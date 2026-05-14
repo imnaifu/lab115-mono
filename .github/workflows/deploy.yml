@@ -41,4 +41,4 @@ jobs:
       - name: Deploy to Coolify
         env:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
-        run: chmod +x scripts/deploy.sh && ./scripts/deploy.sh "$COOLIFY_TOKEN" "${{ env.COOLIFY_URL }}" "ws77irnzbsjjlhheos7uro91" "n5srzren85eptnkz2i3qq2b4"
+        run: chmod +x scripts/deploy.sh && ./scripts/deploy.sh "$COOLIFY_TOKEN" "${{ env.COOLIFY_URL }}" "ws77irnzbsjjlhheos7uro91" "n5srzren85eptnkz2i3qq2b4" "${{ github.sha }}"
