@@ -35,10 +35,7 @@ if [ -z "$UUID" ]; then
       - traefik.http.routers.https-0-converter.tls.certresolver=letsencrypt
       - traefik.http.services.http-0-converter.loadbalancer.server.port=80' | base64 -w0)
 
-  RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
-    -H "Content-Type: application/json" \
-    "$COOLIFY_URL/api/v1/services" \
-    -d "{\"project_uuid\":\"$COOLIFY_PROJECT\",\"server_uuid\":\"$COOLIFY_SERVER\",\"environment_name\":\"production\",\"docker_compose_raw\":\"$B64\",\"name\":\"unit-converter-website\"}")
+  RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $COOLIFY_TOKEN"     -H "Content-Type: application/json"     "$COOLIFY_URL/api/v1/services"     -d "{\"project_uuid\":\"$COOLIFY_PROJECT\",\"server_uuid\":\"$COOLIFY_SERVER\",\"environment_name\":\"production\",\"docker_compose_raw\":\"$B64\",\"name\":\"unit-converter-website\"}")
   echo "Create response: $RESPONSE"
   UUID=$(echo "$RESPONSE" | grep -o '"uuid":"[^"]*"' | cut -d'"' -f4 | head -1)
   echo "New UUID: $UUID"
