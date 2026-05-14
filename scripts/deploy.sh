@@ -9,11 +9,15 @@ SHA_TAG="$5"
 
 echo "==> Checking existing services..."
 
+# Get all services, use jq if available, fallback to flexible grep
 LIST=$(curl -s -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/services")
-UUID=$(echo "$LIST" | grep -o '"name":"unit-converter-website","uuid":"[^"]*"' | grep -o '"uuid":"[^"]*"' | cut -d'"' -f4 || true)
+
+# Find UUIDs of all services named "unit-converter-website" (grep handles both "name":"x" and "name": "x")
+ALL_UUIDS=$(echo "$LIST" | grep -oP '"name":\s*"unit-converter-website"\s*,\s*"uuid":\s*"[^"]*"' | grep -oP '"uuid":\s*"[^"]*"' | grep -oP '"[^"]*"' | tail -1 || true)
+UUID=$(echo "$ALL_UUIDS" | head -1)
 
 if [ -z "$UUID" ]; then
-  echo "==> Creating new service..."
+  echo "==> No existing service found, creating new one..."
 
   COMPOSE=$(cat <<-YAML
 services:
@@ -45,12 +49,14 @@ YAML
     "$COOLIFY_URL/api/v1/services" \
     -d "{\"project_uuid\":\"$COOLIFY_PROJECT\",\"server_uuid\":\"$COOLIFY_SERVER\",\"environment_name\":\"production\",\"docker_compose_raw\":\"$B64\",\"name\":\"unit-converter-website\"}")
   echo "Create response: $RESPONSE"
-  UUID=$(echo "$RESPONSE" | grep -o '"uuid":"[^"]*"' | cut -d'"' -f4 | head -1)
+  UUID=$(echo "$RESPONSE" | grep -oP '"uuid":\s*"[^"]*"' | grep -oP '"[^"]*"' | tail -1)
   echo "New UUID: $UUID"
   sleep 5
+else
+  echo "==> Found existing service: $UUID"
 fi
 
 echo "==> Deploying service $UUID..."
-curl -s -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$UUID&forcePull=true"
-echo ""
+DEPLOY_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$UUID")
+echo "Deploy response: $DEPLOY_RESPONSE"
 echo "==> Done! https://converter.lab115.com"
