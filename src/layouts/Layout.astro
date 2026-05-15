@@ -1,0 +1,71 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  canonical: string;
+  /** Page-level JSON-LD object; serialised into a <script type="application/ld+json"> tag. */
+  jsonLd?: Record<string, unknown>;
+}
+
+const { title, description, canonical, jsonLd } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh" data-lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="generator" content={Astro.generator} />
+
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta name="keywords" content="单位转换, unit converter, 长度转换, 重量转换, 温度转换, 容量转换, 面积转换, 速度转换, length, weight, temperature, volume, area, speed converter, online tool" />
+  <link rel="canonical" href={canonical} />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:site_name" content="Converter · 单位转换" />
+  <meta property="og:locale" content="zh_CN" />
+  <meta property="og:locale:alternate" content="en_US" />
+
+  <!-- Twitter card (falls back to OG when absent, but explicit is friendlier to some scrapers). -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+
+  <!-- Robots / theme -->
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="theme-color" content="#f1ead9" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Google Analytics (kept from the original site so existing tracking property is untouched). -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5X27KERS7Q" is:inline></script>
+  <script is:inline>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag("js", new Date());
+    gtag("config", "G-5X27KERS7Q");
+  </script>
+
+  <!-- Google AdSense placeholder — uncomment + replace client id when approved.
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script>
+  -->
+
+  {jsonLd && (
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+  )}
+</head>
+<body>
+  <slot />
+</body>
+</html>
