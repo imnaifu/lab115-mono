@@ -1,17 +1,17 @@
-# Multi-app orchestration. Each service is an INDEPENDENT Next.js project under
-# apps/<name>/ with its own package.json, deps and Dockerfile. Coolify builds
-# each from its own context (strategy A), and Traefik routes每个域名 to its
-# container.
+# Multi-app orchestration. Each service is an INDEPENDENT app under apps/<name>/
+# with its own Dockerfile (Next.js, or a plain static site — see `english`).
+# Coolify builds each from its own context (strategy A), and Traefik routes
+# 每个域名 to its container.
 #
 # ── Add a new tool ──────────────────────────────────────────────────────────
-#   1. Drop the Claude-design-exported Next.js project into apps/<name>/
-#   2. Make sure it has a Dockerfile (copy apps/converter/Dockerfile if missing)
-#   3. Copy the `converter` block below, then change:
-#        - the service name          (converter → <name>)
+#   1. Drop the project into apps/<name>/ (with its own Dockerfile)
+#   2. Copy a service block below, then change:
+#        - the service name          (→ <name>)
 #        - build.context             (./apps/<name>)
-#        - every `converter` in labels (router/service names + Host())
+#        - every occurrence of the name in labels (router/service names)
 #        - the Host(`...`) domain
-#   4. Point the subdomain's DNS at the server, then `git push`.
+#        - loadbalancer.server.port  (Next.js: 3000, nginx static: 80)
+#   3. Point the subdomain's DNS at the server, then `git push`.
 services:
   converter:
     build:
@@ -36,3 +36,25 @@ services:
       - traefik.http.routers.converter-https.middlewares=gzip
       # Next.js listens on 3000 inside the container
       - traefik.http.services.converter.loadbalancer.server.port=3000
+
+  english:
+    # Static site (Claude design-canvas export) served by nginx — no Node build.
+    build:
+      context: ./apps/english
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.english-http.entryPoints=http
+      - traefik.http.routers.english-http.rule=Host(`english.lab115.com`)
+      - traefik.http.routers.english-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.english-https.entryPoints=https
+      - traefik.http.routers.english-https.rule=Host(`english.lab115.com`)
+      - traefik.http.routers.english-https.tls=true
+      - traefik.http.routers.english-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.english-https.middlewares=gzip
+      # nginx listens on 80 inside the container
+      - traefik.http.services.english.loadbalancer.server.port=80

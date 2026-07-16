@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-426d664f-a9c6-4fc7-af6b-1493c3565a59/styles.css">
+<script src="_ds/modernist-426d664f-a9c6-4fc7-af6b-1493c3565a59/_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="image-slot.js"></script>
+<style>
+@keyframes ebsIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+a { color: var(--color-accent); }
+a:hover { color: var(--color-accent-700); }
+</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text)">
+
+  <nav class="nav" style="position:sticky;top:0;z-index:20;background:var(--color-bg)">
+    <span class="nav-brand" style="display:flex;align-items:center;gap:10px">
+      <span style="display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;background:var(--color-accent);color:var(--color-bg)">EN</span>
+      Scene English
+    </span>
+    <span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Learn English by place</span>
+    <span style="display:flex;align-items:center;gap:10px;font-size:13px">
+      <strong style="font-family:var(--font-heading)">{{ overall.learned }}</strong>
+      <span style="color:color-mix(in srgb,var(--color-text) 60%,transparent)">/ {{ overall.total }} words</span>
+    </span>
+  </nav>
+
+  <!-- ============ HOME ============ -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:1140px;margin:0 auto;padding:0 clamp(20px,5vw,64px)">
+
+    <section style="padding:clamp(40px,7vw,88px) 0 clamp(28px,4vw,44px)">
+      <span style="display:block;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:18px">Picture dictionary</span>
+      <h1 style="font-family:var(--font-heading);font-weight:800;font-size:clamp(40px,6.4vw,80px);line-height:1.04;letter-spacing:-0.02em;margin:0 0 22px;max-width:16ch">Learn English, one scene at a time.</h1>
+      <p style="font-size:clamp(16px,1.6vw,19px);line-height:1.6;max-width:52ch;margin:0;color:color-mix(in srgb,var(--color-text) 82%,transparent)">Step into a barber shop, a zoo, a busy airport. Meet the words you will really use — with a labelled picture, a button that says each word out loud, and flip cards to practise. You are doing great already.</p>
+
+      <div style="margin-top:36px;border-top:2px solid var(--color-divider);border-bottom:2px solid var(--color-divider);padding:20px 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <span style="font-family:var(--font-heading);font-weight:800;font-size:15px">Your progress</span>
+        <div style="flex:1;min-width:200px;height:10px;background:var(--color-neutral-300);position:relative">
+          <div style="position:absolute;inset:0 auto 0 0;background:var(--color-accent);width:{{ overall.pct }}%"></div>
+        </div>
+        <span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 65%,transparent)">{{ overall.learned }} of {{ overall.total }} words learned</span>
+      </div>
+    </section>
+
+    <section style="padding-bottom:80px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:24px">
+        <h2 style="font-family:var(--font-heading);font-weight:800;font-size:clamp(24px,3vw,34px);letter-spacing:-0.015em;margin:0">Choose a scene</h2>
+        <span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Eight places</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px;background:var(--color-divider);border:2px solid var(--color-divider)">
+        <sc-for list="{{ scenes }}" as="s" hint-placeholder-count="8">
+          <button type="button" onClick="{{ s.open }}" style="text-align:left;display:flex;flex-direction:column;gap:16px;background:var(--color-bg);border:0;padding:22px 20px 18px;cursor:pointer;min-height:200px;font:inherit;color:inherit" style-hover="background:var(--color-accent-100)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <span style="display:inline-flex;width:52px;height:52px;align-items:center;justify-content:center;background:var(--color-surface);color:var(--color-accent)">{{ s.iconEl }}</span>
+              <span class="tag tag-outline">{{ s.count }} words</span>
+            </div>
+            <div style="flex:1">
+              <h3 style="font-family:var(--font-heading);font-weight:800;font-size:22px;line-height:1.1;margin:0 0 6px">{{ s.name }}</h3>
+              <p style="font-size:13px;line-height:1.5;margin:0;color:color-mix(in srgb,var(--color-text) 70%,transparent)">{{ s.tagline }}</p>
+            </div>
+            <div>
+              <div style="height:6px;background:var(--color-neutral-300);position:relative;margin-bottom:8px">
+                <div style="position:absolute;inset:0 auto 0 0;background:var(--color-accent);width:{{ s.pct }}%"></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">
+                <span>{{ s.learnedLabel }}</span>
+                <span style="display:inline-flex;align-items:center;gap:4px;color:var(--color-accent-700);font-family:var(--font-heading);font-weight:800">Open {{ chevronEl }}</span>
+              </div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <!-- ============ SCENE DETAIL ============ -->
+  <sc-if value="{{ isScene }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1200px;margin:0 auto;padding:0 clamp(20px,5vw,64px)" key="{{ scene.id }}">
+
+    <div style="padding:22px 0 0">
+      <button type="button" onClick="{{ goHome }}" class="btn btn-ghost" style="padding-left:0">{{ backEl }} All scenes</button>
+    </div>
+
+    <section style="padding:14px 0 22px;border-bottom:2px solid var(--color-divider)">
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <span style="display:inline-flex;width:60px;height:60px;align-items:center;justify-content:center;background:var(--color-accent);color:var(--color-bg)">{{ scene.iconEl }}</span>
+        <div style="flex:1;min-width:220px">
+          <span style="display:block;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:4px">Scene</span>
+          <h1 style="font-family:var(--font-heading);font-weight:800;font-size:clamp(30px,4vw,46px);letter-spacing:-0.02em;margin:0">{{ scene.name }}</h1>
+        </div>
+        <div style="min-width:180px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="font-family:var(--font-heading);font-weight:800;font-size:22px">{{ scene.learned }}</span>
+            <span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">/ {{ scene.count }} learned</span>
+          </div>
+          <div style="height:8px;background:var(--color-neutral-300);position:relative;width:180px">
+            <div style="position:absolute;inset:0 auto 0 0;background:var(--color-accent);width:{{ scene.pct }}%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 0">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Layout</span>
+        <div class="seg">
+          <label class="seg-opt"><input type="radio" name="ebs-layout" checked="{{ isSplit }}" onChange="{{ setSplit }}">Picture &amp; list</label>
+          <label class="seg-opt"><input type="radio" name="ebs-layout" checked="{{ isStacked }}" onChange="{{ setStacked }}">Picture on top</label>
+        </div>
+      </div>
+      <button type="button" onClick="{{ resetScene }}" class="btn btn-secondary">{{ resetEl }} Reset this scene</button>
+    </div>
+
+    <div style="{{ layoutStyle }}">
+      <!-- DIAGRAM -->
+      <figure style="margin:0">
+        <div style="position:relative;width:100%;aspect-ratio:4/3;border:2px solid var(--color-divider);background:var(--color-surface)">
+          <image-slot id="diagram-{{ scene.id }}" shape="rect" fit="cover" placeholder="{{ scene.slotHint }}" class="grayscale" style="position:absolute;inset:0"></image-slot>
+          <div style="position:absolute;inset:0;pointer-events:none">
+            <sc-for list="{{ scene.words }}" as="w" hint-placeholder-count="6">
+              <span style="position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;{{ w.pinPos }}">
+                <span style="display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;background:var(--color-accent);color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:12px;box-shadow:var(--shadow-sm)">{{ w.n }}</span>
+                <span style="background:var(--color-bg);border:1px solid var(--color-divider);padding:2px 7px;font-size:12px;font-family:var(--font-heading);font-weight:800;white-space:nowrap;box-shadow:var(--shadow-sm)">{{ w.word }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+        <figcaption style="font-size:12px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-top:8px">Numbered labels match the cards. Drag your own {{ scene.lowerName }} picture onto the frame.</figcaption>
+      </figure>
+
+      <!-- WORD LIST -->
+      <div>
+        <div style="display:grid;grid-template-columns:{{ cardCols }};gap:2px;background:var(--color-divider);border:2px solid var(--color-divider)">
+          <sc-for list="{{ scene.words }}" as="w" hint-placeholder-count="6">
+            <button type="button" onClick="{{ w.flip }}" style="{{ w.cardStyle }}" style-hover="background:var(--color-accent-100)">
+              <sc-if value="{{ w.notFlipped }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:12px;height:100%;animation:ebsIn .18s ease">
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;{{ w.badgeStyle }};font-family:var(--font-heading);font-weight:800;font-size:12px">{{ w.badgeText }}</span>
+                    <span class="tag tag-neutral">{{ w.pos }}</span>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-family:var(--font-heading);font-weight:800;font-size:26px;line-height:1.1;letter-spacing:-0.01em">{{ w.word }}</div>
+                    <sc-if value="{{ showPhonetics }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size:14px;color:var(--color-accent-700);margin-top:6px;font-variant-ligatures:none">{{ w.ipa }}</div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ chevronEl }} Tap for meaning</span>
+                    <span onClick="{{ w.speak }}" role="button" title="Hear the word" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--color-divider);color:var(--color-accent);cursor:pointer;background:var(--color-bg)" style-hover="background:var(--color-accent-100)">{{ audioEl }}</span>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ w.flipped }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:10px;height:100%;animation:ebsIn .18s ease">
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-family:var(--font-heading);font-weight:800;font-size:16px">{{ w.word }}</span>
+                    <span onClick="{{ w.speak }}" role="button" title="Hear the word" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--color-divider);color:var(--color-accent);cursor:pointer;background:var(--color-bg)" style-hover="background:var(--color-accent-100)">{{ audioEl }}</span>
+                  </div>
+                  <p style="font-size:14px;line-height:1.55;margin:0;color:color-mix(in srgb,var(--color-text) 88%,transparent)">{{ w.def }}</p>
+                  <p style="font-size:13px;line-height:1.5;margin:0;padding-left:10px;border-left:2px solid var(--color-accent);color:color-mix(in srgb,var(--color-text) 70%,transparent);font-style:italic">{{ w.example }}</p>
+                  <div style="margin-top:auto">
+                    <span onClick="{{ w.toggle }}" role="button" class="{{ w.gotClass }}" style="width:100%;justify-content:flex-start">{{ w.gotEl }} {{ w.gotLabel }}</span>
+                  </div>
+                </div>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:40px 0 80px">
+      <button type="button" onClick="{{ goHome }}" class="btn btn-primary">{{ backEl }} Back to all scenes</button>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:760},&quot;showPhonetics&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;defaultLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;split&quot;,&quot;stacked&quot;],&quot;default&quot;:&quot;split&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+class Component extends DCLogic {
+  scenes = [
+    { id:'barber', name:'Barber Shop', icon:'Scissors', tagline:'Get a haircut and meet the tools of the trade.',
+      words:[
+        {word:'Scissors', ipa:'/ˈsɪz.ərz/', pos:'noun', def:'A tool with two sharp blades used to cut hair.', ex:'The barber cuts my hair with shiny scissors.'},
+        {word:'Comb', ipa:'/koʊm/', pos:'noun', def:'A flat tool with teeth that tidies your hair.', ex:'Please comb your hair before school.'},
+        {word:'Mirror', ipa:'/ˈmɪr.ər/', pos:'noun', def:'Glass that shows your reflection.', ex:'I look in the mirror to see my new haircut.'},
+        {word:'Barber', ipa:'/ˈbɑːr.bər/', pos:'noun', def:'A person whose job is cutting hair.', ex:'The barber is friendly and quick.'},
+        {word:'Razor', ipa:'/ˈreɪ.zər/', pos:'noun', def:'A sharp tool used for shaving.', ex:'Dad shaves his beard with a razor.'},
+        {word:'Haircut', ipa:'/ˈher.kʌt/', pos:'noun', def:'The way your hair is cut and styled.', ex:'I love my short new haircut!'},
+      ]},
+    { id:'zoo', name:'Zoo', icon:'Bird', tagline:'Say hello to the animals and their keepers.',
+      words:[
+        {word:'Lion', ipa:'/ˈlaɪ.ən/', pos:'noun', def:'A big wild cat with a loud roar.', ex:'The lion is sleeping in the sun.'},
+        {word:'Elephant', ipa:'/ˈel.ə.fənt/', pos:'noun', def:'A huge grey animal with a long trunk.', ex:'The elephant sprays water with its trunk.'},
+        {word:'Monkey', ipa:'/ˈmʌŋ.ki/', pos:'noun', def:'A playful animal that loves to climb.', ex:'The monkey swings from tree to tree.'},
+        {word:'Giraffe', ipa:'/dʒəˈræf/', pos:'noun', def:'A very tall animal with a long neck.', ex:'The giraffe eats leaves high up.'},
+        {word:'Cage', ipa:'/keɪdʒ/', pos:'noun', def:'A home with bars that keeps animals safe.', ex:'The parrot lives in a big cage.'},
+        {word:'Zookeeper', ipa:'/ˈzuː.kiː.pər/', pos:'noun', def:'A person who feeds and cares for the animals.', ex:'The zookeeper gives the seals some fish.'},
+      ]},
+    { id:'restaurant', name:'Restaurant', icon:'Utensils', tagline:'Order a meal and learn to eat out.',
+      words:[
+        {word:'Menu', ipa:'/ˈmen.juː/', pos:'noun', def:'A list of the food you can order.', ex:'Can I see the menu, please?'},
+        {word:'Waiter', ipa:'/ˈweɪ.tər/', pos:'noun', def:'A person who brings your food to the table.', ex:'The waiter brought our warm soup.'},
+        {word:'Fork', ipa:'/fɔːrk/', pos:'noun', def:'A tool with points that you eat with.', ex:'I eat my salad with a fork.'},
+        {word:'Plate', ipa:'/pleɪt/', pos:'noun', def:'A flat dish that holds your food.', ex:'My plate is full of rice.'},
+        {word:'Bill', ipa:'/bɪl/', pos:'noun', def:'The paper that shows what you must pay.', ex:'Dad paid the bill after dinner.'},
+        {word:'Dessert', ipa:'/dɪˈzɜːrt/', pos:'noun', def:'Something sweet you eat after your meal.', ex:'Ice cream is my favourite dessert.'},
+      ]},
+    { id:'doctor', name:"Doctor's Office", icon:'Stethoscope', tagline:'Visit the doctor and feel better soon.',
+      words:[
+        {word:'Doctor', ipa:'/ˈdɑːk.tər/', pos:'noun', def:'A person who helps you feel better.', ex:'The doctor listened to my heart.'},
+        {word:'Nurse', ipa:'/nɜːrs/', pos:'noun', def:'A person who helps the doctor care for you.', ex:'The nurse gave me a plaster.'},
+        {word:'Medicine', ipa:'/ˈmed.ə.sən/', pos:'noun', def:'Something you take to get well.', ex:'Take your medicine twice a day.'},
+        {word:'Thermometer', ipa:'/θərˈmɑːm.ɪ.tər/', pos:'noun', def:'A tool that checks how hot your body is.', ex:'The thermometer shows my temperature.'},
+        {word:'Bandage', ipa:'/ˈbæn.dɪdʒ/', pos:'noun', def:'A soft strip of cloth to cover a cut.', ex:'The nurse put a bandage on my knee.'},
+        {word:'Patient', ipa:'/ˈpeɪ.ʃənt/', pos:'noun', def:'A person who is sick and being cared for.', ex:'The patient waited to see the doctor.'},
+      ]},
+    { id:'hotel', name:'Hotel', icon:'BedDouble', tagline:'Check in and stay the night away from home.',
+      words:[
+        {word:'Reception', ipa:'/rɪˈsep.ʃən/', pos:'noun', def:'The desk where you check in to a hotel.', ex:'We got our key at reception.'},
+        {word:'Key', ipa:'/kiː/', pos:'noun', def:'What you use to open your room.', ex:'Do not lose the room key!'},
+        {word:'Luggage', ipa:'/ˈlʌg.ɪdʒ/', pos:'noun', def:'The bags you take on a trip.', ex:'My luggage is very heavy.'},
+        {word:'Lobby', ipa:'/ˈlɑː.bi/', pos:'noun', def:'The big open room near the entrance.', ex:'We waited in the hotel lobby.'},
+        {word:'Elevator', ipa:'/ˈel.ə.veɪ.tər/', pos:'noun', def:'A small room that carries you between floors.', ex:'Let us take the elevator to floor ten.'},
+        {word:'Pillow', ipa:'/ˈpɪl.oʊ/', pos:'noun', def:'A soft cushion for your head at night.', ex:'The pillow is soft and comfy.'},
+      ]},
+    { id:'classroom', name:'Classroom', icon:'GraduationCap', tagline:'Sit down, listen up and learn something new.',
+      words:[
+        {word:'Teacher', ipa:'/ˈtiː.tʃər/', pos:'noun', def:'A person who helps you learn.', ex:'Our teacher tells great stories.'},
+        {word:'Blackboard', ipa:'/ˈblæk.bɔːrd/', pos:'noun', def:'A dark board the teacher writes on.', ex:'She wrote the date on the blackboard.'},
+        {word:'Pencil', ipa:'/ˈpen.səl/', pos:'noun', def:'A tool you write and draw with.', ex:'My pencil is long and red.'},
+        {word:'Book', ipa:'/bʊk/', pos:'noun', def:'Pages with words and pictures to read.', ex:'I read a book about space.'},
+        {word:'Desk', ipa:'/desk/', pos:'noun', def:'The table where you sit and work.', ex:'My desk is next to the window.'},
+        {word:'Backpack', ipa:'/ˈbæk.pæk/', pos:'noun', def:'A bag you wear to carry your books.', ex:'My backpack is full of books.'},
+      ]},
+    { id:'airport', name:'Airport', icon:'Plane', tagline:'Catch a flight and travel the world.',
+      words:[
+        {word:'Passport', ipa:'/ˈpæs.pɔːrt/', pos:'noun', def:'A little book that shows who you are.', ex:'Show your passport at the gate.'},
+        {word:'Ticket', ipa:'/ˈtɪk.ɪt/', pos:'noun', def:'A paper that lets you board the plane.', ex:'Keep your ticket safe.'},
+        {word:'Suitcase', ipa:'/ˈsuːt.keɪs/', pos:'noun', def:'A big bag for your clothes.', ex:'I packed my suitcase for the trip.'},
+        {word:'Gate', ipa:'/geɪt/', pos:'noun', def:'The door where you get on the plane.', ex:'Our gate is number twelve.'},
+        {word:'Pilot', ipa:'/ˈpaɪ.lət/', pos:'noun', def:'The person who flies the plane.', ex:'The pilot said hello to us.'},
+        {word:'Runway', ipa:'/ˈrʌn.weɪ/', pos:'noun', def:'The long road where planes take off.', ex:'The plane sped down the runway.'},
+      ]},
+    { id:'grocery', name:'Grocery Store', icon:'ShoppingCart', tagline:'Fill your cart and buy the family food.',
+      words:[
+        {word:'Trolley', ipa:'/ˈtrɑː.li/', pos:'noun', def:'A basket on wheels for your shopping.', ex:'I push the trolley down the aisle.'},
+        {word:'Cashier', ipa:'/kæˈʃɪr/', pos:'noun', def:'The person you pay at the till.', ex:'The cashier gave me my change.'},
+        {word:'Aisle', ipa:'/aɪl/', pos:'noun', def:'A row with shelves on each side.', ex:'The milk is in the third aisle.'},
+        {word:'Basket', ipa:'/ˈbæs.kɪt/', pos:'noun', def:'A small bag you carry by hand.', ex:'I put apples in my basket.'},
+        {word:'Receipt', ipa:'/rɪˈsiːt/', pos:'noun', def:'The paper that lists what you bought.', ex:'Keep the receipt in your pocket.'},
+        {word:'Shelf', ipa:'/ʃelf/', pos:'noun', def:'A flat board that holds the food.', ex:'The cereal is on the top shelf.'},
+      ]},
+  ];
+  pins = [[17,20],[50,13],[83,21],[85,53],[62,84],[28,84],[14,55],[50,50]];
+
+  state = { view:'home', sceneId:null, layout:null, flipped:{}, learned:{}, iconMap:null };
+
+  componentDidMount() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ebs_learned_v1') || '{}');
+      if (saved && typeof saved === 'object') this.setState({ learned: saved });
+    } catch (e) {}
+    this.buildIcons();
+  }
+
+  buildIcons(tries = 0) {
+    const L = window.lucide;
+    if (!L || !L.icons) { if (tries < 60) setTimeout(() => this.buildIcons(tries + 1), 60); return; }
+    const need = new Set(['ArrowLeft','Volume2','Check','RotateCcw','ChevronRight','Plus']);
+    this.scenes.forEach(s => need.add(s.icon));
+    const map = {};
+    need.forEach(n => { const node = L.icons[n]; if (node) map[n] = this.svgInner(node); });
+    this.setState({ iconMap: map });
+  }
+
+  svgInner(node) {
+    let ch = (Array.isArray(node) && node[0] === 'svg') ? node[2] : node;
+    if (!Array.isArray(ch)) return '';
+    return ch.map(c => {
+      const t = c[0], a = c[1] || {};
+      const s = Object.keys(a).map(k => `${k}="${a[k]}"`).join(' ');
+      return `<${t} ${s}></${t}>`;
+    }).join('');
+  }
+
+  ic(name, size = 24) {
+    const inner = this.state.iconMap && this.state.iconMap[name];
+    if (!inner) return null;
+    return React.createElement('svg', { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round', dangerouslySetInnerHTML:{ __html: inner } });
+  }
+
+  open(id) { this.setState({ view:'scene', sceneId:id, flipped:{} }); window.scrollTo({ top:0 }); }
+  goHome = () => { this.setState({ view:'home' }); window.scrollTo({ top:0 }); };
+
+  saveLearned(next) { try { localStorage.setItem('ebs_learned_v1', JSON.stringify(next)); } catch (e) {} }
+
+  speak(word) {
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(word);
+      u.lang = 'en-US'; u.rate = 0.9; u.pitch = 1;
+      synth.speak(u);
+    } catch (e) {}
+  }
+
+  countLearned(scene) {
+    return scene.words.reduce((n, w) => n + (this.state.learned[scene.id + ':' + w.word] ? 1 : 0), 0);
+  }
+
+  renderVals() {
+    const P = this.props || {};
+    const showPhonetics = P.showPhonetics ?? true;
+    const layout = this.state.layout ?? P.defaultLayout ?? 'split';
+
+    const totalAll = this.scenes.reduce((n, s) => n + s.words.length, 0);
+    const learnedAll = this.scenes.reduce((n, s) => n + this.countLearned(s), 0);
+
+    const chevronEl = this.ic('ChevronRight', 14);
+    const backEl = this.ic('ArrowLeft', 18);
+    const audioEl = this.ic('Volume2', 18);
+    const resetEl = this.ic('RotateCcw', 16);
+
+    const scenesVM = this.scenes.map((s) => {
+      const learned = this.countLearned(s);
+      return {
+        ...s, iconEl: this.ic(s.icon, 30), count: s.words.length,
+        learned, pct: Math.round((learned / s.words.length) * 100),
+        learnedLabel: learned === s.words.length ? 'All done!' : learned + ' learned',
+        open: () => this.open(s.id),
+      };
+    });
+
+    let sceneVM = null;
+    const cur = this.scenes.find(s => s.id === this.state.sceneId);
+    if (cur) {
+      const learned = this.countLearned(cur);
+      sceneVM = {
+        ...cur, iconEl: this.ic(cur.icon, 32), count: cur.words.length,
+        learned, pct: Math.round((learned / cur.words.length) * 100),
+        lowerName: cur.name.toLowerCase(),
+        slotHint: 'Drop a ' + cur.name.toLowerCase() + ' picture here',
+        words: cur.words.map((w, i) => {
+          const key = cur.id + ':' + w.word;
+          const isLearned = !!this.state.learned[key];
+          const flipped = !!this.state.flipped[w.word];
+          const pin = this.pins[i % this.pins.length];
+          const base = 'text-align:left;display:block;background:' + (isLearned ? 'var(--color-accent-100)' : 'var(--color-bg)') + ';border:0;border-left:3px solid ' + (isLearned ? 'var(--color-accent)' : 'transparent') + ';padding:18px 16px;cursor:pointer;min-height:190px;font:inherit;color:inherit;width:100%';
+          return {
+            n: i + 1, word: w.word, ipa: w.ipa, pos: w.pos, def: w.def, example: w.ex,
+            flipped, notFlipped: !flipped, learned: isLearned,
+            pinPos: 'left:' + pin[0] + '%;top:' + pin[1] + '%',
+            cardStyle: base,
+            badgeStyle: isLearned ? 'background:var(--color-accent);color:var(--color-bg)' : 'border:1.5px solid var(--color-divider);color:var(--color-text)',
+            badgeText: isLearned ? '✓' : String(i + 1),
+            gotClass: isLearned ? 'btn btn-primary' : 'btn btn-secondary',
+            gotLabel: isLearned ? 'Learned' : 'Got it!',
+            gotEl: isLearned ? this.ic('Check', 16) : this.ic('Plus', 16),
+            flip: () => this.setState(st => ({ flipped: { ...st.flipped, [w.word]: !st.flipped[w.word] } })),
+            speak: (e) => { if (e) e.stopPropagation(); this.speak(w.word); },
+            toggle: (e) => { if (e) e.stopPropagation(); this.setState(st => { const nx = { ...st.learned }; if (nx[key]) delete nx[key]; else nx[key] = true; this.saveLearned(nx); return { learned: nx }; }); },
+          };
+        }),
+      };
+    }
+
+    return {
+      isHome: this.state.view === 'home',
+      isScene: this.state.view === 'scene' && !!sceneVM,
+      overall: { learned: learnedAll, total: totalAll, pct: Math.round((learnedAll / totalAll) * 100) },
+      scenes: scenesVM,
+      scene: sceneVM,
+      showPhonetics,
+      isSplit: layout === 'split', isStacked: layout === 'stacked',
+      setSplit: () => this.setState({ layout: 'split' }),
+      setStacked: () => this.setState({ layout: 'stacked' }),
+      layoutStyle: layout === 'split'
+        ? 'display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start'
+        : 'display:flex;flex-direction:column;gap:clamp(20px,3vw,36px)',
+      cardCols: layout === 'split' ? 'repeat(auto-fill,minmax(210px,1fr))' : 'repeat(auto-fill,minmax(230px,1fr))',
+      chevronEl, backEl, audioEl, resetEl,
+      goHome: this.goHome,
+      resetScene: () => { if (!cur) return; this.setState(st => { const nx = { ...st.learned }; cur.words.forEach(w => delete nx[cur.id + ':' + w.word]); this.saveLearned(nx); return { learned: nx, flipped: {} }; }); },
+    };
+  }
+}
+</script>
+</body>
+</html>
