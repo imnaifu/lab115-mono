@@ -1,0 +1,42 @@
+name: CI
+
+# Quality gate only — deployment is handled by Coolify's native git integration
+# (push to main → Coolify builds docker-compose.yml and redeploys).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # Auto-discover the apps under apps/ so new tools are covered without editing
+  # this workflow.
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.list.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          apps=$(ls -d apps/*/ | xargs -n1 basename | jq -R . | jq -cs .)
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.discover.outputs.apps) }}
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build

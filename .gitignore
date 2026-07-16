@@ -4,6 +4,11 @@ dist-ssr
 *.local
 *.tsbuildinfo
 
+# Next.js
+.next/
+/out/
+next-env.d.ts
+
 # Editor / OS
 .DS_Store
 .vscode/*

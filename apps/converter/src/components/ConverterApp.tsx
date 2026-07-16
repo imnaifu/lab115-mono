@@ -1,3 +1,8 @@
+"use client";
+
+// This is the entry to the converter's interactive React tree. Marking it a
+// client component makes every component it imports (Hero/UnitGrid/…) client
+// too, so localStorage / contentEditable / DOM effects all work under Next.js.
 import { useEffect, useState } from "react";
 import { CATEGORIES, getCategory, type CategoryKey, type Lang, type Unit } from "../data/categories";
 import { usePersistedState } from "../hooks/usePersistedState";

@@ -1,0 +1,38 @@
+# Multi-app orchestration. Each service is an INDEPENDENT Next.js project under
+# apps/<name>/ with its own package.json, deps and Dockerfile. Coolify builds
+# each from its own context (strategy A), and Traefik routes每个域名 to its
+# container.
+#
+# ── Add a new tool ──────────────────────────────────────────────────────────
+#   1. Drop the Claude-design-exported Next.js project into apps/<name>/
+#   2. Make sure it has a Dockerfile (copy apps/converter/Dockerfile if missing)
+#   3. Copy the `converter` block below, then change:
+#        - the service name          (converter → <name>)
+#        - build.context             (./apps/<name>)
+#        - every `converter` in labels (router/service names + Host())
+#        - the Host(`...`) domain
+#   4. Point the subdomain's DNS at the server, then `git push`.
+services:
+  converter:
+    build:
+      context: ./apps/converter
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.converter-http.entryPoints=http
+      - traefik.http.routers.converter-http.rule=Host(`converter.lab115.com`)
+      - traefik.http.routers.converter-http.middlewares=redirect-to-https
+      # HTTPS router (Let's Encrypt via Coolify's Traefik resolver)
+      - traefik.http.routers.converter-https.entryPoints=https
+      - traefik.http.routers.converter-https.rule=Host(`converter.lab115.com`)
+      - traefik.http.routers.converter-https.tls=true
+      - traefik.http.routers.converter-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.converter-https.middlewares=gzip
+      # Next.js listens on 3000 inside the container
+      - traefik.http.services.converter.loadbalancer.server.port=3000
