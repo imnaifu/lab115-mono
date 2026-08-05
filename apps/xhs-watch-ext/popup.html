@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>小红书新帖监控</title>
+    <link rel="stylesheet" href="./src/popup/popup.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="bar-main">
+        <strong>小红书新帖监控</strong>
+        <span class="status" id="status">读取中…</span>
+      </div>
+      <button class="primary" id="run-now">立即检查</button>
+    </header>
+
+    <main>
+      <section>
+        <h2>监控目标</h2>
+        <div id="watches"></div>
+        <div class="row">
+          <button id="add-watch">+ 添加</button>
+          <button id="fill-current-tab">用当前标签页 URL</button>
+        </div>
+      </section>
+
+      <details id="latest-panel" open>
+        <summary>最近抓到</summary>
+        <div id="latest" class="latest"></div>
+      </details>
+
+      <details>
+        <summary>设置</summary>
+        <div class="fields">
+          <label>
+            <span>检查间隔（分钟）</span>
+            <input type="number" id="interval" min="1" step="1" />
+          </label>
+          <label>
+            <span>每轮抓取条数</span>
+            <input type="number" id="capture-limit" min="1" max="200" step="1" />
+          </label>
+          <label>
+            <span>只推送 N 天内发布的（0 = 不限）</span>
+            <input type="number" id="max-age-days" min="0" step="1" />
+          </label>
+          <label class="check">
+            <input type="checkbox" id="seed-first-run" />
+            <span>首轮只建立基线，不推送存量笔记</span>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="notify-desktop" />
+            <span>桌面通知</span>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="keep-awake" />
+            <span>阻止系统休眠（屏幕仍可熄灭，耗电增加）</span>
+          </label>
+          <label>
+            <span>Bark 推送地址</span>
+            <input type="url" id="bark-url" placeholder="https://api.day.app/你的key" />
+          </label>
+          <label>
+            <span>Bark 分组</span>
+            <input type="text" id="bark-group" />
+          </label>
+          <p class="hint">
+            电脑真正休眠时 Chrome 被冻结，插件跑不了；唤醒后会立刻补一轮。Bark
+            用来在你离开电脑时收通知。自建 Bark 服务器需要点一次「测试推送」来授权该域名。
+          </p>
+          <button id="test-notify">测试推送</button>
+        </div>
+      </details>
+
+      <details>
+        <summary>运行日志</summary>
+        <div id="log" class="log"></div>
+      </details>
+    </main>
+
+    <script type="module" src="./src/popup/popup.ts"></script>
+  </body>
+</html>

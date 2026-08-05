@@ -1,0 +1,66 @@
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap");
+
+:root {
+  /* Cute candy theme */
+  --color-bg: #fff6f0;
+  --color-surface: #ffffff;
+  --color-text: #5b4a52;
+  --color-sub: #8a7680;
+  --color-muted: #bcaab2;
+  --color-accent: #ff6f9c;
+  --color-accent-700: #d63f74;
+  --color-accent-100: #ffe0ec;
+  --color-divider: #f0d9e2;
+  --color-correct: #3fbf87;
+  --color-correct-bd: #2b9e6c;
+  --color-neutral-200: #f3e7ec;
+  --box-idle: rgba(255, 255, 255, 0.96);
+  --box-bd: rgba(214, 63, 116, 0.45);
+  --font-head: "Baloo 2", cursive;
+  --font-body: "Nunito", sans-serif;
+  --radius: 16px;
+  --box-radius: 10px;
+  --shadow: 0 8px 22px rgba(80, 60, 70, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-accent-700);
+}
+
+@keyframes wm-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes wm-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes wm-fall {
+  0% { transform: translateY(-20px) rotate(0); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(540deg); opacity: 0.9; }
+}
+@keyframes wm-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}

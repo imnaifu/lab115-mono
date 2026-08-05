@@ -37,6 +37,26 @@ services:
       # Next.js listens on 3000 inside the container
       - traefik.http.services.converter.loadbalancer.server.port=3000
 
+  xhs-watcher:
+    # Not a website — a long-running worker (Playwright + SQLite + Resend), so
+    # no Traefik labels and no exposed port. See apps/xhs-watcher/README.md.
+    build:
+      context: ./apps/xhs-watcher
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - CRON=*/45 * * * *
+      - KEYWORDS=${XHS_KEYWORDS:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - MAIL_FROM=${XHS_MAIL_FROM:-xhs-watcher@lab115.com}
+      - MAIL_TO=${XHS_MAIL_TO:-}
+    volumes:
+      # SQLite DB + the Playwright profile that holds the login session.
+      # The profile must be seeded once from a local `npm run login`.
+      - ./data/xhs:/data
+    # Chromium needs a bigger /dev/shm than Docker's 64MB default.
+    shm_size: 1gb
+
   english:
     # Static site (Claude design-canvas export) served by nginx — no Node build.
     build:

@@ -8,13 +8,21 @@ Traefik routes each domain to its container. Coolify auto-deploys on push.
 ```
 repo/
 ├── apps/
-│   └── converter/            # converter.lab115.com — bilingual unit converter
-│       ├── package.json / next.config.mjs / tsconfig.json / Dockerfile
-│       ├── public/
-│       └── src/{app,components,data,hooks,utils,i18n.ts,icons.ts,index.css}
+│   ├── converter/            # converter.lab115.com — bilingual unit converter
+│   │   ├── package.json / next.config.mjs / tsconfig.json / Dockerfile
+│   │   ├── public/
+│   │   └── src/{app,components,data,hooks,utils,i18n.ts,icons.ts,index.css}
+│   ├── xhs-watcher/          # headless worker — no domain, no exposed port
+│   └── xhs-watch-ext/        # Chrome extension — not deployed at all
 ├── docker-compose.yml        # one service per app + Traefik host routing
 └── .github/workflows/ci.yml  # quality gate (builds each app on PR/push)
 ```
+
+Not every app is a website: an `apps/*` entry can also be a **headless worker**
+(a container with no Traefik labels and no port) or a **client-side artifact**
+that is never deployed (e.g. a Chrome extension). The only hard requirement is a
+`package.json` with an `npm run build` — CI auto-discovers `apps/*/` and builds
+each one. A `Dockerfile` is only needed for entries that get a compose service.
 
 ## Deploy
 
@@ -67,3 +75,34 @@ Categories: Length · Weight · Temperature · Volume · Area · Speed.
 
 **Colors / fonts** — edit the CSS variables in `:root` at the top of
 `src/index.css`.
+
+---
+
+## apps/xhs-watcher
+
+Headless worker: cron → Playwright 抓小红书搜索结果 → 三层去重 → Resend 邮件摘要.
+No domain, no port; state lives on the `./data/xhs` volume (SQLite + the
+Playwright login profile).
+
+Needs a one-time local `npm run login` (QR scan) whose profile is rsync'd to the
+server — the container has no display. Full details, env vars and known limits:
+[`apps/xhs-watcher/README.md`](apps/xhs-watcher/README.md).
+
+Compose env: `XHS_KEYWORDS`, `RESEND_API_KEY`, `XHS_MAIL_TO`, `XHS_MAIL_FROM`.
+
+---
+
+## apps/xhs-watch-ext
+
+Chrome 扩展（MV3）：`chrome.alarms` 定时 → 后台标签页抓小红书搜索结果的最新笔记 →
+两层去重 → 桌面通知 + Bark 推手机. **不部署** —— 装在自己的 Chrome 里，用浏览器现成的
+登录态，所以没有 compose service、也没有 Dockerfile。
+
+```bash
+cd apps/xhs-watch-ext && npm install && npm run build
+# chrome://extensions → 开发者模式 → 加载已解压的扩展程序 → 选 dist/
+```
+
+和 `xhs-watcher` 是同一件事的两种形态（服务端 24×7 邮件 vs. 本机随开随改推送），
+`normalize.ts` 的解析逻辑在两边是移植关系。设计取舍、休眠时的行为和已知限制：
+[`apps/xhs-watch-ext/README.md`](apps/xhs-watch-ext/README.md)。

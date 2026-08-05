@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "小红书新帖监控",
+  "version": "0.1.0",
+  "description": "定时抓取小红书搜索结果的最新笔记，发现新内容时桌面通知并推送到手机（Bark）。",
+  "permissions": ["alarms", "notifications", "storage", "tabs", "power"],
+  "host_permissions": [
+    "https://www.xiaohongshu.com/*",
+    "https://*.xhscdn.com/*",
+    "https://api.day.app/*"
+  ],
+  "optional_host_permissions": ["https://*/*"],
+  "background": {
+    "service_worker": "worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.xiaohongshu.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["https://www.xiaohongshu.com/*"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

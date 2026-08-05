@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Climb — physics climbing prototype</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #d5d0c6;
+        overflow: hidden;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* 固定 16:9 逻辑分辨率（800x450），等比缩放填满窗口 —— 和原作同样的单屏一关布局 */
+      #stage {
+        width: min(100vw, calc(100vh * 800 / 450));
+        aspect-ratio: 800 / 450;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+      }
+
+      #stage canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        touch-action: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "climb",
+  "version": "0.1.0",
+  "description": "Physics-based climbing puzzle prototype (PixiJS + hand-written PBD solver)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "pixi.js": "^8.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0"
+  }
+}

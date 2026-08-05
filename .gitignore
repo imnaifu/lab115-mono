@@ -9,6 +9,16 @@ dist-ssr
 /out/
 next-env.d.ts
 
+# Runtime data volumes (SQLite DBs, Playwright login profiles) — never commit.
+# Anchored so it can't swallow source dirs like apps/converter/src/data/.
+/data/
+/apps/*/data/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
 # Editor / OS
 .DS_Store
 .vscode/*
