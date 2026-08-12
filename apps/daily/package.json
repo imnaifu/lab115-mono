@@ -1,0 +1,26 @@
+{
+  "name": "daily",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "DAILY_DATA_DIR=${DAILY_DATA_DIR:-./data} next dev",
+    "build": "next build",
+    "start": "next start",
+    "once": "DAILY_DATA_DIR=${DAILY_DATA_DIR:-./data} tsx src/jobs/cli.ts"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.10.1",
+    "next": "^16.3.0",
+    "node-cron": "^4.6.0",
+    "openai": "^7.4.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}

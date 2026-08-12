@@ -12,6 +12,7 @@ repo/
 │   │   ├── package.json / next.config.mjs / tsconfig.json / Dockerfile
 │   │   ├── public/
 │   │   └── src/{app,components,data,hooks,utils,i18n.ts,icons.ts,index.css}
+│   ├── daily/                # daily.lab115.com — site *and* cron in one container
 │   ├── xhs-watcher/          # headless worker — no domain, no exposed port
 │   └── xhs-watch-ext/        # Chrome extension — not deployed at all
 ├── docker-compose.yml        # one service per app + Traefik host routing
@@ -75,6 +76,27 @@ Categories: Length · Weight · Temperature · Volume · Area · Speed.
 
 **Colors / fonts** — edit the CSS variables in `:root` at the top of
 `src/index.css`.
+
+---
+
+## apps/daily
+
+`daily.lab115.com` —— 每天 LA 时间 7:00 抓一批技术博客的新文章，用 DeepSeek
+(`deepseek-v4-flash`) 提炼中英双语观点摘要，出一张适合截图分享的 750px 竖版长图。
+
+和其他 app 不同的两点：
+
+- **网站和定时任务是同一个容器**。Next.js 的 `src/instrumentation.ts` 在服务器
+  启动时注册 `node-cron`，所以只有一个 compose service。
+- **没有数据库**。每天的结果以 JSON 提交到 `github.com/imnaifu/files`，容器把那个
+  仓库 clone 到挂载卷上，页面直接读本地磁盘。因此 runtime 镜像额外装了 `git`。
+
+摘要走 [DeepSeek API](https://api-docs.deepseek.com/)，它是 OpenAI 兼容接口，所以
+依赖是官方 `openai` SDK 加一个 `baseURL` —— 换任何 OpenAI 兼容服务商都只是改环境
+变量。订阅源、环境变量、模型文档、JSON 契约和设计说明：
+[`apps/daily/README.md`](apps/daily/README.md)。
+
+Compose env：`DEEPSEEK_API_KEY`、`DAILY_GIT_TOKEN`、`DAILY_BARK_URL`。
 
 ---
 

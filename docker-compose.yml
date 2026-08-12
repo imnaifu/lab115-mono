@@ -78,3 +78,51 @@ services:
       - traefik.http.routers.english-https.middlewares=gzip
       # nginx listens on 80 inside the container
       - traefik.http.services.english.loadbalancer.server.port=80
+
+  daily:
+    # Website AND worker in one container: Next.js serves daily.lab115.com,
+    # while its instrumentation hook registers the node-cron job that fetches
+    # the blogs, summarizes them and pushes the result to github.com/imnaifu/files.
+    # See apps/daily/README.md for the env vars and the JSON contract.
+    build:
+      context: ./apps/daily
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TZ=America/Los_Angeles
+      - DAILY_DATA_DIR=/data
+      # Required — set these in Coolify, they have no safe default.
+      # DeepSeek key from https://platform.deepseek.com/api_keys
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      # Fine-grained PAT with contents:write on the digest repo. The container
+      # has no SSH key, so HTTPS + token is the only route here (locally you can
+      # set GIT_REMOTE to an SSH URL instead — see apps/daily/README.md).
+      - GIT_TOKEN=${DAILY_GIT_TOKEN:-}
+      - BARK_URL=${DAILY_BARK_URL:-}
+      # Optional overrides.
+      - GIT_REPO=${DAILY_GIT_REPO:-imnaifu/files}
+      - DAILY_MODEL=${DAILY_MODEL:-deepseek-v4-flash}
+      - DAILY_CRON=${DAILY_CRON:-0 7 * * *}
+      - DAILY_TZ=${DAILY_TZ:-America/Los_Angeles}
+      - DAILY_TOP_N=${DAILY_TOP_N:-10}
+    volumes:
+      # The git clone of the digest repo. It is both the job's workspace and
+      # the site's read path, so the pages never hit the network.
+      - ./data/daily:/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.daily-http.entryPoints=http
+      - traefik.http.routers.daily-http.rule=Host(`daily.lab115.com`)
+      - traefik.http.routers.daily-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.daily-https.entryPoints=https
+      - traefik.http.routers.daily-https.rule=Host(`daily.lab115.com`)
+      - traefik.http.routers.daily-https.tls=true
+      - traefik.http.routers.daily-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.daily-https.middlewares=gzip
+      # Next.js listens on 3000 inside the container
+      - traefik.http.services.daily.loadbalancer.server.port=3000
