@@ -2,12 +2,48 @@ import { TOP_N, dateKey } from "@/lib/config";
 import { fetchAll } from "@/lib/fetcher";
 import { notify } from "@/lib/notify";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
-import { writeDigest } from "@/lib/store";
+import { readDigest, writeDigest } from "@/lib/store";
 import { summarize } from "@/lib/summarize";
 import type { Article, Digest, FoldedArticle } from "@/lib/types";
 
-/** Guards against a manual `once` overlapping the cron tick. */
+/**
+ * One lock for everything that touches the clone. The daily job and the
+ * periodic sync both run git in the same working tree, and a fetch landing
+ * mid-rebase would corrupt it.
+ */
 let running = false;
+
+/**
+ * Pull without generating anything.
+ *
+ * The pages read the clone off local disk, and the clone only used to move
+ * when the container booted or the daily job fired. Anything pushed from
+ * somewhere else — a laptop run, a backfill — stayed invisible to the site
+ * until the next 07:00. This closes that window; it costs one `git fetch` and
+ * never calls the model.
+ */
+export async function syncRepo(): Promise<boolean> {
+  if (running) return false; // the daily run does its own pull
+  running = true;
+  try {
+    await ensureRepo();
+    return true;
+  } finally {
+    running = false;
+  }
+}
+
+export interface RunOptions {
+  /**
+   * Do nothing if the repo already carries a digest for today.
+   *
+   * The scheduled run sets this: the day may already have been generated
+   * somewhere else (a laptop run, an earlier container), and regenerating
+   * would rewrite the file and pay for the model a second time for the same
+   * day. A manual `npm run once` leaves it off so re-running is still possible.
+   */
+  skipIfPublished?: boolean;
+}
 
 /**
  * One full run: pull → fetch → summarize → rank → write JSON → push → notify.
@@ -15,8 +51,13 @@ let running = false;
  * The digest is written and pushed even when nothing was found, so every date
  * has a file and the site can render an honest "今日无更新" instead of silently
  * showing yesterday.
+ *
+ * Returns null only when `skipIfPublished` short-circuited the run.
  */
-export async function runDaily(now = new Date()): Promise<Digest> {
+export async function runDaily(
+  now = new Date(),
+  options: RunOptions = {},
+): Promise<Digest | null> {
   if (running) throw new Error("a run is already in progress");
   running = true;
 
@@ -25,6 +66,20 @@ export async function runDaily(now = new Date()): Promise<Digest> {
     console.log(`[daily] run start — ${date}`);
 
     await ensureRepo();
+
+    // AFTER the pull, never before: a clone that is behind origin would report
+    // today as missing and regenerate a day that already exists upstream.
+    if (options.skipIfPublished) {
+      const published = await readDigest(date);
+      if (published) {
+        console.log(
+          `[daily] ${date} is already published ` +
+            `(${published.stats.fetched} article(s), generated ` +
+            `${published.generatedAt}) — skipping`,
+        );
+        return null;
+      }
+    }
 
     const { articles: raw, statuses, window } = await fetchAll(now);
     console.log(

@@ -11,9 +11,9 @@ export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
   const cron = await import("node-cron");
-  const { CRON, TZ } = await import("@/lib/config");
+  const { CRON, SYNC_CRON, TZ } = await import("@/lib/config");
   const { ensureRepo } = await import("@/lib/repo");
-  const { runDaily } = await import("@/jobs/daily");
+  const { runDaily, syncRepo } = await import("@/jobs/daily");
 
   // Clone on boot so the pages have data to read before the first cron tick.
   try {
@@ -26,12 +26,28 @@ export async function register(): Promise<void> {
   cron.schedule(
     CRON,
     () => {
-      runDaily().catch((error) =>
+      // Skip if the day is already in the repo — it may have been generated
+      // elsewhere, and rewriting it would pay for the model twice.
+      runDaily(new Date(), { skipIfPublished: true }).catch((error) =>
         console.error("[daily] cron run failed:", error),
       );
     },
     { timezone: TZ },
   );
 
-  console.log(`[daily] cron registered: "${CRON}" (${TZ})`);
+  // Cheap pull so the site picks up digests pushed from elsewhere without
+  // waiting for the next daily run. No model calls, no commits.
+  cron.schedule(
+    SYNC_CRON,
+    () => {
+      syncRepo().catch((error) =>
+        console.error("[daily] repo sync failed:", error),
+      );
+    },
+    { timezone: TZ },
+  );
+
+  console.log(
+    `[daily] cron registered: "${CRON}" (${TZ}), sync "${SYNC_CRON}"`,
+  );
 }

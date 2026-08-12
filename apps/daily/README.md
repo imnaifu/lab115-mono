@@ -82,6 +82,31 @@ git pull ──→ 拉全部源，筛出过去 24h 的文章 ──→ 按 URL �
   那是按 XDA 短文校准的；neciudan.dev 这类 28k~74k 字符的长文在 6000 下只会喂进
   前 8%，摘出来的是引言而不是论点。输入侧便宜（$0.14/M，1M 上下文），值得给足。
 
+## 两个 cron，不是一个
+
+| | 频率 | 做什么 |
+|---|---|---|
+| `DAILY_CRON` | 默认每天 07:00 | 拉取 → **当天已有就跳过** → 抓取 + 摘要 + commit + push |
+| `DAILY_SYNC_CRON` | 默认每 15 分钟 | **只 `git pull`**，不调模型、不 commit |
+
+定时任务带 `skipIfPublished`：仓库里已经有当天的 digest 就直接退出，不抓取也不调模型。
+因为那一天可能已经在别处生成过（笔记本手动跑、上一个容器实例），重跑等于为同一天付两次
+模型钱、还会覆盖已发布的内容。
+
+**这个检查必须放在 `ensureRepo()` 之后**，这是它唯一容易写错的地方：落后于 origin 的
+clone 会把「今天」看成不存在，于是重新生成一个上游早就有的日期。
+
+手动 `npm run once` **不带**这个开关 —— 手动重跑本来就是这个入口的用途。想要定时任务
+那种行为就加 `npm run once -- --skip-if-published`。
+
+第二个是必需的，不是优化。页面读的是容器里那份 clone，而 clone 原本只在**容器启动时**
+和**每日任务运行时**才会前进 —— 从别处推上去的 digest（笔记本手动跑、补数据）在下一个
+07:00 之前对站点完全不可见。实际后果是：本地推了三次、远端明明有内容，线上仍然显示
+「今日无更新」。
+
+两者共用同一把锁（`jobs/daily.ts` 里的 `running`），因为它们操作同一个工作树，
+fetch 撞进 rebase 中间会把它弄坏。每日任务在跑时，同步会直接跳过。
+
 ## 网络失败怎么办
 
 GitHub over HTTPS 会偶发超时。这是个无人值守的每日任务，而且**没有跨天去重**，
@@ -217,7 +242,8 @@ v4 模型**默认开启 thinking mode**（effort 默认 `high`），而 thinking
 | `GIT_REMOTE` | 否 | 覆盖远端 URL。不设时按上面的三条规则推导 |
 | `BARK_URL` | 否 | 形如 `https://api.day.app/<key>`，不填则不推送 |
 | `GIT_REPO` | 否 | 默认 `imnaifu/files` |
-| `DAILY_CRON` | 否 | 默认 `0 7 * * *` |
+| `DAILY_CRON` | 否 | 默认 `0 7 * * *`，生成当日 digest |
+| `DAILY_SYNC_CRON` | 否 | 默认 `*/15 * * * *`，只拉取不生成 |
 | `DAILY_TZ` | 否 | 默认 `America/Los_Angeles` |
 | `DAILY_TOP_N` | 否 | 默认 `10`，超出的折叠成标题链接 |
 | `DAILY_WINDOW_HOURS` | 否 | 默认 `24` |

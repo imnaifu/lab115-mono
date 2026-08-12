@@ -104,6 +104,8 @@ services:
       - GIT_REPO=${DAILY_GIT_REPO:-imnaifu/files}
       - DAILY_MODEL=${DAILY_MODEL:-deepseek-v4-flash}
       - DAILY_CRON=${DAILY_CRON:-0 7 * * *}
+      # Pull-only, so the site sees digests pushed from anywhere else.
+      - DAILY_SYNC_CRON=${DAILY_SYNC_CRON:-*/15 * * * *}
       - DAILY_TZ=${DAILY_TZ:-America/Los_Angeles}
       - DAILY_TOP_N=${DAILY_TOP_N:-10}
     volumes:

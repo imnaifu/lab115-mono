@@ -114,6 +114,9 @@ const PERMANENT = [
   /invalid username or (?:password|token)/i,
   /access rights/i,
   /host key verification failed/i,
+  // The runtime image ships git but not openssh-client, so an SSH remote can
+  // never work in the container. Retrying it just burns the backoff budget.
+  /cannot run ssh/i,
 ];
 
 function isPermanent(error: unknown): boolean {
@@ -158,6 +161,28 @@ async function exists(target: string): Promise<boolean> {
  * Safe to call on every run and on every container boot.
  */
 export async function ensureRepo(): Promise<void> {
+  // GIT_REMOTE wins over GIT_TOKEN by design, which makes for a confusing
+  // failure: setting a token while an SSH GIT_REMOTE is still in .env pushes
+  // over SSH and fails on permissions, with the token never used.
+  if (GIT_REMOTE && GIT_TOKEN && GIT_REMOTE.startsWith("git@")) {
+    console.warn(
+      `[daily] GIT_REMOTE is an SSH URL, so GIT_TOKEN is being ignored — ` +
+        `clear GIT_REMOTE to push with the token instead`,
+    );
+  }
+
+  // Without either, remoteUrl() guesses SSH. That is right on a laptop with a
+  // key loaded and always wrong in the container, which has neither a key nor
+  // an ssh binary — and git then reports "cannot run ssh", which says nothing
+  // about the actual mistake.
+  if (!GIT_REMOTE && !GIT_TOKEN) {
+    console.warn(
+      `[daily] neither GIT_TOKEN nor GIT_REMOTE is set — falling back to SSH ` +
+        `(git@github.com:${REPO_SLUG}.git). In a container set GIT_TOKEN; ` +
+        `the image has no SSH key or client.`,
+    );
+  }
+
   if (!(await exists(path.join(REPO_PATH, ".git")))) {
     try {
       await fs.mkdir(DATA_PATH, { recursive: true });

@@ -44,6 +44,13 @@ export const GIT_AUTHOR_EMAIL =
 export const CRON = process.env.DAILY_CRON ?? "0 7 * * *";
 export const TZ = process.env.DAILY_TZ ?? "America/Los_Angeles";
 
+/**
+ * How often to `git pull` without generating anything. The pages serve
+ * whatever is in the clone, so without this they cannot see a digest pushed
+ * from anywhere but this container until the next daily run.
+ */
+export const SYNC_CRON = process.env.DAILY_SYNC_CRON ?? "*/15 * * * *";
+
 /** How far back a run looks. No cross-day dedup state — the window is it. */
 export const WINDOW_HOURS = Number(process.env.DAILY_WINDOW_HOURS ?? 24);
 /** Articles above this rank get folded into a bare title list. */
