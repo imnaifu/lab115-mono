@@ -33,6 +33,49 @@ const FETCH_TIMEOUT_MS = 30_000;
  */
 const SHORT_BODY_CHARS = 1200;
 
+/**
+ * Below this, whatever we hold is not an article and is worse than nothing —
+ * HN's feed body is ~150 characters of "Article URL … Points: 257", and
+ * summarizing *that* invents an article. An empty body makes the prompt say
+ * "judge from the title alone", which is at least honest.
+ */
+const MIN_USEFUL_BODY = 200;
+
+/**
+ * Cap on simultaneous article-page fetches.
+ *
+ * Bodies used to be fetched with an unbounded `Promise.all`. That was fine
+ * while every source was a handful of known blogs, but HN links to arbitrary
+ * third-party sites — any one of which can sit on a socket for the full
+ * FETCH_TIMEOUT_MS — and a wide window turns that into hundreds of parallel
+ * connections. With a cap the worst case is bounded at
+ * ceil(articles / limit) × timeout.
+ */
+const BODY_FETCH_CONCURRENCY = 6;
+
+/** Like Promise.all over a mapper, but with at most `limit` in flight. */
+async function mapLimited<In, Out>(
+  items: In[],
+  limit: number,
+  mapper: (item: In) => Promise<Out>,
+): Promise<Out[]> {
+  const results = new Array<Out>(items.length);
+  let next = 0;
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () =>
+    (async () => {
+      while (next < items.length) {
+        const index = next;
+        next += 1;
+        results[index] = await mapper(items[index]);
+      }
+    })(),
+  );
+
+  await Promise.all(workers);
+  return results;
+}
+
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
@@ -98,11 +141,18 @@ function decodeEntities(input: string): string {
   );
 }
 
+const TAGS = /<[^>]+>/g;
+const SCRIPTS = /<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi;
+
+/**
+ * Two strip passes, not one. Some feeds double-encode their markup —
+ * jacob.gold ships `&lt;p&gt;US residential proxies…` — so decoding entities
+ * *produces* tags that were not there before. Without the second pass those
+ * land in the body as literal "<p>" for the model to read.
+ */
 function stripHtml(html: string): string {
-  const withoutTags = html
-    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<[^>]+>/g, " ");
-  return decodeEntities(withoutTags).replace(/\s+/g, " ").trim();
+  const once = decodeEntities(html.replace(SCRIPTS, " ").replace(TAGS, " "));
+  return once.replace(SCRIPTS, " ").replace(TAGS, " ").replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -219,11 +269,12 @@ async function fetchBody(url: string): Promise<string> {
   return stripHtml(scoped);
 }
 
-async function fetchSource(
-  source: Source,
-  from: Date,
-  to: Date,
-): Promise<RawArticle[]> {
+/** Shape shared by the feed and scrape paths, before bodies are resolved. */
+type Candidate = Omit<RawArticle, "readingMinutes" | "body"> & {
+  bodyHtml: string;
+};
+
+async function parseFeed(source: Source): Promise<Candidate[]> {
   const xml = await get(source.feed, "application/rss+xml, application/xml");
   const doc = parser.parse(xml) as Record<string, any>;
 
@@ -231,18 +282,66 @@ async function fetchSource(
   const nodes: Record<string, unknown>[] =
     doc?.rss?.channel?.item ?? doc?.feed?.entry ?? doc?.channel?.item ?? [];
 
-  const parsed = nodes
+  return nodes
     .map((node) => normalize(node, source))
-    .filter((a): a is NonNullable<typeof a> => a !== null)
-    // No cross-day dedup state by design — the publication window *is* the
-    // filter, so a run only ever sees the last WINDOW_HOURS of each feed.
-    .filter((a) => {
-      const at = new Date(a.publishedAt).getTime();
-      return at >= from.getTime() && at < to.getTime();
-    });
+    .filter((a): a is Candidate => a !== null);
+}
 
-  return Promise.all(
-    parsed.map(async ({ bodyHtml, ...rest }) => {
+/**
+ * The no-feed path: pull posts out of a listing page. Produces the same
+ * candidates as parseFeed, minus any body — scraped sources always have to
+ * fetch the article page, which is why they set `fetchBody`.
+ */
+async function parseListing(source: Source): Promise<Candidate[]> {
+  const config = source.scrape!;
+  const html = await get(config.index, "text/html");
+  const out: Candidate[] = [];
+
+  for (const match of html.matchAll(config.pattern)) {
+    const groups = match.groups ?? {};
+    const title = stripHtml(groups.title ?? "");
+    if (!title || !groups.url || !groups.date) continue;
+
+    // Listing links are usually root-relative.
+    const url = canonical(new URL(groups.url, config.index).toString());
+    const published = new Date(groups.date.trim());
+    if (Number.isNaN(published.getTime())) continue;
+
+    out.push({
+      id: idOf(url),
+      sourceId: source.id,
+      title,
+      url,
+      author: null,
+      publishedAt: published.toISOString(),
+      image: null,
+      bodyHtml: "",
+    });
+  }
+
+  return out;
+}
+
+async function fetchSource(
+  source: Source,
+  from: Date,
+  to: Date,
+): Promise<RawArticle[]> {
+  const candidates = source.scrape
+    ? await parseListing(source)
+    : await parseFeed(source);
+
+  const parsed = candidates.filter((a) => {
+    // No cross-day dedup state by design — the publication window *is* the
+    // filter, so a run only ever sees the last WINDOW_HOURS of each source.
+    const at = new Date(a.publishedAt).getTime();
+    return at >= from.getTime() && at < to.getTime();
+  });
+
+  return mapLimited(
+    parsed,
+    BODY_FETCH_CONCURRENCY,
+    async ({ bodyHtml, ...rest }) => {
       let plain = stripHtml(bodyHtml);
       if (source.fetchBody || plain.length < SHORT_BODY_CHARS) {
         // A failed body fetch must not lose the article — keep what we had.
@@ -252,12 +351,13 @@ async function fetchSource(
           /* keep the feed-provided text */
         }
       }
+      if (plain.length < MIN_USEFUL_BODY) plain = "";
       return {
         ...rest,
         readingMinutes: readingMinutes(plain),
         body: plain.slice(0, BODY_CHAR_LIMIT),
       };
-    }),
+    },
   );
 }
 

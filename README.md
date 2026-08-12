@@ -22,8 +22,9 @@ repo/
 Not every app is a website: an `apps/*` entry can also be a **headless worker**
 (a container with no Traefik labels and no port) or a **client-side artifact**
 that is never deployed (e.g. a Chrome extension). The only hard requirement is a
-`package.json` with an `npm run build` — CI auto-discovers `apps/*/` and builds
-each one. A `Dockerfile` is only needed for entries that get a compose service.
+`package.json` with a `build` script and a lockfile — CI auto-discovers
+`apps/*/` and builds each one, picking npm or yarn from whichever lockfile the
+app carries (`package-lock.json` wins if both are present). A `Dockerfile` is only needed for entries that get a compose service.
 
 ## Deploy
 

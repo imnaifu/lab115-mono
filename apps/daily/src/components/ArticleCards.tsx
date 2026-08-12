@@ -36,7 +36,12 @@ export function HeroCard({ article }: { article: Article }) {
           <div style={{ marginTop: 10 }}>
             <Meta article={article} />
           </div>
-          <p className="hero__thesis">{article.summary.zh.thesis}</p>
+          {/* Empty when the model failed for this article — the headline above
+              already carries the meaning, so render nothing rather than
+              padding the card with a restated title. */}
+          {article.summary.zh.thesis ? (
+            <p className="hero__thesis">{article.summary.zh.thesis}</p>
+          ) : null}
         </div>
         <Cover
           id={article.id}
@@ -68,7 +73,9 @@ export function ArticleCard({ article }: { article: Article }) {
       <div className="card__body">
         <Meta article={article} />
         <h3 className="card__title">{article.title}</h3>
-        <p className="card__thesis">{article.summary.zh.thesis}</p>
+        {article.summary.zh.thesis ? (
+          <p className="card__thesis">{article.summary.zh.thesis}</p>
+        ) : null}
         <Points points={article.summary.zh.points} />
         <EnglishBlock en={article.summary.en} />
       </div>

@@ -6,7 +6,7 @@
     "dev": "DAILY_DATA_DIR=${DAILY_DATA_DIR:-./data} next dev",
     "build": "next build",
     "start": "next start",
-    "once": "DAILY_DATA_DIR=${DAILY_DATA_DIR:-./data} tsx src/jobs/cli.ts"
+    "once": "DAILY_DATA_DIR=${DAILY_DATA_DIR:-./data} tsx --env-file-if-exists=.env src/jobs/cli.ts"
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",

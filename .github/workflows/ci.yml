@@ -36,7 +36,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
-      - run: npm ci --no-audit --no-fund
+      # Apps pick their own package manager (daily and word-match-nextjs are on
+      # yarn, the rest on npm), so detect it from the lockfile instead of
+      # hardcoding one. Both forms are the strict, lockfile-respecting variant —
+      # a build must never resolve a dependency the lockfile didn't pin.
+      # setup-node's built-in cache is skipped on purpose: it needs the package
+      # manager named up front, which is exactly what varies here.
+      - name: Install dependencies
+        run: |
+          # package-lock.json wins when an app carries both, so apps that pass
+          # today keep the exact install path they pass with. Only yarn-only
+          # apps change behaviour.
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          elif [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile --non-interactive
+          else
+            echo "::error::apps/${{ matrix.app }} has no yarn.lock or package-lock.json"
+            exit 1
+          fi
       - run: npm run build

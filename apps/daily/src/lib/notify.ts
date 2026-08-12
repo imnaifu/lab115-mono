@@ -15,7 +15,12 @@ export async function notify(digest: Digest): Promise<void> {
       ? `今日无更新 · ${digest.date}`
       : `今日速读 ${digest.stats.fetched} 篇 · ${digest.date}`;
 
-  const lead = digest.articles[0]?.summary.zh.thesis ?? "各源今天都没有新文章";
+  // `||` not `??` — a failed summary is an empty string, not null, and an
+  // empty Bark body renders as a blank notification.
+  const lead =
+    digest.articles[0]?.summary.zh.thesis ||
+    digest.articles[0]?.title ||
+    "各源今天都没有新文章";
   const body = failed.length
     ? `${lead}（${failed.length} 个源抓取失败）`
     : lead;

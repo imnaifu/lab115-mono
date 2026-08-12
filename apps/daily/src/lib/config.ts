@@ -55,8 +55,16 @@ export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? "";
 export const DEEPSEEK_BASE_URL =
   process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com";
 export const MODEL = process.env.DAILY_MODEL ?? "deepseek-v4-flash";
-/** Per-article body budget handed to the model, in characters. */
-export const BODY_CHAR_LIMIT = Number(process.env.DAILY_BODY_CHARS ?? 6000);
+/**
+ * Per-article body budget handed to the model, in characters.
+ *
+ * 6000 was calibrated on XDA's short posts. Long-form sources ship 28k–74k
+ * characters, and summarizing those from their first 6k produces a summary of
+ * the introduction, not of the argument. Input is the cheap half of the bill
+ * ($0.14/M) against a 1M context, so the budget is generous on purpose:
+ * ~10 articles × 20k chars is still only ~55k tokens.
+ */
+export const BODY_CHAR_LIMIT = Number(process.env.DAILY_BODY_CHARS ?? 20_000);
 
 export const BARK_URL = process.env.BARK_URL ?? "";
 

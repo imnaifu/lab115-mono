@@ -9,14 +9,18 @@ import type { SummaryText } from "./types";
  * Docs: https://api-docs.deepseek.com/ — tool calls follow the OpenAI shape,
  * so the stock `openai` SDK works with nothing but a different base URL.
  *
- * Everything goes into ONE call so the scores are mutually comparable —
- * ranking is the whole point, and per-article calls would each score in a
- * vacuum. deepseek-v4-flash has a 1M context and a 384K output ceiling, so
- * neither the prompt nor the reply is anywhere near a limit; the cap below is
- * a guard against a source suddenly firehosing, not a token constraint.
+ * TWO calls, not one. Asking for score + Chinese + English in a single tool
+ * call produced Chinese for 10/10 articles and English for 0/10: the model
+ * filled the first four fields of each object and stopped. Splitting the work
+ * makes each call small enough to complete, and the English pass needs no
+ * article bodies at all — it rewrites from the Chinese summary, so it is
+ * nearly free.
  */
 const MAX_ARTICLES_PER_CALL = 30;
 const MAX_OUTPUT_TOKENS = 16_000;
+
+/** Screenshot budget. Violations are logged, never silently truncated. */
+const ZH_THESIS_LIMIT = 45;
 
 /**
  * DeepSeek's v4 models run in thinking mode by default (effort `high`), and
@@ -51,13 +55,15 @@ export interface Verdict {
   en: SummaryText;
 }
 
-const TOOL_NAME = "emit_digest";
+// --- pass 1: score + Chinese -----------------------------------------------
 
-const TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
+const ZH_TOOL_NAME = "emit_chinese";
+
+const ZH_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
   type: "function",
   function: {
-    name: TOOL_NAME,
-    description: "Return the bilingual summary and score for every article.",
+    name: ZH_TOOL_NAME,
+    description: "Return the Chinese summary and score for EVERY article.",
     parameters: {
       type: "object",
       properties: {
@@ -80,31 +86,19 @@ const TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
               },
               zh_thesis: {
                 type: "string",
-                description: "One Chinese sentence: what the article argues.",
+                description:
+                  `One Chinese sentence stating what the article argues. ` +
+                  `HARD LIMIT ${ZH_THESIS_LIMIT} Chinese characters — it has ` +
+                  `to fit one or two lines of a phone screenshot.`,
               },
               zh_points: {
                 type: "array",
                 items: { type: "string" },
-                description: "2-3 concrete Chinese takeaways.",
-              },
-              en_thesis: {
-                type: "string",
-                description: "One English sentence: what the article argues.",
-              },
-              en_points: {
-                type: "array",
-                items: { type: "string" },
-                description: "2-3 concrete English takeaways.",
+                description:
+                  "2-3 concrete Chinese takeaways, each under 40 characters.",
               },
             },
-            required: [
-              "index",
-              "score",
-              "zh_thesis",
-              "zh_points",
-              "en_thesis",
-              "en_points",
-            ],
+            required: ["index", "score", "zh_thesis", "zh_points"],
           },
         },
       },
@@ -113,36 +107,109 @@ const TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-const SYSTEM = `You are the editor of a daily reading digest for a senior software engineer.
+const ZH_SYSTEM = `You are the editor of a daily reading digest for a senior software engineer.
 
-For each article you receive, produce:
-- a one-sentence thesis (what the piece actually ARGUES or REPORTS, not what topic it is about), and
-- 2-3 concrete takeaways — specific claims, numbers, tool names, tradeoffs. Never write filler like "the article discusses various aspects".
+For each article, write in Chinese:
+- a one-sentence thesis: what the piece actually ARGUES or REPORTS, not what topic it is about;
+- 2-3 concrete takeaways — specific claims, numbers, tool names, tradeoffs. Never filler like "本文讨论了多个方面".
 
-Write both a Chinese and an English version. They must carry the same information, each written natively — the Chinese is not a word-for-word translation of the English. Keep product, tool and company names in their original form (Docker, Proxmox, Claude). Keep every sentence tight enough to read on a phone screenshot: thesis under 45 Chinese characters or 25 English words, each takeaway shorter still.
+Keep product, tool and company names in their original form (Docker, Proxmox, Claude).
+
+LENGTH IS A HARD REQUIREMENT, not a preference. The thesis must be at most ${ZH_THESIS_LIMIT} Chinese characters and each takeaway under 40. These are read as a screenshot on a phone; an overlong sentence breaks the layout. Cut adjectives and background before you cut facts.
 
 Then score information density 0-100. Be harsh and use the full range: a rare, carefully argued essay outscores a competent news write-up, which outscores a rewritten press release. Rank by what is worth a reader's time, not by topical popularity.
 
-FORMATTING RULE: never put a straight double-quote character inside any value you return. When you need to quote something, use 「」 in Chinese and single quotes in English. A stray double-quote breaks the JSON and costs the whole day's summaries.`;
+FORMATTING RULE: never put a straight double-quote character inside any value. Use 「」 when you need to quote. A stray double-quote breaks the JSON.`;
+
+// --- pass 2: English --------------------------------------------------------
+
+const EN_TOOL_NAME = "emit_english";
+
+const EN_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: EN_TOOL_NAME,
+    description: "Return the English summary for EVERY article listed.",
+    parameters: {
+      type: "object",
+      properties: {
+        articles: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              index: {
+                type: "integer",
+                description: "The [n] index of the article.",
+              },
+              en_thesis: {
+                type: "string",
+                description:
+                  "One English sentence stating what the article argues. " +
+                  "Under 25 words. Must NOT restate the headline.",
+              },
+              en_points: {
+                type: "array",
+                items: { type: "string" },
+                description:
+                  "2-3 concrete English takeaways, matching the Chinese ones.",
+              },
+            },
+            required: ["index", "en_thesis", "en_points"],
+          },
+        },
+      },
+      required: ["articles"],
+    },
+  },
+};
+
+const EN_SYSTEM = `You write the English half of a bilingual reading digest.
+
+For each entry you are given the headline and a Chinese summary. Produce the English version: the same information, written natively in English — NOT a word-for-word translation of the Chinese, and NOT a restatement of the headline. The headline is already displayed next to your text, so repeating it adds nothing.
+
+Thesis under 25 words, each takeaway shorter. Keep product, tool and company names as-is.
+
+FORMATTING RULE: never put a straight double-quote character inside any value. Use single quotes instead. A stray double-quote breaks the JSON.`;
+
+// --- shared plumbing --------------------------------------------------------
 
 function renderArticle(article: RawArticle, index: number): string {
   const source = sourceOf(article.sourceId);
   return [
     `[${index}] ${article.title}`,
     `source: ${source.name}`,
-    `url: ${article.url}`,
     `published: ${article.publishedAt}`,
     `body: ${article.body || "(body unavailable — judge from the title alone)"}`,
   ].join("\n");
 }
 
-/** A short, honest placeholder so a model failure degrades to a link list
- *  rather than taking the whole run down. */
-function fallback(article: RawArticle): Verdict {
+/** Pass 2's input: no bodies, just what pass 1 concluded. */
+function renderForEnglish(
+  article: RawArticle,
+  verdict: Verdict,
+  index: number,
+): string {
+  return [
+    `[${index}] ${article.title}`,
+    `zh_thesis: ${verdict.zh.thesis}`,
+    `zh_points: ${verdict.zh.points.join(" / ")}`,
+  ].join("\n");
+}
+
+/**
+ * An empty summary, not a title-shaped one.
+ *
+ * This used to fall back to `article.title`, which rendered a headline inside
+ * the summary block — indistinguishable from a real summary to anyone reading
+ * the screenshot. Empty is honest: the components skip a block with no text,
+ * and the headline is displayed beside it anyway.
+ */
+function emptyVerdict(): Verdict {
   return {
     score: 0,
-    zh: { thesis: article.title, points: [] },
-    en: { thesis: article.title, points: [] },
+    zh: { thesis: "", points: [] },
+    en: { thesis: "", points: [] },
   };
 }
 
@@ -153,9 +220,10 @@ function fallback(article: RawArticle): Verdict {
  */
 function extractRows(
   message: OpenAI.Chat.Completions.ChatCompletionMessage,
+  toolName: string,
 ): Array<Record<string, unknown>> {
   const call = message.tool_calls?.find(
-    (c) => "function" in c && c.function.name === TOOL_NAME,
+    (c) => "function" in c && c.function.name === toolName,
   );
 
   const raw =
@@ -171,8 +239,7 @@ function extractRows(
     };
     return parsed.articles ?? [];
   } catch (error) {
-    // One unescaped quote in one summary used to cost the whole day's
-    // summaries. Salvage what parses instead.
+    // One malformed element used to cost the whole day's summaries.
     logParseFailure(unfenced, error as Error);
     const rows = salvageRows(unfenced);
     if (rows.length === 0) throw error;
@@ -203,13 +270,13 @@ function logParseFailure(raw: string, error: Error): void {
  * Observed failure (deepseek-v4-flash, tool-call arguments): an element's
  * closing brace is simply dropped —
  *
- *   …"en_points": ["…and training"], {"index": 1, "score": 58, …
- *                                  ↑ the `}` for element 0 never arrives
+ *   …"zh_points": ["…"], {"index": 1, "score": 58, …
+ *                       ↑ the `}` for element 0 never arrives
  *
  * Brace counting cannot recover from that: depth never returns to zero, so
  * every following element is swallowed into the first. Instead we split on the
- * one thing our own schema guarantees — every element opens with `"index"` —
- * and then repair each fragment independently.
+ * one thing both schemas guarantee — every element opens with `"index"` — and
+ * then repair each fragment independently.
  */
 function salvageRows(raw: string): Array<Record<string, unknown>> {
   const arrayStart = raw.indexOf("[", raw.indexOf('"articles"'));
@@ -218,7 +285,9 @@ function salvageRows(raw: string): Array<Record<string, unknown>> {
   const rows: Array<Record<string, unknown>> = [];
 
   // Lookahead split: keep the `{"index"` that starts each element.
-  for (const fragment of raw.slice(arrayStart + 1).split(/(?=\{\s*"index"\s*:)/)) {
+  for (const fragment of raw
+    .slice(arrayStart + 1)
+    .split(/(?=\{\s*"index"\s*:)/)) {
     const repaired = repairElement(fragment);
     if (!repaired) continue;
     try {
@@ -287,9 +356,88 @@ function repairElement(fragment: string): string | null {
 }
 
 /**
- * Returns a verdict per article, keyed by article id. On any API failure the
- * map comes back filled with fallbacks — the digest still publishes, just
- * without summaries.
+ * One tool call, with a fallback attempt. The fallback exists because
+ * provider-specific restrictions around `tool_choice` have already broken this
+ * once, and a rejected request means a whole day published without summaries.
+ */
+async function callTool(
+  client: OpenAI,
+  tool: OpenAI.Chat.Completions.ChatCompletionTool,
+  toolName: string,
+  system: string,
+  user: string,
+): Promise<Array<Record<string, unknown>>> {
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+
+  const attempts: DeepSeekParams[] = [
+    {
+      model: MODEL,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      messages,
+      tools: [tool],
+      tool_choice: { type: "function", function: { name: toolName } },
+      ...(isDeepSeek(DEEPSEEK_BASE_URL)
+        ? { thinking: { type: "disabled" as const } }
+        : {}),
+    },
+    {
+      model: MODEL,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      messages,
+      tools: [tool],
+      tool_choice: "auto",
+    },
+  ];
+
+  let response: OpenAI.Chat.Completions.ChatCompletion | undefined;
+
+  for (const [index, params] of attempts.entries()) {
+    try {
+      response = await client.chat.completions.create(params);
+      if (index > 0) console.warn(`[daily] ${toolName} used the fallback call`);
+      break;
+    } catch (error) {
+      const status = (error as { status?: number }).status;
+      // The fallback exists for ONE thing: the provider rejecting our
+      // tool_choice/thinking combination, which is a 400. Anything else —
+      // 429, 5xx, a network drop — is transient and already retried inside the
+      // SDK, so re-sending different parameters just doubles the traffic.
+      if (index === attempts.length - 1 || status !== 400) throw error;
+      console.warn(
+        `[daily] ${toolName} rejected the forced tool_choice, retrying ` +
+          `without it: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  const choice = response?.choices[0];
+  const message = choice?.message;
+  if (!message) throw new Error("model returned no choices");
+
+  // `length` means the reply was cut off at max_tokens — that produces
+  // malformed JSON too, and the fix is a bigger budget, not better parsing.
+  if (choice?.finish_reason === "length") {
+    console.warn(
+      `[daily] ${toolName} hit max_tokens (${MAX_OUTPUT_TOKENS}) and is truncated`,
+    );
+  }
+
+  return extractRows(message, toolName);
+}
+
+function asPoints(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map(String).filter((s) => s.trim().length > 0)
+    : [];
+}
+
+/**
+ * Returns a verdict per article, keyed by article id. Any failure degrades to
+ * an empty summary for the affected articles — the digest still publishes,
+ * just with bare titles.
  */
 export async function summarize(
   articles: RawArticle[],
@@ -299,7 +447,7 @@ export async function summarize(
 
   // Newest first — if the cap bites, we drop the stalest items.
   const batch = articles.slice(0, MAX_ARTICLES_PER_CALL);
-  for (const article of articles) out.set(article.id, fallback(article));
+  for (const article of articles) out.set(article.id, emptyVerdict());
 
   if (!DEEPSEEK_API_KEY) {
     console.warn("[daily] DEEPSEEK_API_KEY unset — publishing without summaries");
@@ -309,94 +457,94 @@ export async function summarize(
   const client = new OpenAI({
     apiKey: DEEPSEEK_API_KEY,
     baseURL: DEEPSEEK_BASE_URL,
+    // The SDK's own retries cover 429/5xx; ours (below) cover a 400 on
+    // tool_choice. Bound both so a bad day cannot stall the cron run.
+    maxRetries: 2,
+    timeout: 180_000,
   });
 
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM },
-    {
-      role: "user",
-      content:
-        `Here are today's ${batch.length} articles. Summarize and score ` +
-        `every one of them, and call ${TOOL_NAME} exactly once.\n\n` +
-        batch.map(renderArticle).join("\n\n---\n\n"),
-    },
-  ];
-
-  /**
-   * Attempt 1 forces the tool call with thinking off. Attempt 2 drops both
-   * knobs and lets the model answer however it likes — `extractRows` accepts a
-   * plain JSON reply too. The fallback exists because provider-specific
-   * restrictions around tool_choice have already bitten once, and a rejected
-   * request means a whole day published with no summaries.
-   */
-  const attempts: DeepSeekParams[] = [
-    {
-      model: MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      messages,
-      tools: [TOOL],
-      tool_choice: { type: "function", function: { name: TOOL_NAME } },
-      ...(isDeepSeek(DEEPSEEK_BASE_URL)
-        ? { thinking: { type: "disabled" as const } }
-        : {}),
-    },
-    {
-      model: MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      messages,
-      tools: [TOOL],
-      tool_choice: "auto",
-    },
-  ];
-
+  // --- pass 1: score + Chinese ---
   try {
-    let response: OpenAI.Chat.Completions.ChatCompletion | undefined;
+    const rows = await callTool(
+      client,
+      ZH_TOOL,
+      ZH_TOOL_NAME,
+      ZH_SYSTEM,
+      `Here are today's ${batch.length} articles. Summarize and score every ` +
+        `one of them, and call ${ZH_TOOL_NAME} exactly once.\n\n` +
+        batch.map(renderArticle).join("\n\n---\n\n"),
+    );
 
-    for (const [index, params] of attempts.entries()) {
-      try {
-        response = await client.chat.completions.create(params);
-        if (index > 0) console.warn("[daily] summarize used the fallback call");
-        break;
-      } catch (error) {
-        const isLast = index === attempts.length - 1;
-        if (isLast) throw error;
-        console.warn(
-          `[daily] summarize attempt ${index + 1} rejected, retrying without ` +
-            `tool_choice/thinking: ${(error as Error).message}`,
-        );
-      }
-    }
-
-    const choice = response?.choices[0];
-    const message = choice?.message;
-    if (!message) throw new Error("model returned no choices");
-
-    // `length` means the reply was cut off at max_tokens — that produces
-    // malformed JSON too, and the fix is a bigger budget, not better parsing.
-    if (choice?.finish_reason === "length") {
-      console.warn(
-        `[daily] reply hit max_tokens (${MAX_OUTPUT_TOKENS}) and is truncated`,
-      );
-    }
-
-    for (const row of extractRows(message)) {
+    for (const row of rows) {
       const article = batch[Number(row.index)];
-      if (!article) continue; // hallucinated index — ignore, keep the fallback
+      if (!article) continue; // hallucinated index — ignore
       out.set(article.id, {
         score: Math.max(0, Math.min(100, Number(row.score) || 0)),
         zh: {
-          thesis: String(row.zh_thesis ?? article.title),
-          points: (row.zh_points as string[] | undefined)?.map(String) ?? [],
+          thesis: String(row.zh_thesis ?? "").trim(),
+          points: asPoints(row.zh_points),
         },
-        en: {
-          thesis: String(row.en_thesis ?? article.title),
-          points: (row.en_points as string[] | undefined)?.map(String) ?? [],
-        },
+        en: { thesis: "", points: [] },
       });
     }
   } catch (error) {
-    console.error("[daily] summarize failed, publishing bare titles:", error);
+    console.error("[daily] Chinese pass failed, publishing bare titles:", error);
+    return out;
   }
 
+  // --- pass 2: English, from the Chinese (no bodies re-sent) ---
+  const withZh = batch.filter((a) => out.get(a.id)?.zh.thesis);
+  if (withZh.length === 0) return out;
+
+  try {
+    const rows = await callTool(
+      client,
+      EN_TOOL,
+      EN_TOOL_NAME,
+      EN_SYSTEM,
+      `Write the English half for all ${withZh.length} entries below, and ` +
+        `call ${EN_TOOL_NAME} exactly once.\n\n` +
+        withZh
+          .map((a, i) => renderForEnglish(a, out.get(a.id)!, i))
+          .join("\n\n---\n\n"),
+    );
+
+    for (const row of rows) {
+      const article = withZh[Number(row.index)];
+      if (!article) continue;
+      const verdict = out.get(article.id)!;
+      verdict.en = {
+        thesis: String(row.en_thesis ?? "").trim(),
+        points: asPoints(row.en_points),
+      };
+    }
+  } catch (error) {
+    // The Chinese half is already in hand — ship it rather than losing the day.
+    console.error("[daily] English pass failed, publishing Chinese only:", error);
+  }
+
+  report(batch, out);
   return out;
+}
+
+/** Surface the two things that silently degraded before: a missing English
+ *  half, and a thesis too long for the screenshot. */
+function report(batch: RawArticle[], out: Map<string, Verdict>): void {
+  let missingZh = 0;
+  let missingEn = 0;
+  let overLimit = 0;
+
+  for (const article of batch) {
+    const verdict = out.get(article.id);
+    if (!verdict?.zh.thesis) missingZh += 1;
+    if (!verdict?.en.thesis) missingEn += 1;
+    if ((verdict?.zh.thesis.length ?? 0) > ZH_THESIS_LIMIT) overLimit += 1;
+  }
+
+  const total = batch.length;
+  console.log(
+    `[daily] summaries — zh ${total - missingZh}/${total}, ` +
+      `en ${total - missingEn}/${total}, ` +
+      `zh thesis over ${ZH_THESIS_LIMIT} chars: ${overLimit}/${total}`,
+  );
 }

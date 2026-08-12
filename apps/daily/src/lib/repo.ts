@@ -21,17 +21,27 @@ const run = promisify(execFile);
  * pull → write → commit → push.
  */
 
-/** Auth is embedded in the remote URL; this string must never reach a log. */
+/**
+ * Which URL to talk to origin on. Auth is embedded here, so the result must
+ * never reach a log un-redacted.
+ *
+ * The order matters and is not arbitrary:
+ *   1. GIT_REMOTE — an explicit override always wins.
+ *   2. GIT_TOKEN  — HTTPS with the token. This is the container's route; it
+ *                   has no SSH key, so it must be preferred whenever a token
+ *                   exists.
+ *   3. SSH        — derived from REPO_SLUG for a laptop that already has a key
+ *                   loaded, so local runs need no flags and no PAT.
+ *
+ * Defaulting straight to SSH would have been simpler and would have broken
+ * every deploy.
+ */
 function remoteUrl(): string {
   if (GIT_REMOTE) return GIT_REMOTE;
-  const auth = GIT_TOKEN ? `x-access-token:${GIT_TOKEN}@` : "";
-  return `https://${auth}github.com/${REPO_SLUG}.git`;
-}
-
-/** True when a push can actually authenticate: a token, or an SSH/custom
- *  remote that carries its own credentials. */
-function canPush(): boolean {
-  return Boolean(GIT_TOKEN || GIT_REMOTE);
+  if (GIT_TOKEN) {
+    return `https://x-access-token:${GIT_TOKEN}@github.com/${REPO_SLUG}.git`;
+  }
+  return `git@github.com:${REPO_SLUG}.git`;
 }
 
 /** Scrub credentials from anything we print — git echoes the remote on error. */
@@ -88,6 +98,26 @@ const STALL_GUARD = [
   "http.lowSpeedTime=30",
 ];
 
+/**
+ * Errors that will fail identically on every attempt. Retrying a bad key or a
+ * missing repo just burns the whole backoff budget — 65s of sleeping before
+ * reporting something that was knowable on attempt one.
+ */
+const PERMANENT = [
+  /repository not found/i,
+  /permission denied/i,
+  /authentication failed/i,
+  /could not read username/i,
+  /invalid username or (?:password|token)/i,
+  /access rights/i,
+  /host key verification failed/i,
+];
+
+function isPermanent(error: unknown): boolean {
+  const message = (error as Error)?.message ?? "";
+  return PERMANENT.some((pattern) => pattern.test(message));
+}
+
 async function gitNetwork(args: string[], cwd = REPO_PATH): Promise<string> {
   let last: unknown;
 
@@ -96,6 +126,7 @@ async function gitNetwork(args: string[], cwd = REPO_PATH): Promise<string> {
       return await git([...STALL_GUARD, ...args], cwd);
     } catch (error) {
       last = error;
+      if (isPermanent(error)) break; // no amount of waiting fixes auth
       const wait = BACKOFF_MS[attempt];
       if (wait === undefined) break; // that was the final attempt
       console.warn(
@@ -231,14 +262,6 @@ export async function commitAndPush(
     console.log("[daily] DRY_RUN — committed locally, skipping push");
     return false;
   }
-  if (!canPush()) {
-    console.warn(
-      "[daily] committed locally but cannot push — set GIT_TOKEN (HTTPS) " +
-        "or GIT_REMOTE (e.g. git@github.com:owner/repo.git for SSH)",
-    );
-    return false;
-  }
-
   try {
     await gitNetwork(["push", "origin", `HEAD:${REPO_BRANCH}`]);
   } catch (error) {
@@ -246,8 +269,9 @@ export async function commitAndPush(
     // resetting, so the next successful run carries it up. Don't fail the run
     // over this — the site already reads the local clone.
     console.error(
-      `[daily] push failed, digest is committed locally and will go up ` +
-        `on the next run: ${(error as Error).message}`,
+      `[daily] push failed, digest is committed locally and will go up on ` +
+        `the next run — check GIT_TOKEN, or that an SSH key with write access ` +
+        `is loaded: ${(error as Error).message}`,
     );
     return false;
   }
