@@ -1,4 +1,6 @@
-import { ArticleCard, HeroCard } from "./ArticleCards";
+import { HeroCard } from "./ArticleCards";
+import { CategoryTabs, type CategoryGroup } from "./CategoryTabs";
+import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { sourceOf } from "@/lib/sources";
 import type { Article, Digest } from "@/lib/types";
@@ -146,20 +148,26 @@ function Footer({ digest }: { digest: Digest }) {
 }
 
 /**
- * Rank 1 goes in the hero; the rest are grouped by source so the page reads
- * like shelves, with the sections ordered by their best article's rank — that
- * keeps the global ranking visible without scattering each blog's posts.
+ * Rank 1 goes in the hero; the rest are grouped into the sections defined in
+ * categories.ts.
+ *
+ * Sections keep the registry's order rather than sorting by best rank, so the
+ * page reads the same way every day — a fixed running order is what makes a
+ * daily publication feel like one. Empty sections are dropped: an "投资 —
+ * nothing today" heading is noise on a screenshot.
  */
-function groupBySource(articles: Article[]): Array<[string, Article[]]> {
+function groupByCategory(articles: Article[]): CategoryGroup[] {
   const groups = new Map<string, Article[]>();
   for (const article of articles) {
-    const bucket = groups.get(article.sourceId);
+    const id = categoryOf(article.category).id;
+    const bucket = groups.get(id);
     if (bucket) bucket.push(article);
-    else groups.set(article.sourceId, [article]);
+    else groups.set(id, [article]);
   }
-  return [...groups.entries()].sort(
-    (a, b) => a[1][0].rank - b[1][0].rank,
-  );
+  return CATEGORIES.map((category) => ({
+    category,
+    articles: groups.get(category.id) ?? [],
+  })).filter((group) => group.articles.length > 0);
 }
 
 export function DigestView({ digest }: { digest: Digest }) {
@@ -181,17 +189,7 @@ export function DigestView({ digest }: { digest: Digest }) {
         <EmptyState date={digest.date} />
       )}
 
-      {groupBySource(rest).map(([sourceId, articles]) => (
-        <section className="section pad" key={sourceId}>
-          <div className="section__head">
-            <h2 className="section__title">{sourceOf(sourceId).name}</h2>
-            <span className="section__count">{articles.length} 篇</span>
-          </div>
-          {articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </section>
-      ))}
+      <CategoryTabs groups={groupByCategory(rest)} />
 
       <FoldedList digest={digest} />
       <Footer digest={digest} />

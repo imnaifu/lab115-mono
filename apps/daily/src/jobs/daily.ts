@@ -1,7 +1,13 @@
-import { TOP_N, dateKey } from "@/lib/config";
+import { dateKey } from "@/lib/config";
+import {
+  CATEGORIES,
+  FALLBACK_CATEGORY,
+  categoryOf,
+} from "@/lib/categories";
 import { fetchAll } from "@/lib/fetcher";
 import { notify } from "@/lib/notify";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
+import { sourceOf } from "@/lib/sources";
 import { readDigest, writeDigest } from "@/lib/store";
 import { summarize } from "@/lib/summarize";
 import type { Article, Digest, FoldedArticle } from "@/lib/types";
@@ -97,11 +103,73 @@ export async function runDaily(
       return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
     });
 
-    const articles: Article[] = ranked.slice(0, TOP_N).map((item, i) => {
+    // Fill each section independently, in two passes.
+    //
+    // Pass 1 also honours each SOURCE's cap, so within a section the best
+    // article from a quiet blog beats the fourth-best from Hacker News.
+    // Pass 2 tops each section up from what the source caps held back — a
+    // source cap means "prefer variety", not "leave the section short on a day
+    // when only one source published in it".
+    const perCategory = new Map<string, number>();
+    const perSource = new Map<string, number>();
+    const shown: typeof ranked = [];
+    const overflow: typeof ranked = [];
+
+    const categoryOpen = (id: string) =>
+      (perCategory.get(id) ?? 0) < categoryOf(id).maxPerDay;
+
+    for (const item of ranked) {
+      const category = verdicts.get(item.id)?.category ?? FALLBACK_CATEGORY;
+      const sourceCap = sourceOf(item.sourceId).maxPerDay ?? Infinity;
+      const sourceUsed = perSource.get(item.sourceId) ?? 0;
+
+      if (categoryOpen(category) && sourceUsed < sourceCap) {
+        shown.push(item);
+        perCategory.set(category, (perCategory.get(category) ?? 0) + 1);
+        perSource.set(item.sourceId, sourceUsed + 1);
+      } else {
+        overflow.push(item);
+      }
+    }
+
+    const backfilled: typeof ranked = [];
+    const stillFolded: typeof ranked = [];
+    for (const item of overflow) {
+      const category = verdicts.get(item.id)?.category ?? FALLBACK_CATEGORY;
+      if (categoryOpen(category)) {
+        backfilled.push(item);
+        shown.push(item);
+        perCategory.set(category, (perCategory.get(category) ?? 0) + 1);
+      } else {
+        stillFolded.push(item);
+      }
+    }
+
+    if (backfilled.length) {
+      console.log(
+        `[daily] backfilled ${backfilled.length} card(s) past the source caps`,
+      );
+    }
+    console.log(
+      `[daily] sections — ${CATEGORIES.map(
+        (c) => `${c.name} ${perCategory.get(c.id) ?? 0}`,
+      ).join(", ")}`,
+    );
+
+    // Backfilled items were appended, so restore score order before assigning
+    // ranks — `rank` is meaningless otherwise.
+    shown.sort((a, b) => {
+      const diff =
+        (verdicts.get(b.id)?.score ?? 0) - (verdicts.get(a.id)?.score ?? 0);
+      return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
+    });
+
+    const articles: Article[] = shown.map((item, i) => {
       const verdict = verdicts.get(item.id)!;
       return {
         id: item.id,
         sourceId: item.sourceId,
+        category: verdict.category,
         title: item.title,
         url: item.url,
         author: item.author,
@@ -114,7 +182,7 @@ export async function runDaily(
       };
     });
 
-    const folded: FoldedArticle[] = ranked.slice(TOP_N).map((item) => ({
+    const folded: FoldedArticle[] = stillFolded.map((item) => ({
       title: item.title,
       url: item.url,
       sourceId: item.sourceId,

@@ -18,6 +18,9 @@ export interface Article {
   /** sha1 of the canonical URL — stable across runs, safe as a React key. */
   id: string;
   sourceId: string;
+  /** A `Category.id`, assigned per article by the model. Older digests may
+   *  name a category that no longer exists — `categoryOf` handles that. */
+  category: string;
   title: string;
   url: string;
   author: string | null;

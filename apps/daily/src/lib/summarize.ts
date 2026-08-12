@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { CATEGORIES, resolveCategory } from "./categories";
 import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
 import type { RawArticle } from "./fetcher";
 import { sourceOf } from "./sources";
@@ -51,6 +52,7 @@ function isDeepSeek(baseUrl: string): boolean {
 
 export interface Verdict {
   score: number;
+  category: string;
   zh: SummaryText;
   en: SummaryText;
 }
@@ -79,10 +81,21 @@ const ZH_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
               score: {
                 type: "integer",
                 description:
-                  "0-100 information density: how much a technically " +
-                  "literate reader gains from this piece. Original analysis, " +
-                  "hard numbers and hands-on detail score high; press-release " +
-                  "rewrites, listicles and speculation score low.",
+                  "0-100: how much a curious generalist gains from this " +
+                  "piece. An idea that changes how they see something scores " +
+                  "high, whatever the field. Version bumps, benchmark " +
+                  "numbers, release notes and anything only a specialist in " +
+                  "that one niche could care about score low, however " +
+                  "technically impressive.",
+              },
+              category: {
+                type: "string",
+                // Generated from the registry, so adding a category in
+                // categories.ts updates the model's options automatically.
+                enum: CATEGORIES.map((c) => c.id),
+                description:
+                  "Which section this article belongs in. " +
+                  CATEGORIES.map((c) => `"${c.id}" — ${c.hint}`).join(" "),
               },
               zh_thesis: {
                 type: "string",
@@ -98,7 +111,13 @@ const ZH_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
                   "2-3 concrete Chinese takeaways, each under 40 characters.",
               },
             },
-            required: ["index", "score", "zh_thesis", "zh_points"],
+            required: [
+              "index",
+              "score",
+              "category",
+              "zh_thesis",
+              "zh_points",
+            ],
           },
         },
       },
@@ -107,17 +126,21 @@ const ZH_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-const ZH_SYSTEM = `You are the editor of a daily reading digest for a senior software engineer.
+const ZH_SYSTEM = `You are the editor of a daily reading digest for a curious, well-read generalist. They work in tech but read far beyond it — business, economics, history, design, science — and they are smart but NOT a specialist in any particular field you will encounter.
 
 For each article, write in Chinese:
 - a one-sentence thesis: what the piece actually ARGUES or REPORTS, not what topic it is about;
-- 2-3 concrete takeaways — specific claims, numbers, tool names, tradeoffs. Never filler like "本文讨论了多个方面".
+- 2-3 concrete takeaways — specific claims, numbers, tradeoffs. Never filler like "本文讨论了多个方面".
 
-Keep product, tool and company names in their original form (Docker, Proxmox, Claude).
+WRITE FOR SOMEONE OUTSIDE THE FIELD. If a term only means something to practitioners (WAL, RAG, p99, cap rate, gain-of-function), either explain it in three or four words inline or find a plainer way to say it. Do not assume the reader has used the tool, read the prior article, or follows that industry. Keep product and company names as-is (Docker, Nvidia, Anthropic) — those are nouns, not jargon.
+
+Prefer the part of the article a non-specialist would find interesting. For a deep technical post that is what it implies about how something works or fails, not the API surface.
+
+Also file each article into exactly one section. The options and their boundaries are in the schema — read them, because the hard calls are the boundaries, not the obvious cases. Always choose the MOST SPECIFIC section that fits; the catch-all is for what genuinely belongs nowhere else.
 
 LENGTH IS A HARD REQUIREMENT, not a preference. The thesis must be at most ${ZH_THESIS_LIMIT} Chinese characters and each takeaway under 40. These are read as a screenshot on a phone; an overlong sentence breaks the layout. Cut adjectives and background before you cut facts.
 
-Then score information density 0-100. Be harsh and use the full range: a rare, carefully argued essay outscores a competent news write-up, which outscores a rewritten press release. Rank by what is worth a reader's time, not by topical popularity.
+Then score 0-100 as described in the schema. Be harsh and use the full range. A well-argued essay that travels beyond its own field outscores an expert write-up that only insiders can use, which outscores a rewritten press release.
 
 FORMATTING RULE: never put a straight double-quote character inside any value. Use 「」 when you need to quote. A stray double-quote breaks the JSON.`;
 
@@ -152,7 +175,10 @@ const EN_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
                 type: "array",
                 items: { type: "string" },
                 description:
-                  "2-3 concrete English takeaways, matching the Chinese ones.",
+                  "The English takeaways. EXACTLY as many as the Chinese " +
+                  "entry has, in the SAME ORDER — they are rendered as pairs, " +
+                  "each English line sitting under the Chinese one it " +
+                  "matches. Never merge, split, drop or reorder them.",
               },
             },
             required: ["index", "en_thesis", "en_points"],
@@ -164,9 +190,13 @@ const EN_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-const EN_SYSTEM = `You write the English half of a bilingual reading digest.
+const EN_SYSTEM = `You write the English half of a bilingual reading digest for a curious generalist — smart, widely read, not a specialist in the article's field.
 
 For each entry you are given the headline and a Chinese summary. Produce the English version: the same information, written natively in English — NOT a word-for-word translation of the Chinese, and NOT a restatement of the headline. The headline is already displayed next to your text, so repeating it adds nothing.
+
+Keep it free of unexplained jargon, the same way the Chinese is.
+
+The two languages are displayed as PAIRS — every English line renders directly beneath the Chinese line it corresponds to. So return exactly as many takeaways as the Chinese entry lists, in the same order, one for one. Merging two Chinese points into one English sentence, or adding an extra, breaks the pairing.
 
 Thesis under 25 words, each takeaway shorter. Keep product, tool and company names as-is.
 
@@ -208,6 +238,8 @@ function renderForEnglish(
 function emptyVerdict(): Verdict {
   return {
     score: 0,
+    // An unclassified article still needs a section to live in.
+    category: resolveCategory(undefined),
     zh: { thesis: "", points: [] },
     en: { thesis: "", points: [] },
   };
@@ -480,6 +512,7 @@ export async function summarize(
       if (!article) continue; // hallucinated index — ignore
       out.set(article.id, {
         score: Math.max(0, Math.min(100, Number(row.score) || 0)),
+        category: resolveCategory(row.category),
         zh: {
           thesis: String(row.zh_thesis ?? "").trim(),
           points: asPoints(row.zh_points),

@@ -181,12 +181,34 @@ a {
 }
 
 .section__title {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
   margin: 0;
   font-family: var(--serif);
   font-size: 23px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
+}
+
+/* Carries the category's colour, so the sections are distinguishable at a
+   glance in a long screenshot without tinting the headings themselves. */
+.section__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  /* Optical alignment: a baseline-aligned circle sits too low. */
+  transform: translateY(-2px);
+}
+
+.section__sub {
+  font-size: 13px;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
 }
 
 .section__count {
@@ -366,6 +388,28 @@ a {
   opacity: 0.55;
 }
 
+/* --- bilingual lines ------------------------------------------------------ */
+
+/* English sits directly under the Chinese it translates, quieter and one size
+   down. Pairing them beats a separate block at the foot of the card: on a
+   screenshot the reader cannot scroll back to find what a sentence refers to. */
+.thesis {
+  margin-top: 14px;
+}
+
+.is-en {
+  margin-top: 3px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.hero__thesis.is-en {
+  font-size: 14px;
+}
+
 /* --- takeaway points ----------------------------------------------------- */
 
 .points {
@@ -377,13 +421,11 @@ a {
 .points li {
   position: relative;
   padding-left: 17px;
-  font-size: 14px;
   line-height: 1.6;
-  color: var(--ink-mid);
 }
 
 .points li + li {
-  margin-top: 5px;
+  margin-top: 9px;
 }
 
 .points li::before {
@@ -397,41 +439,58 @@ a {
   background: var(--orange);
 }
 
-/* --- english block ------------------------------------------------------- */
-
-/* The EN half is deliberately quieter: same information, secondary weight, so
-   a screenshot reads Chinese-first without losing the original phrasing. */
-.en {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--line);
-}
-
-.en__label {
+.points__zh {
   display: block;
-  margin-bottom: 6px;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
+  font-size: 14px;
+  color: var(--ink-mid);
 }
 
-.en__thesis {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.58;
-  color: var(--ink-soft);
-}
-
-.en .points li {
+.points__en {
+  display: block;
+  margin-top: 2px;
   font-size: 12.5px;
+  line-height: 1.5;
   color: var(--ink-soft);
 }
 
-.en .points li::before {
-  background: var(--ink-soft);
-  opacity: 0.5;
+/* --- category tabs -------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 30px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-mid);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  /* No transition: the page is often captured mid-interaction. */
+}
+
+/* The ink background has to live here, not only in the inline style: the
+   「全部」 tab has no category accent to supply one, and white-on-white made it
+   vanish. Category tabs override both colours inline. */
+.tab.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.tab__count {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.65;
 }
 
 /* --- folded list --------------------------------------------------------- */

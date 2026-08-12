@@ -1,5 +1,5 @@
 import { Cover } from "./Cover";
-import { EnglishBlock, Points } from "./Summary";
+import { Bilingual } from "./Summary";
 import { sourceOf } from "@/lib/sources";
 import type { Article } from "@/lib/types";
 
@@ -36,12 +36,6 @@ export function HeroCard({ article }: { article: Article }) {
           <div style={{ marginTop: 10 }}>
             <Meta article={article} />
           </div>
-          {/* Empty when the model failed for this article — the headline above
-              already carries the meaning, so render nothing rather than
-              padding the card with a restated title. */}
-          {article.summary.zh.thesis ? (
-            <p className="hero__thesis">{article.summary.zh.thesis}</p>
-          ) : null}
         </div>
         <Cover
           id={article.id}
@@ -50,13 +44,12 @@ export function HeroCard({ article }: { article: Article }) {
         />
       </div>
 
-      <Points points={article.summary.zh.points} />
-      <EnglishBlock en={article.summary.en} />
+      <Bilingual zh={article.summary.zh} en={article.summary.en} variant="hero" />
     </a>
   );
 }
 
-/** Ranks 2..N — shelf rows that keep the book-cover motif at a smaller size. */
+/** Everything below the hero — shelf rows that keep the book-cover motif. */
 export function ArticleCard({ article }: { article: Article }) {
   return (
     <a
@@ -73,11 +66,11 @@ export function ArticleCard({ article }: { article: Article }) {
       <div className="card__body">
         <Meta article={article} />
         <h3 className="card__title">{article.title}</h3>
-        {article.summary.zh.thesis ? (
-          <p className="card__thesis">{article.summary.zh.thesis}</p>
-        ) : null}
-        <Points points={article.summary.zh.points} />
-        <EnglishBlock en={article.summary.en} />
+        <Bilingual
+          zh={article.summary.zh}
+          en={article.summary.en}
+          variant="card"
+        />
       </div>
     </a>
   );

@@ -15,12 +15,36 @@ git pull ──→ 拉全部源，筛出过去 24h 的文章 ──→ 按 URL �
   ↓
 取正文（RSS 全文 / 抓原文页）──→ 一次 LLM 调用：双语摘要 + 信息量打分
   ↓
-排序取 Top 10，其余折叠 ──→ 写 JSON ──→ git commit & push ──→ Bark 推送
+按类分栏、每类取 top N ──→ 写 JSON ──→ git commit & push ──→ Bark 推送
 ```
 
-## 订阅源
+## 配置：`config.json`
 
-改 `src/lib/sources.ts` 一个数组即可增删。
+**所有需要人工决策的东西都在 `apps/daily/config.json` 里**，改它不用碰 TypeScript：
+
+- `sources` —— 订阅哪些博客（url、名称、配色、版面配额、抓取方式）
+- `categories` —— 分几栏、每栏叫什么、边界怎么划、最多几张卡
+- `fallbackCategory` —— 分不出来时落到哪一栏
+
+和 `src/lib/config.ts` 的分工：**编辑决策进 `config.json`，运维参数进环境变量**
+（密钥、cron、时区、时间窗口）。
+
+它是被 `import` 进来的、打进镜像的，所以改完要 push 并重新部署才生效。
+
+`src/lib/user-config.ts` 在加载时校验，写坏了会**当场抛出可读的错误**，而不是静默
+丢掉一条：一个悄悄消失的源看起来和一个停更的博客一模一样，那种 bug 能藏几个月。
+
+```
+config.json: source "heavybit" has neither a feed nor a scrape config
+config.json: duplicate source id "heavybit"
+config.json: fallbackCategory "nope" is not one of the categories — ...
+config.json: source "alienchow" scrape.pattern is not a valid regex: ...
+config.json: source "alienchow" scrape.flags must include "g"
+```
+
+正则在 JSON 里存成 `pattern` + `flags` 两个字符串，加载时编译成 `RegExp`。
+
+## 订阅源
 
 | 源 | Feed / 列表页 | 实测频率 | 正文来源 |
 |---|---|---|---|
@@ -34,6 +58,13 @@ git pull ──→ 拉全部源，筛出过去 24h 的文章 ──→ 按 URL �
 | Heavybit Library | `heavybit.com/library/feed` | ~2 篇/周 | 文章全文，播客单集只有简介 |
 | Neciu Dan’s Blog | `neciudan.dev/rss.xml` | ~1 篇/周 | 全文，28k~74k 字符 |
 | Alienchow | `alienchow.dev/`（**爬列表页**） | ~5 篇/年 | 无 feed，抓原文页 |
+| Marginal Revolution | `marginalrevolution.com/feed` | ~5 篇/天（限 2） | 短链接贴，~1.6k |
+| Astral Codex Ten | `astralcodexten.com/feed` | ~0.8 篇/天 | 全文 ~10k |
+| Platformer | `platformer.news/rss/` | ~1 篇/3 天 | 全文 ~15k |
+| Construction Physics | `construction-physics.com/feed` | ~1 篇/3 天 | 全文 ~13k |
+| Nielsen Norman Group | `nngroup.com/feed/rss/` | ~1 篇/3 天 | 仅摘要，抓原文页 |
+| Austin Kleon | `austinkleon.com/feed/` | ~0.5 篇/天 | 仅摘要，抓原文页 |
+| Benedict Evans | `ben-evans.com/benedictevans?format=rss` | ~1 篇/月 | 全文 ~10k |
 | Nic Chan | `nicchan.me/feed.xml` | 停更中 | Atom，全文 5k~11k |
 | caolan.uk notes | `caolan.uk/feed/notes/` | ~4 篇/年 | 无，抓原文页 |
 
@@ -124,6 +155,60 @@ GitHub over HTTPS 会偶发超时。这是个无人值守的每日任务，而�
 
 走代理的话 `git` 会自动读 `HTTPS_PROXY` / `https_proxy`（`repo.ts` 把整个
 `process.env` 透传给子进程），不需要改代码。
+
+## 分类
+
+`config.json` 的 `categories` 是**唯一**要改的地方：模型的 enum、分类说明、页面栏目
+顺序和每栏上限全部由它生成。加一类就是往数组里加一项。
+
+目前 AI · 技术 · 商业 · 投资 · 人文，每类上限 4 张卡。
+
+**分类是逐篇由模型判断的，不是按源固定映射。** Hacker News 和 Marginal Revolution
+本身就横跨从数据库内核到劳动经济学，按源写死会大面积错分。
+
+`hint` 字段直接进 prompt，**要写成边界而不是主题清单** —— 难的从来不是「什么是 AI」，
+而是「为什么归这里而不是隔壁」。实测教训：兜底类最初写成「其余一切值得读的：社会、
+经济、历史、科学…」，结果把 `What sort of maths are LLMs good at?` 当成「科学」吸走了。
+现在它显式让位（`LAST RESORT — use only when none of the categories above fits`），
+prompt 里也加了「永远选最具体的那一类」。
+
+模型没给或给了未知值时落到 `FALLBACK_CATEGORY`。旧 digest 里的类别若已被删除，
+`categoryOf()` 也不会抛错 —— 归档页必须永远能渲染。
+
+边界模糊的文章在不同批次间会漂移（`AI is removing the middle class of software
+engineering` 有时判成商业、有时人文），这是模型判断的正常方差，不是 bug。
+
+## 页面
+
+- **中英逐句配对**，不是分成两块。英文紧跟在它翻译的那句中文下面，字号小一号、颜色更淡。
+  早先的版本把所有英文堆在卡片底部一个 `ENGLISH` 区块里，读者得往回找它对应哪句中文 ——
+  而截图是不能滚动的。中英要点按**位置**配对，所以 prompt 明确要求英文数量和顺序与中文
+  一一对应（实测 13/13 篇匹配）。数量万一不匹配，多出来的中文行就单独显示。
+
+- **分类用 tab 切换，默认停在「全部」。** tab 会藏内容，而这个页面是用来截图的 ——
+  默认过滤到某一栏意味着截图会悄悄丢掉其余部分。所以默认展示全部分栏（和没有 tab 时
+  完全一样），tab 只是叠加在上面的筛选器。加载后直接截图，不会缺东西。
+
+- 头条**不进 tab**，它领的是整期而不是某一栏。
+
+`CategoryTabs` 是唯一的客户端组件（需要 `useState`），其余全是服务端渲染。
+
+## 每个源的版面配额
+
+`Source.maxPerDay` 限制一个源在一期里最多占几张卡。目前 Hacker News 3、
+Marginal Revolution 2，其余不限。
+
+这不是洁癖。排序原本纯按分数，等于**谁产量高谁占版面** —— 实测某天 14 篇里
+Hacker News 独占 10 篇，页面读起来像一份 changelog。而 MR 每天发 ~5 篇短链接贴，
+不限的话会复制同样的问题。
+
+选卡分两轮：
+
+1. **按配额选** —— 冷门博客的最佳文章胜过 Hacker News 的第四名
+2. **回填** —— 若还没填满 `DAILY_TOP_N`，从被配额挡下的文章里按分数补上
+
+第二轮是必需的。只有第一轮时实测出现过「10 个位置只填了 9 个、折叠列表却有 14 篇」——
+因为那天低频源集体没更新。配额表达的是「优先多样性」，不是「宁可留空」。
 
 ## 没有跨天去重
 
