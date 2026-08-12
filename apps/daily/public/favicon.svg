@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Daily Read">
+  <!-- Same palette as src/index.css: cream paper, indigo ink, warm orange. -->
+  <rect width="64" height="64" rx="14" fill="#FBF3E9"/>
+  <!-- Orange accent disc, echoing the masthead blob. -->
+  <circle cx="50" cy="16" r="10" fill="#EFA050"/>
+  <!-- An open book: two indigo covers meeting at the spine. -->
+  <path d="M10 18.5A2.5 2.5 0 0 1 12.5 16H30v34H12.5A2.5 2.5 0 0 1 10 47.5v-29Z" fill="#3B3563"/>
+  <path d="M54 18.5A2.5 2.5 0 0 0 51.5 16H34v34h17.5a2.5 2.5 0 0 0 2.5-2.5v-29Z" fill="#3B3563" opacity="0.72"/>
+</svg>

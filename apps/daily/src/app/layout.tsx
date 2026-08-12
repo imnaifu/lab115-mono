@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     alternateLocale: "en_US",
   },
   twitter: { card: "summary", title: TITLE, description: DESCRIPTION },
+  icons: { icon: "/favicon.svg" },
 };
 
 export const viewport: Viewport = { themeColor: "#fbf3e9" };

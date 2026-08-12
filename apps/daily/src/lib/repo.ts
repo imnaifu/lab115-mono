@@ -106,6 +106,9 @@ const STALL_GUARD = [
 const PERMANENT = [
   /repository not found/i,
   /permission denied/i,
+  // GitHub's SSH wording when the key's account lacks write access:
+  // "ERROR: Permission to owner/repo.git denied to some-user."
+  /permission to .+ denied to /i,
   /authentication failed/i,
   /could not read username/i,
   /invalid username or (?:password|token)/i,
