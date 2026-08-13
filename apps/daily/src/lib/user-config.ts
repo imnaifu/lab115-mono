@@ -47,6 +47,9 @@ interface RawConfig {
   /** Below this score an article never gets a card, however high it ranks
    *  inside its section. See MIN_SCORE in categories.ts for why. */
   minScore: number;
+  /** Bounds for one article's Chinese summary, in characters. */
+  summaryMinChars: number;
+  summaryMaxChars: number;
   categories: RawCategory[];
   fallbackCategory: string;
   sources: RawSource[];
@@ -82,6 +85,17 @@ function requireUniqueIds(entries: Array<{ id: string }>, where: string): void {
 function validate(config: RawConfig): RawConfig {
   if (!Number.isFinite(config.minScore) || config.minScore < 0) {
     fail("minScore must be a number of at least 0");
+  }
+  if (
+    !Number.isFinite(config.summaryMinChars) ||
+    !Number.isFinite(config.summaryMaxChars) ||
+    config.summaryMinChars < 20 ||
+    config.summaryMaxChars <= config.summaryMinChars
+  ) {
+    fail(
+      "summaryMinChars/summaryMaxChars must be numbers with min >= 20 and " +
+        "max greater than min",
+    );
   }
   if (!Array.isArray(config.categories) || config.categories.length === 0) {
     fail("categories must be a non-empty array");

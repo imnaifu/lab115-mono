@@ -6,12 +6,37 @@
  * additive once the first digest has shipped.
  */
 
-/** One language's take on an article. */
+/**
+ * One language's take on an article — written to REPLACE reading it, not to
+ * tease it. Hence the context and the evidence: a bare thesis tells you
+ * whether to click, which is a different job.
+ *
+ * `background` and `implication` are optional because digests archived before
+ * this shape existed have neither, and an old page must still render.
+ */
 export interface SummaryText {
-  /** One sentence: what the article actually argues. */
+  /** One sentence: what the article argues. Rendered as the lead. */
   thesis: string;
-  /** 2–3 supporting points. */
-  points: string[];
+  /**
+   * 2–4 flowing paragraphs carrying the context, the evidence and what
+   * follows from it.
+   *
+   * Prose, not bullets. An earlier version modelled this as an array of
+   * points, and the shape of the field decided the shape of the writing: each
+   * entry came back as a compressed standalone sentence, so a card read like
+   * a telegram — six assertions with no connective tissue between them. A
+   * paragraph forces the model to relate its facts to each other, which is the
+   * part that makes a summary readable instead of merely complete.
+   */
+  paragraphs?: string[];
+
+  // --- superseded, kept so archived digests still render ---
+  /** @deprecated folded into `paragraphs`. */
+  background?: string;
+  /** @deprecated folded into `paragraphs`. */
+  points?: string[];
+  /** @deprecated folded into `paragraphs`. */
+  implication?: string;
 }
 
 export interface Article {

@@ -1,5 +1,4 @@
-import { HeroCard } from "./ArticleCards";
-import { CategoryTabs, type CategoryGroup } from "./CategoryTabs";
+import { DigestBody, type CategoryGroup } from "./DigestBody";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { sourceOf } from "@/lib/sources";
@@ -37,33 +36,6 @@ function Masthead({ digest }: { digest: Digest }) {
         ) : null}
       </div>
     </header>
-  );
-}
-
-/** Per-source pills. Successful sources are muted; a failed fetch is called
- *  out so a thin day is never mistaken for a quiet one. */
-function SourceStatusBar({ digest }: { digest: Digest }) {
-  if (digest.sources.length === 0) return null;
-
-  return (
-    <div className="status">
-      {digest.sources.map((status) => (
-        <span
-          key={status.id}
-          className={`status__chip${status.ok ? "" : " status__chip--bad"}`}
-          title={status.error ?? undefined}
-        >
-          <span
-            className="status__mark"
-            style={{
-              background: status.ok ? sourceOf(status.id).accent : undefined,
-            }}
-          />
-          {status.name}
-          {status.ok ? ` ${status.count}` : " 抓取失败"}
-        </span>
-      ))}
-    </div>
   );
 }
 
@@ -135,13 +107,6 @@ function Footer({ digest }: { digest: Digest }) {
       </span>
       <span className="foot__links">
         <a href="/archive">归档 Archive</a>
-        <a
-          href={`https://github.com/imnaifu/files/blob/main/daily/${digest.date.slice(0, 4)}/${digest.date.slice(5, 7)}/${digest.date}.json`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          JSON
-        </a>
       </span>
     </footer>
   );
@@ -177,19 +142,11 @@ export function DigestView({ digest }: { digest: Digest }) {
     <div className="page">
       <Masthead digest={digest} />
 
-      <div className="pad">
-        <SourceStatusBar digest={digest} />
-      </div>
-
       {hero ? (
-        <section className="section pad">
-          <HeroCard article={hero} />
-        </section>
+        <DigestBody hero={hero} groups={groupByCategory(rest)} />
       ) : (
         <EmptyState date={digest.date} />
       )}
-
-      <CategoryTabs groups={groupByCategory(rest)} />
 
       <FoldedList digest={digest} />
       <Footer digest={digest} />

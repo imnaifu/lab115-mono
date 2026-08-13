@@ -1,5 +1,7 @@
 {
   "minScore": 40,
+  "summaryMinChars": 120,
+  "summaryMaxChars": 300,
   "categories": [
     {
       "id": "ai",
@@ -48,7 +50,7 @@
       "id": "heavybit",
       "name": "Heavybit Library",
       "site": "https://www.heavybit.com/library",
-      "feed": "https://www.heavybit.com/library/feed",
+      "feed": "https://www.heavybit.com/library/blog/feed",
       "accent": "#3B3563",
       "fetchBody": false
     },

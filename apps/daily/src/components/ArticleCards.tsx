@@ -1,5 +1,5 @@
 import { Cover } from "./Cover";
-import { Bilingual } from "./Summary";
+import { Summary, type Lang } from "./Summary";
 import { sourceOf } from "@/lib/sources";
 import type { Article } from "@/lib/types";
 
@@ -21,7 +21,7 @@ function Meta({ article }: { article: Article }) {
 }
 
 /** Rank 1 — the template's "Currently reading" slot, given the most room. */
-export function HeroCard({ article }: { article: Article }) {
+export function HeroCard({ article, lang }: { article: Article; lang: Lang }) {
   return (
     <a
       className="hero"
@@ -44,7 +44,7 @@ export function HeroCard({ article }: { article: Article }) {
         />
       </div>
 
-      <Bilingual zh={article.summary.zh} en={article.summary.en} variant="hero" />
+      <Summary summary={article.summary[lang]} variant="hero" />
     </a>
   );
 }
@@ -56,8 +56,10 @@ export function HeroCard({ article }: { article: Article }) {
  * as well as the head. A compact row keeps a thin day honest without letting a
  * heavy day run to thirty full cards.
  */
-export function ArticleRow({ article }: { article: Article }) {
+export function ArticleRow({ article, lang }: { article: Article; lang: Lang }) {
   const source = sourceOf(article.sourceId);
+  const line = article.summary[lang].thesis;
+
   return (
     <a
       className="row"
@@ -68,14 +70,19 @@ export function ArticleRow({ article }: { article: Article }) {
       <span className="row__source" style={{ color: source.accent }}>
         {source.name}
       </span>
-      <span className="row__title">{article.title}</span>
+      <span className="row__body">
+        <span className="row__title">{article.title}</span>
+        {/* Every article gets a summary, card or not, so the tail of a
+            section is readable without paying for anything extra. */}
+        {line ? <span className="row__zh">{line}</span> : null}
+      </span>
       <span className="row__mins">{article.readingMinutes}′</span>
     </a>
   );
 }
 
 /** The top of a section — full card with cover and bilingual summary. */
-export function ArticleCard({ article }: { article: Article }) {
+export function ArticleCard({ article, lang }: { article: Article; lang: Lang }) {
   return (
     <a
       className="card"
@@ -91,11 +98,7 @@ export function ArticleCard({ article }: { article: Article }) {
       <div className="card__body">
         <Meta article={article} />
         <h3 className="card__title">{article.title}</h3>
-        <Bilingual
-          zh={article.summary.zh}
-          en={article.summary.en}
-          variant="card"
-        />
+        <Summary summary={article.summary[lang]} variant="card" />
       </div>
     </a>
   );

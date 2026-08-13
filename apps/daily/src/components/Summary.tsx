@@ -1,49 +1,55 @@
 import type { SummaryText } from "@/lib/types";
 
+export type Lang = "zh" | "en";
+
 /**
- * Chinese and English are interleaved line by line, not split into two blocks.
+ * One language's summary: a one-sentence lead, then prose.
  *
- * The old layout put every English sentence in one "ENGLISH" section at the
- * bottom of the card, which meant reading it required scrolling back up to
- * find the Chinese it belonged to. Pairing them makes each line legible on its
- * own — which is what a screenshot needs, since the reader cannot scroll.
+ * Only ever ONE language at a time. The two used to be interleaved line by
+ * line, which was readable while a card was two lines long; now that a card
+ * runs 150–500 characters, showing both would put a 1000-character wall on
+ * screen. The reader picks a language at the top of the page instead.
  *
- * The two point arrays are zipped positionally: the English pass is told to
- * return the same number of takeaways in the same order. When it returns
- * fewer anyway, the unpaired Chinese lines simply render alone.
+ * The legacy branch renders digests archived under the older bullet shape —
+ * background, points, implication. New runs never populate those.
  */
-export function Bilingual({
-  zh,
-  en,
+export function Summary({
+  summary,
   variant,
 }: {
-  zh: SummaryText;
-  en: SummaryText;
+  summary: SummaryText;
   variant: "hero" | "card";
 }) {
-  const thesisClass = variant === "hero" ? "hero__thesis" : "card__thesis";
+  const paragraphs = summary.paragraphs ?? [];
+  const legacyPoints = summary.points ?? [];
 
   return (
-    <>
-      {zh.thesis ? (
-        <div className="thesis">
-          <p className={thesisClass}>{zh.thesis}</p>
-          {en.thesis ? <p className={`${thesisClass} is-en`}>{en.thesis}</p> : null}
-        </div>
+    <div className={`summary${variant === "hero" ? " summary--hero" : ""}`}>
+      {summary.background ? (
+        <p className="summary__background">{summary.background}</p>
       ) : null}
 
-      {zh.points.length > 0 ? (
+      {summary.thesis ? (
+        <p className="summary__thesis">{summary.thesis}</p>
+      ) : null}
+
+      {paragraphs.map((paragraph, i) => (
+        <p className="summary__para" key={i}>
+          {paragraph}
+        </p>
+      ))}
+
+      {legacyPoints.length > 0 ? (
         <ul className="points">
-          {zh.points.map((point, i) => (
-            <li key={i}>
-              <span className="points__zh">{point}</span>
-              {en.points[i] ? (
-                <span className="points__en">{en.points[i]}</span>
-              ) : null}
-            </li>
+          {legacyPoints.map((point, i) => (
+            <li key={i}>{point}</li>
           ))}
         </ul>
       ) : null}
-    </>
+
+      {summary.implication ? (
+        <p className="summary__implication">{summary.implication}</p>
+      ) : null}
+    </div>
   );
 }

@@ -317,8 +317,12 @@ a {
   border-radius: var(--radius);
 }
 
+/* A grid, not flex: source names run from "AVC" to "the singularity is nearer",
+   and an auto-width first column left every title starting at a different x.
+   A fixed column makes the titles scan as one straight edge. */
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: baseline;
   padding: 9px 0;
@@ -331,14 +335,33 @@ a {
 }
 
 .row__source {
-  flex: 0 0 auto;
+  min-width: 0;
   font-size: 11px;
   font-weight: 800;
+  /* The few names too long for the column lose their tail rather than
+     pushing the title out of alignment. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__body {
+  min-width: 0;
 }
 
 .row__title {
-  flex: 1;
+  display: block;
   color: var(--ink);
+}
+
+/* The Chinese line, quieter than the headline — same relationship the cards
+   use between a thesis and its English pair. */
+.row__zh {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
 }
 
 .row__mins {
@@ -430,26 +453,62 @@ a {
   opacity: 0.55;
 }
 
-/* --- bilingual lines ------------------------------------------------------ */
+/* --- summary body -------------------------------------------------------- */
 
-/* English sits directly under the Chinese it translates, quieter and one size
-   down. Pairing them beats a separate block at the foot of the card: on a
-   screenshot the reader cannot scroll back to find what a sentence refers to. */
-.thesis {
+/* Four parts in reading order: context, claim, evidence, consequence. The
+   claim is the one that has to catch the eye — background is setup and
+   implication is aftermath, so both sit a step back. */
+.summary {
   margin-top: 14px;
 }
 
-.is-en {
-  margin-top: 3px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-style: normal;
-  line-height: 1.5;
+.summary__background {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.65;
   color: var(--ink-soft);
 }
 
-.hero__thesis.is-en {
+.summary__thesis {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.62;
+  color: var(--ink);
+}
+
+.summary--hero .summary__background {
   font-size: 14px;
+}
+
+.summary--hero .summary__thesis {
+  font-family: var(--serif);
+  font-size: 17.5px;
+  font-weight: 400;
+}
+
+/* Prose, so it needs prose measure: generous line height and real space
+   between paragraphs. The whole point of the change was that a run of short
+   lines reads like notes. */
+.summary__para {
+  margin: 11px 0 0;
+  font-size: 13.5px;
+  line-height: 1.85;
+  color: var(--ink-mid);
+}
+
+.summary--hero .summary__para {
+  font-size: 14.5px;
+  line-height: 1.9;
+}
+
+.summary__implication {
+  margin: 10px 0 0;
+  padding-left: 11px;
+  border-left: 2px solid var(--orange);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-mid);
 }
 
 /* --- takeaway points ----------------------------------------------------- */
@@ -481,27 +540,54 @@ a {
   background: var(--orange);
 }
 
-.points__zh {
-  display: block;
-  font-size: 14px;
+/* Points now carry a mechanism or a number rather than a four-word label, so
+   they wrap — the bullet has to stay put at the first line. */
+.points li {
+  font-size: 13.5px;
   color: var(--ink-mid);
 }
 
-.points__en {
-  display: block;
-  margin-top: 2px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ink-soft);
-}
-
 /* --- category tabs -------------------------------------------------------- */
+
+.controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 30px;
+}
 
 .tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 30px;
+}
+
+/* Language is a mode, not a filter — a segmented pair rather than another
+   pill in the tab row, so the two never look interchangeable. */
+.lang {
+  display: flex;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.lang__btn {
+  padding: 7px 13px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang__btn.is-active {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .tab {
@@ -561,41 +647,6 @@ a {
   font-size: 11px;
   font-weight: 800;
   color: var(--ink-soft);
-}
-
-/* --- source status / failures -------------------------------------------- */
-
-.status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.status__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-
-.status__chip--bad {
-  border-color: rgba(201, 116, 58, 0.4);
-  background: rgba(239, 160, 80, 0.12);
-  color: var(--orange-deep);
-}
-
-.status__mark {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
 }
 
 /* --- empty state --------------------------------------------------------- */
@@ -718,6 +769,17 @@ a {
     width: 66px;
     height: 88px;
     flex: 0 0 66px;
+  }
+
+  /* 132px is a third of a narrow screen — stack instead, which keeps the
+     titles aligned with each other just as well. */
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+
+  .row__source {
+    grid-column: 1 / -1;
   }
 
   .hero__title {
