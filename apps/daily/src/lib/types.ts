@@ -36,11 +36,17 @@ export interface Article {
   summary: { zh: SummaryText; en: SummaryText };
 }
 
-/** Articles beyond DAILY_TOP_N — shown as a plain title link, no summary. */
+/**
+ * Fetched and summarized, but not given a card — rendered as a plain title
+ * link. Carries its score so it is possible to tell WHY it was folded: a low
+ * one means the model judged it thin, a high one means its section or its
+ * source was already full.
+ */
 export interface FoldedArticle {
   title: string;
   url: string;
   sourceId: string;
+  score: number;
 }
 
 /**

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArticleCard } from "./ArticleCards";
-import type { Category } from "@/lib/categories";
+import { ArticleCard, ArticleRow } from "./ArticleCards";
+import { MIN_SCORE, type Category } from "@/lib/categories";
 import type { Article } from "@/lib/types";
 
 const ALL = "all";
@@ -67,24 +67,44 @@ export function CategoryTabs({ groups }: { groups: CategoryGroup[] }) {
         ))}
       </nav>
 
-      {visible.map(({ category, articles }) => (
-        <section className="section pad" key={category.id}>
-          <div className="section__head">
-            <h2 className="section__title">
-              <span
-                className="section__dot"
-                style={{ background: category.accent }}
-              />
-              {category.name}
-              <small className="section__sub">{category.nameEn}</small>
-            </h2>
-            <span className="section__count">{articles.length} 篇</span>
-          </div>
-          {articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </section>
-      ))}
+      {visible.map(({ category, articles }) => {
+        // Articles arrive already sorted by score. The top of each section gets
+        // cards; everything after keeps its place as a one-line row rather than
+        // being dropped. A low score forfeits the card but not the listing —
+        // otherwise a thin section would hand a card to filler.
+        const cards = articles.filter(
+          (a, i) => i < category.cardCount && a.score >= MIN_SCORE,
+        );
+        const rows = articles.filter((a) => !cards.includes(a));
+
+        return (
+          <section className="section pad" key={category.id}>
+            <div className="section__head">
+              <h2 className="section__title">
+                <span
+                  className="section__dot"
+                  style={{ background: category.accent }}
+                />
+                {category.name}
+                <small className="section__sub">{category.nameEn}</small>
+              </h2>
+              <span className="section__count">{articles.length} 篇</span>
+            </div>
+
+            {cards.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+
+            {rows.length > 0 ? (
+              <div className="rows">
+                {rows.map((article) => (
+                  <ArticleRow key={article.id} article={article} />
+                ))}
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
     </>
   );
 }

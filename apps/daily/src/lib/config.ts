@@ -62,6 +62,7 @@ export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? "";
 export const DEEPSEEK_BASE_URL =
   process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com";
 export const MODEL = process.env.DAILY_MODEL ?? "deepseek-v4-flash";
+
 /**
  * Per-article body budget handed to the model, in characters.
  *

@@ -7,15 +7,25 @@ import type { SummaryText } from "./types";
 
 /**
  * Summarizing + ranking via DeepSeek's OpenAI-compatible API.
- * Docs: https://api-docs.deepseek.com/ — tool calls follow the OpenAI shape,
- * so the stock `openai` SDK works with nothing but a different base URL.
+ * Docs: https://api-docs.deepseek.com/
  *
- * TWO calls, not one. Asking for score + Chinese + English in a single tool
- * call produced Chinese for 10/10 articles and English for 0/10: the model
- * filled the first four fields of each object and stopped. Splitting the work
- * makes each call small enough to complete, and the English pass needs no
- * article bodies at all — it rewrites from the Chinese summary, so it is
- * nearly free.
+ * JSON output mode, not tool calls. DeepSeek's tool-call `arguments` came back
+ * as invalid JSON in roughly one call in five, in four distinct structural
+ * ways — a dropped closing brace, a missing opening bracket, an array closed
+ * with `}`, an unescaped quote. Those are bracket-level faults, not the kind a
+ * model makes while generating prose, and there is an open upstream issue
+ * about exactly this. Routing the reply through `content` instead avoids that
+ * serialization path. https://api-docs.deepseek.com/guides/json_mode
+ *
+ * JSON mode has requirements of its own: the prompt must contain the word
+ * "json", must show an example of the shape, and needs max_tokens set high
+ * enough that the reply is not truncated. All three are handled below.
+ *
+ * TWO calls, not one. Asking for score + Chinese + English together produced
+ * Chinese for 10/10 articles and English for 0/10: the model filled the first
+ * four fields of each object and stopped. Splitting the work makes each reply
+ * small enough to finish, and the English pass needs no article bodies at all
+ * — it rewrites from the Chinese, so it is nearly free.
  */
 const MAX_ARTICLES_PER_CALL = 30;
 const MAX_OUTPUT_TOKENS = 16_000;
@@ -24,17 +34,10 @@ const MAX_OUTPUT_TOKENS = 16_000;
 const ZH_THESIS_LIMIT = 45;
 
 /**
- * DeepSeek's v4 models run in thinking mode by default (effort `high`), and
- * thinking mode rejects a `tool_choice` that names a specific function:
- *
- *   400 Thinking mode does not support this tool_choice
- *
- * We turn it off. This job extracts and scores — it does not need a chain of
- * thought — and thinking tokens bill as output, so leaving it on costs money
- * and latency for nothing. With it off, `tool_choice` can force the schema.
- *
- * The knob is DeepSeek-specific, so it is only sent to DeepSeek: pointing
- * DEEPSEEK_BASE_URL at any other OpenAI-compatible provider omits it.
+ * DeepSeek's v4 models run in thinking mode by default, at effort `high`.
+ * This job extracts and scores — it does not need a chain of thought — and
+ * thinking tokens bill as output, so leaving it on costs money and latency for
+ * nothing. The knob is DeepSeek-specific, so it is only sent to DeepSeek.
  * https://api-docs.deepseek.com/guides/thinking_mode/
  */
 type DeepSeekParams =
@@ -57,74 +60,9 @@ export interface Verdict {
   en: SummaryText;
 }
 
-// --- pass 1: score + Chinese -----------------------------------------------
+// --- pass 1: score + category + Chinese -------------------------------------
 
-const ZH_TOOL_NAME = "emit_chinese";
-
-const ZH_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: ZH_TOOL_NAME,
-    description: "Return the Chinese summary and score for EVERY article.",
-    parameters: {
-      type: "object",
-      properties: {
-        articles: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              index: {
-                type: "integer",
-                description: "The [n] index of the article being summarized.",
-              },
-              score: {
-                type: "integer",
-                description:
-                  "0-100: how much a curious generalist gains from this " +
-                  "piece. An idea that changes how they see something scores " +
-                  "high, whatever the field. Version bumps, benchmark " +
-                  "numbers, release notes and anything only a specialist in " +
-                  "that one niche could care about score low, however " +
-                  "technically impressive.",
-              },
-              category: {
-                type: "string",
-                // Generated from the registry, so adding a category in
-                // categories.ts updates the model's options automatically.
-                enum: CATEGORIES.map((c) => c.id),
-                description:
-                  "Which section this article belongs in. " +
-                  CATEGORIES.map((c) => `"${c.id}" — ${c.hint}`).join(" "),
-              },
-              zh_thesis: {
-                type: "string",
-                description:
-                  `One Chinese sentence stating what the article argues. ` +
-                  `HARD LIMIT ${ZH_THESIS_LIMIT} Chinese characters — it has ` +
-                  `to fit one or two lines of a phone screenshot.`,
-              },
-              zh_points: {
-                type: "array",
-                items: { type: "string" },
-                description:
-                  "2-3 concrete Chinese takeaways, each under 40 characters.",
-              },
-            },
-            required: [
-              "index",
-              "score",
-              "category",
-              "zh_thesis",
-              "zh_points",
-            ],
-          },
-        },
-      },
-      required: ["articles"],
-    },
-  },
-};
+const ZH_PASS = "chinese";
 
 const ZH_SYSTEM = `You are the editor of a daily reading digest for a curious, well-read generalist. They work in tech but read far beyond it — business, economics, history, design, science — and they are smart but NOT a specialist in any particular field you will encounter.
 
@@ -132,67 +70,37 @@ For each article, write in Chinese:
 - a one-sentence thesis: what the piece actually ARGUES or REPORTS, not what topic it is about;
 - 2-3 concrete takeaways — specific claims, numbers, tradeoffs. Never filler like "本文讨论了多个方面".
 
+Each article is given to you with a number in brackets, like [3]. Return that number as "index" so the summary can be matched back.
+
 WRITE FOR SOMEONE OUTSIDE THE FIELD. If a term only means something to practitioners (WAL, RAG, p99, cap rate, gain-of-function), either explain it in three or four words inline or find a plainer way to say it. Do not assume the reader has used the tool, read the prior article, or follows that industry. Keep product and company names as-is (Docker, Nvidia, Anthropic) — those are nouns, not jargon.
 
 Prefer the part of the article a non-specialist would find interesting. For a deep technical post that is what it implies about how something works or fails, not the API surface.
 
-Also file each article into exactly one section. The options and their boundaries are in the schema — read them, because the hard calls are the boundaries, not the obvious cases. Always choose the MOST SPECIFIC section that fits; the catch-all is for what genuinely belongs nowhere else.
+Also file each article into exactly one section, using the "category" field. These are the ONLY allowed values, and the hard calls are the boundaries rather than the obvious cases:
+
+${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}
+
+Always choose the MOST SPECIFIC section that fits; the catch-all is for what genuinely belongs nowhere else. Never invent a value outside that list.
 
 LENGTH IS A HARD REQUIREMENT, not a preference. The thesis must be at most ${ZH_THESIS_LIMIT} Chinese characters and each takeaway under 40. These are read as a screenshot on a phone; an overlong sentence breaks the layout. Cut adjectives and background before you cut facts.
 
-Then score 0-100 as described in the schema. Be harsh and use the full range. A well-argued essay that travels beyond its own field outscores an expert write-up that only insiders can use, which outscores a rewritten press release.
+Then score 0-100 in the "score" field. The first question is ARGUMENT OR ANNOUNCEMENT: does the piece reason toward a claim a reader could disagree with, or does it report that something happened? A firsthand account that draws conclusions counts as argument; a launch, a benchmark table, a version bump or a roundup of links is an announcement and belongs in the 30s or below, however important the event. Above that floor, score by how much a curious generalist gains. Be harsh and use the full range.
+
+This digest is for reading OPINION AND ANALYSIS, not for keeping up with news. The test: if the whole piece can be restated as "X happened" or "Y was released" with nothing of substance lost, it is news — score it in the 30s or below and let something with an argument take the slot. Being newsworthy is not the same as being worth reading here. A well-argued essay outscores an expert write-up that only insiders can use, which outscores a competent report of real events, which outscores a rewritten press release.
 
 FORMATTING RULE: never put a straight double-quote character inside any value. Use 「」 when you need to quote. A stray double-quote breaks the JSON.`;
 
+const ZH_EXAMPLE =
+  '{"articles":[{"index":0,"score":72,"category":"ai",' +
+  '"zh_thesis":"一句话论点","zh_points":["要点一","要点二"]}]}';
+
 // --- pass 2: English --------------------------------------------------------
 
-const EN_TOOL_NAME = "emit_english";
-
-const EN_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: EN_TOOL_NAME,
-    description: "Return the English summary for EVERY article listed.",
-    parameters: {
-      type: "object",
-      properties: {
-        articles: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              index: {
-                type: "integer",
-                description: "The [n] index of the article.",
-              },
-              en_thesis: {
-                type: "string",
-                description:
-                  "One English sentence stating what the article argues. " +
-                  "Under 25 words. Must NOT restate the headline.",
-              },
-              en_points: {
-                type: "array",
-                items: { type: "string" },
-                description:
-                  "The English takeaways. EXACTLY as many as the Chinese " +
-                  "entry has, in the SAME ORDER — they are rendered as pairs, " +
-                  "each English line sitting under the Chinese one it " +
-                  "matches. Never merge, split, drop or reorder them.",
-              },
-            },
-            required: ["index", "en_thesis", "en_points"],
-          },
-        },
-      },
-      required: ["articles"],
-    },
-  },
-};
+const EN_PASS = "english";
 
 const EN_SYSTEM = `You write the English half of a bilingual reading digest for a curious generalist — smart, widely read, not a specialist in the article's field.
 
-For each entry you are given the headline and a Chinese summary. Produce the English version: the same information, written natively in English — NOT a word-for-word translation of the Chinese, and NOT a restatement of the headline. The headline is already displayed next to your text, so repeating it adds nothing.
+For each entry you are given a number in brackets, the headline, and a Chinese summary. Return that number as "index". Produce the English version: the same information, written natively in English — NOT a word-for-word translation of the Chinese, and NOT a restatement of the headline. The headline is already displayed next to your text, so repeating it adds nothing.
 
 Keep it free of unexplained jargon, the same way the Chinese is.
 
@@ -201,6 +109,10 @@ The two languages are displayed as PAIRS — every English line renders directly
 Thesis under 25 words, each takeaway shorter. Keep product, tool and company names as-is.
 
 FORMATTING RULE: never put a straight double-quote character inside any value. Use single quotes instead. A stray double-quote breaks the JSON.`;
+
+const EN_EXAMPLE =
+  '{"articles":[{"index":0,"en_thesis":"One sentence.",' +
+  '"en_points":["Point one","Point two"]}]}';
 
 // --- shared plumbing --------------------------------------------------------
 
@@ -238,7 +150,6 @@ function renderForEnglish(
 function emptyVerdict(): Verdict {
   return {
     score: 0,
-    // An unclassified article still needs a section to live in.
     category: resolveCategory(undefined),
     zh: { thesis: "", points: [] },
     en: { thesis: "", points: [] },
@@ -246,23 +157,33 @@ function emptyVerdict(): Verdict {
 }
 
 /**
- * Pull the rows out of the reply. `tool_choice` should force a tool call, but
- * OpenAI-compatible providers vary in how strictly they honour it, so a plain
- * JSON reply in `content` is accepted too.
+ * Print the neighbourhood of a syntax error before giving up.
+ *
+ * There is no repair layer any more, so this log is the only record of what
+ * came back. Every malformation found so far was identified from exactly this
+ * output; without it a bad reply is undiagnosable after the fact.
  */
-function extractRows(
-  message: OpenAI.Chat.Completions.ChatCompletionMessage,
-  toolName: string,
-): Array<Record<string, unknown>> {
-  const call = message.tool_calls?.find(
-    (c) => "function" in c && c.function.name === toolName,
+function logParseFailure(pass: string, raw: string, error: Error): void {
+  const at = Number(/position (\d+)/.exec(error.message)?.[1] ?? NaN);
+  const where = Number.isNaN(at)
+    ? raw.slice(0, 300)
+    : raw.slice(Math.max(0, at - 120), at + 120);
+  console.error(
+    `[daily] ${pass} pass returned malformed JSON (${error.message}); ` +
+      `length=${raw.length}, around the error: …${where}…`,
   );
+}
 
-  const raw =
-    call && "function" in call ? call.function.arguments : message.content;
-  if (!raw) throw new Error("model returned neither a tool call nor content");
+function extractRows(
+  pass: string,
+  message: OpenAI.Chat.Completions.ChatCompletionMessage,
+): Array<Record<string, unknown>> {
+  const raw = message.content;
+  // DeepSeek documents that JSON mode "may occasionally return empty content".
+  if (!raw?.trim()) throw new Error("model returned empty content");
 
-  // A content fallback may be fenced as ```json … ```.
+  // Belt and braces: json_object should never fence, but a stray ```json
+  // would otherwise fail the parse for a purely cosmetic reason.
   const unfenced = raw.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
 
   try {
@@ -271,193 +192,54 @@ function extractRows(
     };
     return parsed.articles ?? [];
   } catch (error) {
-    // One malformed element used to cost the whole day's summaries.
-    logParseFailure(unfenced, error as Error);
-    const rows = salvageRows(unfenced);
-    if (rows.length === 0) throw error;
-    console.warn(
-      `[daily] salvaged ${rows.length} article(s) from the malformed reply`,
-    );
-    return rows;
+    logParseFailure(pass, unfenced, error as Error);
+    throw error;
   }
-}
-
-/** Print the exact neighbourhood of the syntax error — without it, a malformed
- *  reply is undiagnosable after the fact. */
-function logParseFailure(raw: string, error: Error): void {
-  const at = Number(/position (\d+)/.exec(error.message)?.[1] ?? NaN);
-  const where = Number.isNaN(at)
-    ? raw.slice(0, 300)
-    : raw.slice(Math.max(0, at - 120), at + 120);
-  console.error(
-    `[daily] tool-call JSON is malformed (${error.message}); ` +
-      `length=${raw.length}, around the error: …${where}…`,
-  );
 }
 
 /**
- * Best-effort recovery from malformed JSON, so one botched element does not
- * cost the whole day's summaries.
- *
- * Observed failure (deepseek-v4-flash, tool-call arguments): an element's
- * closing brace is simply dropped —
- *
- *   …"zh_points": ["…"], {"index": 1, "score": 58, …
- *                       ↑ the `}` for element 0 never arrives
- *
- * Brace counting cannot recover from that: depth never returns to zero, so
- * every following element is swallowed into the first. Instead we split on the
- * one thing both schemas guarantee — every element opens with `"index"` — and
- * then repair each fragment independently.
+ * One JSON-mode call. No tool definitions and no `tool_choice`, so there is
+ * nothing for a provider to reject and no second attempt to make — the
+ * fallback that used to live here existed only for a 400 on `tool_choice`.
  */
-function salvageRows(raw: string): Array<Record<string, unknown>> {
-  const arrayStart = raw.indexOf("[", raw.indexOf('"articles"'));
-  if (arrayStart < 0) return [];
-
-  const rows: Array<Record<string, unknown>> = [];
-
-  // Lookahead split: keep the `{"index"` that starts each element.
-  for (const fragment of raw
-    .slice(arrayStart + 1)
-    .split(/(?=\{\s*"index"\s*:)/)) {
-    const repaired = repairElement(fragment);
-    if (!repaired) continue;
-    try {
-      rows.push(JSON.parse(repaired));
-    } catch {
-      /* this one article is unrecoverable — keep the rest */
-    }
-  }
-
-  return rows;
-}
-
-/**
- * Trim a fragment back to one JSON object, closing anything the model left
- * open. Unlike the splitter, this scan IS string-aware — it has to be, to know
- * whether a `}` is structure or just a character inside a summary.
- */
-function repairElement(fragment: string): string | null {
-  const text = fragment.trim();
-  if (!text.startsWith("{")) return null;
-
-  const open: string[] = [];
-  let inString = false;
-  let escaped = false;
-  let end = text.length;
-
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i];
-
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (inString) {
-      if (ch === "\\") escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-
-    if (ch === '"') inString = true;
-    else if (ch === "{") open.push("}");
-    else if (ch === "[") open.push("]");
-    else if (ch === "}" || ch === "]") {
-      open.pop();
-      // The element closed cleanly — drop the trailing comma and whatever
-      // belongs to the array or the enclosing object.
-      if (open.length === 0) {
-        end = i + 1;
-        break;
-      }
-    }
-  }
-
-  let out = text.slice(0, end);
-
-  if (inString) {
-    out += '"'; // also covers a reply cut off mid-sentence
-  } else {
-    // The fragment was cut at the next element, so it still carries the comma
-    // that separated them — and `{"a": 1, }` is not valid JSON.
-    out = out.replace(/[\s,]+$/, "");
-  }
-
-  while (open.length) out += open.pop();
-  return out;
-}
-
-/**
- * One tool call, with a fallback attempt. The fallback exists because
- * provider-specific restrictions around `tool_choice` have already broken this
- * once, and a rejected request means a whole day published without summaries.
- */
-async function callTool(
+async function callModel(
   client: OpenAI,
-  tool: OpenAI.Chat.Completions.ChatCompletionTool,
-  toolName: string,
+  pass: string,
   system: string,
   user: string,
+  example: string,
 ): Promise<Array<Record<string, unknown>>> {
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: system },
-    { role: "user", content: user },
-  ];
+  const params: DeepSeekParams = {
+    model: MODEL,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: system },
+      {
+        role: "user",
+        content:
+          `${user}\n\nReply with json only — no prose, no code fence — ` +
+          `shaped exactly like this example:\n${example}`,
+      },
+    ],
+    ...(isDeepSeek(DEEPSEEK_BASE_URL)
+      ? { thinking: { type: "disabled" as const } }
+      : {}),
+  };
 
-  const attempts: DeepSeekParams[] = [
-    {
-      model: MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      messages,
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: toolName } },
-      ...(isDeepSeek(DEEPSEEK_BASE_URL)
-        ? { thinking: { type: "disabled" as const } }
-        : {}),
-    },
-    {
-      model: MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      messages,
-      tools: [tool],
-      tool_choice: "auto",
-    },
-  ];
+  const response = await client.chat.completions.create(params);
+  const choice = response.choices[0];
+  if (!choice?.message) throw new Error("model returned no choices");
 
-  let response: OpenAI.Chat.Completions.ChatCompletion | undefined;
-
-  for (const [index, params] of attempts.entries()) {
-    try {
-      response = await client.chat.completions.create(params);
-      if (index > 0) console.warn(`[daily] ${toolName} used the fallback call`);
-      break;
-    } catch (error) {
-      const status = (error as { status?: number }).status;
-      // The fallback exists for ONE thing: the provider rejecting our
-      // tool_choice/thinking combination, which is a 400. Anything else —
-      // 429, 5xx, a network drop — is transient and already retried inside the
-      // SDK, so re-sending different parameters just doubles the traffic.
-      if (index === attempts.length - 1 || status !== 400) throw error;
-      console.warn(
-        `[daily] ${toolName} rejected the forced tool_choice, retrying ` +
-          `without it: ${(error as Error).message}`,
-      );
-    }
-  }
-
-  const choice = response?.choices[0];
-  const message = choice?.message;
-  if (!message) throw new Error("model returned no choices");
-
-  // `length` means the reply was cut off at max_tokens — that produces
-  // malformed JSON too, and the fix is a bigger budget, not better parsing.
-  if (choice?.finish_reason === "length") {
+  // Truncation produces invalid JSON too, and the fix is a bigger budget
+  // rather than anything at the parsing end.
+  if (choice.finish_reason === "length") {
     console.warn(
-      `[daily] ${toolName} hit max_tokens (${MAX_OUTPUT_TOKENS}) and is truncated`,
+      `[daily] ${pass} pass hit max_tokens (${MAX_OUTPUT_TOKENS}) and is truncated`,
     );
   }
 
-  return extractRows(message, toolName);
+  return extractRows(pass, choice.message);
 }
 
 function asPoints(value: unknown): string[] {
@@ -489,22 +271,20 @@ export async function summarize(
   const client = new OpenAI({
     apiKey: DEEPSEEK_API_KEY,
     baseURL: DEEPSEEK_BASE_URL,
-    // The SDK's own retries cover 429/5xx; ours (below) cover a 400 on
-    // tool_choice. Bound both so a bad day cannot stall the cron run.
     maxRetries: 2,
     timeout: 180_000,
   });
 
-  // --- pass 1: score + Chinese ---
+  // --- pass 1: score + category + Chinese ---
   try {
-    const rows = await callTool(
+    const rows = await callModel(
       client,
-      ZH_TOOL,
-      ZH_TOOL_NAME,
+      ZH_PASS,
       ZH_SYSTEM,
       `Here are today's ${batch.length} articles. Summarize and score every ` +
-        `one of them, and call ${ZH_TOOL_NAME} exactly once.\n\n` +
+        `one of them.\n\n` +
         batch.map(renderArticle).join("\n\n---\n\n"),
+      ZH_EXAMPLE,
     );
 
     for (const row of rows) {
@@ -530,16 +310,15 @@ export async function summarize(
   if (withZh.length === 0) return out;
 
   try {
-    const rows = await callTool(
+    const rows = await callModel(
       client,
-      EN_TOOL,
-      EN_TOOL_NAME,
+      EN_PASS,
       EN_SYSTEM,
-      `Write the English half for all ${withZh.length} entries below, and ` +
-        `call ${EN_TOOL_NAME} exactly once.\n\n` +
+      `Write the English half for all ${withZh.length} entries below.\n\n` +
         withZh
           .map((a, i) => renderForEnglish(a, out.get(a.id)!, i))
           .join("\n\n---\n\n"),
+      EN_EXAMPLE,
     );
 
     for (const row of rows) {
@@ -560,8 +339,8 @@ export async function summarize(
   return out;
 }
 
-/** Surface the two things that silently degraded before: a missing English
- *  half, and a thesis too long for the screenshot. */
+/** Surface the things that would otherwise degrade silently: a missing half,
+ *  and a thesis too long for the screenshot. */
 function report(batch: RawArticle[], out: Map<string, Verdict>): void {
   let missingZh = 0;
   let missingEn = 0;

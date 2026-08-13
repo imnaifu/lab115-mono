@@ -25,8 +25,11 @@ export interface Category {
    * swallows its neighbours.
    */
   hint: string;
-  /** Most cards this section may show. */
-  maxPerDay: number;
+  /**
+   * How many of this section's articles get a full card. Everything below
+   * that rank still appears, as a one-line row — nothing is dropped.
+   */
+  cardCount: number;
 }
 
 export const CATEGORIES: Category[] = USER_CONFIG.categories;
@@ -53,3 +56,14 @@ export function resolveCategory(value: unknown): string {
     .toLowerCase();
   return CATEGORY_BY_ID.has(id) ? id : FALLBACK_CATEGORY;
 }
+
+/**
+ * A card has to be earned, not merely ranked into.
+ *
+ * Every article is published now, so this no longer decides what is *seen* —
+ * only what gets the space of a full card. Without it a 30-point links
+ * roundup ("Wednesday assorted links") took a card simply by being the only
+ * thing in its section that day. Below the floor an article still appears, as
+ * a one-line row.
+ */
+export const MIN_SCORE = USER_CONFIG.minScore;

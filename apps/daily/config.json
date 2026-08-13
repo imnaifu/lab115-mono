@@ -1,44 +1,45 @@
 {
+  "minScore": 40,
   "categories": [
     {
       "id": "ai",
       "name": "AI",
       "nameEn": "Artificial Intelligence",
       "accent": "#3B3563",
-      "maxPerDay": 4,
-      "hint": "The article is ABOUT AI itself — models, agents, how they are built, what they can and cannot do, their effect on work. A piece that merely uses an AI tool to do something else belongs in the category of that something else."
+      "hint": "The article is ABOUT AI itself — models, agents, how they are built, what they can and cannot do, their effect on work. A piece that merely uses an AI tool to do something else belongs in the category of that something else.",
+      "cardCount": 3
     },
     {
       "id": "tech",
       "name": "技术",
       "nameEn": "Engineering",
       "accent": "#2E7D6E",
-      "maxPerDay": 4,
-      "hint": "Software and hardware craft that is NOT about AI: systems, debugging, security, privacy, open source, protocols, the web platform. A war story about a database bug goes here, not in AI."
+      "hint": "Software and hardware craft that is NOT about AI: systems, debugging, security, privacy, open source, protocols, the web platform. A war story about a database bug goes here, not in AI.",
+      "cardCount": 3
     },
     {
       "id": "business",
       "name": "商业",
       "nameEn": "Business & Product",
       "accent": "#EFA050",
-      "maxPerDay": 4,
-      "hint": "Companies, strategy, markets, product decisions, platform policy, regulation of an industry. The subject is how an organisation behaves, not how a technology works."
+      "hint": "Companies, strategy, markets, product decisions, platform policy, regulation of an industry. The subject is how an organisation behaves, not how a technology works.",
+      "cardCount": 3
     },
     {
       "id": "investing",
       "name": "投资",
       "nameEn": "Investing",
       "accent": "#B08D2E",
-      "maxPerDay": 4,
-      "hint": "Capital and markets as the subject: asset prices, valuation, portfolio reasoning, macro as it bears on returns. A company story is only here if it is argued from the investor's side."
+      "hint": "Capital and markets as the subject: asset prices, valuation, portfolio reasoning, macro as it bears on returns. A company story is only here if it is argued from the investor's side.",
+      "cardCount": 3
     },
     {
       "id": "culture",
       "name": "人文",
       "nameEn": "Society & Ideas",
       "accent": "#9E5C81",
-      "maxPerDay": 4,
-      "hint": "LAST RESORT — use only when none of the categories above fits. Society, economics, history, science, design, creative work, writing, how people live and think. An essay is not filed here just because it is reflective: a reflective piece about models is still AI."
+      "hint": "LAST RESORT — use only when none of the categories above fits. Society, economics, history, science, design, creative work, writing, how people live and think. An essay is not filed here just because it is reflective: a reflective piece about models is still AI.",
+      "cardCount": 3
     }
   ],
   "fallbackCategory": "culture",
@@ -74,7 +75,7 @@
       "feed": "https://hnrss.org/frontpage?points=200",
       "accent": "#D2601A",
       "fetchBody": true,
-      "maxPerDay": 3
+      "maxPerRun": 10
     },
     {
       "id": "platformer",
@@ -98,8 +99,7 @@
       "site": "https://marginalrevolution.com/",
       "feed": "https://marginalrevolution.com/feed",
       "accent": "#4A6B4E",
-      "fetchBody": false,
-      "maxPerDay": 2
+      "fetchBody": false
     },
     {
       "id": "construction-physics",
@@ -201,6 +201,46 @@
       "feed": "https://caolan.uk/feed/notes/",
       "accent": "#5B7B6A",
       "fetchBody": true
+    },
+    {
+      "id": "notboring",
+      "name": "Not Boring",
+      "site": "https://www.notboring.co/",
+      "feed": "https://www.notboring.co/feed",
+      "accent": "#C4622D",
+      "fetchBody": false
+    },
+    {
+      "id": "lennys",
+      "name": "Lenny's Newsletter",
+      "site": "https://www.lennysnewsletter.com/",
+      "feed": "https://www.lennysnewsletter.com/feed",
+      "accent": "#3E7A5E",
+      "fetchBody": false
+    },
+    {
+      "id": "slowboring",
+      "name": "Slow Boring",
+      "site": "https://www.slowboring.com/",
+      "feed": "https://www.slowboring.com/feed",
+      "accent": "#5A5F8C",
+      "fetchBody": false
+    },
+    {
+      "id": "noahpinion",
+      "name": "Noahpinion",
+      "site": "https://www.noahpinion.blog/",
+      "feed": "https://www.noahpinion.blog/feed",
+      "accent": "#8C4A6B",
+      "fetchBody": false
+    },
+    {
+      "id": "ruanyifeng",
+      "name": "阮一峰的网络日志",
+      "site": "https://www.ruanyifeng.com/blog/",
+      "feed": "https://www.ruanyifeng.com/blog/atom.xml",
+      "accent": "#4A7C8C",
+      "fetchBody": false
     }
   ]
 }

@@ -30,7 +30,7 @@ export interface RawSource {
   feed: string;
   accent: string;
   fetchBody: boolean;
-  maxPerDay?: number;
+  maxPerRun?: number;
   scrape?: RawScrape;
 }
 
@@ -39,11 +39,14 @@ export interface RawCategory {
   name: string;
   nameEn: string;
   accent: string;
-  maxPerDay: number;
+  cardCount: number;
   hint: string;
 }
 
 interface RawConfig {
+  /** Below this score an article never gets a card, however high it ranks
+   *  inside its section. See MIN_SCORE in categories.ts for why. */
+  minScore: number;
   categories: RawCategory[];
   fallbackCategory: string;
   sources: RawSource[];
@@ -77,6 +80,9 @@ function requireUniqueIds(entries: Array<{ id: string }>, where: string): void {
 }
 
 function validate(config: RawConfig): RawConfig {
+  if (!Number.isFinite(config.minScore) || config.minScore < 0) {
+    fail("minScore must be a number of at least 0");
+  }
   if (!Array.isArray(config.categories) || config.categories.length === 0) {
     fail("categories must be a non-empty array");
   }
@@ -90,8 +96,8 @@ function validate(config: RawConfig): RawConfig {
       ["id", "name", "nameEn", "accent", "hint"],
       `category "${category.id ?? "?"}"`,
     );
-    if (!Number.isFinite(category.maxPerDay) || category.maxPerDay < 1) {
-      fail(`category "${category.id}" needs a maxPerDay of at least 1`);
+    if (!Number.isFinite(category.cardCount) || category.cardCount < 1) {
+      fail(`category "${category.id}" needs a cardCount of at least 1`);
     }
   }
   requireUniqueIds(config.categories, "category");
@@ -109,6 +115,12 @@ function validate(config: RawConfig): RawConfig {
       ["id", "name", "site", "accent"],
       `source "${source.id ?? "?"}"`,
     );
+    if (
+      source.maxPerRun !== undefined &&
+      (!Number.isFinite(source.maxPerRun) || source.maxPerRun < 1)
+    ) {
+      fail(`source "${source.id}" maxPerRun must be at least 1`);
+    }
     // A source needs one way in or the other, and scraping needs a pattern
     // that actually compiles — otherwise the failure surfaces mid-run.
     if (!source.feed && !source.scrape) {

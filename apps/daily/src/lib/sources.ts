@@ -42,15 +42,19 @@ export interface Source {
    */
   fetchBody: boolean;
   /**
-   * Most cards this source may occupy in one digest. Unset means no limit.
+   * Cap on how many of this source's articles enter a run AT ALL — applied
+   * after the time window and BEFORE bodies are fetched, so it saves both the
+   * page requests and the summarizer's input tokens.
    *
-   * Ranking is otherwise purely by score, which hands the page to whichever
-   * source publishes most: Hacker News alone once took 10 of 14 cards, and
-   * Marginal Revolution posts ~5/day. A cap does not lower those articles'
-   * scores — it just lets the next-best article from another source take the
-   * slot, and pushes the overflow into the folded list.
+   * Not to be confused with the layout quota that used to live here: that one
+   * decided how many CARDS a source could occupy and was removed. This one
+   * decides how many articles are paid for. Hacker News alone was 13 of 27
+   * articles and 53% of all body text, because it links to arbitrary sites and
+   * each one is fetched up to BODY_CHAR_LIMIT.
+   *
+   * Selection is by recency, the only ordering available before scoring.
    */
-  maxPerDay?: number;
+  maxPerRun?: number;
   /** Set only when the site publishes no feed. */
   scrape?: ScrapeConfig;
 }
@@ -62,7 +66,7 @@ export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   feed: source.feed,
   accent: source.accent,
   fetchBody: source.fetchBody,
-  ...(source.maxPerDay ? { maxPerDay: source.maxPerDay } : {}),
+  ...(source.maxPerRun ? { maxPerRun: source.maxPerRun } : {}),
   ...(source.scrape
     ? {
         scrape: {

@@ -306,6 +306,48 @@ a {
   flex: 0 0 88px;
 }
 
+/* --- compact rows --------------------------------------------------------- */
+
+/* The tail of each section. Nothing is dropped from a digest, so a busy day
+   has to stay readable without running to thirty full cards. */
+.rows {
+  margin-top: 12px;
+  padding: 4px 18px;
+  background: var(--cream-deep);
+  border-radius: var(--radius);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 9px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.row + .row {
+  border-top: 1px solid var(--line);
+}
+
+.row__source {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.row__title {
+  flex: 1;
+  color: var(--ink);
+}
+
+.row__mins {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
 /* --- covers -------------------------------------------------------------- */
 
 /* Book-cover proportions whether the source gave us an image or not. */

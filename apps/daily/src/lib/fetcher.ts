@@ -331,12 +331,26 @@ async function fetchSource(
     ? await parseListing(source)
     : await parseFeed(source);
 
-  const parsed = candidates.filter((a) => {
+  let parsed = candidates.filter((a) => {
     // No cross-day dedup state by design — the publication window *is* the
     // filter, so a run only ever sees the last WINDOW_HOURS of each source.
     const at = new Date(a.publishedAt).getTime();
     return at >= from.getTime() && at < to.getTime();
   });
+
+  // Applied HERE, before any body is fetched: the point of the cap is to not
+  // pay for these articles, and both the page requests and the summarizer's
+  // input tokens are spent below. Capping later would save nothing.
+  if (source.maxPerRun && parsed.length > source.maxPerRun) {
+    const dropped = parsed.length - source.maxPerRun;
+    parsed = [...parsed]
+      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+      .slice(0, source.maxPerRun);
+    console.log(
+      `[daily] ${source.name}: kept the newest ${source.maxPerRun}, ` +
+        `skipped ${dropped}`,
+    );
+  }
 
   return mapLimited(
     parsed,
