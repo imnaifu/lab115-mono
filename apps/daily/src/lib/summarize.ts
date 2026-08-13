@@ -151,7 +151,7 @@ Return one entry per article, in Chinese, with these fields:
 - "paragraphs" — 2 or 3 paragraphs of flowing prose, each AT MOST ${PARA_MAX} characters. Together they carry the context, the evidence the claim rests on, and what follows if it holds.
 - "category" and "score" — see below.
 
-ONE ENTRY PER ARTICLE. Four articles in, four objects out, indices 0 to 3. Never one object covering several, never a subset. Stopping early is the commonest way this fails.
+ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
 
 PROSE, NOT BULLETS. Each paragraph is 3-5 sentences that connect — 具体来说, 原因是, 但, 结果是. Facts live inside sentences: write "OPT 扩展使本土高技能就业增长 0.5%、工资增长 1%，说明高技能移民并未挤出本地人", not "高技能移民促进本土就业。". Clipped standalone sentences read like a telegram.
 
@@ -173,22 +173,39 @@ SCORE 0-100. First question: argument or announcement? A piece reasoning toward 
 FORMATTING: never put a straight double-quote inside a value — use 「」. A stray quote breaks the JSON.`;
 
 /**
- * The example shows MORE THAN ONE entry on purpose.
+ * ONE entry, because BATCH_SIZE is 1. THESE TWO MUST CHANGE TOGETHER.
  *
- * In JSON mode the example is the specification — there is no schema saying
- * "array of N". With a single-element example the model returned exactly one
- * article per call no matter how many were sent, silently, on 5 of 6 batches.
- * Showing two entries with consecutive indices is what makes "one entry per
- * article" legible.
+ * In JSON mode the example IS the specification — there is no schema saying
+ * "array of N", so the model reads the example's shape as the contract. Back
+ * when a request carried 8 articles this example held a single entry, and the
+ * model returned exactly one summary per call no matter how many were sent,
+ * silently, on 5 of 6 batches. The fix then was to show two entries with
+ * consecutive indices.
+ *
+ * Now that a request carries one article, that second entry describes a case
+ * that never happens: measured against a one-entry example it cost ~73 input
+ * tokens per request and one index mismatch in 12. **If BATCH_SIZE ever goes
+ * back above 1, this example must show two entries again** — otherwise the
+ * 5-of-6 failure returns.
+ *
+ * The wrapper stays an array even for one article: `applyChinese` matches
+ * replies to articles by index, and the retry path re-asks for whatever is
+ * missing, so the shape has to survive a batch of any size.
  */
-const ZH_EXAMPLE =
-  '{"articles":[' +
-  '{"index":0,"score":72,"category":"ai","zh_thesis":"第一篇的一句话论点。",' +
-  '"zh_paragraphs":["交代语境，并说明主张从何而来。",' +
-  '"具体证据，数字和案例写在句子里，句与句之间有承接。"]},' +
-  '{"index":1,"score":45,"category":"culture","zh_thesis":"第二篇的一句话论点。",' +
-  '"zh_paragraphs":["同样的结构，每篇文章一个条目。"]}' +
-  ']}';
+const ZH_EXAMPLE = `{
+  "articles": [
+    {
+      "index": 0,
+      "score": 72,
+      "category": "ai",
+      "zh_thesis": "这篇文章的一句话论点。",
+      "zh_paragraphs": [
+        "交代语境，并说明主张从何而来。",
+        "具体证据，数字和案例写在句子里，句与句之间有承接。"
+      ]
+    }
+  ]
+}`;
 
 // --- pass 2: English --------------------------------------------------------
 
@@ -196,7 +213,7 @@ const EN_PASS = "english";
 
 const EN_SYSTEM = `You write the English half of a bilingual digest for a curious generalist — smart, widely read, not a specialist in the article's field.
 
-Each entry gives you a number in brackets, the headline, and the finished Chinese summary. Return that number as "index" and the English of the SAME summary: same claim, same evidence, same number of paragraphs, same order. ONE ENTRY PER ARTICLE — four entries in, four objects out, indices 0 to 3, never fewer.
+Each entry gives you a number in brackets, the headline, and the finished Chinese summary. Return that number as "index" and the English of the SAME summary: same claim, same evidence, same number of paragraphs, same order. ONE ENTRY PER ARTICLE — every entry you are given gets its own object in "articles", carrying the index it was given, never fewer and never one you were not given.
 
 Write it natively, in flowing paragraphs, never clipped standalone sentences. Not a word-for-word translation, and never a restatement of the headline, which already sits next to your text.
 
@@ -204,14 +221,19 @@ The reader switches between the two languages rather than seeing them side by si
 
 FORMATTING: never put a straight double-quote inside a value — use single quotes. A stray quote breaks the JSON.`;
 
-const EN_EXAMPLE =
-  '{"articles":[' +
-  '{"index":0,"en_thesis":"One sentence.",' +
-  '"en_paragraphs":["First paragraph of flowing prose.",' +
-  '"Second paragraph carrying the evidence."]},' +
-  '{"index":1,"en_thesis":"The second entry.",' +
-  '"en_paragraphs":["One entry per article, same shape."]}' +
-  ']}';
+/** One entry, for the same reason as ZH_EXAMPLE — see the note there. */
+const EN_EXAMPLE = `{
+  "articles": [
+    {
+      "index": 0,
+      "en_thesis": "One sentence.",
+      "en_paragraphs": [
+        "First paragraph of flowing prose.",
+        "Second paragraph carrying the evidence."
+      ]
+    }
+  ]
+}`;
 
 // --- shared plumbing --------------------------------------------------------
 
@@ -234,7 +256,9 @@ function renderForEnglish(
   return [
     `[${index}] ${article.title}`,
     `zh_thesis: ${verdict.zh.thesis}`,
-    ...(verdict.zh.paragraphs ?? []).map((p, i) => `zh_paragraph_${i + 1}: ${p}`),
+    ...(verdict.zh.paragraphs ?? []).map(
+      (p, i) => `zh_paragraph_${i + 1}: ${p}`,
+    ),
   ].join("\n");
 }
 
@@ -258,7 +282,8 @@ function emptyVerdict(): Verdict {
 /** Split into request-sized groups; see BATCH_SIZE. */
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  for (let i = 0; i < items.length; i += size)
+    out.push(items.slice(i, i + size));
   return out;
 }
 
@@ -506,7 +531,9 @@ export async function summarize(
   for (const article of articles) out.set(article.id, emptyVerdict());
 
   if (!DEEPSEEK_API_KEY) {
-    console.warn("[daily] DEEPSEEK_API_KEY unset — publishing without summaries");
+    console.warn(
+      "[daily] DEEPSEEK_API_KEY unset — publishing without summaries",
+    );
     return out;
   }
 
@@ -592,9 +619,7 @@ export async function summarize(
       } catch (error) {
         // The Chinese half is already in hand — ship it rather than losing it.
         if (attempt === GAP_RETRIES) {
-          console.error(
-            `[daily] ${label} failed: ${(error as Error).message}`,
-          );
+          console.error(`[daily] ${label} failed: ${(error as Error).message}`);
         }
       }
     }
@@ -628,7 +653,8 @@ function report(batch: RawArticle[], out: Map<string, Verdict>): void {
   }
 
   const total = batch.length;
-  const median = lengths.sort((a, b) => a - b)[Math.floor(lengths.length / 2)] ?? 0;
+  const median =
+    lengths.sort((a, b) => a - b)[Math.floor(lengths.length / 2)] ?? 0;
   console.log(
     `[daily] summaries — zh ${zh}/${total}, en ${en}/${total}, ` +
       `median ${median} chars, over ${ZH_MAX}: ${over}/${total}, ` +

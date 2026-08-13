@@ -417,6 +417,15 @@ JSON mode 有自己的要求，三条都满足了：prompt 里必须出现 "json
 `max_tokens` 要够大以免截断。官方还提示**可能返回空 content**，所以 `extractRows()`
 会显式检查并报错。
 
+**user message 里那句 `Reply with json only` 不能删。** 官方明确写着：不在 system 或 user
+消息里显式要求生成 JSON 的话，「模型可能生成不断的空白字符直到达到 token 上限」。
+我们的 `max_tokens` 是 48000 —— 真触发就是为一坨空格付 48k output token，还要卡满
+整个超时。system prompt 里只有大写的 `JSON`，那句小写的 `json` 在 user message 里，
+是唯一确定满足要求的地方。
+
+DeepSeek **不支持 `json_schema`**（`response_format` 只有 `text` 和 `json_object`），
+所以上面那条 enum 的代价没有办法绕过，只能靠 prompt 文字 + `resolveCategory()` 兜底。
+
 **代价**：分类的 `enum` 强制没有了 —— tool schema 能约束取值，prompt 文字不能。
 所以分类边界、打分标准、字数限制全部移进了 system prompt，`resolveCategory()` 兜底把
 未知值归到 fallback 分类。
