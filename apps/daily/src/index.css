@@ -549,18 +549,27 @@ a {
 
 /* --- category tabs -------------------------------------------------------- */
 
+/* Holds the language switch alone, above the hero. */
 .controls {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin-top: 30px;
 }
 
+/* Below the hero, immediately above the sections it filters. */
 .tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 34px;
+}
+
+/* The tabs already stand off the hero, so the first section tucks under them
+   instead of opening another full section gap. */
+.tabs + .section {
+  margin-top: 18px;
 }
 
 /* Language is a mode, not a filter — a segmented pair rather than another
