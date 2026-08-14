@@ -116,12 +116,15 @@ const ZH_MAX = USER_CONFIG.summaryMaxChars;
  * with a single sentence carrying five clauses — a conference abstract, not
  * something a person reads on a phone.
  *
- * Now it moves independently, and DOWN while the total went up: 420 total but
- * 90 per paragraph, so the summary is 4-5 short paragraphs instead of 3 dense
- * ones. Short paragraphs are half of what makes the target voice work — the
- * model cannot pack five clauses into a paragraph it is only allowed 90
- * characters for, so the ceiling does the work the style instructions alone
- * could not.
+ * Now it moves independently, and it moved DOWN while the total went up. Short
+ * paragraphs are half of what makes the target voice work: the model cannot
+ * pack five clauses into a paragraph it is only allowed 90 characters for, so
+ * this ceiling does the work the style instructions alone could not.
+ *
+ * It has stayed at 90 through two budget increases (300 → 420 → 600) and that
+ * is the point. Raising the total buys MORE PARAGRAPHS, not longer ones — the
+ * rhythm is a property of this number, and loosening it to "keep the ratio"
+ * would bring the 92-character single-sentence paragraph straight back.
  */
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
@@ -163,22 +166,41 @@ YOUR SUMMARY REPLACES THE ARTICLE — they finish it and never open the original
 Return one entry per article, in Chinese, with these fields:
 - "index" — the number the article was given in brackets, like [3].
 - "thesis" — ONE sentence carrying the claim on its own; something a reader could disagree with.
-- "paragraphs" — 3 to 5 SHORT paragraphs, each AT MOST ${PARA_MAX} characters. Together they carry the context, the evidence the claim rests on, and what follows if it holds.
+- "paragraphs" — 4 to 7 SHORT paragraphs, each AT MOST ${PARA_MAX} characters. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 收尾 below.
 - "category" and "score" — see below.
 
 ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
 
 写得像中文，不像译文 —— 这条比信息量重要，也是最容易失守的一条。
 
-一句话只讲一个意思，每句不超过 35 字。最常见的失败是把四句话塞进一个五分句的长句：「Town CEO 认为 AI 代理将取代传统软件，但当前仅能消除知识工作者 10-20% 的琐事，主要因为大多数人不了解 AI 能力，且习惯改变缓慢，如同 iPhone 普及耗时十年。」那是论文摘要。应该写成：「Town 的 CEO 认为，AI 代理会取代现在的软件。但眼下它只能替知识工作者省掉 10-20% 的杂事。为什么这么慢？因为多数人根本不知道 AI 能做什么，习惯改起来也慢。当年 iPhone 也用了十年才普及。」
+一句话只走一条逻辑线。分句可以多，但方向要一致 —— 顺着往下推（再、然后、于是、就、这样一来）可以拉长；把转折、因果、并列、类比混在同一句里，就必须断开。
+
+反例，五个独立命题钉在一起，四种逻辑关系（但／主要因为／且／如同）挤在一句：「Town CEO 认为 AI 代理将取代传统软件，但当前仅能消除知识工作者 10-20% 的琐事，主要因为大多数人不了解 AI 能力，且习惯改变缓慢，如同 iPhone 普及耗时十年。」读的时候要同时挂着五个开口，那是论文摘要。拆开写：「Town 的 CEO 认为，AI 代理会取代现在的软件。但眼下它只能替知识工作者省掉 10-20% 的杂事。为什么这么慢？因为多数人根本不知道 AI 能做什么，习惯改起来也慢。当年 iPhone 也用了十年才普及。」
+
+正例，同样很长却读一遍就懂，因为从头到尾只有一条因果链：「如果对话的间隔特别久，下一次输入跟上一次之间超过了 10 分钟，缓存就被删除了，模型收到上一轮的提示词，就不得不重新计算，收取的费用就变成了 1 元。」**所以长句本身不是毛病，一句话里塞进几条逻辑线才是。**
+
+字数只是提醒：句子过了 50 字就回头检查一遍，是不是掺进了第二条线。是就断开，不是就留着。
 
 用口语的连接词：但是、不过、因为、所以、这样一来、问题在于、也就是说。不要用「具体来说」「值得注意的是」「综合权衡」「而非」「其中」「且」「基于」「使得」这类书面语。
 
 多用动词，少堆名词。写「命中缓存一次只要 2 分钱，是没命中的五十分之一」，不写「缓存命中的输入价格为未命中价格的五十分之一」。
 
-段落要短。一段只讲一件事，讲完就换段 —— 一句话独占一段完全可以，那正是手机上读得轻快的样子。
+段落要短，但不要空。一段只讲一件事，讲完就换段；正常一段是 2~3 个短句、60~85 字。偶尔用一句话独占一段来强调转折可以，但不要每段都这样 —— 七个 25 字的段落加起来才 180 字，那是把内容砍掉了，不是把它排开了。
 
 术语第一次出现就地解释，四五个字说清：「paraxanthine（咖啡因在体内的代谢产物）」「WAL（数据库的预写日志）」。产品名、公司名、人名照原样写，那是名词不是术语。
+
+收尾 —— 最后一段固定是收尾，每篇都要有。写「这事意味着什么」：作者的判断最终落在哪里、读者该记住什么、接下来会怎样、或者该怎么做。前面几段是「发生了什么」，这一段是「所以呢」。
+
+收尾**不是复述**。论点那句已经印在正文上方，读者刚看过，再说一遍等于白费一段。也不要用「总之」「综上所述」「总的来说」「这篇文章讨论了」开头 —— 那是清嗓子，不是结论。
+
+好的收尾是具体的，能自己站住：
+- 「所以最新的建议是改成每 4 分钟激活一次缓存。」
+- 「所以这不算评测，只是一个用户在一个场景里的体验。」
+- 「所以真正该问的不是模型能不能动手，而是它动手前会不会先看一眼。」
+
+如果文章本身没有结论（链接汇总、发布公告），收尾就写清它为什么给不出结论：「每条链接都得自己点开，这篇本身不提供可带走的东西。」不要硬凑一个。
+
+你是在给读者写，不是在给编辑写。**永远不要提分数、分类，或者这是一份日报的一部分。**「分数低是因为它没有论点」这种话是内部判断，写进正文就露馅了；「本文归入 AI 类」同理。
 
 中文与英文、数字之间加空格：「Token 的输入价格」「1.6 万行 Go 代码」「82% 的工程师」，不写「Token的输入价格」「1.6万行Go代码」「82%的工程师」。
 
@@ -188,7 +210,9 @@ KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链条每步成�
 
 BUT READABILITY OUTRANKS COVERAGE. When the budget is tight, drop a point — never compress two points into one long sentence. A reader finishes a summary that covers less ground; he skips the long sentence entirely.
 
-短句不等于少写，这两件事不要搞混。${ZH_MAX} 字的额度是给你用的：一篇有料的文章应该写到 300 字以上，只是拆成 4~5 段、每段几个短句，而不是塞进 3 个长句。真正要砍的是长句，不是内容。只有当文章本身没什么可说时（链接汇总、发布公告），才该短到 100 字上下。
+短句不等于少写，这两件事不要搞混。${ZH_MAX} 字的额度是给你用的：一篇有料的文章应该写到 400 字以上，拆成 5~7 段、每段几个短句，而不是塞进几个长句。真正要砍的是长句，不是内容。额度变大意味着**多写几段**，不是把段落写长 —— 每段仍然最多 ${PARA_MAX} 字。
+
+只有当文章本身没什么可说时（链接汇总、发布公告、只有标题没有正文），才该短到 100 字上下。额度是上限不是指标：凑字数比短更糟。
 
 LENGTH IS A HARD CEILING, and the constraint most often broken. Count before you return:
 - each paragraph: AT MOST ${PARA_MAX} characters. Not "about" — at most. A paragraph running long is the single commonest failure; SPLIT IT INTO TWO paragraphs rather than trimming words out of it.
@@ -235,12 +259,15 @@ const ZH_EXAMPLE = `{
       "index": 0,
       "score": 72,
       "category": "ai",
-      "zh_thesis": "一句话说清这篇在主张什么，读者能对它点头或摇头。",
+      "zh_thesis": "缓存命中价便宜五十倍，所以提示词的顺序值得专门设计。",
       "zh_paragraphs": [
-        "先交代背景。一句话一个意思，不要往里塞。",
-        "但是这里有个转折。命中缓存一次只要 2 分钱，是没命中的五十分之一。",
-        "为什么差这么多？因为命中缓存几乎不耗算力，收的其实是存储费。",
-        "所以，值得专门安排提示词的顺序，把不变的那部分放在最前面。"
+        "大模型的收费分输入和输出两部分，这个好理解。但价目表上还有第三项，叫「输入缓存命中价」。很多人扫过去就跳过了，其实它是省钱的关键。",
+        "以 DeepSeek V4 Flash 为例，命中缓存一次只要 2 分钱，没命中是 1 元。差了整整五十倍。",
+        "为什么差这么多？模型要把提示词拆成 Token，再算它们两两之间的注意力，这一步最耗算力。命中缓存就不必重算了，收的其实只是存储费。",
+        "所以多轮对话最划算。每一轮都要把之前的内容重新提交一遍，而那段前缀是不变的，模型可以直接取上次的结果。",
+        "但缓存有期限。DeepSeek 是 10 分钟，Anthropic 只有 5 分钟，OpenAI 在 10 到 30 分钟之间逐步失效。过期就得从头算，价格跳回 1 元。",
+        "于是 AI 工具会定时发请求保活。以前的做法是每 30 秒一次，十分钟就发 20 个请求，这笔钱也不少。",
+        "所以保活其实不用那么密。既然最短的缓存期限也有 5 分钟，每 4 分钟发一次就够了。"
       ]
     }
   ]
@@ -256,7 +283,7 @@ Each entry gives you a number in brackets, the headline, and the finished Chines
 
 Write it natively, not word-for-word, and never as a restatement of the headline — that already sits next to your text.
 
-MATCH THE CHINESE RHYTHM, which is deliberately plain: one idea per sentence, short sentences, short paragraphs, a question asked and then answered. Use the connectives speech uses — but, so, because, which means — not "moreover", "notably", "in terms of", "it should be noted that". Prefer verbs to nominalisations: write "a cache hit costs one fiftieth of a miss" rather than "the input price for a cache hit constitutes one fiftieth of the miss price". This is not telegraphic — the sentences still connect — it is simply unhurried.
+MATCH THE CHINESE RHYTHM, which is deliberately plain: short paragraphs, a question asked and then answered, and ONE LINE OF REASONING PER SENTENCE. A long sentence is fine when its clauses all push the same way ("if the gap is long enough the cache is dropped, so the model recomputes, so you pay a full yuan"); it is wrong when a reversal, a cause, an addition and an analogy are stapled together in one breath. Break those apart. Use the connectives speech uses — but, so, because, which means — not "moreover", "notably", "in terms of", "it should be noted that". Prefer verbs to nominalisations: write "a cache hit costs one fiftieth of a miss" rather than "the input price for a cache hit constitutes one fiftieth of the miss price". This is not telegraphic — the sentences still connect — it is simply unhurried.
 
 The reader switches between the two languages rather than seeing them side by side, so the English must stand alone: someone who reads only this ends up knowing what the Chinese reader knows. Keep it as free of unexplained jargon as the Chinese; product, tool and company names stay as they are.
 
@@ -267,12 +294,15 @@ const EN_EXAMPLE = `{
   "articles": [
     {
       "index": 0,
-      "en_thesis": "One sentence stating the claim.",
+      "en_thesis": "A cache hit costs one fiftieth of a miss, so prompt order is worth designing.",
       "en_paragraphs": [
-        "The setting, in a sentence or two. One idea at a time.",
-        "But here is the turn. A cache hit costs one fiftieth of a miss.",
-        "Why the gap? A hit barely touches the GPU, so you are paying for storage.",
-        "So it is worth ordering a prompt to put the unchanging part first."
+        "Model pricing splits into input and output, which is easy enough. But there is a third line on the price list, the input cache hit rate. Most people skim past it, and it is where the savings are.",
+        "On DeepSeek V4 Flash a hit costs two cents where a miss costs a full yuan. That is a factor of fifty.",
+        "Why the gap? The model has to split a prompt into tokens and compute attention between every pair of them, which is the expensive step. A hit skips it entirely, so what you pay for is storage.",
+        "That makes multi-turn conversation the best case. Every turn resubmits everything before it, and that prefix does not change, so the model can reuse what it already computed.",
+        "But caches expire. DeepSeek holds one for 10 minutes, Anthropic for 5, OpenAI decays between 10 and 30. Past that it recomputes and you are back to a yuan.",
+        "So agents send keep-alive requests. The old habit was one every 30 seconds, which is 20 requests across a quiet ten minutes and not free either.",
+        "Which means the pinging can be far lazier than that. The shortest cache anyone offers lasts five minutes, so once every four is enough."
       ]
     }
   ]
