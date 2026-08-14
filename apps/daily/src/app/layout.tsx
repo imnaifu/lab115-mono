@@ -29,7 +29,19 @@ export const viewport: Viewport = { themeColor: "#fbf3e9" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh">
+    /**
+     * suppressHydrationWarning because browser extensions get to the document
+     * before React does. Immersive Translate stamps
+     * `data-immersive-translate-page-theme` onto <html>, and React then reports
+     * the attribute it did not render as a hydration mismatch — an error about
+     * the reader's browser, not about this app.
+     *
+     * Safe precisely because it is SHALLOW: it silences mismatches on this one
+     * element's own attributes and nothing below it, so a real mismatch inside
+     * the page still reports. And there is nothing here to hide — this element
+     * is a static `lang="zh"` with no state, no date, no locale formatting.
+     */
+    <html lang="zh" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

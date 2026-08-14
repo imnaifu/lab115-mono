@@ -49,6 +49,9 @@ interface RawConfig {
   /** Bounds for one article's Chinese summary, in characters. */
   summaryMinChars: number;
   summaryMaxChars: number;
+  /** Ceiling on ONE paragraph. Deliberately not derived from summaryMaxChars —
+   *  see PARA_MAX in summarize.ts for why the two move independently. */
+  summaryParaMaxChars: number;
   categories: RawCategory[];
   fallbackCategory: string;
   sources: RawSource[];
@@ -98,6 +101,19 @@ function validate(config: RawConfig): RawConfig {
     fail(
       "summaryMinChars/summaryMaxChars must be numbers with min >= 20 and " +
         "max greater than min",
+    );
+  }
+  // A paragraph ceiling at or above the whole-summary ceiling constrains
+  // nothing, and the per-paragraph budget is the one the model actually obeys.
+  if (
+    !Number.isFinite(config.summaryParaMaxChars) ||
+    config.summaryParaMaxChars < 20 ||
+    config.summaryParaMaxChars >= config.summaryMaxChars
+  ) {
+    fail(
+      `summaryParaMaxChars must be a number of at least 20 and below ` +
+        `summaryMaxChars (${config.summaryMaxChars}) — at or above it the ` +
+        `per-paragraph budget stops constraining anything`,
     );
   }
   if (!Array.isArray(config.categories) || config.categories.length === 0) {

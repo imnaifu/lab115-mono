@@ -1,7 +1,8 @@
 {
   "publishMinScore": 40,
   "summaryMinChars": 120,
-  "summaryMaxChars": 300,
+  "summaryMaxChars": 420,
+  "summaryParaMaxChars": 90,
   "categories": [
     {
       "id": "ai",

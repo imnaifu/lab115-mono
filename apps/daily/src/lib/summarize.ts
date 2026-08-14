@@ -108,7 +108,22 @@ const GAP_RETRIES = 2;
  */
 const ZH_MIN = USER_CONFIG.summaryMinChars;
 const ZH_MAX = USER_CONFIG.summaryMaxChars;
-const PARA_MAX = Math.round(ZH_MAX / 2.5);
+
+/**
+ * Ceiling on ONE paragraph. It used to be ZH_MAX / 2.5, and that derivation is
+ * what made the prose unreadable: a 300-character budget divided into thirds
+ * gave the model a 120-character paragraph, and it filled every one of them
+ * with a single sentence carrying five clauses — a conference abstract, not
+ * something a person reads on a phone.
+ *
+ * Now it moves independently, and DOWN while the total went up: 420 total but
+ * 90 per paragraph, so the summary is 4-5 short paragraphs instead of 3 dense
+ * ones. Short paragraphs are half of what makes the target voice work — the
+ * model cannot pack five clauses into a paragraph it is only allowed 90
+ * characters for, so the ceiling does the work the style instructions alone
+ * could not.
+ */
+const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
 /**
  * DeepSeek's v4 models run in thinking mode by default, at effort `high`.
@@ -148,22 +163,40 @@ YOUR SUMMARY REPLACES THE ARTICLE — they finish it and never open the original
 Return one entry per article, in Chinese, with these fields:
 - "index" — the number the article was given in brackets, like [3].
 - "thesis" — ONE sentence carrying the claim on its own; something a reader could disagree with.
-- "paragraphs" — 2 or 3 paragraphs of flowing prose, each AT MOST ${PARA_MAX} characters. Together they carry the context, the evidence the claim rests on, and what follows if it holds.
+- "paragraphs" — 3 to 5 SHORT paragraphs, each AT MOST ${PARA_MAX} characters. Together they carry the context, the evidence the claim rests on, and what follows if it holds.
 - "category" and "score" — see below.
 
 ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
 
-PROSE, NOT BULLETS. Each paragraph is 3-5 sentences that connect — 具体来说, 原因是, 但, 结果是. Facts live inside sentences: write "OPT 扩展使本土高技能就业增长 0.5%、工资增长 1%，说明高技能移民并未挤出本地人", not "高技能移民促进本土就业。". Clipped standalone sentences read like a telegram.
+写得像中文，不像译文 —— 这条比信息量重要，也是最容易失守的一条。
 
-KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链式每步 95% 成功率，整体只剩 77%" earns its place; "作者讨论了可靠性" does not. Prose without evidence is merely vague.
+一句话只讲一个意思，每句不超过 35 字。最常见的失败是把四句话塞进一个五分句的长句：「Town CEO 认为 AI 代理将取代传统软件，但当前仅能消除知识工作者 10-20% 的琐事，主要因为大多数人不了解 AI 能力，且习惯改变缓慢，如同 iPhone 普及耗时十年。」那是论文摘要。应该写成：「Town 的 CEO 认为，AI 代理会取代现在的软件。但眼下它只能替知识工作者省掉 10-20% 的杂事。为什么这么慢？因为多数人根本不知道 AI 能做什么，习惯改起来也慢。当年 iPhone 也用了十年才普及。」
+
+用口语的连接词：但是、不过、因为、所以、这样一来、问题在于、也就是说。不要用「具体来说」「值得注意的是」「综合权衡」「而非」「其中」「且」「基于」「使得」这类书面语。
+
+多用动词，少堆名词。写「命中缓存一次只要 2 分钱，是没命中的五十分之一」，不写「缓存命中的输入价格为未命中价格的五十分之一」。
+
+段落要短。一段只讲一件事，讲完就换段 —— 一句话独占一段完全可以，那正是手机上读得轻快的样子。
+
+术语第一次出现就地解释，四五个字说清：「paraxanthine（咖啡因在体内的代谢产物）」「WAL（数据库的预写日志）」。产品名、公司名、人名照原样写，那是名词不是术语。
+
+中文与英文、数字之间加空格：「Token 的输入价格」「1.6 万行 Go 代码」「82% 的工程师」，不写「Token的输入价格」「1.6万行Go代码」「82%的工程师」。
+
+可以设问再回答，可以说「你」和「我们」。「还有一项缓存命中价格，这是什么东西？」远好过「另需考虑缓存命中定价机制」。
+
+KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链条每步成功率 95%，走完只剩 77%" earns its place; "作者讨论了可靠性" does not.
+
+BUT READABILITY OUTRANKS COVERAGE. When the budget is tight, drop a point — never compress two points into one long sentence. A reader finishes a summary that covers less ground; he skips the long sentence entirely.
+
+短句不等于少写，这两件事不要搞混。${ZH_MAX} 字的额度是给你用的：一篇有料的文章应该写到 300 字以上，只是拆成 4~5 段、每段几个短句，而不是塞进 3 个长句。真正要砍的是长句，不是内容。只有当文章本身没什么可说时（链接汇总、发布公告），才该短到 100 字上下。
 
 LENGTH IS A HARD CEILING, and the constraint most often broken. Count before you return:
-- each paragraph: AT MOST ${PARA_MAX} characters. Not "about" — at most. A paragraph running long is the single commonest failure; split it or cut it.
+- each paragraph: AT MOST ${PARA_MAX} characters. Not "about" — at most. A paragraph running long is the single commonest failure; SPLIT IT INTO TWO paragraphs rather than trimming words out of it.
 - the whole entry: AT MOST ${ZH_MAX}, thesis included. This is read on a phone; past that the reader stops.
 
-Getting under it means CUTTING — throat-clearing, the restated headline, hedges, the second example once the first landed — not covering less ground; numbers are the last thing to drop. Being well under is fine: a short link post holds ~${ZH_MIN} characters of substance, and padding is worse than brevity. Never invent detail the article lacks.
+Getting under it means CUTTING — throat-clearing, the restated headline, hedges, the second example once the first landed, and if it comes to it a whole point. Being well under is fine: a short link post holds ~${ZH_MIN} characters of substance, and padding is worse than brevity. Never invent detail the article lacks.
 
-WRITE FOR SOMEONE OUTSIDE THE FIELD. Explain practitioner terms (WAL, RAG, p99, cap rate) in three or four words inline. Product and company names stay as they are — those are nouns, not jargon.
+WRITE FOR SOMEONE OUTSIDE THE FIELD. The reader is curious and widely read but is not a practitioner in this field. Explain practitioner terms (WAL, RAG, p99, cap rate) inline, as above.
 
 CATEGORY — exactly one, from this list only, the most specific that fits. The catch-all is for what genuinely belongs nowhere else. Never invent a value outside the list.
 ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}
@@ -202,10 +235,12 @@ const ZH_EXAMPLE = `{
       "index": 0,
       "score": 72,
       "category": "ai",
-      "zh_thesis": "这篇文章的一句话论点。",
+      "zh_thesis": "一句话说清这篇在主张什么，读者能对它点头或摇头。",
       "zh_paragraphs": [
-        "交代语境，并说明主张从何而来。",
-        "具体证据，数字和案例写在句子里，句与句之间有承接。"
+        "先交代背景。一句话一个意思，不要往里塞。",
+        "但是这里有个转折。命中缓存一次只要 2 分钱，是没命中的五十分之一。",
+        "为什么差这么多？因为命中缓存几乎不耗算力，收的其实是存储费。",
+        "所以，值得专门安排提示词的顺序，把不变的那部分放在最前面。"
       ]
     }
   ]
@@ -219,7 +254,9 @@ const EN_SYSTEM = `You write the English half of a bilingual digest for a curiou
 
 Each entry gives you a number in brackets, the headline, and the finished Chinese summary. Return that number as "index" and the English of the SAME summary: same claim, same evidence, same number of paragraphs, same order. ONE ENTRY PER ARTICLE — every entry you are given gets its own object in "articles", carrying the index it was given, never fewer and never one you were not given.
 
-Write it natively, in flowing paragraphs, never clipped standalone sentences. Not a word-for-word translation, and never a restatement of the headline, which already sits next to your text.
+Write it natively, not word-for-word, and never as a restatement of the headline — that already sits next to your text.
+
+MATCH THE CHINESE RHYTHM, which is deliberately plain: one idea per sentence, short sentences, short paragraphs, a question asked and then answered. Use the connectives speech uses — but, so, because, which means — not "moreover", "notably", "in terms of", "it should be noted that". Prefer verbs to nominalisations: write "a cache hit costs one fiftieth of a miss" rather than "the input price for a cache hit constitutes one fiftieth of the miss price". This is not telegraphic — the sentences still connect — it is simply unhurried.
 
 The reader switches between the two languages rather than seeing them side by side, so the English must stand alone: someone who reads only this ends up knowing what the Chinese reader knows. Keep it as free of unexplained jargon as the Chinese; product, tool and company names stay as they are.
 
@@ -230,10 +267,12 @@ const EN_EXAMPLE = `{
   "articles": [
     {
       "index": 0,
-      "en_thesis": "One sentence.",
+      "en_thesis": "One sentence stating the claim.",
       "en_paragraphs": [
-        "First paragraph of flowing prose.",
-        "Second paragraph carrying the evidence."
+        "The setting, in a sentence or two. One idea at a time.",
+        "But here is the turn. A cache hit costs one fiftieth of a miss.",
+        "Why the gap? A hit barely touches the GPU, so you are paying for storage.",
+        "So it is worth ordering a prompt to put the unchanging part first."
       ]
     }
   ]
