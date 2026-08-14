@@ -39,14 +39,13 @@ export interface RawCategory {
   name: string;
   nameEn: string;
   accent: string;
-  cardCount: number;
   hint: string;
 }
 
 interface RawConfig {
-  /** Below this score an article never gets a card, however high it ranks
-   *  inside its section. See MIN_SCORE in categories.ts for why. */
-  minScore: number;
+  /** The only score threshold: below it an article is not published at all.
+   *  See PUBLISH_MIN_SCORE in categories.ts. */
+  publishMinScore: number;
   /** Bounds for one article's Chinese summary, in characters. */
   summaryMinChars: number;
   summaryMaxChars: number;
@@ -83,8 +82,12 @@ function requireUniqueIds(entries: Array<{ id: string }>, where: string): void {
 }
 
 function validate(config: RawConfig): RawConfig {
-  if (!Number.isFinite(config.minScore) || config.minScore < 0) {
-    fail("minScore must be a number of at least 0");
+  if (
+    !Number.isFinite(config.publishMinScore) ||
+    config.publishMinScore < 0 ||
+    config.publishMinScore > 100
+  ) {
+    fail("publishMinScore must be a number between 0 and 100");
   }
   if (
     !Number.isFinite(config.summaryMinChars) ||
@@ -110,9 +113,6 @@ function validate(config: RawConfig): RawConfig {
       ["id", "name", "nameEn", "accent", "hint"],
       `category "${category.id ?? "?"}"`,
     );
-    if (!Number.isFinite(category.cardCount) || category.cardCount < 1) {
-      fail(`category "${category.id}" needs a cardCount of at least 1`);
-    }
   }
   requireUniqueIds(config.categories, "category");
 

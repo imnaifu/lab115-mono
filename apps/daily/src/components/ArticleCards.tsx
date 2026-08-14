@@ -50,38 +50,14 @@ export function HeroCard({ article, lang }: { article: Article; lang: Lang }) {
 }
 
 /**
- * Everything past a section's `cardCount` — one line, no cover, no summary.
+ * Every published article — full card with cover and bilingual summary.
  *
- * Nothing is dropped from a digest any more, so the page has to carry the tail
- * as well as the head. A compact row keeps a thin day honest without letting a
- * heavy day run to thirty full cards.
+ * There used to be an `ArticleRow` beside this one, carrying everything past a
+ * section's `cardCount` as a single line. It existed because nothing was ever
+ * dropped, so a heavy day had to stay readable without running to thirty full
+ * cards. The publish floor took over that job: what reaches the page now earns
+ * a card, and there is no tail left to compress.
  */
-export function ArticleRow({ article, lang }: { article: Article; lang: Lang }) {
-  const source = sourceOf(article.sourceId);
-  const line = article.summary[lang].thesis;
-
-  return (
-    <a
-      className="row"
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <span className="row__source" style={{ color: source.accent }}>
-        {source.name}
-      </span>
-      <span className="row__body">
-        <span className="row__title">{article.title}</span>
-        {/* Every article gets a summary, card or not, so the tail of a
-            section is readable without paying for anything extra. */}
-        {line ? <span className="row__zh">{line}</span> : null}
-      </span>
-      <span className="row__mins">{article.readingMinutes}′</span>
-    </a>
-  );
-}
-
-/** The top of a section — full card with cover and bilingual summary. */
 export function ArticleCard({ article, lang }: { article: Article; lang: Lang }) {
   return (
     <a

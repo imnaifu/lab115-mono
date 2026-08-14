@@ -1,5 +1,9 @@
 import { dateKey } from "@/lib/config";
-import { CATEGORIES, FALLBACK_CATEGORY } from "@/lib/categories";
+import {
+  CATEGORIES,
+  FALLBACK_CATEGORY,
+  PUBLISH_MIN_SCORE,
+} from "@/lib/categories";
 import { fetchAll } from "@/lib/fetcher";
 import { notify } from "@/lib/notify";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
@@ -92,17 +96,44 @@ export async function runDaily(
 
     // Rank purely by the model's information-density score; ties fall back to
     // recency so the ordering is deterministic.
-    const ranked = [...raw].sort((a, b) => {
+    const sorted = [...raw].sort((a, b) => {
       const diff =
         (verdicts.get(b.id)?.score ?? 0) - (verdicts.get(a.id)?.score ?? 0);
       return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
     });
 
-    // Everything published. No per-source quota, no overflow, nothing folded:
-    // an article's section comes from the model's classification and its place
-    // inside that section from its score. The page decides which of them are
-    // large enough for a card — see Category.cardCount — and the rest render
-    // as one-line rows, so nothing that was fetched disappears.
+    /**
+     * The publish floor, applied to what the model actually judged.
+     *
+     * An empty thesis means the summarizer never spoke for this article — a
+     * failed call, not a verdict of "worthless" — and its score is 0 only
+     * because that is what emptyVerdict() carries. Filtering on the score alone
+     * would turn a total model outage into an empty digest, which is the one
+     * failure mode this job is built to avoid: unjudged articles keep their
+     * place and render as bare titles, exactly as before the floor existed.
+     */
+    const ranked = sorted.filter((item) => {
+      const verdict = verdicts.get(item.id);
+      if (!verdict?.zh.thesis) return true;
+      return verdict.score >= PUBLISH_MIN_SCORE;
+    });
+
+    if (ranked.length !== sorted.length) {
+      console.log(
+        `[daily] dropped ${sorted.length - ranked.length} article(s) below ` +
+          `the publish floor (${PUBLISH_MIN_SCORE}): ` +
+          sorted
+            .filter((item) => !ranked.includes(item))
+            .map((item) => `${verdicts.get(item.id)?.score} ${item.title}`)
+            .join(" · "),
+      );
+    }
+
+    // Everything that clears the floor is published, and every published
+    // article gets a full card. No per-source quota, no overflow, nothing
+    // folded: an article's section comes from the model's classification and
+    // its place inside that section from its score. This filter is the page's
+    // only gate — the components draw whatever survives it.
     const perCategory = new Map<string, number>();
     for (const item of ranked) {
       const category = verdicts.get(item.id)?.category ?? FALLBACK_CATEGORY;

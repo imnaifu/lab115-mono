@@ -1,5 +1,5 @@
 {
-  "minScore": 40,
+  "publishMinScore": 40,
   "summaryMinChars": 120,
   "summaryMaxChars": 300,
   "categories": [
@@ -8,40 +8,63 @@
       "name": "AI",
       "nameEn": "Artificial Intelligence",
       "accent": "#3B3563",
-      "hint": "The article is ABOUT AI itself — models, agents, how they are built, what they can and cannot do, their effect on work. A piece that merely uses an AI tool to do something else belongs in the category of that something else.",
-      "cardCount": 3
+      "hint": "The article is ABOUT AI itself — models, agents, how they are built, what they can and cannot do, their effect on work. A piece that merely uses an AI tool to do something else belongs in the category of that something else."
     },
     {
       "id": "tech",
       "name": "技术",
       "nameEn": "Engineering",
       "accent": "#2E7D6E",
-      "hint": "Software and hardware craft that is NOT about AI: systems, debugging, security, privacy, open source, protocols, the web platform. A war story about a database bug goes here, not in AI.",
-      "cardCount": 3
+      "hint": "Software and hardware craft that is NOT about AI: systems, debugging, security, privacy, open source, protocols, the web platform, chips and how they are built. A war story about a database bug goes here, not in AI. The physics or biology behind a technology is 'science'; how a tool feels to use is 'design'."
     },
     {
       "id": "business",
       "name": "商业",
       "nameEn": "Business & Product",
       "accent": "#EFA050",
-      "hint": "Companies, strategy, markets, product decisions, platform policy, regulation of an industry. The subject is how an organisation behaves, not how a technology works.",
-      "cardCount": 3
+      "hint": "Companies, strategy, markets, product decisions, platform policy, regulation of an industry. The subject is how an organisation behaves, not how a technology works. A whole economy or a government's policy is 'economy', not here."
     },
     {
       "id": "investing",
       "name": "投资",
       "nameEn": "Investing",
       "accent": "#B08D2E",
-      "hint": "Capital and markets as the subject: asset prices, valuation, portfolio reasoning, macro as it bears on returns. A company story is only here if it is argued from the investor's side.",
-      "cardCount": 3
+      "hint": "Capital and markets as the subject: asset prices, valuation, portfolio reasoning, financial theory and its failures, macro as it bears on returns. A company story is only here if it is argued from the investor's side. Labour markets, trade and public spending are 'economy'."
+    },
+    {
+      "id": "economy",
+      "name": "经济",
+      "nameEn": "Economics & Policy",
+      "accent": "#4F6D9E",
+      "hint": "Economics and public policy as the subject: macro, labour and jobs, immigration, trade, housing and cities, healthcare, energy, taxes, elections and how a government actually governs. The argument is about how a society allocates or rules, at the scale of a country or a city. Aimed at an investor's returns it is 'investing'; about a single company it is 'business'."
+    },
+    {
+      "id": "science",
+      "name": "科学",
+      "nameEn": "Science & Health",
+      "accent": "#2F7D91",
+      "hint": "Findings and methods from the natural and social sciences, read for what they show about the world: medicine, health, psychology, biology, physics, space, materials, statistics, whether a study replicates. A paper about labour markets is 'economy'; a chip fabrication process is 'tech'."
+    },
+    {
+      "id": "design",
+      "name": "设计",
+      "nameEn": "Design & Craft",
+      "accent": "#A9523C",
+      "hint": "Design, craft and creative work: interface and UX, typography, visual and product design, architecture as aesthetics, art, writing and the writer's process, taste and how a thing is made well. The subject is the making, not the market it sells into."
+    },
+    {
+      "id": "living",
+      "name": "生活",
+      "nameEn": "Life & Work",
+      "accent": "#6E8B3D",
+      "hint": "How one person actually works and lives: attention, habits, tools and routines, calendars and meetings, careers, burnout, money at household scale, relationships, health as daily practice. Usually first-person and prescriptive. A study about what makes people happy is 'science'; a critique of society at large is the catch-all."
     },
     {
       "id": "culture",
       "name": "人文",
       "nameEn": "Society & Ideas",
       "accent": "#9E5C81",
-      "hint": "LAST RESORT — use only when none of the categories above fits. Society, economics, history, science, design, creative work, writing, how people live and think. An essay is not filed here just because it is reflective: a reflective piece about models is still AI.",
-      "cardCount": 3
+      "hint": "LAST RESORT — use only when none of the categories above fits. History, philosophy, religion, language, media and internet culture, obituaries, how a society thinks about itself. An essay is not filed here just because it is reflective: reflective about models is still 'ai', about jobs still 'economy', about one's own working habits still 'living', about a study still 'science'."
     }
   ],
   "fallbackCategory": "culture",
@@ -74,10 +97,10 @@
       "id": "hn",
       "name": "Hacker News",
       "site": "https://news.ycombinator.com/",
-      "feed": "https://hnrss.org/frontpage?points=200",
+      "feed": "https://hnrss.org/frontpage?points=300",
       "accent": "#D2601A",
       "fetchBody": true,
-      "maxPerRun": 10
+      "maxPerRun": 5
     },
     {
       "id": "platformer",

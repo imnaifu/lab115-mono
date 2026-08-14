@@ -25,11 +25,6 @@ export interface Category {
    * swallows its neighbours.
    */
   hint: string;
-  /**
-   * How many of this section's articles get a full card. Everything below
-   * that rank still appears, as a one-line row — nothing is dropped.
-   */
-  cardCount: number;
 }
 
 export const CATEGORIES: Category[] = USER_CONFIG.categories;
@@ -58,12 +53,24 @@ export function resolveCategory(value: unknown): string {
 }
 
 /**
- * A card has to be earned, not merely ranked into.
+ * The only score threshold: below it an article does not reach the page at all.
  *
- * Every article is published now, so this no longer decides what is *seen* —
- * only what gets the space of a full card. Without it a 30-point links
- * roundup ("Wednesday assorted links") took a card simply by being the only
- * thing in its section that day. Below the floor an article still appears, as
- * a one-line row.
+ * There used to be two, a ladder — one admitted an article to the page, the
+ * other promoted it to a full card, and everything in between rendered as a
+ * one-line row. Now that every published article gets a card, "worth a card"
+ * and "worth publishing" are the same question, so there is one floor and it
+ * keeps the card floor's value (40) rather than the lower publish floor's:
+ * what did not deserve a card should not now get one by default.
+ *
+ * A card has to be earned. Without a floor a 30-point links roundup
+ * ("Wednesday assorted links") or a version bump (`Grok 4.6`, scored 25) takes
+ * a cover and a 300-character summary simply for having been fetched. The
+ * scorer is right about those; this is the place that acts on it.
+ *
+ * Applied in the daily job rather than in the components, so an archived digest
+ * is never re-filtered by a floor that did not exist when it was written.
+ *
+ * The floor only judges articles the model actually judged — see the thesis
+ * check at its call site in jobs/daily.ts.
  */
-export const MIN_SCORE = USER_CONFIG.minScore;
+export const PUBLISH_MIN_SCORE = USER_CONFIG.publishMinScore;

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArticleCard, ArticleRow, HeroCard } from "./ArticleCards";
+import { ArticleCard, HeroCard } from "./ArticleCards";
 import type { Lang } from "./Summary";
-import { MIN_SCORE, type Category } from "@/lib/categories";
+import { type Category } from "@/lib/categories";
 import type { Article } from "@/lib/types";
 
 const ALL = "all";
@@ -30,19 +30,17 @@ export function DigestBody({
 }) {
   const [lang, setLang] = useState<Lang>("zh");
 
-  // Land on the first section that actually has a CARD, not merely the first
-  // section with articles. On a day when every AI item is a version
-  // announcement, all of them score under the card floor, and defaulting to
-  // that section opens the page on a bare list of links.
+  // The first section, full stop. This used to hunt for the first section with
+  // a CARD, because a section could hold nothing but sub-threshold rows and
+  // open the page on a bare list of links. Sub-threshold articles no longer
+  // reach the page at all, so any section that exists has cards in it and the
+  // search has nothing left to find.
   //
-  // 「全部」 is not the default because summaries now run to hundreds of
-  // characters; it stays available for anyone who wants the whole thing in a
-  // single screenshot.
-  const firstWithCard =
-    groups.find((g) => g.articles.some((a) => a.score >= MIN_SCORE)) ??
-    groups[0];
+  // 「全部」 is not the default because summaries run to hundreds of characters
+  // and every article is now a full card; it stays available for anyone who
+  // wants the whole thing in a single screenshot.
   const [active, setActive] = useState<string>(
-    firstWithCard?.category.id ?? ALL,
+    groups[0]?.category.id ?? ALL,
   );
 
   const known = new Set(groups.map((g) => g.category.id));
@@ -110,43 +108,28 @@ export function DigestBody({
         </button>
       </nav>
 
-      {visible.map(({ category, articles }) => {
-        // Articles arrive sorted by score. The top of each section gets cards;
-        // everything after keeps its place as a one-line row rather than being
-        // dropped. A low score forfeits the card but not the listing.
-        const cards = articles.filter(
-          (a, i) => i < category.cardCount && a.score >= MIN_SCORE,
-        );
-        const rows = articles.filter((a) => !cards.includes(a));
+      {/* Articles arrive sorted by score; every one of them gets a full card.
+          There is no card/row split any more — the publish floor in the daily
+          job decides what appears, and what appears is worth the space. */}
+      {visible.map(({ category, articles }) => (
+        <section className="section pad" key={category.id}>
+          <div className="section__head">
+            <h2 className="section__title">
+              <span
+                className="section__dot"
+                style={{ background: category.accent }}
+              />
+              {category.name}
+              <small className="section__sub">{category.nameEn}</small>
+            </h2>
+            <span className="section__count">{articles.length} 篇</span>
+          </div>
 
-        return (
-          <section className="section pad" key={category.id}>
-            <div className="section__head">
-              <h2 className="section__title">
-                <span
-                  className="section__dot"
-                  style={{ background: category.accent }}
-                />
-                {category.name}
-                <small className="section__sub">{category.nameEn}</small>
-              </h2>
-              <span className="section__count">{articles.length} 篇</span>
-            </div>
-
-            {cards.map((article) => (
-              <ArticleCard key={article.id} article={article} lang={lang} />
-            ))}
-
-            {rows.length > 0 ? (
-              <div className="rows">
-                {rows.map((article) => (
-                  <ArticleRow key={article.id} article={article} lang={lang} />
-                ))}
-              </div>
-            ) : null}
-          </section>
-        );
-      })}
+          {articles.map((article) => (
+            <ArticleCard key={article.id} article={article} lang={lang} />
+          ))}
+        </section>
+      ))}
     </>
   );
 }

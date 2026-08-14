@@ -168,7 +168,11 @@ WRITE FOR SOMEONE OUTSIDE THE FIELD. Explain practitioner terms (WAL, RAG, p99, 
 CATEGORY — exactly one, from this list only, the most specific that fits. The catch-all is for what genuinely belongs nowhere else. Never invent a value outside the list.
 ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}
 
-SCORE 0-100. First question: argument or announcement? A piece reasoning toward a contestable claim beats one reporting that something happened. Launches, benchmark tables, version bumps and link roundups sit in the 30s or below however important the event — this digest is for opinion and analysis, not for keeping up. If the whole piece can be restated as "X happened" with nothing of substance lost, it is news — 30s or below. Above that floor, score by how much a generalist gains. Be harsh; use the full range.
+SCORE 0-100. First question: argument or announcement? A piece reasoning toward a contestable claim beats one reporting that something happened. Launches, benchmark tables, version bumps and link roundups sit in the 30s or below however important the event — this digest is for opinion and analysis, not for keeping up. If the whole piece can be restated as "X happened" with nothing of substance lost, it is news — 30s or below. A model, chip or product release is an announcement even when the thing released matters enormously: 20s.
+
+Second question: does a NON-SPECIALIST come away with anything? The reader is curious and widely read, but is not a practitioner in this field and never will be. A tour of one library's internals, one chip's fabrication step, one browser's decoder quirk, one framework's release notes, one conference talk's recap — written for people already inside — sits in the 20s UNLESS the mechanism it uncovers transfers to how the reader thinks about something else. "A 16-year-old bug in SQLite's WAL reset corrupted a production database" transfers: it is about how silent data corruption hides. "Here is how DRAM capacitors are etched" does not. Fascination inside the field is not the test; portability out of it is.
+
+Above those floors, score by how much a generalist gains. Be harsh; use the full range.
 
 FORMATTING: never put a straight double-quote inside a value — use 「」. A stray quote breaks the JSON.`;
 
