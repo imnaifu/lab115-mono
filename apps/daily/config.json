@@ -83,7 +83,8 @@
       "site": "https://www.xda-developers.com/ai-tools/",
       "feed": "https://www.xda-developers.com/feed/ai-tools/",
       "accent": "#EFA050",
-      "fetchBody": true
+      "fetchBody": true,
+      "maxPerRun": 3
     },
     {
       "id": "neciudan",
@@ -266,6 +267,94 @@
       "feed": "https://www.ruanyifeng.com/blog/atom.xml",
       "accent": "#4A7C8C",
       "fetchBody": false
+    },
+    {
+      "id": "ofdollars",
+      "name": "Of Dollars And Data",
+      "site": "https://ofdollarsanddata.com/",
+      "feed": "https://ofdollarsanddata.com/feed/",
+      "accent": "#3D7A4F",
+      "fetchBody": false
+    },
+    {
+      "id": "damodaran",
+      "name": "Musings on Markets",
+      "site": "https://aswathdamodaran.blogspot.com/",
+      "feed": "https://aswathdamodaran.blogspot.com/feeds/posts/default",
+      "accent": "#7A3B4A",
+      "fetchBody": false
+    },
+    {
+      "id": "interconnects",
+      "name": "Interconnects",
+      "site": "https://www.interconnects.ai/",
+      "feed": "https://www.interconnects.ai/feed",
+      "accent": "#4A4E8C",
+      "fetchBody": false
+    },
+    {
+      "id": "importai",
+      "name": "Import AI",
+      "site": "https://importai.substack.com/",
+      "feed": "https://importai.substack.com/feed",
+      "accent": "#6D5AA8",
+      "fetchBody": false
+    },
+    {
+      "id": "mollick",
+      "name": "One Useful Thing",
+      "site": "https://www.oneusefulthing.org/",
+      "feed": "https://www.oneusefulthing.org/feed",
+      "accent": "#3E8C9E",
+      "fetchBody": false
+    },
+    {
+      "id": "intrinsic",
+      "name": "The Intrinsic Perspective",
+      "site": "https://www.theintrinsicperspective.com/",
+      "feed": "https://www.theintrinsicperspective.com/feed",
+      "accent": "#4E8C7A",
+      "fetchBody": false
+    },
+    {
+      "id": "calnewport",
+      "name": "Cal Newport",
+      "site": "https://calnewport.com/",
+      "feed": "https://calnewport.com/feed/",
+      "accent": "#5F7A2E",
+      "fetchBody": false
+    },
+    {
+      "id": "conversable",
+      "name": "Conversable Economist",
+      "site": "https://conversableeconomist.com/",
+      "feed": "https://conversableeconomist.com/feed/",
+      "accent": "#46688F",
+      "fetchBody": false
+    },
+    {
+      "id": "danluu",
+      "name": "Dan Luu",
+      "site": "https://danluu.com/",
+      "feed": "https://danluu.com/atom.xml",
+      "accent": "#4A5A6B",
+      "fetchBody": false
+    },
+    {
+      "id": "craigmod",
+      "name": "Craig Mod",
+      "site": "https://craigmod.com/",
+      "feed": "https://craigmod.com/index.xml",
+      "accent": "#B5714A",
+      "fetchBody": true
+    },
+    {
+      "id": "worksinprogress",
+      "name": "Works in Progress",
+      "site": "https://worksinprogress.co/",
+      "feed": "https://worksinprogress.co/rss.xml",
+      "accent": "#8C6A9E",
+      "fetchBody": true
     }
   ]
 }

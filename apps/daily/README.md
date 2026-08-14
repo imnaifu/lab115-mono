@@ -51,7 +51,7 @@ config.json: source "alienchow" scrape.flags must include "g"
 
 | 源 | Feed / 列表页 | 实测频率 | 正文来源 |
 |---|---|---|---|
-| XDA · AI Tools | `xda-developers.com/feed/ai-tools/` | ~5.9 篇/天 | 只有导语，抓原文页 |
+| XDA · AI Tools | `xda-developers.com/feed/ai-tools/` | ~5.9 篇/天（限 3） | 只有导语，抓原文页 |
 | Hacker News | `hnrss.org/frontpage?points=300` | ~3.1 篇/天（限 5） | 无，抓它指向的第三方站点 |
 | WESTENBERG | `joanwestenberg.com/feed` | ~1.1 篇/天 | 全文 1k~8.5k |
 | ByteCode.News | `bytecode.news/feed.xml` | ~0.6 篇/天 | 只有 ~260 字符摘要，抓原文页 |
@@ -75,6 +75,17 @@ config.json: source "alienchow" scrape.flags must include "g"
 | Lenny's Newsletter | `lennysnewsletter.com/feed` | ~6.4 篇/周 | 全文，中位 3.5k；3/20 是付费预览 |
 | Slow Boring | `slowboring.com/feed` | ~2.1 篇/天 | **一半是付费预览**，中位 2k |
 | 阮一峰的网络日志 | `ruanyifeng.com/blog/atom.xml` | ~1.5 篇/周 | 全文 5k~6.5k |
+| Conversable Economist | `conversableeconomist.com/feed/` | ~0.57 篇/天 | 全文 1.5k~12k |
+| Interconnects | `interconnects.ai/feed` | ~0.36 篇/天 | 全文 3.4k~14.5k |
+| Works in Progress | `worksinprogress.co/rss.xml` | ~0.21 篇/天 | 仅 ~108 字符导语，抓原文页 |
+| Craig Mod | `craigmod.com/index.xml` | ~0.21 篇/天 | 仅 ~590 字符导语，抓原文页 |
+| Of Dollars And Data | `ofdollarsanddata.com/feed/` | ~0.14 篇/天 | 全文 ~7.2k |
+| Import AI | `importai.substack.com/feed` | ~0.14 篇/天 | 全文 17k~18.5k |
+| Cal Newport | `calnewport.com/feed/` | ~0.10 篇/天 | 全文 ~4.8k |
+| Dan Luu | `danluu.com/atom.xml` | ~0.07 篇/天 | 全文，中位 71k（**会截断**） |
+| Musings on Markets | `aswathdamodaran.blogspot.com/feeds/posts/default` | ~0.06 篇/天 | 全文，中位 31k（**会截断**） |
+| One Useful Thing | `oneusefulthing.org/feed` | ~0.05 篇/天 | 全文 ~10.5k |
+| The Intrinsic Perspective | `theintrinsicperspective.com/feed` | ~0.07 篇/天 | 全文 ~14k |
 
 几个需要知道的：
 
@@ -101,6 +112,18 @@ config.json: source "alienchow" scrape.flags must include "g"
   *产生* 原本不存在的标签，只跑一遍会把字面量 `<p>` 喂给模型。
 - **ByteCode.News 和 Jake Gold 都是原创博客**，虽然标题常引用别人（`Bjarnason: …`）。
   两者 feed 里的链接 100% 指向自己站内，所以抓正文抓的是它们自己的页面，不是第三方。
+- **后加的 11 个源是照着分类缺口挑的，不是照着「还有什么好博客」挑的。** 拆出 9 类之后
+  `投资` 和 `科学` 各是 0 个源 —— 有栏目没内容 —— 而 AI 栏的主力是 XDA 的清单体。
+  于是补：投资 Of Dollars And Data + Damodaran，科学 Works in Progress +
+  The Intrinsic Perspective，AI Interconnects + Import AI + One Useful Thing，
+  生活 Cal Newport，经济 Conversable Economist，技术 Dan Luu，设计 Craig Mod。
+- **Dan Luu 和 Damodaran 的正文最长，中位 63k 和 33k。** 加它们的时候 `BODY_CHAR_LIMIT`
+  还是 20000，所以只喂得进前三分之一到三分之二；量了一遍发现被截的远不止这两个源，
+  于是把上限提到 80000（见下面「正文预算」那节），现在两者都能整篇喂进去。
+- **XDA · AI Tools 设了 `maxPerRun: 3`**（原本不限）。它 5.9 篇/天、只给导语、每篇都要
+  抓原文页，是成本最高的源，而产出是清单体 —— `Google recommends these 7 NotebookLM
+  prompts` 45 分、`I can't believe how good this AI coding model is` 55 分。加了三个
+  真正做 AI 分析的源之后没有直接撤掉它，是想让分数来决定；限量先把成本压住。
 
 ### 没有 feed 的源怎么办
 
@@ -128,16 +151,19 @@ config.json: source "alienchow" scrape.flags must include "g"
 - **正文短于 `MIN_USEFUL_BODY`（200 字符）视为没有正文。** HN 的 feed body 是
   ~150 字符的「Article URL … Points: 257」样板文字，拿它去摘要等于凭空编一篇文章；
   留空反而会让 prompt 说「只看标题判断」，那是诚实的。
-- **长文源要留够正文预算。** `BODY_CHAR_LIMIT` 默认 20000 字符。它最初是 6000，
+- **长文源要留够正文预算。** `BODY_CHAR_LIMIT` 默认 **80000** 字符。它最初是 6000，
   那是按 XDA 短文校准的；neciudan.dev 这类 28k~74k 字符的长文在 6000 下只会喂进
-  前 8%，摘出来的是引言而不是论点。输入侧便宜（$0.14/M，1M 上下文），值得给足。
+  前 8%，摘出来的是引言而不是论点。输入侧便宜（$0.14/M，上下文以十万计），值得给足。
+  为什么从 20000 又提到 80000，见下面「正文预算」那节 —— 20000 截掉的比看起来多得多。
 
 ## 两个 cron，不是一个
 
 | | 频率 | 做什么 |
 |---|---|---|
 | `DAILY_CRON` | 默认每天 07:00 | 拉取 → **当天已有就跳过** → 抓取 + 摘要 + commit + push |
-| `DAILY_SYNC_CRON` | 默认每 15 分钟 | **只 `git pull`**，不调模型、不 commit |
+| `DAILY_SYNC_CRON` | 默认每小时的 7/22/37/52 分 | **只 `git pull`**，不调模型、不 commit |
+
+两者的分钟必须错开。两个 cron 共用 `jobs/daily.ts` 里的同一把锁，而抢不到锁时的行为是不对称的：sync 安静跳过（15 分钟后还有下一次），daily 直接抛错（下一次是 24 小时后）。所以 sync 不能落在整点 —— 否则它会先拿到锁，把当天的 digest 挤掉。改 `DAILY_CRON` 时记得同步挪开 `DAILY_SYNC_CRON`。
 
 定时任务带 `skipIfPublished`：仓库里已经有当天的 digest 就直接退出，不抓取也不调模型。
 因为那一天可能已经在别处生成过（笔记本手动跑、上一个容器实例），重跑等于为同一天付两次
@@ -281,8 +307,10 @@ release notes —— 写给已经在圈里的人看的东西 —— 一律压到
 
 ## 摄入上限 `maxPerRun`
 
-`sources[].maxPerRun` 限制一个源在**一次运行里最多进来几篇**。目前只有
-Hacker News 设了 5（原为 10，见上面订阅源那节），其余不限。
+`sources[].maxPerRun` 限制一个源在**一次运行里最多进来几篇**。目前两个源设了：
+Hacker News 5（原为 10）、XDA · AI Tools 3（原本不限），理由都在上面订阅源那节。
+其余不限 —— 新加的 11 个源频率最高的 Conversable Economist 也只有 0.57 篇/天，
+不需要上限。
 
 它加在**抓正文之前** —— 时间窗口过滤之后、并发抓取和送模型之前。这是关键：
 这个上限的意义就是「不为这些文章花钱」，而钱花在抓第三方页面和摘要的 input token 上，
@@ -310,7 +338,48 @@ HN 限 10 篇            81,839                全年 $5.11
 
 真正的杠杆是给 HN 单独降 `BODY_CHAR_LIMIT`，但那是拿摘要质量换每年 0.5 美元 ——
 一篇 2 万字的长文只看前 8000 字，判断会失真，而把这个值从 6000 提到 20000
-正是为了修那个问题。**所以正文预算保持 20000。**
+正是为了修那个问题。**所以不给单个源降预算，要省就限篇数**（HN 5、XDA 3）。
+
+## 正文预算 `BODY_CHAR_LIMIT`：为什么是 80000
+
+20000 截掉的比看起来多得多。把上限临时撤掉、量 14 天窗口内的 136 篇：
+
+```
+notboring              1/3 篇超限   中位  9,180   最长 84,933
+noahpinion             3/8 篇超限   中位 18,368   最长 80,993
+acx                    2/10 篇超限  中位 11,642   最长 68,463
+danluu                 1/1 篇超限   中位 63,384   最长 63,384
+neciudan               1/2 篇超限   中位 47,898   最长 47,898
+platformer             2/5 篇超限   中位 14,745   最长 36,184
+damodaran              1/1 篇超限   中位 32,646   最长 32,646
+worksinprogress        2/3 篇超限   中位 24,590   最长 28,187
+craigmod               2/3 篇超限   中位 23,558   最长 27,249
+lennys                 1/11 篇超限  中位  2,995   最长 26,279
+construction-physics   1/4 篇超限   中位 18,585   最长 25,445
+```
+
+**17/136 篇（12.5%）被截，横跨 11 个源** —— 不是只有那两个显眼的长文博客。Not Boring
+和 Noahpinion 的中位数都在限内，所以从平均值上看不出问题，但它们各自最长的那几篇正好
+是最值得读的深度文。
+
+为什么是 80000 而不是更多：**曲线在这里就平了。**
+
+```
+cap  20000    74,699 字符/天   ≈ 31,737 input tokens/天   （基准）
+cap  40000    88,863                 37,755                +19%
+cap  60000    95,141                 40,423                +27%
+cap  80000    98,845                 41,996                +32%
+cap 120000    99,268                 42,176                +33%   ← 只多 0.4%
+```
+
+样本里最长一篇 84,933 字符，所以 80000 已经覆盖 99.6% 的正文，再往上买不到东西。
+
+为什么不更少：`BATCH_SIZE` 是 1，**一次请求只带一篇正文**，所以最长那篇也只有约 36k
+token，对着以十万计的上下文远不到边。批量大小是 1 的这个决定（见摘要那节，为了 JSON
+可靠性）顺带让正文预算可以给得很松。
+
+成本 +32% 听起来比实际严重：它涨的那个基准本身已经因为 HN 限 5、XDA 限 3 而**腰斩**过，
+所以落点约 $2.7/年，仍低于两项改动之前的 $5.40。
 
 ## 摘要写成段落，不是要点列表
 
@@ -505,12 +574,12 @@ DeepSeek **不支持 `json_schema`**（`response_format` 只有 `text` 和 `json
 | `BARK_URL` | 否 | 形如 `https://api.day.app/<key>`，不填则不推送 |
 | `GIT_REPO` | 否 | 默认 `imnaifu/files` |
 | `DAILY_CRON` | 否 | 默认 `0 7 * * *`，生成当日 digest |
-| `DAILY_SYNC_CRON` | 否 | 默认 `*/15 * * * *`，只拉取不生成 |
+| `DAILY_SYNC_CRON` | 否 | 默认 `7,22,37,52 * * * *`，只拉取不生成。分钟必须与 `DAILY_CRON` 错开 |
 | `DAILY_TZ` | 否 | 默认 `America/Los_Angeles` |
 | `DAILY_WINDOW_HOURS` | 否 | 默认 `24` |
 | `DAILY_MODEL` | 否 | 默认 `deepseek-v4-flash` |
 | `DAILY_CONCURRENCY` | 否 | 默认 `8`，同时在飞的模型请求数 |
-| `DAILY_BODY_CHARS` | 否 | 默认 `20000`，单篇正文喂给模型的上限 |
+| `DAILY_BODY_CHARS` | 否 | 默认 `80000`，单篇正文喂给模型的上限 |
 | `DEEPSEEK_BASE_URL` | 否 | 默认 `https://api.deepseek.com` |
 | `DAILY_DATA_DIR` | 否 | 默认 `/data`，clone 落在它下面的 `repo/` |
 | `GIT_BRANCH` | 否 | 默认 `main` |
