@@ -1,4 +1,5 @@
 import { DigestView, EmptyState } from "@/components/DigestView";
+import { PageShell } from "@/components/Shell";
 import { dateKey } from "@/lib/config";
 import { readDigest, readLatest } from "@/lib/store";
 
@@ -15,9 +16,9 @@ export default async function Home() {
 
   if (!digest) {
     return (
-      <div className="page">
+      <PageShell>
         <EmptyState date={today} />
-      </div>
+      </PageShell>
     );
   }
 

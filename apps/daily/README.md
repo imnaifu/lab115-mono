@@ -809,9 +809,88 @@ https://raw.githubusercontent.com/imnaifu/files/main/daily/2026/08/2026-08-10.js
 - `/archive` 归档列表，直接扫 clone 目录得出，没有索引文件
 
 设计取自 Uizard 的 "Readium" 读书 App 模板：奶油底 `#FBF3E9`、深靛蓝 `#3B3563`、
-暖橙 `#EFA050`、卡片米色 `#F3E8D8`，页头有机色块 + 粗衬线标题 + 书封网格。
+暖橙 `#EFA050`、卡片米色 `#F3E8D8`，页头有机色块 + 书封网格。
 版心固定 750px 竖版，为整页截图设计，不依赖任何 hover 效果。
 颜色和字体都在 `src/index.css` 顶部的 `:root` 里。
+
+**样式用 Tailwind v4**（CSS-first，没有 `tailwind.config.js`）。
+
+`index.css` 从 730 行降到 62 行，而且**一个选择器都没有** —— 只剩 `@theme` 的 token
+（颜色、字体栈、`max-w-page`、`rounded-card`、`rounded-blob`、两个阴影）和一条
+`:root { color-scheme: light }`。其余全部在组件的 `className` 上。
+
+**移动优先，用原生 `sm:`。** 早先一版为了「什么都不动」保留了原来「桌面为基准、窄屏覆盖」
+的结构，为此声明了一个 `@custom-variant narrow (@media (max-width: 560px))`，每个响应式
+值都要写两遍。现在断点就是 Tailwind 的 `sm`（40rem），裸类是手机、`sm:` 打开桌面。
+
+**页头的两个有机色块是真的 div，不是伪元素。** 作为伪元素它们必须在样式表里有个类，
+而那个类存在的唯一理由就是放这两组偏移量；挪进 JSX 后 `@layer components` 整层可以删掉。
+八值的 `border-radius` 收成了 `--radius-blob` token，所以用起来就是 `rounded-blob`。
+
+**跨页复用的是组件，不是 class 字符串。** 归档页和日报页共用同一个 `<Masthead>` /
+`<PageShell>` / `<Footer>` / `<SectionHead>`（都在 `src/components/Shell.tsx`）。中间有一版
+是导出七个 class 名字符串加一个 `styles.ts`，那是两个页面共用外观但不共用组件的产物 ——
+现在字符串没了，只剩 `PAD` 和 `SECTION` 两个。
+
+**`+` 兄弟选择器换成了容器属性**：`.card + .card` 的间距变成 section 上的
+`flex flex-col gap-3`（顺带把标题的下边距也一起管了），折叠列表的分隔线变成
+`divide-y divide-line`。
+
+**只剩 3 个 arbitrary 值**：两处 `leading-[1.85]` 和一个 `size-[3px]` 的圆点。字号从 14 种
+（`text-[13.5px]` `text-[14.5px]` `text-[17.5px]` …）塌成 6 级标准刻度。
+
+`leading-[1.85]` 是故意留的：摘要是按「读」而不是「扫」重写的，Tailwind 最近的一档
+`leading-relaxed`（1.625）会把那次改动争到的空气收回去一部分。
+
+**字体：整页一套无衬线** —— 中文思源黑体（Noto Sans SC，就是 Adobe 的 Source Han
+Sans），英文 Manrope。模板原本的粗衬线标题（Bitter + 思源宋体）已经拿掉了。
+
+这不只是把变量指向换个值。原来的层级是**靠字面**做的：标题衬线、正文无衬线，所以
+`.summary--hero .summary__thesis` 用 `font-weight: 400` 也能从周围正文里跳出来。全部
+变成无衬线之后，「只是稍微大一点」不再是信号，那一处要改成 600 才站得住 —— 一次
+find-replace 会静默把它拍平。
+
+两个连带的点：
+
+- **`Noto Sans SC` 的 600 字重是这次才请求的。** `.summary__thesis` 一直写着
+  `font-weight: 600`，但字体 URL 只加载了 400/500/700，中文那一档长期是浏览器凑的。
+  现在字重是区分论点和正文的**唯一**手段，真字面必须在。
+- **Manrope 和思源黑体在 Google Fonts 上都没有斜体轴**，而 `.masthead__title small`
+  （Daily Read）和 `.section__sub`（英文栏目名）还在要斜体 —— 这两行现在是合成倾斜。
+  次要文字上可以接受；真觉得不对，就去掉 `font-style: italic`，它们本来还有字号和
+  颜色在区分。原来 Bitter 有真斜体（URL 里的 `1,500` 就是为它加载的）。
+
+顺带少下载两套字体，对一个「打开就截图」的页面是净收益。
+
+- **正文用 `font-medium`（500），不是默认的 400。** 中文每个字的笔画密度远高于拉丁文，
+  同一个字重在英文里正常、在中文里就显得发虚 —— 14px 的 400 尤其明显。500 的中文子集在
+  字体 URL 里（`400;500;600;700`），所以这是真字面，不是浏览器合成的伪粗体（验证方式：
+  `document.fonts.check('500 14px "Noto Sans SC"', "正文")` 为 true，且该字重有 17/101
+  个子集实际下载）。副产物：改完之后整页已经没有中文用 400 了。
+
+### 简化是拿视觉保真度换的，这笔账要记清
+
+第一版转换的目标是「零视觉差异」，并且做到了 —— 改前改后各打一份 computed style 快照
+（首页 223 个元素、归档页 33 个，含伪元素和盒子尺寸）做 diff，总高度 5482px 一致、
+DOM 路径全同、真实差异 0 种。代价是满屏的 `text-[13.5px]` / `mt-[34px]` / `py-[7px]`，
+一个自定义断点变体，和一条压回 Tailwind 默认行高的 `html { line-height: normal }`。
+
+后来明确不要求一模一样，于是全部换成标准刻度。**现在的页面和最初有肉眼可见的小差别**，
+都是刻度取整的结果：
+
+| | 原来 | 现在 |
+|---|---|---|
+| 报头字号 | 54 / 40px | `text-5xl` / `text-4xl`（48 / 36px） |
+| 正文字号 | 13.5px | `text-sm`（14px） |
+| 段间距 | 11px | `gap-3`（12px） |
+| 卡片内边距 | 16px、22px | `p-4`、`p-5`（16 / 20px） |
+| 断点 | 560px | `sm` = 640px |
+| 未声明处的行高 | `normal` | 1.5（Tailwind 默认，不再压制） |
+
+色块位置反而是精确的 —— `-top-26 -left-21 h-50 w-65` 正好等于 -104 / -84 / 200 / 260px。
+
+那两份快照脚本和 diff 工具没有留在仓库里，是一次性的验证。**如果哪天再动样式且要求保真，
+重新写一遍比读旧脚本便宜。**
 
 封面图的降级是纯 CSS 的：渐变色块（按来源配色 + 文章 id 决定角度）永远渲染在底层，
 照片盖在上面。XDA 的 CDN 会间歇性超时，图挂了就自然露出渐变，不需要客户端 JS。

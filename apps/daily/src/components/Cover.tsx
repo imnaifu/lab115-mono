@@ -12,6 +12,18 @@ function gradientFor(id: string, accent: string): string {
 }
 
 /**
+ * Cover size is a prop, not a descendant selector.
+ *
+ * It used to come from `.hero .cover` / `.card .cover` — the parent reaching in
+ * to size its child, which utilities cannot express. The hero cover is a full
+ * width band on a phone and a book spine beside the text on a wider screen.
+ */
+const SIZE = {
+  hero: "h-42 w-full sm:h-50 sm:w-36",
+  card: "h-22 w-16 sm:h-30 sm:w-22",
+} as const;
+
+/**
  * The gradient + source name are ALWAYS rendered, with the photo layered on
  * top when there is one. That way a cover that 404s or times out — XDA's CDN
  * does both intermittently — degrades to a designed placeholder instead of an
@@ -25,24 +37,37 @@ export function Cover({
   id,
   sourceId,
   image,
+  variant,
 }: {
   id: string;
   sourceId: string;
   image: string | null;
+  variant: keyof typeof SIZE;
 }) {
   const source = sourceOf(sourceId);
 
   return (
-    <div className="cover">
+    <div
+      className={`relative flex-none overflow-hidden rounded-xl bg-cream-deep shadow-cover ${SIZE[variant]}`}
+    >
       <div
-        className="cover__fallback"
+        className="absolute inset-0 flex items-end p-2.5"
         style={{ background: gradientFor(id, source.accent) }}
       >
-        <span className="cover__initial">{source.name}</span>
+        <span
+          className={`font-bold text-paper/95 ${variant === "hero" ? "text-xl" : "text-sm"}`}
+        >
+          {source.name}
+        </span>
       </div>
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" loading="lazy" />
+        <img
+          className="absolute inset-0 size-full object-cover"
+          src={image}
+          alt=""
+          loading="lazy"
+        />
       ) : null}
     </div>
   );

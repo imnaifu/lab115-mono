@@ -3,16 +3,23 @@ import { Summary, type Lang } from "./Summary";
 import { sourceOf } from "@/lib/sources";
 import type { Article } from "@/lib/types";
 
+/** The dot between meta items. `bg-current` so it matches whatever colour the
+ *  row is drawn in. */
+function Dot() {
+  return <span className="size-0.75 rounded-full bg-current opacity-55" />;
+}
+
 function Meta({ article }: { article: Article }) {
   const source = sourceOf(article.sourceId);
+
   return (
-    <div className="meta">
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-semibold text-ink-soft">
       <span style={{ color: source.accent }}>{source.name}</span>
-      <span className="meta__sep" />
+      <Dot />
       <span>{article.readingMinutes} 分钟</span>
       {article.author ? (
         <>
-          <span className="meta__sep" />
+          <Dot />
           <span>{article.author}</span>
         </>
       ) : null}
@@ -24,16 +31,20 @@ function Meta({ article }: { article: Article }) {
 export function HeroCard({ article, lang }: { article: Article; lang: Lang }) {
   return (
     <a
-      className="hero"
+      className="block rounded-card bg-card p-5 shadow-soft"
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
     >
-      <div className="hero__top">
-        <div className="hero__body">
-          <span className="pill pill--rank">今日头条 · TOP 1</span>
-          <h2 className="hero__title">{article.title}</h2>
-          <div style={{ marginTop: 10 }}>
+      <div className="flex flex-col items-start gap-5 sm:flex-row">
+        <div className="min-w-0 flex-1">
+          <span className="inline-flex rounded-full bg-ink px-2.5 py-1 text-xs font-bold whitespace-nowrap text-paper">
+            今日头条 · TOP 1
+          </span>
+          <h2 className="mt-2.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            {article.title}
+          </h2>
+          <div className="mt-2.5">
             <Meta article={article} />
           </div>
         </div>
@@ -41,6 +52,7 @@ export function HeroCard({ article, lang }: { article: Article; lang: Lang }) {
           id={article.id}
           sourceId={article.sourceId}
           image={article.image}
+          variant="hero"
         />
       </div>
 
@@ -61,7 +73,7 @@ export function HeroCard({ article, lang }: { article: Article; lang: Lang }) {
 export function ArticleCard({ article, lang }: { article: Article; lang: Lang }) {
   return (
     <a
-      className="card"
+      className="flex items-start gap-4 rounded-card border border-line bg-paper p-4"
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
@@ -70,10 +82,11 @@ export function ArticleCard({ article, lang }: { article: Article; lang: Lang })
         id={article.id}
         sourceId={article.sourceId}
         image={article.image}
+        variant="card"
       />
-      <div className="card__body">
+      <div className="min-w-0 flex-1">
         <Meta article={article} />
-        <h3 className="card__title">{article.title}</h3>
+        <h3 className="mt-2 text-lg font-bold text-ink">{article.title}</h3>
         <Summary summary={article.summary[lang]} variant="card" />
       </div>
     </a>

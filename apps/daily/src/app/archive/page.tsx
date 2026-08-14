@@ -1,4 +1,11 @@
 import type { Metadata } from "next";
+import {
+  Footer,
+  Masthead,
+  PAD,
+  PageShell,
+  SECTION,
+} from "@/components/Shell";
 import { readDigest, listDates } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -14,26 +21,25 @@ export default async function Archive() {
   );
 
   return (
-    <div className="page">
-      <header className="masthead">
-        <span className="masthead__eyebrow">daily.lab115.com</span>
-        <h1 className="masthead__title">
-          归档
-          <small>Archive</small>
-        </h1>
-        <div className="masthead__meta">
-          <span>{dates.length} 天</span>
-        </div>
-      </header>
+    <PageShell>
+      <Masthead title="归档" subtitle="Archive">
+        <span>{dates.length} 天</span>
+      </Masthead>
 
-      <section className="section pad">
+      <section className={`${SECTION} flex flex-col gap-2.5 ${PAD}`}>
         {rows.length === 0 ? (
-          <div className="folded">还没有任何归档 · Nothing archived yet.</div>
+          <div className="rounded-card bg-cream-deep px-5 py-4">
+            还没有任何归档 · Nothing archived yet.
+          </div>
         ) : (
           rows.map(({ date, digest }) => (
-            <a className="archive__row" key={date} href={`/d/${date}`}>
-              <span className="archive__date">{date}</span>
-              <span className="section__count">
+            <a
+              className="flex items-center justify-between gap-3.5 rounded-xl border border-line bg-paper px-5 py-4"
+              key={date}
+              href={`/d/${date}`}
+            >
+              <span className="text-lg font-bold text-ink">{date}</span>
+              <span className="text-sm font-bold text-ink-soft">
                 {digest ? `${digest.stats.fetched} 篇` : "—"}
               </span>
             </a>
@@ -41,12 +47,7 @@ export default async function Archive() {
         )}
       </section>
 
-      <footer className="foot pad">
-        <span>daily.lab115.com</span>
-        <span className="foot__links">
-          <a href="/">今日 Today</a>
-        </span>
-      </footer>
-    </div>
+      <Footer left="daily.lab115.com" link={<a href="/">今日 Today</a>} />
+    </PageShell>
   );
 }

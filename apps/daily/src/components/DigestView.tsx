@@ -1,4 +1,13 @@
 import { DigestBody, type CategoryGroup } from "./DigestBody";
+import {
+  Footer,
+  Masthead,
+  MastheadDot,
+  PAD,
+  PageShell,
+  SECTION,
+  SectionHead,
+} from "./Shell";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { sourceOf } from "@/lib/sources";
@@ -14,51 +23,25 @@ function formatDate(date: string): string {
   return `${year}年${month}月${day}日 · 星期${weekday}`;
 }
 
-function Masthead({ digest }: { digest: Digest }) {
-  const minutes = digest.articles.reduce((sum, a) => sum + a.readingMinutes, 0);
-
-  return (
-    <header className="masthead">
-      <span className="masthead__eyebrow">daily.lab115.com</span>
-      <h1 className="masthead__title">
-        今日速读
-        <small>Daily Read</small>
-      </h1>
-      <div className="masthead__meta">
-        <span>{formatDate(digest.date)}</span>
-        <span className="masthead__dot" />
-        <span>{digest.stats.fetched} 篇新文章</span>
-        {minutes > 0 ? (
-          <>
-            <span className="masthead__dot" />
-            <span>精读约 {minutes} 分钟</span>
-          </>
-        ) : null}
-      </div>
-    </header>
-  );
-}
-
 function FoldedList({ digest }: { digest: Digest }) {
   if (digest.folded.length === 0) return null;
 
   return (
-    <section className="section pad">
-      <div className="section__head">
-        <h2 className="section__title">其余更新</h2>
-        <span className="section__count">{digest.folded.length} 篇</span>
-      </div>
-      <div className="folded">
+    <section className={`${SECTION} flex flex-col gap-3.5 ${PAD}`}>
+      <SectionHead title="其余更新" count={`${digest.folded.length} 篇`} />
+      {/* `divide-y` replaces a `+` sibling rule: separators between rows, none
+          above the first or below the last. */}
+      <div className="divide-y divide-line rounded-card bg-cream-deep px-5 py-4">
         {digest.folded.map((item) => (
           <a
-            className="folded__item"
+            className="flex items-baseline gap-2.5 py-2 text-sm"
             key={item.url}
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
           >
             <span
-              className="folded__source"
+              className="flex-none text-xs font-extrabold"
               style={{ color: sourceOf(item.sourceId).accent }}
             >
               {sourceOf(item.sourceId).name}
@@ -73,9 +56,9 @@ function FoldedList({ digest }: { digest: Digest }) {
 
 export function EmptyState({ date }: { date: string }) {
   return (
-    <section className="section pad">
-      <div className="empty">
-        <div className="empty__mark">
+    <section className={`${SECTION} ${PAD}`}>
+      <div className="rounded-card bg-card px-7 py-14 text-center">
+        <div className="mx-auto mb-5 flex size-22 items-center justify-center rounded-full bg-cream">
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
             <path
               d="M7 9.5A2.5 2.5 0 0 1 9.5 7H18v26H9.5A2.5 2.5 0 0 1 7 30.5v-21Z"
@@ -88,27 +71,14 @@ export function EmptyState({ date }: { date: string }) {
             />
           </svg>
         </div>
-        <h2 className="empty__title">今日无更新</h2>
-        <p className="empty__sub">
+        <h2 className="text-2xl font-bold text-ink">今日无更新</h2>
+        <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-ink-mid">
           过去 24 小时里，订阅的几个源都没有发布新文章。明天同一时间再来。
           <br />
           No new posts from any source in the last 24 hours.
         </p>
       </div>
     </section>
-  );
-}
-
-function Footer({ digest }: { digest: Digest }) {
-  return (
-    <footer className="foot pad">
-      <span>
-        {SITE.replace("https://", "")} · {digest.date}
-      </span>
-      <span className="foot__links">
-        <a href="/archive">归档 Archive</a>
-      </span>
-    </footer>
   );
 }
 
@@ -137,10 +107,21 @@ function groupByCategory(articles: Article[]): CategoryGroup[] {
 
 export function DigestView({ digest }: { digest: Digest }) {
   const [hero, ...rest] = digest.articles;
+  const minutes = digest.articles.reduce((sum, a) => sum + a.readingMinutes, 0);
 
   return (
-    <div className="page">
-      <Masthead digest={digest} />
+    <PageShell>
+      <Masthead title="今日速读" subtitle="Daily Read">
+        <span>{formatDate(digest.date)}</span>
+        <MastheadDot />
+        <span>{digest.stats.fetched} 篇新文章</span>
+        {minutes > 0 ? (
+          <>
+            <MastheadDot />
+            <span>精读约 {minutes} 分钟</span>
+          </>
+        ) : null}
+      </Masthead>
 
       {hero ? (
         <DigestBody hero={hero} groups={groupByCategory(rest)} />
@@ -149,7 +130,10 @@ export function DigestView({ digest }: { digest: Digest }) {
       )}
 
       <FoldedList digest={digest} />
-      <Footer digest={digest} />
-    </div>
+      <Footer
+        left={`${SITE.replace("https://", "")} · ${digest.date}`}
+        link={<a href="/archive">归档 Archive</a>}
+      />
+    </PageShell>
   );
 }

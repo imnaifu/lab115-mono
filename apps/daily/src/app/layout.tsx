@@ -45,14 +45,34 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* Bitter is the closest free match to the template's chunky serif;
-            the Noto SC faces carry the Chinese half of every card. */}
+        {/**
+         * Two families, not four. Manrope sets the Latin, Noto Sans SC — 思源
+         * 黑体, the same typeface Adobe ships as Source Han Sans — sets the
+         * Chinese, and nothing on the page uses anything else.
+         *
+         * Dropped: Bitter and Noto Serif SC (思源宋体), which carried every
+         * heading back when hierarchy came from the face rather than the weight.
+         * That is two fewer font files on a page whose whole point is being
+         * screenshotted quickly.
+         *
+         * 600 is requested for Noto Sans SC and was NOT there before, which was
+         * a latent bug: `.summary__thesis` has always asked for 600, so Chinese
+         * theses were being synthesised from 500 or 700 by the browser. Now that
+         * weight is the only thing separating a thesis from the prose beneath
+         * it, the real face has to be available.
+         *
+         * Neither family ships an italic on Google Fonts, and `.masthead__title
+         * small` / `.section__sub` still ask for one — those two lines now get a
+         * synthesised oblique. Acceptable on secondary text; if it ever looks
+         * wrong, the fix is to drop `font-style: italic` and lean on the size
+         * and colour that already distinguish them.
+         */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,600;0,700;1,500&family=Manrope:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body className="bg-cream font-sans text-ink antialiased">{children}</body>
     </html>
   );
 }
