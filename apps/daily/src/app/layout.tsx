@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
+import { DEFAULT_LANG, isLang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/config";
 import "@/index.css";
 
-const TITLE = "今日速读 · Daily Read — 技术博客每日摘要";
+const TITLE = "每日干货 · Daily Takes — 技术博客每日摘要";
 const DESCRIPTION =
   "每天自动抓取 Heavybit、XDA、caolan.uk 等博客的新文章，提炼中英双语观点摘要。A daily bilingual digest of new posts from a handful of engineering blogs.";
 
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     url: `${SITE}/`,
-    siteName: "今日速读 · Daily Read",
+    siteName: "每日干货 · Daily Takes",
     locale: "zh_CN",
     alternateLocale: "en_US",
   },
@@ -27,7 +29,22 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#fbf3e9" };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+/**
+ * The language comes from a header the middleware set, not from the route.
+ *
+ * A root layout in the App Router cannot see the segments beneath it, so it has
+ * no way to read `[lang]` itself — and `<html lang>` has to be right, because
+ * screen readers choose a voice from it and browsers decide whether to offer a
+ * translation by it.
+ */
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const header = (await headers()).get("x-lang") ?? undefined;
+  const lang = isLang(header) ? header : DEFAULT_LANG;
+
   return (
     /**
      * suppressHydrationWarning because browser extensions get to the document
@@ -41,7 +58,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
      * the page still reports. And there is nothing here to hide — this element
      * is a static `lang="zh"` with no state, no date, no locale formatting.
      */
-    <html lang="zh" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -72,7 +89,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           rel="stylesheet"
         />
       </head>
-      <body className="bg-cream font-sans text-ink antialiased">{children}</body>
+      <body className="bg-cream font-sans text-ink antialiased">
+{children}</body>
     </html>
   );
 }

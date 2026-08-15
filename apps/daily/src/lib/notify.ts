@@ -10,10 +10,12 @@ export async function notify(digest: Digest): Promise<void> {
   if (!BARK_URL) return;
 
   const failed = digest.sources.filter((s) => !s.ok);
+  // `shown`, not `fetched`. The publish floor means a run can fetch plenty and
+  // publish none, and the notification has to promise what the page delivers.
   const title =
-    digest.stats.fetched === 0
+    digest.stats.shown === 0
       ? `今日无更新 · ${digest.date}`
-      : `今日速读 ${digest.stats.fetched} 篇 · ${digest.date}`;
+      : `每日干货 ${digest.stats.shown} 篇 · ${digest.date}`;
 
   // `||` not `??` — a failed summary is an empty string, not null, and an
   // empty Bark body renders as a blank notification.

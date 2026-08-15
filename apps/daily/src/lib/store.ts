@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { REPO_SUBDIR } from "./config";
 import { REPO_PATH } from "./paths";
-import type { Digest } from "./types";
+import type { Article, Digest } from "./types";
 
 /**
  * Read/write side of the git clone. There is no index file: the archive list
@@ -82,4 +82,20 @@ export async function listDates(): Promise<string[]> {
 export async function readLatest(): Promise<Digest | null> {
   const [newest] = await listDates();
   return newest ? readDigest(newest) : null;
+}
+
+/**
+ * One article by date and id PREFIX, plus the digest it came from.
+ *
+ * Prefix rather than exact match so an old full-length link keeps working after
+ * links got shortened — `startsWith` accepts both.
+ */
+export async function readArticle(
+  date: string,
+  idPrefix: string,
+): Promise<{ digest: Digest; article: Article } | null> {
+  if (!/^[0-9a-f]{4,40}$/.test(idPrefix)) return null;
+  const digest = await readDigest(date);
+  const article = digest?.articles.find((a) => a.id.startsWith(idPrefix));
+  return digest && article ? { digest, article } : null;
 }

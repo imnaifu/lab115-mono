@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ArticleCard, HeroCard } from "./ArticleCards";
+import { ArticleCard } from "./ArticleCards";
 import { PAD, SECTION, SectionHead } from "./Shell";
-import type { Lang } from "./Summary";
+import { strings } from "@/lib/i18n";
+import type { Lang } from "@/lib/lang";
 import { type Category } from "@/lib/categories";
 import type { Article } from "@/lib/types";
-
-const ALL = "all";
 
 /** Every pill-shaped control on the page. Only the colours change per state. */
 const PILL =
@@ -27,69 +26,31 @@ export interface CategoryGroup {
  * follow the language switch just as the cards do.
  */
 export function DigestBody({
-  hero,
   groups,
+  date,
+  lang,
 }: {
-  hero: Article | null;
   groups: CategoryGroup[];
+  /** Needed only to build each card's share link — the permalink is
+   *  `/d/<date>/<id>`, because the store can only look articles up by day. */
+  date: string;
+  lang: Lang;
 }) {
-  const [lang, setLang] = useState<Lang>("zh");
+  const [active, setActive] = useState<string>(groups[0]?.category.id ?? "");
 
-  // The first section, full stop. This used to hunt for the first section with
-  // a CARD, because a section could hold nothing but sub-threshold rows and
-  // open the page on a bare list of links. Sub-threshold articles no longer
-  // reach the page at all, so any section that exists has cards in it.
-  //
-  // 「全部」 is not the default because summaries run to hundreds of characters
-  // and every article is a full card; it stays available for anyone who wants
-  // the whole thing in a single screenshot.
-  const [active, setActive] = useState<string>(groups[0]?.category.id ?? ALL);
-
+  // A day's categories are whatever the model produced that day, so the state
+  // can name a section this digest does not have — navigating from one date to
+  // another with the component mounted is enough. Falling back to the first
+  // section keeps something on screen; there is no 「全部」 to fall back to any
+  // more.
   const known = new Set(groups.map((g) => g.category.id));
-  const current = active === ALL || known.has(active) ? active : ALL;
-  const visible =
-    current === ALL ? groups : groups.filter((g) => g.category.id === current);
-
-  const total = groups.reduce((sum, g) => sum + g.articles.length, 0);
+  const current = known.has(active) ? active : (groups[0]?.category.id ?? "");
+  const visible = groups.filter((g) => g.category.id === current);
 
   return (
     <>
-      {/* Language stays ABOVE the hero because it rewrites the hero too; a
-          control that sits below the text it changes reads as unrelated to it.
-          It is a segmented pair rather than another pill in the tab row, so a
-          mode never looks interchangeable with a filter. */}
-      <div className={`mt-8 flex justify-end ${PAD}`}>
-        <div
-          className="flex overflow-hidden rounded-full border border-line bg-paper"
-          role="group"
-          aria-label="语言"
-        >
-          {(["zh", "en"] as const).map((code) => (
-            <button
-              key={code}
-              type="button"
-              className={`cursor-pointer px-3 py-2 text-xs font-bold ${
-                lang === code ? "bg-ink text-paper" : "text-ink-soft"
-              }`}
-              aria-pressed={lang === code}
-              onClick={() => setLang(code)}
-            >
-              {code === "zh" ? "中文" : "EN"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {hero ? (
-        <section className={`${SECTION} ${PAD}`}>
-          <HeroCard article={hero} lang={lang} />
-        </section>
-      ) : null}
-
-      {/* Category tabs sit BELOW the hero, directly above the sections they
-          filter — the hero is not in any category, so tabs above it implied a
-          filter that had no effect on the first thing you read. */}
-      <nav className={`mt-8 flex flex-wrap gap-2 ${PAD}`} aria-label="分类">
+      {/* Directly above the sections they filter. */}
+      <nav className={`mt-8 flex flex-wrap gap-2 ${PAD}`} aria-label={lang === "en" ? "Categories" : "分类"}>
         {groups.map(({ category, articles }) => {
           const on = current === category.id;
           return (
@@ -105,26 +66,11 @@ export function DigestBody({
               }
               onClick={() => setActive(category.id)}
             >
-              {category.name}
+              {lang === "en" ? category.nameEn : category.name}
               <Count>{articles.length}</Count>
             </button>
           );
         })}
-        {/* 「全部」 has no category accent to colour it, so its active state is
-            the ink background rather than an inline style. */}
-        <button
-          type="button"
-          className={`${PILL} ${
-            current === ALL
-              ? "border-ink bg-ink text-paper"
-              : "bg-paper text-ink-mid"
-          }`}
-          aria-pressed={current === ALL}
-          onClick={() => setActive(ALL)}
-        >
-          全部
-          <Count>{total}</Count>
-        </button>
       </nav>
 
       {/* Articles arrive sorted by score; every one gets a full card. There is
@@ -139,13 +85,18 @@ export function DigestBody({
           key={category.id}
         >
           <SectionHead
-            title={category.name}
-            sub={category.nameEn}
+            title={lang === "en" ? category.nameEn : category.name}
+            sub={lang === "en" ? category.name : category.nameEn}
             dot={category.accent}
-            count={`${articles.length} 篇`}
+            count={strings(lang).sectionCount(articles.length)}
           />
           {articles.map((article) => (
-            <ArticleCard key={article.id} article={article} lang={lang} />
+            <ArticleCard
+              key={article.id}
+              article={article}
+              date={date}
+              lang={lang}
+            />
           ))}
         </section>
       ))}
