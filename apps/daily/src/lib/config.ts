@@ -78,9 +78,6 @@ export const WINDOW_DAYS = Number(process.env.DAILY_WINDOW_DAYS ?? 1);
 export const WINDOW_ANCHOR_HOUR = Number(
   process.env.DAILY_WINDOW_ANCHOR_HOUR ?? 7,
 );
-/** Articles above this rank get folded into a bare title list. */
-export const TOP_N = Number(process.env.DAILY_TOP_N ?? 10);
-
 /** DeepSeek serves an OpenAI-compatible API, so the `openai` SDK talks to it
  *  unchanged — only the base URL and key differ. */
 export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? "";

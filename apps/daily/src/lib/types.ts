@@ -87,6 +87,25 @@ export interface FoldedArticle {
 }
 
 /**
+ * Scored below the publish floor and therefore never summarized — a record of
+ * what was considered and turned down, NOT something the page renders.
+ *
+ * Deliberately not `folded`: that list appears on the page as 其他动态, and the
+ * whole point of this one is that it does not. It exists so a run can be
+ * audited after the fact — "why is that post missing" is answerable, and a
+ * rubric that starts rejecting good work is visible in the file before it is
+ * visible in the digest.
+ *
+ * Optional because digests written before it existed do not carry it.
+ */
+export interface RejectedArticle {
+  title: string;
+  url: string;
+  sourceId: string;
+  score: number;
+}
+
+/**
  * Per-source outcome for the run. A source that threw still gets an entry with
  * `ok: false` so the page can say "this one failed today" instead of silently
  * pretending the site published nothing.
@@ -109,4 +128,6 @@ export interface Digest {
   sources: SourceStatus[];
   articles: Article[];
   folded: FoldedArticle[];
+  /** Below the floor: written to the file, never rendered. */
+  rejected?: RejectedArticle[];
 }

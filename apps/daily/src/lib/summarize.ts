@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { CATEGORIES, resolveCategory } from "./categories";
+import { CATEGORIES, PUBLISH_MIN_SCORE, resolveCategory } from "./categories";
 import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
 import { USER_CONFIG } from "./user-config";
 import type { RawArticle } from "./fetcher";
@@ -22,11 +22,19 @@ import type { SummaryText } from "./types";
  * "json", must show an example of the shape, and needs max_tokens set high
  * enough that the reply is not truncated. All three are handled below.
  *
- * TWO calls, not one. Asking for score + Chinese + English together produced
- * Chinese for 10/10 articles and English for 0/10: the model filled the first
- * four fields of each object and stopped. Splitting the work makes each reply
- * small enough to finish, and the English pass needs no article bodies at all
- * — it rewrites from the Chinese, so it is nearly free.
+ * TWO calls, split by JOB rather than by language: score everything, then
+ * summarize only what cleared the floor, both languages in the one reply.
+ *
+ * The split used to run the other way — Chinese+score, then English from the
+ * Chinese — because asking for score + Chinese + English together returned
+ * Chinese for 10/10 articles and English for 0/10, the model filling the first
+ * fields of each object and stopping. THAT WAS MEASURED WITH A BATCH OF
+ * ARTICLES PER REQUEST. At BATCH_SIZE 1 the same combined reply is ~2,900
+ * characters and comes back whole (10/10 with both halves, measured), so the
+ * lesson is about reply size, not about combining languages.
+ *
+ * Scoring goes first so the floor can be applied before any summary is
+ * written: on the sample that is 8 of 18 articles never summarized at all.
  */
 const MAX_ARTICLES_PER_CALL = 30;
 
@@ -186,10 +194,25 @@ function budgetFor(readingMinutes: number): {
 
 /**
  * DeepSeek's v4 models run in thinking mode by default, at effort `high`.
- * This job extracts and scores — it does not need a chain of thought — and
- * thinking tokens bill as output, so leaving it on costs money and latency for
- * nothing. The knob is DeepSeek-specific, so it is only sent to DeepSeek.
- * https://api-docs.deepseek.com/guides/thinking_mode/
+ * Thinking tokens bill as output, and this job extracts and scores rather than
+ * reasoning at length, so it is off. The knob is DeepSeek-specific, so it is
+ * only sent to DeepSeek. https://api-docs.deepseek.com/guides/thinking_mode/
+ *
+ * IT WAS TRIED ON, for pass 1, on the theory that a pass which JUDGES should
+ * think first — the scores were badly bunched (40 of 64 published articles
+ * between 50 and 75, five of one day's thirteen tied at exactly 65, the same
+ * article re-scored 20 points apart across two runs).
+ *
+ * It cost 4 of 15 articles their summaries. Reasoning and `json_object` do not
+ * cohabit: measured over one reproduction, 5 of 8 pass-1 calls came back with
+ * an EMPTY content field — DeepSeek documents this as an occasional JSON-mode
+ * fault and thinking turns "occasional" into 62%. It is not truncation
+ * (`finish_reason` was never "length") and not the timeout (the failures were
+ * 1-to-7-minute articles while a 74-minute one succeeded).
+ *
+ * The scoring fix that came out of that experiment lives in the prompt instead
+ * — "score" is the LAST field written, so it is judged against a summary that
+ * already exists. That part works with thinking off.
  */
 type DeepSeekParams =
   OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming & {
@@ -205,6 +228,16 @@ function isDeepSeek(baseUrl: string): boolean {
 }
 
 export interface Verdict {
+  /**
+   * True once the score pass has spoken for this article.
+   *
+   * Distinguishes the two ways an article can reach the end with no summary:
+   * scored and dropped (the digest should not carry it) versus never judged
+   * because the call failed (it keeps its place as a bare title). Without this
+   * flag those look identical downstream, and a model outage would publish
+   * every rejected article instead of none.
+   */
+  judged: boolean;
   score: number;
   category: string;
   /** The headline in Chinese; "" when it was already Chinese or came back empty.
@@ -214,28 +247,111 @@ export interface Verdict {
   en: SummaryText;
 }
 
-// --- pass 1: score + category + Chinese -------------------------------------
+// --- pass 1: score only -----------------------------------------------------
 
-const ZH_PASS = "chinese";
+/**
+ * Scoring runs FIRST and ALONE, and its reply is a single number per article.
+ *
+ * The order is the point: everything below the publish floor is discarded here,
+ * so no summary is ever written for an article the digest will not carry. On
+ * the 14-day sample that is around 40% of what gets fetched, and summaries are
+ * where the output tokens go.
+ *
+ * The cost is the body being sent twice for survivors — once to score, once to
+ * summarize. The two passes have different system prompts, so the cached prefix
+ * cannot be shared. At $0.14/M against ~42k input tokens a day it is worth
+ * roughly a dollar a year, which is not a reason to keep summarizing articles
+ * nobody will read.
+ *
+ * KNOWN RISK: with no other field to fill, the score is the only token the
+ * model produces about the article, and thinking is off. An earlier
+ * arrangement had it written last, after the summary, and that measurably
+ * fixed the bunching — a roundup of reader comments went 55 → 28. This pass
+ * gives that up by construction; if the scores bunch again, the fix is to let
+ * this one pass think (its reply is small enough that the empty-content fault
+ * which killed thinking on the summary pass has room to behave).
+ */
+const SCORE_PASS = "score";
 
-const ZH_SYSTEM = `You edit a daily digest for a curious generalist: smart, widely read, not a specialist in whatever field the article belongs to.
+const SCORE_SYSTEM = `You are the first reader for a daily digest aimed at a curious generalist: smart, widely read, not a specialist in whatever field the article belongs to. Your only job is to decide how much that reader gains from the piece.
 
-YOUR SUMMARY REPLACES THE ARTICLE — they finish it and never open the original. Not "should I read this?" but "now I know this."
-
-Return one entry per article, in Chinese, with these fields:
+Return one entry per article, as json, with exactly two fields:
 - "index" — the number the article was given in brackets, like [3].
-- "zh_title" — the HEADLINE in Chinese. See 标题 below.
-- "thesis" — ONE sentence carrying the claim on its own; something a reader could disagree with.
-- "paragraphs" — SHORT paragraphs, each AT MOST ${PARA_MAX} characters; how many this article gets is stated with it. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 收尾 below.
-- "category" and "score" — see below.
+- "score" — 0-100, by the rubric below.
+
+NOTHING ELSE. No summary, no headline, no category, no reasoning. Just the number.
 
 ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
 
-标题 —— "zh_title" 是把原标题译成中文，不是重写，也不是把论点缩短成标题。原文说什么就译什么，包括它故意的含糊、疑问句和反讽；不要替它把答案补上。原标题是「Why does Opus 5 feel worse to work with?」就译「为什么 Opus 5 用起来更难受？」，不要译成「Opus 5 因为对齐基准而失去了主动提问的能力」——那是论点，论点有自己的字段。
+SCORE 0-100. First question: argument or announcement? A piece reasoning toward a contestable claim beats one reporting that something happened. Launches, benchmark tables, version bumps and link roundups sit in the 30s or below however important the event — this digest is for opinion and analysis, not for keeping up. If the whole piece can be restated as "X happened" with nothing of substance lost, it is news — 30s or below. A model, chip or product release is an announcement even when the thing released matters enormously: 20s.
+
+Second question: does a NON-SPECIALIST come away with anything? The reader is curious and widely read, but is not a practitioner in this field and never will be. A tour of one library's internals, one chip's fabrication step, one browser's decoder quirk, one framework's release notes, one conference talk's recap — written for people already inside — sits in the 20s UNLESS the mechanism it uncovers transfers to how the reader thinks about something else. "A 16-year-old bug in SQLite's WAL reset corrupted a production database" transfers: it is about how silent data corruption hides. "Here is how DRAM capacitors are etched" does not. Fascination inside the field is not the test; portability out of it is.
+
+Third question: does it leave the reader with a CLAIM, or with a list? A piece that argues — takes a position that could be wrong, and defends it — beats one that hands over material someone else produced. A digest of the week's best reader comments, a "what I have been reading lately" list, a paragraph passing on what another outlet reported: the writer supplied selection, not judgment, and the reader's takeaway is "here are some things", which is not a takeaway. Those sit in the 20s and 30s however good the material they point at. The test: delete the writer and see what is lost.
+
+Reviewing someone else's book, paper or reporting is NOT relaying, PROVIDED the piece argues. 「音乐版权的规则不是天然如此，是一层层临时补丁堆出来的，内部互相矛盾」 is a claim you can disagree with, and it scores as an argument even though the occasion for it was somebody else's book. But 「这本书讲了 A、B、C，值得一读」 is a list wearing a review's clothes.
+
+Length is not the test either — a short piece can argue. 「外置卷帘在美国买不到，因为木框架加护墙板的房子根本装不了，也就没有供应链」 is four paragraphs and it carries a claim with a mechanism under it; it beats a long, careful relay of another outlet's reporting.
+
+Above those floors, score by how much a generalist gains. Be harsh; use the full range — a run where most articles land between 50 and 75 means the range is not being used, and the middle is where a bad score hides.`;
+
+const SCORE_EXAMPLE = `{
+  "articles": [
+    {
+      "index": 0,
+      "score": 72
+    }
+  ]
+}`;
+
+// --- pass 2: both summaries, for survivors only -----------------------------
+
+/**
+ * Chinese and English in ONE reply, which the header note says failed before —
+ * "Chinese for 10/10 articles and English for 0/10", the model filling the
+ * first fields of each object and stopping.
+ *
+ * That was measured when a request carried a batch of articles. BATCH_SIZE is 1
+ * now, so the reply holding both languages for one article is ~1,200 characters
+ * against the ~12,000 that broke it. The gap detection below still checks each
+ * half separately, so a reply that stops after the Chinese is re-asked rather
+ * than published half-empty.
+ */
+const SUMMARY_PASS = "summary";
+
+const SUMMARY_SYSTEM = `You edit a daily digest for a curious generalist: smart, widely read, not a specialist in whatever field the article belongs to.
+
+YOUR SUMMARY REPLACES THE ARTICLE — they finish it and never open the original. Not "should I read this?" but "now I know this."
+
+Every article you are given has already been judged worth carrying. Summarize it; do not re-litigate whether it deserves the space.
+
+The rules below are grouped: what to return, then the headline, then how the summary is written, how it ends, how long it runs, then the English half, and finally how it is classified. Read all of them before writing anything.
+
+## 一、返回什么
+
+Return one entry per article, with these fields:
+- "index" — the number the article was given in brackets, like [3].
+- "zh_title" — the HEADLINE in Chinese. See 二 below.
+- "zh_thesis" — ONE sentence carrying the claim on its own; something a reader could disagree with.
+- "zh_paragraphs" — SHORT paragraphs, each AT MOST ${PARA_MAX} characters; how many this article gets is stated with it. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 四 below.
+- "en_thesis" and "en_paragraphs" — the same summary in English. See 六.
+- "category" — see 七.
+
+FILL THE FIELDS IN THE ORDER LISTED. The Chinese is written first and the English is written from it, so the two halves cannot drift apart; "category" is last because by then you know what the piece actually is.
+
+ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
+
+FORMATTING: never put a straight double-quote inside a value — use 「」 in the Chinese and single quotes in the English. A stray quote breaks the JSON.
+
+## 二、标题
+
+"zh_title" 是把原标题译成中文，不是重写，也不是把论点缩短成标题。原文说什么就译什么，包括它故意的含糊、疑问句和反讽；不要替它把答案补上。原标题是「Why does Opus 5 feel worse to work with?」就译「为什么 Opus 5 用起来更难受？」，不要译成「Opus 5 因为对齐基准而失去了主动提问的能力」——那是论点，论点有自己的字段。
 
 标题里的产品名、公司名、人名、模型名照原样保留，不要音译：「Claude Code」「a16z」「Zuckerberg」「DiG-bench」。中英文之间照样加空格。不要加书名号、引号或句末标点。
 
 如果原标题本身就是中文（比如「科技爱好者周刊（第 408 期）」），"zh_title" 就原样返回它，不要改写。
+
+## 三、正文怎么写
 
 写得像中文，不像译文 —— 这条比信息量重要，也是最容易失守的一条。
 
@@ -253,9 +369,19 @@ ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "artic
 
 段落要短，但不要空。正常一段是 2~3 个短句、60~85 字。偶尔用一句话独占一段来强调转折可以，但不要每段都这样 —— 五个 25 字的段落加起来才 125 字，那是把内容砍掉了，不是把它排开了。
 
+可以设问再回答，可以说「你」和「我们」。「还有一项缓存命中价格，这是什么东西？」远好过「另需考虑缓存命中定价机制」。
+
+中文与英文、数字之间加空格：「Token 的输入价格」「1.6 万行 Go 代码」「82% 的工程师」，不写「Token的输入价格」「1.6万行Go代码」「82%的工程师」。
+
 术语第一次出现就地解释，四五个字说清：「paraxanthine（咖啡因在体内的代谢产物）」「WAL（数据库的预写日志）」。产品名、公司名、人名照原样写，那是名词不是术语。
 
-收尾 —— 最后一段固定是收尾，每篇都要有。写「这事意味着什么」：作者的判断最终落在哪里、读者该记住什么、接下来会怎样、或者该怎么做。前面几段是「发生了什么」，这一段是「所以呢」。
+WRITE FOR SOMEONE OUTSIDE THE FIELD. The reader is curious and widely read but is not a practitioner in this field. Explain practitioner terms (WAL, RAG, p99, cap rate) inline, as above.
+
+你是在给读者写，不是在给编辑写。**永远不要提分数、分类，或者这是一份日报的一部分。**「分数低是因为它没有论点」这种话是内部判断，写进正文就露馅了；「本文归入 AI 类」同理。
+
+## 四、收尾
+
+最后一段固定是收尾，每篇都要有。写「这事意味着什么」：作者的判断最终落在哪里、读者该记住什么、接下来会怎样、或者该怎么做。前面几段是「发生了什么」，这一段是「所以呢」。
 
 收尾**不是复述**。论点那句已经印在正文上方，读者刚看过，再说一遍等于白费一段。也不要用「总之」「综上所述」「总的来说」「这篇文章讨论了」开头 —— 那是清嗓子，不是结论。
 
@@ -266,35 +392,32 @@ ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "artic
 
 如果文章本身没有结论（链接汇总、发布公告），收尾就写清它为什么给不出结论：「每条链接都得自己点开，这篇本身不提供可带走的东西。」不要硬凑一个。
 
-你是在给读者写，不是在给编辑写。**永远不要提分数、分类，或者这是一份日报的一部分。**「分数低是因为它没有论点」这种话是内部判断，写进正文就露馅了；「本文归入 AI 类」同理。
-
-中文与英文、数字之间加空格：「Token 的输入价格」「1.6 万行 Go 代码」「82% 的工程师」，不写「Token的输入价格」「1.6万行Go代码」「82%的工程师」。
-
-可以设问再回答，可以说「你」和「我们」。「还有一项缓存命中价格，这是什么东西？」远好过「另需考虑缓存命中定价机制」。
-
-KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链条每步成功率 95%，走完只剩 77%" earns its place; "作者讨论了可靠性" does not.
-
-BUT READABILITY OUTRANKS COVERAGE. When the budget is tight, drop a point — never compress two points into one long sentence. A reader finishes a summary that covers less ground; he skips the long sentence entirely.
+## 五、长度与取舍
 
 LENGTH — each paragraph AT MOST ${PARA_MAX} characters. Not "about" — at most. A paragraph running long is the single commonest failure; SPLIT IT INTO TWO paragraphs rather than trimming words out of it.
 
 The budget for the whole entry comes with the article, and it is a ceiling, not a target. Being well under it is fine and padding is worse than brevity. Never invent detail the article lacks.
 
-WRITE FOR SOMEONE OUTSIDE THE FIELD. The reader is curious and widely read but is not a practitioner in this field. Explain practitioner terms (WAL, RAG, p99, cap rate) inline, as above.
+KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链条每步成功率 95%，走完只剩 77%" earns its place; "作者讨论了可靠性" does not.
 
-CATEGORY — exactly one, from this list only, the most specific that fits. The catch-all is for what genuinely belongs nowhere else. Never invent a value outside the list.
-${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}
+BUT READABILITY OUTRANKS COVERAGE. When the budget is tight, drop a point — never compress two points into one long sentence. A reader finishes a summary that covers less ground; he skips the long sentence entirely.
 
-SCORE 0-100. First question: argument or announcement? A piece reasoning toward a contestable claim beats one reporting that something happened. Launches, benchmark tables, version bumps and link roundups sit in the 30s or below however important the event — this digest is for opinion and analysis, not for keeping up. If the whole piece can be restated as "X happened" with nothing of substance lost, it is news — 30s or below. A model, chip or product release is an announcement even when the thing released matters enormously: 20s.
+## 六、英文
 
-Second question: does a NON-SPECIALIST come away with anything? The reader is curious and widely read, but is not a practitioner in this field and never will be. A tour of one library's internals, one chip's fabrication step, one browser's decoder quirk, one framework's release notes, one conference talk's recap — written for people already inside — sits in the 20s UNLESS the mechanism it uncovers transfers to how the reader thinks about something else. "A 16-year-old bug in SQLite's WAL reset corrupted a production database" transfers: it is about how silent data corruption hides. "Here is how DRAM capacitors are etched" does not. Fascination inside the field is not the test; portability out of it is.
+"en_thesis" and "en_paragraphs" are the English of the SAME summary you have just written: same claim, same evidence, same number of paragraphs, same order. Write it natively, not word-for-word, and never as a restatement of the headline — that already sits next to your text.
 
-Above those floors, score by how much a generalist gains. Be harsh; use the full range.
+MATCH THE CHINESE RHYTHM, which is deliberately plain: short paragraphs, a question asked and then answered, and ONE LINE OF REASONING PER SENTENCE. A long sentence is fine when its clauses all push the same way ("if the gap is long enough the cache is dropped, so the model recomputes, so you pay a full yuan"); it is wrong when a reversal, a cause, an addition and an analogy are stapled together in one breath. Break those apart. Use the connectives speech uses — but, so, because, which means — not "moreover", "notably", "in terms of", "it should be noted that". Prefer verbs to nominalisations: write "a cache hit costs one fiftieth of a miss" rather than "the input price for a cache hit constitutes one fiftieth of the miss price". This is not telegraphic — the sentences still connect — it is simply unhurried.
 
-FORMATTING: never put a straight double-quote inside a value — use 「」. A stray quote breaks the JSON.`;
+The reader switches between the two languages rather than seeing them side by side, so the English must stand alone: someone who reads only this ends up knowing what the Chinese reader knows. Keep it as free of unexplained jargon as the Chinese; product, tool and company names stay as they are.
+
+## 七、分类 "category"
+
+Exactly one, from this list only, the most specific that fits. The catch-all is for what genuinely belongs nowhere else. Never invent a value outside the list.
+${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
 
 /**
- * ONE entry, because BATCH_SIZE is 1. THESE TWO MUST CHANGE TOGETHER.
+ * ONE entry, because BATCH_SIZE is 1. THIS AND SUMMARY_SYSTEM MUST CHANGE
+ * TOGETHER.
  *
  * In JSON mode the example IS the specification — there is no schema saying
  * "array of N", so the model reads the example's shape as the contract. Back
@@ -309,16 +432,14 @@ FORMATTING: never put a straight double-quote inside a value — use 「」. A s
  * back above 1, this example must show two entries again** — otherwise the
  * 5-of-6 failure returns.
  *
- * The wrapper stays an array even for one article: `applyChinese` matches
- * replies to articles by index, and the retry path re-asks for whatever is
- * missing, so the shape has to survive a batch of any size.
+ * The wrapper stays an array even for one article: the appliers match replies
+ * to articles by index, and the retry path re-asks for whatever is missing, so
+ * the shape has to survive a batch of any size.
  */
-const ZH_EXAMPLE = `{
+const SUMMARY_EXAMPLE = `{
   "articles": [
     {
       "index": 0,
-      "score": 72,
-      "category": "tech",
       "zh_title": "大模型的缓存命中价，能省五十倍的钱",
       "zh_thesis": "缓存命中价便宜五十倍，所以提示词的顺序值得专门设计。",
       "zh_paragraphs": [
@@ -327,32 +448,7 @@ const ZH_EXAMPLE = `{
         "为什么差这么多？模型要把提示词拆成 Token，再算它们两两之间的注意力，这一步最耗算力。命中缓存就不必重算了，收的其实只是存储费。",
         "但缓存有期限。DeepSeek 是 10 分钟，Anthropic 只有 5 分钟，OpenAI 在 10 到 30 分钟之间逐步失效。过期就得从头算，价格跳回 1 元。",
         "所以 AI 工具的保活请求不用发那么密。既然最短的缓存期限也有 5 分钟，每 4 分钟发一次就够了，以前那种每 30 秒一次纯属浪费。"
-      ]
-    }
-  ]
-}`;
-
-// --- pass 2: English --------------------------------------------------------
-
-const EN_PASS = "english";
-
-const EN_SYSTEM = `You write the English half of a bilingual digest for a curious generalist — smart, widely read, not a specialist in the article's field.
-
-Each entry gives you a number in brackets, the headline, and the finished Chinese summary. Return that number as "index" and the English of the SAME summary: same claim, same evidence, same number of paragraphs, same order. ONE ENTRY PER ARTICLE — every entry you are given gets its own object in "articles", carrying the index it was given, never fewer and never one you were not given.
-
-Write it natively, not word-for-word, and never as a restatement of the headline — that already sits next to your text.
-
-MATCH THE CHINESE RHYTHM, which is deliberately plain: short paragraphs, a question asked and then answered, and ONE LINE OF REASONING PER SENTENCE. A long sentence is fine when its clauses all push the same way ("if the gap is long enough the cache is dropped, so the model recomputes, so you pay a full yuan"); it is wrong when a reversal, a cause, an addition and an analogy are stapled together in one breath. Break those apart. Use the connectives speech uses — but, so, because, which means — not "moreover", "notably", "in terms of", "it should be noted that". Prefer verbs to nominalisations: write "a cache hit costs one fiftieth of a miss" rather than "the input price for a cache hit constitutes one fiftieth of the miss price". This is not telegraphic — the sentences still connect — it is simply unhurried.
-
-The reader switches between the two languages rather than seeing them side by side, so the English must stand alone: someone who reads only this ends up knowing what the Chinese reader knows. Keep it as free of unexplained jargon as the Chinese; product, tool and company names stay as they are.
-
-FORMATTING: never put a straight double-quote inside a value — use single quotes. A stray quote breaks the JSON.`;
-
-/** One entry, for the same reason as ZH_EXAMPLE — see the note there. */
-const EN_EXAMPLE = `{
-  "articles": [
-    {
-      "index": 0,
+      ],
       "en_thesis": "A cache hit costs one fiftieth of a miss, so prompt order is worth designing.",
       "en_paragraphs": [
         "Model pricing splits into input and output, which is easy enough. But there is a third line on the price list, the input cache hit rate. Most people skim past it, and it is where the savings are.",
@@ -360,41 +456,47 @@ const EN_EXAMPLE = `{
         "Why the gap? The model has to split a prompt into tokens and compute attention between every pair of them, which is the expensive step. A hit skips it entirely, so what you pay for is storage.",
         "But caches expire. DeepSeek holds one for 10 minutes, Anthropic for 5, OpenAI decays between 10 and 30. Past that it recomputes and you are back to a yuan.",
         "So the keep-alive pinging can be far lazier than it usually is. The shortest cache anyone offers lasts five minutes, so once every four is enough, and the old habit of once every 30 seconds was pure waste."
-      ]
+      ],
+      "category": "tech"
     }
   ]
 }`;
 
 // --- shared plumbing --------------------------------------------------------
 
-function renderArticle(article: RawArticle, index: number): string {
+/**
+ * One article as the model sees it.
+ *
+ * `budget` is passed only by the summary pass. The scoring pass returns a
+ * single number and can do nothing with a length allowance, so sending it
+ * there is noise in front of the one judgement that request exists to make.
+ *
+ * It rides in the USER message rather than the system prompt because it varies
+ * per article: the system prompt stays byte-identical across every request in
+ * a pass, which is what keeps hitting DeepSeek's cached prefix ($0.0028/M
+ * against $0.14/M).
+ */
+function renderArticle(
+  article: RawArticle,
+  index: number,
+  budget?: ReturnType<typeof budgetFor>,
+): string {
   const source = sourceOf(article.sourceId);
-  const budget = budgetFor(article.readingMinutes);
   return [
     `[${index}] ${article.title}`,
     `source: ${source.name}`,
     `published: ${article.publishedAt}`,
-    // The budget varies per article, so it rides in the USER message: the
-    // system prompt stays byte-identical across every request, which is what
-    // keeps hitting DeepSeek's cached prefix ($0.0028/M against $0.14/M).
-    `budget: 这篇最多 ${budget.chars} 字，分 ${budget.paraLow}~${budget.paraHigh} 段。` +
-      `装不下就砍掉一整个点，不要把两个点压成一句。`,
+    // Says CHINESE explicitly: measured with both languages in one reply, 9 of
+    // 10 summaries ran over, and an unqualified "最多 N 字" next to a request
+    // for two languages reads as the budget for the pair.
+    ...(budget
+      ? [
+          `budget: 中文正文最多 ${budget.chars} 字（英文不计入），` +
+            `分 ${budget.paraLow}~${budget.paraHigh} 段，英文段数照中文走。` +
+            `装不下就砍掉一整个点，不要把两个点压成一句。`,
+        ]
+      : []),
     `body: ${article.body || "(body unavailable — judge from the title alone)"}`,
-  ].join("\n");
-}
-
-/** Pass 2's input: no bodies, just what pass 1 concluded. */
-function renderForEnglish(
-  article: RawArticle,
-  verdict: Verdict,
-  index: number,
-): string {
-  return [
-    `[${index}] ${article.title}`,
-    `zh_thesis: ${verdict.zh.thesis}`,
-    ...(verdict.zh.paragraphs ?? []).map(
-      (p, i) => `zh_paragraph_${i + 1}: ${p}`,
-    ),
   ].join("\n");
 }
 
@@ -408,6 +510,7 @@ function renderForEnglish(
  */
 function emptyVerdict(): Verdict {
   return {
+    judged: false,
     score: 0,
     category: resolveCategory(undefined),
     titleZh: "",
@@ -440,7 +543,7 @@ function pick(group: RawArticle[], index: unknown): RawArticle | undefined {
 
 /** Index is relative to the group that was sent, so the same helper serves
  *  both the first attempt and the smaller retry. */
-function applyChinese(
+function applyScores(
   rows: Array<Record<string, unknown>>,
   group: RawArticle[],
   out: Map<string, Verdict>,
@@ -452,15 +555,14 @@ function applyChinese(
       unmatched += 1;
       continue;
     }
-    const thesis = asText(row.zh_thesis);
-    if (!thesis) continue; // an entry with no thesis is a gap, not a result
-    out.set(article.id, {
-      score: Math.max(0, Math.min(100, Number(row.score) || 0)),
-      category: resolveCategory(row.category),
-      titleZh: chineseTitle(row.zh_title, article.title),
-      zh: { thesis, paragraphs: asPoints(row.zh_paragraphs) },
-      en: { thesis: "", paragraphs: [] },
-    });
+    // A row that carries no usable number is a gap, not a score of zero —
+    // leaving `judged` false sends it down the "never judged" path instead of
+    // the "rejected" one.
+    const score = Number(row.score);
+    if (!Number.isFinite(score)) continue;
+    const verdict = out.get(article.id)!;
+    verdict.judged = true;
+    verdict.score = Math.max(0, Math.min(100, score));
   }
   if (rows.length !== group.length || unmatched) {
     console.warn(
@@ -471,7 +573,9 @@ function applyChinese(
   }
 }
 
-function applyEnglish(
+/** Both languages land together; each half is checked on its own so a reply
+ *  that stopped after the Chinese is re-asked rather than published half. */
+function applySummaries(
   rows: Array<Record<string, unknown>>,
   group: RawArticle[],
   out: Map<string, Verdict>,
@@ -479,12 +583,25 @@ function applyEnglish(
   for (const row of rows) {
     const article = pick(group, row.index);
     if (!article) continue;
-    const thesis = asText(row.en_thesis);
-    if (!thesis) continue;
-    out.get(article.id)!.en = {
-      thesis,
-      paragraphs: asPoints(row.en_paragraphs),
-    };
+    const verdict = out.get(article.id)!;
+
+    const zhThesis = asText(row.zh_thesis);
+    if (zhThesis) {
+      verdict.category = resolveCategory(row.category);
+      verdict.titleZh = chineseTitle(row.zh_title, article.title);
+      verdict.zh = {
+        thesis: zhThesis,
+        paragraphs: asPoints(row.zh_paragraphs),
+      };
+    }
+
+    const enThesis = asText(row.en_thesis);
+    if (enThesis) {
+      verdict.en = {
+        thesis: enThesis,
+        paragraphs: asPoints(row.en_paragraphs),
+      };
+    }
   }
 }
 
@@ -674,9 +791,14 @@ function asPoints(value: unknown): string[] {
 }
 
 /**
- * Returns a verdict per article, keyed by article id. Any failure degrades to
- * an empty summary for the affected articles — the digest still publishes,
- * just with bare titles.
+ * Returns a verdict per article, keyed by article id.
+ *
+ * TWO passes: score everything, drop what the floor rejects, then summarize
+ * only what survived. A verdict therefore comes back in one of three states —
+ * scored and summarized, scored and rejected (no summary, by design), or never
+ * judged at all because the call failed. `Verdict.judged` is what tells the
+ * last two apart, and the caller must respect it: a failure degrades to a bare
+ * title so the digest still publishes, while a rejection is meant to vanish.
  */
 export async function summarize(
   articles: RawArticle[],
@@ -708,35 +830,33 @@ export async function summarize(
     timeout: 60_000,
   });
 
-  // --- pass 1: score + category + Chinese, one article per request ---
-  const batches = chunk(batch, BATCH_SIZE);
-  let zhFailures = 0;
+  // --- pass 1: score every article, one per request ---
+  const scoreBatches = chunk(batch, BATCH_SIZE);
 
   // Retries live inside the worker so a stumble on one article never blocks
   // the others; the whole pass is bounded by REQUEST_CONCURRENCY.
-  await mapLimited(batches, REQUEST_CONCURRENCY, async (group, i) => {
-    const label = `${ZH_PASS} ${i + 1}/${batches.length}`;
+  await mapLimited(scoreBatches, REQUEST_CONCURRENCY, async (group, i) => {
+    const label = `${SCORE_PASS} ${i + 1}/${scoreBatches.length}`;
 
     for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
       // Covers both failure modes at once: a request that threw, and one that
       // returned valid JSON with entries silently missing.
-      const missing = group.filter((a) => !out.get(a.id)?.zh.thesis);
+      const missing = group.filter((a) => !out.get(a.id)?.judged);
       if (!missing.length) return;
 
       try {
         const rows = await callModel(
           client,
           attempt ? `${label} retry ${attempt}` : label,
-          ZH_SYSTEM,
+          SCORE_SYSTEM,
           `Here ${missing.length === 1 ? "is 1 article" : `are ${missing.length} articles`}. ` +
-            `Summarize and score every one of them.\n\n` +
-            missing.map(renderArticle).join("\n\n---\n\n"),
-          ZH_EXAMPLE,
+            `Score every one of them.\n\n` +
+            missing.map((a, j) => renderArticle(a, j)).join("\n\n---\n\n"),
+          SCORE_EXAMPLE,
         );
-        applyChinese(rows, missing, out);
+        applyScores(rows, missing, out);
       } catch (error) {
         if (attempt === GAP_RETRIES) {
-          zhFailures += 1;
           console.error(
             `[daily] ${label} failed after ${attempt + 1} attempts ` +
               `(${group.length} article(s) keep bare titles): ` +
@@ -747,56 +867,80 @@ export async function summarize(
     }
   });
 
-  if (zhFailures === batches.length) return out;
+  // --- the floor, applied before a single summary is written ---
+  //
+  // This is the whole reason scoring runs on its own: an article below the
+  // floor costs one small reply and then nothing else. Articles the score pass
+  // never spoke for are NOT dropped here — an outage must not empty the digest,
+  // so they go on as bare titles, which is what `judged` distinguishes.
+  const survivors = batch.filter((a) => {
+    const verdict = out.get(a.id)!;
+    return verdict.judged && verdict.score >= PUBLISH_MIN_SCORE;
+  });
+  const unjudged = batch.filter((a) => !out.get(a.id)!.judged).length;
+  console.log(
+    `[daily] scored ${batch.length - unjudged}/${batch.length}; ` +
+      `${survivors.length} at or above the floor (${PUBLISH_MIN_SCORE}), ` +
+      `${batch.length - unjudged - survivors.length} dropped unsummarized` +
+      (unjudged ? `, ${unjudged} unscored and kept as bare titles` : ""),
+  );
+  if (survivors.length === 0) return out;
 
-  // --- pass 2: English, from the Chinese (no bodies re-sent) ---
-  const withZh = batch.filter((a) => out.get(a.id)?.zh.thesis);
-  if (withZh.length === 0) return out;
-
-  const enBatches = chunk(withZh, BATCH_SIZE);
-  await mapLimited(enBatches, REQUEST_CONCURRENCY, async (group, i) => {
-    const label = `${EN_PASS} ${i + 1}/${enBatches.length}`;
+  // --- pass 2: both summaries, survivors only ---
+  const summaryBatches = chunk(survivors, BATCH_SIZE);
+  await mapLimited(summaryBatches, REQUEST_CONCURRENCY, async (group, i) => {
+    const label = `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`;
 
     for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
-      const missing = group.filter((a) => !out.get(a.id)?.en.thesis);
+      // Either half missing counts as a gap: a reply that stopped after the
+      // Chinese is re-asked rather than published with an empty English side.
+      const missing = group.filter((a) => {
+        const verdict = out.get(a.id)!;
+        return !verdict.zh.thesis || !verdict.en.thesis;
+      });
       if (!missing.length) return;
 
       try {
         const rows = await callModel(
           client,
           attempt ? `${label} retry ${attempt}` : label,
-          EN_SYSTEM,
-          `Write the English version for ` +
-            `${missing.length === 1 ? "this entry" : `these ${missing.length} entries`}.\n\n` +
+          SUMMARY_SYSTEM,
+          `Here ${missing.length === 1 ? "is 1 article" : `are ${missing.length} articles`}. ` +
+            `Summarize every one of them, in Chinese and then in English.\n\n` +
             missing
-              .map((a, j) => renderForEnglish(a, out.get(a.id)!, j))
+              .map((a, j) => renderArticle(a, j, budgetFor(a.readingMinutes)))
               .join("\n\n---\n\n"),
-          EN_EXAMPLE,
+          SUMMARY_EXAMPLE,
         );
-        applyEnglish(rows, missing, out);
+        applySummaries(rows, missing, out);
       } catch (error) {
-        // The Chinese half is already in hand — ship it rather than losing it.
         if (attempt === GAP_RETRIES) {
-          console.error(`[daily] ${label} failed: ${(error as Error).message}`);
+          console.error(
+            `[daily] ${label} failed after ${attempt + 1} attempts ` +
+              `(${group.length} article(s) keep bare titles): ` +
+              `${(error as Error).message}`,
+          );
         }
       }
     }
   });
 
-  report(batch, out);
+  report(survivors, out);
   return out;
 }
 
 /** Surface what would otherwise degrade silently: a missing half, and
- *  summaries that came back too thin to replace the article. */
-function report(batch: RawArticle[], out: Map<string, Verdict>): void {
+ *  summaries that came back too thin to replace the article. Measured over the
+ *  articles that cleared the floor — the rejected ones have no summary on
+ *  purpose and would read as failures here. */
+function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
   let zh = 0;
   let en = 0;
   let thin = 0;
   let over = 0;
   const lengths: number[] = [];
 
-  for (const article of batch) {
+  for (const article of survivors) {
     const verdict = out.get(article.id);
     if (!verdict?.zh.thesis) continue;
     zh += 1;
@@ -812,7 +956,7 @@ function report(batch: RawArticle[], out: Map<string, Verdict>): void {
     if (chars > budgetFor(article.readingMinutes).chars) over += 1;
   }
 
-  const total = batch.length;
+  const total = survivors.length;
   const median =
     lengths.sort((a, b) => a - b)[Math.floor(lengths.length / 2)] ?? 0;
   console.log(

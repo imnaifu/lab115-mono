@@ -9,7 +9,12 @@ import { notify } from "@/lib/notify";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
 import { readDigest, writeDigest } from "@/lib/store";
 import { summarize } from "@/lib/summarize";
-import type { Article, Digest, FoldedArticle } from "@/lib/types";
+import type {
+  Article,
+  Digest,
+  FoldedArticle,
+  RejectedArticle,
+} from "@/lib/types";
 
 /**
  * One lock for everything that touches the clone. The daily job and the
@@ -105,27 +110,40 @@ export async function runDaily(
     /**
      * The publish floor, applied to what the model actually judged.
      *
-     * An empty thesis means the summarizer never spoke for this article — a
-     * failed call, not a verdict of "worthless" — and its score is 0 only
-     * because that is what emptyVerdict() carries. Filtering on the score alone
-     * would turn a total model outage into an empty digest, which is the one
-     * failure mode this job is built to avoid: unjudged articles keep their
-     * place and render as bare titles, exactly as before the floor existed.
+     * `judged`, not the presence of a summary. The summarizer now scores first
+     * and only writes summaries for what clears the floor, so "no summary" no
+     * longer means "the call failed" — for a rejected article it is the
+     * intended outcome, and testing for a thesis here would publish every one
+     * of them as a bare title.
+     *
+     * An unjudged article is the failed call, and it keeps its place: its score
+     * is 0 only because that is what emptyVerdict() carries, and filtering on
+     * the score alone would turn a total model outage into an empty digest,
+     * which is the one failure mode this job is built to avoid. Unjudged
+     * articles render as bare titles, exactly as before the floor existed.
      */
     const ranked = sorted.filter((item) => {
       const verdict = verdicts.get(item.id);
-      if (!verdict?.zh.thesis) return true;
+      if (!verdict?.judged) return true;
       return verdict.score >= PUBLISH_MIN_SCORE;
     });
 
-    if (ranked.length !== sorted.length) {
+    // The complement of `ranked`, kept because a rejection is a decision worth
+    // being able to look up later — it goes into the file, never onto the page.
+    const rejected: RejectedArticle[] = sorted
+      .filter((item) => !ranked.includes(item))
+      .map((item) => ({
+        title: item.title,
+        url: item.url,
+        sourceId: item.sourceId,
+        score: verdicts.get(item.id)?.score ?? 0,
+      }));
+
+    if (rejected.length) {
       console.log(
-        `[daily] dropped ${sorted.length - ranked.length} article(s) below ` +
+        `[daily] dropped ${rejected.length} article(s) below ` +
           `the publish floor (${PUBLISH_MIN_SCORE}): ` +
-          sorted
-            .filter((item) => !ranked.includes(item))
-            .map((item) => `${verdicts.get(item.id)?.score} ${item.title}`)
-            .join(" · "),
+          rejected.map((item) => `${item.score} ${item.title}`).join(" · "),
       );
     }
 
@@ -186,6 +204,7 @@ export async function runDaily(
       sources: statuses,
       articles,
       folded,
+      rejected,
     };
 
     const rel = await writeDigest(digest);
