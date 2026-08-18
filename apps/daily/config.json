@@ -1,7 +1,7 @@
 {
-  "publishMinScore": 40,
+  "publishMinScore": 55,
   "summaryMinChars": 120,
-  "summaryMaxChars": 800,
+  "summaryMaxChars": 500,
   "summaryParaMaxChars": 90,
   "categories": [
     {
@@ -406,6 +406,291 @@
       "accent": "#9C7B2F",
       "fetchBody": false,
       "maxPerRun": 3
+    },
+    {
+      "id": "simonwillison",
+      "name": "Simon Willison",
+      "site": "https://simonwillison.net/",
+      "feed": "https://simonwillison.net/atom/entries/",
+      "accent": "#4C5FA8",
+      "fetchBody": false
+    },
+    {
+      "id": "kexuefm",
+      "name": "科学空间",
+      "site": "https://kexue.fm/",
+      "feed": "https://kexue.fm/feed",
+      "accent": "#35748F",
+      "fetchBody": true
+    },
+    {
+      "id": "marcbrooker",
+      "name": "Marc Brooker",
+      "site": "https://brooker.co.za/blog/",
+      "feed": "https://brooker.co.za/blog/rss.xml",
+      "accent": "#40607A",
+      "fetchBody": false
+    },
+    {
+      "id": "righto",
+      "name": "Ken Shirriff",
+      "site": "https://www.righto.com/",
+      "feed": "https://www.righto.com/feeds/posts/default",
+      "accent": "#766AAE",
+      "fetchBody": false
+    },
+    {
+      "id": "baoyu",
+      "name": "宝玉的分享",
+      "site": "https://baoyu.io/",
+      "feed": "https://baoyu.io/feed.xml",
+      "accent": "#4E7FA8",
+      "fetchBody": true,
+      "maxPerRun": 3
+    },
+    {
+      "id": "yunfeng",
+      "name": "云风的 BLOG",
+      "site": "https://blog.codingnow.com/",
+      "feed": "https://blog.codingnow.com/atom.xml",
+      "accent": "#2F6F5A",
+      "fetchBody": false
+    },
+    {
+      "id": "acoup",
+      "name": "ACOUP",
+      "site": "https://acoup.blog/",
+      "feed": "https://acoup.blog/feed/",
+      "accent": "#7E4A6E",
+      "fetchBody": false
+    },
+    {
+      "id": "quanta",
+      "name": "Quanta Magazine",
+      "site": "https://www.quantamagazine.org/",
+      "feed": "https://www.quantamagazine.org/feed/",
+      "accent": "#2A8CA0",
+      "fetchBody": true,
+      "maxPerRun": 3
+    },
+    {
+      "id": "bitsaboutmoney",
+      "name": "Bits about Money",
+      "site": "https://www.bitsaboutmoney.com/",
+      "feed": "https://www.bitsaboutmoney.com/archive/rss/",
+      "accent": "#D08A55",
+      "fetchBody": false
+    },
+    {
+      "id": "apricitas",
+      "name": "Apricitas Economics",
+      "site": "https://www.apricitas.io/",
+      "feed": "https://www.apricitas.io/feed",
+      "accent": "#567FB0",
+      "fetchBody": false
+    },
+    {
+      "id": "paristreview",
+      "name": "The Paris Review Daily",
+      "site": "https://www.theparisreview.org/blog/",
+      "feed": "https://www.theparisreview.org/blog/feed/",
+      "accent": "#A15C93",
+      "fetchBody": false,
+      "maxPerRun": 3
+    },
+    {
+      "id": "jstordaily",
+      "name": "JSTOR Daily",
+      "site": "https://daily.jstor.org/",
+      "feed": "https://daily.jstor.org/feed/",
+      "accent": "#9166A6",
+      "fetchBody": false,
+      "maxPerRun": 3
+    },
+    {
+      "id": "aeon",
+      "name": "Aeon",
+      "site": "https://aeon.co/",
+      "feed": "https://aeon.co/feed.rss",
+      "accent": "#7C6BA4",
+      "fetchBody": true,
+      "maxPerRun": 3
+    },
+    {
+      "id": "henrikkarlsson",
+      "name": "Escaping Flatland",
+      "site": "https://www.henrikkarlsson.xyz/",
+      "feed": "https://www.henrikkarlsson.xyz/feed",
+      "accent": "#B0668C",
+      "fetchBody": false
+    },
+    {
+      "id": "convivial",
+      "name": "The Convivial Society",
+      "site": "https://theconvivialsociety.substack.com/",
+      "feed": "https://theconvivialsociety.substack.com/feed",
+      "accent": "#77527F",
+      "fetchBody": false
+    },
+    {
+      "id": "resobscura",
+      "name": "Res Obscura",
+      "site": "https://resobscura.substack.com/",
+      "feed": "https://resobscura.substack.com/feed",
+      "accent": "#8B5D93",
+      "fetchBody": false
+    },
+    {
+      "id": "rogerebert",
+      "name": "RogerEbert.com",
+      "site": "https://www.rogerebert.com/",
+      "feed": "https://www.rogerebert.com/feed",
+      "accent": "#B4536D",
+      "fetchBody": false,
+      "maxPerRun": 3
+    },
+    {
+      "id": "chuapp",
+      "name": "触乐",
+      "site": "https://www.chuapp.com/",
+      "feed": "https://www.chuapp.com/feed",
+      "accent": "#C25C7A",
+      "fetchBody": false,
+      "maxPerRun": 3
+    },
+    {
+      "id": "nautilus",
+      "name": "Nautilus",
+      "site": "https://nautil.us/",
+      "feed": "https://nautil.us/feed/",
+      "accent": "#327E86",
+      "fetchBody": true,
+      "maxPerRun": 3
+    },
+    {
+      "id": "fanpu",
+      "name": "返朴",
+      "site": "https://www.fanpu.io/",
+      "feed": "https://www.fanpu.io/feed",
+      "accent": "#4390A6",
+      "fetchBody": false
+    },
+    {
+      "id": "psyche",
+      "name": "Psyche",
+      "site": "https://psyche.co/",
+      "feed": "https://psyche.co/feed",
+      "accent": "#7A9450",
+      "fetchBody": true,
+      "maxPerRun": 3
+    },
+    {
+      "id": "vittles",
+      "name": "Vittles",
+      "site": "https://www.vittlesmagazine.com/",
+      "feed": "https://www.vittlesmagazine.com/feed",
+      "accent": "#86A044",
+      "fetchBody": false,
+      "maxPerRun": 2
+    },
+    {
+      "id": "sspai",
+      "name": "少数派",
+      "site": "https://sspai.com/",
+      "feed": "https://sspai.com/feed",
+      "accent": "#64913F",
+      "fetchBody": true,
+      "maxPerRun": 3
+    },
+    {
+      "id": "designobserver",
+      "name": "Design Observer",
+      "site": "https://designobserver.com/",
+      "feed": "https://designobserver.com/feed/",
+      "accent": "#B96A48",
+      "fetchBody": false
+    },
+    {
+      "id": "netinterest",
+      "name": "Net Interest",
+      "site": "https://www.netinterest.co/",
+      "feed": "https://www.netinterest.co/feed",
+      "accent": "#9A7C3A",
+      "fetchBody": false
+    },
+    {
+      "id": "klement",
+      "name": "Klement on Investing",
+      "site": "https://klementoninvesting.substack.com/",
+      "feed": "https://klementoninvesting.substack.com/feed",
+      "accent": "#C4A24A",
+      "fetchBody": false,
+      "maxPerRun": 2
+    },
+    {
+      "id": "chartbook",
+      "name": "Chartbook",
+      "site": "https://adamtooze.substack.com/",
+      "feed": "https://adamtooze.substack.com/feed",
+      "accent": "#3E5C86",
+      "fetchBody": true,
+      "maxPerRun": 2
+    },
+    {
+      "id": "guigujushi",
+      "name": "硅谷居士",
+      "site": "https://blog.wenxuecity.com/myoverview/80634/",
+      "feed": "",
+      "accent": "#C08F5A",
+      "fetchBody": true,
+      "maxPerRun": 3,
+      "scrape": {
+        "index": "https://blog.wenxuecity.com/myoverview/80634/",
+        "pattern": "class=\"blog_title\"[^>]*>[\\s\\S]*?<a[^>]*href=\"(?<url>[^\"]+)\"[^>]*>(?<title>[\\s\\S]*?)</a>[\\s\\S]*?class=\"time[^\"]*\">\\((?<date>[^)]+)\\)",
+        "flags": "gi"
+      }
+    },
+    {
+      "id": "earlyretirementnow",
+      "name": "Early Retirement Now",
+      "site": "https://earlyretirementnow.com/",
+      "feed": "https://earlyretirementnow.com/feed/",
+      "accent": "#8E7A45",
+      "fetchBody": false
+    },
+    {
+      "id": "awealthofcs",
+      "name": "A Wealth of Common Sense",
+      "site": "https://awealthofcommonsense.com/",
+      "feed": "https://awealthofcommonsense.com/feed/",
+      "accent": "#D4B45C",
+      "fetchBody": true,
+      "maxPerRun": 2
+    },
+    {
+      "id": "jlcollins",
+      "name": "JL Collins",
+      "site": "https://jlcollinsnh.com/",
+      "feed": "https://jlcollinsnh.com/feed/",
+      "accent": "#7E6B33",
+      "fetchBody": true
+    },
+    {
+      "id": "humbledollar",
+      "name": "HumbleDollar",
+      "site": "https://humbledollar.com/",
+      "feed": "https://humbledollar.com/feed/",
+      "accent": "#B9A05C",
+      "fetchBody": true,
+      "maxPerRun": 2
+    },
+    {
+      "id": "alphaarchitect",
+      "name": "Alpha Architect",
+      "site": "https://alphaarchitect.com/",
+      "feed": "https://alphaarchitect.com/feed/",
+      "accent": "#6F5F2E",
+      "fetchBody": false
     }
   ]
 }

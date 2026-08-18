@@ -87,8 +87,12 @@ export interface FoldedArticle {
 }
 
 /**
- * Scored below the publish floor and therefore never summarized — a record of
- * what was considered and turned down, NOT something the page renders.
+ * Below the publish floor and therefore never summarized — a record of what
+ * was considered and turned down, NOT something the page renders.
+ *
+ * Includes articles the score pass never spoke for: their score is 0, 0 is
+ * below the floor, and they are turned down like any other. A run whose model
+ * calls failed therefore shows up here as a pile of zeroes.
  *
  * Deliberately not `folded`: that list appears on the page as 其他动态, and the
  * whole point of this one is that it does not. It exists so a run can be

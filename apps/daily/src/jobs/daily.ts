@@ -108,25 +108,26 @@ export async function runDaily(
     });
 
     /**
-     * The publish floor, applied to what the model actually judged.
+     * The publish floor: one rule, no exemptions — nothing below
+     * PUBLISH_MIN_SCORE reaches the page.
      *
-     * `judged`, not the presence of a summary. The summarizer now scores first
-     * and only writes summaries for what clears the floor, so "no summary" no
-     * longer means "the call failed" — for a rejected article it is the
-     * intended outcome, and testing for a thesis here would publish every one
-     * of them as a bare title.
+     * The score alone decides, so an article the score pass never spoke for is
+     * dropped along with the ones it rejected: emptyVerdict() carries 0, and 0
+     * is below any floor. That is deliberate. Unjudged articles USED to be
+     * exempted and published as bare titles, on the reasoning that a model
+     * outage must not empty the digest. What that actually bought was a page
+     * padded with empty cards: the run of 2026-08-18 published 39 articles of
+     * which 18 were unscored stubs — Open Thread 447, Monday assorted links —
+     * every one of them something the floor would have rejected on merit had
+     * the call succeeded. An honest empty digest beats a full page of nothing.
      *
-     * An unjudged article is the failed call, and it keeps its place: its score
-     * is 0 only because that is what emptyVerdict() carries, and filtering on
-     * the score alone would turn a total model outage into an empty digest,
-     * which is the one failure mode this job is built to avoid. Unjudged
-     * articles render as bare titles, exactly as before the floor existed.
+     * The cost is real and accepted: if the score pass fails wholesale, the day
+     * publishes nothing. `stats.fetched` and the per-source statuses still
+     * record that the run happened, so the outage is visible in the file.
      */
-    const ranked = sorted.filter((item) => {
-      const verdict = verdicts.get(item.id);
-      if (!verdict?.judged) return true;
-      return verdict.score >= PUBLISH_MIN_SCORE;
-    });
+    const ranked = sorted.filter(
+      (item) => (verdicts.get(item.id)?.score ?? 0) >= PUBLISH_MIN_SCORE,
+    );
 
     // The complement of `ranked`, kept because a rejection is a decision worth
     // being able to look up later — it goes into the file, never onto the page.

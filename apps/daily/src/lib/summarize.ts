@@ -36,7 +36,21 @@ import type { SummaryText } from "./types";
  * Scoring goes first so the floor can be applied before any summary is
  * written: on the sample that is 8 of 18 articles never summarized at all.
  */
-const MAX_ARTICLES_PER_CALL = 30;
+
+/**
+ * Hard ceiling on how many articles one run pays for. A runaway guard, NOT an
+ * editorial knob — the floor is what decides how much gets published.
+ *
+ * It has to sit clear of real volume, because the cut is silent and lands on
+ * the OLDEST items (see the slice below). At 30, against the 75-source list,
+ * the run of 2026-08-18 fetched 48 and scored 30: the other 18 were never sent
+ * to the model, carried emptyVerdict()'s score of 0 to the end, and the
+ * casualties skewed to the low-frequency sources — an investing blog posting
+ * twice a month is always older than a daily one, so 投资 and 设计 came back
+ * empty while the high-frequency sources filled the page. A cap set below real
+ * volume does not trim the weakest articles, it trims the slowest sources.
+ */
+const MAX_ARTICLES_PER_CALL = 60;
 
 /**
  * 16_000 was set when a summary was a 45-character thesis. Prose summaries
@@ -116,8 +130,8 @@ const GAP_RETRIES = 2;
  * compression is what makes a summary unreadable — three separate topics
  * squeezed into five 80-character paragraphs is a telegram, not prose.
  *
- * So this is now only the top of `budgetFor`, reached by an hour-long essay
- * and by nothing else.
+ * So this is now only the top of `budgetFor`, reached by anything past
+ * roughly a 12-minute read and by nothing shorter.
  */
 const ZH_MAX = USER_CONFIG.summaryMaxChars;
 
@@ -164,7 +178,9 @@ const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
  * length. A 1-minute link post has one thing to say and 200 characters is
  * already generous; a 60-minute essay has a dozen and still cannot have
  * 12,000. The constants fit two points picked editorially — ~200 characters at
- * 1 minute, ~475 at 10 — and the ZH_MAX clamp only bites past an hour.
+ * 1 minute, ~475 at 10 — and the ZH_MAX clamp bites from ~12 minutes up,
+ * which is where the ceiling stops being decorative and starts holding the
+ * long essays to the same 500 characters.
  *
  * Against the same 14-day sample the median budget lands at 377 where the flat
  * one was 450, so MOST articles get less room than before, not more. Only the
@@ -183,8 +199,8 @@ function budgetFor(readingMinutes: number): {
   const minutes = Math.max(1, readingMinutes);
   const chars = Math.min(ZH_MAX, Math.round(90 + 160 * Math.log(minutes + 1)));
   // Paragraph COUNT absorbs the budget, because PARA_MAX caps how long each
-  // one may be: 800 characters over "3 to 5 paragraphs" would demand
-  // 160-character paragraphs, contradicting that ceiling outright.
+  // one may be: 500 characters over "3 to 5 paragraphs" would demand
+  // 125-character paragraphs, contradicting that ceiling outright.
   return {
     chars,
     paraLow: Math.min(7, Math.max(2, Math.round(chars / 95))),
@@ -232,10 +248,12 @@ export interface Verdict {
    * True once the score pass has spoken for this article.
    *
    * Distinguishes the two ways an article can reach the end with no summary:
-   * scored and dropped (the digest should not carry it) versus never judged
-   * because the call failed (it keeps its place as a bare title). Without this
-   * flag those look identical downstream, and a model outage would publish
-   * every rejected article instead of none.
+   * scored and dropped versus never judged because the call failed. Both are
+   * kept off the page — the floor reads the score, and an unjudged article
+   * carries 0 — so this flag is now a REPORTING one. It is what lets a run say
+   * "30 of 48 scored" instead of silently booking 18 model failures as 18
+   * editorial rejections, which is the difference between a quiet outage and a
+   * strict day.
    */
   judged: boolean;
   score: number;
@@ -817,9 +835,8 @@ function asPoints(value: unknown): string[] {
  * TWO passes: score everything, drop what the floor rejects, then summarize
  * only what survived. A verdict therefore comes back in one of three states —
  * scored and summarized, scored and rejected (no summary, by design), or never
- * judged at all because the call failed. `Verdict.judged` is what tells the
- * last two apart, and the caller must respect it: a failure degrades to a bare
- * title so the digest still publishes, while a rejection is meant to vanish.
+ * judged at all because the call failed. The last two both vanish from the
+ * page: `Verdict.judged` separates them for the log, not for the floor.
  */
 export async function summarize(
   articles: RawArticle[],
@@ -829,6 +846,18 @@ export async function summarize(
 
   // Newest first — if the cap bites, we drop the stalest items.
   const batch = articles.slice(0, MAX_ARTICLES_PER_CALL);
+  // Say so when it bites. The cut used to be invisible: the counts below are
+  // taken over `batch`, so a run that quietly discarded 18 of 48 articles
+  // still reported a clean "scored 30/30", and the discarded ones surfaced
+  // only as score-0 entries with no explanation attached.
+  if (articles.length > MAX_ARTICLES_PER_CALL) {
+    console.log(
+      `[daily] cap — ${articles.length} fetched, scoring the newest ` +
+        `${MAX_ARTICLES_PER_CALL}; the ` +
+        `${articles.length - MAX_ARTICLES_PER_CALL} oldest never reach the ` +
+        `model and are dropped unscored`,
+    );
+  }
   for (const article of articles) out.set(article.id, emptyVerdict());
 
   if (!DEEPSEEK_API_KEY) {
@@ -892,8 +921,8 @@ export async function summarize(
   //
   // This is the whole reason scoring runs on its own: an article below the
   // floor costs one small reply and then nothing else. Articles the score pass
-  // never spoke for are NOT dropped here — an outage must not empty the digest,
-  // so they go on as bare titles, which is what `judged` distinguishes.
+  // never spoke for are dropped too — see the floor in jobs/daily.ts for why
+  // the exemption they used to get was removed.
   const survivors = batch.filter((a) => {
     const verdict = out.get(a.id)!;
     return verdict.judged && verdict.score >= PUBLISH_MIN_SCORE;
@@ -903,7 +932,7 @@ export async function summarize(
     `[daily] scored ${batch.length - unjudged}/${batch.length}; ` +
       `${survivors.length} at or above the floor (${PUBLISH_MIN_SCORE}), ` +
       `${batch.length - unjudged - survivors.length} dropped unsummarized` +
-      (unjudged ? `, ${unjudged} unscored and kept as bare titles` : ""),
+      (unjudged ? `, ${unjudged} unscored and dropped` : ""),
   );
   if (survivors.length === 0) return out;
 
