@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "RedNote Exporter",
+    "description": "Extension name shown in the browser and the Chrome Web Store."
+  },
+  "appDesc": {
+    "message": "导出小红书笔记列表（首页推荐、搜索结果、用户主页）到 CSV，下载单篇笔记的图片与视频",
+    "description": "Short description shown in the browser and the Chrome Web Store."
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "data": {
+    "cursor_score": "",
+    "items": [
+      {
+        "id": "6a16fbf2000000000802716f",
+        "model_type": "note",
+        "note_card": {
+          "type": "video",
+          "interact_info": {
+            "followed": false,
+            "relation": "none",
+            "liked": false,
+            "liked_count": "1,937",
+            "collected": false,
+            "collected_count": "152",
+            "comment_count": "13",
+            "share_count": "3"
+          },
+          "time": 1779891186000,
+          "title": "小鸡洗澡",
+          "user": {
+            "avatar": "https://sns-avatar-qc.xhscdn.com/avatar/5ac192094eacab167ad92358.jpg",
+            "xsec_token": "ABWBz5JWzhrOOZ0wFg9RRa4i__l42zIT9UtPoV8aBbSoQ=",
+            "user_id": "5ac192094eacab167ad92358",
+            "nickname": "知道了"
+          },
+          "image_list": [
+            {
+              "url": "",
+              "info_list": [
+                {
+                  "image_scene": "WB_PRV",
+                  "url": "http://sns-web-i10.rednotecdn.com/202606060754/90bd91dfed3ba223e04d1eb3763eee2a/1040g2sg320m4fvqcls704a47eb90i8qoaodm03o!nd_prv_wlteh_webp_3?src=A"
+                },
+                {
+                  "image_scene": "WB_DFT",
+                  "url": "http://sns-web-i10.rednotecdn.com/202606060754/5b03ebbf157a4b33f5e3bb0fd4b8de23/1040g2sg320m4fvqcls704a47eb90i8qoaodm03o!nd_dft_wlteh_webp_3?src=A"
+                }
+              ],
+              "url_pre": "http://sns-web-i10.rednotecdn.com/202606060754/90bd91dfed3ba223e04d1eb3763eee2a/1040g2sg320m4fvqcls704a47eb90i8qoaodm03o!nd_prv_wlteh_webp_3?src=A",
+              "stream": {},
+              "live_photo": false,
+              "file_id": "",
+              "height": 1440,
+              "width": 1080,
+              "trace_id": "",
+              "url_default": "http://sns-web-i10.rednotecdn.com/202606060754/5b03ebbf157a4b33f5e3bb0fd4b8de23/1040g2sg320m4fvqcls704a47eb90i8qoaodm03o!nd_dft_wlteh_webp_3?src=A"
+            }
+          ],
+          "last_update_time": 1779891186000,
+          "ip_location": "广西",
+          "video": {
+            "media": {
+              "video_id": 137948009388531755,
+              "video": {
+                "duration": 13,
+                "md5": "3249be259690ea7db5c77d2f348c5610",
+                "hdr_type": 0,
+                "drm_type": 0,
+                "stream_types": [259],
+                "biz_name": 110,
+                "biz_id": "282063198019023215"
+              },
+              "stream": {
+                "h264": [
+                  {
+                    "video_duration": 12166,
+                    "volume": 0,
+                    "video_bitrate": 2805362,
+                    "audio_bitrate": 64788,
+                    "stream_desc": "WM_X264_MP4",
+                    "duration": 12168,
+                    "avg_bitrate": 2877248,
+                    "fps": 30,
+                    "vmaf": -1,
+                    "quality_type": "HD",
+                    "format": "mp4",
+                    "master_url": "http://sns-v8.rednotecdn.com/stream/1/110/259/01ea16fbd113602b010370039e69c85664_259.mp4",
+                    "psnr": 0,
+                    "ssim": 0,
+                    "weight": 62,
+                    "video_codec": "h264",
+                    "size": 4376295,
+                    "width": 720,
+                    "audio_codec": "aac",
+                    "rotate": 0,
+                    "default_stream": 0,
+                    "height": 960,
+                    "audio_duration": 12167,
+                    "audio_channels": 2,
+                    "backup_urls": [
+                      "http://sns-v10.rednotecdn.com/stream/1/110/259/01ea16fbd113602b010370039e69c85664_259.mp4"
+                    ],
+                    "hdr_type": 0,
+                    "stream_type": 259
+                  }
+                ],
+                "h265": [],
+                "h266": [],
+                "av1": []
+              }
+            },
+            "image": {
+              "thumbnail_fileid": "frame/110/0/01ea16fbd113602b0010000000019e69c83895_0.webp"
+            },
+            "capa": {
+              "duration": 12
+            },
+            "consumer": {
+              "origin_video_key": "pre_post/1040g0cg320m4fealm8e04a47eb90i8qonpq4468"
+            },
+            "media_v2": "{\"video_id\":\"137948009388531755\",\"video\":{\"biz_name\":110,\"biz_id\":\"282063198019023215\",\"duration\":13,\"md5\":\"3249be259690ea7db5c77d2f348c5610\",\"hdr_type\":0,\"drm_type\":0,\"stream_types\":[259],\"width\":720,\"height\":960,\"bound\":[{\"x\":0,\"y\":0,\"w\":0,\"h\":0}],\"bbox\":{\"ocr_v5\":[{\"x\":0,\"y\":0,\"w\":0,\"h\":0}],\"ocr_v3\":[{\"x\":0,\"y\":0,\"w\":0,\"h\":0}],\"ocr_v4\":[{\"x\":0,\"y\":0,\"w\":0,\"h\":0}],\"ocr_v2\":[{\"x\":304,\"y\":48,\"w\":113,\"h\":677}]},\"opaque1\":{\"bottomAvgLuma\":\"99\",\"loudnorm\":\"{\\\"lra\\\":1.1,\\\"htp\\\":0.13,\\\"hldn\\\":-9.15,\\\"ldn\\\":-9.52,\\\"thr\\\":-19.6}\",\"domestic\":\"0\",\"isSupportSubtitle\":\"false\",\"rightAvgLuma\":\"40\",\"hasHumanVoice\":\"false\",\"audioLevInfo\":\"{\\\"audio_quality_level\\\":\\\"E\\\",\\\"mos_overall\\\":4.1784,\\\"version\\\":\\\"3.0\\\"}\",\"topAvgLuma\":\"107\",\"audioClsInfo\":\"{\\\"music_ratio\\\":0.9909389628551102,\\\"freesound_ratio\\\":0.0,\\\"speech_ratio\\\":0.0}\"}},\"stream\":{\"h264\":[{\"stream_type\":259,\"stream_desc\":\"WM_X264_MP4\",\"default_stream\":0,\"format\":\"mp4\",\"width\":720,\"height\":960,\"duration\":12168,\"size\":4376295,\"volume\":0.0,\"avg_bitrate\":2877248,\"fps\":30,\"video_codec\":\"h264\",\"video_bitrate\":2805362,\"video_duration\":12166,\"audio_codec\":\"aac\",\"audio_bitrate\":64788,\"audio_duration\":12167,\"audio_channels\":2,\"rotate\":0,\"master_url\":\"http://sns-v8.rednotecdn.com/stream/1/110/259/01ea16fbd113602b010370039e69c85664_259.mp4\",\"backup_urls\":[\"http://sns-v10.rednotecdn.com/stream/1/110/259/01ea16fbd113602b010370039e69c85664_259.mp4\"],\"hdr_type\":0,\"vmaf\":-1.0,\"psnr\":0.0,\"ssim\":0.0,\"weight\":62,\"quality_type\":\"HD\",\"sr\":0,\"opaque1\":{\"pcdn_302_flag\":\"false\",\"didLoudnorm\":\"false\",\"pcdn_supplier\":\"\"}}],\"h265\":[],\"h266\":[],\"av1\":[]},\"user_level\":0}"
+          },
+          "tag_list": [
+            {
+              "id": "69c669bb0000000004028005",
+              "name": "小鸟友好计划",
+              "type": "topic"
+            },
+            {
+              "id": "5beeb3c34e61ca0001196b0b",
+              "name": "玄凤鹦鹉",
+              "type": "topic"
+            },
+            {
+              "id": "5e3907390000000001000ee7",
+              "name": "养鸡日记",
+              "type": "topic"
+            },
+            {
+              "id": "5c15b34600000000030319d8",
+              "name": "腮红鸡",
+              "type": "topic"
+            },
+            {
+              "id": "628280a8000000000100b496",
+              "name": "鸟鸟教",
+              "type": "topic"
+            },
+            {
+              "id": "5bfbff003f6add0001995496",
+              "name": "小鸡",
+              "type": "topic"
+            },
+            {
+              "id": "5c2b28b100000000080373d7",
+              "name": "小鹦鹉",
+              "type": "topic"
+            },
+            {
+              "id": "5ff160880000000001004ff6",
+              "name": "快乐洗澡澡",
+              "type": "topic"
+            }
+          ],
+          "at_user_list": [],
+          "share_info": {
+            "un_share": false
+          },
+          "note_id": "6a16fbf2000000000802716f",
+          "desc": "热得哦，不爱碰水的小鸡都洗澡了\n\t\n#小鸟友好计划[话题]# #玄凤鹦鹉[话题]# #养鸡日记[话题]# #腮红鸡[话题]# #鸟鸟教[话题]# #小鸡[话题]# #小鹦鹉[话题]# #快乐洗澡澡[话题]#"
+        }
+      }
+    ],
+    "current_time": 1780703672808
+  },
+  "code": 0,
+  "success": true,
+  "msg": "成功"
+}
