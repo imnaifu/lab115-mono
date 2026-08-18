@@ -1,7 +1,7 @@
 {
   "publishMinScore": 40,
   "summaryMinChars": 120,
-  "summaryMaxChars": 450,
+  "summaryMaxChars": 800,
   "summaryParaMaxChars": 90,
   "categories": [
     {

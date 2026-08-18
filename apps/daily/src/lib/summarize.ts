@@ -98,16 +98,30 @@ async function mapLimited<In>(
 const GAP_RETRIES = 2;
 
 /**
- * Bounds for one article's Chinese summary, from config.json — summary length
- * is an editorial call, not an operational one.
+ * The CEILING of the per-article curve below, from config.json — summary
+ * length is an editorial call, not an operational one.
  *
- * A total budget alone did not hold: asked for "150-500 characters overall"
- * the model came back with a median of 508. Per-paragraph budgets in the
- * prompt below are what actually constrain it, and these two numbers just set
- * the frame.
+ * It is no longer the budget every article gets. Measured over 14 days (63
+ * summaries) a flat budget correlated with nothing: a 1-minute link post came
+ * back at a median of 254 characters and a 65-minute essay at 279. The short
+ * pieces were padded up to it and the long ones compressed down to it, and
+ * compression is what makes a summary unreadable — three separate topics
+ * squeezed into five 80-character paragraphs is a telegram, not prose.
+ *
+ * So this is now only the top of `budgetFor`, reached by an hour-long essay
+ * and by nothing else.
+ */
+const ZH_MAX = USER_CONFIG.summaryMaxChars;
+
+/**
+ * Kept for `report` alone — no floor is stated to the model any more.
+ *
+ * A stated minimum is a padding instruction, and paired with "cover the
+ * article" it made compression the one move that satisfied both. Noticing that
+ * a summary came back thin is still worth doing, so the number survives as a
+ * statistic rather than as a rule.
  */
 const ZH_MIN = USER_CONFIG.summaryMinChars;
-const ZH_MAX = USER_CONFIG.summaryMaxChars;
 
 /**
  * Ceiling on ONE paragraph. It used to be ZH_MAX / 2.5, and that derivation is
@@ -122,13 +136,53 @@ const ZH_MAX = USER_CONFIG.summaryMaxChars;
  * this ceiling does the work the style instructions alone could not.
  *
  * It has stayed at 90 across every move the total has made (300 → 420 → 600 →
- * 450) and that is the point. The total buys PARAGRAPH COUNT, not paragraph
- * length — the rhythm is a property of this number, and moving it to "keep the
- * ratio" in either direction would bring the 92-character single-sentence
- * paragraph straight back. The 600 → 450 cut is spent by asking for 3–5
- * paragraphs instead of 4–7, in the prompt below.
+ * 450 → a per-article curve) and that is the point. The total buys PARAGRAPH
+ * COUNT, not paragraph length — the rhythm is a property of this number, and
+ * moving it to "keep the ratio" in either direction would bring the
+ * 92-character single-sentence paragraph straight back. It is why `budgetFor`
+ * spends a bigger budget on more paragraphs and never on longer ones.
  */
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
+
+/**
+ * What ONE article is allowed, derived from how long that article is.
+ *
+ * Driven by `readingMinutes` rather than a raw character count because
+ * `reading.ts` already normalises the two alphabets the feeds mix — CJK
+ * codepoints at 400/min, everything else at 230 wpm — so a Chinese post and an
+ * English one of the same substance land on the same number.
+ *
+ * Logarithmic, not proportional: the compression ratio should RISE with
+ * length. A 1-minute link post has one thing to say and 200 characters is
+ * already generous; a 60-minute essay has a dozen and still cannot have
+ * 12,000. The constants fit two points picked editorially — ~200 characters at
+ * 1 minute, ~475 at 10 — and the ZH_MAX clamp only bites past an hour.
+ *
+ * Against the same 14-day sample the median budget lands at 377 where the flat
+ * one was 450, so MOST articles get less room than before, not more. Only the
+ * long ones gain, which is the whole point.
+ *
+ * Nothing enforces any of this: it is written into the request and the model
+ * obeys it or does not. The flat 450 was broken by 13% of summaries, and there
+ * is no truncation or retry here to change that — a summary that runs long is
+ * published long, and `report` counts it.
+ */
+function budgetFor(readingMinutes: number): {
+  chars: number;
+  paraLow: number;
+  paraHigh: number;
+} {
+  const minutes = Math.max(1, readingMinutes);
+  const chars = Math.min(ZH_MAX, Math.round(90 + 160 * Math.log(minutes + 1)));
+  // Paragraph COUNT absorbs the budget, because PARA_MAX caps how long each
+  // one may be: 800 characters over "3 to 5 paragraphs" would demand
+  // 160-character paragraphs, contradicting that ceiling outright.
+  return {
+    chars,
+    paraLow: Math.min(7, Math.max(2, Math.round(chars / 95))),
+    paraHigh: Math.min(9, Math.max(3, Math.round(chars / 70))),
+  };
+}
 
 /**
  * DeepSeek's v4 models run in thinking mode by default, at effort `high`.
@@ -172,7 +226,7 @@ Return one entry per article, in Chinese, with these fields:
 - "index" — the number the article was given in brackets, like [3].
 - "zh_title" — the HEADLINE in Chinese. See 标题 below.
 - "thesis" — ONE sentence carrying the claim on its own; something a reader could disagree with.
-- "paragraphs" — 3 to 5 SHORT paragraphs, each AT MOST ${PARA_MAX} characters. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 收尾 below.
+- "paragraphs" — SHORT paragraphs, each AT MOST ${PARA_MAX} characters; how many this article gets is stated with it. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 收尾 below.
 - "category" and "score" — see below.
 
 ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
@@ -193,11 +247,11 @@ ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "artic
 
 字数只是提醒：句子过了 50 字就回头检查一遍，是不是掺进了第二条线。是就断开，不是就留着。
 
-用口语的连接词：但是、不过、因为、所以、这样一来、问题在于、也就是说。不要用「具体来说」「值得注意的是」「综合权衡」「而非」「其中」「且」「基于」「使得」这类书面语。
+用口语的连接词：但是、不过、因为、所以、这样一来、问题在于、也就是说。不要用「综合权衡」「而非」「其中」「且」「基于」「使得」这类书面语。
 
 多用动词，少堆名词。写「命中缓存一次只要 2 分钱，是没命中的五十分之一」，不写「缓存命中的输入价格为未命中价格的五十分之一」。
 
-段落要短，但不要空。一段只讲一件事，讲完就换段；正常一段是 2~3 个短句、60~85 字。偶尔用一句话独占一段来强调转折可以，但不要每段都这样 —— 五个 25 字的段落加起来才 125 字，那是把内容砍掉了，不是把它排开了。
+段落要短，但不要空。正常一段是 2~3 个短句、60~85 字。偶尔用一句话独占一段来强调转折可以，但不要每段都这样 —— 五个 25 字的段落加起来才 125 字，那是把内容砍掉了，不是把它排开了。
 
 术语第一次出现就地解释，四五个字说清：「paraxanthine（咖啡因在体内的代谢产物）」「WAL（数据库的预写日志）」。产品名、公司名、人名照原样写，那是名词不是术语。
 
@@ -222,15 +276,9 @@ KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链条每步成�
 
 BUT READABILITY OUTRANKS COVERAGE. When the budget is tight, drop a point — never compress two points into one long sentence. A reader finishes a summary that covers less ground; he skips the long sentence entirely.
 
-短句不等于少写，这两件事不要搞混。${ZH_MAX} 字的额度是给你用的：一篇有料的文章应该写到 300 字以上，拆成 4~5 段、每段几个短句，而不是塞进几个长句。真正要砍的是长句，不是内容。段落数量是用来分配额度的，不是把段落写长 —— 每段仍然最多 ${PARA_MAX} 字。
+LENGTH — each paragraph AT MOST ${PARA_MAX} characters. Not "about" — at most. A paragraph running long is the single commonest failure; SPLIT IT INTO TWO paragraphs rather than trimming words out of it.
 
-只有当文章本身没什么可说时（链接汇总、发布公告、只有标题没有正文），才该短到 100 字上下。额度是上限不是指标：凑字数比短更糟。
-
-LENGTH IS A HARD CEILING, and the constraint most often broken. Count before you return:
-- each paragraph: AT MOST ${PARA_MAX} characters. Not "about" — at most. A paragraph running long is the single commonest failure; SPLIT IT INTO TWO paragraphs rather than trimming words out of it.
-- the whole entry: AT MOST ${ZH_MAX}, thesis included. This is read on a phone; past that the reader stops.
-
-Getting under it means CUTTING — throat-clearing, the restated headline, hedges, the second example once the first landed, and if it comes to it a whole point. Being well under is fine: a short link post holds ~${ZH_MIN} characters of substance, and padding is worse than brevity. Never invent detail the article lacks.
+The budget for the whole entry comes with the article, and it is a ceiling, not a target. Being well under it is fine and padding is worse than brevity. Never invent detail the article lacks.
 
 WRITE FOR SOMEONE OUTSIDE THE FIELD. The reader is curious and widely read but is not a practitioner in this field. Explain practitioner terms (WAL, RAG, p99, cap rate) inline, as above.
 
@@ -321,10 +369,16 @@ const EN_EXAMPLE = `{
 
 function renderArticle(article: RawArticle, index: number): string {
   const source = sourceOf(article.sourceId);
+  const budget = budgetFor(article.readingMinutes);
   return [
     `[${index}] ${article.title}`,
     `source: ${source.name}`,
     `published: ${article.publishedAt}`,
+    // The budget varies per article, so it rides in the USER message: the
+    // system prompt stays byte-identical across every request, which is what
+    // keeps hitting DeepSeek's cached prefix ($0.0028/M against $0.14/M).
+    `budget: 这篇最多 ${budget.chars} 字，分 ${budget.paraLow}~${budget.paraHigh} 段。` +
+      `装不下就砍掉一整个点，不要把两个点压成一句。`,
     `body: ${article.body || "(body unavailable — judge from the title alone)"}`,
   ].join("\n");
 }
@@ -753,7 +807,9 @@ function report(batch: RawArticle[], out: Map<string, Verdict>): void {
       (verdict.zh.paragraphs ?? []).reduce((sum, p) => sum + p.length, 0);
     lengths.push(chars);
     if (chars < ZH_MIN) thin += 1;
-    if (chars > ZH_MAX) over += 1;
+    // Against ITS OWN budget, not a shared number — that is the only ceiling
+    // this article was ever given.
+    if (chars > budgetFor(article.readingMinutes).chars) over += 1;
   }
 
   const total = batch.length;
@@ -761,7 +817,7 @@ function report(batch: RawArticle[], out: Map<string, Verdict>): void {
     lengths.sort((a, b) => a - b)[Math.floor(lengths.length / 2)] ?? 0;
   console.log(
     `[daily] summaries — zh ${zh}/${total}, en ${en}/${total}, ` +
-      `median ${median} chars, over ${ZH_MAX}: ${over}/${total}, ` +
+      `median ${median} chars, over their own budget: ${over}/${total}, ` +
       `under ${ZH_MIN}: ${thin}/${total}`,
   );
 }
