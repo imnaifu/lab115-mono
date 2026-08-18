@@ -283,17 +283,38 @@ NOTHING ELSE. No summary, no headline, no category, no reasoning. Just the numbe
 
 ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
 
-SCORE 0-100. First question: argument or announcement? A piece reasoning toward a contestable claim beats one reporting that something happened. Launches, benchmark tables, version bumps and link roundups sit in the 30s or below however important the event — this digest is for opinion and analysis, not for keeping up. If the whole piece can be restated as "X happened" with nothing of substance lost, it is news — 30s or below. A model, chip or product release is an announcement even when the thing released matters enormously: 20s.
+SCORING — four tests, then the landing.
 
-Second question: does a NON-SPECIALIST come away with anything? The reader is curious and widely read, but is not a practitioner in this field and never will be. A tour of one library's internals, one chip's fabrication step, one browser's decoder quirk, one framework's release notes, one conference talk's recap — written for people already inside — sits in the 20s UNLESS the mechanism it uncovers transfers to how the reader thinks about something else. "A 16-year-old bug in SQLite's WAL reset corrupted a production database" transfers: it is about how silent data corruption hides. "Here is how DRAM capacitors are etched" does not. Fascination inside the field is not the test; portability out of it is.
+Tests 1-3 are CEILINGS: hitting one caps the score at the band named, and a piece that hits several takes the LOWEST cap. Test 4 is a BONUS: it moves a piece around inside the band its ceiling allows, and can never lift it over that ceiling. Test 5 is where it finally lands.
 
-Third question: does it leave the reader with a CLAIM, or with a list? A piece that argues — takes a position that could be wrong, and defends it — beats one that hands over material someone else produced. A digest of the week's best reader comments, a "what I have been reading lately" list, a paragraph passing on what another outlet reported: the writer supplied selection, not judgment, and the reader's takeaway is "here are some things", which is not a takeaway. Those sit in the 20s and 30s however good the material they point at. The test: delete the writer and see what is lost.
+1. ARGUMENT OR ANNOUNCEMENT? Does it reason toward a contestable claim, or report that something happened?
+- If the whole piece can be restated as "X happened" with nothing of substance lost, it is news. CAP: 30s.
+- Launches, benchmark tables, version bumps, link roundups. CAP: 30s however important the event — this digest is for opinion and analysis, not for keeping up.
+- A model, chip or product release. CAP: 20s, even when the thing released matters enormously.
 
-Reviewing someone else's book, paper or reporting is NOT relaying, PROVIDED the piece argues. 「音乐版权的规则不是天然如此，是一层层临时补丁堆出来的，内部互相矛盾」 is a claim you can disagree with, and it scores as an argument even though the occasion for it was somebody else's book. But 「这本书讲了 A、B、C，值得一读」 is a list wearing a review's clothes.
+2. DOES A NON-SPECIALIST COME AWAY WITH ANYTHING? The reader is curious and widely read, but is not a practitioner in this field and never will be.
+- Written for people already inside — one library's internals, one chip's fabrication step, one browser's decoder quirk, one framework's release notes, one conference talk's recap. CAP: 20s.
+- The one exception: the mechanism it uncovers TRANSFERS to how the reader thinks about something else, and then there is no cap. "A 16-year-old bug in SQLite's WAL reset corrupted a production database" transfers — it is about how silent data corruption hides. "Here is how DRAM capacitors are etched" does not.
+- The test is portability out of the field, not fascination inside it.
 
-Length is not the test either — a short piece can argue. 「外置卷帘在美国买不到，因为木框架加护墙板的房子根本装不了，也就没有供应链」 is four paragraphs and it carries a claim with a mechanism under it; it beats a long, careful relay of another outlet's reporting.
+3. A CLAIM, OR A LIST? Did the writer supply judgment, or only selection?
+- A digest of the week's best reader comments, a "what I have been reading lately" list, a paragraph passing on what another outlet reported. CAP: 20s-30s, however good the material it points at — the reader's takeaway is "here are some things", which is not a takeaway.
+- The test: delete the writer and see what is lost.
+- NOT relaying: reviewing someone else's book, paper or reporting, PROVIDED the piece argues. 「音乐版权的规则不是天然如此，是一层层临时补丁堆出来的，内部互相矛盾」 is a claim you can disagree with, and it scores as an argument even though the occasion was somebody else's book. But 「这本书讲了 A、B、C，值得一读」 is a list wearing a review's clothes.
+- NOT about length: 「外置卷帘在美国买不到，因为木框架加护墙板的房子根本装不了，也就没有供应链」 is four paragraphs carrying a claim with a mechanism under it, and it beats a long, careful relay of another outlet's reporting.
 
-Above those floors, score by how much a generalist gains. Be harsh; use the full range — a run where most articles land between 50 and 75 means the range is not being used, and the middle is where a bad score hides.`;
+4. WOULD AN ORDINARY PERSON WANT TO READ IT? Up to +15, the only test that adds rather than caps. It moves a piece INSIDE the band tests 1-3 allow: a product launch that is a delight to read is still a product launch, still capped in the 20s.
+What earns it:
+- It is about something people live with — money, health, work, housing, schooling, cities, what AI is doing to their job.
+- There are people and scenes in it, not only propositions: somebody did something, somewhere, and it turned out a particular way.
+- It has a hook — a fact that contradicts what you assumed, a number startling on its own, something you would repeat at dinner.
+- You can walk in with no background. Nothing has to be explained before it becomes interesting.
+What does not:
+- Interesting only to people already in the field. That is test 2, which caps rather than adds.
+- Worthy but inert: correct, well-sourced, and about an abstraction from the first line to the last.
+Be honest rather than generous. Most pieces earn +0 to +5; +15 is for the one a reader would send to a friend.
+
+5. WHERE IT LANDS. Under the ceilings, score by how much a generalist gains, then add the bonus from 4. Be harsh; use the full range — a run where most articles land between 50 and 75 means the range is not being used, and the middle is where a bad score hides.`;
 
 const SCORE_EXAMPLE = `{
   "articles": [
