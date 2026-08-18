@@ -121,10 +121,12 @@ const ZH_MAX = USER_CONFIG.summaryMaxChars;
  * pack five clauses into a paragraph it is only allowed 90 characters for, so
  * this ceiling does the work the style instructions alone could not.
  *
- * It has stayed at 90 through two budget increases (300 → 420 → 600) and that
- * is the point. Raising the total buys MORE PARAGRAPHS, not longer ones — the
- * rhythm is a property of this number, and loosening it to "keep the ratio"
- * would bring the 92-character single-sentence paragraph straight back.
+ * It has stayed at 90 across every move the total has made (300 → 420 → 600 →
+ * 450) and that is the point. The total buys PARAGRAPH COUNT, not paragraph
+ * length — the rhythm is a property of this number, and moving it to "keep the
+ * ratio" in either direction would bring the 92-character single-sentence
+ * paragraph straight back. The 600 → 450 cut is spent by asking for 3–5
+ * paragraphs instead of 4–7, in the prompt below.
  */
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
@@ -151,6 +153,9 @@ function isDeepSeek(baseUrl: string): boolean {
 export interface Verdict {
   score: number;
   category: string;
+  /** The headline in Chinese; "" when it was already Chinese or came back empty.
+   *  See `titleZh` in types.ts. */
+  titleZh: string;
   zh: SummaryText;
   en: SummaryText;
 }
@@ -165,11 +170,18 @@ YOUR SUMMARY REPLACES THE ARTICLE — they finish it and never open the original
 
 Return one entry per article, in Chinese, with these fields:
 - "index" — the number the article was given in brackets, like [3].
+- "zh_title" — the HEADLINE in Chinese. See 标题 below.
 - "thesis" — ONE sentence carrying the claim on its own; something a reader could disagree with.
-- "paragraphs" — 4 to 7 SHORT paragraphs, each AT MOST ${PARA_MAX} characters. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 收尾 below.
+- "paragraphs" — 3 to 5 SHORT paragraphs, each AT MOST ${PARA_MAX} characters. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 收尾 below.
 - "category" and "score" — see below.
 
 ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
+
+标题 —— "zh_title" 是把原标题译成中文，不是重写，也不是把论点缩短成标题。原文说什么就译什么，包括它故意的含糊、疑问句和反讽；不要替它把答案补上。原标题是「Why does Opus 5 feel worse to work with?」就译「为什么 Opus 5 用起来更难受？」，不要译成「Opus 5 因为对齐基准而失去了主动提问的能力」——那是论点，论点有自己的字段。
+
+标题里的产品名、公司名、人名、模型名照原样保留，不要音译：「Claude Code」「a16z」「Zuckerberg」「DiG-bench」。中英文之间照样加空格。不要加书名号、引号或句末标点。
+
+如果原标题本身就是中文（比如「科技爱好者周刊（第 408 期）」），"zh_title" 就原样返回它，不要改写。
 
 写得像中文，不像译文 —— 这条比信息量重要，也是最容易失守的一条。
 
@@ -185,7 +197,7 @@ ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "artic
 
 多用动词，少堆名词。写「命中缓存一次只要 2 分钱，是没命中的五十分之一」，不写「缓存命中的输入价格为未命中价格的五十分之一」。
 
-段落要短，但不要空。一段只讲一件事，讲完就换段；正常一段是 2~3 个短句、60~85 字。偶尔用一句话独占一段来强调转折可以，但不要每段都这样 —— 七个 25 字的段落加起来才 180 字，那是把内容砍掉了，不是把它排开了。
+段落要短，但不要空。一段只讲一件事，讲完就换段；正常一段是 2~3 个短句、60~85 字。偶尔用一句话独占一段来强调转折可以，但不要每段都这样 —— 五个 25 字的段落加起来才 125 字，那是把内容砍掉了，不是把它排开了。
 
 术语第一次出现就地解释，四五个字说清：「paraxanthine（咖啡因在体内的代谢产物）」「WAL（数据库的预写日志）」。产品名、公司名、人名照原样写，那是名词不是术语。
 
@@ -210,7 +222,7 @@ KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链条每步成�
 
 BUT READABILITY OUTRANKS COVERAGE. When the budget is tight, drop a point — never compress two points into one long sentence. A reader finishes a summary that covers less ground; he skips the long sentence entirely.
 
-短句不等于少写，这两件事不要搞混。${ZH_MAX} 字的额度是给你用的：一篇有料的文章应该写到 400 字以上，拆成 5~7 段、每段几个短句，而不是塞进几个长句。真正要砍的是长句，不是内容。额度变大意味着**多写几段**，不是把段落写长 —— 每段仍然最多 ${PARA_MAX} 字。
+短句不等于少写，这两件事不要搞混。${ZH_MAX} 字的额度是给你用的：一篇有料的文章应该写到 300 字以上，拆成 4~5 段、每段几个短句，而不是塞进几个长句。真正要砍的是长句，不是内容。段落数量是用来分配额度的，不是把段落写长 —— 每段仍然最多 ${PARA_MAX} 字。
 
 只有当文章本身没什么可说时（链接汇总、发布公告、只有标题没有正文），才该短到 100 字上下。额度是上限不是指标：凑字数比短更糟。
 
@@ -258,16 +270,15 @@ const ZH_EXAMPLE = `{
     {
       "index": 0,
       "score": 72,
-      "category": "ai",
+      "category": "tech",
+      "zh_title": "大模型的缓存命中价，能省五十倍的钱",
       "zh_thesis": "缓存命中价便宜五十倍，所以提示词的顺序值得专门设计。",
       "zh_paragraphs": [
         "大模型的收费分输入和输出两部分，这个好理解。但价目表上还有第三项，叫「输入缓存命中价」。很多人扫过去就跳过了，其实它是省钱的关键。",
         "以 DeepSeek V4 Flash 为例，命中缓存一次只要 2 分钱，没命中是 1 元。差了整整五十倍。",
         "为什么差这么多？模型要把提示词拆成 Token，再算它们两两之间的注意力，这一步最耗算力。命中缓存就不必重算了，收的其实只是存储费。",
-        "所以多轮对话最划算。每一轮都要把之前的内容重新提交一遍，而那段前缀是不变的，模型可以直接取上次的结果。",
         "但缓存有期限。DeepSeek 是 10 分钟，Anthropic 只有 5 分钟，OpenAI 在 10 到 30 分钟之间逐步失效。过期就得从头算，价格跳回 1 元。",
-        "于是 AI 工具会定时发请求保活。以前的做法是每 30 秒一次，十分钟就发 20 个请求，这笔钱也不少。",
-        "所以保活其实不用那么密。既然最短的缓存期限也有 5 分钟，每 4 分钟发一次就够了。"
+        "所以 AI 工具的保活请求不用发那么密。既然最短的缓存期限也有 5 分钟，每 4 分钟发一次就够了，以前那种每 30 秒一次纯属浪费。"
       ]
     }
   ]
@@ -299,10 +310,8 @@ const EN_EXAMPLE = `{
         "Model pricing splits into input and output, which is easy enough. But there is a third line on the price list, the input cache hit rate. Most people skim past it, and it is where the savings are.",
         "On DeepSeek V4 Flash a hit costs two cents where a miss costs a full yuan. That is a factor of fifty.",
         "Why the gap? The model has to split a prompt into tokens and compute attention between every pair of them, which is the expensive step. A hit skips it entirely, so what you pay for is storage.",
-        "That makes multi-turn conversation the best case. Every turn resubmits everything before it, and that prefix does not change, so the model can reuse what it already computed.",
         "But caches expire. DeepSeek holds one for 10 minutes, Anthropic for 5, OpenAI decays between 10 and 30. Past that it recomputes and you are back to a yuan.",
-        "So agents send keep-alive requests. The old habit was one every 30 seconds, which is 20 requests across a quiet ten minutes and not free either.",
-        "Which means the pinging can be far lazier than that. The shortest cache anyone offers lasts five minutes, so once every four is enough."
+        "So the keep-alive pinging can be far lazier than it usually is. The shortest cache anyone offers lasts five minutes, so once every four is enough, and the old habit of once every 30 seconds was pure waste."
       ]
     }
   ]
@@ -347,6 +356,7 @@ function emptyVerdict(): Verdict {
   return {
     score: 0,
     category: resolveCategory(undefined),
+    titleZh: "",
     zh: { thesis: "", paragraphs: [] },
     en: { thesis: "", paragraphs: [] },
   };
@@ -393,6 +403,7 @@ function applyChinese(
     out.set(article.id, {
       score: Math.max(0, Math.min(100, Number(row.score) || 0)),
       category: resolveCategory(row.category),
+      titleZh: chineseTitle(row.zh_title, article.title),
       zh: { thesis, paragraphs: asPoints(row.zh_paragraphs) },
       en: { thesis: "", paragraphs: [] },
     });
@@ -425,6 +436,26 @@ function applyEnglish(
 
 function asText(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+/**
+ * The Chinese headline, or "" meaning "there is no second line to show".
+ *
+ * Two cases collapse to empty here rather than in the components, so the stored
+ * digest carries the decision instead of every renderer repeating it:
+ *
+ * - The model echoed the original. Instructed to leave an already-Chinese
+ *   headline alone, it also does that for English ones now and then, and a card
+ *   showing the same string twice looks like a bug.
+ * - The headline was Chinese to begin with, so the "translation" is the original
+ *   and the page needs one line, not two.
+ *
+ * A model that ignores the field entirely also lands here, which is the point:
+ * the Chinese title is an enhancement, and its absence has to be ordinary.
+ */
+function chineseTitle(value: unknown, original: string): string {
+  const translated = asText(value);
+  return translated && translated !== original.trim() ? translated : "";
 }
 
 /**

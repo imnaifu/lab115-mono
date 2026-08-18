@@ -152,6 +152,10 @@ export async function runDaily(
         sourceId: item.sourceId,
         category: verdict.category,
         title: item.title,
+        // Omitted rather than stored empty, so the field's absence means the
+        // same thing in a digest written today as in one written before it
+        // existed: there is no Chinese headline to show.
+        ...(verdict.titleZh ? { titleZh: verdict.titleZh } : {}),
         url: item.url,
         author: item.author,
         publishedAt: item.publishedAt,

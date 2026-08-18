@@ -75,7 +75,16 @@ export function Masthead({
   children,
 }: {
   title: string;
-  subtitle: string;
+  /**
+   * A second line under the title, in the SAME language.
+   *
+   * Nothing passes one today. It used to carry the title's other-language twin —
+   * 每日干货 above Daily Takes, 归档 above Archive — which the one-language-at-a-
+   * time rule ruled out; see the note in lib/i18n.ts. Kept optional rather than
+   * deleted because a masthead tagline is a plausible thing to want here, and a
+   * caller adding one now has no way to reintroduce the pair by accident.
+   */
+  subtitle?: string;
   lang: Lang;
   path: string;
   children: ReactNode;
@@ -93,9 +102,17 @@ export function Masthead({
       <div className="absolute -top-14 -right-11 -z-10 size-42 rounded-full bg-orange" />
 
       <div className="flex items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-2 rounded-full bg-ink px-3 py-1 text-xs font-bold tracking-widest text-cream uppercase">
+        {/* The domain chip goes home too, same destination as the lockup below.
+            Two links to the same page is what a masthead normally is — the chip
+            is what a reader who has scrolled to an article page reaches for
+            first, and its text already names the destination, so it needs no
+            aria-label of its own. */}
+        <a
+          href={href(lang, "/")}
+          className="inline-flex items-center gap-2 rounded-full bg-ink px-3 py-1 text-xs font-bold tracking-widest text-cream uppercase"
+        >
           daily.lab115.com
-        </span>
+        </a>
         <LangSwitch lang={lang} path={path} />
       </div>
 
@@ -105,7 +122,16 @@ export function Masthead({
           `mt-1.5` rather than `items-center`: centring on the whole block would
           drop the mark below the cap line of the title, because the subtitle is
           part of the block's height. */}
-      <div className="mt-5 flex items-start gap-3 sm:gap-4">
+      {/* The whole lockup is the link home — the mark and the wordmark read as
+          one target, so making only one of them clickable would be a smaller
+          hit area for no reason. On the home page it points at itself, which is
+          what every masthead does and what a reader arriving from an article
+          page or the archive expects to find here. */}
+      <a
+        href={href(lang, "/")}
+        aria-label={lang === "en" ? "Daily Takes — home" : "每日干货 · 回到首页"}
+        className="mt-5 flex items-start gap-3 sm:gap-4"
+      >
         <img
           src="/favicon.svg"
           alt=""
@@ -114,11 +140,13 @@ export function Masthead({
         {/* `max-w-md` keeps the wordmark clear of the orange blob. */}
         <h1 className="max-w-md text-4xl leading-tight font-bold tracking-tight text-ink sm:text-5xl">
           {title}
-          <small className="mt-1.5 block text-lg font-medium italic text-ink-mid sm:text-xl">
-            {subtitle}
-          </small>
+          {subtitle ? (
+            <small className="mt-1.5 block text-lg font-medium italic text-ink-mid sm:text-xl">
+              {subtitle}
+            </small>
+          ) : null}
         </h1>
-      </div>
+      </a>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm font-semibold text-ink-mid">
         {children}
@@ -183,10 +211,8 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
       className={`mt-10 border-t border-line pt-6 ${PAD} flex flex-wrap items-start justify-between gap-x-8 gap-y-4`}
     >
       <div className="min-w-0">
-        <div className="text-lg font-bold text-ink">
-          每日干货{" "}
-          <span className="font-medium text-ink-mid italic">Daily Takes</span>
-        </div>
+        {/* Same single name as the masthead, so the switch changes both. */}
+        <div className="text-lg font-bold text-ink">{t.brand}</div>
         {/* `text-pretty` so the last line never ends up holding one orphaned
             character, which is what this sentence did at `max-w-xs`. */}
         <p className="mt-1 max-w-sm text-xs font-medium text-pretty text-ink-soft">
@@ -204,19 +230,21 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
 /**
  * A section heading with its count on the right.
  *
- * `dot` and `sub` are optional because the folded-updates section has neither —
- * it is not a category, so it has no accent colour and no second name.
+ * `dot` is optional because the folded-updates section and 全部 are not
+ * categories, so they have no accent colour.
+ *
+ * There used to be a `sub` beside the title carrying the category's other name —
+ * 技术 with Tech next to it. Gone with the rest of the side-by-side pairs; the
+ * heading now says the category once, in the reader's language. See i18n.ts.
  */
 export function SectionHead({
   title,
   count,
   dot,
-  sub,
 }: {
   title: string;
   count: string;
   dot?: string;
-  sub?: string;
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
@@ -231,11 +259,6 @@ export function SectionHead({
           />
         ) : null}
         {title}
-        {sub ? (
-          <small className="text-sm font-medium italic text-ink-soft">
-            {sub}
-          </small>
-        ) : null}
       </h2>
       <span className="text-sm font-bold whitespace-nowrap text-ink-soft">
         {count}

@@ -1,5 +1,11 @@
 import { ImageResponse } from "next/og";
 import {
+  coverGradient,
+  layoutParagraph,
+  POSTER,
+  POSTER_BESIDE_COVER,
+  posterCover,
+  parseHighlights,
   POSTER_MARK,
   POSTER_WIDTH,
   posterFonts,
@@ -7,10 +13,38 @@ import {
   posterText,
 } from "@/lib/share";
 import { sourceOf } from "@/lib/sources";
+import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, isLang } from "@/lib/lang";
 import { readArticle } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * The same 0–100 → five stars the page's `<Stars>` does, and 0 for an article the
+ * summarizer never judged. Duplicated as a number rather than imported, because
+ * that component returns JSX with Tailwind classes and Satori has neither.
+ */
+function starCount(score: number): number {
+  if (!Number.isFinite(score) || score <= 0) return 0;
+  return Math.min(5, Math.max(1, Math.round(score / 20)));
+}
+
+/** The page's `<Dot>` between meta items. */
+function Dot() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        width: 5,
+        height: 5,
+        borderRadius: 3,
+        margin: "0 10px",
+        background: "#8a83a8",
+        opacity: 0.55,
+      }}
+    />
+  );
+}
 
 /**
  * The shareable poster: one article, whole summary, rendered as a PNG.
@@ -24,7 +58,7 @@ export const dynamic = "force-dynamic";
  * more than one child says `display: flex` explicitly, and spacing is margins.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ lang: string; date: string; id: string }> },
 ) {
   const { lang, date, id } = await params;
@@ -32,13 +66,43 @@ export async function GET(
   if (!found) return new Response("Not found", { status: 404 });
 
   const { article } = found;
-  // The poster is written in the language of the page that links to it.
-  const summary = article.summary[isLang(lang) ? lang : DEFAULT_LANG];
+  // The poster is written in the language of the page that links to it — the
+  // brand included, since one language at a time applies here too.
+  const posterLang = isLang(lang) ? lang : DEFAULT_LANG;
+  const summary = article.summary[posterLang];
+  const brand = strings(posterLang).brand;
   const source = sourceOf(article.sourceId);
-  const fonts = await posterFonts(
-    posterText(article, summary, `${date}每日干货Daily Takes`),
+
+  // Same rule as the page: the Chinese poster leads with the Chinese headline and
+  // keeps the original underneath, the English one shows the original alone.
+  const translated = posterLang === "zh" ? (article.titleZh ?? "") : "";
+  const headline = translated || article.title;
+  const original = translated ? article.title : "";
+
+  // `extra` is the glyph set for everything the layout draws itself, so the brand
+  // and the Chinese headline have to be in it or the subset omits their glyphs
+  // and Satori draws blanks.
+  const highlights = parseHighlights(
+    new URL(req.url).searchParams.get("hl"),
+    (summary.paragraphs ?? []).length,
   );
-  const height = posterHeight(summary, article.title);
+
+  const t = strings(posterLang);
+  const stars = starCount(article.score);
+  // Everything the layout writes itself, so the font subset covers it: the brand,
+  // the date, the Chinese headline, the meta line's words, and the two star glyphs.
+  const meta = [
+    source.name,
+    t.minutesToRead(article.readingMinutes),
+    article.author ?? "",
+    stars ? "★☆" : "",
+  ].join(" ");
+
+  const [fonts, cover] = await Promise.all([
+    posterFonts(posterText(article, summary, `${date}${brand}${translated}${meta}`)),
+    posterCover(article.image),
+  ]);
+  const height = posterHeight(summary, headline, original, highlights);
 
   return new ImageResponse(
     (
@@ -50,7 +114,7 @@ export async function GET(
           flexDirection: "column",
           background: "#fbf3e9",
           color: "#3b3563",
-          padding: "56px 60px",
+          padding: `${POSTER.pad + 16}px ${POSTER.pad}px`,
           fontFamily: "Manrope, Noto Sans SC",
         }}
       >
@@ -75,19 +139,7 @@ export async function GET(
                 fontWeight: 700,
               }}
             >
-              每日干货
-            </div>
-            <div
-              style={{
-                display: "flex",
-                marginLeft: 14,
-                fontSize: 24,
-                fontWeight: 700,
-                color: "#efa050",
-                letterSpacing: 1,
-              }}
-            >
-              Daily Takes
+              {brand}
             </div>
           </div>
           <div style={{ display: "flex", fontSize: 22, color: "#8a83a8" }}>
@@ -95,60 +147,197 @@ export async function GET(
           </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            marginTop: 40,
-            fontSize: 44,
-            fontWeight: 700,
-            lineHeight: 1.25,
-          }}
-        >
-          {article.title}
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            marginTop: 16,
-            fontSize: 20,
-            fontWeight: 700,
-            color: source.accent,
-          }}
-        >
-          {source.name}
-        </div>
-
-        {/* The claim, set apart by the accent rule the site uses for emphasis. */}
-        <div
-          style={{
-            display: "flex",
-            marginTop: 32,
-            paddingLeft: 20,
-            borderLeft: "5px solid #efa050",
-            fontSize: 30,
-            fontWeight: 700,
-            lineHeight: 1.5,
-          }}
-        >
-          {summary.thesis}
-        </div>
-
+        {/* THE CARD, which is the whole point of this layout: the article page puts
+            all of this on a `bg-card` panel, so the poster does too, at the same
+            radius and the same padding. Everything inside is the page's Tailwind
+            value scaled — see POSTER in lib/share.ts. */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            marginTop: 28,
-            fontSize: 22,
-            color: "#5f5885",
-            lineHeight: 1.85,
+            marginTop: 34,
+            padding: POSTER.cardPad,
+            borderRadius: POSTER.radius,
+            background: "#f3e8d8",
+            // The page's `shadow-soft` and, below, its `shadow-cover`.
+            boxShadow: "0 3px 14px rgba(59, 53, 99, 0.06)",
           }}
         >
+          {/* Cover on the left of the meta and the headline, as on the page. */}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                width: POSTER.cover,
+                height: POSTER.cover,
+                marginRight: POSTER.coverGap,
+                borderRadius: 16,
+                boxShadow: "0 6px 20px rgba(59, 53, 99, 0.16)",
+                // The gradient is drawn whether or not there is a photo, exactly as
+                // `Cover` does it, so a cover that failed to fetch degrades to a
+                // designed placeholder instead of a hole.
+                backgroundImage: coverGradient(article.id, source.accent),
+                alignItems: "flex-end",
+                padding: 10,
+                fontSize: 15,
+                fontWeight: 700,
+                color: "rgba(255, 253, 249, 0.95)",
+                overflow: "hidden",
+              }}
+            >
+              {cover ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={cover}
+                  width={POSTER.cover}
+                  height={POSTER.cover}
+                  alt=""
+                  style={{ objectFit: "cover" }}
+                />
+              ) : (
+                source.name
+              )}
+            </div>
+
+            {/* An explicit width, because Satori has no `min-w-0 flex-1`. */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                width: POSTER_BESIDE_COVER,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: POSTER.metaSize,
+                  fontWeight: 600,
+                  color: "#8a83a8",
+                }}
+              >
+                <div style={{ display: "flex", color: source.accent }}>
+                  {source.name}
+                </div>
+                <Dot />
+                <div style={{ display: "flex" }}>
+                  {t.minutesToRead(article.readingMinutes)}
+                </div>
+                {article.author ? (
+                  <>
+                    <Dot />
+                    <div style={{ display: "flex" }}>{article.author}</div>
+                  </>
+                ) : null}
+                {stars ? (
+                  <>
+                    <Dot />
+                    <div style={{ display: "flex" }}>
+                      <div style={{ display: "flex", color: "#efa050" }}>
+                        {"★".repeat(stars)}
+                      </div>
+                      <div style={{ display: "flex", opacity: 0.4 }}>
+                        {"☆".repeat(5 - stars)}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  marginTop: 10,
+                  fontSize: POSTER.titleSize,
+                  fontWeight: 700,
+                  lineHeight: 1.25,
+                }}
+              >
+                {headline}
+              </div>
+
+              {original ? (
+                <div
+                  style={{
+                    display: "flex",
+                    marginTop: 8,
+                    fontSize: POSTER.originalSize,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                    color: "#8a83a8",
+                  }}
+                >
+                  {original}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* The thesis, styled the way `Summary` styles it: weight, colour, and
+              the orange accent bar. The bar lives in both places now — see the
+              `rule` entry in that component's SIZE table. */}
+          <div
+            style={{
+              display: "flex",
+              marginTop: 24,
+              paddingLeft: POSTER.thesisPad,
+              borderLeft: `${POSTER.thesisRule}px solid #efa050`,
+              fontSize: POSTER.thesisSize,
+              fontWeight: 600,
+              lineHeight: 1.5,
+              color: "#3b3563",
+            }}
+          >
+            {summary.thesis}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              marginTop: 18,
+              fontSize: POSTER.paraSize,
+              color: "#5f5885",
+              lineHeight: 1.85,
+            }}
+          >
+          {/* ONE ROW PER LINE, broken by `layoutParagraph` rather than by Satori.
+              A row holds exactly one line's worth of text, so nothing inside it
+              wraps: a marked piece's box is that line's marked characters and
+              nothing else, which is what makes the wash a highlighter instead of
+              a full-width rectangle, and no piece ever gets pushed onto a line of
+              its own. See the note on layoutParagraph for the whole argument. */}
           {(summary.paragraphs ?? []).map((paragraph, i) => (
-            <div key={i} style={{ display: "flex", marginTop: i === 0 ? 0 : 14 }}>
-              {paragraph}
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginTop: i === 0 ? 0 : 14,
+              }}
+            >
+              {layoutParagraph(paragraph, highlights.get(i)).map((line, row) => (
+                <div key={row} style={{ display: "flex" }}>
+                  {line.map((piece, j) => (
+                    <span
+                      key={j}
+                      style={
+                        piece.marked
+                          ? {
+                              background: "rgba(239, 160, 80, 0.5)",
+                              color: "#3b3563",
+                            }
+                          : undefined
+                      }
+                    >
+                      {piece.text}
+                    </span>
+                  ))}
+                </div>
+              ))}
             </div>
           ))}
+          </div>
         </div>
       </div>
     ),

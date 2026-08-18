@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
 import { EndLink, Footer, Masthead, PAD, PageShell, SECTION } from "@/components/Shell";
 import { strings } from "@/lib/i18n";
-import { href, isLang } from "@/lib/lang";
+import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { dateKey } from "@/lib/config";
 import { notFound } from "next/navigation";
 import { readDigest, listDates } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "归档 · 每日干货" };
+/** A function rather than a constant, because the brand in it is per-language. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const t = strings(isLang(lang) ? lang : DEFAULT_LANG);
+  return { title: `${t.archiveTitle} · ${t.brand}` };
+}
 
 export default async function Archive({
   params,
@@ -28,12 +37,7 @@ export default async function Archive({
 
   return (
     <PageShell>
-      <Masthead
-        title={t.archiveTitle}
-        subtitle={lang === "en" ? "归档" : "Archive"}
-        lang={lang}
-        path="/archive"
-      >
+      <Masthead title={t.archiveTitle} lang={lang} path="/archive">
         <span>{t.days(dates.length)}</span>
       </Masthead>
 

@@ -5,10 +5,24 @@ import type { SummaryText } from "@/lib/types";
  * The hero-sized variant runs every block a step larger than a card does.
  * Nothing renders a hero card any more, but the single-article page uses the
  * larger size for the one summary it shows.
+ *
+ * `rule` is the orange bar beside the thesis, one step heavier on the hero. The
+ * share poster draws the same bar from POSTER.thesisRule in lib/share.ts — if the
+ * weight changes here, change it there.
  */
 const SIZE = {
-  hero: { background: "text-base", thesis: "text-lg", para: "text-base" },
-  card: { background: "text-sm", thesis: "text-base", para: "text-sm" },
+  hero: {
+    background: "text-base",
+    thesis: "text-lg",
+    rule: "border-l-[3px] pl-4",
+    para: "text-base",
+  },
+  card: {
+    background: "text-sm",
+    thesis: "text-base",
+    rule: "border-l-2 pl-3",
+    para: "text-sm",
+  },
 } as const;
 
 /**
@@ -51,12 +65,22 @@ export function Summary({
         <p className={`text-ink-soft ${size.background}`}>{text.background}</p>
       ) : null}
 
+      {/* The claim, marked out by the accent bar the site uses for emphasis —
+          the same one the legacy `implication` block below carries. */}
       {text.thesis ? (
-        <p className={`font-semibold text-ink ${size.thesis}`}>{text.thesis}</p>
+        <p
+          className={`border-orange font-semibold text-ink ${size.thesis} ${size.rule}`}
+        >
+          {text.thesis}
+        </p>
       ) : null}
 
+      {/* `data-para` is how the share dialog works out which paragraphs a text
+          selection touches, so the poster can highlight them. The index is the
+          one the poster route indexes by too — the same array, same order. */}
       {paragraphs.map((paragraph, i) => (
         <p
+          data-para={i}
           className={`leading-[1.85] font-medium text-ink-mid ${size.para}`}
           key={i}
         >

@@ -1,4 +1,6 @@
+import { ArticleTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
+import { Stars } from "./Stars";
 import { Summary } from "./Summary";
 import { sourceOf } from "@/lib/sources";
 import { strings } from "@/lib/i18n";
@@ -24,6 +26,16 @@ function Meta({ article, lang }: { article: Article; lang: Lang }) {
         <>
           <Dot />
           <span>{article.author}</span>
+        </>
+      ) : null}
+      {/* Last, because the author is optional and the stars are not — ending the
+          line on them keeps the meta row the same shape on every card. Both this
+          and the Dot render nothing when the article was never scored, so no
+          orphaned separator is left behind. */}
+      {article.score > 0 ? (
+        <>
+          <Dot />
+          <Stars score={article.score} lang={lang} />
         </>
       ) : null}
     </div>
@@ -52,16 +64,22 @@ function Actions({
   const t = strings(lang);
   return (
     <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+      {/* Secondary. Reading the original means leaving — this digest exists so
+          that most of the time you do not have to, and the emphasis should not
+          push you off the page it just spent 450 characters replacing. */}
       <a
-        className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper"
+        className="rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid"
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"
       >
         {t.readFull}
       </a>
+      {/* Primary, and rightmost: passing a piece on is the action worth making
+          obvious. A plain link to the article page, which is where the link and
+          the poster are — it was briefly a dialog that opened them in place. */}
       <a
-        className="rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid"
+        className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper"
         href={href(lang, articlePath(date, article.id))}
       >
         {t.share}
@@ -89,19 +107,41 @@ export function ArticleCard({
   lang: Lang;
 }) {
   return (
-    <div className="flex items-start gap-4 rounded-card bg-card p-4 shadow-soft">
-      <Cover
-        id={article.id}
-        sourceId={article.sourceId}
-        image={article.image}
-        variant="card"
-      />
-      <div className="min-w-0 flex-1">
-        <Meta article={article} lang={lang} />
-        <h3 className="mt-2 text-lg font-bold text-ink">{article.title}</h3>
-        <Summary summary={article.summary} variant="card" lang={lang} />
-        <Actions article={article} date={date} lang={lang} />
+    // No `gap` on the column: `Summary` and `Actions` each bring their own
+    // `mt-4`, so the existing vertical rhythm is already right.
+    //
+    <div className="flex flex-col rounded-card bg-card p-4 shadow-soft">
+      {/* The cover sits beside the HEADLINE, not beside the whole card.
+          It used to be the left column of a full-height split, which worked
+          while a summary was two lines. At 3–5 paragraphs it stopped working
+          twice over: the cover's 88px sat above ~800px of empty gutter, and it
+          held 80px away from the prose all the way down, leaving a ~246px
+          measure on a phone — about five words a line. Bounding the split to
+          this row gives the summary the card's full width at every size and
+          costs the cover nothing, because the 80px square is within a line of
+          what the meta line plus the title occupy anyway.
+
+          `items-center`, not `items-start`: a one-line title leaves the text
+          block 28px shorter than the cover, and centred that reads as air above
+          and below the headline instead of a hole under it. With a two-line
+          title the two are the same height and this does nothing. */}
+      <div className="flex items-center gap-3.5 sm:gap-4">
+        <Cover
+          id={article.id}
+          sourceId={article.sourceId}
+          image={article.image}
+          variant="card"
+        />
+        <div className="min-w-0 flex-1">
+          <Meta article={article} lang={lang} />
+          <h3 className="mt-2 text-lg font-bold text-ink">
+            <ArticleTitle article={article} lang={lang} variant="card" />
+          </h3>
+        </div>
       </div>
+
+      <Summary summary={article.summary} variant="card" lang={lang} />
+      <Actions article={article} date={date} lang={lang} />
     </div>
   );
 }

@@ -4,10 +4,19 @@ import { USER_CONFIG } from "./user-config";
  * The subscription list, defined in `config.json`. Adding or removing a blog
  * is an edit to that file — no TypeScript involved.
  *
- * Before adding one, check `feed item count ÷ posts per day > 1 day`. That is
- * what makes a once-a-day poll safe, and it is the rule XDA's site-wide feed
- * fails: ~69 articles/day against a 10-item feed covers about 3.5 hours, so a
- * daily fetch would miss 95% of it. Its category feeds pass easily.
+ * Two checks before adding one, and they pull in opposite directions.
+ *
+ * A CEILING on volume: `feed item count ÷ posts per day > 1 day`, which is what
+ * makes a once-a-day poll safe. XDA's site-wide feed is the case that fails it —
+ * ~69 articles/day against a 10-item feed covers about 3.5 hours, so a daily
+ * fetch would miss 95% of what it published. A source that busy needs a section
+ * feed, or a `maxPerRun`, or both.
+ *
+ * A FLOOR on volume: more than one post a MONTH. Deliberately low. A blog that
+ * publishes three essays a month contributes on the days it publishes and is
+ * simply absent on the others, which costs nothing — the digest is assembled
+ * from whatever appeared, not from a quota per source. Rejecting quiet blogs
+ * would drop exactly the writers who post only when they have something.
  */
 export interface ScrapeConfig {
   /** Listing page to fetch. */

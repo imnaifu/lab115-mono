@@ -109,8 +109,9 @@ export function posterText(article: Article, summary: SummaryText, extra: string
     summary.thesis,
     ...(summary.paragraphs ?? []),
     extra,
-    // Punctuation and digits the layout adds on its own.
-    "0123456789·—、。，：；？！「」（）%",
+    // Punctuation and digits the layout adds on its own, plus the NBSP that
+    // `piecesOf` substitutes at piece boundaries.
+    `0123456789·—、。，：；？！「」（）%${NBSP}`,
   ].join("");
 }
 
@@ -144,6 +145,322 @@ function widthUnits(text: string): number {
 export const POSTER_WIDTH = 1000;
 
 /**
+ * The poster's geometry, and the page's geometry it is copied from.
+ *
+ * The poster is meant to look like the article page's card, so every size below is
+ * that card's Tailwind value times SCALE. The card is ~694px wide inside the 750px
+ * column; the poster is 1000px, and 1.45 is the ratio — which also lands the body
+ * text back on 22px, the size the line budget was measured at.
+ *
+ * Kept here rather than in the route because `posterHeight` has to agree with what
+ * the route draws, and two copies of these numbers would drift the first time one
+ * of them changed.
+ */
+export const POSTER = {
+  /** Canvas edge → card. Matches the page's `px-4 sm:px-7` gutter. */
+  pad: 40,
+  /** Inside the card: the page's `p-5`, scaled. */
+  cardPad: 30,
+  radius: 26,
+  /** `size-28` on the page. */
+  cover: 112,
+  /** The page's `gap-5` between cover and text. */
+  coverGap: 28,
+  metaSize: 17,
+  titleSize: 42,
+  originalSize: 23,
+  thesisSize: 26,
+  /** The accent bar beside the thesis: the page's `border-l-[3px] pl-4`, scaled. */
+  thesisRule: 4,
+  thesisPad: 22,
+  paraSize: 22,
+} as const;
+
+/** The width one line of body text actually has. */
+export const POSTER_TEXT_WIDTH =
+  POSTER_WIDTH - 2 * (POSTER.pad + POSTER.cardPad);
+
+/**
+ * The column beside the cover, holding the meta line and the headline.
+ *
+ * Stated explicitly because Satori will not derive it: the page constrains that
+ * block with `min-w-0 flex-1`, and without an equivalent here a long English
+ * headline ran straight off the card and off the canvas.
+ */
+export const POSTER_BESIDE_COVER =
+  POSTER_TEXT_WIDTH - POSTER.cover - POSTER.coverGap;
+
+/**
+ * The cover gradient, as a plain `linear-gradient` string.
+ *
+ * The same artwork `Cover.tsx` draws, recomputed rather than shared, because that
+ * one leans on `color-mix(in srgb, …)` and Satori has no colour functions. The mix
+ * is done here in numbers instead, so the poster's placeholder and the page's are
+ * the same two stops at the same angle.
+ */
+export function coverGradient(id: string, accent: string): string {
+  const seed = parseInt(id.slice(0, 4), 16) || 0;
+  const tilt = 120 + (seed % 90);
+  return (
+    `linear-gradient(${tilt}deg, ${accent} 0%, ${accent} 42%, ` +
+    `${mix(accent, "#1d1a33", 0.55)} 100%)`
+  );
+}
+
+/** `ratio` of `a` plus the rest of `b`, per sRGB channel — `color-mix` by hand. */
+function mix(a: string, b: string, ratio: number): string {
+  const channels = (hex: string) =>
+    [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
+  const [ar, ag, ab] = channels(a);
+  const [br, bg, bb] = channels(b);
+  const blend = (x: number, y: number) =>
+    Math.round(x * ratio + y * (1 - ratio))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${blend(ar, br)}${blend(ag, bg)}${blend(ab, bb)}`;
+}
+
+/** A cover fetch that cannot hold up or blow up a poster. */
+const COVER_TIMEOUT_MS = 4000;
+const COVER_MAX_BYTES = 3_000_000;
+
+/**
+ * The article's cover as a data URI, or null to fall back to the gradient.
+ *
+ * Fetched HERE rather than handed to Satori as a URL, so the failure modes belong
+ * to this function instead of to the renderer: a source's CDN that hangs, returns
+ * HTML, or serves a 12 MB PNG would otherwise stall or fail the whole image. XDA's
+ * did two of those three intermittently, which is why `Cover` on the page renders
+ * the gradient underneath every photo rather than instead of one.
+ *
+ * Any problem at all returns null. A poster with a designed placeholder is a fine
+ * outcome; a poster that 500s is not.
+ */
+export async function posterCover(url: string | null): Promise<string | null> {
+  if (!url) return null;
+
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(COVER_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+
+    const type = response.headers.get("content-type") ?? "";
+    if (!type.startsWith("image/")) return null;
+
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength > COVER_MAX_BYTES) return null;
+
+    const base64 = Buffer.from(bytes).toString("base64");
+    return `data:${type.split(";")[0]};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
+/** A character range inside one paragraph, `[start, end)`. */
+export type Span = readonly [start: number, end: number];
+
+/**
+ * `?hl=` → paragraph index ⇒ character ranges, e.g. `1.12-40,2.0-15`.
+ *
+ * Everything is validated rather than trusted: this comes off a public URL and
+ * feeds both a render and a size estimate. Unparseable entries are dropped
+ * instead of failing the request, so an old or hand-edited link still yields a
+ * poster — just an unmarked one.
+ */
+export function parseHighlights(
+  raw: string | null,
+  /** The article's paragraph count. Entries outside it are dropped: the renderer
+   *  would ignore them anyway, but `posterHeight` would still reserve a line for
+   *  each, so `?hl=99.0-5` could pad the canvas without marking anything. */
+  paragraphs: number,
+): Map<number, Span[]> {
+  const out = new Map<number, Span[]>();
+  if (!raw) return out;
+
+  // Bounded so a crafted `?hl=` cannot make this loop interesting.
+  for (const part of raw.split(",", 64)) {
+    const match = /^(\d{1,3})\.(\d{1,5})-(\d{1,5})$/.exec(part.trim());
+    if (!match) continue;
+
+    const [para, start, end] = match.slice(1).map(Number);
+    if (end <= start || para >= paragraphs) continue;
+
+    const spans = out.get(para) ?? [];
+    spans.push([start, end]);
+    out.set(para, spans);
+  }
+  return out;
+}
+
+/**
+ * A no-break space, standing in for a real one at a run boundary.
+ *
+ * SATORI DROPS WHITESPACE AT THE EDGE OF A TEXT ITEM, on either side: rendering
+ * `"alpha beta "`, `"gamma delta"`, `" epsilon zeta"` as three spans produces
+ * `alpha betagamma deltaepsilon zeta`. Since a mark almost always begins at a word
+ * boundary — that is where a reader starts a selection — the space in front of it
+ * lands exactly on the split and disappears, which silently corrupts the quoted
+ * text in a poster meant to be shared. U+00A0 is not collapsible whitespace, so it
+ * survives the edge; the only cost is that a line cannot break at that one space.
+ */
+const NBSP = " ";
+
+/**
+ * Characters that may not begin a line, and ones that may not end it.
+ *
+ * Chinese line-breaking in one rule each: a closing mark never starts a line and
+ * an opening one never ends it. Without these a line would begin with 「。」 or
+ * finish on a dangling 「「」.
+ */
+const NO_LINE_START = "。，、；：？！）」』》〉】”’%…·";
+const NO_LINE_END = "（「『《〈【“‘";
+
+/** How wide one character is, in the full-width units `widthUnits` counts. */
+function charUnits(ch: string): number {
+  return /[　-〿㐀-鿿豈-﫿＀-￯]/.test(ch)
+    ? 1
+    : 0.5;
+}
+
+/**
+ * Units per line when the POSTER breaks its own lines.
+ *
+ * DERIVED, not tuned: a CJK character is one unit wide at the body size, so the
+ * column holds `POSTER_TEXT_WIDTH / paraSize` of them. Latin fits slightly more
+ * than the half-width this counts it as — Manrope averages a shade under 0.5em —
+ * so Chinese is the tighter case and the one to size against.
+ *
+ * The 1.4 units held back are insurance, and worth more than they used to be:
+ * when Satori did the wrapping, a slightly-too-long line simply wrapped. Now an
+ * overflowing line makes its row wrap internally, which is exactly the artifact
+ * this layout exists to remove, so the failure is no longer cosmetic.
+ */
+const LINE_BUDGET = POSTER_TEXT_WIDTH / POSTER.paraSize - 1.4;
+
+export interface Piece {
+  text: string;
+  marked: boolean;
+}
+
+/**
+ * One paragraph, broken into lines HERE rather than by Satori.
+ *
+ * Satori's own wrapping cannot give a highlighter wash. A `background` paints a
+ * flex item's box, so a marked run spanning two lines is one full-width rectangle
+ * with the ragged tail of the last line filled in, and a run that will not fit in
+ * what is left of a line moves down whole, leaving a short line above it. Both are
+ * properties of letting one item hold more than a line of text.
+ *
+ * So each line becomes its own row of pieces. Every wash then covers exactly the
+ * characters on that line, and no row has to wrap, which removes the break before
+ * a mark at the same time. The cost is that the line breaking is ours, measured in
+ * the same crude full-width units as the height estimate — accurate for Chinese,
+ * approximate for Latin, hence the conservative LINE_BUDGET.
+ */
+export function layoutParagraph(text: string, spans: Span[] | undefined): Piece[][] {
+  const marked = markedFlags(text, spans);
+
+  const lines: Piece[][] = [];
+  let start = 0;
+
+  while (start < text.length) {
+    let units = 0;
+    let at = start;
+    // The last index a line could end at, so a long word is not cut mid-way.
+    let candidate = -1;
+
+    while (at < text.length) {
+      units += charUnits(text[at]);
+      if (units > LINE_BUDGET && at > start) break;
+
+      const next = at + 1;
+      if (
+        next < text.length &&
+        (/\s/.test(text[at]) ||
+          charUnits(text[at]) === 1 ||
+          charUnits(text[next]) === 1) &&
+        !NO_LINE_START.includes(text[next]) &&
+        !NO_LINE_END.includes(text[at])
+      ) {
+        candidate = next;
+      }
+      at += 1;
+    }
+
+    const cut = at >= text.length ? text.length : candidate > start ? candidate : at;
+    lines.push(piecesOf(text, marked, start, cut));
+
+    // Whitespace at a break belongs to neither line.
+    start = cut;
+    while (start < text.length && /\s/.test(text[start])) start += 1;
+  }
+
+  return lines.length ? lines : [[{ text, marked: false }]];
+}
+
+/** A flag per character: is it inside a mark? Marks are clamped, merged and
+ *  shrunk off surrounding whitespace here, so the rest of the file can ignore
+ *  overlaps and stray spaces. */
+function markedFlags(text: string, spans: Span[] | undefined): boolean[] {
+  const flags = new Array<boolean>(text.length).fill(false);
+  for (const [rawStart, rawEnd] of spans ?? []) {
+    let start = Math.max(0, Math.min(rawStart, text.length));
+    let end = Math.max(0, Math.min(rawEnd, text.length));
+    // A selection made at a word boundary carries the space in front of it, and a
+    // wash that starts before the words it marks looks like a mistake.
+    while (start < end && /\s/.test(text[start])) start += 1;
+    while (end > start && /\s/.test(text[end - 1])) end -= 1;
+    for (let i = start; i < end; i += 1) flags[i] = true;
+  }
+  return flags;
+}
+
+/** One line's characters, grouped into runs of equal marked-ness. */
+function piecesOf(
+  text: string,
+  marked: boolean[],
+  from: number,
+  to: number,
+): Piece[] {
+  const pieces: Piece[] = [];
+  for (let i = from; i < to; i += 1) {
+    const last = pieces[pieces.length - 1];
+    if (last && last.marked === marked[i]) last.text += text[i];
+    else pieces.push({ text: text[i], marked: marked[i] });
+  }
+  // A trailing space would be dropped at the row's edge anyway, and a leading one
+  // would indent the line.
+  if (pieces.length) {
+    pieces[0].text = pieces[0].text.replace(/^\s+/, "");
+    const tail = pieces[pieces.length - 1];
+    tail.text = tail.text.replace(/\s+$/, "");
+  }
+  return keepBoundarySpaces(pieces.filter((piece) => piece.text.length > 0));
+}
+
+/**
+ * Protect the space on each side of every split — see NBSP.
+ *
+ * Only the characters touching a boundary are converted, so the rest of the
+ * paragraph keeps its ordinary breakable spaces.
+ */
+function keepBoundarySpaces(runs: Piece[]): Piece[] {
+  for (let i = 1; i < runs.length; i += 1) {
+    const left = runs[i - 1];
+    const right = runs[i];
+    if (/\s$/.test(left.text)) {
+      left.text = left.text.slice(0, -1) + NBSP;
+    }
+    if (/^\s/.test(right.text)) {
+      right.text = NBSP + right.text.slice(1);
+    }
+  }
+  return runs;
+}
+
+/**
  * Poster height, computed from the text rather than fixed.
  *
  * `ImageResponse` demands concrete dimensions, and the summaries are not a
@@ -154,46 +471,83 @@ export const POSTER_WIDTH = 1000;
  * The estimate is deliberately generous; empty space at the bottom is a much
  * cheaper mistake than a clipped last paragraph.
  */
-export function posterHeight(summary: SummaryText, title: string): number {
-  // Every number here is one measurement off the rendered poster, so the layout
-  // and this estimate can be checked against each other. The content column is
-  // 880px wide (1000 less 60px of padding either side).
-  const PADDING = 56 * 2;
-  const HEADER = 50 + 40; // wordmark line, then its margin to the title
-  const TITLE_LINE = 55; // 44px at line-height 1.25
-  const SOURCE = 16 + 25; // margin, then one line
-  const THESIS = 32 + 0; // margin above the block
-  const THESIS_LINE = 45; // 30px at 1.5
-  const PARAS = 28; // margin above the first paragraph
-  const PARA_LINE = 41; // 22px at 1.85
+export function posterHeight(
+  summary: SummaryText,
+  title: string,
+  /** The original headline, when the poster prints it under a Chinese one. Must
+   *  be passed whenever the route renders it, or the height stops matching the
+   *  image and og:image lies about its own dimensions. */
+  original = "",
+  /** The marks the route will draw, keyed by paragraph. They change the line
+   *  count, because `layoutParagraph` breaks lines around them. */
+  highlights?: Map<number, Span[]>,
+): number {
+  // Every number is one measurement off the rendered poster, so the layout and
+  // this arithmetic can be checked against each other. Line heights are
+  // `fontSize x line-height`, taken from POSTER and the route's styles.
+  const PADDING = (POSTER.pad + 16) * 2;
+  const BRAND_ROW = 50;
+  const CARD_TOP = 34;
+  const CARD_PAD = POSTER.cardPad * 2;
+  const META_LINE = 21;
+  const TITLE_GAP = 10;
+  const TITLE_LINE = Math.round(POSTER.titleSize * 1.25);
+  const ORIGINAL_GAP = 8;
+  const ORIGINAL_LINE = Math.round(POSTER.originalSize * 1.4);
+  const THESIS_GAP = 24;
+  const THESIS_LINE = Math.round(POSTER.thesisSize * 1.5);
+  const PARAS_GAP = 18;
+  const PARA_LINE = Math.round(POSTER.paraSize * 1.85);
   const PARA_GAP = 14; // between paragraphs
-  // No footer any more: the permalink and the reading time were the only
-  // things in it, and both were removed.
   const SLACK = 30; // most of a line, so a bad guess never clips
 
   /**
-   * 39 full-width UNITS per line, against the 40 that fit on an 880px line at
-   * 22px. Erring low errs toward more lines, and the two errors are not
-   * symmetric: an over-tall poster ends in white space, an under-tall one
-   * silently crops the last paragraph.
+   * Two column widths, because the headline sits BESIDE the cover and the summary
+   * runs under it. Getting these the wrong way round was the old bug this replaces
+   * — the title was measured against the full width it does not have.
    */
-  const UNITS_PER_LINE = 39;
+  const besideCover = POSTER_BESIDE_COVER;
+  const linesOf = (text: string, size: number, width: number) =>
+    text ? Math.ceil(widthUnits(text) / (width / size - 1)) : 0;
 
+  const titleLines = linesOf(title, POSTER.titleSize, besideCover);
+  const originalLines = linesOf(original, POSTER.originalSize, besideCover);
+  // The accent bar and its padding take width off the thesis, so it wraps sooner
+  // than the paragraphs under it do.
+  const thesisWidth = POSTER_TEXT_WIDTH - POSTER.thesisRule - POSTER.thesisPad;
+  const thesisLines = linesOf(summary.thesis, POSTER.thesisSize, thesisWidth);
+
+  /**
+   * The paragraph line count is COUNTED, not estimated: the route breaks its own
+   * lines, so asking `layoutParagraph` how many it produced is the same arithmetic
+   * the renderer will do. This used to divide by a units-per-line guess and then
+   * add a line per mark to cover Satori's wrapping; both fudges went with the
+   * guessing.
+   */
   const paragraphs = summary.paragraphs ?? [];
-  const lines = paragraphs.reduce(
-    (sum, p) => sum + Math.ceil(widthUnits(p) / UNITS_PER_LINE),
+  const bodyLines = paragraphs.reduce(
+    (sum, p, i) => sum + layoutParagraph(p, highlights?.get(i)).length,
     0,
   );
 
+  // The cover and the block beside it are centred on each other, so the header row
+  // is as tall as whichever is taller.
+  const headerText =
+    META_LINE +
+    TITLE_GAP +
+    titleLines * TITLE_LINE +
+    (originalLines ? ORIGINAL_GAP + originalLines * ORIGINAL_LINE : 0);
+
   return Math.round(
     PADDING +
-      HEADER +
-      Math.ceil(widthUnits(title) / 22) * TITLE_LINE +
-      SOURCE +
-      THESIS +
-      Math.ceil(widthUnits(summary.thesis) / 24) * THESIS_LINE +
-      PARAS +
-      lines * PARA_LINE +
+      BRAND_ROW +
+      CARD_TOP +
+      CARD_PAD +
+      Math.max(POSTER.cover, headerText) +
+      THESIS_GAP +
+      thesisLines * THESIS_LINE +
+      PARAS_GAP +
+      bodyLines * PARA_LINE +
       Math.max(0, paragraphs.length - 1) * PARA_GAP +
       SLACK,
   );

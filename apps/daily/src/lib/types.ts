@@ -46,7 +46,19 @@ export interface Article {
   /** A `Category.id`, assigned per article by the model. Older digests may
    *  name a category that no longer exists — `categoryOf` handles that. */
   category: string;
+  /** The headline exactly as the source published it. Never translated. */
   title: string;
+  /**
+   * The headline in Chinese, from the same pass that writes the Chinese summary.
+   *
+   * Optional, and two distinct reasons for it to be absent: a digest archived
+   * before this field existed has none, and an article whose headline is already
+   * Chinese gets none either — 阮一峰's posts are their own translation, and a
+   * second copy of the same string is not a second line worth rendering.
+   *
+   * The English side never uses it: there the original headline IS the English.
+   */
+  titleZh?: string;
   url: string;
   author: string | null;
   /** ISO 8601, as published by the feed. */

@@ -32,7 +32,34 @@ export const CATEGORIES: Category[] = USER_CONFIG.categories;
 /** Where an unrecognised or missing classification lands. */
 export const FALLBACK_CATEGORY = USER_CONFIG.fallbackCategory;
 
+/**
+ * The live ids, and only those.
+ *
+ * There was briefly a forwarding entry per RETIRED id — `ai` pointed here after
+ * it merged into `tech` — so that archived digests naming it still rendered under
+ * the section that absorbed them. It is gone by decision: the archive is being
+ * rewritten to say `tech` instead, which fixes the data rather than teaching every
+ * reader of it to compensate. Until that rewrite lands, an article still saying
+ * `ai` resolves to the catch-all, exactly as any unknown id does.
+ */
 export const CATEGORY_BY_ID = new Map(CATEGORIES.map((c) => [c.id, c]));
+
+/**
+ * The id of the page's 「全部」 tab.
+ *
+ * Not a category: it selects every section at once instead of one of them, so it
+ * has no hint, no accent and no entry in config.json. It lives here because it
+ * shares the id namespace with the real categories — the tab strip keys on a
+ * single string — which is also why no category may claim it.
+ */
+export const ALL_TAB = "all";
+
+if (CATEGORY_BY_ID.has(ALL_TAB)) {
+  throw new Error(
+    `config.json: "${ALL_TAB}" is reserved for the page's 「全部」 tab and ` +
+      `cannot be used as a category id`,
+  );
+}
 
 /** Never throws — an archived digest may name a category that has since been
  *  renamed away, and an old page must still render. */
@@ -49,7 +76,7 @@ export function resolveCategory(value: unknown): string {
   const id = String(value ?? "")
     .trim()
     .toLowerCase();
-  return CATEGORY_BY_ID.has(id) ? id : FALLBACK_CATEGORY;
+  return CATEGORY_BY_ID.get(id)?.id ?? FALLBACK_CATEGORY;
 }
 
 /**

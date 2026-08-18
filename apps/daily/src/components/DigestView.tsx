@@ -148,12 +148,7 @@ export function DigestView({
 
   return (
     <PageShell>
-      <Masthead
-        title="每日干货"
-        subtitle="Daily Takes"
-        lang={lang}
-        path={path}
-      >
+      <Masthead title={t.brand} lang={lang} path={path}>
         <span>{formatDate(digest.date, lang)}</span>
         <MastheadDot />
         {/* `shown`, not `fetched`: the publish floor drops the rest, so
@@ -168,7 +163,12 @@ export function DigestView({
       </Masthead>
 
       {groups.length > 0 ? (
-        <DigestBody groups={groups} date={digest.date} lang={lang} />
+        <DigestBody
+          articles={digest.articles}
+          groups={groups}
+          date={digest.date}
+          lang={lang}
+        />
       ) : (
         <EmptyState lang={lang} />
       )}

@@ -1,31 +1,56 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
-import { DEFAULT_LANG, isLang } from "@/lib/lang";
+import { strings } from "@/lib/i18n";
+import { DEFAULT_LANG, isLang, otherLang, type Lang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/config";
 import "@/index.css";
 
-const TITLE = "每日干货 · Daily Takes — 技术博客每日摘要";
-const DESCRIPTION =
-  "每天自动抓取 Heavybit、XDA、caolan.uk 等博客的新文章，提炼中英双语观点摘要。A daily bilingual digest of new posts from a handful of engineering blogs.";
+/** What both the layout and its metadata need: see the note on RootLayout. */
+async function langFromHeader(): Promise<Lang> {
+  const header = (await headers()).get("x-lang") ?? undefined;
+  return isLang(header) ? header : DEFAULT_LANG;
+}
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE),
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: { canonical: `${SITE}/` },
-  openGraph: {
-    type: "website",
-    title: TITLE,
-    description: DESCRIPTION,
-    url: `${SITE}/`,
-    siteName: "每日干货 · Daily Takes",
-    locale: "zh_CN",
-    alternateLocale: "en_US",
-  },
-  twitter: { card: "summary", title: TITLE, description: DESCRIPTION },
-  icons: { icon: "/favicon.svg" },
-};
+const OG_LOCALE: Record<Lang, string> = { zh: "zh_CN", en: "en_US" };
+
+/**
+ * ONE language per document, title included.
+ *
+ * This was a static `metadata` holding "每日干货 · Daily Takes — 技术博客每日摘要"
+ * and a description written half in each language, so the browser tab said the
+ * site's name twice no matter which side you were reading. A function instead,
+ * because the language is only knowable at request time — see RootLayout below
+ * for why it comes from a header rather than from the route.
+ *
+ * The description is `tagline`, the same sentence the footer prints, rather than
+ * a second copy that lists blogs by name: the one it used to list included XDA,
+ * which is no longer subscribed, and a description that enumerates the feed is
+ * guaranteed to rot every time config.json changes.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await langFromHeader();
+  const t = strings(lang);
+  const title = `${t.brand} — ${t.titleTag}`;
+
+  return {
+    metadataBase: new URL(SITE),
+    title,
+    description: t.tagline,
+    alternates: { canonical: `${SITE}/` },
+    openGraph: {
+      type: "website",
+      title,
+      description: t.tagline,
+      url: `${SITE}/`,
+      siteName: t.brand,
+      locale: OG_LOCALE[lang],
+      alternateLocale: OG_LOCALE[otherLang(lang)],
+    },
+    twitter: { card: "summary", title, description: t.tagline },
+    icons: { icon: "/favicon.svg" },
+  };
+}
 
 export const viewport: Viewport = { themeColor: "#fbf3e9" };
 
@@ -42,8 +67,7 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  const header = (await headers()).get("x-lang") ?? undefined;
-  const lang = isLang(header) ? header : DEFAULT_LANG;
+  const lang = await langFromHeader();
 
   return (
     /**

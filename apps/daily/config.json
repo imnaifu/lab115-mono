@@ -1,22 +1,15 @@
 {
   "publishMinScore": 40,
   "summaryMinChars": 120,
-  "summaryMaxChars": 600,
+  "summaryMaxChars": 450,
   "summaryParaMaxChars": 90,
   "categories": [
     {
-      "id": "ai",
-      "name": "AI",
-      "nameEn": "Artificial Intelligence",
-      "accent": "#3B3563",
-      "hint": "The article is ABOUT AI itself — models, agents, how they are built, what they can and cannot do, their effect on work. A piece that merely uses an AI tool to do something else belongs in the category of that something else."
-    },
-    {
       "id": "tech",
       "name": "技术",
-      "nameEn": "Engineering",
-      "accent": "#2E7D6E",
-      "hint": "Software and hardware craft that is NOT about AI: systems, debugging, security, privacy, open source, protocols, the web platform, chips and how they are built. A war story about a database bug goes here, not in AI. The physics or biology behind a technology is 'science'; how a tool feels to use is 'design'."
+      "nameEn": "Tech",
+      "accent": "#3B3563",
+      "hint": "AI and the craft of software and hardware, which are one section here: models, agents, how they are built, what they can and cannot do, their effect on work; and systems, debugging, security, privacy, open source, protocols, the web platform, chips and how they are made. A war story about a database bug and a piece about what an agent can actually do both belong here. A piece that merely uses an AI tool to do something else belongs in the category of that something else. The physics or biology behind a technology is 'science'; how a tool feels to use is 'design'; a company's strategy around a technology is 'business'."
     },
     {
       "id": "business",
@@ -65,7 +58,7 @@
       "name": "人文",
       "nameEn": "Society & Ideas",
       "accent": "#9E5C81",
-      "hint": "LAST RESORT — use only when none of the categories above fits. History, philosophy, religion, language, media and internet culture, obituaries, how a society thinks about itself. An essay is not filed here just because it is reflective: reflective about models is still 'ai', about jobs still 'economy', about one's own working habits still 'living', about a study still 'science'."
+      "hint": "LAST RESORT — use only when none of the categories above fits. History, philosophy, religion, language, media and internet culture, obituaries, how a society thinks about itself. An essay is not filed here just because it is reflective: reflective about models is still 'tech', about jobs still 'economy', about one's own working habits still 'living', about a study still 'science'."
     }
   ],
   "fallbackCategory": "culture",
@@ -77,15 +70,6 @@
       "feed": "https://www.heavybit.com/library/blog/feed",
       "accent": "#3B3563",
       "fetchBody": false
-    },
-    {
-      "id": "xda-ai-tools",
-      "name": "XDA · AI Tools",
-      "site": "https://www.xda-developers.com/ai-tools/",
-      "feed": "https://www.xda-developers.com/feed/ai-tools/",
-      "accent": "#EFA050",
-      "fetchBody": true,
-      "maxPerRun": 3
     },
     {
       "id": "neciudan",
@@ -356,6 +340,72 @@
       "feed": "https://worksinprogress.co/rss.xml",
       "accent": "#8C6A9E",
       "fetchBody": true
+    },
+    {
+      "id": "404media",
+      "name": "404 Media",
+      "site": "https://www.404media.co/",
+      "feed": "https://www.404media.co/rss/",
+      "accent": "#A63D3D",
+      "fetchBody": false,
+      "maxPerRun": 3
+    },
+    {
+      "id": "wheresyoured",
+      "name": "Where’s Your Ed At",
+      "site": "https://www.wheresyoured.at/",
+      "feed": "https://www.wheresyoured.at/rss/",
+      "accent": "#8A5A2E",
+      "fetchBody": false
+    },
+    {
+      "id": "bloodmachine",
+      "name": "Blood in the Machine",
+      "site": "https://www.bloodinthemachine.com/",
+      "feed": "https://www.bloodinthemachine.com/feed",
+      "accent": "#7C3A52",
+      "fetchBody": false
+    },
+    {
+      "id": "citationneeded",
+      "name": "Citation Needed",
+      "site": "https://www.citationneeded.news/",
+      "feed": "https://www.citationneeded.news/rss/",
+      "accent": "#4C6E8A",
+      "fetchBody": false
+    },
+    {
+      "id": "themarkup",
+      "name": "The Markup",
+      "site": "https://themarkup.org/",
+      "feed": "https://themarkup.org/feeds/rss.xml",
+      "accent": "#2E7A85",
+      "fetchBody": false
+    },
+    {
+      "id": "restofworld",
+      "name": "Rest of World",
+      "site": "https://restofworld.org/",
+      "feed": "https://restofworld.org/feed/latest/",
+      "accent": "#5E8C4A",
+      "fetchBody": true
+    },
+    {
+      "id": "pluralistic",
+      "name": "Pluralistic",
+      "site": "https://pluralistic.net/",
+      "feed": "https://pluralistic.net/feed/",
+      "accent": "#5D4E9C",
+      "fetchBody": false
+    },
+    {
+      "id": "techdirt",
+      "name": "Techdirt",
+      "site": "https://www.techdirt.com/",
+      "feed": "https://www.techdirt.com/feed/",
+      "accent": "#9C7B2F",
+      "fetchBody": false,
+      "maxPerRun": 3
     }
   ]
 }
