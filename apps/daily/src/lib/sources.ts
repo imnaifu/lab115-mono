@@ -48,6 +48,8 @@ export interface Source {
   category: string;
   /** One line on what it publishes, and its known failure modes. */
   description: string;
+  /** Exempt from the publish floor — see alwaysPublish in user-config.ts. */
+  alwaysPublish: boolean;
   /** False means "do not fetch". Such a source is still carried here, and on
    *  purpose: sourceOf() is what renders archived digests, and dropping the
    *  entry would turn every past article of a parked source into a bare id with
@@ -87,6 +89,7 @@ export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   category: source.category,
   description: source.description,
   enabled: source.enabled ?? true,
+  alwaysPublish: source.alwaysPublish ?? false,
   fetchBody: source.fetchBody,
   ...(source.maxPerRun ? { maxPerRun: source.maxPerRun } : {}),
   ...(source.scrape
@@ -120,6 +123,7 @@ export function sourceOf(id: string): Source {
       category: USER_CONFIG.fallbackCategory,
       description: "",
       enabled: false,
+      alwaysPublish: false,
       fetchBody: false,
     }
   );

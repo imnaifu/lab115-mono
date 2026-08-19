@@ -109,17 +109,6 @@
       "fetchBody": false
     },
     {
-      "id": "marginal",
-      "name": "Marginal Revolution",
-      "site": "https://marginalrevolution.com/",
-      "feed": "https://marginalrevolution.com/feed",
-      "category": "economy",
-      "description": "Tyler Cowen 经济学博客，日更多条；「assorted links」链接汇总占了一半以上。",
-      "accent": "#4A6B4E",
-      "enabled": true,
-      "fetchBody": false
-    },
-    {
       "id": "construction-physics",
       "name": "Construction Physics",
       "site": "https://www.construction-physics.com/",
@@ -462,18 +451,6 @@
       "fetchBody": false
     },
     {
-      "id": "techdirt",
-      "name": "Techdirt",
-      "site": "https://www.techdirt.com/",
-      "feed": "https://www.techdirt.com/feed/",
-      "category": "tech",
-      "description": "科技政策与言论自由的密集报道，日更多条，夹带「Daily Deal」广告帖；已限 maxPerRun 3。",
-      "accent": "#9C7B2F",
-      "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 3
-    },
-    {
       "id": "simonwillison",
       "name": "Simon Willison",
       "site": "https://simonwillison.net/",
@@ -645,18 +622,6 @@
       "maxPerRun": 2
     },
     {
-      "id": "sspai",
-      "name": "少数派",
-      "site": "https://sspai.com/",
-      "feed": "https://sspai.com/feed",
-      "category": "living",
-      "description": "少数派，中文效率工具与数码；「派早报」「社区速递」「线下活动」等栏目帖占比很高。",
-      "accent": "#64913F",
-      "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 3
-    },
-    {
       "id": "designobserver",
       "name": "Design Observer",
       "site": "https://designobserver.com/",
@@ -691,18 +656,6 @@
       "maxPerRun": 2
     },
     {
-      "id": "chartbook",
-      "name": "Chartbook",
-      "site": "https://adamtooze.substack.com/",
-      "feed": "https://adamtooze.substack.com/feed",
-      "category": "economy",
-      "description": "Adam Tooze，经济史与全球宏观；但「Top Links NNNN」纯链接汇总占了绝大多数；已限 maxPerRun 2。",
-      "accent": "#3E5C86",
-      "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 2
-    },
-    {
       "id": "guigujushi",
       "name": "硅谷居士",
       "site": "https://blog.wenxuecity.com/myoverview/80634/",
@@ -711,6 +664,7 @@
       "description": "硅谷居士，中文的指数投资与 FIRE，文学城博客，靠 scrape 抓取；已限 maxPerRun 3。",
       "accent": "#C08F5A",
       "enabled": true,
+      "alwaysPublish": true,
       "fetchBody": true,
       "maxPerRun": 3,
       "scrape": {
@@ -731,18 +685,6 @@
       "fetchBody": false
     },
     {
-      "id": "awealthofcs",
-      "name": "A Wealth of Common Sense",
-      "site": "https://awealthofcommonsense.com/",
-      "feed": "https://awealthofcommonsense.com/feed/",
-      "category": "investing",
-      "description": "Ben Carlson，市场常识与投资心态，日更短文；已限 maxPerRun 2。",
-      "accent": "#D4B45C",
-      "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 2
-    },
-    {
       "id": "jlcollins",
       "name": "JL Collins",
       "site": "https://jlcollinsnh.com/",
@@ -752,29 +694,6 @@
       "accent": "#7E6B33",
       "enabled": true,
       "fetchBody": true
-    },
-    {
-      "id": "humbledollar",
-      "name": "HumbleDollar",
-      "site": "https://humbledollar.com/",
-      "feed": "https://humbledollar.com/feed/",
-      "category": "investing",
-      "description": "多作者的个人理财站，退休规划与税务实务，偏美国国情；已限 maxPerRun 2。",
-      "accent": "#B9A05C",
-      "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 2
-    },
-    {
-      "id": "alphaarchitect",
-      "name": "Alpha Architect",
-      "site": "https://alphaarchitect.com/",
-      "feed": "https://alphaarchitect.com/feed/",
-      "category": "investing",
-      "description": "量化因子投资，学术论文解读，专业门槛较高。",
-      "accent": "#6F5F2E",
-      "enabled": true,
-      "fetchBody": false
     }
   ]
 }

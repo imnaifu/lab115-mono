@@ -7,6 +7,7 @@ import {
 import { fetchAll } from "@/lib/fetcher";
 import { notify } from "@/lib/notify";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
+import { sourceOf } from "@/lib/sources";
 import { readDigest, writeDigest } from "@/lib/store";
 import { summarize } from "@/lib/summarize";
 import type {
@@ -126,8 +127,21 @@ export async function runDaily(
      * record that the run happened, so the outage is visible in the file.
      */
     const ranked = sorted.filter(
-      (item) => (verdicts.get(item.id)?.score ?? 0) >= PUBLISH_MIN_SCORE,
+      (item) =>
+        sourceOf(item.sourceId).alwaysPublish ||
+        (verdicts.get(item.id)?.score ?? 0) >= PUBLISH_MIN_SCORE,
     );
+
+    // Only when the score pass actually spoke. An article it never answered for
+    // would otherwise carry four empty strings, which reads like a review that
+    // found nothing rather than a review that never happened.
+    const reviewOf = (id: string) => {
+      const review = verdicts.get(id)?.review;
+      const filled =
+        review &&
+        Object.values(review).some((finding) => finding.length > 0);
+      return filled ? { review } : {};
+    };
 
     // The complement of `ranked`, kept because a rejection is a decision worth
     // being able to look up later — it goes into the file, never onto the page.
@@ -138,6 +152,7 @@ export async function runDaily(
         url: item.url,
         sourceId: item.sourceId,
         score: verdicts.get(item.id)?.score ?? 0,
+        ...reviewOf(item.id),
       }));
 
     if (rejected.length) {
@@ -182,6 +197,7 @@ export async function runDaily(
         readingMinutes: item.readingMinutes,
         score: verdict.score,
         rank: i + 1,
+        ...reviewOf(item.id),
         summary: { zh: verdict.zh, en: verdict.en },
       };
     });

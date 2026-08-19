@@ -39,6 +39,33 @@ export interface SummaryText {
   implication?: string;
 }
 
+/**
+ * What the score pass wrote before it committed to a number — one finding per
+ * test, in the order the rubric asks for them.
+ *
+ * Stored because a score with no reasoning attached is not auditable, and
+ * tuning the rubric is exactly the work of finding out which test misfired. A
+ * post scoring 15 tells you nothing; the same post with "relays a personal
+ * anecdote, nothing transfers" tells you which line to go argue with.
+ *
+ * Written to the file for published AND rejected articles, and rendered on
+ * neither — this is a record for whoever is tuning, not something a reader has
+ * any use for.
+ *
+ * Optional: digests written before it existed carry no reviews, and an article
+ * the score pass never answered for carries none either.
+ */
+export interface ScoreReview {
+  /** Argument or announcement. */
+  argument: string;
+  /** What a non-specialist takes away, and whether it transfers. */
+  transfer: string;
+  /** A claim, or a list. */
+  claim: string;
+  /** The bonus, and what earned it. */
+  appeal: string;
+}
+
 export interface Article {
   /** sha1 of the canonical URL — stable across runs, safe as a React key. */
   id: string;
@@ -70,6 +97,8 @@ export interface Article {
   score: number;
   /** 1-based position after sorting by score. */
   rank: number;
+  /** How the score was arrived at. See ScoreReview. */
+  review?: ScoreReview;
   summary: { zh: SummaryText; en: SummaryText };
 }
 
@@ -107,6 +136,10 @@ export interface RejectedArticle {
   url: string;
   sourceId: string;
   score: number;
+  /** Why it was turned down, in the model's own words. The whole point of
+   *  keeping a rejection list is answering "why is that post missing", and the
+   *  score alone never answered it. */
+  review?: ScoreReview;
 }
 
 /**

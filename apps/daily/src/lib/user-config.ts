@@ -37,6 +37,20 @@ export interface RawSource {
    *  this be dropped" answerable without opening the site. */
   description: string;
   accent: string;
+  /**
+   * True exempts every article from this source from the publish floor: it is
+   * summarized and published whatever it scores.
+   *
+   * For the source you keep BECAUSE it is that person writing, not because each
+   * post clears a bar. 硅谷居士 is the case it was added for — short personal
+   * posts about his own investing that the rubric reads, correctly, as
+   * anecdote-without-argument and caps in the 20s. The rubric is not wrong; it
+   * is answering a different question than "do I want to see this".
+   *
+   * It is a real exemption and it exempts the bad days too. A whitelisted
+   * source that posts a link roundup publishes that link roundup.
+   */
+  alwaysPublish?: boolean;
   /** False parks a source without deleting it: it is not fetched, but it stays
    *  in SOURCES so archived digests carrying its articles still render with its
    *  name, link and accent instead of falling back to a bare id. Absent counts
@@ -169,6 +183,12 @@ function validate(config: RawConfig): RawConfig {
     }
     if (source.enabled !== undefined && typeof source.enabled !== "boolean") {
       fail(`source "${source.id}" enabled must be true or false`);
+    }
+    if (
+      source.alwaysPublish !== undefined &&
+      typeof source.alwaysPublish !== "boolean"
+    ) {
+      fail(`source "${source.id}" alwaysPublish must be true or false`);
     }
     if (
       source.maxPerRun !== undefined &&

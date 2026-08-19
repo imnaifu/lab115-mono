@@ -4,7 +4,7 @@ import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
 import { USER_CONFIG } from "./user-config";
 import type { RawArticle } from "./fetcher";
 import { sourceOf } from "./sources";
-import type { SummaryText } from "./types";
+import type { ScoreReview, SummaryText } from "./types";
 
 /**
  * Summarizing + ranking via DeepSeek's OpenAI-compatible API.
@@ -163,6 +163,22 @@ const ZH_MIN = USER_CONFIG.summaryMinChars;
  * moving it to "keep the ratio" in either direction would bring the
  * 92-character single-sentence paragraph straight back. It is why `budgetFor`
  * spends a bigger budget on more paragraphs and never on longer ones.
+ *
+ * It is also the number the paragraph COUNT must be derived from, and for a
+ * long time it was not: the count came from chars/70 while a paragraph was
+ * allowed 90, so the top of the stated range times this ceiling came to
+ * 1.15-1.34x the character budget. A reply could obey both paragraph rules and
+ * still overrun the total by a third, and the longest summaries were doing
+ * exactly that — 661 characters against 474, seven paragraphs against a range
+ * of 5-7, longest paragraph 108. Three rules of which two contradict give the
+ * model no reason to take any of them seriously.
+ *
+ * Dropping the count entirely was tried first and came back WORSE: 12 of 14
+ * over budget against 11 of 15, because the count is the only free variable and
+ * the model parks it at six whatever the budget says. Over that same run
+ * paragraphs averaged 77 characters — this ceiling is being respected — while a
+ * 377-character budget came back at 703 in six paragraphs. Total is count times
+ * length; the length end is healthy, so the count end is the one that gives.
  */
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
@@ -198,14 +214,13 @@ function budgetFor(readingMinutes: number): {
 } {
   const minutes = Math.max(1, readingMinutes);
   const chars = Math.min(ZH_MAX, Math.round(90 + 160 * Math.log(minutes + 1)));
-  // Paragraph COUNT absorbs the budget, because PARA_MAX caps how long each
-  // one may be: 500 characters over "3 to 5 paragraphs" would demand
-  // 125-character paragraphs, contradicting that ceiling outright.
-  return {
-    chars,
-    paraLow: Math.min(7, Math.max(2, Math.round(chars / 95))),
-    paraHigh: Math.min(9, Math.max(3, Math.round(chars / 70))),
-  };
+  // Paragraph COUNT absorbs the budget, because PARA_MAX caps how long each one
+  // may be. The ceiling therefore has to be chars/PARA_MAX and nothing looser:
+  // count and per-paragraph cap MULTIPLY, so any divisor below PARA_MAX hands
+  // out a paragraph allowance the character budget cannot pay for. It was
+  // chars/70 until now, which permitted 1.15-1.34x the total — see PARA_MAX.
+  const paraHigh = Math.max(2, Math.floor(chars / PARA_MAX));
+  return { chars, paraHigh, paraLow: Math.max(2, paraHigh - 1) };
 }
 
 /**
@@ -256,6 +271,9 @@ export interface Verdict {
    */
   judged: boolean;
   score: number;
+  /** The four findings the score was written after. Empty strings when the
+   *  score pass never answered for this article. */
+  review: ScoreReview;
   category: string;
   /** The headline in Chinese; "" when it was already Chinese or came back empty.
    *  See `titleZh` in types.ts. */
@@ -318,13 +336,18 @@ const SCORE_TEMPERATURE = 0;
 
 const SCORE_SYSTEM = `You are the first reader for a daily digest aimed at a curious generalist: smart, widely read, not a specialist in whatever field the article belongs to. Your only job is to decide how much that reader gains from the piece.
 
-Return one entry per article, as json, with exactly two fields:
-- "index" — the number the article was given in brackets, like [3].
-- "score" — 0-100, by the rubric below.
+You are given ONE article and you return ONE json object. No wrapper, no array, no index — the reply is the object itself.
 
-NOTHING ELSE. No summary, no headline, no category, no reasoning. Just the number.
+It has five fields, and THE ORDER IS THE METHOD:
+- "t1" — one sentence: argument or announcement, and what caps it if anything.
+- "t2" — one sentence: what a non-specialist comes away with, and whether it transfers.
+- "t3" — one sentence: a claim or a list, and what is lost if you delete the writer.
+- "t4" — one sentence: what the bonus is worth and why, as a signed number like +5 or +0.
+- "score" — 0-100. WRITTEN LAST, AFTER the four findings, and it must follow from them.
 
-ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
+WRITE THE FINDINGS BEFORE THE NUMBER. Not as a formality — a number produced first is a guess dressed up afterwards, because there is nowhere to do the judging before the first token is out. The four sentences ARE the judging; the score is what they add up to.
+
+Each finding must point at the article. Name the claim, name the evidence, name the thing being relayed. "Well argued" is not a finding; "argues that the politeness norm itself is what excludes, and cites Astell's 1706 exchange with the bishop" is one. A finding that could have been written without reading the piece caps that test at half.
 
 SCORING — four tests, then the landing.
 
@@ -360,12 +383,11 @@ Be honest rather than generous. Most pieces earn +0 to +5; +15 is for the one a 
 5. WHERE IT LANDS. Under the ceilings, score by how much a generalist gains, then add the bonus from 4. Be harsh; use the full range — a run where most articles land between 50 and 75 means the range is not being used, and the middle is where a bad score hides.`;
 
 const SCORE_EXAMPLE = `{
-  "articles": [
-    {
-      "index": 0,
-      "score": 72
-    }
-  ]
+  "t1": "Argument: it claims the standard antibiotic course selects for resistance rather than preventing it, and traces where the guidance came from. Not an announcement.",
+  "t2": "Transfers — the mechanism is how a rule outlives the evidence that justified it, and the reader acts on this one personally. No cap.",
+  "t3": "A claim, and a contestable one; delete the writer and you lose the argument, not just the citations.",
+  "t4": "+12 — it is about medicine he swallows, it contradicts what his doctor told him, and it is readable cold.",
+  "score": 88
 }`;
 
 // --- pass 2: both summaries, for survivors only -----------------------------
@@ -542,12 +564,15 @@ const SUMMARY_EXAMPLE = `{
  */
 function renderArticle(
   article: RawArticle,
-  index: number,
+  /** Only the summary pass numbers its articles — its reply is still a wrapped
+   *  array matched back by index. The score pass sends one article and gets one
+   *  bare object, so there is nothing to number. */
+  index: number | undefined,
   budget?: ReturnType<typeof budgetFor>,
 ): string {
   const source = sourceOf(article.sourceId);
   return [
-    `[${index}] ${article.title}`,
+    index === undefined ? article.title : `[${index}] ${article.title}`,
     `source: ${source.name}`,
     `published: ${article.publishedAt}`,
     // Says CHINESE explicitly: measured with both languages in one reply, 9 of
@@ -557,7 +582,8 @@ function renderArticle(
       ? [
           `budget: 中文正文最多 ${budget.chars} 字（英文不计入），` +
             `分 ${budget.paraLow}~${budget.paraHigh} 段，英文段数照中文走。` +
-            `装不下就砍掉一整个点，不要把两个点压成一句。`,
+            `装不下就砍掉一整个点（收尾段除外，它永远留着），` +
+            `不要把两个点压成一句。`,
         ]
       : []),
     `body: ${article.body || "(body unavailable — judge from the title alone)"}`,
@@ -576,6 +602,7 @@ function emptyVerdict(): Verdict {
   return {
     judged: false,
     score: 0,
+    review: { argument: "", transfer: "", claim: "", appeal: "" },
     category: resolveCategory(undefined),
     titleZh: "",
     zh: { thesis: "", paragraphs: [] },
@@ -627,6 +654,17 @@ function applyScores(
     const verdict = out.get(article.id)!;
     verdict.judged = true;
     verdict.score = Math.max(0, Math.min(100, score));
+    // t1-t4 are what the model wrote before it was allowed to name a number.
+    // Kept verbatim: paraphrasing them here would defeat the point of having
+    // asked for them.
+    const text = (value: unknown) =>
+      typeof value === "string" ? value.trim() : "";
+    verdict.review = {
+      argument: text(row.t1),
+      transfer: text(row.t2),
+      claim: text(row.t3),
+      appeal: text(row.t4),
+    };
   }
   if (rows.length !== group.length || unmatched) {
     console.warn(
@@ -780,8 +818,13 @@ function parseArticles(raw: string): Array<Record<string, unknown>> {
     const holder = value as { articles?: unknown } | null;
     if (holder && Array.isArray(holder.articles)) {
       rows.push(...(holder.articles as Array<Record<string, unknown>>));
-    } else if (holder && typeof holder === "object" && "index" in holder) {
-      // A bare article that escaped the wrapper.
+    } else if (holder && typeof holder === "object") {
+      // A bare object. The score pass returns one of these BY DESIGN — no
+      // wrapper, no array — and the summary pass produces one whenever a reply
+      // escapes its wrapper. It used to be required to carry an "index" to be
+      // recognised here, which stopped being a useful test once the scoring
+      // reply dropped the field. An object with nothing usable in it costs
+      // nothing: the appliers skip any row without the numbers they need.
       rows.push(holder as Record<string, unknown>);
     }
 
@@ -930,7 +973,9 @@ export async function summarize(
           SCORE_SYSTEM,
           `Here ${missing.length === 1 ? "is 1 article" : `are ${missing.length} articles`}. ` +
             `Score every one of them.\n\n` +
-            missing.map((a, j) => renderArticle(a, j)).join("\n\n---\n\n"),
+            missing
+              .map((a) => renderArticle(a, undefined))
+              .join("\n\n---\n\n"),
           SCORE_EXAMPLE,
           SCORE_TEMPERATURE,
         );
@@ -953,15 +998,25 @@ export async function summarize(
   // floor costs one small reply and then nothing else. Articles the score pass
   // never spoke for are dropped too — see the floor in jobs/daily.ts for why
   // the exemption they used to get was removed.
+  // A whitelisted article has to be summarized even when it scores nothing:
+  // it is going on the page either way, and the one thing worse than a weak
+  // article is a weak article with no summary under it.
   const survivors = batch.filter((a) => {
     const verdict = out.get(a.id)!;
+    if (sourceOf(a.sourceId).alwaysPublish) return true;
     return verdict.judged && verdict.score >= PUBLISH_MIN_SCORE;
   });
+  const exempt = survivors.filter(
+    (a) =>
+      sourceOf(a.sourceId).alwaysPublish &&
+      (out.get(a.id)!.score < PUBLISH_MIN_SCORE || !out.get(a.id)!.judged),
+  ).length;
   const unjudged = batch.filter((a) => !out.get(a.id)!.judged).length;
   console.log(
     `[daily] scored ${batch.length - unjudged}/${batch.length}; ` +
       `${survivors.length} at or above the floor (${PUBLISH_MIN_SCORE}), ` +
       `${batch.length - unjudged - survivors.length} dropped unsummarized` +
+      (exempt ? `, ${exempt} below it but whitelisted` : "") +
       (unjudged ? `, ${unjudged} unscored and dropped` : ""),
   );
   if (survivors.length === 0) return out;
