@@ -28,7 +28,20 @@ export interface RawSource {
   name: string;
   site: string;
   feed: string;
+  /** A `Category.id`. Editorial metadata describing what this SOURCE mostly
+   *  publishes — NOT what any article gets filed under, which the model decides
+   *  per article. Kept so the source list can be reviewed by section. */
+  category: string;
+  /** One line on what this source publishes and what is wrong with it, written
+   *  from its recent output rather than its reputation. Exists to make "should
+   *  this be dropped" answerable without opening the site. */
+  description: string;
   accent: string;
+  /** False parks a source without deleting it: it is not fetched, but it stays
+   *  in SOURCES so archived digests carrying its articles still render with its
+   *  name, link and accent instead of falling back to a bare id. Absent counts
+   *  as enabled. */
+  enabled?: boolean;
   fetchBody: boolean;
   maxPerRun?: number;
   scrape?: RawScrape;
@@ -139,12 +152,24 @@ function validate(config: RawConfig): RawConfig {
     );
   }
 
+  const categoryIds = new Set(config.categories.map((c) => c.id));
   for (const source of config.sources) {
     requireFields(
       source as unknown as Record<string, unknown>,
-      ["id", "name", "site", "accent"],
+      ["id", "name", "site", "accent", "category", "description"],
       `source "${source.id ?? "?"}"`,
     );
+    // A typo here is invisible at runtime — nothing reads this field — so it
+    // has to fail at load or it fails never.
+    if (!categoryIds.has(source.category)) {
+      fail(
+        `source "${source.id}" has category "${source.category}", which is ` +
+          `not one of the categories`,
+      );
+    }
+    if (source.enabled !== undefined && typeof source.enabled !== "boolean") {
+      fail(`source "${source.id}" enabled must be true or false`);
+    }
     if (
       source.maxPerRun !== undefined &&
       (!Number.isFinite(source.maxPerRun) || source.maxPerRun < 1)

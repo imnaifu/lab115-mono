@@ -43,6 +43,16 @@ export interface Source {
   feed: string;
   /** Card accent; also seeds the gradient cover when an article has no image. */
   accent: string;
+  /** A `Category.id` describing the source's usual beat. Editorial metadata for
+   *  reviewing the list — the model still classifies every article on its own. */
+  category: string;
+  /** One line on what it publishes, and its known failure modes. */
+  description: string;
+  /** False means "do not fetch". Such a source is still carried here, and on
+   *  purpose: sourceOf() is what renders archived digests, and dropping the
+   *  entry would turn every past article of a parked source into a bare id with
+   *  a dead link. Fetching reads ACTIVE_SOURCES instead. */
+  enabled: boolean;
   /**
    * True when the feed body is known to be a teaser (or absent) and the
    * article page has to be fetched instead. Sources left false still get a
@@ -74,6 +84,9 @@ export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   site: source.site,
   feed: source.feed,
   accent: source.accent,
+  category: source.category,
+  description: source.description,
+  enabled: source.enabled ?? true,
   fetchBody: source.fetchBody,
   ...(source.maxPerRun ? { maxPerRun: source.maxPerRun } : {}),
   ...(source.scrape
@@ -86,6 +99,10 @@ export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
       }
     : {}),
 }));
+
+/** The ones a run actually fetches. SOURCES keeps the parked ones so old pages
+ *  still render; this is what the fetcher iterates. */
+export const ACTIVE_SOURCES = SOURCES.filter((s) => s.enabled);
 
 export const SOURCE_BY_ID = new Map(SOURCES.map((s) => [s.id, s]));
 
@@ -100,6 +117,9 @@ export function sourceOf(id: string): Source {
       site: "#",
       feed: "",
       accent: "#8A8299",
+      category: USER_CONFIG.fallbackCategory,
+      description: "",
+      enabled: false,
       fetchBody: false,
     }
   );

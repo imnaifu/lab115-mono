@@ -209,26 +209,25 @@ function budgetFor(readingMinutes: number): {
 }
 
 /**
- * DeepSeek's v4 models run in thinking mode by default, at effort `high`.
- * Thinking tokens bill as output, and this job extracts and scores rather than
- * reasoning at length, so it is off. The knob is DeepSeek-specific, so it is
- * only sent to DeepSeek. https://api-docs.deepseek.com/guides/thinking_mode/
+ * DeepSeek's v4 models run in thinking mode by default, at effort `high`. It is
+ * OFF. The knob is DeepSeek-specific, so it is only sent to DeepSeek.
+ * https://api-docs.deepseek.com/guides/thinking_mode/
  *
- * IT WAS TRIED ON, for pass 1, on the theory that a pass which JUDGES should
- * think first — the scores were badly bunched (40 of 64 published articles
- * between 50 and 75, five of one day's thirteen tied at exactly 65, the same
- * article re-scored 20 points apart across two runs).
+ * It was on briefly and it worked: 0 empty replies in 48 scoring calls where an
+ * older model gave 5 empty in 8, and the scores stopped quantising — 23 distinct
+ * values instead of 11, with the pile-up of 11 articles sitting exactly on the
+ * publish floor gone. It cost ~1,850 reasoning tokens per article (~$21/year)
+ * and took a run from four minutes to twelve.
  *
- * It cost 4 of 15 articles their summaries. Reasoning and `json_object` do not
- * cohabit: measured over one reproduction, 5 of 8 pass-1 calls came back with
- * an EMPTY content field — DeepSeek documents this as an occasional JSON-mode
- * fault and thinking turns "occasional" into 62%. It is not truncation
- * (`finish_reason` was never "length") and not the timeout (the failures were
- * 1-to-7-minute articles while a 74-minute one succeeded).
+ * It is off anyway, on two counts. The summary pass still trips the old fault —
+ * 5 empty replies in 17 calls, one article losing its summary after three
+ * retries — so whatever got fixed upstream was fixed for short replies and not
+ * for the ~2,100-character ones this pass produces. And the twelve-minute run
+ * is paid every day for a benefit that only shows up while tuning.
  *
- * The scoring fix that came out of that experiment lives in the prompt instead
- * — "score" is the LAST field written, so it is judged against a summary that
- * already exists. That part works with thinking off.
+ * Turning it on for the score pass alone remains available and is cheap: the
+ * measurements above are current, so no re-litigating is needed, only the
+ * `pass` check this spread does not currently make.
  */
 type DeepSeekParams =
   OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming & {
@@ -290,6 +289,32 @@ export interface Verdict {
  * which killed thinking on the summary pass has room to behave).
  */
 const SCORE_PASS = "score";
+
+/**
+ * Sampling temperature for the SCORE pass only. DeepSeek defaults to 1.0 and
+ * recommends 0.0 for work with one right answer, 1.5 for prose; judging against
+ * a fixed rubric belongs at the first end and was silently running at the
+ * default. https://api-docs.deepseek.com/quick_start/parameter_settings
+ *
+ * The score is one token, so the temperature applies almost entirely to it: at
+ * 1.0 each run draws from the model's distribution over the number instead of
+ * taking its best answer. Measured, same 48 articles, same rubric, two
+ * consecutive runs: |Δ| averaged 10.3 and reached 44 (Chaos theory scored 68
+ * then 24), only 7 of 48 held still, and 11 of 48 crossed the publish floor —
+ * a quarter of the page decided by the draw.
+ *
+ * That noise is why the rubric could not be tuned. An edit aimed at literary
+ * trivia moved 44 of 47 articles, which reads as a large effect and was mostly
+ * the dice: changing nothing at all moved 41 of 48 by the same amounts.
+ *
+ * This does not make a score correct, only repeatable — a rubric that overrates
+ * link roundups will now overrate them the same way every time, which is the
+ * difference between a bias that can be fixed and one that cannot be seen.
+ *
+ * The summary pass keeps the default on purpose: 0 there buys nothing and costs
+ * the prose, which is the one thing that pass exists to produce.
+ */
+const SCORE_TEMPERATURE = 0;
 
 const SCORE_SYSTEM = `You are the first reader for a daily digest aimed at a curious generalist: smart, widely read, not a specialist in whatever field the article belongs to. Your only job is to decide how much that reader gains from the piece.
 
@@ -786,6 +811,7 @@ async function callModel(
   system: string,
   user: string,
   example: string,
+  temperature?: number,
 ): Promise<Array<Record<string, unknown>>> {
   const params: DeepSeekParams = {
     model: MODEL,
@@ -803,6 +829,9 @@ async function callModel(
     ...(isDeepSeek(DEEPSEEK_BASE_URL)
       ? { thinking: { type: "disabled" as const } }
       : {}),
+    // Omitted entirely when undefined, so the summary pass keeps the provider
+    // default rather than being pinned to some value chosen here.
+    ...(temperature === undefined ? {} : { temperature }),
   };
 
   const response = await client.chat.completions.create(params);
@@ -903,6 +932,7 @@ export async function summarize(
             `Score every one of them.\n\n` +
             missing.map((a, j) => renderArticle(a, j)).join("\n\n---\n\n"),
           SCORE_EXAMPLE,
+          SCORE_TEMPERATURE,
         );
         applyScores(rows, missing, out);
       } catch (error) {

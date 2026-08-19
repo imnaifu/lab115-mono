@@ -1,5 +1,5 @@
 {
-  "publishMinScore": 55,
+  "publishMinScore": 60,
   "summaryMinChars": 120,
   "summaryMaxChars": 500,
   "summaryParaMaxChars": 90,
@@ -68,15 +68,10 @@
       "name": "Heavybit Library",
       "site": "https://www.heavybit.com/library",
       "feed": "https://www.heavybit.com/library/blog/feed",
+      "category": "tech",
+      "description": "开发者工具公司的工程与增长访谈，近期几乎全是 AI agent 基础设施话题。",
       "accent": "#3B3563",
-      "fetchBody": false
-    },
-    {
-      "id": "neciudan",
-      "name": "Neciu Dan’s Blog",
-      "site": "https://neciudan.dev/",
-      "feed": "https://neciudan.dev/rss.xml",
-      "accent": "#4F6D9E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -84,7 +79,10 @@
       "name": "Hacker News",
       "site": "https://news.ycombinator.com/",
       "feed": "https://hnrss.org/frontpage?points=300",
+      "category": "tech",
+      "description": "Hacker News 头条聚合，内容取决于当天社区，质量与主题都不可控；已限 maxPerRun 5。",
       "accent": "#D2601A",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 5
     },
@@ -93,7 +91,10 @@
       "name": "Platformer",
       "site": "https://www.platformer.news/",
       "feed": "https://www.platformer.news/rss/",
+      "category": "business",
+      "description": "Casey Newton 的科技平台报道，聚焦 AI 公司动向与内部访谈。",
       "accent": "#3F6E8C",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -101,7 +102,10 @@
       "name": "Astral Codex Ten",
       "site": "https://www.astralcodexten.com/",
       "feed": "https://www.astralcodexten.com/feed",
+      "category": "culture",
+      "description": "Scott Alexander，理性主义长文与书评，但 Open Thread 这类纯站务帖占了不小比例。",
       "accent": "#6B4E8E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -109,7 +113,10 @@
       "name": "Marginal Revolution",
       "site": "https://marginalrevolution.com/",
       "feed": "https://marginalrevolution.com/feed",
+      "category": "economy",
+      "description": "Tyler Cowen 经济学博客，日更多条；「assorted links」链接汇总占了一半以上。",
       "accent": "#4A6B4E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -117,7 +124,10 @@
       "name": "Construction Physics",
       "site": "https://www.construction-physics.com/",
       "feed": "https://www.construction-physics.com/feed",
+      "category": "economy",
+      "description": "建造业与住房供给政策分析，间杂「Reading List」链接汇总。",
       "accent": "#7A6A55",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -125,7 +135,10 @@
       "name": "Nielsen Norman Group",
       "site": "https://www.nngroup.com/",
       "feed": "https://www.nngroup.com/feed/rss/",
+      "category": "design",
+      "description": "Nielsen Norman Group 的 UX 研究，近期大量 AI 与设计流程话题，偶有课程广告。",
       "accent": "#A85C6B",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -133,7 +146,10 @@
       "name": "Austin Kleon",
       "site": "https://austinkleon.com/",
       "feed": "https://austinkleon.com/feed/",
+      "category": "culture",
+      "description": "Austin Kleon 谈创作生活与手作，篇幅短，随笔性质。",
       "accent": "#C08A3E",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -141,7 +157,10 @@
       "name": "Benedict Evans",
       "site": "https://www.ben-evans.com/",
       "feed": "https://www.ben-evans.com/benedictevans?format=rss",
+      "category": "business",
+      "description": "科技行业结构性分析，AI 商业模式与市场格局，更新慢但每篇有观点。",
       "accent": "#55606E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -149,7 +168,10 @@
       "name": "WESTENBERG",
       "site": "https://www.joanwestenberg.com/",
       "feed": "https://www.joanwestenberg.com/feed",
+      "category": "culture",
+      "description": "哲学化的生产力与生活方式随笔，标题风格强烈，论证密度参差。",
       "accent": "#7B3F5E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -157,7 +179,10 @@
       "name": "ByteCode.News",
       "site": "https://bytecode.news/",
       "feed": "https://bytecode.news/feed.xml",
+      "category": "tech",
+      "description": "个人向科技随笔，兼有工具发布公告。",
       "accent": "#6E7B3F",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -165,7 +190,10 @@
       "name": "Jake Gold",
       "site": "https://jacob.gold/",
       "feed": "https://jacob.gold/index.xml",
+      "category": "tech",
+      "description": "Jake Gold，安全、网络与 AI 行业短评。",
       "accent": "#B08D2E",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -173,7 +201,10 @@
       "name": "Uncharted Territories",
       "site": "https://unchartedterritories.tomaspueyo.com/",
       "feed": "https://unchartedterritories.tomaspueyo.com/feed",
+      "category": "economy",
+      "description": "Tomas Pueyo，地缘政治、能源与 AI 的宏观分析，含定期的 Dispatch 汇总栏目。",
       "accent": "#2E7D6E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -181,44 +212,21 @@
       "name": "the singularity is nearer",
       "site": "https://geohot.github.io/blog/",
       "feed": "https://geohot.github.io/blog/feed.xml",
+      "category": "tech",
+      "description": "George Hotz，对 AI 泡沫与行业炒作的尖锐短评。",
       "accent": "#B4523D",
+      "enabled": true,
       "fetchBody": false
-    },
-    {
-      "id": "alienchow",
-      "name": "Alienchow",
-      "site": "https://alienchow.dev/",
-      "feed": "",
-      "accent": "#8C6D4F",
-      "fetchBody": true,
-      "scrape": {
-        "index": "https://alienchow.dev/",
-        "pattern": "<a\\s+href=[\"']?(?<url>[^\"'\\s>]+)[\"']?[^>]*class=[\"']?post-item\\b[^>]*>[\\s\\S]*?post-item-date[^>]*>(?<date>[^<]+)<[\\s\\S]*?post-item-title[^>]*>(?<title>[^<]+)<",
-        "flags": "gi"
-      }
-    },
-    {
-      "id": "nicchan",
-      "name": "Nic Chan",
-      "site": "https://www.nicchan.me/blog/",
-      "feed": "https://www.nicchan.me/feed.xml",
-      "accent": "#9E5C81",
-      "fetchBody": false
-    },
-    {
-      "id": "caolan",
-      "name": "caolan.uk",
-      "site": "https://caolan.uk/notes/",
-      "feed": "https://caolan.uk/feed/notes/",
-      "accent": "#5B7B6A",
-      "fetchBody": true
     },
     {
       "id": "notboring",
       "name": "Not Boring",
       "site": "https://www.notboring.co/",
       "feed": "https://www.notboring.co/feed",
+      "category": "business",
+      "description": "Packy McCormick，创业公司深度与乐观主义叙事；「Weekly Dose of Optimism」是链接汇总。",
       "accent": "#C4622D",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -226,15 +234,10 @@
       "name": "Lenny's Newsletter",
       "site": "https://www.lennysnewsletter.com/",
       "feed": "https://www.lennysnewsletter.com/feed",
+      "category": "business",
+      "description": "产品管理与增长，访谈和播客转录占多数，夹带自家招聘与产品公告。",
       "accent": "#3E7A5E",
-      "fetchBody": false
-    },
-    {
-      "id": "slowboring",
-      "name": "Slow Boring",
-      "site": "https://www.slowboring.com/",
-      "feed": "https://www.slowboring.com/feed",
-      "accent": "#5A5F8C",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -242,7 +245,10 @@
       "name": "Noahpinion",
       "site": "https://www.noahpinion.blog/",
       "feed": "https://www.noahpinion.blog/feed",
+      "category": "economy",
+      "description": "Noah Smith，宏观经济与产业政策，间有旅行和美食这类私人话题。",
       "accent": "#8C4A6B",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -250,7 +256,10 @@
       "name": "阮一峰的网络日志",
       "site": "https://www.ruanyifeng.com/blog/",
       "feed": "https://www.ruanyifeng.com/blog/atom.xml",
+      "category": "tech",
+      "description": "科技爱好者周刊，每周一期的链接与工具汇总，中文。",
       "accent": "#4A7C8C",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -258,7 +267,10 @@
       "name": "Of Dollars And Data",
       "site": "https://ofdollarsanddata.com/",
       "feed": "https://ofdollarsanddata.com/feed/",
+      "category": "investing",
+      "description": "Nick Maggiulli，用数据讲个人理财与长期投资心态。",
       "accent": "#3D7A4F",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -266,7 +278,10 @@
       "name": "Musings on Markets",
       "site": "https://aswathdamodaran.blogspot.com/",
       "feed": "https://aswathdamodaran.blogspot.com/feeds/posts/default",
+      "category": "investing",
+      "description": "Aswath Damodaran，估值方法与个股拆解，专业度最高的一个投资源。",
       "accent": "#7A3B4A",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -274,7 +289,10 @@
       "name": "Interconnects",
       "site": "https://www.interconnects.ai/",
       "feed": "https://www.interconnects.ai/feed",
+      "category": "tech",
+      "description": "Nathan Lambert，大模型后训练与开源模型进展的技术分析。",
       "accent": "#4A4E8C",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -282,7 +300,10 @@
       "name": "Import AI",
       "site": "https://importai.substack.com/",
       "feed": "https://importai.substack.com/feed",
+      "category": "tech",
+      "description": "Jack Clark 的 AI 周报，逐条点评论文与行业动态，篇幅长。",
       "accent": "#6D5AA8",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -290,7 +311,10 @@
       "name": "One Useful Thing",
       "site": "https://www.oneusefulthing.org/",
       "feed": "https://www.oneusefulthing.org/feed",
+      "category": "tech",
+      "description": "Ethan Mollick，AI 的实际使用方式与对工作的影响，面向非专家。",
       "accent": "#3E8C9E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -298,7 +322,10 @@
       "name": "The Intrinsic Perspective",
       "site": "https://www.theintrinsicperspective.com/",
       "feed": "https://www.theintrinsicperspective.com/feed",
+      "category": "science",
+      "description": "Erik Hoel，意识研究、神经科学与学术圈批评。",
       "accent": "#4E8C7A",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -306,7 +333,10 @@
       "name": "Cal Newport",
       "site": "https://calnewport.com/",
       "feed": "https://calnewport.com/feed/",
+      "category": "living",
+      "description": "Cal Newport，深度工作、注意力与 AI 对脑力劳动的影响。",
       "accent": "#5F7A2E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -314,7 +344,10 @@
       "name": "Conversable Economist",
       "site": "https://conversableeconomist.com/",
       "feed": "https://conversableeconomist.com/feed/",
+      "category": "economy",
+      "description": "Timothy Taylor，经济学论文与史料的通俗解读，学术味重。",
       "accent": "#46688F",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -322,7 +355,10 @@
       "name": "Dan Luu",
       "site": "https://danluu.com/",
       "feed": "https://danluu.com/atom.xml",
+      "category": "tech",
+      "description": "Dan Luu，实证导向的系统与工程分析，长文，一年只有几篇。",
       "accent": "#4A5A6B",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -330,7 +366,10 @@
       "name": "Craig Mod",
       "site": "https://craigmod.com/",
       "feed": "https://craigmod.com/index.xml",
+      "category": "culture",
+      "description": "Craig Mod，日本、徒步、摄影与出版的随笔；含 RODEN/RIDGELINE 等多个栏目。",
       "accent": "#B5714A",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -338,7 +377,10 @@
       "name": "Works in Progress",
       "site": "https://worksinprogress.co/",
       "feed": "https://worksinprogress.co/rss.xml",
+      "category": "science",
+      "description": "进步研究，医学、农业、城市的长篇实证文章，质量稳定。",
       "accent": "#8C6A9E",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -346,7 +388,10 @@
       "name": "404 Media",
       "site": "https://www.404media.co/",
       "feed": "https://www.404media.co/rss/",
+      "category": "tech",
+      "description": "记者自营的科技调查报道，监控、平台滥用、AI 乱象；已限 maxPerRun 3。",
       "accent": "#A63D3D",
+      "enabled": true,
       "fetchBody": false,
       "maxPerRun": 3
     },
@@ -355,7 +400,10 @@
       "name": "Where’s Your Ed At",
       "site": "https://www.wheresyoured.at/",
       "feed": "https://www.wheresyoured.at/rss/",
+      "category": "business",
+      "description": "Ed Zitron，对 AI 商业模式的尖锐批判，长文，立场极强。",
       "accent": "#8A5A2E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -363,7 +411,10 @@
       "name": "Blood in the Machine",
       "site": "https://www.bloodinthemachine.com/",
       "feed": "https://www.bloodinthemachine.com/feed",
+      "category": "culture",
+      "description": "Brian Merchant，技术批评与劳工视角，反 AI 立场鲜明。",
       "accent": "#7C3A52",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -371,7 +422,10 @@
       "name": "Citation Needed",
       "site": "https://www.citationneeded.news/",
       "feed": "https://www.citationneeded.news/rss/",
+      "category": "business",
+      "description": "Molly White，加密货币与科技行业问责；「Issue NNN」是周期性链接汇总。",
       "accent": "#4C6E8A",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -379,7 +433,10 @@
       "name": "The Markup",
       "site": "https://themarkup.org/",
       "feed": "https://themarkup.org/feeds/rss.xml",
+      "category": "tech",
+      "description": "算法问责调查报道，隐私、医疗数据、平台监管。",
       "accent": "#2E7A85",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -387,7 +444,10 @@
       "name": "Rest of World",
       "site": "https://restofworld.org/",
       "feed": "https://restofworld.org/feed/latest/",
+      "category": "business",
+      "description": "非西方视角的科技商业报道，中国出海、新兴市场，选题独特。",
       "accent": "#5E8C4A",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -395,7 +455,10 @@
       "name": "Pluralistic",
       "site": "https://pluralistic.net/",
       "feed": "https://pluralistic.net/feed/",
+      "category": "culture",
+      "description": "Cory Doctorow，版权、反垄断与平台批判，日更且每篇含大段链接汇总。",
       "accent": "#5D4E9C",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -403,7 +466,10 @@
       "name": "Techdirt",
       "site": "https://www.techdirt.com/",
       "feed": "https://www.techdirt.com/feed/",
+      "category": "tech",
+      "description": "科技政策与言论自由的密集报道，日更多条，夹带「Daily Deal」广告帖；已限 maxPerRun 3。",
       "accent": "#9C7B2F",
+      "enabled": true,
       "fetchBody": false,
       "maxPerRun": 3
     },
@@ -412,31 +478,21 @@
       "name": "Simon Willison",
       "site": "https://simonwillison.net/",
       "feed": "https://simonwillison.net/atom/entries/",
+      "category": "tech",
+      "description": "LLM 工程一线实践，模型评测与工具发布，更新频繁且信息密度高。",
       "accent": "#4C5FA8",
+      "enabled": true,
       "fetchBody": false
-    },
-    {
-      "id": "kexuefm",
-      "name": "科学空间",
-      "site": "https://kexue.fm/",
-      "feed": "https://kexue.fm/feed",
-      "accent": "#35748F",
-      "fetchBody": true
     },
     {
       "id": "marcbrooker",
       "name": "Marc Brooker",
       "site": "https://brooker.co.za/blog/",
       "feed": "https://brooker.co.za/blog/rss.xml",
+      "category": "tech",
+      "description": "AWS 首席工程师，分布式系统与数据库，篇篇有原创观点。",
       "accent": "#40607A",
-      "fetchBody": false
-    },
-    {
-      "id": "righto",
-      "name": "Ken Shirriff",
-      "site": "https://www.righto.com/",
-      "feed": "https://www.righto.com/feeds/posts/default",
-      "accent": "#766AAE",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -444,7 +500,10 @@
       "name": "宝玉的分享",
       "site": "https://baoyu.io/",
       "feed": "https://baoyu.io/feed.xml",
+      "category": "tech",
+      "description": "宝玉，AI 工程实践与行业观察，中文，也发翻译。",
       "accent": "#4E7FA8",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 3
     },
@@ -453,7 +512,10 @@
       "name": "云风的 BLOG",
       "site": "https://blog.codingnow.com/",
       "feed": "https://blog.codingnow.com/atom.xml",
+      "category": "tech",
+      "description": "云风，游戏引擎与系统编程，中文；间有育儿、健康等私人话题。",
       "accent": "#2F6F5A",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -461,7 +523,10 @@
       "name": "ACOUP",
       "site": "https://acoup.blog/",
       "feed": "https://acoup.blog/feed/",
+      "category": "culture",
+      "description": "Bret Devereaux，古代军事与社会史的长篇连载，学术但可读性强。",
       "accent": "#7E4A6E",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -469,7 +534,10 @@
       "name": "Quanta Magazine",
       "site": "https://www.quantamagazine.org/",
       "feed": "https://www.quantamagazine.org/feed/",
+      "category": "science",
+      "description": "数学与基础科学报道，专业记者撰写，是 science 分类的主力；已限 maxPerRun 3。",
       "accent": "#2A8CA0",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 3
     },
@@ -478,7 +546,10 @@
       "name": "Bits about Money",
       "site": "https://www.bitsaboutmoney.com/",
       "feed": "https://www.bitsaboutmoney.com/archive/rss/",
+      "category": "business",
+      "description": "Patrick McKenzie，支付与银行系统内幕，更新慢但每篇都是长文。",
       "accent": "#D08A55",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -486,42 +557,21 @@
       "name": "Apricitas Economics",
       "site": "https://www.apricitas.io/",
       "feed": "https://www.apricitas.io/feed",
+      "category": "economy",
+      "description": "图表驱动的宏观经济分析，电力、关税、产业政策。",
       "accent": "#567FB0",
+      "enabled": true,
       "fetchBody": false
-    },
-    {
-      "id": "paristreview",
-      "name": "The Paris Review Daily",
-      "site": "https://www.theparisreview.org/blog/",
-      "feed": "https://www.theparisreview.org/blog/feed/",
-      "accent": "#A15C93",
-      "fetchBody": false,
-      "maxPerRun": 3
-    },
-    {
-      "id": "jstordaily",
-      "name": "JSTOR Daily",
-      "site": "https://daily.jstor.org/",
-      "feed": "https://daily.jstor.org/feed/",
-      "accent": "#9166A6",
-      "fetchBody": false,
-      "maxPerRun": 3
-    },
-    {
-      "id": "aeon",
-      "name": "Aeon",
-      "site": "https://aeon.co/",
-      "feed": "https://aeon.co/feed.rss",
-      "accent": "#7C6BA4",
-      "fetchBody": true,
-      "maxPerRun": 3
     },
     {
       "id": "henrikkarlsson",
       "name": "Escaping Flatland",
       "site": "https://www.henrikkarlsson.xyz/",
       "feed": "https://www.henrikkarlsson.xyz/feed",
+      "category": "culture",
+      "description": "Henrik Karlsson，关于思考方式、育儿与社群的个人随笔。",
       "accent": "#B0668C",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -529,7 +579,10 @@
       "name": "The Convivial Society",
       "site": "https://theconvivialsociety.substack.com/",
       "feed": "https://theconvivialsociety.substack.com/feed",
+      "category": "culture",
+      "description": "L.M. Sacasas，技术哲学，追问技术如何改变人的处境。",
       "accent": "#77527F",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -537,7 +590,10 @@
       "name": "Res Obscura",
       "site": "https://resobscura.substack.com/",
       "feed": "https://resobscura.substack.com/feed",
+      "category": "culture",
+      "description": "Benjamin Breen，历史学者写的科技史与文化史随笔。",
       "accent": "#8B5D93",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -545,16 +601,10 @@
       "name": "RogerEbert.com",
       "site": "https://www.rogerebert.com/",
       "feed": "https://www.rogerebert.com/feed",
+      "category": "culture",
+      "description": "影评站，含影展报道与讣告；产出中影展片单、游戏评测这类小众条目占比高。",
       "accent": "#B4536D",
-      "fetchBody": false,
-      "maxPerRun": 3
-    },
-    {
-      "id": "chuapp",
-      "name": "触乐",
-      "site": "https://www.chuapp.com/",
-      "feed": "https://www.chuapp.com/feed",
-      "accent": "#C25C7A",
+      "enabled": true,
       "fetchBody": false,
       "maxPerRun": 3
     },
@@ -563,24 +613,22 @@
       "name": "Nautilus",
       "site": "https://nautil.us/",
       "feed": "https://nautil.us/feed/",
+      "category": "science",
+      "description": "科普长文，衰老、神经、演化，面向大众；已限 maxPerRun 3。",
       "accent": "#327E86",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 3
-    },
-    {
-      "id": "fanpu",
-      "name": "返朴",
-      "site": "https://www.fanpu.io/",
-      "feed": "https://www.fanpu.io/feed",
-      "accent": "#4390A6",
-      "fetchBody": false
     },
     {
       "id": "psyche",
       "name": "Psyche",
       "site": "https://psyche.co/",
       "feed": "https://psyche.co/feed",
+      "category": "living",
+      "description": "Aeon 旗下，心理学与生活实践的短文，teaser feed 需抓正文；已限 maxPerRun 3。",
       "accent": "#7A9450",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 3
     },
@@ -589,7 +637,10 @@
       "name": "Vittles",
       "site": "https://www.vittlesmagazine.com/",
       "feed": "https://www.vittlesmagazine.com/feed",
+      "category": "living",
+      "description": "英国的食物文化写作，餐厅、食材与饮食社会学；已限 maxPerRun 2。",
       "accent": "#86A044",
+      "enabled": true,
       "fetchBody": false,
       "maxPerRun": 2
     },
@@ -598,7 +649,10 @@
       "name": "少数派",
       "site": "https://sspai.com/",
       "feed": "https://sspai.com/feed",
+      "category": "living",
+      "description": "少数派，中文效率工具与数码；「派早报」「社区速递」「线下活动」等栏目帖占比很高。",
       "accent": "#64913F",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 3
     },
@@ -607,7 +661,10 @@
       "name": "Design Observer",
       "site": "https://designobserver.com/",
       "feed": "https://designobserver.com/feed/",
+      "category": "design",
+      "description": "设计评论，谈职业、协作与设计伦理，不是前端技术。",
       "accent": "#B96A48",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -615,7 +672,10 @@
       "name": "Net Interest",
       "site": "https://www.netinterest.co/",
       "feed": "https://www.netinterest.co/feed",
+      "category": "investing",
+      "description": "Marc Rubinstein，金融业与金融股的深度分析。",
       "accent": "#9A7C3A",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -623,7 +683,10 @@
       "name": "Klement on Investing",
       "site": "https://klementoninvesting.substack.com/",
       "feed": "https://klementoninvesting.substack.com/feed",
+      "category": "investing",
+      "description": "Joachim Klement，用学术研究讲投资与宏观，每篇很短；已限 maxPerRun 2。",
       "accent": "#C4A24A",
+      "enabled": true,
       "fetchBody": false,
       "maxPerRun": 2
     },
@@ -632,7 +695,10 @@
       "name": "Chartbook",
       "site": "https://adamtooze.substack.com/",
       "feed": "https://adamtooze.substack.com/feed",
+      "category": "economy",
+      "description": "Adam Tooze，经济史与全球宏观；但「Top Links NNNN」纯链接汇总占了绝大多数；已限 maxPerRun 2。",
       "accent": "#3E5C86",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 2
     },
@@ -641,7 +707,10 @@
       "name": "硅谷居士",
       "site": "https://blog.wenxuecity.com/myoverview/80634/",
       "feed": "",
+      "category": "investing",
+      "description": "硅谷居士，中文的指数投资与 FIRE，文学城博客，靠 scrape 抓取；已限 maxPerRun 3。",
       "accent": "#C08F5A",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 3,
       "scrape": {
@@ -655,7 +724,10 @@
       "name": "Early Retirement Now",
       "site": "https://earlyretirementnow.com/",
       "feed": "https://earlyretirementnow.com/feed/",
+      "category": "investing",
+      "description": "SWR 安全提取率的量化研究系列，FIRE 领域最硬的一个，长文。",
       "accent": "#8E7A45",
+      "enabled": true,
       "fetchBody": false
     },
     {
@@ -663,7 +735,10 @@
       "name": "A Wealth of Common Sense",
       "site": "https://awealthofcommonsense.com/",
       "feed": "https://awealthofcommonsense.com/feed/",
+      "category": "investing",
+      "description": "Ben Carlson，市场常识与投资心态，日更短文；已限 maxPerRun 2。",
       "accent": "#D4B45C",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 2
     },
@@ -672,7 +747,10 @@
       "name": "JL Collins",
       "site": "https://jlcollinsnh.com/",
       "feed": "https://jlcollinsnh.com/feed/",
+      "category": "investing",
+      "description": "《The Simple Path to Wealth》作者，指数投资入门，更新很少。",
       "accent": "#7E6B33",
+      "enabled": true,
       "fetchBody": true
     },
     {
@@ -680,7 +758,10 @@
       "name": "HumbleDollar",
       "site": "https://humbledollar.com/",
       "feed": "https://humbledollar.com/feed/",
+      "category": "investing",
+      "description": "多作者的个人理财站，退休规划与税务实务，偏美国国情；已限 maxPerRun 2。",
       "accent": "#B9A05C",
+      "enabled": true,
       "fetchBody": true,
       "maxPerRun": 2
     },
@@ -689,7 +770,10 @@
       "name": "Alpha Architect",
       "site": "https://alphaarchitect.com/",
       "feed": "https://alphaarchitect.com/feed/",
+      "category": "investing",
+      "description": "量化因子投资，学术论文解读，专业门槛较高。",
       "accent": "#6F5F2E",
+      "enabled": true,
       "fetchBody": false
     }
   ]
