@@ -610,18 +610,6 @@
       "maxPerRun": 3
     },
     {
-      "id": "vittles",
-      "name": "Vittles",
-      "site": "https://www.vittlesmagazine.com/",
-      "feed": "https://www.vittlesmagazine.com/feed",
-      "category": "living",
-      "description": "英国的食物文化写作，餐厅、食材与饮食社会学；已限 maxPerRun 2。",
-      "accent": "#86A044",
-      "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 2
-    },
-    {
       "id": "designobserver",
       "name": "Design Observer",
       "site": "https://designobserver.com/",
