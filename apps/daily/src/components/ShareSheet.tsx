@@ -169,9 +169,15 @@ export function ShareSheet({
    * present in the HTML and absent from the hydrated tree is a mismatch React
    * will complain about — correctly, since it would flicker.
    *
-   * The file probe uses an empty `File` because `canShare` only looks at the
-   * type; asking with the real poster would mean fetching 206KB to find out
-   * whether it could ever be used.
+   * The file probe uses an empty `File` on purpose: `canShare` only looks at the
+   * TYPE, so asking with the real poster would mean fetching 210KB to learn
+   * nothing more. Measured — on desktop Chrome it returns true for the real file,
+   * the empty one, and every combination of fields, and the share still arrives
+   * without an image.
+   *
+   * So this is a floor, not a promise: false means the browser has no file support
+   * at all and there is no point fetching a poster, true means it might work.
+   * `systemShare` is where that uncertainty is absorbed.
    */
   const [canShare, setCanShare] = useState(false);
   const [canShareFiles, setCanShareFiles] = useState(false);
@@ -185,9 +191,12 @@ export function ShareSheet({
    */
   const [asked, setAsked] = useState(false);
   /**
-   * Whether this is a touch screen, which is what decides whether the long-press
-   * hint is TRUE. `pointer: coarse` rather than a user-agent test: the gesture is
-   * a property of the input device, not of the OS name.
+   * Whether this is a touch screen, which SPLITS THE TWO WAYS TO SAVE THE POSTER:
+   * a long press on the preview here, a download link there, never both. Each is
+   * useless on the other's platform — see the hint and the download below.
+   *
+   * `pointer: coarse` rather than a user-agent test: the gesture is a property of
+   * the input device, not of the OS name.
    */
   const [touch, setTouch] = useState(false);
   /**
@@ -280,9 +289,21 @@ export function ShareSheet({
    * the file is the difference between a share that can be posted and one that
    * cannot.
    *
+   * `url` NOW TRAVELS WITH THE FILE, which it briefly did not, on a guess that
+   * Safari was unreliable with both at once. That guess was wrong in the one
+   * direction that mattered: Safari is the browser where files work. Chrome is the
+   * one where they do not — `navigator.canShare({files})` returns true for a real
+   * 213KB PNG on desktop Chrome, and then the share arrives with no image, because
+   * `canShare` only validates the TYPE and says nothing about whether the platform
+   * will actually carry a file. There is no predicate for that, so the fix is not
+   * to detect it: send the link alongside, and a target that dropped the file can
+   * still unfurl og:image — which is that same poster. The cost is that an app
+   * taking both shows the image and a link card for it; that beats an image that
+   * silently never arrives.
+   *
    * Both fallbacks are one-way on purpose: a late file, or an iOS that has
    * decided the gesture is stale, leaves the reader with the link-only sheet
-   * rather than an error. `save image` on the page is the path that cannot fail.
+   * rather than an error.
    */
   async function systemShare() {
     // Blank lines between the three parts: a composer that pastes this whole
@@ -302,9 +323,7 @@ export function ShareSheet({
 
     if (file) {
       try {
-        // No `url` beside `files`: Safari has been unreliable with both at once,
-        // and `text` already carries the link for anything that reads it.
-        await navigator.share({ title, text, files: [file] });
+        await navigator.share({ title, text, url: page, files: [file] });
         onClose();
         return;
       } catch (error) {
@@ -453,24 +472,30 @@ export function ShareSheet({
             </button>
 
             {/**
-             * A download, and A DOWNLOAD IS NOT THE PHOTO LIBRARY — worth stating,
-             * because the comment here used to claim that long-pressing this
-             * offered "save image" the way it would for any picture. It does not:
-             * this is an anchor, so a long press gets the link menu — open, copy,
-             * share. On iOS Safari the download itself lands in Files → Downloads,
-             * and on Android in Downloads, where the gallery usually picks it up.
+             * A download, DESKTOP ONLY — and the two halves of that pair with the
+             * long-press hint above, which is touch only. One route to a saved
+             * image per platform, and each platform gets the one that works.
              *
-             * The route to the album is the preview above, or the OS tile. This
-             * one stays because it is the only path on a desktop browser, and the
-             * only one anywhere that cannot fail.
+             * On a phone this button was the wrong answer offered next to the right
+             * one. A download is not the photo library: this is an anchor, so a long
+             * press on it gets the link menu — open, copy, share — and the download
+             * itself lands in Files → Downloads on iOS, or Downloads on Android.
+             * Someone looking for their picture would take the button that says
+             * "save image" over an unlabelled gesture on the image, and end up with
+             * a PNG filed where they will not look for it.
+             *
+             * It stays on the desktop because there it is the only path at all: no
+             * OS share sheet worth the name, and no long press.
              */}
-            <a
-              href={poster}
-              download={`${title.slice(0, 40)}.png`}
-              className={ACTION}
-            >
-              {t.saveImage}
-            </a>
+            {touch ? null : (
+              <a
+                href={poster}
+                download={`${title.slice(0, 40)}.png`}
+                className={ACTION}
+              >
+                {t.saveImage}
+              </a>
+            )}
 
           </div>
         </div>
