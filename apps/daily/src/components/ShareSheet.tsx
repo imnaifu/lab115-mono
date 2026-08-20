@@ -191,6 +191,18 @@ export function ShareSheet({
    */
   const [asked, setAsked] = useState(false);
   /**
+   * The preview's load attempts: 0 is the first, 1 the retry, 2 means it failed.
+   *
+   * The poster is generated per request and arrives over whatever connection the
+   * phone has, so a load can fail transiently — a dropped chunk leaves the broken
+   * image glyph sitting where the picture should be, and long-pressing it works
+   * because that re-requests the URL. One retry turns that into a picture; a
+   * second failure means the image is not coming and the sheet should stop
+   * pretending, which is what `previewFailed` below is for.
+   */
+  const [attempt, setAttempt] = useState(0);
+  const previewFailed = attempt > 1;
+  /**
    * Whether this is a touch screen, which SPLITS THE TWO WAYS TO SAVE THE POSTER:
    * a long press on the preview here, a download link there, never both. Each is
    * useless on the other's platform — see the hint and the download below.
@@ -398,12 +410,19 @@ export function ShareSheet({
          * saved file is the full-resolution source either way; CSS sizing does not
          * reach it.
          */}
-        {asked ? (
+        {asked && !previewFailed ? (
           <div className="flex flex-col gap-2">
             <img
-              src={poster}
+              /**
+               * `?retry=1` on the second attempt, because without it the reload
+               * would be served the same failed entry out of the HTTP cache. The
+               * query is ignored by the route, which takes everything it needs
+               * from the path.
+               */
+              src={attempt === 0 ? poster : `${poster}?retry=${attempt}`}
               alt={title}
               className="mx-auto max-h-[38vh] w-auto rounded-[12px] shadow-soft"
+              onError={() => setAttempt((n) => n + 1)}
             />
             {/* Said only where the gesture exists, and said at all because a
                 long press is invisible: nothing about an image announces that
@@ -486,8 +505,12 @@ export function ShareSheet({
              *
              * It stays on the desktop because there it is the only path at all: no
              * OS share sheet worth the name, and no long press.
+             *
+             * And it comes BACK on a phone when the preview failed to load, because
+             * the long press it was hidden in favour of needs an image to press.
+             * Exactly one route to a saved file, always — never both, never none.
              */}
-            {touch ? null : (
+            {touch && !previewFailed ? null : (
               <a
                 href={poster}
                 download={`${title.slice(0, 40)}.png`}

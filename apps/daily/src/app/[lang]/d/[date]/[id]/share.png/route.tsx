@@ -103,7 +103,7 @@ export async function GET(
   ]);
   const height = posterHeight(summary, headline, original);
 
-  return new ImageResponse(
+  const image = new ImageResponse(
     (
       <div
         style={{
@@ -368,24 +368,42 @@ export async function GET(
         </div>
       </div>
     ),
-    {
-      width: POSTER_WIDTH,
-      height,
-      fonts,
+    { width: POSTER_WIDTH, height, fonts },
+  );
+
+  /**
+   * Buffered and re-emitted with a LENGTH, rather than returned as it comes.
+   *
+   * `ImageResponse` is a streaming response, so it goes out chunked with no
+   * `content-length` — and a 125–263KB image whose end nothing declares is a
+   * broken picture the moment a mobile connection drops a chunk. The reader sees
+   * the broken-image glyph, then long-presses it, which re-requests the URL and
+   * works: intermittent, per-network, and impossible to reproduce on a desk.
+   *
+   * Buffering costs one ~200KB allocation per request and buys a response whose
+   * size is stated up front, so a truncated one is detectable rather than merely
+   * wrong. It is not proof against a dropped connection — nothing at this layer
+   * is — which is why the sheet also retries; see the preview in ShareSheet.
+   */
+  const bytes = await image.arrayBuffer();
+
+  return new Response(bytes, {
+    headers: {
+      "content-type": "image/png",
+      "content-length": String(bytes.byteLength),
       /**
-       * An hour of caching, because this route is now fetched TWICE per share.
-       *
-       * The sheet shows the poster as an `<img>` and then hands the same bytes to
-       * `navigator.share`, and Next's default for a dynamic route is
-       * `max-age=0, must-revalidate` with no validator — so those were two full
-       * ~210KB renders of a deterministic image. A digest is written once for its
-       * day and never edited, so the only thing that can change inside the hour is
-       * an upstream cover photo, which is cosmetic.
+       * An hour of caching, because this route is fetched TWICE per share: the
+       * sheet shows the poster as an `<img>` and then hands the same bytes to
+       * `navigator.share`. Next's default for a dynamic route is
+       * `max-age=0, must-revalidate` with no validator, which made those two full
+       * renders of a deterministic image. A digest is written once for its day and
+       * never edited, so the only thing that can change inside the hour is an
+       * upstream cover photo, which is cosmetic.
        *
        * It also takes the repeat cost off crawlers and link unfurlers, which fetch
        * this the moment a link is posted anywhere.
        */
-      headers: { "cache-control": "public, max-age=3600" },
+      "cache-control": "public, max-age=3600",
     },
-  );
+  });
 }
