@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
+import { ServiceWorker } from "@/components/ServiceWorker";
 import { strings } from "@/lib/i18n";
-import { DEFAULT_LANG, isLang, otherLang, type Lang } from "@/lib/lang";
+import { DEFAULT_LANG, href, isLang, otherLang, type Lang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/config";
 import "@/index.css";
@@ -48,7 +49,26 @@ export async function generateMetadata(): Promise<Metadata> {
       alternateLocale: OG_LOCALE[otherLang(lang)],
     },
     twitter: { card: "summary", title, description: t.tagline },
-    icons: { icon: "/favicon.svg" },
+    icons: {
+      icon: "/favicon.svg",
+      // iOS does not read the manifest for home-screen icons, and it ignores
+      // transparency — so this is a separate, full-bleed PNG.
+      apple: "/apple-touch-icon.png",
+    },
+    /**
+     * The manifest of THIS document's language, because there is one per language
+     * — see the route. Linking the root would install whichever language the
+     * browser's Accept-Language happened to resolve to, which is not necessarily
+     * the one being read.
+     */
+    manifest: href(lang, "/manifest.webmanifest"),
+    /**
+     * iOS reads none of the above from the manifest: `display: standalone` and the
+     * app's name on the home screen come from these two meta tags instead. The
+     * status bar is left `default` so it keeps the page's own cream rather than
+     * being painted over.
+     */
+    appleWebApp: { capable: true, title: t.brand, statusBarStyle: "default" },
   };
 }
 
@@ -114,7 +134,9 @@ export default async function RootLayout({
         />
       </head>
       <body className="bg-cream font-sans text-ink antialiased">
-{children}</body>
+{children}
+        <ServiceWorker />
+      </body>
     </html>
   );
 }

@@ -32,9 +32,21 @@ export default function proxy(request: NextRequest): NextResponse {
 
 export const config = {
   /**
-   * Everything except Next's own assets and the files served straight from
-   * `public/`. A redirect on `/favicon.svg` would break the icon, and one on
-   * `/_next/...` would break the whole page.
+   * Everything except Next's own assets and ANY file with an extension.
+   *
+   * It used to name the exceptions one at a time — `favicon.svg`, `robots.txt` —
+   * and that list is a trap: adding a file to `public/` and forgetting to add it
+   * here makes the file 404 through a redirect to `/zh/<file>`, which is a strange
+   * enough failure to cost an afternoon. `/sw.js` in particular would have been
+   * silently redirected, and a service worker that 404s does not register.
+   *
+   * A dot in the last segment stands in for "this is a file, not a page", which
+   * holds for every route on this site: the paths are `/<lang>`, `/<lang>/archive`
+   * and `/<lang>/d/<date>/<id>`, and none of those segments contains one.
+   *
+   * The routes that DO end in an extension — `share.png`, `manifest.webmanifest` —
+   * take their language from `params`, not from the header this sets, so skipping
+   * them here costs nothing.
    */
-  matcher: ["/((?!_next/|favicon\\.svg|robots\\.txt).*)"],
+  matcher: ["/((?!_next/|[^/]*\\.[a-zA-Z0-9]+$).*)"],
 };
