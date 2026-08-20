@@ -1,51 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ShareSheet } from "./ShareSheet";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 
 /** The same pill the list's action row uses, so the two read as one control set. */
 const PILL =
   "cursor-pointer rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid";
-
-/**
- * The platform row: secondary to the two actions above it, so smaller and
- * quieter, but still a pill so the whole block reads as one control set.
- */
-const PILL_SMALL =
-  "rounded-full border border-line px-3.5 py-1.5 text-xs font-bold text-ink-soft";
-
-/**
- * The platforms that accept a shared link as a plain URL.
- *
- * Three, and the shortness of the list is the finding rather than a shortcut: an
- * intent URL IS the whole integration, so a platform without one cannot be added
- * here at any price. 微信, 小红书 and Instagram have none — WeChat composes only
- * from inside its own webview, through a JS-SDK call signed by a verified
- * official account — which is why the poster download beside these is not the
- * lesser path for them but the only one.
- *
- * `pic` is Weibo's alone and wants an absolute URL: it drops the poster into the
- * composer next to the link, the closest any of the three comes to what the
- * download does by hand. X and Telegram both build their preview from og:image,
- * which is that same poster, so neither needs telling.
- */
-function intents(page: string, poster: string, title: string, weibo: string) {
-  const url = encodeURIComponent(page);
-  const text = encodeURIComponent(title);
-  return [
-    { label: "X", href: `https://x.com/intent/post?url=${url}&text=${text}` },
-    { label: "Telegram", href: `https://t.me/share/url?url=${url}&text=${text}` },
-    {
-      label: weibo,
-      // `pic` is dropped unless the poster URL has already been absolutised —
-      // before hydration it has not, and a relative one means nothing to Weibo.
-      href:
-        `https://service.weibo.com/share/share.php?url=${url}&title=${text}` +
-        (/^https?:\/\//.test(poster) ? `&pic=${encodeURIComponent(poster)}` : ""),
-    },
-  ];
-}
 
 interface Marked {
   /** `<paragraph>.<start>-<end>` per run, in the order they appear. */
@@ -107,13 +69,18 @@ function highlightQuery(marked: Marked): string {
 }
 
 /**
- * The share block: hand the link to the OS share sheet, copy it, save the poster —
- * with whatever the reader has marked in the summary above — or open one platform's
- * composer directly.
+ * The share block: ONE button, and the sheet it opens.
  *
- * Two rows, because the controls are not peers. The top row acts on THIS device:
- * the sheet, the clipboard, the file. The bottom row leaves for a named platform,
- * which is a smaller and more specific thing to want.
+ * Every destination lives in the sheet — the platforms, the clipboard, the file,
+ * the OS handover. It was split across both surfaces for a while, pills on the
+ * page and platforms in the sheet, and the split had no rule behind it: "copy
+ * link" and "save image" are the same kind of thing as the sheet's own fallbacks,
+ * so a reader deciding where to press had to check two places to find out they
+ * were the same place.
+ *
+ * What stays here is the sentence under the button, because it has to be read
+ * BEFORE the button: the highlight comes from a text selection, and the press is
+ * what ends it.
  *
  * Highlighting lives here rather than on the list because this is the page the
  * 分享 button leads to: the reader arrives, selects the passage worth passing on,
@@ -153,13 +120,17 @@ export function ArticleShare({
    * on the server, so nothing tries.
    */
   const [links, setLinks] = useState({ page: url, poster: imageUrl });
+  /** Whether the sheet is up. It renders either way — see ShareSheet. */
+  const [sheetOpen, setSheetOpen] = useState(false);
   /**
-   * Whether to offer the OS share sheet at all. Read after mount rather than
-   * during render: the server has no `navigator`, and a button present in the
-   * HTML and absent from the hydrated tree is a mismatch React will complain
-   * about — correctly, since it would flicker.
+   * The highlight the sheet will use, FROZEN when it opens.
+   *
+   * It has to be frozen, and this is the only place that can do it: pressing the
+   * button is itself what clears the selection, so by the time the sheet renders
+   * there is nothing left to read. Captured on pointerdown, which runs before the
+   * clearing — the same trick, and the same reason, as the download link below.
    */
-  const [canShare, setCanShare] = useState(false);
+  const [sheetHl, setSheetHl] = useState("");
 
   useEffect(() => {
     setLinks({
@@ -167,10 +138,6 @@ export function ArticleShare({
       poster: new URL(imageUrl, location.href).href,
     });
   }, [url, imageUrl]);
-
-  useEffect(() => {
-    setCanShare(typeof navigator.share === "function");
-  }, []);
 
   // Tracked live so the line below can say what will happen BEFORE the reader
   // commits to a click. One listener on a page holding one article.
@@ -193,83 +160,21 @@ export function ArticleShare({
     }
   }
 
-  /**
-   * The OS share sheet: on a phone the shortest route to any app at all, and the
-   * only route to 微信 and 小红书 that is not a manual screenshot.
-   *
-   * It shares the LINK, not the poster, and that is deliberate. `navigator.share`
-   * does take files, but the poster would have to be fetched first and it is
-   * rendered on demand — fonts subsetted per article, cover refetched — so a cold
-   * one takes seconds, and iOS withdraws the user activation that `share()`
-   * requires while a fetch that long is in flight. A sheet that fails half the
-   * time is worse than one that passes a link whose og:image is that same poster;
-   * the reader who wants the file itself has the button next to this one.
-   */
-  async function systemShare() {
-    try {
-      await navigator.share({ title, text: title, url: links.page });
-    } catch {
-      // Dismissing the sheet throws AbortError, so a rejection here is the
-      // ordinary outcome as often as it is a failure. Neither is worth a report.
-    }
-  }
-
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        {/* First when it exists, because on the device that has it it is the
-            fastest thing in the row — and it is absent on every desktop browser
-            but Safari, where the two buttons after it are the whole story. */}
-        {canShare ? (
-          <button type="button" className={PILL} onClick={systemShare}>
-            {t.shareVia}
-          </button>
-        ) : null}
-
-        <button type="button" className={PILL} onClick={copy}>
-          {copied ? t.copied : t.copyLink}
-        </button>
-
-        {/* A plain download link, so long-press on a phone offers "save image"
-            the way it would for any picture. */}
-        <a
-          href={`${imageUrl}${highlightQuery(marked)}`}
-          download={`${title.slice(0, 40)}.png`}
-          className={PILL}
-          /**
-           * The href is rewritten from the DOM on POINTER DOWN as well as from
-           * state, and the redundancy is the point: pressing the link is itself
-           * what clears the selection, so a `selectionchange` fires and React may
-           * re-render with an empty set before the click's default action reads
-           * the attribute. The handler runs BEFORE that clearing, so what it
-           * writes is what the browser downloads.
-           */
-          onPointerDown={(event) => {
-            event.currentTarget.setAttribute(
-              "href",
-              `${imageUrl}${highlightQuery(selectedRuns())}`,
-            );
-          }}
-        >
-          {t.saveImage}
-        </a>
-      </div>
-
-      {/* A row of plain links — no JS, no SDK, nothing to fail. Each opens that
-          platform's own composer with the permalink and the headline in it. */}
-      <div className="flex flex-wrap items-center gap-2">
-        {intents(links.page, links.poster, title, t.weibo).map((intent) => (
-          <a
-            key={intent.label}
-            href={intent.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={PILL_SMALL}
-          >
-            {intent.label}
-          </a>
-        ))}
-      </div>
+    <div className="flex flex-col items-start gap-2">
+      {/* Always here, unlike the version that called `navigator.share` directly:
+          that one vanished on any browser without a share sheet — every desktop
+          browser but Safari, and any http origin, since Web Share needs a secure
+          context. A button that is sometimes absent is indistinguishable from a
+          feature that was never built. */}
+      <button
+        type="button"
+        className={PILL}
+        onPointerDown={() => setSheetHl(highlightQuery(selectedRuns()))}
+        onClick={() => setSheetOpen(true)}
+      >
+        {t.shareVia}
+      </button>
 
       {/* Tells the reader the affordance exists — a highlight nobody knows about
           is a highlight nobody uses — and then confirms it once they have made
@@ -277,6 +182,18 @@ export function ArticleShare({
       <div className="text-xs font-medium text-ink-soft">
         {marked.chars ? t.highlighted(marked.chars) : t.highlightHint}
       </div>
+
+      <ShareSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        page={links.page}
+        poster={links.poster}
+        title={title}
+        hl={sheetHl}
+        onCopy={copy}
+        copied={copied}
+        lang={lang}
+      />
     </div>
   );
 }

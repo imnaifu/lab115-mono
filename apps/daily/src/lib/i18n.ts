@@ -55,6 +55,11 @@ const STRINGS = {
     copied: "已复制链接",
     saveImage: "保存图片",
     shareVia: "分享到…",
+    /** The sheet's own heading, so it repeats the button that opened it. */
+    shareTo: "分享到",
+    close: "关闭",
+    moreApps: "更多",
+    moreAppsHint: "「更多」交给系统的分享面板，长图一起带过去。",
     /** A platform name, so it takes the name that platform uses here. */
     weibo: "微博",
     shareHint: "图片里带完整摘要和链接，可以直接发出去。",
@@ -104,6 +109,10 @@ const STRINGS = {
     copied: "Link copied",
     saveImage: "Save image",
     shareVia: "Share via…",
+    shareTo: "Share to",
+    close: "Close",
+    moreApps: "More",
+    moreAppsHint: "“More” hands it to the OS share sheet, poster included.",
     weibo: "Weibo",
     shareHint: "The image carries the whole summary and the link.",
     highlightHint:
