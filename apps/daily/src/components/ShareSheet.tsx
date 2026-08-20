@@ -98,20 +98,24 @@ const ACTION =
  * A tile: the mark in a wash of its own colour, the name under it.
  *
  * A FIXED-WIDTH FLEX ITEM THAT WRAPS, not a grid column, and the width is set by
- * the longest label rather than by the marks. "WhatsApp" is 61px at this size and
- * the marks are 44px, so the label is the constraint; five 68px tiles fit the card
- * at its full 24rem, and on a phone narrow enough that they do not — 92vw of a
- * 360px screen leaves room for four — the fifth drops to a second row.
+ * the longest label rather than by the marks: "WhatsApp" is 61px at this size and
+ * the marks are 44px.
  *
- * A `grid-cols-5` did break there, and silently: equal columns simply became
- * narrower than their contents, so the two long labels ran together and the row
- * read as four destinations and one long word. Shrinking the type is not the fix
- * either, because Chrome enforces a minimum font size (12px in some locales,
- * which is exactly where a 10px label lands) — the stylesheet asks and the browser
- * declines. Wrapping degrades instead of overlapping.
+ * 64px is that 61 plus the smallest margin worth having, and the 3px matters — at
+ * 68px the row wrapped on a 393px phone, which is most of them. Five 64px tiles
+ * with no gap need 320px, and 92vw of a 390px screen leaves 329px inside the card.
+ * Below roughly a 380px screen they no longer fit and the fifth drops to a second
+ * row, which is the point of laying this out as a wrapping row: it degrades
+ * instead of overlapping.
+ *
+ * A `grid-cols-5` did overlap, and silently — equal columns just became narrower
+ * than their contents, so the two long labels ran together and the row read as
+ * four destinations and one long word. Shrinking the type is not the fix either,
+ * because Chrome enforces a minimum font size (12px in some locales, which is
+ * exactly where a 10px label lands): the stylesheet asks and the browser declines.
  */
 const TILE =
-  "flex w-17 cursor-pointer flex-col items-center gap-2 rounded-card py-3 text-center";
+  "flex w-16 cursor-pointer flex-col items-center gap-2 rounded-card py-3 text-center";
 const TILE_MARK =
   "flex size-11 items-center justify-center rounded-full";
 const TILE_LABEL = "text-[10px] font-bold text-ink-mid";
@@ -172,6 +176,21 @@ export function ShareSheet({
   const [canShare, setCanShare] = useState(false);
   const [canShareFiles, setCanShareFiles] = useState(false);
   /**
+   * Whether the poster has been asked for yet, latched on the first open.
+   *
+   * The dialog is in the tree from the start and a list page holds one per card,
+   * so an unconditional `<img src={poster}>` would fetch sixteen ~210KB posters on
+   * page load for a reader who shares nothing. Latched rather than tied to `open`
+   * so closing and reopening does not fetch it again.
+   */
+  const [asked, setAsked] = useState(false);
+  /**
+   * Whether this is a touch screen, which is what decides whether the long-press
+   * hint is TRUE. `pointer: coarse` rather than a user-agent test: the gesture is
+   * a property of the input device, not of the OS name.
+   */
+  const [touch, setTouch] = useState(false);
+  /**
    * The poster fetch already in flight, so the click that follows a pointerdown
    * has something to await. One article, one poster — nothing varies per press
    * any more, so the first fetch is good for every later one.
@@ -179,6 +198,11 @@ export function ShareSheet({
   const warmed = useRef<Promise<File | null> | null>(null);
 
   useEffect(() => {
+    if (open) setAsked(true);
+  }, [open]);
+
+  useEffect(() => {
+    setTouch(window.matchMedia("(pointer: coarse)").matches);
     setCanShare(typeof navigator.share === "function");
     setCanShareFiles(
       typeof navigator.canShare === "function" &&
@@ -321,7 +345,7 @@ export function ShareSheet({
        * locales, which is where this row's 10px lands), so a smaller number in
        * the stylesheet buys nothing on the browsers that most need the room.
        */
-      className="m-auto w-[min(92vw,24rem)] rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
+      className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
     >
       <div className="flex flex-col gap-4 p-4">
         <div className="flex items-baseline justify-between gap-3">
@@ -335,12 +359,50 @@ export function ShareSheet({
           </button>
         </div>
 
+        {/**
+         * The poster itself, and the reason it is a real `<img>`.
+         *
+         * A LONG PRESS ON AN IMAGE IS THE ONLY WAY INTO THE PHOTO LIBRARY on iOS.
+         * "Save image" below is an `<a download>`, and a same-origin download on
+         * iOS Safari lands in Files → Downloads, not in Photos; long-pressing that
+         * link offers the link menu — open, copy, share — because it is a link, not
+         * a picture. Rendering the bytes gives the platform's own "Save to Photos",
+         * and it costs nothing extra: `warmPoster` was fetching this URL anyway,
+         * and the route now caches for an hour so the two share one response.
+         *
+         * It doubles as the preview this sheet never had. The poster is generated
+         * server-side and was, until now, sent unseen.
+         *
+         * `object-contain` inside a capped height, so what the reader sees is the
+         * whole poster rather than a crop of its top — the point of a preview is
+         * that it is not a different picture from the one that gets sent. The
+         * saved file is the full-resolution source either way; CSS sizing does not
+         * reach it.
+         */}
+        {asked ? (
+          <div className="flex flex-col gap-2">
+            <img
+              src={poster}
+              alt={title}
+              className="mx-auto max-h-[38vh] w-auto rounded-[12px] shadow-soft"
+            />
+            {/* Said only where the gesture exists, and said at all because a
+                long press is invisible: nothing about an image announces that
+                holding it will file it away. */}
+            {touch ? (
+              <div className="text-center text-[11px] font-medium text-ink-soft">
+                {t.pressToSave}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {/* One row of destinations, and the OS handover is FIRST among them rather
             than a footnote under them. It belongs at this level: on a phone it is
             the only route to 微信 and 小红书, so treating it as the fallback for the
             four named ones had it backwards — for most readers it is the one that
             reaches the app they actually use. */}
-        <div className="flex flex-wrap gap-x-0.5 gap-y-1">
+        <div className="flex flex-wrap gap-y-1">
           {canShare ? (
             <button type="button" onPointerDown={warmPoster} onClick={systemShare} className={TILE}>
               {/* Ink rather than a brand colour, in the same 12% wash as the
@@ -390,8 +452,18 @@ export function ShareSheet({
               {copied ? t.copied : t.copyLink}
             </button>
 
-            {/* A plain download link, so a long press on a phone offers "save
-                image" the way it would for any picture. */}
+            {/**
+             * A download, and A DOWNLOAD IS NOT THE PHOTO LIBRARY — worth stating,
+             * because the comment here used to claim that long-pressing this
+             * offered "save image" the way it would for any picture. It does not:
+             * this is an anchor, so a long press gets the link menu — open, copy,
+             * share. On iOS Safari the download itself lands in Files → Downloads,
+             * and on Android in Downloads, where the gallery usually picks it up.
+             *
+             * The route to the album is the preview above, or the OS tile. This
+             * one stays because it is the only path on a desktop browser, and the
+             * only one anywhere that cannot fail.
+             */}
             <a
               href={poster}
               download={`${title.slice(0, 40)}.png`}

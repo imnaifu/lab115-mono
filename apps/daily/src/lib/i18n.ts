@@ -53,6 +53,8 @@ const STRINGS = {
     copyLink: "复制链接",
     copied: "已复制链接",
     saveImage: "保存图片",
+    /** Only shown on a touch screen, where a long press is the gesture. */
+    pressToSave: "长按图片可以存到相册",
     /** The sheet's own heading, so it repeats the button that opened it. */
     shareTo: "分享到",
     close: "关闭",
@@ -101,6 +103,7 @@ const STRINGS = {
     copyLink: "Copy link",
     copied: "Link copied",
     saveImage: "Save image",
+    pressToSave: "Press and hold the image to save it to your photos",
     shareTo: "Share to",
     close: "Close",
     moreApps: "More",

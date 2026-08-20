@@ -368,6 +368,24 @@ export async function GET(
         </div>
       </div>
     ),
-    { width: POSTER_WIDTH, height, fonts },
+    {
+      width: POSTER_WIDTH,
+      height,
+      fonts,
+      /**
+       * An hour of caching, because this route is now fetched TWICE per share.
+       *
+       * The sheet shows the poster as an `<img>` and then hands the same bytes to
+       * `navigator.share`, and Next's default for a dynamic route is
+       * `max-age=0, must-revalidate` with no validator — so those were two full
+       * ~210KB renders of a deterministic image. A digest is written once for its
+       * day and never edited, so the only thing that can change inside the hour is
+       * an upstream cover photo, which is cosmetic.
+       *
+       * It also takes the repeat cost off crawlers and link unfurlers, which fetch
+       * this the moment a link is posted anywhere.
+       */
+      headers: { "cache-control": "public, max-age=3600" },
+    },
   );
 }
