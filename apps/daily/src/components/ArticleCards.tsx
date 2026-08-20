@@ -1,5 +1,6 @@
-import { ArticleTitle } from "./ArticleTitle";
+import { ArticleTitle, displayTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
+import { ShareButton } from "./ShareButton";
 import { Stars } from "./Stars";
 import { Summary } from "./Summary";
 import { sourceOf } from "@/lib/sources";
@@ -51,6 +52,12 @@ function Meta({ article, lang }: { article: Article; lang: Lang }) {
  * link cannot legally contain another interactive element. Naming both actions
  * instead removes that whole contrivance: no absolute overlay, no z-index, no
  * invisible anchor, and the summary text can be selected and copied like text.
+ *
+ * Sharing HAPPENS HERE now rather than on the article page. The pill was a link
+ * down to that page's share block, which meant a navigation between deciding to
+ * share and being able to; the reader has just finished the summary and the thing
+ * they want is the sheet. What gets shared is still the article's permalink — see
+ * ShareButton.
  */
 function Actions({
   article,
@@ -75,15 +82,13 @@ function Actions({
       >
         {t.readFull}
       </a>
-      {/* Primary, and rightmost: passing a piece on is the action worth making
-          obvious. A plain link to the article page, which is where the link and
-          the poster are — it was briefly a dialog that opened them in place. */}
-      <a
-        className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper"
-        href={href(lang, articlePath(date, article.id))}
-      >
-        {t.share}
-      </a>
+      <ShareButton
+        url={href(lang, articlePath(date, article.id))}
+        imageUrl={`${href(lang, articlePath(date, article.id))}/share.png`}
+        title={displayTitle(article, lang)}
+        thesis={article.summary[lang].thesis}
+        lang={lang}
+      />
     </div>
   );
 }

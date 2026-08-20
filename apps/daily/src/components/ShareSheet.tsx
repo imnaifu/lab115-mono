@@ -94,12 +94,27 @@ function intents(page: string, poster: string, title: string, weibo: string) {
 const ACTION =
   "flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-xs font-bold text-ink-mid";
 
-/** A tile: the mark in a wash of its own colour, the name under it. */
+/**
+ * A tile: the mark in a wash of its own colour, the name under it.
+ *
+ * A FIXED-WIDTH FLEX ITEM THAT WRAPS, not a grid column, and the width is set by
+ * the longest label rather than by the marks. "WhatsApp" is 61px at this size and
+ * the marks are 44px, so the label is the constraint; five 68px tiles fit the card
+ * at its full 24rem, and on a phone narrow enough that they do not — 92vw of a
+ * 360px screen leaves room for four — the fifth drops to a second row.
+ *
+ * A `grid-cols-5` did break there, and silently: equal columns simply became
+ * narrower than their contents, so the two long labels ran together and the row
+ * read as four destinations and one long word. Shrinking the type is not the fix
+ * either, because Chrome enforces a minimum font size (12px in some locales,
+ * which is exactly where a 10px label lands) — the stylesheet asks and the browser
+ * declines. Wrapping degrades instead of overlapping.
+ */
 const TILE =
-  "flex cursor-pointer flex-col items-center gap-2 rounded-card px-1 py-3 text-center";
+  "flex w-17 cursor-pointer flex-col items-center gap-2 rounded-card py-3 text-center";
 const TILE_MARK =
   "flex size-11 items-center justify-center rounded-full";
-const TILE_LABEL = "text-[11px] font-bold text-ink-mid";
+const TILE_LABEL = "text-[10px] font-bold text-ink-mid";
 
 /**
  * The share sheet: one tile per destination, opened by the button on the page.
@@ -117,7 +132,7 @@ export function ShareSheet({
   page,
   poster,
   title,
-  hl,
+  thesis,
   onCopy,
   copied,
   lang,
@@ -129,8 +144,8 @@ export function ShareSheet({
   /** The poster route, absolute and WITHOUT a query. */
   poster: string;
   title: string;
-  /** The `?hl=…` frozen when the sheet opened, or "" — see ArticleShare. */
-  hl: string;
+  /** The summary's opening sentence — see `systemShare`. */
+  thesis: string;
   /**
    * The clipboard write, and whether it just happened. Both come from the page
    * rather than being done here: `copied` is a two-second state that outlives the
@@ -157,11 +172,11 @@ export function ShareSheet({
   const [canShare, setCanShare] = useState(false);
   const [canShareFiles, setCanShareFiles] = useState(false);
   /**
-   * The poster fetch already in flight, keyed by the highlight it was started
-   * for: the sheet outlives one opening, so a reader who closes it, marks a
-   * different sentence and opens it again must not be handed the first image.
+   * The poster fetch already in flight, so the click that follows a pointerdown
+   * has something to await. One article, one poster — nothing varies per press
+   * any more, so the first fetch is good for every later one.
    */
-  const warmed = useRef<{ hl: string; file: Promise<File | null> } | null>(null);
+  const warmed = useRef<Promise<File | null> | null>(null);
 
   useEffect(() => {
     setCanShare(typeof navigator.share === "function");
@@ -212,26 +227,29 @@ export function ShareSheet({
    * most of the way done before the handler starts awaiting it.
    */
   function warmPoster() {
-    if (!canShareFiles) return;
-    // Same marks as the fetch already running: keep it rather than start again.
-    if (warmed.current?.hl === hl) return;
-    warmed.current = {
-      hl,
-      file: posterFile(`${poster}${hl}`, `${title.slice(0, 40)}.png`),
-    };
+    if (!canShareFiles || warmed.current) return;
+    warmed.current = posterFile(poster, `${title.slice(0, 40)}.png`);
   }
 
   /**
    * The OS share sheet — the tile that reaches the apps with no web composer at
    * all, 微信 and 小红书 among them.
    *
-   * THE LINK GOES IN `text`, not only in `url`. iOS hands the sheet a string and
-   * a URL as separate items, and an app whose share extension accepts text but
-   * not URLs — 小红书 is one — receives the string alone. With `text: title` that
-   * app got the headline and nothing else: no link, nothing to tap. `url` is
-   * still sent, because the apps that do read it build a proper link card from it
-   * (WeChat), and the cost of saying it twice is that a few apps that concatenate
-   * both show the URL twice.
+   * `text` CARRIES THE WHOLE MESSAGE — headline, thesis, link — rather than
+   * leaving any of it to be fetched.
+   *
+   * Both halves of that were learned the hard way. iOS hands the sheet a string
+   * and a URL as separate items, so an app whose share extension accepts text but
+   * not URLs — 小红书 is one — receives the string alone; with `text: title` it got
+   * the headline and nothing to tap. And once the poster was attached, `url` had
+   * to go (see below), which silently took the SUMMARY with it: WeChat was never
+   * reading `text`, it was building a link card and pulling og:description off the
+   * page, so dropping the URL dropped the only sentence describing the article.
+   *
+   * Putting the thesis in `text` fixes both at once, and stops depending on the
+   * receiving app to go and fetch anything. It also means a target that truncates
+   * — 小红书 caps a note title at 20 characters — cuts a heading that is repeated
+   * in full at the top of the body.
    *
    * The POSTER goes too, when the browser takes files and `warmPoster` got one in
    * time. 小红书 cannot publish a note without an image at all, so for that target
@@ -243,11 +261,14 @@ export function ShareSheet({
    * rather than an error. `save image` on the page is the path that cannot fail.
    */
   async function systemShare() {
-    const text = `${title}\n${page}`;
+    // Blank lines between the three parts: a composer that pastes this whole
+    // string is writing a post, and a headline running into its own summary is
+    // the reader's problem to untangle.
+    const text = `${title}\n\n${thesis}\n\n${page}`;
 
     const file = warmed.current
       ? await Promise.race([
-          warmed.current.file,
+          warmed.current,
           // Not `AbortSignal.timeout` on the fetch: a slow poster is still worth
           // having for the NEXT click, so it is left running and merely stopped
           // being waited on.
@@ -289,9 +310,20 @@ export function ShareSheet({
         if (event.target === dialog.current) onClose();
       }}
       aria-label={t.shareTo}
-      className="m-auto w-[min(92vw,22rem)] rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
+      /**
+       * 24rem, up from 22rem, and the padding inside is a step down — both to fit
+       * five tiles in one row.
+       *
+       * The label is what needs the width, not the mark: "WhatsApp" set at the
+       * row's type size is 61px, and five columns of that plus gaps is what the
+       * card has to clear. Shrinking the type instead is not an option that
+       * works — Chrome enforces a minimum font size (12px by default in some
+       * locales, which is where this row's 10px lands), so a smaller number in
+       * the stylesheet buys nothing on the browsers that most need the room.
+       */
+      className="m-auto w-[min(92vw,24rem)] rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
     >
-      <div className="flex flex-col gap-4 p-5">
+      <div className="flex flex-col gap-4 p-4">
         <div className="flex items-baseline justify-between gap-3">
           <div className="text-sm font-bold text-ink">{t.shareTo}</div>
           <button
@@ -303,9 +335,27 @@ export function ShareSheet({
           </button>
         </div>
 
-        {/* Four across on purpose: it is exactly the platform count, so the row
-            reads as a complete set rather than a wrapped list. */}
-        <div className="grid grid-cols-4 gap-1">
+        {/* One row of destinations, and the OS handover is FIRST among them rather
+            than a footnote under them. It belongs at this level: on a phone it is
+            the only route to 微信 and 小红书, so treating it as the fallback for the
+            four named ones had it backwards — for most readers it is the one that
+            reaches the app they actually use. */}
+        <div className="flex flex-wrap gap-x-0.5 gap-y-1">
+          {canShare ? (
+            <button type="button" onPointerDown={warmPoster} onClick={systemShare} className={TILE}>
+              {/* Ink rather than a brand colour, in the same 12% wash as the
+                  marks beside it: this tile has no brand, and inventing one for
+                  it would make it look like a fifth platform. */}
+              <span
+                className={TILE_MARK}
+                style={{ color: "#3b3563", background: "#3b35631f" }}
+              >
+                <ShareIcon size={20} />
+              </span>
+              <span className={TILE_LABEL}>{t.moreApps}</span>
+            </button>
+          ) : null}
+
           {intents(page, poster, title, t.weibo).map((intent) => (
             <a
               key={intent.label}
@@ -334,54 +384,23 @@ export function ShareSheet({
 
         {/* Everything that finishes on this device, below a rule that separates
             it from the named destinations above. */}
-        <div className="flex flex-col gap-2 border-t border-line pt-4">
+        <div className="border-t border-line pt-4">
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className={ACTION} onClick={onCopy}>
               {copied ? t.copied : t.copyLink}
             </button>
 
-            {/**
-             * A plain download link, so a long press on a phone offers "save
-             * image" the way it would for any picture.
-             *
-             * The highlight is the one FROZEN when the sheet opened, which is why
-             * this can be a static href: on the page this same link had to rewrite
-             * its own href on pointerdown, because pressing it was what cleared the
-             * selection it needed to read. Inside the sheet that race is already
-             * over.
-             */}
+            {/* A plain download link, so a long press on a phone offers "save
+                image" the way it would for any picture. */}
             <a
-              href={`${poster}${hl}`}
+              href={poster}
               download={`${title.slice(0, 40)}.png`}
               className={ACTION}
             >
               {t.saveImage}
             </a>
 
-            {/* Last, and only where it exists: the one action whose destination is
-                unknown until the OS asks. On a phone it is also the only route to
-                微信 and 小红书, which have no web composer to link to. */}
-            {canShare ? (
-              <button
-                type="button"
-                onPointerDown={warmPoster}
-                onClick={systemShare}
-                className={ACTION}
-              >
-                <ShareIcon size={14} />
-                {t.moreApps}
-              </button>
-            ) : null}
           </div>
-
-          {/* Said once, under the row, rather than as a subtitle on the button:
-              the poster travelling with the share is the part nobody would guess,
-              and it is the reason "more" is worth pressing over "save image". */}
-          {canShare ? (
-            <div className="text-[11px] font-medium text-ink-soft">
-              {t.moreAppsHint}
-            </div>
-          ) : null}
         </div>
       </div>
     </dialog>

@@ -5,13 +5,14 @@ import {
   POSTER,
   POSTER_BESIDE_COVER,
   posterCover,
-  parseHighlights,
   POSTER_MARK,
   POSTER_WIDTH,
+  posterDomain,
   posterFonts,
   posterHeight,
   posterText,
 } from "@/lib/share";
+import { SITE } from "@/lib/config";
 import { sourceOf } from "@/lib/sources";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, isLang } from "@/lib/lang";
@@ -58,7 +59,7 @@ function Dot() {
  * more than one child says `display: flex` explicitly, and spacing is margins.
  */
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ lang: string; date: string; id: string }> },
 ) {
   const { lang, date, id } = await params;
@@ -79,14 +80,6 @@ export async function GET(
   const headline = translated || article.title;
   const original = translated ? article.title : "";
 
-  // `extra` is the glyph set for everything the layout draws itself, so the brand
-  // and the Chinese headline have to be in it or the subset omits their glyphs
-  // and Satori draws blanks.
-  const highlights = parseHighlights(
-    new URL(req.url).searchParams.get("hl"),
-    (summary.paragraphs ?? []).length,
-  );
-
   const t = strings(posterLang);
   const stars = starCount(article.score);
   // Everything the layout writes itself, so the font subset covers it: the brand,
@@ -98,11 +91,17 @@ export async function GET(
     stars ? "★☆" : "",
   ].join(" ");
 
+  // In the subset request as well as in the layout: an uppercase glyph Google was
+  // never asked for renders as nothing at all.
+  const domain = posterDomain(SITE);
+
   const [fonts, cover] = await Promise.all([
-    posterFonts(posterText(article, summary, `${date}${brand}${translated}${meta}`)),
+    posterFonts(
+      posterText(article, summary, `${date}${brand}${translated}${meta}${domain}`),
+    ),
     posterCover(article.image),
   ]);
-  const height = posterHeight(summary, headline, original, highlights);
+  const height = posterHeight(summary, headline, original);
 
   return new ImageResponse(
     (
@@ -118,14 +117,48 @@ export async function GET(
           fontFamily: "Manrope, Noto Sans SC",
         }}
       >
+        {/* The domain and the date, above the lockup — the page's masthead in the
+            same order, where the chip sits over the wordmark with the language
+            switch opposite it. The date takes that opposite slot here: a poster
+            has no language to switch, and the date is the other thing a reader
+            looking at a screenshot weeks later needs.
+
+            The domain is what makes the image findable. The wordmark under it
+            says who made this; only the chip says where to type it. */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              padding: `${POSTER.domainPadY}px ${POSTER.domainPadX}px`,
+              borderRadius: 999,
+              background: "#3b3563",
+              color: "#fbf3e9",
+              fontSize: POSTER.domainSize,
+              fontWeight: 700,
+              letterSpacing: POSTER.domainTracking,
+            }}
+          >
+            {domain}
+          </div>
+          <div style={{ display: "flex", fontSize: 22, color: "#8a83a8" }}>
+            {date}
+          </div>
+        </div>
+
         {/* The brand is the only thing identifying where this came from now
             that the permalink is gone, so it is set as a wordmark rather than
             the small chip it used to be. */}
         <div
           style={{
             display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: POSTER.domainGap,
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -141,9 +174,6 @@ export async function GET(
             >
               {brand}
             </div>
-          </div>
-          <div style={{ display: "flex", fontSize: 22, color: "#8a83a8" }}>
-            {date}
           </div>
         </div>
 
@@ -297,16 +327,27 @@ export async function GET(
               flexDirection: "column",
               marginTop: 18,
               fontSize: POSTER.paraSize,
-              color: "#5f5885",
+              /**
+               * Ink at weight 500, not ink-mid at 400.
+               *
+               * The page can afford `text-ink-mid` for body copy: it is live text,
+               * hinted and antialiased by the browser at whatever size the reader
+               * chose. A poster is a bitmap that gets scaled down by whatever app
+               * it lands in — a chat thread renders these 1000px wide images at a
+               * third of that — and the two together were too much: the lighter
+               * ink lost contrast against the card while the thin strokes lost
+               * their pixels, and a Chinese glyph whose strokes are under a pixel
+               * is a grey smudge. Full ink and one weight up are the same fix
+               * applied to both halves.
+               */
+              color: "#3b3563",
+              fontWeight: 500,
               lineHeight: 1.85,
             }}
           >
-          {/* ONE ROW PER LINE, broken by `layoutParagraph` rather than by Satori.
-              A row holds exactly one line's worth of text, so nothing inside it
-              wraps: a marked piece's box is that line's marked characters and
-              nothing else, which is what makes the wash a highlighter instead of
-              a full-width rectangle, and no piece ever gets pushed onto a line of
-              its own. See the note on layoutParagraph for the whole argument. */}
+          {/* ONE ROW PER LINE, broken by `layoutParagraph` rather than by Satori —
+              which is also what lets the height above be counted rather than
+              guessed. See the note on layoutParagraph. */}
           {(summary.paragraphs ?? []).map((paragraph, i) => (
             <div
               key={i}
@@ -316,23 +357,9 @@ export async function GET(
                 marginTop: i === 0 ? 0 : 14,
               }}
             >
-              {layoutParagraph(paragraph, highlights.get(i)).map((line, row) => (
+              {layoutParagraph(paragraph).map((line, row) => (
                 <div key={row} style={{ display: "flex" }}>
-                  {line.map((piece, j) => (
-                    <span
-                      key={j}
-                      style={
-                        piece.marked
-                          ? {
-                              background: "rgba(239, 160, 80, 0.5)",
-                              color: "#3b3563",
-                            }
-                          : undefined
-                      }
-                    >
-                      {piece.text}
-                    </span>
-                  ))}
+                  {line}
                 </div>
               ))}
             </div>

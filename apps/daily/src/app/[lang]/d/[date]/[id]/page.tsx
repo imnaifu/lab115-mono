@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArticleShare } from "@/components/ArticleShare";
-import { ArticleTitle, displayTitle } from "@/components/ArticleTitle";
+import { ArticleTitle } from "@/components/ArticleTitle";
 import { Cover } from "@/components/Cover";
 import { EndLink, Footer, Masthead, PAD, PageShell, SECTION } from "@/components/Shell";
 import { Stars } from "@/components/Stars";
@@ -163,21 +162,6 @@ export default async function ArticlePage({ params }: Params) {
             >
               {t.readFull}
             </a>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-card border border-line bg-paper px-6 py-5">
-          <div className="text-sm font-bold text-ink">{t.shareThis}</div>
-          {/* This page's own URL, which is also what a card's dialog copies —
-              one shared-link shape for the whole site. */}
-          <ArticleShare
-            url={`${SITE}${path}`}
-            imageUrl={`${path}/share.png`}
-            title={displayTitle(article, lang)}
-            lang={lang}
-          />
-          <div className="text-xs font-medium text-ink-soft">
-            {t.shareHint}
           </div>
         </div>
       </section>

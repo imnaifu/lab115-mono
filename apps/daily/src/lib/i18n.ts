@@ -50,21 +50,15 @@ const STRINGS = {
 
     readFull: "阅读全文 →",
     share: "分享",
-    shareThis: "分享这一篇",
     copyLink: "复制链接",
     copied: "已复制链接",
     saveImage: "保存图片",
-    shareVia: "分享到…",
     /** The sheet's own heading, so it repeats the button that opened it. */
     shareTo: "分享到",
     close: "关闭",
     moreApps: "更多",
-    moreAppsHint: "「更多」交给系统的分享面板，长图一起带过去。",
     /** A platform name, so it takes the name that platform uses here. */
     weibo: "微博",
-    shareHint: "图片里带完整摘要和链接，可以直接发出去。",
-    highlightHint: "想强调哪句话？在上面选中它，保存的图片就会把它划出来。",
-    highlighted: (n: number) => `已选中 ${n} 个字，图片里会划出来。`,
 
     archive: "往期回顾",
     archiveSub: "看看前几天读到了什么",
@@ -104,21 +98,13 @@ const STRINGS = {
 
     readFull: "Read the original →",
     share: "Share",
-    shareThis: "Share this one",
     copyLink: "Copy link",
     copied: "Link copied",
     saveImage: "Save image",
-    shareVia: "Share via…",
     shareTo: "Share to",
     close: "Close",
     moreApps: "More",
-    moreAppsHint: "“More” hands it to the OS share sheet, poster included.",
     weibo: "Weibo",
-    shareHint: "The image carries the whole summary and the link.",
-    highlightHint:
-      "Want to single out a sentence? Select it above and the saved image will mark it.",
-    highlighted: (n: number) =>
-      `${n} ${n === 1 ? "character" : "characters"} selected — the image will mark them.`,
 
     archive: "Past editions",
     archiveSub: "What ran on the days before",
