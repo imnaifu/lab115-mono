@@ -8,6 +8,45 @@ import type { Lang } from "@/lib/lang";
 const PILL =
   "cursor-pointer rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid";
 
+/**
+ * The platform row: secondary to the two actions above it, so smaller and
+ * quieter, but still a pill so the whole block reads as one control set.
+ */
+const PILL_SMALL =
+  "rounded-full border border-line px-3.5 py-1.5 text-xs font-bold text-ink-soft";
+
+/**
+ * The platforms that accept a shared link as a plain URL.
+ *
+ * Three, and the shortness of the list is the finding rather than a shortcut: an
+ * intent URL IS the whole integration, so a platform without one cannot be added
+ * here at any price. 微信, 小红书 and Instagram have none — WeChat composes only
+ * from inside its own webview, through a JS-SDK call signed by a verified
+ * official account — which is why the poster download beside these is not the
+ * lesser path for them but the only one.
+ *
+ * `pic` is Weibo's alone and wants an absolute URL: it drops the poster into the
+ * composer next to the link, the closest any of the three comes to what the
+ * download does by hand. X and Telegram both build their preview from og:image,
+ * which is that same poster, so neither needs telling.
+ */
+function intents(page: string, poster: string, title: string, weibo: string) {
+  const url = encodeURIComponent(page);
+  const text = encodeURIComponent(title);
+  return [
+    { label: "X", href: `https://x.com/intent/post?url=${url}&text=${text}` },
+    { label: "Telegram", href: `https://t.me/share/url?url=${url}&text=${text}` },
+    {
+      label: weibo,
+      // `pic` is dropped unless the poster URL has already been absolutised —
+      // before hydration it has not, and a relative one means nothing to Weibo.
+      href:
+        `https://service.weibo.com/share/share.php?url=${url}&title=${text}` +
+        (/^https?:\/\//.test(poster) ? `&pic=${encodeURIComponent(poster)}` : ""),
+    },
+  ];
+}
+
 interface Marked {
   /** `<paragraph>.<start>-<end>` per run, in the order they appear. */
   runs: string[];
@@ -68,8 +107,13 @@ function highlightQuery(marked: Marked): string {
 }
 
 /**
- * The share row: copy the link, or save the poster — with whatever the reader has
- * marked in the summary above.
+ * The share block: hand the link to the OS share sheet, copy it, save the poster —
+ * with whatever the reader has marked in the summary above — or open one platform's
+ * composer directly.
+ *
+ * Two rows, because the controls are not peers. The top row acts on THIS device:
+ * the sheet, the clipboard, the file. The bottom row leaves for a named platform,
+ * which is a smaller and more specific thing to want.
  *
  * Highlighting lives here rather than on the list because this is the page the
  * 分享 button leads to: the reader arrives, selects the passage worth passing on,
@@ -98,6 +142,35 @@ export function ArticleShare({
   const t = strings(lang);
   const [copied, setCopied] = useState(false);
   const [marked, setMarked] = useState<Marked>(NOTHING);
+  /**
+   * Absolute forms of both props, for the places a relative URL is not merely
+   * inconvenient but wrong: an intent link hands the URL to ANOTHER origin, and
+   * `navigator.share` rejects a relative one outright.
+   *
+   * Seeded with the props so the first paint has real hrefs — the article page
+   * passes an absolute permalink already — and resolved against the document
+   * after mount, which is the earliest `location` exists. Nothing here can run
+   * on the server, so nothing tries.
+   */
+  const [links, setLinks] = useState({ page: url, poster: imageUrl });
+  /**
+   * Whether to offer the OS share sheet at all. Read after mount rather than
+   * during render: the server has no `navigator`, and a button present in the
+   * HTML and absent from the hydrated tree is a mismatch React will complain
+   * about — correctly, since it would flicker.
+   */
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setLinks({
+      page: new URL(url, location.href).href,
+      poster: new URL(imageUrl, location.href).href,
+    });
+  }, [url, imageUrl]);
+
+  useEffect(() => {
+    setCanShare(typeof navigator.share === "function");
+  }, []);
 
   // Tracked live so the line below can say what will happen BEFORE the reader
   // commits to a click. One listener on a page holding one article.
@@ -120,9 +193,39 @@ export function ArticleShare({
     }
   }
 
+  /**
+   * The OS share sheet: on a phone the shortest route to any app at all, and the
+   * only route to 微信 and 小红书 that is not a manual screenshot.
+   *
+   * It shares the LINK, not the poster, and that is deliberate. `navigator.share`
+   * does take files, but the poster would have to be fetched first and it is
+   * rendered on demand — fonts subsetted per article, cover refetched — so a cold
+   * one takes seconds, and iOS withdraws the user activation that `share()`
+   * requires while a fetch that long is in flight. A sheet that fails half the
+   * time is worse than one that passes a link whose og:image is that same poster;
+   * the reader who wants the file itself has the button next to this one.
+   */
+  async function systemShare() {
+    try {
+      await navigator.share({ title, text: title, url: links.page });
+    } catch {
+      // Dismissing the sheet throws AbortError, so a rejection here is the
+      // ordinary outcome as often as it is a failure. Neither is worth a report.
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
+        {/* First when it exists, because on the device that has it it is the
+            fastest thing in the row — and it is absent on every desktop browser
+            but Safari, where the two buttons after it are the whole story. */}
+        {canShare ? (
+          <button type="button" className={PILL} onClick={systemShare}>
+            {t.shareVia}
+          </button>
+        ) : null}
+
         <button type="button" className={PILL} onClick={copy}>
           {copied ? t.copied : t.copyLink}
         </button>
@@ -150,6 +253,22 @@ export function ArticleShare({
         >
           {t.saveImage}
         </a>
+      </div>
+
+      {/* A row of plain links — no JS, no SDK, nothing to fail. Each opens that
+          platform's own composer with the permalink and the headline in it. */}
+      <div className="flex flex-wrap items-center gap-2">
+        {intents(links.page, links.poster, title, t.weibo).map((intent) => (
+          <a
+            key={intent.label}
+            href={intent.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={PILL_SMALL}
+          >
+            {intent.label}
+          </a>
+        ))}
       </div>
 
       {/* Tells the reader the affordance exists — a highlight nobody knows about

@@ -54,6 +54,9 @@ const STRINGS = {
     copyLink: "复制链接",
     copied: "已复制链接",
     saveImage: "保存图片",
+    shareVia: "分享到…",
+    /** A platform name, so it takes the name that platform uses here. */
+    weibo: "微博",
     shareHint: "图片里带完整摘要和链接，可以直接发出去。",
     highlightHint: "想强调哪句话？在上面选中它，保存的图片就会把它划出来。",
     highlighted: (n: number) => `已选中 ${n} 个字，图片里会划出来。`,
@@ -100,6 +103,8 @@ const STRINGS = {
     copyLink: "Copy link",
     copied: "Link copied",
     saveImage: "Save image",
+    shareVia: "Share via…",
+    weibo: "Weibo",
     shareHint: "The image carries the whole summary and the link.",
     highlightHint:
       "Want to single out a sentence? Select it above and the saved image will mark it.",
