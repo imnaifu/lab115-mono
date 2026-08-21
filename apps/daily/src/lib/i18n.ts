@@ -43,8 +43,6 @@ const STRINGS = {
     posts: (n: number) => `${n} 篇新文章`,
     readTime: (n: number) => `读完约 ${n} 分钟`,
     sectionCount: (n: number) => `${n} 篇`,
-    minutes: (n: number) => `${n} 分钟`,
-    minutesToRead: (n: number) => `${n} 分钟读完原文`,
     days: (n: number) => `${n} 天`,
 
     readFull: "阅读全文 →",
@@ -92,8 +90,6 @@ const STRINGS = {
     posts: (n: number) => `${n} new ${n === 1 ? "post" : "posts"}`,
     readTime: (n: number) => `about ${n} min to read`,
     sectionCount: (n: number) => `${n}`,
-    minutes: (n: number) => `${n} min`,
-    minutesToRead: (n: number) => `${n} min at the source`,
     days: (n: number) => `${n} ${n === 1 ? "day" : "days"}`,
 
     readFull: "Read the original →",

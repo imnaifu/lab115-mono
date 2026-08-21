@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
+import { Analytics } from "@/components/Analytics";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang, otherLang, type Lang } from "@/lib/lang";
@@ -136,6 +137,7 @@ export default async function RootLayout({
       <body className="bg-cream font-sans text-ink antialiased">
 {children}
         <ServiceWorker />
+        <Analytics />
       </body>
     </html>
   );

@@ -120,6 +120,19 @@ export interface Article {
   publishedAt: string;
   /** Cover image from the feed, or null → the card renders a gradient. */
   image: string | null;
+  /**
+   * Minutes to read THE ORIGINAL, from its body. An input, NOT a display value.
+   *
+   * `budgetFor` in summarize.ts sizes the summary from it — a 40-minute essay is
+   * allowed more words than a link post — and `fetcher.ts` is what measures it.
+   *
+   * NOTHING SHOWS A PER-ARTICLE READING TIME any more. This number described the
+   * original, which is a page the reader is not on; measured on the summary
+   * instead it came out "1 分钟" or "2 分钟" for every article in the digest, which
+   * is a column of identical numbers rather than information. The masthead still
+   * totals the day — see `minutes` in DigestView — because an edition's length
+   * does vary.
+   */
   readingMinutes: number;
   /**
    * 5–50: five 1-10 dimensions summed. See SCORE_WEIGHTS in lib/score.ts.

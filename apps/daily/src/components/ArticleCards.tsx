@@ -21,11 +21,15 @@ function Meta({ article, lang }: { article: Article; lang: Lang }) {
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-semibold text-ink-soft">
       <span style={{ color: source.accent }}>{source.name}</span>
-      <Dot />
-      <span>{strings(lang).minutes(article.readingMinutes)}</span>
-      {/* Last, and optional — so the row ends on the reading time when a source
-          publishes anonymously. The Dot is inside the same condition, which is
-          what keeps a separator from being left dangling. */}
+      {/* NO READING TIME. It was the original article's, which described a page
+          the reader was not on; measured on the summary instead it read "1 分钟"
+          or "2 分钟" on every card in the digest, which is a column of identical
+          numbers rather than information. The masthead still totals the day — see
+          `minutes` in DigestView — because a whole edition's length does vary.
+
+          The author is now optional AND last, so the Dot lives inside the same
+          condition: an anonymous source ends the row on the source name with no
+          separator left dangling. */}
       {article.author ? (
         <>
           <Dot />

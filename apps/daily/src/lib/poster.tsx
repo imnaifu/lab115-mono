@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import {
   coverGradient,
   POSTER,
+  posterAuthor,
   posterClean,
   POSTER_BESIDE_COVER,
   POSTER_HEIGHT,
@@ -110,18 +111,26 @@ export async function renderPoster({
   const headline = translated || posterClean(article.title);
   const original = translated ? posterClean(article.title) : "";
   const thesis = posterClean(summary.thesis ?? "");
-  const author = posterClean(article.author ?? "");
-
   const t = strings(lang);
+  /**
+   * Trimmed to fit the row it shares with the source name, which is the only
+   * unbounded thing on this canvas — see `posterAuthor`. Cleaned first, so what
+   * gets measured is what gets drawn.
+   *
+   * The row used to carry a reading time between the two, and dropping it gave the
+   * byline back ~130px — six bylines were being truncated across the archive, and
+   * now none are.
+   */
+  const author = posterAuthor(posterClean(article.author ?? ""), source.name);
+
   // Everything the layout writes itself, so the font subset covers it: the brand,
   // the date, the Chinese headline and the meta line's words. The two star glyphs
   // used to be in here too — a glyph Google was not asked for renders as nothing
   // at all, so anything the layout writes has to be listed.
-  const meta = [
-    source.name,
-    t.minutesToRead(article.readingMinutes),
-    author,
-  ].join(" ");
+  // The ellipsis is in there for `posterAuthor`, which may add one to a byline it
+  // had to cut. A glyph Google was never asked for renders as nothing at all, so a
+  // truncation mark missing from this list would truncate to a blank.
+  const meta = [source.name, author, "…"].join(" ");
 
   const domain = posterDomain(SITE);
 
@@ -376,10 +385,7 @@ export async function renderPoster({
                     <div style={{ display: "flex", color: source.accent }}>
                       {source.name}
                     </div>
-                    <Dot />
-                    <div style={{ display: "flex" }}>
-                      {t.minutesToRead(article.readingMinutes)}
-                    </div>
+                    {/* No reading time here either — see ArticleCards. */}
                     {author ? (
                       <>
                         <Dot />

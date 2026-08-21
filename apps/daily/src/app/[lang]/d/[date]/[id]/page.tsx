@@ -122,8 +122,7 @@ export default async function ArticlePage({ params }: Params) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-semibold text-ink-soft">
               <span style={{ color: source.accent }}>{source.name}</span>
-              <span className="size-0.75 rounded-full bg-current opacity-55" />
-              <span>{t.minutesToRead(article.readingMinutes)}</span>
+              {/* No reading time — see the note in ArticleCards. */}
               {article.author ? (
                 <>
                   <span className="size-0.75 rounded-full bg-current opacity-55" />

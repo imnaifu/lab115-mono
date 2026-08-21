@@ -336,6 +336,57 @@ function charUnits(ch: string): number {
  */
 const LINE_BUDGET = POSTER_TEXT_WIDTH / POSTER.paraSize - 1.4;
 
+/**
+ * The author, trimmed to whatever room the meta row has left.
+ *
+ * THE META ROW IS THE ONE CONTENT-SIZED THING ON THE POSTER, and the author is
+ * the one part of it that arrives from a feed rather than from config. Everything
+ * else has a bound: the canvas is fixed, the summary is paginated, source names
+ * are curated in config.json. An author is whatever the byline said — measured
+ * over the archive they run 13 to 31 characters, and "Steven Strogatz and Janna
+ * Levin" next to "Quanta Magazine" overran the 672px the column beside the cover
+ * has. Satori wrapped it, which in a row of dot-separated items means a dangling
+ * separator on one line and two orphaned words on the next.
+ *
+ * Trimmed rather than solved by shrinking the type: the row had already been
+ * dropped from 25px to 20 once for this, and 20px only moved the failure to a
+ * slightly longer byline. A ceiling holds for any input.
+ *
+ * The row was tighter still when it carried a reading time as well. That is gone
+ * and the space came back here, which is why nothing in the current archive
+ * actually gets cut — this is now a guard rather than a routine.
+ *
+ * Returns "" when there is no usable room, and the caller renders no author and
+ * no separator — see the `author` check in lib/poster.tsx.
+ */
+export function posterAuthor(author: string, source: string): string {
+  if (!author) return "";
+
+  // The row's width in units of one full-width character at the meta size, less
+  // the one dot between the source and the byline — a 7px circle with 15px of
+  // margin on both sides.
+  const row = POSTER_BESIDE_COVER / POSTER.metaSize;
+  const dot = (7 + 30) / POSTER.metaSize;
+  // 1.5 units held back for the same reason LINE_BUDGET holds back 1.4: these
+  // units count Latin at half width and Manrope is a shade under that, so the
+  // estimate is close rather than exact, and being over is the failure that shows.
+  const room = row - dot - widthUnits(source) - 1.5;
+  if (room < 2) return "";
+  if (widthUnits(author) <= room) return author;
+
+  // An ellipsis costs a unit of its own, and it is the CJK one — the row is set
+  // in the same two faces as everything else here.
+  let kept = "";
+  let used = 1;
+  for (const ch of author) {
+    const next = used + widthUnits(ch);
+    if (next > room) break;
+    kept += ch;
+    used = next;
+  }
+  return `${kept.trimEnd()}…`;
+}
+
 /** `POSTER.indent` in those same units — two full-width characters. */
 const INDENT_UNITS = POSTER.indent / POSTER.paraSize;
 
