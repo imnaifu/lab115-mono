@@ -12,6 +12,8 @@ import {
   posterHeight,
   posterText,
 } from "@/lib/share";
+import { blocksOf } from "@/lib/paragraphs";
+import { starCount } from "@/lib/score";
 import { SITE } from "@/lib/config";
 import { sourceOf } from "@/lib/sources";
 import { strings } from "@/lib/i18n";
@@ -19,16 +21,6 @@ import { DEFAULT_LANG, isLang } from "@/lib/lang";
 import { readArticle } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
-
-/**
- * The same 0–100 → five stars the page's `<Stars>` does, and 0 for an article the
- * summarizer never judged. Duplicated as a number rather than imported, because
- * that component returns JSX with Tailwind classes and Satori has neither.
- */
-function starCount(score: number): number {
-  if (!Number.isFinite(score) || score <= 0) return 0;
-  return Math.min(5, Math.max(1, Math.round(score / 20)));
-}
 
 /** The page's `<Dot>` between meta items. */
 function Dot() {
@@ -70,7 +62,7 @@ export async function GET(
   // The poster is written in the language of the page that links to it — the
   // brand included, since one language at a time applies here too.
   const posterLang = isLang(lang) ? lang : DEFAULT_LANG;
-  const summary = article.summary[posterLang];
+  const summary = article.summary.zh;
   const brand = strings(posterLang).brand;
   const source = sourceOf(article.sourceId);
 
@@ -347,17 +339,24 @@ export async function GET(
           >
           {/* ONE ROW PER LINE, broken by `layoutParagraph` rather than by Satori —
               which is also what lets the height above be counted rather than
-              guessed. See the note on layoutParagraph. */}
-          {(summary.paragraphs ?? []).map((paragraph, i) => (
+              guessed. See the note on layoutParagraph.
+
+              A heading is drawn HEAVIER BUT AT THE SAME SIZE AND LINE HEIGHT as
+              the body. That is deliberate: the height above counts lines through
+              this same `layoutParagraph`, and width measurement ignores weight,
+              so bolding a block cannot make the image disagree with the height
+              declared for it. A larger heading would. */}
+          {blocksOf(summary.text ?? "").map((block, i) => (
             <div
               key={i}
               style={{
                 display: "flex",
                 flexDirection: "column",
-                marginTop: i === 0 ? 0 : 14,
+                marginTop: i === 0 ? 0 : block.kind === "heading" ? 18 : 14,
+                fontWeight: block.kind === "heading" ? 700 : 500,
               }}
             >
-              {layoutParagraph(paragraph).map((line, row) => (
+              {layoutParagraph(block.text).map((line, row) => (
                 <div key={row} style={{ display: "flex" }}>
                   {line}
                 </div>

@@ -37,8 +37,17 @@ export const SECTION = "mt-8";
  * prefix. Making it a pair of `<a>`s rather than one button means the
  * destination is visible on hover, right-click works, and the current language
  * has a real href instead of being a dead control.
+ *
+ * HIDDEN FOR NOW, and the markup below is kept rather than deleted because the
+ * reason it is hidden is temporary: the summaries are Chinese only, so the
+ * switch offered a second language that renders the same text. The /zh and /en
+ * routes still work and every href in the app still carries a language, so
+ * putting this back is deleting the early return.
  */
 export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
+  return null;
+
+  // eslint-disable-next-line no-unreachable
   return (
     <div
       className="flex overflow-hidden rounded-full border border-line bg-paper"

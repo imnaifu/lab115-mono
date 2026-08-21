@@ -1,3 +1,4 @@
+import { blocksOf, paragraphsOf } from "./paragraphs";
 import type { Article, SummaryText } from "./types";
 
 /**
@@ -115,7 +116,7 @@ export function posterText(article: Article, summary: SummaryText, extra: string
   return [
     article.title,
     summary.thesis,
-    ...(summary.paragraphs ?? []),
+    ...paragraphsOf(summary.text ?? ""),
     extra,
     // Punctuation and digits the layout adds on its own.
     "0123456789·—、。，：；？！「」（）%",
@@ -419,6 +420,7 @@ export function posterHeight(
   const PARAS_GAP = 18;
   const PARA_LINE = Math.round(POSTER.paraSize * 1.85);
   const PARA_GAP = 14; // between paragraphs
+  const HEADING_GAP = 18; // above a section heading — matches the route's style
   const SLACK = 30; // most of a line, so a bad guess never clips
 
   /**
@@ -442,11 +444,24 @@ export function posterHeight(
    * lines, so asking `layoutParagraph` how many it produced is the same arithmetic
    * the renderer will do.
    */
-  const paragraphs = summary.paragraphs ?? [];
-  const bodyLines = paragraphs.reduce(
-    (sum, paragraph) => sum + layoutParagraph(paragraph).length,
+  const blocks = blocksOf(summary.text ?? "");
+  const bodyLines = blocks.reduce(
+    (sum, block) => sum + layoutParagraph(block.text).length,
     0,
   );
+  /**
+   * The gaps, SUMMED PER BLOCK rather than multiplied by a count, because a
+   * heading gets a taller one than a paragraph does. The first block has no gap
+   * above it — the route's `marginTop: i === 0 ? 0 : …` — so it is skipped here
+   * too, and the two have to keep agreeing or the image and its declared height
+   * drift apart.
+   */
+  const gaps = blocks
+    .slice(1)
+    .reduce(
+      (sum, block) => sum + (block.kind === "heading" ? HEADING_GAP : PARA_GAP),
+      0,
+    );
 
   // The cover and the block beside it are centred on each other, so the header row
   // is as tall as whichever is taller.
@@ -468,8 +483,7 @@ export function posterHeight(
       thesisLines * THESIS_LINE +
       PARAS_GAP +
       bodyLines * PARA_LINE +
-      Math.max(0, paragraphs.length - 1) * PARA_GAP +
+      gaps +
       SLACK,
   );
 }
-

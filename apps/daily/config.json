@@ -1,7 +1,7 @@
 {
-  "publishMinScore": 60,
-  "summaryMinChars": 120,
-  "summaryMaxChars": 500,
+  "publishMinScore": 30,
+  "summaryMinChars": 150,
+  "summaryMaxChars": 650,
   "summaryParaMaxChars": 90,
   "categories": [
     {
@@ -127,17 +127,6 @@
       "category": "design",
       "description": "Nielsen Norman Group 的 UX 研究，近期大量 AI 与设计流程话题，偶有课程广告。",
       "accent": "#A85C6B",
-      "enabled": true,
-      "fetchBody": true
-    },
-    {
-      "id": "kleon",
-      "name": "Austin Kleon",
-      "site": "https://austinkleon.com/",
-      "feed": "https://austinkleon.com/feed/",
-      "category": "culture",
-      "description": "Austin Kleon 谈创作生活与手作，篇幅短，随笔性质。",
-      "accent": "#C08A3E",
       "enabled": true,
       "fetchBody": true
     },
@@ -483,17 +472,6 @@
       "enabled": true,
       "fetchBody": true,
       "maxPerRun": 3
-    },
-    {
-      "id": "yunfeng",
-      "name": "云风的 BLOG",
-      "site": "https://blog.codingnow.com/",
-      "feed": "https://blog.codingnow.com/atom.xml",
-      "category": "tech",
-      "description": "云风，游戏引擎与系统编程，中文；间有育儿、健康等私人话题。",
-      "accent": "#2F6F5A",
-      "enabled": true,
-      "fetchBody": false
     },
     {
       "id": "acoup",

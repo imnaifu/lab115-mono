@@ -1,4 +1,4 @@
-import type { Lang } from "@/lib/lang";
+import { blocksOf } from "@/lib/paragraphs";
 import type { SummaryText } from "@/lib/types";
 
 /**
@@ -12,61 +12,50 @@ import type { SummaryText } from "@/lib/types";
  */
 const SIZE = {
   hero: {
-    background: "text-base",
     thesis: "text-lg",
     rule: "border-l-[3px] pl-4",
+    heading: "text-base",
     para: "text-base",
   },
   card: {
-    background: "text-sm",
     thesis: "text-base",
     rule: "border-l-2 pl-3",
+    heading: "text-sm",
     para: "text-sm",
   },
 } as const;
 
 /**
- * One language's summary: a one-sentence lead, then prose.
+ * The summary: a one-sentence lead, then prose.
  *
- * It takes both languages and the choice, rather than the chosen one, so the
- * call sites do not each have to remember to index by language.
- *
- * Only ever ONE language on screen. The two used to be interleaved line by
- * line, which was readable while a card was two lines long; now that a card
- * runs 150–600 characters, showing both would put a 1000-character wall on
- * screen.
+ * CHINESE ONLY. It used to take both languages plus the page's choice and index
+ * by it; there is no English half any more, so the `lang` parameter is gone
+ * with it. A page under /en renders this same Chinese.
  *
  * `leading-[1.85]` on the paragraphs is the one arbitrary number left in this
  * file, and it stays deliberately: the summaries were rewritten to be read
  * rather than skimmed, and Tailwind's nearest step down (`leading-relaxed`,
  * 1.625) takes back some of the air that change was for.
  *
- * The legacy branch renders digests archived under the older bullet shape —
- * background, points, implication. New runs never populate those.
+ * The body arrives as ONE string and is split on blank lines — see
+ * lib/paragraphs.ts. A numbered block is a section heading and is drawn heavier
+ * and tight against the paragraph it introduces: the headings exist to let a
+ * reader breathe and skip, and one styled like body copy does neither.
  */
 export function Summary({
   summary,
   variant,
-  lang,
 }: {
-  summary: { zh: SummaryText; en: SummaryText };
+  summary: { zh: SummaryText };
   variant: "hero" | "card";
-  lang: Lang;
 }) {
-  const text = summary[lang];
+  const text = summary.zh;
   const size = SIZE[variant];
-
-  const paragraphs = text.paragraphs ?? [];
-  const legacyPoints = text.points ?? [];
+  const blocks = blocksOf(text.text ?? "");
 
   return (
     <div className="mt-4 flex flex-col gap-3">
-      {text.background ? (
-        <p className={`text-ink-soft ${size.background}`}>{text.background}</p>
-      ) : null}
-
-      {/* The claim, marked out by the accent bar the site uses for emphasis —
-          the same one the legacy `implication` block below carries. */}
+      {/* The claim, marked out by the accent bar the site uses for emphasis. */}
       {text.thesis ? (
         <p
           className={`border-orange font-semibold text-ink ${size.thesis} ${size.rule}`}
@@ -75,32 +64,24 @@ export function Summary({
         </p>
       ) : null}
 
-      {/* `data-para` is how the share dialog works out which paragraphs a text
-          selection touches, so the poster can highlight them. The index is the
-          one the poster route indexes by too — the same array, same order. */}
-      {paragraphs.map((paragraph, i) => (
+      {/* `data-para` indexes the blocks in the order the poster route draws
+          them, so a text selection can be mapped back to what to highlight.
+
+          `-mb-1` on a heading eats part of the `gap-3` below it: a heading
+          belongs to the paragraph under it, not to the one above. */}
+      {blocks.map((block, i) => (
         <p
           data-para={i}
-          className={`leading-[1.85] font-medium text-ink-mid ${size.para}`}
+          className={
+            block.kind === "heading"
+              ? `-mb-1 font-semibold text-ink ${size.heading}`
+              : `leading-[1.85] font-medium text-ink-mid ${size.para}`
+          }
           key={i}
         >
-          {paragraph}
+          {block.text}
         </p>
       ))}
-
-      {legacyPoints.length > 0 ? (
-        <ul className="list-disc space-y-2 pl-5 text-sm text-ink-mid marker:text-orange">
-          {legacyPoints.map((point, i) => (
-            <li key={i}>{point}</li>
-          ))}
-        </ul>
-      ) : null}
-
-      {text.implication ? (
-        <p className="border-l-2 border-orange pl-3 text-sm text-ink-mid">
-          {text.implication}
-        </p>
-      ) : null}
     </div>
   );
 }

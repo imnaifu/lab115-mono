@@ -139,12 +139,12 @@ export function DigestView({
    * put in the masthead described a page other than this one. The summaries are
    * the product; this measures the summaries.
    *
-   * Both languages, because the reader can switch: `<ReadingTime>` picks.
+   * One number, not one per language: the summaries are Chinese only now, so a
+   * page under /en is reading exactly the same text.
    */
-  const minutes = {
-    zh: totalReadingMinutes(digest.articles.map((a) => summaryText(a.summary.zh))),
-    en: totalReadingMinutes(digest.articles.map((a) => summaryText(a.summary.en))),
-  };
+  const minutes = totalReadingMinutes(
+    digest.articles.map((a) => summaryText(a.summary.zh)),
+  );
 
   return (
     <PageShell>
@@ -154,10 +154,10 @@ export function DigestView({
         {/* `shown`, not `fetched`: the publish floor drops the rest, so
             fetched would promise cards that are not on the page. */}
         <span>{t.posts(digest.stats.shown)}</span>
-        {minutes[lang] > 0 ? (
+        {minutes > 0 ? (
           <>
             <MastheadDot />
-            <span>{t.readTime(minutes[lang])}</span>
+            <span>{t.readTime(minutes)}</span>
           </>
         ) : null}
       </Masthead>

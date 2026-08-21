@@ -10,43 +10,59 @@
  * One language's take on an article — written to REPLACE reading it, not to
  * tease it. Hence the context and the evidence: a bare thesis tells you
  * whether to click, which is a different job.
- *
- * `background` and `implication` are optional because digests archived before
- * this shape existed have neither, and an old page must still render.
  */
 export interface SummaryText {
   /** One sentence: what the article argues. Rendered as the lead. */
   thesis: string;
   /**
-   * 2–4 flowing paragraphs carrying the context, the evidence and what
-   * follows from it.
+   * The body, as ONE string. A blank line in it is a paragraph break; nothing
+   * else in the string means anything, and there is no markdown.
    *
-   * Prose, not bullets. An earlier version modelled this as an array of
-   * points, and the shape of the field decided the shape of the writing: each
-   * entry came back as a compressed standalone sentence, so a card read like
-   * a telegram — six assertions with no connective tissue between them. A
-   * paragraph forces the model to relate its facts to each other, which is the
-   * part that makes a summary readable instead of merely complete.
+   * THE SHAPE OF THE FIELD DECIDES THE SHAPE OF THE WRITING, which is the
+   * whole reason this is not an array. Two earlier shapes proved it. `points:
+   * string[]` came back as compressed standalone sentences, so a card read
+   * like a telegram — six assertions with no connective tissue. `paragraphs:
+   * string[]` fixed that but replaced it with a subtler version of the same
+   * fault: an array asks "how many?" before it asks "what does this say", so
+   * the model filled a slot count instead of following an argument, and the
+   * breaks landed where a quota ran out rather than where the reasoning
+   * turned. One string asks for prose and nothing else. Where it breaks is
+   * then a decision inside the writing.
+   *
+   * Read it with `paragraphsOf` — every renderer splits it the same way.
    */
-  paragraphs?: string[];
-
-  // --- superseded, kept so archived digests still render ---
-  /** @deprecated folded into `paragraphs`. */
-  background?: string;
-  /** @deprecated folded into `paragraphs`. */
-  points?: string[];
-  /** @deprecated folded into `paragraphs`. */
-  implication?: string;
+  text: string;
 }
 
 /**
- * What the score pass wrote before it committed to a number — one finding per
- * test, in the order the rubric asks for them.
+ * One dimension of the score: the number the model gave it, and the one line
+ * that justifies the number.
+ *
+ * `score` is 1-10. The model never writes a total — the weights and the sum
+ * live in `SCORE_WEIGHTS` in summarize.ts, so the total is arithmetic over these
+ * and can be recomputed from the stored file.
+ */
+export interface ScoreFinding {
+  score: number;
+  note: string;
+}
+
+/**
+ * How the score was arrived at — one entry per dimension, in the order the
+ * rubric asks for them.
  *
  * Stored because a score with no reasoning attached is not auditable, and
- * tuning the rubric is exactly the work of finding out which test misfired. A
- * post scoring 15 tells you nothing; the same post with "relays a personal
- * anecdote, nothing transfers" tells you which line to go argue with.
+ * tuning the rubric is exactly the work of finding out which dimension
+ * misfired. A post scoring 39 tells you nothing; the same post with
+ * `accessible: 3, "WebAudio internals and Bluetooth multipoint"` tells you
+ * which line to go argue with.
+ *
+ * IT REPLACED FOUR PROSE FINDINGS AND ONE MODEL-CHOSEN TOTAL. The old shape let
+ * the model name the 0-100 number itself, and on the run of 2026-08-20 that
+ * produced SIX DISTINCT VALUES across 19 articles — 85 five times, 82 six
+ * times, 78 four times. A model asked for one number picks from a handful of
+ * round ones; asked for six small ones it has to actually differentiate, and the
+ * spread comes from the arithmetic instead.
  *
  * Written to the file for published AND rejected articles, and rendered on
  * neither — this is a record for whoever is tuning, not something a reader has
@@ -56,14 +72,21 @@ export interface SummaryText {
  * the score pass never answered for carries none either.
  */
 export interface ScoreReview {
-  /** Argument or announcement. */
-  argument: string;
-  /** What a non-specialist takes away, and whether it transfers. */
-  transfer: string;
-  /** A claim, or a list. */
-  claim: string;
-  /** The bonus, and what earned it. */
-  appeal: string;
+  /** What is left if you delete the writer — a position, an insight, a mechanism
+   *  that travels. Merged from `opinion` + `judgment` + `transfer`, which
+   *  correlated 0.73-0.88 with each other. */
+  substance: ScoreFinding;
+  /** Counter-intuitive, and worth repeating. Merged from `novelty` + `hook`,
+   *  which correlated 0.76. */
+  surprise: ScoreFinding;
+  /** Readable with no background in the field. Deep-geek pieces score low. The
+   *  one dimension that measured something of its own from the start. */
+  accessible: ScoreFinding;
+  /** Whether it sets off the reader's curiosity. */
+  relevance: ScoreFinding;
+  /** How well the piece is MADE — structure, evidence, whether it is padded.
+   *  Independent of subject: a jargon-heavy piece can be beautifully made. */
+  quality: ScoreFinding;
 }
 
 export interface Article {
@@ -93,13 +116,22 @@ export interface Article {
   /** Cover image from the feed, or null → the card renders a gradient. */
   image: string | null;
   readingMinutes: number;
-  /** 0–100 information density, assigned by the model. */
+  /**
+   * 5–50: five 1-10 dimensions summed. See SCORE_WEIGHTS in lib/score.ts.
+   *
+   * NOT 0-100. It was, back when the model named the total itself. Digests
+   * archived before this change carry scores on the old scale, so the two are
+   * not comparable across that date — and `starCount` will rate all of them five
+   * stars, which is the honest consequence of not converting them.
+   */
   score: number;
   /** 1-based position after sorting by score. */
   rank: number;
   /** How the score was arrived at. See ScoreReview. */
   review?: ScoreReview;
-  summary: { zh: SummaryText; en: SummaryText };
+  /** CHINESE ONLY. There was an `en` half here and it is gone; the pages still
+   *  route under /zh and /en, but both render this. */
+  summary: { zh: SummaryText };
 }
 
 /**

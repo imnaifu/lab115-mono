@@ -86,7 +86,7 @@ function Actions({
         url={href(lang, articlePath(date, article.id))}
         imageUrl={`${href(lang, articlePath(date, article.id))}/share.png`}
         title={displayTitle(article, lang)}
-        thesis={article.summary[lang].thesis}
+        thesis={article.summary.zh.thesis}
         lang={lang}
       />
     </div>
@@ -145,7 +145,7 @@ export function ArticleCard({
         </div>
       </div>
 
-      <Summary summary={article.summary} variant="card" lang={lang} />
+      <Summary summary={article.summary} variant="card" />
       <Actions article={article} date={date} lang={lang} />
     </div>
   );

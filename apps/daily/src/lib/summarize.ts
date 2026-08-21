@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { CATEGORIES, PUBLISH_MIN_SCORE, resolveCategory } from "./categories";
+import { SCORE_DIMENSIONS, SCORE_MAX, SCORE_MIN, SCORE_WEIGHTS } from "./score";
 import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
 import { USER_CONFIG } from "./user-config";
 import type { RawArticle } from "./fetcher";
@@ -22,16 +23,13 @@ import type { ScoreReview, SummaryText } from "./types";
  * "json", must show an example of the shape, and needs max_tokens set high
  * enough that the reply is not truncated. All three are handled below.
  *
- * TWO calls, split by JOB rather than by language: score everything, then
- * summarize only what cleared the floor, both languages in the one reply.
+ * TWO calls: score everything, then summarize only what cleared the floor.
  *
- * The split used to run the other way — Chinese+score, then English from the
- * Chinese — because asking for score + Chinese + English together returned
- * Chinese for 10/10 articles and English for 0/10, the model filling the first
- * fields of each object and stopping. THAT WAS MEASURED WITH A BATCH OF
- * ARTICLES PER REQUEST. At BATCH_SIZE 1 the same combined reply is ~2,900
- * characters and comes back whole (10/10 with both halves, measured), so the
- * lesson is about reply size, not about combining languages.
+ * The digest is CHINESE ONLY. There was an English half — `en_thesis` and
+ * `en_text` alongside the Chinese in the same reply — and it is gone, along
+ * with the whole question of how to split the passes by language. The reply is
+ * now roughly half the size it was, which is the one thing every malformation
+ * in this file has scaled with.
  *
  * Scoring goes first so the floor can be applied before any summary is
  * written: on the sample that is 8 of 18 articles never summarized at all.
@@ -131,7 +129,15 @@ const GAP_RETRIES = 2;
  * squeezed into five 80-character paragraphs is a telegram, not prose.
  *
  * So this is now only the top of `budgetFor`, reached by anything past
- * roughly a 12-minute read and by nothing shorter.
+ * roughly a 14-minute read and by nothing shorter.
+ *
+ * It went 500 → 650 with the move to the teacher voice below. That voice costs
+ * words by construction — a modern analogy, a scenario, a question asked before
+ * it is answered — and none of them are padding, they are the mechanism that
+ * makes the piece land.
+ *
+ * It is now the ONLY number sent to the model. How that budget gets broken into
+ * paragraphs is the model's call; see `budgetFor`.
  */
 const ZH_MAX = USER_CONFIG.summaryMaxChars;
 
@@ -146,44 +152,58 @@ const ZH_MAX = USER_CONFIG.summaryMaxChars;
 const ZH_MIN = USER_CONFIG.summaryMinChars;
 
 /**
- * Ceiling on ONE paragraph. It used to be ZH_MAX / 2.5, and that derivation is
- * what made the prose unreadable: a 300-character budget divided into thirds
- * gave the model a 120-character paragraph, and it filled every one of them
- * with a single sentence carrying five clauses — a conference abstract, not
- * something a person reads on a phone.
+ * Ceiling on ONE paragraph. THIS IS THE THIRD TIME IT HAS BEEN HERE, and the
+ * measurements are why it keeps coming back.
  *
- * Now it moves independently, and it moved DOWN while the total went up. Short
- * paragraphs are half of what makes the target voice work: the model cannot
- * pack five clauses into a paragraph it is only allowed 90 characters for, so
- * this ceiling does the work the style instructions alone could not.
+ * It was removed once for being an arithmetic rule in a prompt that had just been
+ * simplified to five style bullets. What followed, run by run: paragraphs of 251
+ * characters, then 319, then 424 — each time the longest paragraph in the digest
+ * grew, and each time the article it appeared in was a listicle whose body had
+ * been translated rather than summarised.
  *
- * It has stayed at 90 across every move the total has made (300 → 420 → 600 →
- * 450 → a per-article curve) and that is the point. The total buys PARAGRAPH
- * COUNT, not paragraph length — the rhythm is a property of this number, and
- * moving it to "keep the ratio" in either direction would bring the
- * 92-character single-sentence paragraph straight back. It is why `budgetFor`
- * spends a bigger budget on more paragraphs and never on longer ones.
+ * IT IS THE ONLY RULE THAT CLOSES BOTH EXITS. The constraints added instead were
+ * "at most three points" and then "at most 3 headings", and each worked on the
+ * thing it named while the overflow moved somewhere else: capping points moved it
+ * into headings, capping headings moved it into paragraph length. A 21-rule
+ * listicle came back at 1,757 characters under a 590 budget with a compliant 4
+ * headings and one 424-character block. Length has to be capped where the text
+ * actually is.
  *
- * It is also the number the paragraph COUNT must be derived from, and for a
- * long time it was not: the count came from chars/70 while a paragraph was
- * allowed 90, so the top of the stated range times this ceiling came to
- * 1.15-1.34x the character budget. A reply could obey both paragraph rules and
- * still overrun the total by a third, and the longest summaries were doing
- * exactly that — 661 characters against 474, seven paragraphs against a range
- * of 5-7, longest paragraph 108. Three rules of which two contradict give the
- * model no reason to take any of them seriously.
- *
- * Dropping the count entirely was tried first and came back WORSE: 12 of 14
- * over budget against 11 of 15, because the count is the only free variable and
- * the model parks it at six whatever the budget says. Over that same run
- * paragraphs averaged 77 characters — this ceiling is being respected — while a
- * 377-character budget came back at 703 in six paragraphs. Total is count times
- * length; the length end is healthy, so the count end is the one that gives.
+ * PARAGRAPH COUNT IS STILL THE MODEL'S. The `分 N~M 段` range is gone for good — a
+ * stated count is a target and the model parks on it. A ceiling is not a target:
+ * nothing rewards writing up to it, and it is checkable by looking at one
+ * paragraph, which is the only class of rule this model has been observed to
+ * keep (third person held 19/20; the soft character budget held 3/20).
  */
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
 /**
  * What ONE article is allowed, derived from how long that article is.
+ *
+ * A CHARACTER TOTAL AND NOTHING ELSE. The paragraph COUNT used to be computed
+ * here too and stated in the request as a `分 N~M 段` range; that is gone, and
+ * how many paragraphs the budget becomes is entirely the model's call. The
+ * There is no per-paragraph ceiling at all any more — see below.
+ *
+ * WHAT THAT ARITHMETIC COST, kept because it is the reason not to reintroduce
+ * it casually. There were three rules — total, count range, per-paragraph
+ * ceiling — and count times ceiling did not equal the total, so a reply could
+ * obey two of them and overrun the third by a third (661 characters against
+ * 474, seven paragraphs against a range of 5-7). Three rules of which two
+ * contradict give the model no reason to take any of them seriously. Deriving
+ * the count from the ceiling fixed the contradiction but not the underlying
+ * problem: a stated count is a target, and the model parks it at six whatever
+ * the budget says. The measured tradeoff was 12 of 14 over budget without a
+ * count against 11 of 15 with one — near enough identical, and the version
+ * without it reads better, because a paragraph break landing where the argument
+ * turns beats one landing where the character count runs out.
+ *
+ * The 90-character per-paragraph ceiling went with it, came back when one run
+ * measured 45% of paragraphs over it and the longest at 251, and then went for
+ * good — the style guide in SUMMARY_SYSTEM asks for 排版极简 in prose and that
+ * is now the only thing asking. If the 251-character wall returns, this is the
+ * number that used to prevent it, and `summaryParaMaxChars` is the config key
+ * it came from.
  *
  * Driven by `readingMinutes` rather than a raw character count because
  * `reading.ts` already normalises the two alphabets the feeds mix — CJK
@@ -191,36 +211,26 @@ const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
  * English one of the same substance land on the same number.
  *
  * Logarithmic, not proportional: the compression ratio should RISE with
- * length. A 1-minute link post has one thing to say and 200 characters is
+ * length. A 1-minute link post has one thing to say and 250 characters is
  * already generous; a 60-minute essay has a dozen and still cannot have
- * 12,000. The constants fit two points picked editorially — ~200 characters at
- * 1 minute, ~475 at 10 — and the ZH_MAX clamp bites from ~12 minutes up,
+ * 12,000. The constants fit two points picked editorially — ~250 characters at
+ * 1 minute, ~590 at 10 — and the ZH_MAX clamp bites from ~14 minutes up,
  * which is where the ceiling stops being decorative and starts holding the
- * long essays to the same 500 characters.
+ * long essays to the same 650 characters.
  *
- * Against the same 14-day sample the median budget lands at 377 where the flat
- * one was 450, so MOST articles get less room than before, not more. Only the
- * long ones gain, which is the whole point.
+ * The curve was 90 + 160·ln and is now 110 + 200·ln: the same shape lifted
+ * ~24% for the teacher voice. Against the 14-day sample the median budget goes
+ * 377 → 468. Nothing about the ORDER changed — short pieces still get far less
+ * room than long ones, which is the whole point of having a curve.
  *
  * Nothing enforces any of this: it is written into the request and the model
  * obeys it or does not. The flat 450 was broken by 13% of summaries, and there
  * is no truncation or retry here to change that — a summary that runs long is
  * published long, and `report` counts it.
  */
-function budgetFor(readingMinutes: number): {
-  chars: number;
-  paraLow: number;
-  paraHigh: number;
-} {
+function budgetFor(readingMinutes: number): number {
   const minutes = Math.max(1, readingMinutes);
-  const chars = Math.min(ZH_MAX, Math.round(90 + 160 * Math.log(minutes + 1)));
-  // Paragraph COUNT absorbs the budget, because PARA_MAX caps how long each one
-  // may be. The ceiling therefore has to be chars/PARA_MAX and nothing looser:
-  // count and per-paragraph cap MULTIPLY, so any divisor below PARA_MAX hands
-  // out a paragraph allowance the character budget cannot pay for. It was
-  // chars/70 until now, which permitted 1.15-1.34x the total — see PARA_MAX.
-  const paraHigh = Math.max(2, Math.floor(chars / PARA_MAX));
-  return { chars, paraHigh, paraLow: Math.max(2, paraHigh - 1) };
+  return Math.min(ZH_MAX, Math.round(110 + 200 * Math.log(minutes + 1)));
 }
 
 /**
@@ -279,10 +289,37 @@ export interface Verdict {
    *  See `titleZh` in types.ts. */
   titleZh: string;
   zh: SummaryText;
-  en: SummaryText;
 }
 
 // --- pass 1: score only -----------------------------------------------------
+
+/**
+ * The score is ARITHMETIC OVER SEVEN 1-10 DIMENSIONS, computed here rather than
+ * chosen by the model. The scale, the weights and the star mapping all live in
+ * lib/score.ts — see the notes there for why the weights are equal and why the
+ * model is not allowed to name the total.
+ *
+ * WHAT MOVES THE NUMBERS, measured across three runs — worth reading before
+ * touching any rubric below:
+ *
+ * - THE RUBRIC WORDING DOMINATES. Rewriting `relevance` from a checkable test
+ *   ("money, health, work, housing") to a soft one ("能否触发智力共鸣") moved its
+ *   median from 4 to 7 in one run. `hook` moved 5 to 7 the same way. `transfer`,
+ *   the one dimension whose wording did not change, moved 5 to 5. A criterion
+ *   that cannot be argued against gets a high score from every article.
+ * - THE CALIBRATION PARAGRAPH IS LOAD-BEARING. The run with "if you are about to
+ *   write 7, ask what would have to be true for a 9 — if you cannot answer it is
+ *   a 5" scored 3 points lower across the board than the run without it.
+ * - THE EXAMPLE MATTERS LESS THAN IT LOOKS. SCORE_EXAMPLE was changed from
+ *   9/9/8/9/9/8 to a deliberately middling 7/7/8/4/6/9 and the scores went UP,
+ *   not down, because the rubrics were loosened in the same edit. It is not the
+ *   anchor it was assumed to be.
+ *
+ * NO CEILINGS. Tests used to be hard caps: a product launch was pinned to the
+ * 20s however well written. A sum has no caps, so a well-written announcement
+ * can climb on its other dimensions. The additive answer to a listicle is a low
+ * `judgment`; if that is not enough, a cap belongs in code, not in the prompt.
+ */
 
 /**
  * Scoring runs FIRST and ALONE, and its reply is a single number per article.
@@ -334,60 +371,102 @@ const SCORE_PASS = "score";
  */
 const SCORE_TEMPERATURE = 0;
 
-const SCORE_SYSTEM = `You are the first reader for a daily digest aimed at a curious generalist: smart, widely read, not a specialist in whatever field the article belongs to. Your only job is to decide how much that reader gains from the piece.
+const SCORE_SYSTEM = `You are the chief curator for a daily curiosity digest. The digest exists to make a bright, non-specialist reader say: "I never thought about it that way before!" Your job is to score whether an article is intellectually thrilling, counter-intuitive, and fun to retold at a dinner table.
 
-You are given ONE article and you return ONE json object. No wrapper, no array, no index — the reply is the object itself.
+You are given ONE article and you return ONE json object. No wrapper, no array — the reply is the object itself.
 
-It has five fields, and THE ORDER IS THE METHOD:
-- "t1" — one sentence: argument or announcement, and what caps it if anything.
-- "t2" — one sentence: what a non-specialist comes away with, and whether it transfers.
-- "t3" — one sentence: a claim or a list, and what is lost if you delete the writer.
-- "t4" — one sentence: what the bonus is worth and why, as a signed number like +5 or +0.
-- "score" — 0-100. WRITTEN LAST, AFTER the four findings, and it must follow from them.
+FIVE DIMENSIONS. Each gets a WHOLE NUMBER FROM 1 TO 10 and one sentence saying why. You do NOT return a total score.
 
-WRITE THE FINDINGS BEFORE THE NUMBER. Not as a formality — a number produced first is a guess dressed up afterwards, because there is nowhere to do the judging before the first token is out. The four sentences ARE the judging; the score is what they add up to.
+Return exactly this shape:
+{
+  "substance": { "note": "...", "score": 5 },
+  "surprise": { "note": "...", "score": 5 },
+  "accessible": { "note": "...", "score": 5 },
+  "relevance": { "note": "...", "score": 5 },
+  "quality": { "note": "...", "score": 5 }
+}
 
-Each finding must point at the article. Name the claim, name the evidence, name the thing being relayed. "Well argued" is not a finding; "argues that the politeness norm itself is what excludes, and cites Astell's 1706 exchange with the bishop" is one. A finding that could have been written without reading the piece caps that test at half.
+CRITICAL: WRITE THE NOTE BEFORE THE NUMBER in each object. Every note must cite specific claims, examples, or evidence from the text. A generic note that could apply to any article caps the score at 5.
 
-SCORING — four tests, then the landing.
+CALIBRATION (5-6 IS THE DEFAULT, AND THE BANDS BELOW ARE WRITTEN THAT WAY):
+A competent, interesting article that you enjoyed reading scores 5 or 6 on most dimensions. That is not a criticism of it — read the 5-6 band on each dimension and you will find the ordinary good article described there by name. 7-8 is for a piece that does something specific the 5-6 band does not cover, and you have to say what. 9-10 requires the named thing each dimension asks for; without it, it is not a 9.
 
-Tests 1-3 are CEILINGS: hitting one caps the score at the band named, and a piece that hits several takes the LOWEST cap. Test 4 is a BONUS: it moves a piece around inside the band its ceiling allows, and can never lift it over that ceiling. Test 5 is where it finally lands.
+Across 30 articles most scores land between 4 and 6, a handful reach 7-8, and 9-10 may not appear at all on a given day. Do not be polite — 2 and 3 are ordinary scores for a real weakness, not insults.
 
-1. ARGUMENT OR ANNOUNCEMENT? Does it reason toward a contestable claim, or report that something happened?
-- If the whole piece can be restated as "X happened" with nothing of substance lost, it is news. CAP: 30s.
-- Launches, benchmark tables, version bumps, link roundups. CAP: 30s however important the event — this digest is for opinion and analysis, not for keeping up.
-- A model, chip or product release. CAP: 20s, even when the thing released matters enormously.
+---
 
-2. DOES A NON-SPECIALIST COME AWAY WITH ANYTHING? The reader is curious and widely read, but is not a practitioner in this field and never will be.
-- Written for people already inside — one library's internals, one chip's fabrication step, one browser's decoder quirk, one framework's release notes, one conference talk's recap. CAP: 20s.
-- The one exception: the mechanism it uncovers TRANSFERS to how the reader thinks about something else, and then there is no cap. "A 16-year-old bug in SQLite's WAL reset corrupted a production database" transfers — it is about how silent data corruption hides. "Here is how DRAM capacitors are etched" does not.
-- The test is portability out of the field, not fascination inside it.
+## 1. "substance" — 删掉作者还剩什么 (思想密度)
 
-3. A CLAIM, OR A LIST? Did the writer supply judgment, or only selection?
-- A digest of the week's best reader comments, a "what I have been reading lately" list, a paragraph passing on what another outlet reported. CAP: 20s-30s, however good the material it points at — the reader's takeaway is "here are some things", which is not a takeaway.
-- The test: delete the writer and see what is lost.
-- NOT relaying: reviewing someone else's book, paper or reporting, PROVIDED the piece argues. 「音乐版权的规则不是天然如此，是一层层临时补丁堆出来的，内部互相矛盾」 is a claim you can disagree with, and it scores as an argument even though the occasion was somebody else's book. But 「这本书讲了 A、B、C，值得一读」 is a list wearing a review's clothes.
-- NOT about length: 「外置卷帘在美国买不到，因为木框架加护墙板的房子根本装不了，也就没有供应链」 is four paragraphs carrying a claim with a mechanism under it, and it beats a long, careful relay of another outlet's reporting.
+有没有自己的立场、有没有别人给不出的洞察、揭示的机制能不能搬走 —— 这三件事在实测里高度重合（相关 0.73~0.88），所以合成一条。
 
-4. WOULD AN ORDINARY PERSON WANT TO READ IT? Up to +15, the only test that adds rather than caps. It moves a piece INSIDE the band tests 1-3 allow: a product launch that is a delight to read is still a product launch, still capped in the 20s.
-What earns it:
-- It is about something people live with — money, health, work, housing, schooling, cities, what AI is doing to their job.
-- There are people and scenes in it, not only propositions: somebody did something, somewhere, and it turned out a particular way.
-- It has a hook — a fact that contradicts what you assumed, a number startling on its own, something you would repeat at dinner.
-- You can walk in with no background. Nothing has to be explained before it becomes interesting.
-What does not:
-- Interesting only to people already in the field. That is test 2, which caps rather than adds.
-- Worthy but inert: correct, well-sourced, and about an abstraction from the first line to the last.
-Be honest rather than generous. Most pieces earn +0 to +5; +15 is for the one a reader would send to a friend.
+9-10: The author's synthesis IS the article — remove them and nothing remains — AND the mechanism it uncovers explains something in a COMPLETELY DIFFERENT domain. Name that domain; without one, not a 9.
+7-8: A contestable position argued from more than one angle, or a mechanism that clearly generalises past its own subject and you can say where to.
+5-6: A clear position argued from one example or one line of reasoning; interesting inside its own subject, travels a little. **THIS IS AN ORDINARY GOOD BLOG POST.** A list of rules or tips with an argument wrapped around it caps here — however good the framing, what the reader takes away is the list.
+3-4: A position is visible but the piece mostly recounts, or it is selection with commentary attached — a link roundup with opinions, a list of tips, a summary of someone else's paper.
+1-2: Restates as "X happened" with nothing of substance lost (launches, benchmark tables, version bumps, release notes), or selection only: "what I have been reading", a digest of comments, a paragraph passing on another outlet's reporting.
 
-5. WHERE IT LANDS. Under the ceilings, score by how much a generalist gains, then add the bonus from 4. Be harsh; use the full range — a run where most articles land between 50 and 75 means the range is not being used, and the middle is where a bad score hides.`;
+Reviewing someone else's book or paper is NOT relaying, provided the piece argues its own case.
 
+## 2. "surprise" — 颠覆直觉，还是老生常谈 (值不值得复述)
+
+9-10: Contradicts a belief the reader almost certainly holds AND contains one sentence they would repeat almost verbatim. NAME THE BELIEF and QUOTE THE SENTENCE; missing either, not a 9.
+7-8: Points at something the reader had not noticed — a hidden mechanism, an unexpected cause, a specific number or paradox worth mentioning to someone. State it in one sentence.
+5-6: A fresh angle on a familiar topic. Interesting while being read, but it confirms what an informed reader suspected rather than overturning it, and nothing specific survives closing the tab. **MOST ARTICLES ARE HERE.**
+3-4: A familiar argument with new examples — predictable from the headline, and only interesting to someone already following the subject.
+1-2: Cliché restated ("AI will change jobs", "sleep is good for health"), or dry throughout — changelogs, corporate announcements, feature lists.
+
+## 3. "accessible" — 是否抛弃了行业黑话 (通俗度)
+
+9-10: Zero domain knowledge needed, and the hard idea is carried by an analogy or a human scene a 15-year-old would follow.
+7-8: One or two technical terms, each explained on the spot in a few words. Everything else is plain language.
+5-6: The subject belongs to an industry the reader does not work in. Followable, but the world has to be explained before the point can land. **IN A TECH-LEANING DIGEST THIS IS MOST ARTICLES.**
+3-4: Several terms assume a practitioner. The piece can be followed but not retold.
+1-2: DEEP GEEK — internal architecture, API quirks, a debugging story that means nothing to anyone who has not hit that exact bug, jargon the argument cannot survive losing. **Score it low here even when the piece is excellent**; the excellence belongs in "substance", not here.
+
+## 4. "relevance" — 能否触发智力共鸣 (好奇心关联)
+
+9-10: The reader will do something differently after reading — money, health, work, family, housing, the city they live in. NAME THE ACTION; no action, no 9.
+7-8: Not their own action, but a system they live inside and feel: prices, schools, platforms they use, their country's politics.
+5-6: **Genuinely interesting but detached — history, science, another industry, another era. MOST ARTICLES IN THIS DIGEST BELONG HERE**, including the excellent ones. Being fascinating is not being relevant.
+3-4: Interesting to a hobbyist in that field; the reader has no stake in it whatsoever.
+1-2: An obscure niche with no connection to anything the reader touches.
+
+## 5. "quality" — 文章本身的做工 (注水程度)
+
+THIS ONE IS MECHANICAL. Count things: repeated passages, claims left standing without the evidence they needed, sections that could be deleted with nothing lost. **Do not consider whether the piece is insightful, whether its subject is interesting, or who it is for** — those are "substance", "relevance" and "accessible", and they are scored elsewhere.
+
+The cross-check, and it is not optional: measured over a run, this dimension correlated 0.73 with "substance", which means it was being scored as a second opinion on whether the piece had a thought in it. **If your note here would also serve as your note for "substance", you have not judged craft.** A piece full of API jargon can score 9 here; a piece with a brilliant thesis that repeats it for 3000 words scores 4.
+
+The test to apply: how much of this could be deleted without losing anything?
+
+9-10: Nothing could be cut. No passage restates an earlier one, and every claim that needed support has it, named and specific.
+7-8: A few paragraphs could go — an over-long opening, one example too many.
+5-6: Roughly a third could be cut with nothing lost: the middle restates the beginning, or the same point arrives three times in different words. **MOST ARTICLES ARE HERE**, including ones you enjoyed reading.
+3-4: Half of it is padding, or the piece repeats itself as a structure rather than by accident — a list where every item makes the same point, a section per example where one example was enough.
+1-2: Careless — broken structure, claims with nothing behind them anywhere, obvious filler, or the flat interchangeable prose of generated text.`;
+
+/**
+ * THE SHAPE, IN THE ORDER SCORE_SYSTEM ASKS FOR IT — and a worked calibration.
+ *
+ * Both halves matter. The keys have to match SCORE_WEIGHTS exactly (a startup
+ * check below enforces it), and THE NUMBERS ARE READ AS TYPICAL.
+ *
+ * It is scored against the CURRENT bands, where 5-6 is the ordinary good
+ * article. Every number below is one the rubric can be checked against: the 9s
+ * name the thing their band demands (the belief overturned, the action taken),
+ * the 5 says what stopped it being a 7, and nothing is a 10.
+ *
+ * The example is a weaker anchor than it looks, incidentally — it was changed
+ * from 9/9/8/9/9/8 to a deliberately middling set and the run that followed came
+ * back HIGHER, because the rubric bands were loosened in the same edit. Band
+ * wording moves scores; this mostly teaches the shape.
+ */
 const SCORE_EXAMPLE = `{
-  "t1": "Argument: it claims the standard antibiotic course selects for resistance rather than preventing it, and traces where the guidance came from. Not an announcement.",
-  "t2": "Transfers — the mechanism is how a rule outlives the evidence that justified it, and the reader acts on this one personally. No cap.",
-  "t3": "A claim, and a contestable one; delete the writer and you lose the argument, not just the citations.",
-  "t4": "+12 — it is about medicine he swallows, it contradicts what his doctor told him, and it is readable cold.",
-  "score": 88
+  "substance": { "note": "Argues that the standard course length is itself the problem and traces where the guidance came from, but the idea that a rule outlives its evidence is never carried outside medicine.", "score": 6 },
+  "surprise": { "note": "Overturns the belief that you must finish the course, which almost every reader holds, though there is no one sentence worth quoting verbatim.", "score": 8 },
+  "accessible": { "note": "About pills people swallow; the single technical term is explained on the spot in four words.", "score": 8 },
+  "relevance": { "note": "The reader will decide differently about a course of antibiotics they have been prescribed — that is the action.", "score": 9 },
+  "quality": { "note": "Clean structure and the trial it rests on is named and dated, but the middle third restates the opening at length.", "score": 6 }
 }`;
 
 // --- pass 2: both summaries, for survivors only -----------------------------
@@ -405,100 +484,64 @@ const SCORE_EXAMPLE = `{
  */
 const SUMMARY_PASS = "summary";
 
-const SUMMARY_SYSTEM = `You edit a daily digest for a curious generalist: smart, widely read, not a specialist in whatever field the article belongs to.
+const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中历史/社科老师。抓住文章的重点内容和观点，改写成极简、有趣、易懂的风格，让高中生也能轻松理解
 
-YOUR SUMMARY REPLACES THE ARTICLE — they finish it and never open the original. Not "should I read this?" but "now I know this."
+写作风格指南：
+- 拒绝照本宣科：严禁使用晦涩的学术名词和长难句，多用短句和口语化表达
+- 巧用现代类比：适当引入现代生活中的概念或流行语（如：KPI、拼团、C位、打卡、运营等），帮读者迅速建立脑补画面
+- 场景化/故事化：把宏大的历史概念转化为普通人的“生活视角”
+- 排版极简：多用小标题、序号，结尾简单总结下
+- 生动幽默：语气热情接地气，像在和朋友面对面聊天，而不是在讲台上念课本
 
-Every article you are given has already been judged worth carrying. Summarize it; do not re-litigate whether it deserves the space.
+概要是替读者读完原文的，读完就不必再打开原文。每篇给你的文章都已经判定值得收录，直接写，不要再评价它够不够格。
 
-The rules below are grouped: what to return, then the headline, then how the summary is written, how it ends, how long it runs, then the English half, and finally how it is classified. Read all of them before writing anything.
+以下是格式要求（json 格式）。
 
-## 一、返回什么
+## 返回什么
 
-Return one entry per article, with these fields:
-- "index" — the number the article was given in brackets, like [3].
-- "zh_title" — the HEADLINE in Chinese. See 二 below.
-- "zh_thesis" — ONE sentence carrying the claim on its own; something a reader could disagree with.
-- "zh_paragraphs" — SHORT paragraphs, each AT MOST ${PARA_MAX} characters; how many this article gets is stated with it. They carry the context and the evidence the claim rests on, and THE LAST ONE IS ALWAYS A CLOSING — see 四 below.
-- "en_thesis" and "en_paragraphs" — the same summary in English. See 六.
-- "category" — see 七.
+每篇文章一条，字段如下：
+- "zh_title" —— 中文标题，见下面「标题」。
+- "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。
+- "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间空一行，也就是 JSON 字符串里的 "\\n\\n"。分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
+- "category" —— 见下面「分类」。
 
-FILL THE FIELDS IN THE ORDER LISTED. The Chinese is written first and the English is written from it, so the two halves cannot drift apart; "category" is last because by then you know what the piece actually is.
+一篇文章一条。绝不允许一条盖住几篇、少写几篇，或者给没给你的文章编一条。
 
-ONE ENTRY PER ARTICLE. Every article you are given gets its own object in "articles", carrying the index it was given. Never one object covering several, never a subset, and never an entry for an article you were not given.
+## 格式硬要求
 
-FORMATTING: never put a straight double-quote inside a value — use 「」 in the Chinese and single quotes in the English. A stray quote breaks the JSON.
+**不许在字段值里用直双引号**，中文用「」。一个游离的引号就会让 JSON 失效。
 
-## 二、标题
+**不许在字符串里塞真的换行**，段落之间写 "\\n\\n" 这两个转义。一个未转义的换行和游离引号一样会让 JSON 失效。
 
-"zh_title" 是把原标题译成中文，不是重写，也不是把论点缩短成标题。原文说什么就译什么，包括它故意的含糊、疑问句和反讽；不要替它把答案补上。原标题是「Why does Opus 5 feel worse to work with?」就译「为什么 Opus 5 用起来更难受？」，不要译成「Opus 5 因为对齐基准而失去了主动提问的能力」——那是论点，论点有自己的字段。
+**正文里唯一允许的 markdown 是小标题**，写成「## 标题」，单独占一块。其它一概不解析 —— 没有星号加粗、没有减号列表、没有链接、没有引用块，写了就在读者屏幕上显示成字面符号。序号直接写在文字里就行（「1.」「2.」），或者写在井号后面。
 
-标题里的产品名、公司名、人名、模型名照原样保留，不要音译：「Claude Code」「a16z」「Zuckerberg」「DiG-bench」。中英文之间照样加空格。不要加书名号、引号或句末标点。
+**第三人称，正文里不许出现「我」「我们」「咱们」「笔者」。**
 
-如果原标题本身就是中文（比如「科技爱好者周刊（第 408 期）」），"zh_title" 就原样返回它，不要改写。
+这不是文风偏好，是会让读者读错。概要是替读者读完原文的，它不是原文作者，所以：
 
-## 三、正文怎么写
+- 原文写「我发现蓝牙耳机断连」，概要要写「作者发现自己的蓝牙耳机断连」。照抄成「我发现」，读者会以为是概要作者遇到的事 —— 而那个「我」到底是谁，正文里根本无从判断。
+- 也不要用「我们」把概要和读者绑在一起：「我们总觉得只要把问题说得足够严重」应该写成「人们总觉得」。
+- 要交代是谁在说，就点名：「作者认为」「这位工程师发现」「研究者的结论是」。
 
-写得像中文，不像译文 —— 这条比信息量重要，也是最容易失守的一条。
+**「你」不受影响**，设问和把读者拉进场景都照常用：「你要是那年在长安开个小铺子，光交税就得应付三拨人」—— 那个「你」指任何人，不会跟作者的自称打架。
 
-一句话只走一条逻辑线。分句可以多，但方向要一致 —— 顺着往下推（再、然后、于是、就、这样一来）可以拉长；把转折、因果、并列、类比混在同一句里，就必须断开。
+**每段最多 ${PARA_MAX} 字。** 不是「大约」，是上限，每一段都算。段落写长了是最常见的失误：**把它拆成两段，不要从里面删字。** 一段四百字的墙，读者是直接跳过去的，不是慢慢读完的。
 
-反例，五个独立命题钉在一起，四种逻辑关系（但／主要因为／且／如同）挤在一句：「Town CEO 认为 AI 代理将取代传统软件，但当前仅能消除知识工作者 10-20% 的琐事，主要因为大多数人不了解 AI 能力，且习惯改变缓慢，如同 iPhone 普及耗时十年。」读的时候要同时挂着五个开口，那是论文摘要。拆开写：「Town 的 CEO 认为，AI 代理会取代现在的软件。但眼下它只能替知识工作者省掉 10-20% 的杂事。为什么这么慢？因为多数人根本不知道 AI 能做什么，习惯改起来也慢。当年 iPhone 也用了十年才普及。」
+**小标题最多 3 个，一个不多。** 写完数一遍井号，超过三个就是错的：合并、或者砍掉一整节，不要靠缩短每节来凑。一个都不用也完全可以。
 
-正例，同样很长却读一遍就懂，因为从头到尾只有一条因果链：「如果对话的间隔特别久，下一次输入跟上一次之间超过了 10 分钟，缓存就被删除了，模型收到上一轮的提示词，就不得不重新计算，收取的费用就变成了 1 元。」**所以长句本身不是毛病，一句话里塞进几条逻辑线才是。**
+**一篇最多讲三个要点，所以小标题也最多 3 个 —— 这是同一条规则的两种说法。** 注意它跟上面那条每段字数的上限是**两道独立的闸**：把二十一条规则归并成三个主题、然后每个主题底下写一大坨，同样是不合格的。 抓住文章最值得带走的三件事，其余全部砍掉 —— 不是压缩，是不写。
 
-字数只是提醒：句子过了 50 字就回头检查一遍，是不是掺进了第二条线。是就断开，不是就留着。
+原文本身是一份清单（十条建议、二十条规则）的时候这条最容易破：**挑三条最能说明问题的，再点出这类清单的共性，绝不逐条翻译。** 一篇二十一条的清单译成二十一段、配十二个小标题，那不是概要，是翻译。
 
-用口语的连接词：但是、不过、因为、所以、这样一来、问题在于、也就是说。不要用「综合权衡」「而非」「其中」「且」「基于」「使得」这类书面语。
+**整篇的字数预算跟文章一起给你。** 那是上限不是目标，写不满完全没关系，凑字数比短更糟。装不下就再砍掉一个要点，不要把两个要点压成一句。
 
-多用动词，少堆名词。写「命中缓存一次只要 2 分钱，是没命中的五十分之一」，不写「缓存命中的输入价格为未命中价格的五十分之一」。
+## 标题
 
-段落要短，但不要空。正常一段是 2~3 个短句、60~85 字。偶尔用一句话独占一段来强调转折可以，但不要每段都这样 —— 五个 25 字的段落加起来才 125 字，那是把内容砍掉了，不是把它排开了。
+"zh_title" 是把原标题译成中文，不是重写，也不是把论点缩短成标题。原文的疑问句、反讽、故意的含糊都照译，不要替它把答案补上。产品名、公司名、人名、模型名照原样保留，不要音译。原标题本身就是中文的，原样返回。
 
-可以设问再回答，可以说「你」和「我们」。「还有一项缓存命中价格，这是什么东西？」远好过「另需考虑缓存命中定价机制」。
+## 分类 "category"
 
-中文与英文、数字之间加空格：「Token 的输入价格」「1.6 万行 Go 代码」「82% 的工程师」，不写「Token的输入价格」「1.6万行Go代码」「82%的工程师」。
-
-术语第一次出现就地解释，四五个字说清：「paraxanthine（咖啡因在体内的代谢产物）」「WAL（数据库的预写日志）」。产品名、公司名、人名照原样写，那是名词不是术语。
-
-WRITE FOR SOMEONE OUTSIDE THE FIELD. The reader is curious and widely read but is not a practitioner in this field. Explain practitioner terms (WAL, RAG, p99, cap rate) inline, as above.
-
-你是在给读者写，不是在给编辑写。**永远不要提分数、分类，或者这是一份日报的一部分。**「分数低是因为它没有论点」这种话是内部判断，写进正文就露馅了；「本文归入 AI 类」同理。
-
-## 四、收尾
-
-最后一段固定是收尾，每篇都要有。写「这事意味着什么」：作者的判断最终落在哪里、读者该记住什么、接下来会怎样、或者该怎么做。前面几段是「发生了什么」，这一段是「所以呢」。
-
-收尾**不是复述**。论点那句已经印在正文上方，读者刚看过，再说一遍等于白费一段。也不要用「总之」「综上所述」「总的来说」「这篇文章讨论了」开头 —— 那是清嗓子，不是结论。
-
-好的收尾是具体的，能自己站住：
-- 「所以最新的建议是改成每 4 分钟激活一次缓存。」
-- 「所以这不算评测，只是一个用户在一个场景里的体验。」
-- 「所以真正该问的不是模型能不能动手，而是它动手前会不会先看一眼。」
-
-如果文章本身没有结论（链接汇总、发布公告），收尾就写清它为什么给不出结论：「每条链接都得自己点开，这篇本身不提供可带走的东西。」不要硬凑一个。
-
-## 五、长度与取舍
-
-LENGTH — each paragraph AT MOST ${PARA_MAX} characters. Not "about" — at most. A paragraph running long is the single commonest failure; SPLIT IT INTO TWO paragraphs rather than trimming words out of it.
-
-The budget for the whole entry comes with the article, and it is a ceiling, not a target. Being well under it is fine and padding is worse than brevity. Never invent detail the article lacks.
-
-KEEP THE SPECIFICS — numbers, named cases, mechanisms. "五步链条每步成功率 95%，走完只剩 77%" earns its place; "作者讨论了可靠性" does not.
-
-BUT READABILITY OUTRANKS COVERAGE. When the budget is tight, drop a point — never compress two points into one long sentence. A reader finishes a summary that covers less ground; he skips the long sentence entirely.
-
-## 六、英文
-
-"en_thesis" and "en_paragraphs" are the English of the SAME summary you have just written: same claim, same evidence, same number of paragraphs, same order. Write it natively, not word-for-word, and never as a restatement of the headline — that already sits next to your text.
-
-MATCH THE CHINESE RHYTHM, which is deliberately plain: short paragraphs, a question asked and then answered, and ONE LINE OF REASONING PER SENTENCE. A long sentence is fine when its clauses all push the same way ("if the gap is long enough the cache is dropped, so the model recomputes, so you pay a full yuan"); it is wrong when a reversal, a cause, an addition and an analogy are stapled together in one breath. Break those apart. Use the connectives speech uses — but, so, because, which means — not "moreover", "notably", "in terms of", "it should be noted that". Prefer verbs to nominalisations: write "a cache hit costs one fiftieth of a miss" rather than "the input price for a cache hit constitutes one fiftieth of the miss price". This is not telegraphic — the sentences still connect — it is simply unhurried.
-
-The reader switches between the two languages rather than seeing them side by side, so the English must stand alone: someone who reads only this ends up knowing what the Chinese reader knows. Keep it as free of unexplained jargon as the Chinese; product, tool and company names stay as they are.
-
-## 七、分类 "category"
-
-Exactly one, from this list only, the most specific that fits. The catch-all is for what genuinely belongs nowhere else. Never invent a value outside the list.
+只能从下面这个列表里选一个，选最贴切的那个，绝不要自己造。
 ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
 
 /**
@@ -512,38 +555,29 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
  * silently, on 5 of 6 batches. The fix then was to show two entries with
  * consecutive indices.
  *
- * Now that a request carries one article, that second entry describes a case
- * that never happens: measured against a one-entry example it cost ~73 input
- * tokens per request and one index mismatch in 12. **If BATCH_SIZE ever goes
- * back above 1, this example must show two entries again** — otherwise the
- * 5-of-6 failure returns.
+ * NO "index" FIELD ANY MORE. It was how a reply got matched back to an article,
+ * and at BATCH_SIZE 1 it never did any matching: `pick` returns the only
+ * article in the group without reading it. Asking for a field nothing consumes
+ * cost tokens and produced index mismatches of its own. **If BATCH_SIZE ever
+ * goes above 1, both the field and a second entry with consecutive indices have
+ * to come back** — otherwise replies match the wrong articles, silently.
  *
- * The wrapper stays an array even for one article: the appliers match replies
- * to articles by index, and the retry path re-asks for whatever is missing, so
- * the shape has to survive a batch of any size.
+ * The wrapper stays an array even for one article: the retry path re-asks for
+ * whatever is missing, so the shape has to survive a batch of any size.
+ *
+ * THE PROSE IS A HAND-WRITTEN TARGET, not a previous run's output — it is the
+ * voice the style guide is asking for, written out, because that is the only
+ * part of the prompt the model imitates rather than interprets. Its `## `
+ * headings keep their "1." "2." numbering inside the marker: the numbering is
+ * the author's, the marker is what makes the renderers draw it as a heading.
  */
 const SUMMARY_EXAMPLE = `{
   "articles": [
     {
-      "index": 0,
-      "zh_title": "大模型的缓存命中价，能省五十倍的钱",
-      "zh_thesis": "缓存命中价便宜五十倍，所以提示词的顺序值得专门设计。",
-      "zh_paragraphs": [
-        "大模型的收费分输入和输出两部分，这个好理解。但价目表上还有第三项，叫「输入缓存命中价」。很多人扫过去就跳过了，其实它是省钱的关键。",
-        "以 DeepSeek V4 Flash 为例，命中缓存一次只要 2 分钱，没命中是 1 元。差了整整五十倍。",
-        "为什么差这么多？模型要把提示词拆成 Token，再算它们两两之间的注意力，这一步最耗算力。命中缓存就不必重算了，收的其实只是存储费。",
-        "但缓存有期限。DeepSeek 是 10 分钟，Anthropic 只有 5 分钟，OpenAI 在 10 到 30 分钟之间逐步失效。过期就得从头算，价格跳回 1 元。",
-        "所以 AI 工具的保活请求不用发那么密。既然最短的缓存期限也有 5 分钟，每 4 分钟发一次就够了，以前那种每 30 秒一次纯属浪费。"
-      ],
-      "en_thesis": "A cache hit costs one fiftieth of a miss, so prompt order is worth designing.",
-      "en_paragraphs": [
-        "Model pricing splits into input and output, which is easy enough. But there is a third line on the price list, the input cache hit rate. Most people skim past it, and it is where the savings are.",
-        "On DeepSeek V4 Flash a hit costs two cents where a miss costs a full yuan. That is a factor of fifty.",
-        "Why the gap? The model has to split a prompt into tokens and compute attention between every pair of them, which is the expensive step. A hit skips it entirely, so what you pay for is storage.",
-        "But caches expire. DeepSeek holds one for 10 minutes, Anthropic for 5, OpenAI decays between 10 and 30. Past that it recomputes and you are back to a yuan.",
-        "So the keep-alive pinging can be far lazier than it usually is. The shortest cache anyone offers lasts five minutes, so once every four is enough, and the old habit of once every 30 seconds was pure waste."
-      ],
-      "category": "tech"
+      "zh_title": "家庭如何推动历史",
+      "zh_thesis": "真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。",
+      "zh_text": "教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 1. 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 2. 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 3. 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。",
+      "category": "culture"
     }
   ]
 }`;
@@ -568,7 +602,7 @@ function renderArticle(
    *  array matched back by index. The score pass sends one article and gets one
    *  bare object, so there is nothing to number. */
   index: number | undefined,
-  budget?: ReturnType<typeof budgetFor>,
+  budget?: number,
 ): string {
   const source = sourceOf(article.sourceId);
   return [
@@ -578,11 +612,14 @@ function renderArticle(
     // Says CHINESE explicitly: measured with both languages in one reply, 9 of
     // 10 summaries ran over, and an unqualified "最多 N 字" next to a request
     // for two languages reads as the budget for the pair.
-    ...(budget
+    //
+    // No paragraph count and no per-paragraph ceiling any more — see budgetFor.
+    // The only length rule the model gets is this total.
+    ...(budget !== undefined
       ? [
-          `budget: 中文正文最多 ${budget.chars} 字（英文不计入），` +
-            `分 ${budget.paraLow}~${budget.paraHigh} 段，英文段数照中文走。` +
-            `装不下就砍掉一整个点（收尾段除外，它永远留着），` +
+          `budget: 正文最多 ${budget} 字，其中每一段最多 ${PARA_MAX} 字。` +
+            `分几段你自己定，跟着内容走。` +
+            `装不下就砍掉一整个点（收尾那句除外，它永远留着），` +
             `不要把两个点压成一句。`,
         ]
       : []),
@@ -598,15 +635,24 @@ function renderArticle(
  * the screenshot. Empty is honest: the components skip a block with no text,
  * and the headline is displayed beside it anyway.
  */
+/** Every dimension at 0 with no note — "never judged", distinct from "judged
+ *  and scored 1 across the board", which is a real verdict. */
+function emptyReview(): ScoreReview {
+  const review = {} as ScoreReview;
+  for (const dimension of SCORE_DIMENSIONS) {
+    review[dimension] = { score: 0, note: "" };
+  }
+  return review;
+}
+
 function emptyVerdict(): Verdict {
   return {
     judged: false,
     score: 0,
-    review: { argument: "", transfer: "", claim: "", appeal: "" },
+    review: emptyReview(),
     category: resolveCategory(undefined),
     titleZh: "",
-    zh: { thesis: "", paragraphs: [] },
-    en: { thesis: "", paragraphs: [] },
+    zh: { thesis: "", text: "" },
   };
 }
 
@@ -632,6 +678,60 @@ function pick(group: RawArticle[], index: unknown): RawArticle | undefined {
   return group.length === 1 ? group[0] : group[Number(index)];
 }
 
+/**
+ * The prompt and the weight table must name the SAME six dimensions, and this
+ * fails at module load when they do not.
+ *
+ * It exists because the mismatch is otherwise invisible. The dimension list in
+ * SCORE_SYSTEM is written out by hand — it has to be, each one carries its own
+ * rubric — so renaming one there and not here leaves `readReview` looking for a
+ * key no reply contains. Every article then comes back unjudged, scores 0, and
+ * falls below the floor: a run that publishes an empty digest and logs no error
+ * at all. That happened once, with `argument` renamed to `novelty` in the prompt
+ * only.
+ */
+for (const dimension of SCORE_DIMENSIONS) {
+  if (!SCORE_SYSTEM.includes(`"${dimension}"`)) {
+    throw new Error(
+      `SCORE_WEIGHTS names "${dimension}" but SCORE_SYSTEM never asks for it — ` +
+        `every reply would be missing that field and every article would go ` +
+        `unjudged. Keep the two lists in step.`,
+    );
+  }
+}
+
+/**
+ * The six dimensions as the model sent them, or null if any one is unusable.
+ *
+ * Clamped to 1-10 rather than rejected when out of range: an 11 or a 0 is the
+ * model overshooting a scale it otherwise understood, and throwing the whole
+ * article away over one is worse than pulling it to the edge. A value that is
+ * not a number at all is a different thing and fails the reply.
+ */
+function readReview(row: Record<string, unknown>): ScoreReview | null {
+  const out = {} as ScoreReview;
+  for (const dimension of SCORE_DIMENSIONS) {
+    const raw = row[dimension];
+    const field = (raw ?? {}) as Record<string, unknown>;
+    const score = Number(field.score);
+    if (!Number.isFinite(score)) return null;
+    out[dimension] = {
+      score: Math.max(1, Math.min(10, Math.round(score))),
+      note: typeof field.note === "string" ? field.note.trim() : "",
+    };
+  }
+  return out;
+}
+
+/** The weighted sum — 10 to 100 by construction, see SCORE_WEIGHTS. */
+function totalScore(review: ScoreReview): number {
+  const raw = SCORE_DIMENSIONS.reduce(
+    (sum, d) => sum + review[d].score * SCORE_WEIGHTS[d],
+    0,
+  );
+  return Math.max(SCORE_MIN, Math.min(SCORE_MAX, raw));
+}
+
 /** Index is relative to the group that was sent, so the same helper serves
  *  both the first attempt and the smaller retry. */
 function applyScores(
@@ -646,31 +746,25 @@ function applyScores(
       unmatched += 1;
       continue;
     }
-    // A row that carries no usable number is a gap, not a score of zero —
-    // leaving `judged` false sends it down the "never judged" path instead of
-    // the "rejected" one.
-    const score = Number(row.score);
-    if (!Number.isFinite(score)) continue;
+    // ALL SIX DIMENSIONS OR NONE. A reply missing one is a gap, not a zero on
+    // that dimension: leaving `judged` false sends the article down the "never
+    // judged" path instead of scoring it as though the model had judged it
+    // harshly. Partial replies were the failure mode the old single `score`
+    // field hid, because one missing number looked like a low one.
+    const review = readReview(row);
+    if (!review) continue;
     const verdict = out.get(article.id)!;
     verdict.judged = true;
-    verdict.score = Math.max(0, Math.min(100, score));
-    // t1-t4 are what the model wrote before it was allowed to name a number.
-    // Kept verbatim: paraphrasing them here would defeat the point of having
-    // asked for them.
-    const text = (value: unknown) =>
-      typeof value === "string" ? value.trim() : "";
-    verdict.review = {
-      argument: text(row.t1),
-      transfer: text(row.t2),
-      claim: text(row.t3),
-      appeal: text(row.t4),
-    };
+    verdict.review = review;
+    verdict.score = totalScore(review);
   }
   if (rows.length !== group.length || unmatched) {
+    // No index list to print any more — the field is gone and `pick` matches by
+    // position. At BATCH_SIZE 1 `unmatched` can only be a reply carrying more
+    // objects than articles were sent.
     console.warn(
       `[daily]   sent ${group.length}, model returned ${rows.length}, ` +
-        `${unmatched} had an index outside the batch ` +
-        `(indices: ${rows.map((r) => r.index).join(",")})`,
+        `${unmatched} could not be matched to an article`,
     );
   }
 }
@@ -693,15 +787,7 @@ function applySummaries(
       verdict.titleZh = chineseTitle(row.zh_title, article.title);
       verdict.zh = {
         thesis: zhThesis,
-        paragraphs: asPoints(row.zh_paragraphs),
-      };
-    }
-
-    const enThesis = asText(row.en_thesis);
-    if (enThesis) {
-      verdict.en = {
-        thesis: enThesis,
-        paragraphs: asPoints(row.en_paragraphs),
+        text: asBody(row.zh_text),
       };
     }
   }
@@ -895,10 +981,30 @@ async function callModel(
   return extractRows(pass, choice.message);
 }
 
-function asPoints(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.map(String).filter((s) => s.trim().length > 0)
-    : [];
+/**
+ * The body as the model sent it, normalised to the one shape the renderers read:
+ * paragraphs separated by a blank line.
+ *
+ * IT ACCEPTS AN ARRAY TOO, and joins it. Not for old data — nothing stored is
+ * read back through here — but because the prompt asked for an array of
+ * paragraphs for a long time, and a model that slips back into the old shape
+ * would otherwise lose the entire body to a `String(["a","b"])` reading
+ * "a,b". Cheap to tolerate, expensive to discover.
+ */
+function asBody(value: unknown): string {
+  const raw = Array.isArray(value)
+    ? value
+        .map(String)
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join("\n\n")
+    : String(value ?? "");
+  // Collapse the runs the model improvises — three blank lines and one mean the
+  // same break — and drop trailing space so `report` counts characters, not air.
+  return raw
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 /**
@@ -973,9 +1079,7 @@ export async function summarize(
           SCORE_SYSTEM,
           `Here ${missing.length === 1 ? "is 1 article" : `are ${missing.length} articles`}. ` +
             `Score every one of them.\n\n` +
-            missing
-              .map((a) => renderArticle(a, undefined))
-              .join("\n\n---\n\n"),
+            missing.map((a) => renderArticle(a, undefined)).join("\n\n---\n\n"),
           SCORE_EXAMPLE,
           SCORE_TEMPERATURE,
         );
@@ -1027,12 +1131,7 @@ export async function summarize(
     const label = `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`;
 
     for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
-      // Either half missing counts as a gap: a reply that stopped after the
-      // Chinese is re-asked rather than published with an empty English side.
-      const missing = group.filter((a) => {
-        const verdict = out.get(a.id)!;
-        return !verdict.zh.thesis || !verdict.en.thesis;
-      });
+      const missing = group.filter((a) => !out.get(a.id)!.zh.thesis);
       if (!missing.length) return;
 
       try {
@@ -1070,7 +1169,6 @@ export async function summarize(
  *  purpose and would read as failures here. */
 function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
   let zh = 0;
-  let en = 0;
   let thin = 0;
   let over = 0;
   const lengths: number[] = [];
@@ -1079,23 +1177,20 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
     const verdict = out.get(article.id);
     if (!verdict?.zh.thesis) continue;
     zh += 1;
-    if (verdict.en.thesis) en += 1;
 
-    const chars =
-      verdict.zh.thesis.length +
-      (verdict.zh.paragraphs ?? []).reduce((sum, p) => sum + p.length, 0);
+    const chars = verdict.zh.thesis.length + verdict.zh.text.length;
     lengths.push(chars);
     if (chars < ZH_MIN) thin += 1;
     // Against ITS OWN budget, not a shared number — that is the only ceiling
     // this article was ever given.
-    if (chars > budgetFor(article.readingMinutes).chars) over += 1;
+    if (chars > budgetFor(article.readingMinutes)) over += 1;
   }
 
   const total = survivors.length;
   const median =
     lengths.sort((a, b) => a - b)[Math.floor(lengths.length / 2)] ?? 0;
   console.log(
-    `[daily] summaries — zh ${zh}/${total}, en ${en}/${total}, ` +
+    `[daily] summaries — ${zh}/${total} written, ` +
       `median ${median} chars, over their own budget: ${over}/${total}, ` +
       `under ${ZH_MIN}: ${thin}/${total}`,
   );

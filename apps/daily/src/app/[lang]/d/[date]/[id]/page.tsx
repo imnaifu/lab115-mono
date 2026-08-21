@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
    * route: `ImageResponse` needs concrete dimensions, and og:image promises them
    * to crawlers before the image is ever fetched.
    */
-  const summary = article.summary[pageLang];
+  const summary = article.summary.zh;
   const path = langHref(pageLang, articlePath(date, article.id));
 
   // Mirrors the poster route's headline choice — see the note there.
@@ -148,7 +148,7 @@ export default async function ArticlePage({ params }: Params) {
             </div>
           </div>
 
-          <Summary summary={article.summary} variant="hero" lang={lang} />
+          <Summary summary={article.summary} variant="hero" />
 
           {/* Right-aligned, the same way a list card ends — and secondary for the
               same reason it is there: the summary is the product, not the trip

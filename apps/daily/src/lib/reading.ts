@@ -1,3 +1,4 @@
+import { paragraphsOf } from "./paragraphs";
 import type { SummaryText } from "./types";
 
 /**
@@ -35,7 +36,7 @@ export function totalReadingMinutes(texts: string[]): number {
 
 /** Everything the reader actually sees for one article, in one language. */
 export function summaryText(summary: SummaryText): string {
-  return [summary.thesis, ...(summary.paragraphs ?? [])]
+  return [summary.thesis, ...paragraphsOf(summary.text ?? "")]
     .filter(Boolean)
     .join(" ");
 }

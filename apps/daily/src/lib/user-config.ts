@@ -71,7 +71,8 @@ export interface RawCategory {
 
 interface RawConfig {
   /** The only score threshold: below it an article is not published at all.
-   *  See PUBLISH_MIN_SCORE in categories.ts. */
+   *  ON THE 6-60 SCALE, not 0-100 — see SCORE_WEIGHTS in summarize.ts. 36 is
+   *  60% of the 60 maximum. See PUBLISH_MIN_SCORE in categories.ts. */
   publishMinScore: number;
   /** Bounds for one article's Chinese summary, in characters. */
   summaryMinChars: number;

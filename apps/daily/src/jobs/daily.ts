@@ -15,6 +15,7 @@ import type {
   Digest,
   FoldedArticle,
   RejectedArticle,
+  ScoreFinding,
 } from "@/lib/types";
 
 /**
@@ -133,13 +134,20 @@ export async function runDaily(
     );
 
     // Only when the score pass actually spoke. An article it never answered for
-    // would otherwise carry four empty strings, which reads like a review that
-    // found nothing rather than a review that never happened.
+    // would otherwise carry six zeroes, which reads like a review that scored
+    // everything at rock bottom rather than a review that never happened.
+    //
+    // Typed as ScoreFinding rather than inferred: `Object.values` on an
+    // interface with no index signature falls back to `any[]`, so the previous
+    // version of this check tested `.length` on what are now objects and
+    // silently evaluated false for every article — no review reached the file.
     const reviewOf = (id: string) => {
       const review = verdicts.get(id)?.review;
       const filled =
         review &&
-        Object.values(review).some((finding) => finding.length > 0);
+        (Object.values(review) as ScoreFinding[]).some(
+          (finding) => finding.score > 0,
+        );
       return filled ? { review } : {};
     };
 
@@ -198,7 +206,7 @@ export async function runDaily(
         score: verdict.score,
         rank: i + 1,
         ...reviewOf(item.id),
-        summary: { zh: verdict.zh, en: verdict.en },
+        summary: { zh: verdict.zh },
       };
     });
 
