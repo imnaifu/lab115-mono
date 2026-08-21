@@ -10,6 +10,7 @@ import {
   posterDomain,
   posterFonts,
   posterHeight,
+  posterPart,
   posterText,
 } from "@/lib/share";
 import { blocksOf } from "@/lib/paragraphs";
@@ -51,10 +52,16 @@ function Dot() {
  * more than one child says `display: flex` explicitly, and spacing is margins.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ lang: string; date: string; id: string }> },
 ) {
   const { lang, date, id } = await params;
+  /**
+   * Which image of the pair to draw — see PosterPart. No part means the whole
+   * poster, which is what og:image and every existing link still ask for, so
+   * nothing that predates the split has to know about it.
+   */
+  const part = posterPart(new URL(req.url).searchParams.get("part"));
   const found = await readArticle(date, id);
   if (!found) return new Response("Not found", { status: 404 });
 
@@ -93,7 +100,7 @@ export async function GET(
     ),
     posterCover(article.image),
   ]);
-  const height = posterHeight(summary, headline, original);
+  const height = posterHeight(summary, headline, original, part);
 
   const image = new ImageResponse(
     (
@@ -185,185 +192,231 @@ export async function GET(
             boxShadow: "0 3px 14px rgba(59, 53, 99, 0.06)",
           }}
         >
-          {/* Cover on the left of the meta and the headline, as on the page. */}
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div
-              style={{
-                display: "flex",
-                width: POSTER.cover,
-                height: POSTER.cover,
-                marginRight: POSTER.coverGap,
-                borderRadius: 16,
-                boxShadow: "0 6px 20px rgba(59, 53, 99, 0.16)",
-                // The gradient is drawn whether or not there is a photo, exactly as
-                // `Cover` does it, so a cover that failed to fetch degrades to a
-                // designed placeholder instead of a hole.
-                backgroundImage: coverGradient(article.id, source.accent),
-                alignItems: "flex-end",
-                padding: 10,
-                fontSize: 15,
-                fontWeight: 700,
-                color: "rgba(255, 253, 249, 0.95)",
-                overflow: "hidden",
-              }}
-            >
-              {cover ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={cover}
-                  width={POSTER.cover}
-                  height={POSTER.cover}
-                  alt=""
-                  style={{ objectFit: "cover" }}
-                />
-              ) : (
-                source.name
-              )}
-            </div>
+          {/* THE IDENTITY HALF — cover, meta, headline, thesis. All of part 1,
+              none of part 2. It is one box because the split is one seam:
+              everything that says WHICH article this is sits above it and the
+              prose sits below, which is the same seam the article page draws
+              between its header row and the summary under it.
 
-            {/* An explicit width, because Satori has no `min-w-0 flex-1`. */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                width: POSTER_BESIDE_COVER,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: POSTER.metaSize,
-                  fontWeight: 600,
-                  color: "#8a83a8",
-                }}
-              >
-                <div style={{ display: "flex", color: source.accent }}>
-                  {source.name}
-                </div>
-                <Dot />
-                <div style={{ display: "flex" }}>
-                  {t.minutesToRead(article.readingMinutes)}
-                </div>
-                {article.author ? (
-                  <>
-                    <Dot />
-                    <div style={{ display: "flex" }}>{article.author}</div>
-                  </>
-                ) : null}
-                {stars ? (
-                  <>
-                    <Dot />
-                    <div style={{ display: "flex" }}>
-                      <div style={{ display: "flex", color: "#efa050" }}>
-                        {"★".repeat(stars)}
-                      </div>
-                      <div style={{ display: "flex", opacity: 0.4 }}>
-                        {"☆".repeat(5 - stars)}
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: 10,
-                  fontSize: POSTER.titleSize,
-                  fontWeight: 700,
-                  lineHeight: 1.25,
-                }}
-              >
-                {headline}
-              </div>
-
-              {original ? (
+              A REAL DIV, NOT A FRAGMENT. Satori has no cascade and no implicit
+              layout: a `<>` around these two put both of them in one row-direction
+              box, so the header row collapsed and the thesis was pushed against
+              the right edge of the card. The wrapper adds nothing to the height —
+              it is a plain column with no padding, and its children keep their own
+              margins — but it has to exist and it has to say `column`. */}
+          {part !== 2 ? (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {/* Cover on the left of the meta and the headline, as on the page. */}
+              <div style={{ display: "flex", alignItems: "center" }}>
                 <div
                   style={{
                     display: "flex",
-                    marginTop: 8,
-                    fontSize: POSTER.originalSize,
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                    color: "#8a83a8",
+                    width: POSTER.cover,
+                    height: POSTER.cover,
+                    marginRight: POSTER.coverGap,
+                    borderRadius: 16,
+                    boxShadow: "0 6px 20px rgba(59, 53, 99, 0.16)",
+                    // The gradient is drawn whether or not there is a photo, exactly as
+                    // `Cover` does it, so a cover that failed to fetch degrades to a
+                    // designed placeholder instead of a hole.
+                    backgroundImage: coverGradient(article.id, source.accent),
+                    // For the PLACEHOLDER only — the source name sits at the bottom of
+                    // the box, as `Cover`'s `items-end` puts it. The photo needs no
+                    // alignment because it is exactly the size of the box.
+                    alignItems: "flex-end",
+                    overflow: "hidden",
                   }}
                 >
-                  {original}
+                  {cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={cover}
+                      width={POSTER.cover}
+                      height={POSTER.cover}
+                      alt=""
+                      style={{ objectFit: "cover" }}
+                    />
+                  ) : (
+                    /**
+                     * The padding and the type live HERE, not on the box.
+                     *
+                     * They were on the box, where the photo inherited them: the img is
+                     * POSTER.cover wide, which is the box's OUTER width, so a 10px pad
+                     * left it 20px wider than the content area — pushed 10px right and,
+                     * with `flex-end`, 10px up, then clipped by `overflow: hidden`. The
+                     * result was a photo missing its right and top edges with a strip of
+                     * bare gradient down the left and along the bottom. The page's
+                     * `Cover` draws the photo full-bleed (`inset-0 size-full`) and pads
+                     * only the label layer; this is that, in Satori's terms.
+                     */
+                    <div
+                      style={{
+                        display: "flex",
+                        padding: 10,
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "rgba(255, 253, 249, 0.95)",
+                      }}
+                    >
+                      {source.name}
+                    </div>
+                  )}
                 </div>
-              ) : null}
+
+                {/* An explicit width, because Satori has no `min-w-0 flex-1`. */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: POSTER_BESIDE_COVER,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      fontSize: POSTER.metaSize,
+                      fontWeight: 600,
+                      color: "#8a83a8",
+                    }}
+                  >
+                    <div style={{ display: "flex", color: source.accent }}>
+                      {source.name}
+                    </div>
+                    <Dot />
+                    <div style={{ display: "flex" }}>
+                      {t.minutesToRead(article.readingMinutes)}
+                    </div>
+                    {article.author ? (
+                      <>
+                        <Dot />
+                        <div style={{ display: "flex" }}>{article.author}</div>
+                      </>
+                    ) : null}
+                    {stars ? (
+                      <>
+                        <Dot />
+                        <div style={{ display: "flex" }}>
+                          <div style={{ display: "flex", color: "#efa050" }}>
+                            {"★".repeat(stars)}
+                          </div>
+                          <div style={{ display: "flex", opacity: 0.4 }}>
+                            {"☆".repeat(5 - stars)}
+                          </div>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      marginTop: 10,
+                      fontSize: POSTER.titleSize,
+                      fontWeight: 700,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {headline}
+                  </div>
+
+                  {original ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        marginTop: 8,
+                        fontSize: POSTER.originalSize,
+                        fontWeight: 500,
+                        lineHeight: 1.4,
+                        color: "#8a83a8",
+                      }}
+                    >
+                      {original}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* The thesis, styled the way `Summary` styles it: weight, colour, and
+                  the orange accent bar. The bar lives in both places now — see the
+                  `rule` entry in that component's SIZE table. */}
+              <div
+                style={{
+                  display: "flex",
+                  marginTop: 24,
+                  paddingLeft: POSTER.thesisPad,
+                  borderLeft: `${POSTER.thesisRule}px solid #efa050`,
+                  fontSize: POSTER.thesisSize,
+                  fontWeight: 600,
+                  lineHeight: 1.5,
+                  color: "#3b3563",
+                }}
+              >
+                {summary.thesis}
+              </div>
             </div>
-          </div>
+          ) : null}
 
-          {/* The thesis, styled the way `Summary` styles it: weight, colour, and
-              the orange accent bar. The bar lives in both places now — see the
-              `rule` entry in that component's SIZE table. */}
-          <div
-            style={{
-              display: "flex",
-              marginTop: 24,
-              paddingLeft: POSTER.thesisPad,
-              borderLeft: `${POSTER.thesisRule}px solid #efa050`,
-              fontSize: POSTER.thesisSize,
-              fontWeight: 600,
-              lineHeight: 1.5,
-              color: "#3b3563",
-            }}
-          >
-            {summary.thesis}
-          </div>
+          {/* THE PROSE HALF — the paragraphs alone, which is all of part 2 and
+              none of part 1. A reader who only ever sees the thumbnail gets the
+              headline and the claim; this is the image they swipe to. */}
+          {part !== 1 ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  // 18 is the gap under the thesis, so on part 2 — where the
+                  // paragraphs are the card's first child — there is nothing to
+                  // sit under and the gap has to go. posterHeight applies
+                  // PARAS_GAP by the same rule.
+                  marginTop: part === 2 ? 0 : 18,
+                  fontSize: POSTER.paraSize,
+                  /**
+                   * Ink at weight 500, not ink-mid at 400.
+                   *
+                   * The page can afford `text-ink-mid` for body copy: it is live text,
+                   * hinted and antialiased by the browser at whatever size the reader
+                   * chose. A poster is a bitmap that gets scaled down by whatever app
+                   * it lands in — a chat thread renders these 1000px wide images at a
+                   * third of that — and the two together were too much: the lighter
+                   * ink lost contrast against the card while the thin strokes lost
+                   * their pixels, and a Chinese glyph whose strokes are under a pixel
+                   * is a grey smudge. Full ink and one weight up are the same fix
+                   * applied to both halves.
+                   */
+                  color: "#3b3563",
+                  fontWeight: 500,
+                  lineHeight: 1.85,
+                }}
+              >
+              {/* ONE ROW PER LINE, broken by `layoutParagraph` rather than by Satori —
+                  which is also what lets the height above be counted rather than
+                  guessed. See the note on layoutParagraph.
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              marginTop: 18,
-              fontSize: POSTER.paraSize,
-              /**
-               * Ink at weight 500, not ink-mid at 400.
-               *
-               * The page can afford `text-ink-mid` for body copy: it is live text,
-               * hinted and antialiased by the browser at whatever size the reader
-               * chose. A poster is a bitmap that gets scaled down by whatever app
-               * it lands in — a chat thread renders these 1000px wide images at a
-               * third of that — and the two together were too much: the lighter
-               * ink lost contrast against the card while the thin strokes lost
-               * their pixels, and a Chinese glyph whose strokes are under a pixel
-               * is a grey smudge. Full ink and one weight up are the same fix
-               * applied to both halves.
-               */
-              color: "#3b3563",
-              fontWeight: 500,
-              lineHeight: 1.85,
-            }}
-          >
-          {/* ONE ROW PER LINE, broken by `layoutParagraph` rather than by Satori —
-              which is also what lets the height above be counted rather than
-              guessed. See the note on layoutParagraph.
-
-              A heading is drawn HEAVIER BUT AT THE SAME SIZE AND LINE HEIGHT as
-              the body. That is deliberate: the height above counts lines through
-              this same `layoutParagraph`, and width measurement ignores weight,
-              so bolding a block cannot make the image disagree with the height
-              declared for it. A larger heading would. */}
-          {blocksOf(summary.text ?? "").map((block, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginTop: i === 0 ? 0 : block.kind === "heading" ? 18 : 14,
-                fontWeight: block.kind === "heading" ? 700 : 500,
-              }}
-            >
-              {layoutParagraph(block.text).map((line, row) => (
-                <div key={row} style={{ display: "flex" }}>
-                  {line}
+                  A heading is drawn HEAVIER BUT AT THE SAME SIZE AND LINE HEIGHT as
+                  the body. That is deliberate: the height above counts lines through
+                  this same `layoutParagraph`, and width measurement ignores weight,
+                  so bolding a block cannot make the image disagree with the height
+                  declared for it. A larger heading would. */}
+              {blocksOf(summary.text ?? "").map((block, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    marginTop: i === 0 ? 0 : block.kind === "heading" ? 18 : 14,
+                    fontWeight: block.kind === "heading" ? 700 : 500,
+                  }}
+                >
+                  {layoutParagraph(block.text).map((line, row) => (
+                    <div key={row} style={{ display: "flex" }}>
+                      {line}
+                    </div>
+                  ))}
                 </div>
               ))}
-            </div>
-          ))}
-          </div>
+              </div>
+          ) : null}
         </div>
       </div>
     ),

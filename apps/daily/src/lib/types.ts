@@ -99,12 +99,17 @@ export interface Article {
   /** The headline exactly as the source published it. Never translated. */
   title: string;
   /**
-   * The headline in Chinese, from the same pass that writes the Chinese summary.
+   * The headline REWRITTEN in Chinese, from the same pass that writes the Chinese
+   * summary. Not a translation: the prompt asks for a headline someone would want
+   * to open, held to the article by a no-inventing, no-overclaiming rule. `title`
+   * above stays the article's name — it is what the <title>, the canonical link
+   * and the second line of every card and poster show.
    *
    * Optional, and two distinct reasons for it to be absent: a digest archived
-   * before this field existed has none, and an article whose headline is already
-   * Chinese gets none either — 阮一峰's posts are their own translation, and a
-   * second copy of the same string is not a second line worth rendering.
+   * before this field existed has none, and the model sometimes returns the
+   * original unchanged, which `chineseTitle` in summarize.ts collapses to "" so
+   * no renderer prints the same string twice. A Chinese-language source is NOT
+   * one of those reasons any more — it gets a rewrite like everything else.
    *
    * The English side never uses it: there the original headline IS the English.
    */

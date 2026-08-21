@@ -165,6 +165,33 @@ export function posterDomain(site: string): string {
 export const POSTER_WIDTH = 1000;
 
 /**
+ * Which image of the share this poster is.
+ *
+ * A share carries TWO images now — 小红书 and WeChat both take a set, and one
+ * 1000x1550 wall of text scaled into a chat bubble was never readable anyway.
+ * The split is by what the page itself already separates: the article's identity
+ * on the first, the prose on the second.
+ *
+ * - 1 — cover, meta, headline, thesis. The one a reader sees as the thumbnail.
+ * - 2 — the summary's paragraphs, nothing else.
+ * - 0 — the whole poster on one canvas, unchanged. STILL LOAD-BEARING: og:image
+ *   is a single image by definition, so an unfurled link uses this, and it is
+ *   what the desktop download hands over.
+ */
+export type PosterPart = 0 | 1 | 2;
+
+/** `?part=` as a PosterPart. Anything unrecognised is the whole poster, which is
+ *  the shape every existing caller and every crawler asks for. */
+export function posterPart(value: string | null): PosterPart {
+  return value === "1" ? 1 : value === "2" ? 2 : 0;
+}
+
+/** The poster route for one part. `base` is the route WITHOUT a query. */
+export function posterPartUrl(base: string, part: PosterPart): string {
+  return part === 0 ? base : `${base}?part=${part}`;
+}
+
+/**
  * The poster's geometry, and the page's geometry it is copied from.
  *
  * The poster is meant to look like the article page's card, so every size below is
@@ -399,6 +426,10 @@ export function posterHeight(
    *  be passed whenever the route renders it, or the height stops matching the
    *  image and og:image lies about its own dimensions. */
   original = "",
+  /** Which part the route is about to draw. The same rule as `original`: this
+   *  has to match what is rendered or the canvas and its declared height part
+   *  company. */
+  part: PosterPart = 0,
 ): number {
   // Every number is one measurement off the rendered poster, so the layout and
   // this arithmetic can be checked against each other. Line heights are
@@ -471,19 +502,28 @@ export function posterHeight(
     titleLines * TITLE_LINE +
     (originalLines ? ORIGINAL_GAP + originalLines * ORIGINAL_LINE : 0);
 
-  return Math.round(
+  /**
+   * The three stacks the canvas is made of, so a part is a SUM OF THE ONES IT
+   * DRAWS rather than the total with terms subtracted back out. Every part pays
+   * `frame` — the masthead, the card's padding and the slack are on all of them.
+   *
+   * `PARAS_GAP` belongs to `body` only when something sits above it, which is
+   * why it is applied at the part below and not inside `body`: on part 2 the
+   * paragraphs are the card's first child and the route sets no margin there.
+   */
+  const frame =
     PADDING +
-      DOMAIN_ROW +
-      POSTER.domainGap +
-      BRAND_ROW +
-      CARD_TOP +
-      CARD_PAD +
-      Math.max(POSTER.cover, headerText) +
-      THESIS_GAP +
-      thesisLines * THESIS_LINE +
-      PARAS_GAP +
-      bodyLines * PARA_LINE +
-      gaps +
-      SLACK,
-  );
+    DOMAIN_ROW +
+    POSTER.domainGap +
+    BRAND_ROW +
+    CARD_TOP +
+    CARD_PAD +
+    SLACK;
+  const head =
+    Math.max(POSTER.cover, headerText) + THESIS_GAP + thesisLines * THESIS_LINE;
+  const body = bodyLines * PARA_LINE + gaps;
+
+  if (part === 1) return Math.round(frame + head);
+  if (part === 2) return Math.round(frame + body);
+  return Math.round(frame + head + PARAS_GAP + body);
 }

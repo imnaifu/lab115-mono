@@ -18,10 +18,15 @@ const SIZE = {
     para: "text-base",
   },
   card: {
-    thesis: "text-base",
+    // Body copy is 16px here too. It was 14px, which reads as a caption next to
+    // the 16px headings and thesis it sits under — and the summary IS the card,
+    // so the list is where the size matters most. thesis and heading each move
+    // up a step with it to keep the lead above the prose rather than level with
+    // it; only `rule` stays lighter than the hero's.
+    thesis: "text-lg",
     rule: "border-l-2 pl-3",
-    heading: "text-sm",
-    para: "text-sm",
+    heading: "text-base",
+    para: "text-base",
   },
 } as const;
 

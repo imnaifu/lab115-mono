@@ -4,6 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { BRAND, BrandIcon, ShareIcon, type BrandKey } from "./BrandIcons";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
+import { posterPartUrl } from "@/lib/share";
+
+/**
+ * The two images a share carries, in the order the receiving app will show them:
+ * the identity card first — it becomes the thumbnail — then the prose.
+ *
+ * 小红书 and WeChat both publish a SET of images, and one 1000x1550 wall of text
+ * scaled into a chat bubble was unreadable. See PosterPart in lib/share.ts.
+ */
+const PARTS = [1, 2] as const;
 
 /**
  * How long a click will wait for the poster before giving up on it.
@@ -16,6 +26,13 @@ import type { Lang } from "@/lib/lang";
  *
  * It also has to fit inside whatever iOS still counts as a user gesture, which
  * is the harder constraint and the unstated one — see `systemShare`.
+ *
+ * IT DID NOT GO UP WHEN THE SHARE WENT TO TWO IMAGES, on purpose. Two posters is
+ * two server renders, which would not fit here — so what changed instead is WHEN
+ * the fetch starts: `warm` now runs the moment the sheet opens rather than on the
+ * pointerdown of the share tile, and the two run concurrently. By the time
+ * anything is awaited the reader has had a second or more to look at the preview,
+ * so this budget is covering the tail, not the whole round trip.
  */
 const POSTER_WAIT_MS = 2000;
 
@@ -191,7 +208,7 @@ export function ShareSheet({
    */
   const [asked, setAsked] = useState(false);
   /**
-   * The preview's load attempts: 0 is the first, 1 the retry, 2 means it failed.
+   * Each preview's load attempts: 0 is the first, 1 the retry, 2 means it failed.
    *
    * The poster is generated per request and arrives over whatever connection the
    * phone has, so a load can fail transiently — a dropped chunk leaves the broken
@@ -199,9 +216,16 @@ export function ShareSheet({
    * because that re-requests the URL. One retry turns that into a picture; a
    * second failure means the image is not coming and the sheet should stop
    * pretending, which is what `previewFailed` below is for.
+   *
+   * ONE COUNTER PER PART, not one for the pair. The two are separate requests and
+   * fail separately, and a shared counter would reload the good image every time
+   * the other one stumbled — a visible flash on the picture that was already
+   * there. Indexed by position in PARTS.
    */
-  const [attempt, setAttempt] = useState(0);
-  const previewFailed = attempt > 1;
+  const [attempts, setAttempts] = useState<number[]>(() => PARTS.map(() => 0));
+  const failed = attempts.map((n) => n > 1);
+  /** Both gone. The sheet's fallbacks key off this — see the download below. */
+  const previewFailed = failed.every(Boolean);
   /**
    * Whether this is a touch screen, which SPLITS THE TWO WAYS TO SAVE THE POSTER:
    * a long press on the preview here, a download link there, never both. Each is
@@ -212,15 +236,50 @@ export function ShareSheet({
    */
   const [touch, setTouch] = useState(false);
   /**
-   * The poster fetch already in flight, so the click that follows a pointerdown
-   * has something to await. One article, one poster — nothing varies per press
-   * any more, so the first fetch is good for every later one.
+   * Both poster fetches already in flight, so the click has something to await.
+   * One article, one pair of posters — nothing varies per press, so the first
+   * fetch is good for every later one.
+   *
+   * Resolves to the files that ARRIVED, in part order, so a `null` from one leg
+   * does not take the other down with it.
    */
-  const warmed = useRef<Promise<File | null> | null>(null);
+  const warmed = useRef<Promise<Array<File | null>> | null>(null);
 
+  /**
+   * Start fetching both posters, and do it FROM THE OPEN EFFECT below rather than
+   * from the share tile's pointerdown.
+   *
+   * Two renders cannot be started inside a live gesture and still land inside
+   * POSTER_WAIT_MS — a cold poster is most of a second on its own. Opening the
+   * sheet is the earliest honest signal that a share is coming, and the preview
+   * is fetching these same URLs at that moment anyway, so the pair costs two
+   * renders whether or not this ref exists. `canShareFiles` still gates it: a
+   * browser that cannot carry a file has no reason to hold two Files in memory.
+   */
+  function warm() {
+    if (!canShareFiles || warmed.current) return;
+    warmed.current = Promise.all(
+      PARTS.map((part) =>
+        posterFile(
+          posterPartUrl(poster, part),
+          `${title.slice(0, 40)}-${part}.png`,
+        ),
+      ),
+    );
+  }
+
+  /**
+   * `canShareFiles` is a dependency, not just `open`: it is set by the probe in
+   * the effect below, and `warm` returns early while it is still false. Without it
+   * a sheet that opened before the probe landed would never warm anything and
+   * every share would fall through to link-only. `warm` is idempotent — it latches
+   * on `warmed.current` — so running it twice costs nothing.
+   */
   useEffect(() => {
-    if (open) setAsked(true);
-  }, [open]);
+    if (!open) return;
+    setAsked(true);
+    warm();
+  }, [open, canShareFiles]);
 
   useEffect(() => {
     setTouch(window.matchMedia("(pointer: coarse)").matches);
@@ -228,7 +287,13 @@ export function ShareSheet({
     setCanShareFiles(
       typeof navigator.canShare === "function" &&
         navigator.canShare({
-          files: [new File([], "probe.png", { type: "image/png" })],
+          // TWO empty files, because two is what the share sends. `canShare` only
+          // validates types, so this cannot tell us the platform will carry a
+          // pair — but an implementation that caps the COUNT would say no here,
+          // and that is worth asking before holding two Files in memory.
+          files: PARTS.map(
+            (part) => new File([], `probe-${part}.png`, { type: "image/png" }),
+          ),
         }),
     );
   }, []);
@@ -265,18 +330,6 @@ export function ShareSheet({
   }, [onClose]);
 
   /**
-   * Start fetching the poster on POINTERDOWN, before the click that shares it.
-   *
-   * The poster takes a round trip and a server-side render, and iOS only honours
-   * `share()` while it still counts the gesture as live — so the fetch has to be
-   * most of the way done before the handler starts awaiting it.
-   */
-  function warmPoster() {
-    if (!canShareFiles || warmed.current) return;
-    warmed.current = posterFile(poster, `${title.slice(0, 40)}.png`);
-  }
-
-  /**
    * The OS share sheet — the tile that reaches the apps with no web composer at
    * all, 微信 and 小红书 among them.
    *
@@ -296,10 +349,14 @@ export function ShareSheet({
    * — 小红书 caps a note title at 20 characters — cuts a heading that is repeated
    * in full at the top of the body.
    *
-   * The POSTER goes too, when the browser takes files and `warmPoster` got one in
+   * THE TWO POSTERS go too, when the browser takes files and `warm` got them in
    * time. 小红书 cannot publish a note without an image at all, so for that target
-   * the file is the difference between a share that can be posted and one that
-   * cannot.
+   * the files are the difference between a share that can be posted and one that
+   * cannot — and a note is a SET of images there, which is why there are two.
+   *
+   * Whatever arrived is sent, one or both: a pair is what the layout is designed
+   * for, but part 1 alone is still a complete card — cover, headline, thesis — so
+   * a failed part 2 should not demote the share to a bare link.
    *
    * `url` NOW TRAVELS WITH THE FILE, which it briefly did not, on a guess that
    * Safari was unreliable with both at once. That guess was wrong in the one
@@ -323,7 +380,7 @@ export function ShareSheet({
     // the reader's problem to untangle.
     const text = `${title}\n\n${thesis}\n\n${page}`;
 
-    const file = warmed.current
+    const ready = warmed.current
       ? await Promise.race([
           warmed.current,
           // Not `AbortSignal.timeout` on the fetch: a slow poster is still worth
@@ -332,10 +389,13 @@ export function ShareSheet({
           new Promise<null>((resolve) => setTimeout(resolve, POSTER_WAIT_MS, null)),
         ])
       : null;
+    // In part order, which is the order the receiving app lays them out: the
+    // identity card is the thumbnail and has to come first.
+    const files = (ready ?? []).filter((file): file is File => file !== null);
 
-    if (file) {
+    if (files.length) {
       try {
-        await navigator.share({ title, text, url: page, files: [file] });
+        await navigator.share({ title, text, url: page, files });
         onClose();
         return;
       } catch (error) {
@@ -412,18 +472,43 @@ export function ShareSheet({
          */}
         {asked && !previewFailed ? (
           <div className="flex flex-col gap-2">
-            <img
-              /**
-               * `?retry=1` on the second attempt, because without it the reload
-               * would be served the same failed entry out of the HTTP cache. The
-               * query is ignored by the route, which takes everything it needs
-               * from the path.
-               */
-              src={attempt === 0 ? poster : `${poster}?retry=${attempt}`}
-              alt={title}
-              className="mx-auto max-h-[38vh] w-auto rounded-[12px] shadow-soft"
-              onError={() => setAttempt((n) => n + 1)}
-            />
+            {/* BOTH images, stacked in send order — the preview is only worth
+                having if it is the same thing that leaves the device, and the
+                share now carries two. 30vh each rather than the 38 one had, so
+                the pair plus the tiles still fits the dialog's 90vh before it
+                has to scroll.
+
+                A part that failed twice is dropped and the other stays: the two
+                are separate requests, and hiding the good one because its
+                neighbour never arrived would be throwing away the half that
+                works. */}
+            {PARTS.map((part, i) =>
+              failed[i] ? null : (
+                <img
+                  key={part}
+                  /**
+                   * `&retry=1` on the second attempt, because without it the
+                   * reload would be served the same failed entry out of the HTTP
+                   * cache. `part` is a real parameter the route reads; `retry` is
+                   * ignored by it and exists only to miss the cache — which is
+                   * why the two are appended rather than either replacing the
+                   * other.
+                   */
+                  src={
+                    attempts[i] === 0
+                      ? posterPartUrl(poster, part)
+                      : `${posterPartUrl(poster, part)}&retry=${attempts[i]}`
+                  }
+                  alt={title}
+                  className="mx-auto max-h-[30vh] w-auto rounded-[12px] shadow-soft"
+                  onError={() =>
+                    setAttempts((was) =>
+                      was.map((n, at) => (at === i ? n + 1 : n)),
+                    )
+                  }
+                />
+              ),
+            )}
             {/* Said only where the gesture exists, and said at all because a
                 long press is invisible: nothing about an image announces that
                 holding it will file it away. */}
@@ -441,8 +526,10 @@ export function ShareSheet({
             four named ones had it backwards — for most readers it is the one that
             reaches the app they actually use. */}
         <div className="flex flex-wrap gap-y-1">
+          {/* No `onPointerDown` warmer on this button any more: two posters cannot
+              be started inside the gesture, so `warm` runs when the sheet opens. */}
           {canShare ? (
-            <button type="button" onPointerDown={warmPoster} onClick={systemShare} className={TILE}>
+            <button type="button" onClick={systemShare} className={TILE}>
               {/* Ink rather than a brand colour, in the same 12% wash as the
                   marks beside it: this tile has no brand, and inventing one for
                   it would make it look like a fifth platform. */}

@@ -178,6 +178,20 @@ const ZH_MIN = USER_CONFIG.summaryMinChars;
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
 /**
+ * Ceiling on "zh_title", in characters.
+ *
+ * Hardcoded rather than sent to config.json alongside the summary bounds, which
+ * is where an editorial number would normally go: this one is not really an
+ * editorial choice, it is what the two renderers can hold. 24 characters is two
+ * lines of the poster's headline (POSTER.titleSize over POSTER_BESIDE_COVER,
+ * ~13 characters a line) and two lines of the card's `text-lg`. Raise it and the
+ * poster's header row starts pushing the cover out of its own row.
+ *
+ * A ceiling, not a target — same reasoning as PARA_MAX above.
+ */
+const TITLE_MAX = 24;
+
+/**
  * What ONE article is allowed, derived from how long that article is.
  *
  * A CHARACTER TOTAL AND NOTHING ELSE. The paragraph COUNT used to be computed
@@ -285,8 +299,8 @@ export interface Verdict {
    *  score pass never answered for this article. */
   review: ScoreReview;
   category: string;
-  /** The headline in Chinese; "" when it was already Chinese or came back empty.
-   *  See `titleZh` in types.ts. */
+  /** The REWRITTEN Chinese headline; "" when it came back empty or merely echoed
+   *  the original. See `titleZh` in types.ts. */
   titleZh: string;
   zh: SummaryText;
 }
@@ -537,7 +551,23 @@ const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中�
 
 ## 标题
 
-"zh_title" 是把原标题译成中文，不是重写，也不是把论点缩短成标题。原文的疑问句、反讽、故意的含糊都照译，不要替它把答案补上。产品名、公司名、人名、模型名照原样保留，不要音译。原标题本身就是中文的，原样返回。
+"zh_title" 是给这篇文章重写一个中文标题，目标是让人想点开 —— 但它得是这篇文章的标题，不是一句随便的耸动话。
+
+**原标题是中文的也要重写**，不要原样返回。原标题会作为文章的本名单独显示在新标题下面，所以这里的任务始终是写一个新的。
+
+怎么写得有人想点：
+- **挑最反常识的那一点。** 文章里最让人「等一下，真的吗」的地方，就是标题该说的事。
+- **给具体的东西**：一个数字、一个名字、一个动作、一个后果。「AI 让资深程序员慢了 19%」比「关于 AI 与生产力的一些思考」强，因为前者有个能被反驳的说法。
+- **疑问句、反转、只说一半都可以**，但留的那一半必须在正文前两段就兑现。
+- **短。最多 ${TITLE_MAX} 字**，越短越好。
+
+下面这几条比「抓眼球」优先，冲突的时候让标题平淡也没关系：
+- **不许骗。** 标题里每个说法都要在正文里站得住。原文说「某些任务上慢了 19%」，标题不能写成「AI 让程序员废了」。
+- **不许编**数字、人名、机构、结论，原文没有的一个都不许出现。
+- **不许用空心钩子**：「震惊」「太可怕」「你绝对想不到」「细节令人深思」「速看」「多少人还不知道」—— 这些字零信息量，删掉之后标题反而更好。
+- **不许写成目录**：「关于 X 的三个要点」「X 的五个启示」不是标题。
+- 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
+- 原标题本身已经够抓人的时候，直接译过来就是最好的答案 —— 重写不是义务。
 
 ## 分类 "category"
 
@@ -574,7 +604,7 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
 const SUMMARY_EXAMPLE = `{
   "articles": [
     {
-      "zh_title": "家庭如何推动历史",
+      "zh_title": "推动历史的不是皇帝，是一家人的晚饭",
       "zh_thesis": "真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。",
       "zh_text": "教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 1. 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 2. 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 3. 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。",
       "category": "culture"
@@ -800,21 +830,23 @@ function asText(value: unknown): string {
 /**
  * The Chinese headline, or "" meaning "there is no second line to show".
  *
- * Two cases collapse to empty here rather than in the components, so the stored
- * digest carries the decision instead of every renderer repeating it:
+ * ONE case collapses to empty here rather than in the components, so the stored
+ * digest carries the decision instead of every renderer repeating it: the model
+ * echoed the original instead of writing anything, and a card showing the same
+ * string twice looks like a bug.
  *
- * - The model echoed the original. Instructed to leave an already-Chinese
- *   headline alone, it also does that for English ones now and then, and a card
- *   showing the same string twice looks like a bug.
- * - The headline was Chinese to begin with, so the "translation" is the original
- *   and the page needs one line, not two.
+ * It used to be two. The other was an already-Chinese headline, which the prompt
+ * told the model to return untouched — so the "translation" WAS the original and
+ * the page wanted one line. That exemption is gone: the field is a rewrite now,
+ * not a translation, and a Chinese source gets a new headline like everything
+ * else, with its own title kept underneath as the article's real name.
  *
  * A model that ignores the field entirely also lands here, which is the point:
  * the Chinese title is an enhancement, and its absence has to be ordinary.
  */
 function chineseTitle(value: unknown, original: string): string {
-  const translated = asText(value);
-  return translated && translated !== original.trim() ? translated : "";
+  const rewritten = asText(value);
+  return rewritten && rewritten !== original.trim() ? rewritten : "";
 }
 
 /**
