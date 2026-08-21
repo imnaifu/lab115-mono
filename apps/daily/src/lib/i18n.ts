@@ -45,6 +45,8 @@ const STRINGS = {
 
     readFull: "阅读全文 →",
     share: "分享",
+    /** The share button while it waits for the posters — see ShareButton. */
+    preparing: "正在生成图片",
     copyLink: "复制链接",
     copied: "已复制链接",
     saveImage: "保存图片",
@@ -102,6 +104,7 @@ const STRINGS = {
 
     readFull: "Read the original →",
     share: "Share",
+    preparing: "Preparing images",
     copyLink: "Copy link",
     copied: "Link copied",
     saveImage: "Save image",
