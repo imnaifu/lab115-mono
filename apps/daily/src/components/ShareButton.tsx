@@ -21,6 +21,7 @@ import type { Lang } from "@/lib/lang";
 export function ShareButton({
   url,
   imageUrl,
+  parts,
   title,
   thesis,
   lang,
@@ -33,8 +34,11 @@ export function ShareButton({
    * bundle.
    */
   url: string;
-  /** The poster route for this article. */
+  /** The poster route for this article, WITHOUT a `?part=`. */
   imageUrl: string;
+  /** How many images this article's share carries — see the same prop on
+   *  ShareSheet, and `posterParts` in lib/share.ts. */
+  parts: number;
   title: string;
   /** The summary's opening sentence — see ShareSheet's `systemShare`. */
   thesis: string;
@@ -88,6 +92,7 @@ export function ShareButton({
         onClose={() => setOpen(false)}
         page={links.page}
         poster={links.poster}
+        parts={parts}
         title={title}
         thesis={thesis}
         onCopy={copy}

@@ -187,13 +187,15 @@ export async function ensureRepo(): Promise<void> {
     try {
       await fs.mkdir(DATA_PATH, { recursive: true });
     } catch (error) {
-      // Almost always one of two things: the compose volume is not mounted, or
-      // someone ran this locally without DAILY_DATA_DIR and hit the container
-      // default of /data. Neither is obvious from a bare ENOENT/EACCES.
+      // The path is no longer configurable, so this is now one thing rather than
+      // two: whatever `./data` resolved to is not writable. In the container that
+      // means the volume is not mounted where the Dockerfile's WORKDIR puts it;
+      // locally it means the app directory is read-only. Neither is obvious from
+      // a bare ENOENT/EACCES, hence the path in the message.
       throw new Error(
         `cannot create the data directory "${DATA_PATH}" ` +
-          `(${(error as NodeJS.ErrnoException).code}) — set DAILY_DATA_DIR to a ` +
-          `writable path, or check that the volume is mounted`,
+          `(${(error as NodeJS.ErrnoException).code}) — check that the volume is ` +
+          `mounted there and that the path is writable`,
       );
     }
     // REPO_PATH is absolute, so git cannot resolve it against DATA_PATH and

@@ -4,16 +4,43 @@ import { useEffect, useRef, useState } from "react";
 import { BRAND, BrandIcon, ShareIcon, type BrandKey } from "./BrandIcons";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
-import { posterPartUrl } from "@/lib/share";
+import { posterPartUrl } from "@/lib/links";
 
 /**
- * The two images a share carries, in the order the receiving app will show them:
- * the identity card first — it becomes the thumbnail — then the prose.
+ * The images a share carries, in the order the reader should SEE them: the
+ * identity card, then one page of prose after another.
  *
- * 小红书 and WeChat both publish a SET of images, and one 1000x1550 wall of text
- * scaled into a chat bubble was unreadable. See PosterPart in lib/share.ts.
+ * NOT A CONSTANT ANY MORE — the count is per article, because the prose is
+ * paginated onto a fixed 1080x1440 canvas and a long summary needs more pages
+ * than a short one. It arrives as the `parts` prop, computed server-side by
+ * `posterParts`; see the note there for why the sheet cannot count for itself.
+ *
+ * 小红书 and WeChat both publish a SET of images, which is what makes this worth
+ * doing at all.
  */
-const PARTS = [1, 2] as const;
+function displayOrder(parts: number): number[] {
+  return Array.from({ length: parts }, (_, i) => i + 1);
+}
+
+/**
+ * The order the set is handed to `navigator.share` — DISPLAY ORDER REVERSED.
+ *
+ * Measured on a real share, not guessed: sent as [card, prose] the attachments
+ * arrive at the target with the prose first and the card second. The receiving app
+ * stacks what it is given in reverse and there is no field that says otherwise, so
+ * the compensation has to live somewhere, and this is the only place that knows it
+ * is compensating.
+ *
+ * The preview still renders display order. That is the point of splitting the two:
+ * what a preview owes the reader is the order they will see in the app they are
+ * sharing to, not the order the bytes travel in.
+ *
+ * If a target ever stops reversing, THIS is the function to change — the preview,
+ * the probe and the file names are deliberately not tied to it.
+ */
+function shareOrder(parts: number): number[] {
+  return displayOrder(parts).reverse();
+}
 
 /**
  * How long a click will wait for the poster before giving up on it.
@@ -152,6 +179,7 @@ export function ShareSheet({
   onClose,
   page,
   poster,
+  parts,
   title,
   thesis,
   onCopy,
@@ -162,8 +190,18 @@ export function ShareSheet({
   onClose: () => void;
   /** The permalink, already absolute: it is handed to another origin. */
   page: string;
-  /** The poster route, absolute and WITHOUT a query. */
+  /** The poster route, absolute and WITHOUT a query. Each image is this plus a
+   *  `?part=`; see `posterPartUrl`. */
   poster: string;
+  /**
+   * How many images this article's share carries — the identity card plus one per
+   * page of prose.
+   *
+   * Passed in rather than derived, because deriving it needs the summary text and
+   * `posterPages`' whole layout table, and this is a client component. See
+   * `posterParts` in lib/share.ts.
+   */
+  parts: number;
   title: string;
   /** The summary's opening sentence — see `systemShare`. */
   thesis: string;
@@ -179,6 +217,7 @@ export function ShareSheet({
 }) {
   const t = strings(lang);
   const dialog = useRef<HTMLDialogElement>(null);
+  const shown = displayOrder(parts);
 
   /**
    * Whether this browser has a share sheet of its own, and whether it takes
@@ -220,9 +259,11 @@ export function ShareSheet({
    * ONE COUNTER PER PART, not one for the pair. The two are separate requests and
    * fail separately, and a shared counter would reload the good image every time
    * the other one stumbled — a visible flash on the picture that was already
-   * there. Indexed by position in PARTS.
+   * there. Indexed by position in display order.
    */
-  const [attempts, setAttempts] = useState<number[]>(() => PARTS.map(() => 0));
+  const [attempts, setAttempts] = useState<number[]>(() =>
+    displayOrder(parts).map(() => 0),
+  );
   const failed = attempts.map((n) => n > 1);
   /** Both gone. The sheet's fallbacks key off this — see the download below. */
   const previewFailed = failed.every(Boolean);
@@ -258,8 +299,11 @@ export function ShareSheet({
    */
   function warm() {
     if (!canShareFiles || warmed.current) return;
+    // Share order, not display order — see the note on `shareOrder`. The file
+    // NAMES still carry the part number, so `…-1.png` is the card whichever
+    // position it travels in.
     warmed.current = Promise.all(
-      PARTS.map((part) =>
+      shareOrder(parts).map((part) =>
         posterFile(
           posterPartUrl(poster, part),
           `${title.slice(0, 40)}-${part}.png`,
@@ -287,11 +331,12 @@ export function ShareSheet({
     setCanShareFiles(
       typeof navigator.canShare === "function" &&
         navigator.canShare({
-          // TWO empty files, because two is what the share sends. `canShare` only
-          // validates types, so this cannot tell us the platform will carry a
-          // pair — but an implementation that caps the COUNT would say no here,
-          // and that is worth asking before holding two Files in memory.
-          files: PARTS.map(
+          // As many empty files as the share will send. `canShare` only validates
+          // types, so this cannot tell us the platform will carry a set — but an
+          // implementation that caps the COUNT would say no here, and a four-image
+          // article is exactly where that would bite. Worth asking before holding
+          // four Files in memory.
+          files: shown.map(
             (part) => new File([], `probe-${part}.png`, { type: "image/png" }),
           ),
         }),
@@ -389,8 +434,10 @@ export function ShareSheet({
           new Promise<null>((resolve) => setTimeout(resolve, POSTER_WAIT_MS, null)),
         ])
       : null;
-    // In part order, which is the order the receiving app lays them out: the
-    // identity card is the thumbnail and has to come first.
+    // Already in SHARE_ORDER — `warm` fetched them that way — so this only drops
+    // whichever leg failed. Never re-sort here: the order is decided once, at
+    // SHARE_ORDER, and a second opinion about it in this function is how the two
+    // would drift apart.
     const files = (ready ?? []).filter((file): file is File => file !== null);
 
     if (files.length) {
@@ -482,7 +529,7 @@ export function ShareSheet({
                 are separate requests, and hiding the good one because its
                 neighbour never arrived would be throwing away the half that
                 works. */}
-            {PARTS.map((part, i) =>
+            {shown.map((part, i) =>
               failed[i] ? null : (
                 <img
                   key={part}
@@ -596,16 +643,25 @@ export function ShareSheet({
              * And it comes BACK on a phone when the preview failed to load, because
              * the long press it was hidden in favour of needs an image to press.
              * Exactly one route to a saved file, always — never both, never none.
+             *
+             * ONE LINK PER IMAGE, numbered when there is more than one. A single
+             * link would hand over the cover and quietly drop the prose — the whole
+             * summary, which is the part worth keeping — and there is no such thing
+             * as downloading a set in one click: the sandbox permits a link the
+             * reader clicks, not a script that saves four files.
              */}
-            {touch && !previewFailed ? null : (
-              <a
-                href={poster}
-                download={`${title.slice(0, 40)}.png`}
-                className={ACTION}
-              >
-                {t.saveImage}
-              </a>
-            )}
+            {touch && !previewFailed
+              ? null
+              : shown.map((part) => (
+                  <a
+                    key={part}
+                    href={posterPartUrl(poster, part)}
+                    download={`${title.slice(0, 40)}-${part}.png`}
+                    className={ACTION}
+                  >
+                    {parts > 1 ? `${t.saveImage} ${part}` : t.saveImage}
+                  </a>
+                ))}
 
           </div>
         </div>

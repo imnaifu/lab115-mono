@@ -1,9 +1,13 @@
 import { PUBLISH_MIN_SCORE } from "./categories";
 
 /**
- * The score scale, in one place because three different things read it: the
- * scoring pass that produces it, the page's `<Stars>`, and the share poster's
- * own copy of the same arithmetic.
+ * The score scale, in one place because the scoring pass that produces it and the
+ * publish floor that reads it are in different modules.
+ *
+ * IT IS NOT DISPLAYED ANYWHERE. It used to drive a five-star rating on every card
+ * and poster; `starCount` and `<Stars>` are gone. What the score still does is
+ * decide what gets published and in what order — see PUBLISH_MIN_SCORE and the
+ * ranking in jobs/daily.ts.
  *
  * It lives here rather than in summarize.ts so a client component can import it
  * without dragging the OpenAI client into the bundle.
@@ -64,41 +68,4 @@ export const SCORE_MIN = SCORE_DIMENSIONS.reduce(
 );
 export const SCORE_MAX = SCORE_MIN * 10;
 
-/** Points of score per star, above the floor. See `starCount`. */
-const PER_STAR = 4;
 
-export const MAX_STARS = 5;
-
-/**
- * Stars, counted FROM THE PUBLISH FLOOR rather than from zero.
- *
- * Every article on the page cleared the floor, so the interesting range is
- * floor-to-maximum and nothing below it is ever displayed. Dividing the full
- * 7-70 scale into fifths instead put every published article on the same two or
- * three stars — measured: a digest whose scores ran 36-45 rendered as 2 stars,
- * all of it, and 5 stars was unreachable by construction.
- *
- * So the band is `PUBLISH_MIN_SCORE` to `SCORE_MAX` — 30 to 50 as configured,
- * 20 points — cut at four points a star.
- *
- * IT STILL DOES NOT SPREAD, and that is a property of the scores rather than of
- * this arithmetic. Measured over five runs the model's medians sit at 6-7 on
- * most dimensions whatever the rubric says, so the published band is about a
- * sixth of the nominal range and no cut of it gives five usable stars: at five
- * points a star every article lands on 1-3, at two points a 1-point difference
- * changes the rating. This is recorded rather than fixed because the fix is not
- * here.
- *
- * ONE STAR IS THE FLOOR, NOT ZERO. A source marked `alwaysPublish` skips the
- * floor entirely, so a published article can score below it; that is a real one
- * star, not the absence of a rating. Only a score of 0 — the scoring pass never
- * answered — returns 0 here, and the callers render nothing for it.
- *
- * Digests archived before this scale existed carry 0-100 scores and will show
- * five stars throughout. Those numbers are not comparable and are not converted.
- */
-export function starCount(score: number): number {
-  if (!Number.isFinite(score) || score <= 0) return 0;
-  const above = Math.floor((score - PUBLISH_MIN_SCORE) / PER_STAR) + 1;
-  return Math.min(MAX_STARS, Math.max(1, above));
-}

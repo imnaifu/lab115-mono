@@ -3,13 +3,12 @@ import type { Metadata } from "next";
 import { ArticleTitle } from "@/components/ArticleTitle";
 import { Cover } from "@/components/Cover";
 import { EndLink, Footer, Masthead, PAD, PageShell, SECTION } from "@/components/Shell";
-import { Stars } from "@/components/Stars";
 import { Summary } from "@/components/Summary";
 import { categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
-import { posterHeight, POSTER_WIDTH } from "@/lib/share";
+import { POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
 import { sourceOf } from "@/lib/sources";
 import { articlePath } from "@/lib/links";
 import { readArticle } from "@/lib/store";
@@ -20,9 +19,19 @@ type Params = { params: Promise<{ lang: string; date: string; id: string }> };
 
 /**
  * og:image is wired here rather than through Next's `opengraph-image` file
- * convention, because that convention needs a static `size` and the poster's
- * height depends on the summary. `posterHeight` is deterministic, so the meta
- * can state the real dimensions — the same call the route itself makes.
+ * convention, because a share is now a SET of images and that convention gives
+ * one per page.
+ *
+ * It points at PART 1 — the identity card — and not at the whole summary. It used
+ * to be a single canvas as tall as the prose needed, which in a WeChat or X link
+ * card is a wall of text scaled to thumbnail size: unreadable, and it buried the
+ * headline it was supposed to be selling. Part 1 is a 3:4 card with the cover, the
+ * headline and the claim on it, and og:description already carries the thesis, so
+ * nothing an unfurl can show is lost.
+ *
+ * The dimensions are CONSTANTS now. The poster canvas is fixed at 1080x1440, so
+ * the old hazard — meta declaring a height computed separately from the one the
+ * route drew — cannot happen.
  */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { lang, date, id } = await params;
@@ -34,21 +43,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!found) return { title: `${t.notFoundTitle} · ${t.brand}` };
 
   const { article } = found;
-  /**
-   * The summary of THIS page's language, which is what the poster route renders.
-   *
-   * It was hardcoded to `.zh`, so an English page declared an og:image height
-   * computed from the Chinese summary — and the English text is roughly twice the
-   * characters, so the number was wrong by hundreds of pixels on every /en
-   * article. The height below is the whole reason this has to agree with the
-   * route: `ImageResponse` needs concrete dimensions, and og:image promises them
-   * to crawlers before the image is ever fetched.
-   */
+  // The thesis, for og:description. There is one summary and it is Chinese —
+  // an /en page renders the same one, as the page below does.
   const summary = article.summary.zh;
   const path = langHref(pageLang, articlePath(date, article.id));
-
-  // Mirrors the poster route's headline choice — see the note there.
-  const translated = pageLang === "zh" ? (article.titleZh ?? "") : "";
 
   return {
     // The ORIGINAL headline, in both languages: a <title> is how this page is
@@ -65,13 +63,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       url: `${SITE}${path}`,
       images: [
         {
+          // No `?part=` — the route's default IS part 1, which is what a caller
+          // that knows nothing about parts should get. See `posterPart`.
           url: `${SITE}${path}/share.png`,
           width: POSTER_WIDTH,
-          height: posterHeight(
-            summary,
-            translated || article.title,
-            translated ? article.title : "",
-          ),
+          height: POSTER_HEIGHT,
         },
       ],
     },
@@ -132,12 +128,6 @@ export default async function ArticlePage({ params }: Params) {
                 <>
                   <span className="size-0.75 rounded-full bg-current opacity-55" />
                   <span>{article.author}</span>
-                </>
-              ) : null}
-              {article.score > 0 ? (
-                <>
-                  <span className="size-0.75 rounded-full bg-current opacity-55" />
-                  <Stars score={article.score} lang={lang} />
                 </>
               ) : null}
               </div>

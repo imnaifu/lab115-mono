@@ -1243,7 +1243,6 @@ DeepSeek **不支持 `json_schema`**（`response_format` 只有 `text` 和 `json
 | `DAILY_CONCURRENCY` | 否 | 默认 `8`，同时在飞的模型请求数 |
 | `DAILY_BODY_CHARS` | 否 | 默认 `80000`，单篇正文喂给模型的上限 |
 | `DEEPSEEK_BASE_URL` | 否 | 默认 `https://api.deepseek.com` |
-| `DAILY_DATA_DIR` | 否 | 默认 `/data`，clone 落在它下面的 `repo/` |
 | `GIT_BRANCH` | 否 | 默认 `main` |
 | `GIT_AUTHOR_NAME` / `GIT_AUTHOR_EMAIL` | 否 | commit 署名 |
 | `DRY_RUN` | 否 | `=1` 时跑完整流程但不 push、不推送 |
@@ -1288,10 +1287,15 @@ push 失败不致命 —— 内容已 commit 在本地，下次运行走 rebase 
 npm run dev
 ```
 
-`dev` 和 `once` 两个脚本会把 `DAILY_DATA_DIR` 默认成 `./data`（想换目录照常在前面
-显式指定即可）。`config.ts` 里的默认值是容器的挂载点 `/data`，本地跑会撞到「根目录
-不可写」，所以本地入口在脚本层面兜住了。Docker 运行时是 `CMD ["node", "server.js"]`，
-不经过 npm scripts，环境变量由 compose 给。
+数据目录**写死在 `config.ts` 里**，是相对路径 `./data`，没有环境变量。本地跑就是
+`apps/daily/data/`，容器里 WORKDIR 是 `/app`，所以是 `/app/data/` —— compose 的卷
+就挂在那儿。下面两样东西都住在里面：
+
+- `repo/` —— digest 仓库的 git clone，job 的工作区，也是页面的读取路径
+- `posters/<日期>/` —— 预渲染好的分享图，只保留最近 30 天，见 `lib/poster-store.ts`
+
+以前这里是 `DAILY_DATA_DIR`，compose 给 `/data`、npm scripts 给 `./data`，同一份代码
+按谁启动它读两个不同的路径 —— 本地忘了加前缀就会在根目录上 EACCES。
 
 ## 输出的 JSON
 

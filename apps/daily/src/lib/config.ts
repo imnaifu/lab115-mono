@@ -11,15 +11,25 @@ export const SITE = "https://daily.lab115.com";
 /**
  * Mounted volume. The git clone lives inside it, so it survives redeploys.
  *
- * The `/data` default is the container's mount point and is unwritable
- * anywhere else, so the `dev` and `once` npm scripts default it to `./data`
- * instead — running them without the variable set must not try to mkdir at the
- * filesystem root.
+ * HARDCODED, and `./data` rather than `/data`.
  *
- * May be relative: `paths.ts` resolves it to an absolute path, which is the
- * only form the git commands may ever see.
+ * It was `process.env.DAILY_DATA_DIR ?? "/data"`, which meant the same code read
+ * two different paths depending on who launched it: compose set the variable to
+ * the container's mount point, and the `dev` and `once` npm scripts each set it
+ * to `./data` because nothing can mkdir at the filesystem root of a Mac. Two
+ * environments, two values, and a local run that forgot the prefix failed with a
+ * bare EACCES on a path nobody had typed.
+ *
+ * One relative path is the version of that with no configuration in it. Resolved
+ * against the process cwd by `paths.ts`, it is `apps/daily/data` locally and
+ * `/app/data` in the container — where WORKDIR is `/app`, so the compose volume
+ * mounts at `/app/data`. The HOST side of that mount is unchanged, so there is
+ * nothing to migrate.
+ *
+ * Relative is fine here and only here: `paths.ts` resolves it to an absolute path,
+ * which is the only form the git commands may ever see.
  */
-export const DATA_DIR = process.env.DAILY_DATA_DIR ?? "/data";
+export const DATA_DIR = "./data";
 
 /** github.com/<slug> — the digests are committed here. */
 export const REPO_SLUG = process.env.GIT_REPO ?? "imnaifu/files";

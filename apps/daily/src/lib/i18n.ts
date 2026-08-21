@@ -46,7 +46,6 @@ const STRINGS = {
     minutes: (n: number) => `${n} 分钟`,
     minutesToRead: (n: number) => `${n} 分钟读完原文`,
     days: (n: number) => `${n} 天`,
-    rating: (n: number) => `评分 ${n} 星，满分 5 星`,
 
     readFull: "阅读全文 →",
     share: "分享",
@@ -96,7 +95,6 @@ const STRINGS = {
     minutes: (n: number) => `${n} min`,
     minutesToRead: (n: number) => `${n} min at the source`,
     days: (n: number) => `${n} ${n === 1 ? "day" : "days"}`,
-    rating: (n: number) => `Rated ${n} out of 5`,
 
     readFull: "Read the original →",
     share: "Share",

@@ -125,9 +125,10 @@ export interface Article {
    * 5–50: five 1-10 dimensions summed. See SCORE_WEIGHTS in lib/score.ts.
    *
    * NOT 0-100. It was, back when the model named the total itself. Digests
-   * archived before this change carry scores on the old scale, so the two are
-   * not comparable across that date — and `starCount` will rate all of them five
-   * stars, which is the honest consequence of not converting them.
+   * archived before this change carry scores on the old scale, so the two are not
+   * comparable across that date. Nothing converts them, and nothing needs to: the
+   * score is never shown to a reader — it decides what publishes and in what
+   * order, both of which happen within one run.
    */
   score: number;
   /** 1-based position after sorting by score. */

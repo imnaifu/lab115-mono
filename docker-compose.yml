@@ -91,7 +91,6 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - TZ=America/Los_Angeles
-      - DAILY_DATA_DIR=/data
       # Required — set these in Coolify, they have no safe default.
       # DeepSeek key from https://platform.deepseek.com/api_keys
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
@@ -111,9 +110,15 @@ services:
       - DAILY_TZ=${DAILY_TZ:-America/Los_Angeles}
       - DAILY_TOP_N=${DAILY_TOP_N:-10}
     volumes:
-      # The git clone of the digest repo. It is both the job's workspace and
-      # the site's read path, so the pages never hit the network.
-      - ./data/daily:/data
+      # The git clone of the digest repo, plus the rendered share posters. It is
+      # both the job's workspace and the site's read path, so the pages never hit
+      # the network.
+      #
+      # /app/data, NOT /data: the app resolves its data directory as the relative
+      # `./data` against the Dockerfile's WORKDIR of /app, hardcoded rather than
+      # configured — see DATA_DIR in src/lib/config.ts for why. The host side is
+      # unchanged, so this moved without moving any data.
+      - ./data/daily:/app/data
     labels:
       - traefik.enable=true
       - traefik.http.middlewares.gzip.compress=true

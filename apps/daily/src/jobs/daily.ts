@@ -9,6 +9,7 @@ import { notify } from "@/lib/notify";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
 import { sourceOf } from "@/lib/sources";
 import { readDigest, writeDigest } from "@/lib/store";
+import { cachePosters } from "@/jobs/posters";
 import { summarize } from "@/lib/summarize";
 import type {
   Article,
@@ -237,6 +238,21 @@ export async function runDaily(
       [rel],
       `daily: ${date} — ${digest.stats.fetched} article(s)`,
     );
+
+    /**
+     * Every share image, rendered now and written to disk.
+     *
+     * AFTER the push and BEFORE the notification, which is the one ordering that
+     * makes sense: the digest is the record and it should be safe in git before
+     * this spends a minute on derived files, and the notification is what sends a
+     * reader to the site — so the images should already be there when they arrive
+     * to share one.
+     *
+     * It cannot fail the run. The posters are a cache; the route renders on a
+     * miss, so the worst case of this whole step failing is the old behaviour.
+     */
+    await cachePosters(digest);
+
     await notify(digest);
 
     console.log(

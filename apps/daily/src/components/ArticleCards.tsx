@@ -1,9 +1,9 @@
 import { ArticleTitle, displayTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
 import { ShareButton } from "./ShareButton";
-import { Stars } from "./Stars";
 import { Summary } from "./Summary";
 import { sourceOf } from "@/lib/sources";
+import { posterParts } from "@/lib/share";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
 import { articlePath } from "@/lib/links";
@@ -23,20 +23,13 @@ function Meta({ article, lang }: { article: Article; lang: Lang }) {
       <span style={{ color: source.accent }}>{source.name}</span>
       <Dot />
       <span>{strings(lang).minutes(article.readingMinutes)}</span>
+      {/* Last, and optional — so the row ends on the reading time when a source
+          publishes anonymously. The Dot is inside the same condition, which is
+          what keeps a separator from being left dangling. */}
       {article.author ? (
         <>
           <Dot />
           <span>{article.author}</span>
-        </>
-      ) : null}
-      {/* Last, because the author is optional and the stars are not — ending the
-          line on them keeps the meta row the same shape on every card. Both this
-          and the Dot render nothing when the article was never scored, so no
-          orphaned separator is left behind. */}
-      {article.score > 0 ? (
-        <>
-          <Dot />
-          <Stars score={article.score} lang={lang} />
         </>
       ) : null}
     </div>
@@ -85,6 +78,10 @@ function Actions({
       <ShareButton
         url={href(lang, articlePath(date, article.id))}
         imageUrl={`${href(lang, articlePath(date, article.id))}/share.png`}
+        /* Counted HERE, on the server, where the summary and the poster's layout
+           table both already are. The sheet is a client component and needs the
+           number to know how many images to fetch and preview. */
+        parts={posterParts(article.summary.zh)}
         title={displayTitle(article, lang)}
         thesis={article.summary.zh.thesis}
         lang={lang}

@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "DAILY_DATA_DIR=${DAILY_DATA_DIR:-./data} next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "once": "DAILY_DATA_DIR=${DAILY_DATA_DIR:-./data} tsx --env-file-if-exists=.env src/jobs/cli.ts"
+    "once": "tsx --env-file-if-exists=.env src/jobs/cli.ts"
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",
@@ -14,7 +14,8 @@
     "node-cron": "^4.6.0",
     "openai": "^7.4.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

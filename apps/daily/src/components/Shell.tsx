@@ -118,7 +118,10 @@ export function Masthead({
             aria-label of its own. */}
         <a
           href={href(lang, "/")}
-          className="inline-flex items-center gap-2 rounded-full bg-ink px-3 py-1 text-xs font-bold tracking-widest text-cream uppercase"
+          /* No `uppercase`: a domain is written lowercase, and the poster's chip
+             prints it that way too — see posterDomain in lib/share.ts. The
+             literal below is already the form that renders. */
+          className="inline-flex items-center gap-2 rounded-full bg-ink px-3 py-1 text-xs font-bold tracking-widest text-cream"
         >
           daily.lab115.com
         </a>

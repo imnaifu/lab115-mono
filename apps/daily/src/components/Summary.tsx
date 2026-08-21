@@ -57,6 +57,14 @@ export function Summary({
   const text = summary.zh;
   const size = SIZE[variant];
   const blocks = blocksOf(text.text ?? "");
+  /**
+   * The block the opening indent goes on: the first one that is PROSE.
+   *
+   * Not simply block 0 — a summary can open on a `## heading`, which is a label
+   * rather than the start of the writing. `posterPages` in lib/share.ts picks the
+   * same block the same way, so the page and the poster indent the same sentence.
+   */
+  const opening = blocks.findIndex((block) => block.kind !== "heading");
 
   return (
     <div className="mt-4 flex flex-col gap-3">
@@ -80,7 +88,16 @@ export function Summary({
           className={
             block.kind === "heading"
               ? `-mb-1 font-semibold text-ink ${size.heading}`
-              : `leading-[1.85] font-medium text-ink-mid ${size.para}`
+              : // The OPENING paragraph starts two characters in, and only it —
+                // `i === opening`. The paragraphs here are already separated by
+                // `gap-3`, so indenting each one marks the same break twice; what
+                // a gap cannot say is where the prose begins.
+                //
+                // `2em`, not the `rem` a Tailwind `indent-8` would give, so it
+                // stays two CHARACTERS at whichever size the variant sets. The
+                // poster draws the same measure from POSTER.indent — change one,
+                // change both.
+                `${i === opening ? "indent-[2em]" : ""} leading-[1.85] font-medium text-ink-mid ${size.para}`
           }
           key={i}
         >

@@ -42,3 +42,26 @@ export function articleAnchor(id: string): string {
 export function articlePath(date: string, id: string): string {
   return `/d/${date}/${articleAnchor(id)}`;
 }
+
+/**
+ * Which image of a share this poster is: 1 is the identity card, 2 and up are
+ * pages of prose. See `posterPages` in lib/share.ts for where the count comes
+ * from.
+ *
+ * THESE TWO LIVE HERE, not beside the geometry they describe, for the same reason
+ * everything else in this file does: the share sheet is a client component and it
+ * needs to build these URLs. lib/share.ts carries the font fetcher, the inlined
+ * brand mark and the whole layout table — none of which has any business in a
+ * browser bundle.
+ */
+export function posterPart(value: string | null): number {
+  const part = Number(value);
+  // Anything unparseable is the first image, which is the one a caller that knows
+  // nothing about parts — a crawler, an old link — should get.
+  return Number.isInteger(part) && part >= 1 ? part : 1;
+}
+
+/** The poster route for one part. `base` is the route WITHOUT a query. */
+export function posterPartUrl(base: string, part: number): string {
+  return part <= 1 ? base : `${base}?part=${part}`;
+}

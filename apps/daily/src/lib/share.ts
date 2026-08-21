@@ -1,137 +1,22 @@
-import { blocksOf, paragraphsOf } from "./paragraphs";
-import type { Article, SummaryText } from "./types";
+import { blocksOf } from "./paragraphs";
+import type { SummaryText } from "./types";
 
 /**
- * Fonts for the share poster.
+ * The poster's LAYOUT: its canvas, its type scale, its line breaking and its
+ * pagination. Arithmetic over strings, and nothing else.
  *
- * Satori (what `next/og` renders with) needs real font data — it cannot use a
- * CSS @font-face or a webfont URL — and it cannot read woff2. That rules out
- * the stylesheet the site itself loads, and it rules out shipping 思源黑体
- * whole: the full face is over 10 MB.
+ * NOTHING IN HERE MAY TOUCH THE NETWORK, THE FILESYSTEM OR A NATIVE MODULE, and
+ * that is a hard rule with a build error behind it rather than a preference.
+ * `posterParts` below is called by ArticleCards, which is reached from DigestBody,
+ * which is `"use client"` — so this module is in the browser bundle. When the font
+ * fetcher and the cover decoder still lived here, adding `import("sharp")` to the
+ * latter made webpack follow it into that bundle and fail on `fs` and
+ * `child_process`, and every article page 500'd.
  *
- * The way out is Google's `text=` parameter, which returns a face subsetted to
- * exactly the characters asked for. Measured on real articles, a title plus a
- * full Chinese summary is ~250 distinct characters and comes back at 54–59 KB.
- * Ask for more than that — every article on a day, say — and Google stops
- * subsetting and hands back the whole 10 MB face, so this must always be called
- * with ONE poster's text.
- *
- * The ancient User-Agent is not a mistake, and the exact one matters. Google
- * picks the format from it, and only some of what it serves is parseable here:
- *
- *   modern Chrome/Safari  → woff2   Satori cannot read it
- *   Firefox 27, Chrome 30 → woff    unreliable in Satori's parser
- *   MSIE 6                → eot     "Unsupported OpenType signature"
- *   Android 2.3, or none  → ttf     works
- *
- * Android 2.3 rather than sending no User-Agent at all — both yield ttf today,
- * but one is a stated request and the other is an accident of whatever the
- * runtime happens to omit.
+ * Everything that was in violation now lives in lib/poster-assets.ts, which only
+ * the renderer and the job import. If something here starts needing I/O, it
+ * belongs over there.
  */
-const LEGACY_UA =
-  "Mozilla/5.0 (Linux; U; Android 2.3; en-us) AppleWebKit/533.1 " +
-  "(KHTML, like Gecko) Version/4.0 Mobile Safari/533.1";
-
-/** Keyed by weight + text so the two weights of one poster are cached apart. */
-const fontCache = new Map<string, ArrayBuffer>();
-/** Bounded so a long-lived server cannot accumulate a font per article. */
-const FONT_CACHE_MAX = 48;
-
-async function loadSubset(
-  family: string,
-  text: string,
-  weight: number,
-): Promise<ArrayBuffer> {
-  const key = `${family}:${weight}:${text}`;
-  const hit = fontCache.get(key);
-  if (hit) return hit;
-
-  const cssUrl =
-    `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}` +
-    `:wght@${weight}&text=${encodeURIComponent(text)}`;
-  const css = await fetch(cssUrl, {
-    headers: { "user-agent": LEGACY_UA },
-  }).then((r) => r.text());
-
-  const href = css.match(/src:\s*url\(([^)]+)\)/)?.[1];
-  if (!href) throw new Error(`no font url in Google's css for weight ${weight}`);
-
-  const data = await fetch(href, {
-    headers: { "user-agent": LEGACY_UA },
-  }).then((r) => r.arrayBuffer());
-
-  if (fontCache.size >= FONT_CACHE_MAX) {
-    fontCache.delete(fontCache.keys().next().value!);
-  }
-  fontCache.set(key, data);
-  return data;
-}
-
-export interface PosterFont {
-  name: string;
-  data: ArrayBuffer;
-  weight: 500 | 700;
-  style: "normal";
-}
-
-/**
- * BOTH families, in the order Satori should try them.
- *
- * The poster used to load 思源黑体 alone, which meant every Latin word — every
- * title, every source name, the brand itself — was drawn with that face's Latin
- * glyphs. They are perfectly good glyphs and completely wrong here: the site
- * sets Latin in Manrope, so the poster looked like a different publication than
- * the page it came from.
- *
- * Satori falls back in array order, so Manrope goes first and picks up the
- * Latin, and 思源黑体 catches everything Manrope has no glyph for. Manrope is
- * Latin-only, so its subset is tiny (~8.6 KB) — this costs two more requests
- * and no meaningful bytes.
- *
- * THE BODY WEIGHT IS 500, NOT 400. A poster is read at whatever size the app
- * that received it decides to show it — a chat thread scales a 1000px image down
- * to a third of that — and 400 survives none of it: at phone scale the strokes
- * of a 22px Chinese glyph land under a pixel and the paragraph turns grey. 500 is
- * the smallest step that holds up, and still reads as body text against the 700
- * of the headline. There is no 400 registered at all, so nothing can silently
- * fall back to it.
- */
-export async function posterFonts(text: string): Promise<PosterFont[]> {
-  const [latin500, latin700, cjk500, cjk700] = await Promise.all([
-    loadSubset("Manrope", text, 500),
-    loadSubset("Manrope", text, 700),
-    loadSubset("Noto Sans SC", text, 500),
-    loadSubset("Noto Sans SC", text, 700),
-  ]);
-  return [
-    { name: "Manrope", data: latin500, weight: 500, style: "normal" },
-    { name: "Manrope", data: latin700, weight: 700, style: "normal" },
-    { name: "Noto Sans SC", data: cjk500, weight: 500, style: "normal" },
-    { name: "Noto Sans SC", data: cjk700, weight: 700, style: "normal" },
-  ];
-}
-
-/** Every glyph the poster will draw, so the subset covers all of it. */
-export function posterText(article: Article, summary: SummaryText, extra: string) {
-  return [
-    article.title,
-    summary.thesis,
-    ...paragraphsOf(summary.text ?? ""),
-    extra,
-    // Punctuation and digits the layout adds on its own.
-    "0123456789·—、。，：；？！「」（）%",
-  ].join("");
-}
-
-/**
- * The brand mark, inlined as a data URI.
- *
- * Satori draws `<img>` but not inline `<svg>` elements, and it has no
- * filesystem, so the icon cannot simply be referenced by path. This is the same
- * artwork as `public/favicon.svg`, minified — if that file changes, regenerate
- * this string, because nothing enforces that the two agree.
- */
-export const POSTER_MARK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSLmr4/ml6XlubLotKcgRGFpbHkgVGFrZXMiPiA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0iIzNCMzU2MyIvPiA8cGF0aCBmaWxsPSIjRkJGM0U5IiBkPSJNIDggMjMgQSAxMiAxMiAwIDEgMSAzMiAyMyBDIDMyIDM1LjAgMjUuNCA0NC4wIDE1LjggNDguOCBMIDguNiAzOS4yIEMgMTguOCAzNS42IDIzLjYgMzAuMiAyMy42IDIzIFoiLz4gPHBhdGggZmlsbD0iI0VGQTA1MCIgZD0iTSAzMyAyMyBBIDEyIDEyIDAgMSAxIDU3IDIzIEMgNTcgMzUuMCA1MC40IDQ0LjAgNDAuOCA0OC44IEwgMzMuNiAzOS4yIEMgNDMuOCAzNS42IDQ4LjYgMzAuMiA0OC42IDIzIFoiLz4gPC9zdmc+";
 
 /**
  * Text width in full-width UNITS: CJK and CJK punctuation count 1, everything
@@ -151,90 +36,132 @@ function widthUnits(text: string): number {
 }
 
 /**
- * The domain, as the poster prints it.
+ * The domain, as the poster prints it: LOWERCASE, the way a URL is actually
+ * written and the way the masthead chip on the page now prints it too.
  *
- * Uppercased HERE rather than with `textTransform`, because the string also has
- * to be handed to `posterText` so Google subsets the font with those letters in
- * it — and a subset built from the lowercase form would leave the uppercase
- * render blank. One transform, done once, used by both.
+ * The case is applied HERE rather than with `textTransform`, because the string
+ * also has to be handed to `posterText` so Google subsets the font with those
+ * letters in it — a subset built from one case leaves the other case blank. One
+ * transform, done once, used by both. That is why this is still a function doing
+ * something that looks redundant against an already-lowercase host: it is the
+ * single place the two callers agree on.
  */
 export function posterDomain(site: string): string {
-  return new URL(site).host.toUpperCase();
+  return new URL(site).host.toLowerCase();
 }
 
-export const POSTER_WIDTH = 1000;
-
 /**
- * Which image of the share this poster is.
+ * The canvas, FIXED at 小红书's best size: 1080x1440, which is 3:4.
  *
- * A share carries TWO images now — 小红书 and WeChat both take a set, and one
- * 1000x1550 wall of text scaled into a chat bubble was never readable anyway.
- * The split is by what the page itself already separates: the article's identity
- * on the first, the prose on the second.
+ * 3:4 is the tallest ratio that platform displays without cropping, so it is the
+ * most of a phone screen one image can occupy, and 1080 is its native width —
+ * an image that arrives at exactly that width is never resampled.
  *
- * - 1 — cover, meta, headline, thesis. The one a reader sees as the thumbnail.
- * - 2 — the summary's paragraphs, nothing else.
- * - 0 — the whole poster on one canvas, unchanged. STILL LOAD-BEARING: og:image
- *   is a single image by definition, so an unfurled link uses this, and it is
- *   what the desktop download hands over.
+ * FIXED IS THE WHOLE POINT, and it replaces a variable height computed from the
+ * summary. A carousel of images has to be one shape: two images of different
+ * heights are letterboxed against each other by every app that shows a set, and
+ * the reader swiping sees the frame jump. It also retires a standing hazard —
+ * the old `posterHeight` had to agree with what the route drew or og:image
+ * declared dimensions the image did not have. Now the canvas is a constant and
+ * the arithmetic below decides only what FITS on it.
  */
-export type PosterPart = 0 | 1 | 2;
-
-/** `?part=` as a PosterPart. Anything unrecognised is the whole poster, which is
- *  the shape every existing caller and every crawler asks for. */
-export function posterPart(value: string | null): PosterPart {
-  return value === "1" ? 1 : value === "2" ? 2 : 0;
-}
-
-/** The poster route for one part. `base` is the route WITHOUT a query. */
-export function posterPartUrl(base: string, part: PosterPart): string {
-  return part === 0 ? base : `${base}?part=${part}`;
-}
+export const POSTER_WIDTH = 1080;
+export const POSTER_HEIGHT = 1440;
 
 /**
- * The poster's geometry, and the page's geometry it is copied from.
+ * The poster's geometry.
  *
- * The poster is meant to look like the article page's card, so every size below is
- * that card's Tailwind value times SCALE. The card is ~694px wide inside the 750px
- * column; the poster is 1000px, and 1.45 is the ratio — which also lands the body
- * text back on 22px, the size the line budget was measured at.
+ * It USED TO BE the article page's card times 1.45 — same layout, bigger. That
+ * premise is gone: the body text is 32px here against the page's 16px, which is
+ * 2x, not 1.45x. The poster is not a screenshot of the page any more, it is a
+ * carousel card read at arm's length on a phone, and the number it is designed
+ * around is LINE LENGTH — 876px of text at 32px is about 25 Chinese characters a
+ * line, which is inside the 20-26 that reads comfortably. At the old 22px the
+ * same column held 39, and a 39-character line is what "the text looks small"
+ * actually means.
  *
- * Kept here rather than in the route because `posterHeight` has to agree with what
- * the route draws, and two copies of these numbers would drift the first time one
- * of them changed.
+ * Everything else here is that 32 scaled by 32/22, rounded — so the proportions
+ * of the old design survive at the new size.
+ *
+ * Kept in this module rather than in the route because the pagination below has
+ * to agree with what the route draws, and two copies of these numbers would
+ * drift the first time one of them changed. THE GAPS ARE HERE FOR THAT REASON
+ * TOO: they used to be literals in both places.
  */
 export const POSTER = {
-  /** Canvas edge → card. Matches the page's `px-4 sm:px-7` gutter. */
-  pad: 40,
+  /** Canvas edge → card. */
+  pad: 58,
   /**
-   * The domain chip above the wordmark: the page's masthead chip, scaled.
+   * The domain chip above the wordmark.
    *
-   * The page sets it at `text-xs` with `px-3 py-1` and `tracking-widest`, and it
-   * is the one element on the poster that is a chip rather than plain text — so
-   * its padding is stated here too, or the height estimate below could not know
+   * It is the one element on the poster that is a chip rather than plain text, so
+   * its padding is stated here as well — the frame arithmetic below has to know
    * how tall the row is.
    */
-  domainSize: 18,
-  domainPadX: 16,
-  domainPadY: 6,
-  domainTracking: 2,
-  /** Chip row → the wordmark lockup under it. The page's `mt-5`, scaled. */
-  domainGap: 20,
-  /** Inside the card: the page's `p-5`, scaled. */
-  cardPad: 30,
-  radius: 26,
-  /** `size-28` on the page. */
-  cover: 112,
-  /** The page's `gap-5` between cover and text. */
-  coverGap: 28,
-  metaSize: 17,
-  titleSize: 42,
-  originalSize: 23,
-  thesisSize: 26,
-  /** The accent bar beside the thesis: the page's `border-l-[3px] pl-4`, scaled. */
-  thesisRule: 4,
-  thesisPad: 22,
-  paraSize: 22,
+  domainSize: 26,
+  domainPadX: 23,
+  domainPadY: 9,
+  domainTracking: 3,
+  /** Chip row → the wordmark lockup under it. */
+  domainGap: 29,
+  /** The lockup: the mark, and the wordmark beside it. */
+  markSize: 70,
+  markGap: 23,
+  brandSize: 58,
+  dateSize: 32,
+  /** Lockup → card. */
+  cardTop: 49,
+  /** Inside the card. */
+  cardPad: 44,
+  radius: 38,
+  cover: 163,
+  coverGap: 41,
+  /**
+   * 25, which is 32/22 scaled — and it only fits because the stars are gone.
+   *
+   * The meta row is the one element here whose width is set by its CONTENT rather
+   * than by the canvas. With five star glyphs and a dot in front of them it came
+   * to ~730px against the 672 the column beside the cover has, so it wrapped, and
+   * wrapping a row of separated items leaves a dangling dot at the end of one line
+   * and two orphaned words on the next. It was dropped to 20 for that. Source,
+   * reading time and author alone are ~570px, so the row is back at its proper
+   * size with room to spare.
+   */
+  metaSize: 25,
+  titleSize: 61,
+  titleGap: 15,
+  originalSize: 33,
+  originalGap: 12,
+  /** The accent bar beside the thesis. */
+  thesisRule: 6,
+  thesisPad: 32,
+  thesisSize: 38,
+  /** Headline block → thesis. */
+  thesisGap: 35,
+  paraSize: 32,
+  /** Between two paragraphs, and above a section heading — the heading gets the
+   *  taller one, exactly as `Summary` gives it `-mb-1` against the page's gap. */
+  paraGap: 20,
+  /**
+   * The opening indent: the article's FIRST line starts two characters in.
+   *
+   * Once per article, not once per paragraph. The full 段首缩进 convention indents
+   * every paragraph; here the paragraphs are already separated by a blank line's
+   * worth of gap, so indenting each one as well marks the same break twice. What
+   * is left is the one thing the gaps cannot say — where the prose begins.
+   *
+   * Two full-width characters, so it is `paraSize * 2` rather than a number of
+   * its own. The page says the same thing as `indent-[2em]`, the same measure in
+   * the unit a browser has. INDENT_UNITS below is this in the line breaker's
+   * units and has to stay in step with it.
+   */
+  indent: 64,
+  headingGap: 26,
+  /** The `2/4` in the bottom corner. Its row is part of the frame whether or not
+   *  it is drawn, so a one-image share and a four-image one put the card in the
+   *  same place. */
+  pageSize: 24,
+  pageRow: 40,
 } as const;
 
 /** The width one line of body text actually has. */
@@ -250,6 +177,46 @@ export const POSTER_TEXT_WIDTH =
  */
 export const POSTER_BESIDE_COVER =
   POSTER_TEXT_WIDTH - POSTER.cover - POSTER.coverGap;
+
+/** One drawn line of body text, top to top. */
+const PARA_LINE = Math.round(POSTER.paraSize * 1.85);
+
+/**
+ * Everything on a BODY PAGE that is not the body copy: the two canvas margins,
+ * the domain chip's row, the gap down to the card, the card's own padding, and
+ * the page counter's row.
+ *
+ * The route's outer padding is `pad + 16` top and bottom — the extra 16 is there
+ * so the chip does not sit on the canvas edge — hence the +16 here.
+ *
+ * NO WORDMARK LOCKUP, which is `markSize + domainGap` and the single biggest thing
+ * that used to be in here. The renderer draws the mark and the brand name on part
+ * 1 only: a page of prose is an interior page of a deck, the domain chip above it
+ * already says where the image came from, and 99px of masthead repeated on every
+ * page was costing between one and two lines of the summary each time. That is the
+ * trade — brand furniture, or the text it was framing.
+ */
+const POSTER_FRAME =
+  (POSTER.pad + 16) * 2 +
+  (Math.round(POSTER.domainSize * 1.2) + POSTER.domainPadY * 2) +
+  POSTER.cardTop +
+  POSTER.cardPad * 2 +
+  POSTER.pageRow;
+
+/**
+ * How much of a body page is left for lines, with slack held back.
+ *
+ * The slack matters more than it did before the canvas was fixed: it cannot grow,
+ * so an over-estimate here does not make a taller image, it clips the last line
+ * off a page. Under-filling is invisible, so the asymmetry is worth paying for.
+ *
+ * HALF A LINE, though, not the whole one it was. A full line was picked when
+ * nothing had been measured; across every archived summary the tallest page then
+ * came out 114px under what the card could hold, which is a line and a half of
+ * insurance on top of the 1.4 units `LINE_BUDGET` already holds back horizontally.
+ * Two layers of the same guess is one too many.
+ */
+const BODY_BUDGET = POSTER_HEIGHT - POSTER_FRAME - Math.round(PARA_LINE / 2);
 
 /**
  * The cover gradient, as a plain `linear-gradient` string.
@@ -281,44 +248,6 @@ function mix(a: string, b: string, ratio: number): string {
   return `#${blend(ar, br)}${blend(ag, bg)}${blend(ab, bb)}`;
 }
 
-/** A cover fetch that cannot hold up or blow up a poster. */
-const COVER_TIMEOUT_MS = 4000;
-const COVER_MAX_BYTES = 3_000_000;
-
-/**
- * The article's cover as a data URI, or null to fall back to the gradient.
- *
- * Fetched HERE rather than handed to Satori as a URL, so the failure modes belong
- * to this function instead of to the renderer: a source's CDN that hangs, returns
- * HTML, or serves a 12 MB PNG would otherwise stall or fail the whole image. XDA's
- * did two of those three intermittently, which is why `Cover` on the page renders
- * the gradient underneath every photo rather than instead of one.
- *
- * Any problem at all returns null. A poster with a designed placeholder is a fine
- * outcome; a poster that 500s is not.
- */
-export async function posterCover(url: string | null): Promise<string | null> {
-  if (!url) return null;
-
-  try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(COVER_TIMEOUT_MS),
-    });
-    if (!response.ok) return null;
-
-    const type = response.headers.get("content-type") ?? "";
-    if (!type.startsWith("image/")) return null;
-
-    const bytes = await response.arrayBuffer();
-    if (bytes.byteLength > COVER_MAX_BYTES) return null;
-
-    const base64 = Buffer.from(bytes).toString("base64");
-    return `data:${type.split(";")[0]};base64,${base64}`;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Characters that may not begin a line, and ones that may not end it.
  *
@@ -326,6 +255,64 @@ export async function posterCover(url: string | null): Promise<string | null> {
  * an opening one never ends it. Without these a line would begin with 「。」 or
  * finish on a dangling 「「」.
  */
+/**
+ * What the poster's two faces can actually draw: ASCII and Latin-1 from Manrope,
+ * general and CJK punctuation, and the CJK blocks from 思源黑体.
+ *
+ * Deliberately the same ranges `charUnits` below measures with. A character this
+ * does not match is a character the width arithmetic does not know either.
+ */
+const DRAWABLE =
+  /[\u0020-\u007e\u00a0-\u00ff\u2000-\u206f\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/;
+
+/**
+ * A few symbols worth keeping as words rather than dropping.
+ *
+ * Small on purpose. The whole archive — two months of summaries — contains
+ * exactly two characters this file cannot draw, so this is not a table that wants
+ * filling in; it is here so the one that carries meaning in a sentence survives
+ * as something readable.
+ */
+const SUBSTITUTES = new Map([
+  ["\u2260", "!="],
+  ["\u2264", "<="],
+  ["\u2265", ">="],
+  ["\u2248", "~"],
+  ["\u2192", "->"],
+  ["\u2190", "<-"],
+]);
+
+/**
+ * Text with every character the poster cannot draw taken out of it.
+ *
+ * SATORI GOES TO THE NETWORK FOR A GLYPH IT CANNOT FIND. That is the bug this
+ * exists for: `@vercel/og` reacts to a missing glyph by calling its own
+ * `loadGoogleFont` for that one character, which answers 400 for anything the
+ * Google Fonts API has no family for — so an article containing `≠` logged a
+ * stack trace per render and drew nothing where the symbol should be. The subset
+ * request cannot help, because asking Google for a character a font does not have
+ * returns a font that still does not have it.
+ *
+ * Two things get removed. U+FFFD, the replacement character, is dropped outright:
+ * it means "a character was lost decoding this" and there is nothing to draw for
+ * it — one is sitting in a real archived digest right now. Everything else outside
+ * DRAWABLE is either substituted from the table above or dropped.
+ *
+ * CALLED INSIDE `posterPages`, not by its callers, and that placement is
+ * load-bearing: pagination and the renderer must agree on the text down to the
+ * character, and `posterParts` is called from a component while the drawing
+ * happens in the job. If cleaning were the caller's job, one of them would forget
+ * and the sheet would ask for a page the renderer does not produce.
+ */
+export function posterClean(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    if (ch === "\n" || DRAWABLE.test(ch)) out += ch;
+    else out += SUBSTITUTES.get(ch) ?? "";
+  }
+  return out;
+}
+
 const NO_LINE_START = "。，、；：？！）」』》〉】”’%…·";
 const NO_LINE_END = "（「『《〈【“‘";
 
@@ -349,6 +336,9 @@ function charUnits(ch: string): number {
  */
 const LINE_BUDGET = POSTER_TEXT_WIDTH / POSTER.paraSize - 1.4;
 
+/** `POSTER.indent` in those same units — two full-width characters. */
+const INDENT_UNITS = POSTER.indent / POSTER.paraSize;
+
 /**
  * One paragraph, broken into lines HERE rather than by Satori.
  *
@@ -357,29 +347,40 @@ const LINE_BUDGET = POSTER_TEXT_WIDTH / POSTER.paraSize - 1.4;
  * gone; the line breaking stays, because two things that were side effects of it
  * are worth more than the code costs:
  *
- *   - `posterHeight` COUNTS lines instead of estimating them. The estimate it
- *     replaced divided by a guessed units-per-line and then padded the result,
- *     and a canvas that has to be guessed at is a canvas that clips or empties.
+ *   - `posterPages` COUNTS lines instead of estimating them, so pagination knows
+ *     exactly what fits on a fixed canvas. The estimate this replaced divided by
+ *     a guessed units-per-line and then padded the result — fine for choosing a
+ *     canvas height, useless for deciding where to break a page.
  *   - Chinese line breaking gets the two rules below. Satori's own breaking has
  *     no notion of 避头尾, so a line could begin with 。 or end on a dangling 「.
  *
  * The cost is that the measurement is ours, in the same crude full-width units as
  * everything else here — accurate for Chinese, approximate for Latin, hence the
  * conservative LINE_BUDGET.
+ *
+ * `indent` is the FIRST LINE's handicap, in the same units — two for a Chinese
+ * paragraph, which is drawn 2em in from the margin. It has to be a parameter of
+ * the line breaker rather than a style applied afterwards: an indented first line
+ * holds two characters fewer, so styling it after the fact would push its last
+ * two characters past the column, and Satori would wrap them into a second visual
+ * line inside a row sized for one — which also puts the page height the caller
+ * counted out of step with the page it drew.
  */
-export function layoutParagraph(text: string): string[] {
+export function layoutParagraph(text: string, indent = 0): string[] {
   const lines: string[] = [];
   let start = 0;
 
   while (start < text.length) {
     let units = 0;
     let at = start;
+    // Only the line that is actually drawn indented pays for it.
+    const budget = lines.length === 0 ? LINE_BUDGET - indent : LINE_BUDGET;
     // The last index a line could end at, so a long word is not cut mid-way.
     let candidate = -1;
 
     while (at < text.length) {
       units += charUnits(text[at]);
-      if (units > LINE_BUDGET && at > start) break;
+      if (units > budget && at > start) break;
 
       const next = at + 1;
       if (
@@ -409,121 +410,174 @@ export function layoutParagraph(text: string): string[] {
 }
 
 /**
- * Poster height, computed from the text rather than fixed.
+ * One drawn line of the summary, ready to be a row on a page.
  *
- * `ImageResponse` demands concrete dimensions, and the summaries are not a
- * fixed size — 100 characters on a link-roundup day, 600 on a heavy one. A
- * fixed canvas would either crop the long ones or leave the short ones mostly
- * empty, and the whole point of the image is that it carries the WHOLE summary.
- *
- * The estimate is deliberately generous; empty space at the bottom is a much
- * cheaper mistake than a clipped last paragraph.
+ * `gap` is the space ABOVE it, and it is non-zero only on a block's first line
+ * and only when something sits above it — a block that starts a page starts flush
+ * against the card's padding, so the gap is dropped rather than carried over.
  */
-export function posterHeight(
-  summary: SummaryText,
-  title: string,
-  /** The original headline, when the poster prints it under a Chinese one. Must
-   *  be passed whenever the route renders it, or the height stops matching the
-   *  image and og:image lies about its own dimensions. */
-  original = "",
-  /** Which part the route is about to draw. The same rule as `original`: this
-   *  has to match what is rendered or the canvas and its declared height part
-   *  company. */
-  part: PosterPart = 0,
-): number {
-  // Every number is one measurement off the rendered poster, so the layout and
-  // this arithmetic can be checked against each other. Line heights are
-  // `fontSize x line-height`, taken from POSTER and the route's styles.
-  const PADDING = (POSTER.pad + 16) * 2;
-  /** The chip's text plus its own padding, top and bottom. */
-  const DOMAIN_ROW =
-    Math.round(POSTER.domainSize * 1.2) + POSTER.domainPadY * 2;
-  const BRAND_ROW = 50;
-  const CARD_TOP = 34;
-  const CARD_PAD = POSTER.cardPad * 2;
-  const META_LINE = 21;
-  const TITLE_GAP = 10;
-  const TITLE_LINE = Math.round(POSTER.titleSize * 1.25);
-  const ORIGINAL_GAP = 8;
-  const ORIGINAL_LINE = Math.round(POSTER.originalSize * 1.4);
-  const THESIS_GAP = 24;
-  const THESIS_LINE = Math.round(POSTER.thesisSize * 1.5);
-  const PARAS_GAP = 18;
-  const PARA_LINE = Math.round(POSTER.paraSize * 1.85);
-  const PARA_GAP = 14; // between paragraphs
-  const HEADING_GAP = 18; // above a section heading — matches the route's style
-  const SLACK = 30; // most of a line, so a bad guess never clips
+export interface PosterRow {
+  text: string;
+  heading: boolean;
+  gap: number;
+  /** Drawn 2em in from the margin. True on EXACTLY ONE row per article — the
+   *  first line of its opening paragraph — so it is false on every row of every
+   *  page after the first. See POSTER.indent. */
+  indent: boolean;
+}
 
+/**
+ * The summary's body, split into fixed-height pages.
+ *
+ * PACKED LINE BY LINE, not block by block. Blocks would be the tidier unit and it
+ * is the wrong one: `PARA_MAX` keeps a paragraph inside a page today, but nothing
+ * in the renderer enforces that, and a block that did not fit would silently run
+ * off a canvas that can no longer grow to hold it. Rows are all one height, so
+ * packing them cannot overflow.
+ *
+ * ONE RULE BEYOND FILLING: a heading may not be the last thing on a page. It
+ * exists to introduce the paragraph under it, and a reader who has to swipe to
+ * find out what it introduced got two images where the layout promised one
+ * thought. When a heading's rows fit but the first row of what follows does not,
+ * the heading travels to the next page with it.
+ */
+export function posterPages(summary: SummaryText): PosterRow[][] {
+  const parsed = blocksOf(posterClean(summary.text ?? ""));
   /**
-   * Two column widths, because the headline sits BESIDE the cover and the summary
-   * runs under it. Getting these the wrong way round was the old bug this replaces
-   * — the title was measured against the full width it does not have.
-   */
-  const besideCover = POSTER_BESIDE_COVER;
-  const linesOf = (text: string, size: number, width: number) =>
-    text ? Math.ceil(widthUnits(text) / (width / size - 1)) : 0;
-
-  const titleLines = linesOf(title, POSTER.titleSize, besideCover);
-  const originalLines = linesOf(original, POSTER.originalSize, besideCover);
-  // The accent bar and its padding take width off the thesis, so it wraps sooner
-  // than the paragraphs under it do.
-  const thesisWidth = POSTER_TEXT_WIDTH - POSTER.thesisRule - POSTER.thesisPad;
-  const thesisLines = linesOf(summary.thesis, POSTER.thesisSize, thesisWidth);
-
-  /**
-   * The paragraph line count is COUNTED, not estimated: the route breaks its own
-   * lines, so asking `layoutParagraph` how many it produced is the same arithmetic
-   * the renderer will do.
-   */
-  const blocks = blocksOf(summary.text ?? "");
-  const bodyLines = blocks.reduce(
-    (sum, block) => sum + layoutParagraph(block.text).length,
-    0,
-  );
-  /**
-   * The gaps, SUMMED PER BLOCK rather than multiplied by a count, because a
-   * heading gets a taller one than a paragraph does. The first block has no gap
-   * above it — the route's `marginTop: i === 0 ? 0 : …` — so it is skipped here
-   * too, and the two have to keep agreeing or the image and its declared height
-   * drift apart.
-   */
-  const gaps = blocks
-    .slice(1)
-    .reduce(
-      (sum, block) => sum + (block.kind === "heading" ? HEADING_GAP : PARA_GAP),
-      0,
-    );
-
-  // The cover and the block beside it are centred on each other, so the header row
-  // is as tall as whichever is taller.
-  const headerText =
-    META_LINE +
-    TITLE_GAP +
-    titleLines * TITLE_LINE +
-    (originalLines ? ORIGINAL_GAP + originalLines * ORIGINAL_LINE : 0);
-
-  /**
-   * The three stacks the canvas is made of, so a part is a SUM OF THE ONES IT
-   * DRAWS rather than the total with terms subtracted back out. Every part pays
-   * `frame` — the masthead, the card's padding and the slack are on all of them.
+   * Which block gets the opening indent: the first one that is PROSE.
    *
-   * `PARAS_GAP` belongs to `body` only when something sits above it, which is
-   * why it is applied at the part below and not inside `body`: on part 2 the
-   * paragraphs are the card's first child and the route sets no margin there.
+   * Not simply block 0. A summary can open on a `## heading`, and a heading is a
+   * label rather than the start of the writing — indenting it would put the
+   * article's opening mark on something that is not the opening sentence.
    */
-  const frame =
-    PADDING +
-    DOMAIN_ROW +
-    POSTER.domainGap +
-    BRAND_ROW +
-    CARD_TOP +
-    CARD_PAD +
-    SLACK;
-  const head =
-    Math.max(POSTER.cover, headerText) + THESIS_GAP + thesisLines * THESIS_LINE;
-  const body = bodyLines * PARA_LINE + gaps;
+  const opening = parsed.findIndex((block) => block.kind !== "heading");
+  const blocks = parsed.map((block, i) => {
+    const heading = block.kind === "heading";
+    const indented = i === opening;
+    return {
+      heading,
+      indented,
+      // The very first block of the summary has nothing above it anywhere.
+      gap: i === 0 ? 0 : heading ? POSTER.headingGap : POSTER.paraGap,
+      // Only the indented line is broken against a narrower column.
+      lines: layoutParagraph(block.text, indented ? INDENT_UNITS : 0),
+    };
+  });
 
-  if (part === 1) return Math.round(frame + head);
-  if (part === 2) return Math.round(frame + body);
-  return Math.round(frame + head + PARAS_GAP + body);
+  /**
+   * PACKED TWICE, and the second pass is the point.
+   *
+   * Filling each page to BODY_BUDGET and starting a new one when it overflows is
+   * the obvious way and it produces a WIDOW: a summary needing 3.1 pages puts 0.1
+   * of a page on the fourth, which renders as one paragraph alone under the
+   * masthead with two-thirds of the canvas empty under it. Measured on a real
+   * article: pages of 15, 15, 15 and 2 lines.
+   *
+   * So the budget decides HOW MANY pages, and then the lines are spread as evenly
+   * over that many as the text allows.
+   *
+   * "As allows" is doing real work there, and the naive version of this was wrong:
+   * packing to a flat `total / pages` target CAN NEED MORE PAGES than the greedy
+   * pass did, because a page break has to land on a row that the orphan rule and
+   * the block boundaries permit — asked for four pages of 12 lines, the same
+   * article came back as five. So the target is raised a line at a time until the
+   * page count is back down to what the budget actually requires. The first target
+   * that fits is the flattest one reachable, the loop is bounded by the budget it
+   * walks toward, and greedy is the floor it can always fall back on.
+   */
+  const greedy = pack(blocks, BODY_BUDGET);
+  if (greedy.length < 2) return greedy;
+
+  const total = greedy.reduce((sum, page) => sum + heightOf(page), 0);
+  for (
+    let target = Math.ceil(total / greedy.length);
+    target < BODY_BUDGET;
+    target += PARA_LINE
+  ) {
+    const balanced = pack(blocks, target);
+    if (balanced.length <= greedy.length) return balanced;
+  }
+  return greedy;
+}
+
+/** The drawn height of one page's rows: every row is a line, plus its own gap. */
+function heightOf(page: PosterRow[]): number {
+  return page.reduce((sum, row) => sum + row.gap + PARA_LINE, 0);
+}
+
+/**
+ * Lay the blocks out onto pages no taller than `budget`.
+ *
+ * ROW BY ROW, not block by block. Blocks would be the tidier unit and it is the
+ * wrong one: `PARA_MAX` keeps a paragraph inside a page today, but nothing in the
+ * renderer enforces that, and a block that did not fit would silently run off a
+ * canvas that can no longer grow to hold it. Rows are all one height, so packing
+ * them cannot overflow.
+ */
+function pack(
+  blocks: Array<{
+    heading: boolean;
+    indented: boolean;
+    gap: number;
+    lines: string[];
+  }>,
+  budget: number,
+): PosterRow[][] {
+  const pages: PosterRow[][] = [];
+  let page: PosterRow[] = [];
+  let used = 0;
+
+  const flush = () => {
+    if (page.length) pages.push(page);
+    page = [];
+    used = 0;
+  };
+
+  blocks.forEach((block, at) => {
+    const next = blocks[at + 1];
+    /**
+     * What this block needs before the page is allowed to start it — its own gap
+     * and rows, plus the first row of the block below when this one is a heading.
+     * That trailing term IS the orphan rule: without it the heading fits, the
+     * paragraph does not, and the page ends on a promise.
+     */
+    const owed =
+      (page.length ? block.gap : 0) +
+      block.lines.length * PARA_LINE +
+      (block.heading && next ? next.gap + PARA_LINE : 0);
+    if (page.length && used + owed > budget) flush();
+
+    block.lines.forEach((text, row) => {
+      const gap = row === 0 && page.length ? block.gap : 0;
+      // A block long enough to outrun a page on its own splits here rather than
+      // overflowing. PARA_MAX means it should not happen; the canvas is fixed, so
+      // "should not" is not a good enough reason to let it clip.
+      if (page.length && used + gap + PARA_LINE > budget) flush();
+      page.push({
+        text,
+        heading: block.heading,
+        gap: page.length ? gap : 0,
+        // The opening paragraph's first line and nothing else. A paragraph that
+        // spills onto the next page resumes flush either way: the indent marks
+        // where the prose STARTS, not the top of a column.
+        indent: row === 0 && block.indented,
+      });
+      used += gap + PARA_LINE;
+    });
+  });
+
+  flush();
+  return pages;
+}
+
+/**
+ * How many images this article's share carries: the identity card, plus one per
+ * page of prose.
+ *
+ * Computed on the SERVER and handed to the share sheet as a number, because the
+ * sheet has to build that many URLs and previews and has no summary text to count
+ * from — see the `parts` prop on ShareButton.
+ */
+export function posterParts(summary: SummaryText): number {
+  return 1 + posterPages(summary).length;
 }
