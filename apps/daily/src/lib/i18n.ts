@@ -34,8 +34,6 @@ import type { Lang } from "./lang";
 const STRINGS = {
   zh: {
     brand: "每日干货",
-    /** Follows the brand in a <title>, e.g. "每日干货 — 技术博客每日摘要". */
-    titleTag: "技术博客每日摘要",
     notFoundTitle: "未找到",
 
     allTab: "全部",
@@ -82,7 +80,6 @@ const STRINGS = {
 
   en: {
     brand: "Daily Takes",
-    titleTag: "A daily digest of the blogs worth reading",
     notFoundTitle: "Not found",
 
     allTab: "All",

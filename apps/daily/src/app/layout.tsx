@@ -19,9 +19,9 @@ const OG_LOCALE: Record<Lang, string> = { zh: "zh_CN", en: "en_US" };
 /**
  * ONE language per document, title included.
  *
- * This was a static `metadata` holding "每日干货 · Daily Takes — 技术博客每日摘要"
- * and a description written half in each language, so the browser tab said the
- * site's name twice no matter which side you were reading. A function instead,
+ * This was a static `metadata` holding the brand in both languages at once plus a
+ * description written half in each, so the browser tab said the site's name twice
+ * no matter which side you were reading. A function instead,
  * because the language is only knowable at request time — see RootLayout below
  * for why it comes from a header rather than from the route.
  *
@@ -33,7 +33,14 @@ const OG_LOCALE: Record<Lang, string> = { zh: "zh_CN", en: "en_US" };
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await langFromHeader();
   const t = strings(lang);
-  const title = `${t.brand} — ${t.titleTag}`;
+  /**
+   * THE BRAND ALONE. There was a tagline after an em dash — "值得一读的博客文章
+   * 摘要", and before that a subject claim — and both were spending the front of
+   * every browser tab, bookmark and search result on a sentence nobody reads
+   * twice. A masthead does not explain itself; `description` below is where an
+   * explanation belongs, and it is still there.
+   */
+  const title = t.brand;
 
   return {
     metadataBase: new URL(SITE),

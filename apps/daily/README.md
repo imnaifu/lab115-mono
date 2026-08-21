@@ -1,6 +1,6 @@
 # apps/daily — daily.lab115.com
 
-每天 LA 时间早上 7:00 抓一遍订阅的技术博客，用 DeepSeek 提炼中文观点摘要，
+每天 LA 时间早上 7:00 抓一遍订阅的博客，用 DeepSeek 提炼中文观点摘要，
 生成一张适合截图分享的竖版长图页面，同时把当天结果以 JSON 提交到
 [`github.com/imnaifu/files`](https://github.com/imnaifu/files)。
 

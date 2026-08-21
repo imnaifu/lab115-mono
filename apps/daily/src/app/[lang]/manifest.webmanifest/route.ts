@@ -44,7 +44,11 @@ function manifest(lang: Lang) {
 
   return {
     id: `/${lang}`,
-    name: `${t.brand} — ${t.titleTag}`,
+    // `name` and `short_name` are the same string now that the title carries no
+    // tagline. Both are kept rather than one: a manifest without `short_name` is
+    // free to truncate `name` itself for a home-screen label, and this way there
+    // is nothing to truncate.
+    name: t.brand,
     short_name: t.brand,
     description: t.tagline,
     lang: lang === "zh" ? "zh-CN" : "en-US",
