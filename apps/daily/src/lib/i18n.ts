@@ -73,7 +73,16 @@ const STRINGS = {
     emptyTitle: "今日无更新",
     emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天同一时间再来。",
 
-    tagline: "每天早上把订阅的博客读一遍，提炼成中英双语的观点摘要。",
+    /**
+     * The footer's line, and the description on every page and in the manifest.
+     *
+     * It said 中英双语 and there has been no English half for a while — one
+     * summary, in Chinese, rendered the same on `/zh` and `/en`. The Chinese copy
+     * simply drops the claim; the English one below says which language instead of
+     * dropping it, because an English reader arriving at `/en` is exactly who needs
+     * telling what they are about to read.
+     */
+    tagline: "每天早上把订阅的博客读一遍，提炼成观点摘要。",
 
     /** "2026年8月14日 · 星期五" */
     date: (y: number, m: number, d: number, weekday: number) =>
@@ -118,7 +127,7 @@ const STRINGS = {
     emptyBody: "No new posts from any source in the last 24 hours. Same time tomorrow.",
 
     tagline:
-      "Every morning, the subscribed blogs read and boiled down to bilingual takes.",
+      "Every morning, the subscribed blogs read and boiled down to takes in Chinese.",
 
     /** "Friday, 14 August 2026" */
     date: (y: number, m: number, d: number, weekday: number) =>

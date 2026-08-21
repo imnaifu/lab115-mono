@@ -6,6 +6,7 @@ import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang, otherLang, type Lang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/config";
+import { alternatesFor } from "@/lib/seo";
 import "@/index.css";
 
 /** What both the layout and its metadata need: see the note on RootLayout. */
@@ -46,7 +47,10 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE),
     title,
     description: t.tagline,
-    alternates: { canonical: `${SITE}/` },
+    // The home page in both languages — see alternatesFor. It used to declare
+    // `${SITE}/` as its own canonical, which is the URL that REDIRECTS here: a
+    // canonical pointing at a 307 is a canonical a crawler cannot follow.
+    alternates: alternatesFor(lang, "/"),
     openGraph: {
       type: "website",
       title,

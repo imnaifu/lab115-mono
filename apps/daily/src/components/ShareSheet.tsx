@@ -23,23 +23,25 @@ function displayOrder(parts: number): number[] {
 }
 
 /**
- * The order the set is handed to `navigator.share` — DISPLAY ORDER REVERSED.
+ * The order the set is handed to `navigator.share`. THE SAME as display order —
+ * and it exists as its own function because it briefly was not.
  *
- * Measured on a real share, not guessed: sent as [card, prose] the attachments
- * arrive at the target with the prose first and the card second. The receiving app
- * stacks what it is given in reverse and there is no field that says otherwise, so
- * the compensation has to live somewhere, and this is the only place that knows it
- * is compensating.
+ * The history is worth keeping because it is the trap: an early two-image share
+ * came back from a target with the prose first and the card second, so this
+ * returned the list reversed to compensate. With four images it was still wrong,
+ * and reversing a reversal cannot be — which means the target was never reversing
+ * anything and the compensation was the whole of the bug. The likeliest reading of
+ * the original observation is that it came from a different app; WeChat and 小红书
+ * implement their share extensions separately and nothing says they agree.
  *
- * The preview still renders display order. That is the point of splitting the two:
- * what a preview owes the reader is the order they will see in the app they are
- * sharing to, not the order the bytes travel in.
- *
- * If a target ever stops reversing, THIS is the function to change — the preview,
- * the probe and the file names are deliberately not tied to it.
+ * SO: DO NOT ADD A REVERSE HERE ON ONE OBSERVATION. If a target ever really does
+ * reorder, the way to find out is the page counter drawn on every image — `1/4`,
+ * `2/4` — which says what each image is regardless of where it landed. Read the
+ * counters in the app, then change this one line, and note WHICH app it was for:
+ * a single global order cannot satisfy two targets that disagree.
  */
 function shareOrder(parts: number): number[] {
-  return displayOrder(parts).reverse();
+  return displayOrder(parts);
 }
 
 /**
@@ -325,9 +327,8 @@ export function ShareSheet({
    */
   function warm() {
     if (!canShareFiles || warmed.current) return;
-    // Share order, not display order — see the note on `shareOrder`. The file
-    // NAMES still carry the part number, so `…-1.png` is the card whichever
-    // position it travels in.
+    // Through `shareOrder` rather than `shown` directly — see the note there. The
+    // two agree today; the seam is what makes a future disagreement one line.
     warmed.current = Promise.all(
       shareOrder(parts).map((part) =>
         posterFile(
@@ -460,9 +461,9 @@ export function ShareSheet({
           new Promise<null>((resolve) => setTimeout(resolve, POSTER_WAIT_MS, null)),
         ])
       : null;
-    // Already in SHARE_ORDER — `warm` fetched them that way — so this only drops
-    // whichever leg failed. Never re-sort here: the order is decided once, at
-    // SHARE_ORDER, and a second opinion about it in this function is how the two
+    // Already in send order — `warm` fetched them that way — so this only drops
+    // whichever leg failed. Never re-sort here: the order is decided once, in
+    // `shareOrder`, and a second opinion about it in this function is how the two
     // would drift apart.
     const files = (ready ?? []).filter((file): file is File => file !== null);
 

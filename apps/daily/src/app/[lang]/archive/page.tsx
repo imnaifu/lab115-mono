@@ -4,6 +4,7 @@ import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { dateKey } from "@/lib/config";
 import { notFound } from "next/navigation";
+import { alternatesFor } from "@/lib/seo";
 import { readDigest, listDates } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +16,17 @@ export async function generateMetadata({
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const t = strings(isLang(lang) ? lang : DEFAULT_LANG);
-  return { title: `${t.archiveTitle} · ${t.brand}` };
+  const pageLang = isLang(lang) ? lang : DEFAULT_LANG;
+  const t = strings(pageLang);
+  const dates = await listDates();
+  return {
+    title: `${t.archiveTitle} · ${t.brand}`,
+    // What the page actually offers, which is a count of days. It had no
+    // description at all, so a result for it showed the site's tagline and looked
+    // like a second home page.
+    description: `${t.days(dates.length)} · ${t.tagline}`,
+    alternates: alternatesFor(pageLang, "/archive"),
+  };
 }
 
 export default async function Archive({

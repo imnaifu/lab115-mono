@@ -11,6 +11,7 @@ import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
 import { POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
 import { sourceOf } from "@/lib/sources";
 import { articlePath } from "@/lib/links";
+import { alternatesFor, JsonLd, publisher } from "@/lib/seo";
 import { readArticle } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -55,12 +56,23 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     // not a second identity for it.
     title: `${article.title} · ${t.brand}`,
     description: summary.thesis,
-    alternates: { canonical: `${SITE}${path}` },
+    // Both languages, not just this one — see alternatesFor. `path` is already
+    // language-prefixed, so the bare form is rebuilt from the pieces.
+    alternates: alternatesFor(pageLang, articlePath(date, article.id)),
     openGraph: {
       type: "article",
       title: article.title,
       description: summary.thesis,
       url: `${SITE}${path}`,
+      /**
+       * The three fields an `article` og object is supposed to carry and did not.
+       * `type: "article"` on its own tells a crawler the shape and then withholds
+       * everything that shape is for — when it was published, who wrote it, what
+       * it is about.
+       */
+      publishedTime: article.publishedAt,
+      ...(article.author ? { authors: [article.author] } : {}),
+      section: categoryOf(article.category).nameEn,
       images: [
         {
           // No `?part=` — the route's default IS part 1, which is what a caller
@@ -95,6 +107,50 @@ export default async function ArticlePage({ params }: Params) {
 
   return (
     <PageShell>
+      {/**
+       * The summary, as a thing with a date, a source and a subject.
+       *
+       * THE HONESTY OF THIS MARKUP IS THE WHOLE DESIGN. What this page holds is
+       * OUR summary OF SOMEONE ELSE'S article, and the two easy ways to mark that
+       * up are both lies: naming the original's author as `author` claims they
+       * wrote this text, and omitting the original entirely claims there isn't
+       * one.
+       *
+       * So `author` is the site — we wrote the summary — and `isBasedOn` carries
+       * the original with its own byline and publisher. That is exactly what
+       * schema.org defines isBasedOn for, and it is also the link that tells a
+       * crawler this page is derivative rather than a competing copy of the
+       * source, which is what stops it being read as scraped content.
+       */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "@id": `${SITE}${path}`,
+          mainEntityOfPage: `${SITE}${path}`,
+          headline: article.title,
+          ...(article.titleZh ? { alternativeHeadline: article.titleZh } : {}),
+          description: article.summary.zh.thesis,
+          // The summary is Chinese whichever page it is rendered on — see the
+          // note on `Summary`. Saying `en-US` here because the chrome is English
+          // would misdescribe the body.
+          inLanguage: "zh-CN",
+          datePublished: article.publishedAt,
+          image: `${SITE}${path}/share.png`,
+          author: publisher(t.brand),
+          publisher: publisher(t.brand),
+          articleSection: category.nameEn,
+          isBasedOn: {
+            "@type": "Article",
+            url: article.url,
+            name: article.title,
+            ...(article.author
+              ? { author: { "@type": "Person", name: article.author } }
+              : {}),
+            publisher: { "@type": "Organization", name: source.name, url: source.site },
+          },
+        }}
+      />
       <Masthead
         title={t.brand}
         lang={lang}

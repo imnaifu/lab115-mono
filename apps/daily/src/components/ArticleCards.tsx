@@ -95,7 +95,7 @@ function Actions({
 }
 
 /**
- * Every published article — full card with cover and bilingual summary.
+ * Every published article — full card with cover and summary.
  *
  * There used to be an `ArticleRow` beside this one, carrying everything past a
  * section's `cardCount` as a single line. It existed because nothing was ever
