@@ -64,6 +64,16 @@ function shareOrder(parts: number): number[] {
 const POSTER_WAIT_MS = 2000;
 
 /**
+ * Milliseconds between the clicks that save a set of images.
+ *
+ * Not a guess at politeness: fired back to back, Chrome treats the burst as one
+ * event and keeps only the first download. Spaced out, each click is its own. 400
+ * is comfortably past where that starts working and still finishes a four-image
+ * share inside a second and a half. See `saveAll`.
+ */
+const SAVE_GAP_MS = 400;
+
+/**
  * The poster as a `File`, or null for anything at all going wrong.
  *
  * Null rather than a throw because every caller's answer to a failure is the
@@ -218,6 +228,22 @@ export function ShareSheet({
   const t = strings(lang);
   const dialog = useRef<HTMLDialogElement>(null);
   const shown = displayOrder(parts);
+  /**
+   * Whether `saveAll` is walking the list. TWO OF THEM, and they are not
+   * redundant.
+   *
+   * The REF is the guard. A second click has to be rejected synchronously, and
+   * state cannot do that: `setSaving(true)` does not change the `saving` the
+   * running handler closed over, so a double click inside one render passed the
+   * check and started every download twice — which is the surest way to trip the
+   * very blocker the gap between clicks exists to avoid. Measured: the button read
+   * `disabled === false` immediately after its own click.
+   *
+   * The STATE is the appearance. `disabled` has to come from something React
+   * renders, and a ref does not trigger a render.
+   */
+  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
 
   /**
    * Whether this browser has a share sheet of its own, and whether it takes
@@ -461,6 +487,51 @@ export function ShareSheet({
     }
   }
 
+  /**
+   * Save every image, from one click, DESKTOP ONLY.
+   *
+   * One synthetic `<a download>` per part, clicked in turn. There is no browser
+   * API for "save these four files", and the two alternatives were worse: a
+   * numbered link per image is what this replaces — five pills over two rows
+   * under a thumbnail strip that had just been compacted to fit — and a server
+   * side archive hands back a container the reader then has to open.
+   *
+   * THE BROWSER WILL INTERRUPT THIS, and that is expected rather than a bug.
+   * Chrome treats a second programmatic download from one gesture as something to
+   * ask about: it shows a "download multiple files" prompt, and once the reader
+   * allows it for the origin every later share saves silently. Firefox allows it;
+   * Safari is the least predictable. What matters is that the failure mode is a
+   * VISIBLE prompt rather than files that quietly never arrive.
+   *
+   * The gap between clicks is what makes them all land. Fired in a tight loop,
+   * Chrome coalesces the burst and drops most of it; a few hundred milliseconds
+   * apart, each is its own download. The anchor has to be in the document before
+   * it is clicked — Firefox ignores a click on a detached one.
+   */
+  async function saveAll() {
+    // The ref, not the state — see the note on both.
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      for (const [at, part] of shown.entries()) {
+        if (failed[at]) continue;
+        const link = document.createElement("a");
+        link.href = posterPartUrl(poster, part);
+        link.download = `${title.slice(0, 40)}-${part}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        if (at < shown.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, SAVE_GAP_MS));
+        }
+      }
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
   return (
     <dialog
       ref={dialog}
@@ -519,43 +590,71 @@ export function ShareSheet({
          */}
         {asked && !previewFailed ? (
           <div className="flex flex-col gap-2">
-            {/* BOTH images, stacked in send order — the preview is only worth
-                having if it is the same thing that leaves the device, and the
-                share now carries two. 30vh each rather than the 38 one had, so
-                the pair plus the tiles still fits the dialog's 90vh before it
-                has to scroll.
-
-                A part that failed twice is dropped and the other stays: the two
-                are separate requests, and hiding the good one because its
-                neighbour never arrived would be throwing away the half that
-                works. */}
-            {shown.map((part, i) =>
-              failed[i] ? null : (
-                <img
-                  key={part}
-                  /**
-                   * `&retry=1` on the second attempt, because without it the
-                   * reload would be served the same failed entry out of the HTTP
-                   * cache. `part` is a real parameter the route reads; `retry` is
-                   * ignored by it and exists only to miss the cache — which is
-                   * why the two are appended rather than either replacing the
-                   * other.
-                   */
-                  src={
-                    attempts[i] === 0
-                      ? posterPartUrl(poster, part)
-                      : `${posterPartUrl(poster, part)}&retry=${attempts[i]}`
-                  }
-                  alt={title}
-                  className="mx-auto max-h-[30vh] w-auto rounded-[12px] shadow-soft"
-                  onError={() =>
-                    setAttempts((was) =>
-                      was.map((n, at) => (at === i ? n + 1 : n)),
-                    )
-                  }
-                />
-              ),
-            )}
+            {/**
+             * EVERY image, in display order, as a ROW OF THUMBNAILS.
+             *
+             * They were stacked full-width at 30vh each, which was fine for one
+             * and impossible for four: a share is three to five images now, and
+             * four of them plus the destination tiles and the action pills ran
+             * well past the dialog's 90vh, so the reader had to scroll to reach
+             * the button they opened the sheet for.
+             *
+             * A thumbnail this size cannot be read, and that is the trade being
+             * made deliberately. What a preview owes the reader here is the SHAPE
+             * of what is about to leave the device — how many images, in what
+             * order, roughly what they look like — not a legible copy of it. The
+             * full-resolution file is what gets shared and what a long press saves
+             * either way; CSS sizing does not reach it.
+             *
+             * FOUR TO A ROW, wrapping — not a scroller. Four is what the dialog's
+             * width holds at a readable-enough size, and it is also what most
+             * shares have, so the common case is exactly one row.
+             *
+             * `flex-wrap` with a computed basis rather than `grid-cols-4`, because
+             * a grid's four tracks are always four tracks: three thumbnails would
+             * sit left-aligned with a visible hole where the fourth would be, and
+             * three is the most common count of all. Wrapping items plus
+             * `justify-center` centre whatever there are, and a fifth drops to a
+             * second row centred under them.
+             *
+             * The basis is the row minus its three gaps, quartered — `gap-2` is
+             * 0.5rem, so that is 1.5rem of gap to take out. Only the WIDTH is set:
+             * height follows from the poster's own 3:4, so nothing is stretched and
+             * a change to the canvas ratio needs no change here.
+             *
+             * A part that failed twice is dropped and its neighbours stay: each is
+             * a separate request, and hiding a good image because the one after it
+             * never arrived would throw away the half that works.
+             */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {shown.map((part, i) =>
+                failed[i] ? null : (
+                  <img
+                    key={part}
+                    /**
+                     * `&retry=1` on the second attempt, because without it the
+                     * reload would be served the same failed entry out of the
+                     * HTTP cache. `part` is a real parameter the route reads;
+                     * `retry` is ignored by it and exists only to miss the cache
+                     * — which is why the two are appended rather than either
+                     * replacing the other.
+                     */
+                    src={
+                      attempts[i] === 0
+                        ? posterPartUrl(poster, part)
+                        : `${posterPartUrl(poster, part)}&retry=${attempts[i]}`
+                    }
+                    alt={title}
+                    className="w-[calc((100%-1.5rem)/4)] flex-none rounded-[10px] shadow-soft"
+                    onError={() =>
+                      setAttempts((was) =>
+                        was.map((n, at) => (at === i ? n + 1 : n)),
+                      )
+                    }
+                  />
+                ),
+              )}
+            </div>
             {/* Said only where the gesture exists, and said at all because a
                 long press is invisible: nothing about an image announces that
                 holding it will file it away. */}
@@ -644,24 +743,37 @@ export function ShareSheet({
              * the long press it was hidden in favour of needs an image to press.
              * Exactly one route to a saved file, always — never both, never none.
              *
-             * ONE LINK PER IMAGE, numbered when there is more than one. A single
-             * link would hand over the cover and quietly drop the prose — the whole
-             * summary, which is the part worth keeping — and there is no such thing
-             * as downloading a set in one click: the sandbox permits a link the
-             * reader clicks, not a script that saves four files.
+             * ONE CONTROL, whatever the share holds.
+             *
+             * It was one numbered link per image — "保存图片 1", "保存图片 2" … —
+             * which worked and read as clutter: four parts meant five pills over
+             * two rows, directly under a thumbnail strip that had just been
+             * compacted to fit one.
+             *
+             * A SET IS A BUTTON, a single image is still a link. The distinction is
+             * not cosmetic: one file needs no script, and an anchor is the element
+             * that means "this saves a file" — middle-click, copy-link and the
+             * context menu all keep working. Only the many-file case needs the loop
+             * in `saveAll`, and only because no browser offers anything better.
              */}
-            {touch && !previewFailed
-              ? null
-              : shown.map((part) => (
-                  <a
-                    key={part}
-                    href={posterPartUrl(poster, part)}
-                    download={`${title.slice(0, 40)}-${part}.png`}
-                    className={ACTION}
-                  >
-                    {parts > 1 ? `${t.saveImage} ${part}` : t.saveImage}
-                  </a>
-                ))}
+            {touch && !previewFailed ? null : parts > 1 ? (
+              <button
+                type="button"
+                onClick={saveAll}
+                disabled={saving}
+                className={`${ACTION} disabled:opacity-50`}
+              >
+                {t.saveAll}
+              </button>
+            ) : (
+              <a
+                href={posterPartUrl(poster, 1)}
+                download={`${title.slice(0, 40)}.png`}
+                className={ACTION}
+              >
+                {t.saveImage}
+              </a>
+            )}
 
           </div>
         </div>

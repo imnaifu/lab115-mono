@@ -65,3 +65,4 @@ export function posterPart(value: string | null): number {
 export function posterPartUrl(base: string, part: number): string {
   return part <= 1 ? base : `${base}?part=${part}`;
 }
+

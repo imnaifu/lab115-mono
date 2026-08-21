@@ -143,17 +143,18 @@ export const POSTER = {
    *  taller one, exactly as `Summary` gives it `-mb-1` against the page's gap. */
   paraGap: 20,
   /**
-   * The opening indent: the article's FIRST line starts two characters in.
+   * The opening indent: two characters in, ONCE PER ARTICLE.
    *
-   * Once per article, not once per paragraph. The full 段首缩进 convention indents
-   * every paragraph; here the paragraphs are already separated by a blank line's
-   * worth of gap, so indenting each one as well marks the same break twice. What
-   * is left is the one thing the gaps cannot say — where the prose begins.
+   * Not once per paragraph — the full 段首缩进 convention indents every one, and
+   * here the paragraphs are already separated by a gap, so indenting each marks
+   * the same break twice. Not once per image either, which was tried: the indent
+   * says where the writing starts, and it starts once.
    *
-   * Two full-width characters, so it is `paraSize * 2` rather than a number of
-   * its own. The page says the same thing as `indent-[2em]`, the same measure in
-   * the unit a browser has. INDENT_UNITS below is this in the line breaker's
-   * units and has to stay in step with it.
+   * Two full-width characters, so it is `paraSize * 2` rather than a number of its
+   * own. INDENT_UNITS is this in the line breaker's units and has to stay in step
+   * with it, and the page's `indent-[2em]` is the same measure in the unit a
+   * browser has — see `opening` in Summary.tsx, which picks the same paragraph the
+   * same way.
    */
   indent: 64,
   headingGap: 26,
@@ -473,7 +474,7 @@ export interface PosterRow {
   gap: number;
   /** Drawn 2em in from the margin. True on EXACTLY ONE row per article — the
    *  first line of its opening paragraph — so it is false on every row of every
-   *  page after the first. See POSTER.indent. */
+   *  page after the one that carries it. See POSTER.indent. */
   indent: boolean;
 }
 
@@ -495,11 +496,20 @@ export interface PosterRow {
 export function posterPages(summary: SummaryText): PosterRow[][] {
   const parsed = blocksOf(posterClean(summary.text ?? ""));
   /**
-   * Which block gets the opening indent: the first one that is PROSE.
+   * The one block that gets the indent: the first one that is PROSE.
    *
-   * Not simply block 0. A summary can open on a `## heading`, and a heading is a
-   * label rather than the start of the writing — indenting it would put the
-   * article's opening mark on something that is not the opening sentence.
+   * ONCE PER ARTICLE. Once per IMAGE was tried — every page of a share opening
+   * with the mark, on the argument that each image is seen alone — and it is not
+   * what this wants: the indent says "the writing starts here", and it starts
+   * once. A page that happens to be second is not a second beginning.
+   *
+   * Not simply block 0 either. A summary can open on a `## heading`, and a heading
+   * is a label rather than the start of the writing, so indenting it would put the
+   * mark on something that is not the opening sentence.
+   *
+   * Being per-article rather than per-page is also what keeps this out of `pack`:
+   * the decision depends only on the text, so line breaking can apply the exact
+   * handicap below instead of applying it to every paragraph in case.
    */
   const opening = parsed.findIndex((block) => block.kind !== "heading");
   const blocks = parsed.map((block, i) => {
@@ -510,7 +520,7 @@ export function posterPages(summary: SummaryText): PosterRow[][] {
       indented,
       // The very first block of the summary has nothing above it anywhere.
       gap: i === 0 ? 0 : heading ? POSTER.headingGap : POSTER.paraGap,
-      // Only the indented line is broken against a narrower column.
+      // Only the line that is drawn indented is broken against a narrower column.
       lines: layoutParagraph(block.text, indented ? INDENT_UNITS : 0),
     };
   });

@@ -1,25 +1,20 @@
-import { renderPoster } from "@/lib/poster";
-import { readPoster, writePoster } from "@/lib/poster-store";
+import { posterBytes } from "@/lib/poster-serve";
 import { POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
 import { posterPart } from "@/lib/links";
 import { DEFAULT_LANG, isLang } from "@/lib/lang";
-import { readArticle } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 /**
  * One image of an article's share, as a PNG.
  *
- * THE LAYOUT IS NOT HERE. It is in lib/poster.tsx, because the daily job renders
- * these too — every image of every article, written to disk the moment a digest
- * is — and two copies of that JSX would drift on the first edit. This handler is
- * the cache in front of it: serve the file if the job already made it, render and
- * keep it if not.
+ * THE LAYOUT IS NOT HERE, and neither is the caching. The layout is lib/poster.tsx
+ * — the daily job renders every image of every article the moment a digest is
+ * written, and two copies of that JSX would drift on the first edit. The
+ * cache-or-render step is lib/poster-serve.ts, because a cache miss is a policy
+ * decision — render it and keep it — rather than an HTTP one.
  *
- * A miss is ordinary, not a fault. A fresh container has an empty volume, a digest
- * from before the job pre-rendered anything has no files at all, and the cache
- * prunes dates past a month. All of those land here and render, which is exactly
- * what this route did for its whole life before the cache existed.
+ * What is left here is the HTTP: which part was asked for, and the headers.
  *
  * A route handler rather than Next's `opengraph-image` file convention, because
  * that convention gives one image per page and a share is a set of them.
@@ -34,25 +29,10 @@ export async function GET(
   // note on the cache key in lib/poster-store.ts.
   const posterLang = isLang(lang) ? lang : DEFAULT_LANG;
 
-  const cached = await readPoster(date, id, posterLang, part);
-  if (cached) return png(cached);
-
-  const found = await readArticle(date, id);
-  if (!found) return new Response("Not found", { status: 404 });
-
-  const bytes = await renderPoster({
-    article: found.article,
-    date,
-    lang: posterLang,
-    part,
-  });
-  // null means the article has no such part — a stale link, or someone counting
-  // past the end. A 404 says so; a blank canvas would not.
-  if (!bytes) return new Response("No such part", { status: 404 });
-
-  // Not awaited for its own sake — the reader is waiting on the image, not on the
-  // cache write, and a failed write is already swallowed inside.
-  void writePoster(date, id, posterLang, part, bytes);
+  const bytes = await posterBytes(date, id, posterLang, part);
+  // null covers both "no such article" and "no such part" — a stale link, or
+  // someone counting past the end. A 404 says so; a blank canvas would not.
+  if (!bytes) return new Response("Not found", { status: 404 });
   return png(bytes);
 }
 

@@ -48,6 +48,8 @@ const STRINGS = {
     copyLink: "复制链接",
     copied: "已复制链接",
     saveImage: "保存图片",
+    /** Every image at once, when a share has more than one. */
+    saveAll: "保存所有图片",
     /** Only shown on a touch screen, where a long press is the gesture. */
     pressToSave: "长按任一张图可以存到相册",
     /** The sheet's own heading, so it repeats the button that opened it. */
@@ -94,6 +96,7 @@ const STRINGS = {
     copyLink: "Copy link",
     copied: "Link copied",
     saveImage: "Save image",
+    saveAll: "Save all images",
     pressToSave: "Press and hold either image to save it to your photos",
     shareTo: "Share to",
     close: "Close",
