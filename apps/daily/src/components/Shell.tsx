@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { strings } from "@/lib/i18n";
 import { href, LANGS, otherLang, type Lang } from "@/lib/lang";
+import type { TrackEvent } from "@/lib/track";
 
 /**
  * The chrome both pages wear: the column, the masthead, the footer.
@@ -50,8 +51,6 @@ export const SECTION = "mt-8";
  * choice and the poster, and on every new digest it changes the prose as well.
  */
 export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
-
-  // eslint-disable-next-line no-unreachable
   return (
     <div
       className="flex overflow-hidden rounded-full border border-line bg-paper"
@@ -64,6 +63,12 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
           href={href(code, path)}
           aria-current={code === lang ? "true" : undefined}
           hrefLang={code}
+          /* Only the half that would CHANGE the language: the current one is a
+             link for the reasons in the note above, but pressing it is a no-op
+             and counting it as a switch would inflate the one number this event
+             exists to answer — whether anyone uses the switch at all. */
+          data-track={code === lang ? undefined : "lang_switch"}
+          data-track-to={code === lang ? undefined : code}
           className={`px-3 py-2 text-xs font-bold ${
             code === lang ? "bg-ink text-paper" : "text-ink-soft"
           }`}
@@ -188,15 +193,28 @@ export function EndLink({
   href: to,
   label,
   sub,
+  track: event,
+  trackFrom,
 }: {
   href: string;
   label: string;
   sub: string;
+  /**
+   * Which event this one counts as. NAMED BY THE CALLER rather than derived from
+   * the href, because the same component is the way to the archive, the way back
+   * to today and the way to a single day — three different things a reader wants,
+   * and a regex over a path is a fragile way to tell them apart.
+   */
+  track?: TrackEvent;
+  /** Which page it was pressed on, when the same event exists on two. */
+  trackFrom?: string;
 }) {
   return (
     <a
       href={to}
       className={`${SECTION} flex items-center justify-between gap-4 rounded-card border border-line bg-paper px-6 py-5`}
+      data-track={event}
+      data-track-from={trackFrom}
     >
       <span className="min-w-0">
         <span className="block text-xl font-bold text-ink">{label}</span>

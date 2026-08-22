@@ -185,6 +185,7 @@ export function DigestView({
           href={href(lang, "/archive")}
           label={t.archive}
           sub={t.archiveSub}
+          track="archive_open"
         />
       </div>
 

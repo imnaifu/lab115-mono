@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { Analytics } from "@/components/Analytics";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { ClickTracking } from "@/components/ClickTracking";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang, otherLang, type Lang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
@@ -149,6 +150,9 @@ export default async function RootLayout({
 {children}
         <ServiceWorker />
         <Analytics />
+        {/* One delegated listener for every `data-track` link on the page — see
+            the note there for why the links themselves stay server-rendered. */}
+        <ClickTracking />
       </body>
     </html>
   );

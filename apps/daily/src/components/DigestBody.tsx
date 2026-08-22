@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArticleCard } from "./ArticleCards";
 import { PAD, SECTION, SectionHead } from "./Shell";
 import { strings } from "@/lib/i18n";
+import { track } from "@/lib/track";
 import type { Lang } from "@/lib/lang";
 import { ALL_TAB, type Category } from "@/lib/categories";
 import type { Article } from "@/lib/types";
@@ -76,7 +77,12 @@ export function DigestBody({
           label={t.allTab}
           count={articles.length}
           on={current === ALL_TAB}
-          onClick={() => setActive(ALL_TAB)}
+          onClick={() => {
+            setActive(ALL_TAB);
+            // Whether 全部 is used AT ALL is the open question here: the README
+            // asserts nobody would, and that assertion has never been tested.
+            track("category_tab", { tab: ALL_TAB });
+          }}
         />
         {/* `inCategory` rather than `articles`, which is the whole day — the two
             counts sitting next to each other is precisely where shadowing the
@@ -88,7 +94,10 @@ export function DigestBody({
             count={inCategory.length}
             on={current === category.id}
             accent={category.accent}
-            onClick={() => setActive(category.id)}
+            onClick={() => {
+              setActive(category.id);
+              track("category_tab", { tab: category.id });
+            }}
           />
         ))}
       </nav>

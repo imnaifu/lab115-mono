@@ -214,6 +214,12 @@ export default async function ArticlePage({ params }: Params) {
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
+              /* `from` separates the two places this pill exists: a reader on a
+                 single-article page arrived from a share or a search, which is a
+                 different reader from one scrolling the day's list. */
+              data-track="read_original"
+              data-track-source={article.sourceId}
+              data-track-from="article"
             >
               {t.readFull}
             </a>
@@ -226,6 +232,8 @@ export default async function ArticlePage({ params }: Params) {
           href={langHref(lang, `/d/${date}`)}
           label={t.wholeDay}
           sub={t.wholeDaySub(date, found.digest.stats.shown)}
+          track="day_open"
+          trackFrom="article"
         />
       </div>
 

@@ -77,6 +77,16 @@ function Actions({
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"
+        /**
+         * THE COUNTER-METRIC. This digest exists so that most of the time a
+         * reader does not have to click here, so this number is not a success
+         * measure — it is what the summary is being judged against, per source.
+         *
+         * `data-*` rather than an onClick: see ClickTracking.
+         */
+        data-track="read_original"
+        data-track-source={article.sourceId}
+        data-track-from="list"
       >
         {t.readFull}
       </a>

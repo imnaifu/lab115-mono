@@ -5,6 +5,7 @@ import { ShareSheet } from "./ShareSheet";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import { posterPartUrl } from "@/lib/links";
+import { track } from "@/lib/track";
 
 /**
  * How long the button will wait for the posters before opening the sheet anyway.
@@ -145,6 +146,15 @@ export function ShareButton({
 
     preparingRef.current = true;
     setPreparing(true);
+    track("share_open", { parts });
+    /**
+     * HOW LONG THE READER ACTUALLY WAITED, which is the one number that says
+     * whether the spinner above was worth adding.
+     *
+     * `performance.now` rather than `Date.now`: this is an elapsed duration, and
+     * the monotonic clock cannot be moved by an NTP correction mid-wait.
+     */
+    const started = performance.now();
     try {
       const loaded = await Promise.race([
         Promise.all(
@@ -157,6 +167,14 @@ export function ShareButton({
         ),
       ]);
       if (loaded) readyRef.current = true;
+      track("share_ready", {
+        ms: Math.round(performance.now() - started),
+        // The distinction that matters: a sheet that opened because the images
+        // arrived, versus one that opened because the budget ran out and the
+        // reader is about to see a half-drawn preview.
+        timed_out: !loaded,
+        parts,
+      });
     } finally {
       preparingRef.current = false;
       setPreparing(false);
@@ -167,6 +185,9 @@ export function ShareButton({
   async function copy() {
     try {
       await navigator.clipboard.writeText(new URL(url, location.href).href);
+      // After the write, not before: on http the clipboard throws and nothing
+      // was copied, so counting the attempt would count a failure as a share.
+      track("copy_link");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

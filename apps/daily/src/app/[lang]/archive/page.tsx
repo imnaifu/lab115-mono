@@ -62,6 +62,12 @@ export default async function Archive({
               className="flex items-center justify-between gap-3.5 rounded-xl border border-line bg-paper px-5 py-4"
               key={date}
               href={href(lang, `/d/${date}`)}
+              /* `age` rather than the date itself: which day was opened is not
+                 the question — how far back readers actually reach is, and that
+                 is what says whether the archive is a product or a formality. */
+              data-track="day_open"
+              data-track-from="archive"
+              data-track-age={rows.findIndex((row) => row.date === date)}
             >
               <span className="text-lg font-bold text-ink">{date}</span>
               <span className="text-sm font-bold text-ink-soft">
@@ -73,7 +79,13 @@ export default async function Archive({
       </section>
 
       <div className={PAD}>
-        <EndLink href={href(lang, "/")} label={t.today} sub={t.todaySub} />
+        <EndLink
+          href={href(lang, "/")}
+          label={t.today}
+          sub={t.todaySub}
+          track="today_open"
+          trackFrom="archive"
+        />
       </div>
 
       <Footer year={dateKey(new Date()).slice(0, 4)} lang={lang} />

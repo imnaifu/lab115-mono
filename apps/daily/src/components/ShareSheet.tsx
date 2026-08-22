@@ -5,6 +5,7 @@ import { BRAND, BrandIcon, ShareIcon, type BrandKey } from "./BrandIcons";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import { posterPartUrl } from "@/lib/links";
+import { track } from "@/lib/track";
 
 /**
  * The images a share carries, in the order the reader should SEE them: the
@@ -467,24 +468,46 @@ export function ShareSheet({
     // would drift apart.
     const files = (ready ?? []).filter((file): file is File => file !== null);
 
+    /**
+     * WHAT THE HANDOVER ACTUALLY DID, which nothing here could previously tell.
+     *
+     * The whole uncertainty this function is built around — `canShare` returns
+     * true for a file the platform then silently drops — is invisible from the
+     * inside, and it stays invisible: no API reports it. What CAN be counted is
+     * everything around it, and together those bound the problem. `files` says
+     * how many posters were in hand when the sheet opened; `waited` says whether
+     * the fetch was still running when the reader pressed (the case where a
+     * share degrades to link-only through no fault of the platform).
+     */
+    const shape = { files: files.length, parts, waited: ready === null };
+
     if (files.length) {
       try {
         await navigator.share({ title, text, url: page, files });
+        track("share_result", { ...shape, outcome: "with_files" });
         onClose();
         return;
       } catch (error) {
         // Dismissing the sheet is not a failure to retry — reopening it on the
         // reader who just closed it would be the actual bug.
-        if ((error as Error).name === "AbortError") return;
+        if ((error as Error).name === "AbortError") {
+          track("share_result", { ...shape, outcome: "aborted" });
+          return;
+        }
+        // Anything else and the link-only attempt below is a real fallback
+        // rather than the first try, which is worth telling apart.
+        track("share_result", { ...shape, outcome: "files_rejected" });
       }
     }
 
     try {
       await navigator.share({ title, text, url: page });
+      track("share_result", { ...shape, outcome: "link_only" });
       onClose();
     } catch {
       // AbortError again, or the gesture expired while the poster was awaited.
       // Neither is worth reporting: the buttons on the page still work.
+      track("share_result", { ...shape, outcome: "failed" });
     }
   }
 
@@ -647,11 +670,23 @@ export function ShareSheet({
                     }
                     alt={title}
                     className="w-[calc((100%-1.5rem)/4)] flex-none rounded-[10px] shadow-soft"
-                    onError={() =>
+                    onError={() => {
+                      /**
+                       * Reported on the SECOND failure only — the first is
+                       * retried and usually succeeds, so counting it would turn
+                       * an ordinary dropped chunk into an alarm.
+                       *
+                       * Read off `attempts` before the update rather than inside
+                       * it: a state updater has to stay pure, and firing a
+                       * beacon from one would send it twice under StrictMode.
+                       */
+                      if (attempts[i] >= 1) {
+                        track("poster_failed", { part, parts });
+                      }
                       setAttempts((was) =>
                         was.map((n, at) => (at === i ? n + 1 : n)),
-                      )
-                    }
+                      );
+                    }}
                   />
                 ),
               )}
@@ -676,7 +711,14 @@ export function ShareSheet({
           {/* No `onPointerDown` warmer on this button any more: two posters cannot
               be started inside the gesture, so `warm` runs when the sheet opens. */}
           {canShare ? (
-            <button type="button" onClick={systemShare} className={TILE}>
+            <button
+              type="button"
+              onClick={() => {
+                track("share_target", { target: "system" });
+                systemShare();
+              }}
+              className={TILE}
+            >
               {/* Ink rather than a brand colour, in the same 12% wash as the
                   marks beside it: this tile has no brand, and inventing one for
                   it would make it look like a fifth platform. */}
@@ -696,7 +738,10 @@ export function ShareSheet({
               href={intent.href}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={onClose}
+              onClick={() => {
+                track("share_target", { target: intent.brand });
+                onClose();
+              }}
               className={TILE}
             >
               <span
@@ -760,7 +805,13 @@ export function ShareSheet({
             {touch && !previewFailed ? null : parts > 1 ? (
               <button
                 type="button"
-                onClick={saveAll}
+                onClick={() => {
+                  // `shape` tells the two controls apart: a set is a scripted
+                  // loop the browser can interrupt, a single image is an anchor
+                  // that cannot fail. They are not the same act.
+                  track("save_image", { parts, shape: "set" });
+                  saveAll();
+                }}
                 disabled={saving}
                 className={`${ACTION} disabled:opacity-50`}
               >
@@ -771,6 +822,7 @@ export function ShareSheet({
                 href={posterPartUrl(poster, 1)}
                 download={`${title.slice(0, 40)}.png`}
                 className={ACTION}
+                onClick={() => track("save_image", { parts, shape: "single" })}
               >
                 {t.saveImage}
               </a>
