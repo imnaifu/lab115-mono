@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Analytics } from "@/components/Analytics";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { ClickTracking } from "@/components/ClickTracking";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang, otherLang, type Lang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
@@ -115,7 +116,21 @@ export default async function RootLayout({
      * the page still reports. And there is nothing here to hide — this element
      * is a static `lang="zh"` with no state, no date, no locale formatting.
      */
-    <html lang={lang} suppressHydrationWarning>
+    <html
+      lang={lang}
+      /**
+       * `overscroll-y-contain` TURNS OFF THE PLATFORM'S OWN OVERSCROLL, and it is
+       * what makes PullToRefresh possible rather than being a second indicator
+       * fighting the first: Chrome on Android has a pull-to-refresh of its own,
+       * and iOS rubber-bands the whole document — including the `fixed` badge,
+       * which would ride down with the page it is supposed to be hovering over.
+       *
+       * A Tailwind class on the element rather than a rule in index.css: that file
+       * is tokens only and says so at the top.
+       */
+      className="overscroll-y-contain"
+      suppressHydrationWarning
+    >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -148,6 +163,9 @@ export default async function RootLayout({
       </head>
       <body className="bg-cream font-sans text-ink antialiased">
 {children}
+        {/* Touch screens only, and it attaches nothing on a desktop — see the
+            note in the component. */}
+        <PullToRefresh />
         <ServiceWorker />
         <Analytics />
         {/* One delegated listener for every `data-track` link on the page — see

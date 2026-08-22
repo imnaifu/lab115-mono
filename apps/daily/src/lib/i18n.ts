@@ -58,6 +58,28 @@ const STRINGS = {
     shareTo: "分享到",
     close: "关闭",
     moreApps: "更多",
+
+    /**
+     * The masthead's install control, and the sheet it opens.
+     *
+     * 「App」 IS THE CHINESE WORD, not the English one leaking in — nobody says
+     * 「应用程序」 about a home-screen icon, and 「存成应用」 reads like a file
+     * dialog. Same exemption as a product name: the one-language rule at the top
+     * of this file is about not saying the same thing twice in two scripts, and
+     * this says it once.
+     *
+     * The steps themselves are NOT here — they are the platform branch table in
+     * lib/install.ts, next to the detection that chooses between them. See the
+     * note there for why splitting the two would be worse.
+     */
+    saveApp: "存成 App",
+    saveAppTitle: "把这个页面存成 App",
+    /** The one-tap install, on the browsers that offer one. */
+    installNow: "现在安装",
+    /** Above the steps, and ONLY when the button above them exists. */
+    installManual: "或者手动添加：",
+    installWhy:
+      "装好之后是桌面上一个独立图标，打开就是全屏、没有地址栏，看过的页面离线也还能读。",
     /** A platform name, so it takes the name that platform uses here. */
     weibo: "微博",
 
@@ -113,6 +135,13 @@ const STRINGS = {
     shareTo: "Share to",
     close: "Close",
     moreApps: "More",
+
+    saveApp: "Save as app",
+    saveAppTitle: "Save this page as an app",
+    installNow: "Install now",
+    installManual: "Or add it by hand:",
+    installWhy:
+      "It gets an icon of its own, opens full screen with no address bar, and the pages you have already opened stay readable with no network.",
     weibo: "Weibo",
 
     archive: "Past editions",

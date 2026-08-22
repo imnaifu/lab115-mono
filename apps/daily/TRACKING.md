@@ -49,12 +49,30 @@ GA 自己的传输层处理 unload），而为了一个指标去延迟读者的�
 | `archive_open` | — | 首页 → 归档 | `DigestView.tsx` |
 | `today_open` | `from` | 归档 → 今天 | archive 页 |
 | `day_open` | `from`=`archive`\|`article`、`age` | 打开某一天 | archive 页、文章页 |
+| `install_open` | `platform` `can_prompt` | 按了「存成 App」 | `InstallApp.tsx` |
+| `install_prompt` | `outcome`=`accepted`\|`dismissed`\|`failed`、`platform` | 浏览器自己那个安装弹窗的结局 | `InstallApp.tsx` |
+| `pull_refresh` | — | **下拉刷新真的被用了多少** | `PullToRefresh.tsx` |
 
 事件名在 `lib/track.ts` 里是一个**联合类型**，不是 `string`。GA4 会照单全收任何事件名，
 `shre_open` 会被永久归档成一个独立事件，报表上只表现为少了一部分点击 —— 这种错只有
 编译器能挡住。
 
 ## 几个刻意的决定
+
+**`install_open` 带 `can_prompt`，因为它分成两种完全不同的点击。** `true` 是浏览器给了
+`beforeinstallprompt`（Chrome / Edge），面板里有一个「现在安装」按钮，一下就装完；`false`
+是 Safari 这类什么都不给的，面板里只有分步说明。两者混在一个数里的话，「有多少人真的装
+上了」这个问题就没法答了 —— `can_prompt` 为 `true` 而后面没有跟着 `install_prompt`，说明
+读者看了说明然后把面板关掉了。
+
+**`platform` 就是 `lib/install.ts` 里那个 `GuideKey`**（`ios-safari`、`android-chromium`
+…），不是自由拼出来的字符串。它同时是分支表的键：报表上哪个平台的安装最多，直接对应到
+要去校对哪一段步骤说明。UA 嗅探会猜错，而猜错只会印出错的步骤、不会报错，所以这个维度
+是唯一能发现「某个平台的文案一直是错的」的东西。
+
+**`pull_refresh` 是「这个站被当成 App 在用吗」的唯一指标。** 会下拉的人，是回到了同一个
+窗口而不是重开一个标签页 —— 装没装 GA 的 `display-mode` 维度都看不出这件事。它不带参数：
+数量本身就是答案。
 
 **`read_original` 是反向指标。** 这个 digest 存在就是为了让读者多数时候不用点它，所以
 它不是成功数，是摘要被拿去比对的那个数，按 `source` 分。**不要把它标成 GA 的 key

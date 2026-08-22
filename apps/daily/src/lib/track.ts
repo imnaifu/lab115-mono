@@ -49,6 +49,21 @@ export type TrackEvent =
   | "lang_switch"
   | "archive_open"
   | "today_open"
+  /** The masthead's install control was pressed — one per press, whether or not
+   *  the browser had a native offer to make (`can_prompt` says which). */
+  | "install_open"
+  /**
+   * How the browser's own install dialog ended. Only ever sent where there was
+   * one to show, so `install_open` with `can_prompt` true and no `install_prompt`
+   * after it means the reader read the steps and closed the sheet.
+   */
+  | "install_prompt"
+  /**
+   * The pull-to-refresh gesture completed. THE ONE NUMBER that says whether the
+   * installed app is being used as an app — a reader who pulls is a reader who
+   * came back to the same window rather than opening a new tab.
+   */
+  | "pull_refresh"
   /** A single day opened — from an archive row or from an article page. */
   | "day_open";
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { InstallApp } from "./InstallApp";
 import { strings } from "@/lib/i18n";
 import { href, LANGS, otherLang, type Lang } from "@/lib/lang";
 import type { TrackEvent } from "@/lib/track";
@@ -134,7 +135,20 @@ export function Masthead({
         >
           daily.lab115.com
         </a>
-        <LangSwitch lang={lang} path={path} />
+        {/* The top-right corner of the CONTENT column, which is as close to the
+            top right of the page as anything readable can go — the orange blob
+            owns the literal corner. Two controls now, both of them about the
+            frame rather than the text: which language the site is in, and whether
+            it lives on the home screen.
+
+            `gap-2` between them and `gap-3` to the chip: the pair reads as one
+            group of controls, which is what keeps a three-item row from looking
+            like three unrelated things. The install button is the mark alone on a
+            phone — see the width note there for the arithmetic. */}
+        <div className="flex flex-none items-center gap-2">
+          <InstallApp lang={lang} />
+          <LangSwitch lang={lang} path={path} />
+        </div>
       </div>
 
       {/* The mark and the wordmark, laid out the way the share poster lays them
