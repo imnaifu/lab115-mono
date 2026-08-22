@@ -33,9 +33,12 @@ const SIZE = {
 /**
  * The summary: a one-sentence lead, then prose.
  *
- * CHINESE ONLY. It used to take both languages plus the page's choice and index
- * by it; there is no English half any more, so the `lang` parameter is gone
- * with it. A page under /en renders this same Chinese.
+ * LANGUAGE-BLIND, and that is the point: it takes ONE `SummaryText`, already
+ * chosen. It used to take both halves plus the page's language and index by it,
+ * which put the fallback rule — what an English page does when there is no
+ * English half — inside a component whose job is typography. That rule now lives
+ * in `summaryFor` (lib/take.ts), which every caller goes through, so there is one
+ * answer to it instead of one per renderer.
  *
  * `leading-[1.85]` on the paragraphs is the one arbitrary number left in this
  * file, and it stays deliberately: the summaries were rewritten to be read
@@ -51,10 +54,10 @@ export function Summary({
   summary,
   variant,
 }: {
-  summary: { zh: SummaryText };
+  summary: SummaryText;
   variant: "hero" | "card";
 }) {
-  const text = summary.zh;
+  const text = summary;
   const size = SIZE[variant];
   const blocks = blocksOf(text.text ?? "");
   /**

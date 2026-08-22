@@ -38,14 +38,18 @@ export const SECTION = "mt-8";
  * destination is visible on hover, right-click works, and the current language
  * has a real href instead of being a dead control.
  *
- * HIDDEN FOR NOW, and the markup below is kept rather than deleted because the
- * reason it is hidden is temporary: the summaries are Chinese only, so the
- * switch offered a second language that renders the same text. The /zh and /en
- * routes still work and every href in the app still carries a language, so
- * putting this back is deleting the early return.
+ * IT WAS HIDDEN, by an early `return null` right here, for as long as the
+ * summaries were Chinese only — a switch that offers a second language and then
+ * renders the same text is a control that does nothing. The English half is back
+ * (see `summaryFor` in lib/take.ts), so the switch is too, and the note is kept
+ * because it says what would have to be true to hide it again.
+ *
+ * One thing it does NOT promise: that every page has both languages. An archived
+ * digest written before the English half returned falls back to Chinese under
+ * /en. The switch still belongs there — it changes the chrome, the headline
+ * choice and the poster, and on every new digest it changes the prose as well.
  */
 export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
-  return null;
 
   // eslint-disable-next-line no-unreachable
   return (

@@ -11,6 +11,7 @@ import {
 } from "./Shell";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
+import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
 import { summaryText, totalReadingMinutes } from "@/lib/reading";
 import { sourceOf } from "@/lib/sources";
@@ -139,11 +140,15 @@ export function DigestView({
    * put in the masthead described a page other than this one. The summaries are
    * the product; this measures the summaries.
    *
-   * One number, not one per language: the summaries are Chinese only now, so a
-   * page under /en is reading exactly the same text.
+   * PER LANGUAGE, because the two halves are different lengths: `reading.ts`
+   * normalises CJK at 400 characters a minute against English at 230 words, so
+   * the same take measured on either side lands within a minute of the other —
+   * but only if each side is measured on the text it actually shows. An /en page
+   * that fell back to Chinese is measured on the Chinese, which is also correct:
+   * that IS the text on the page.
    */
   const minutes = totalReadingMinutes(
-    digest.articles.map((a) => summaryText(a.summary.zh)),
+    digest.articles.map((a) => summaryText(summaryFor(a, lang))),
   );
 
   return (

@@ -1,6 +1,7 @@
 import { posterParts, renderPoster } from "@/lib/poster";
 import { prunePosters, writePoster } from "@/lib/poster-store";
-import { LANGS } from "@/lib/lang";
+import { LANGS, type Lang } from "@/lib/lang";
+import { summaryFor } from "@/lib/take";
 import type { Digest } from "@/lib/types";
 
 /**
@@ -42,7 +43,25 @@ const CONCURRENCY = 4;
  * the route already handles by rendering — so a bad cover fetch or a full disk
  * costs one slow request later, not a failed digest.
  */
-export async function cachePosters(digest: Digest): Promise<void> {
+export async function cachePosters(
+  digest: Digest,
+  /**
+   * Narrow the work to the images that actually changed.
+   *
+   * Absent means every image of every article in every language, which is what
+   * the daily run wants: the digest is new, so nothing is cached yet.
+   *
+   * The BACKFILL wants the other thing. Adding an English take to an archived
+   * digest invalidates exactly that article's English posters — the Chinese ones
+   * are drawn from a Chinese take nothing touched, and the other articles are
+   * untouched entirely. Re-rendering a whole day to replace four images is a
+   * minute of Satori for nothing.
+   *
+   * It is a NARROWING, never a widening: whatever it selects still has to exist
+   * in the digest.
+   */
+  only?: { ids?: Set<string>; langs?: Lang[] },
+): Promise<void> {
   const started = Date.now();
 
   /**
@@ -53,9 +72,17 @@ export async function cachePosters(digest: Digest): Promise<void> {
    * each article's parts one after another, leaving cores idle on the short ones.
    * One list means the limiter always has something to hand out.
    */
-  const jobs = digest.articles.flatMap((article) =>
-    LANGS.flatMap((lang) =>
-      Array.from({ length: posterParts(article.summary.zh) }, (_, i) => ({
+  const langs = only?.langs ?? LANGS;
+  const jobs = digest.articles
+    .filter((article) => !only?.ids || only.ids.has(article.id))
+    .flatMap((article) =>
+    langs.flatMap((lang) =>
+      // The count is per LANGUAGE, not per article: the two halves paginate
+      // separately, so a take that is four images in Chinese can be five in
+      // English. Counting once off the Chinese left the English poster's last
+      // part unwarmed — or, the other way round, asked for a part the renderer
+      // says does not exist, which lands in `failed` below as a phantom error.
+      Array.from({ length: posterParts(summaryFor(article, lang)) }, (_, i) => ({
         article,
         lang,
         part: i + 1,

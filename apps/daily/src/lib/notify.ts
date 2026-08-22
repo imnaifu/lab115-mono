@@ -19,6 +19,10 @@ export async function notify(digest: Digest): Promise<void> {
 
   // `||` not `??` — a failed summary is an empty string, not null, and an
   // empty Bark body renders as a blank notification.
+  //
+  // `.zh` ON PURPOSE, not through `summaryFor`: this push goes to one device that
+  // belongs to whoever runs the digest, and the title beside it is Chinese too.
+  // There is no reader language to honour here — there is one reader.
   const lead =
     digest.articles[0]?.summary.zh.thesis ||
     digest.articles[0]?.title ||

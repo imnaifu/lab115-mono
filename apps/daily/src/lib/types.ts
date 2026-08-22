@@ -148,9 +148,22 @@ export interface Article {
   rank: number;
   /** How the score was arrived at. See ScoreReview. */
   review?: ScoreReview;
-  /** CHINESE ONLY. There was an `en` half here and it is gone; the pages still
-   *  route under /zh and /en, but both render this. */
-  summary: { zh: SummaryText };
+  /**
+   * The take, in each language it was written in.
+   *
+   * `zh` is the spine and is always there — an article with no Chinese summary
+   * never reaches this type. `en` is OPTIONAL, and its absence has two ordinary
+   * causes rather than one exceptional one: a digest archived while the site was
+   * Chinese-only carries no `en` at all, and a run where the model returned the
+   * Chinese half and stopped publishes that article with `zh` alone rather than
+   * holding up the day for it.
+   *
+   * So every renderer reads this through `summaryFor` in lib/take.ts, which falls
+   * back to `zh`. That fallback is the one place the site still shows Chinese to a
+   * reader who asked for English, and it is deliberate: an archive page with no
+   * body is worse than one in the wrong language.
+   */
+  summary: { zh: SummaryText; en?: SummaryText };
 }
 
 /**

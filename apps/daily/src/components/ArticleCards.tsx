@@ -7,6 +7,7 @@ import { posterParts } from "@/lib/share";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
 import { articlePath } from "@/lib/links";
+import { summaryFor } from "@/lib/take";
 import type { Article } from "@/lib/types";
 
 /** The dot between meta items. `bg-current` so it matches whatever colour the
@@ -85,9 +86,9 @@ function Actions({
         /* Counted HERE, on the server, where the summary and the poster's layout
            table both already are. The sheet is a client component and needs the
            number to know how many images to fetch and preview. */
-        parts={posterParts(article.summary.zh)}
+        parts={posterParts(summaryFor(article, lang))}
         title={displayTitle(article, lang)}
-        thesis={article.summary.zh.thesis}
+        thesis={summaryFor(article, lang).thesis}
         lang={lang}
       />
     </div>
@@ -146,7 +147,7 @@ export function ArticleCard({
         </div>
       </div>
 
-      <Summary summary={article.summary} variant="card" />
+      <Summary summary={summaryFor(article, lang)} variant="card" />
       <Actions article={article} date={date} lang={lang} />
     </div>
   );

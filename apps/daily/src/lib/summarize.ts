@@ -303,6 +303,16 @@ export interface Verdict {
    *  the original. See `titleZh` in types.ts. */
   titleZh: string;
   zh: SummaryText;
+  /**
+   * The English half, or null when the reply carried only the Chinese one.
+   *
+   * Null rather than an empty SummaryText because the two are read differently:
+   * `zh.thesis` being empty is what the gap retry hunts for, while a missing
+   * English half is NOT re-asked — see `applySummaries`. Keeping it nullable makes
+   * "there is no English take for this article" a value the job can copy straight
+   * into the optional field on `Article.summary`.
+   */
+  en: SummaryText | null;
 }
 
 // --- pass 1: score only -----------------------------------------------------
@@ -498,6 +508,31 @@ const SCORE_EXAMPLE = `{
  */
 const SUMMARY_PASS = "summary";
 
+/**
+ * What the English half has to be, stated once and interpolated into BOTH
+ * prompts that ask for it: the summary pass, which writes it beside the Chinese,
+ * and the backfill pass, which writes it for a digest that already shipped
+ * without one.
+ *
+ * SHARED RATHER THAN COPIED because the two must not drift. An English take
+ * written by the backfill is published on the same page, under the same headline,
+ * next to the same poster as one written by the daily run — a reader cannot tell
+ * which produced the article they are reading, so neither should be allowed its
+ * own idea of what the English is supposed to sound like.
+ *
+ * The Chinese rules are NOT shared this way and should not be: the backfill never
+ * writes Chinese, so there is one caller and nothing to keep in step.
+ */
+const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：同一个论点、同样的证据、同样的段落断点、同样数量的小标题（「## 」照样是正文里唯一允许的 markdown）。中文那边的每条硬要求在这边同样有效 —— 第三人称、最多三个要点、段落写长了就拆。
+
+**写成地道英文，不是把中文一个词一个词换过来。**
+
+上面风格指南要的现代类比在这里要**重新本地化，而不是翻译**。「拼团买大件」是 chipping in with the neighbours，不是 group-buying；「C 位」是 centre stage 或 top billing，不是 the C position；「KPI」「打卡」这类已经进入英文办公语汇的词照用。一个直译过来的中文网络梗，英文读者读到的是一句不知所云的话。
+
+英文里不许出现「」『』和中文标点，要引一段话用单引号。直双引号的禁令在这边同样有效 —— 一个游离的引号就会让整条 JSON 失效。
+
+**两边的读者不会同时看到两种语言**，是切换过去的，所以英文必须自己站得住：只读英文的人，最后知道的东西要和只读中文的人一样多。产品名、公司名、人名、模型名两边都照原样。`;
+
 const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中历史/社科老师。抓住文章的重点内容和观点，改写成极简、有趣、易懂的风格，让高中生也能轻松理解
 
 写作风格指南：
@@ -517,7 +552,10 @@ const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中�
 - "zh_title" —— 中文标题，见下面「标题」。
 - "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。
 - "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间空一行，也就是 JSON 字符串里的 "\\n\\n"。分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
+- "en_thesis" 和 "en_text" —— 同一篇概要的英文版，见下面「英文」。
 - "category" —— 见下面「分类」。
+
+**按上面的顺序填字段。** 中文先写完，英文从写好的中文来，两半就不会各说一套；"category" 放最后，因为写到那时你才真的知道这篇是什么。
 
 一篇文章一条。绝不允许一条盖住几篇、少写几篇，或者给没给你的文章编一条。
 
@@ -569,6 +607,10 @@ const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中�
 - 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
 - 原标题本身已经够抓人的时候，直接译过来就是最好的答案 —— 重写不是义务。
 
+## 英文
+
+${EN_RULES}
+
 ## 分类 "category"
 
 只能从下面这个列表里选一个，选最贴切的那个，绝不要自己造。
@@ -600,13 +642,44 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
  * part of the prompt the model imitates rather than interprets. Its `## `
  * headings keep their "1." "2." numbering inside the marker: the numbering is
  * the author's, the marker is what makes the renderers draw it as a heading.
+ *
+ * BOTH HALVES ARE HAND-WRITTEN, and the English one is doing a second job: it is
+ * the only place the prompt can SHOW what "localise the analogy, do not translate
+ * it" means. 「拼团买大件」 is written here as neighbours chipping in, 「C 位」 as
+ * centre stage — and KPI stays KPI, because that one really did cross over. A rule
+ * this soft is imitated far more reliably than it is followed.
+ *
+ * The two halves have the SAME paragraph count and the SAME three headings, block
+ * for block. That is the contract the English section states in prose, and the
+ * example is where the model actually reads it.
  */
+/**
+ * The hand-written target, field by field, SHARED between the two examples.
+ *
+ * `SUMMARY_EXAMPLE` composes all of it; `BACKFILL_EXAMPLE` composes the English
+ * pair alone and shows the Chinese as input instead. Split for that reason and no
+ * other — a second copy of 2,000 characters of prose is a second thing to edit
+ * and a guaranteed drift.
+ *
+ * Every note on `SUMMARY_EXAMPLE` below applies to these strings: they are
+ * written by hand rather than lifted from a run, the two halves mirror each other
+ * block for block, and the English is where "localise the analogy" is shown
+ * rather than merely asked for.
+ */
+const EXAMPLE_ZH_TITLE = `推动历史的不是皇帝，是一家人的晚饭`;
+const EXAMPLE_ZH_THESIS = `真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。`;
+const EXAMPLE_ZH_TEXT = `教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 1. 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 2. 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 3. 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。`;
+const EXAMPLE_EN_THESIS = `History was not driven by kings and generals but by the everyday needs of countless ordinary families trying to put dinner on the table.`;
+const EXAMPLE_EN_TEXT = `Textbooks give emperors, generals and wars the centre stage. Zoom in, though, and you find that the ones actually holding the production together — and moving the plot along — were millions of ordinary households going about their day.\\n\\nSo rewind 4,000 years to the ancient Near East and watch how one unremarkable family levered history along:\\n\\n## 1. Getting fed was the original hardcore KPI\\n\\nIn ancient Mesopotamia a family's most important job was growing barley. Two great rivers watered the land, the soil was rich, and more grain meant more mouths could be fed.\\n\\nIn the ancient world people were labour, labour was an army, and an army was national power. Wherever families had more children and enough to feed them, that is where a superpower grew.\\n\\n## 2. Too big for one household? Enter the state\\n\\nSome jobs were simply beyond a single family, however hard it worked:\\n\\nIrrigation: watering the fields and holding back the floods meant thousands of households digging one canal. Somebody had to organise that, direct it, and at times force people to turn up — which is how the earliest states and governments got squeezed into existence.\\n\\nBig-ticket items: an ox and an iron plough were heavy equipment, far beyond one family's savings, so neighbours chipped in together, bought one between them, and took turns.\\n\\n## 3. Shopping built civilisation\\n\\nNo household could make everything it needed. Beyond what they grew themselves, families went to market for what they could not produce — pots, timber, bronze, even someone else's vegetables.\\n\\nOnce millions of households all wanted to buy, trade appeared, cities filled up and trade routes spread out. States went to war over the scarce goods behind all of it, and civilisations rose and fell along with them.\\n\\nIn one line: emperors and generals did not create history. The needs of countless ordinary families trying to eat well and live a little better pushed human society, step by step, into the modern world.`;
+
 const SUMMARY_EXAMPLE = `{
   "articles": [
     {
-      "zh_title": "推动历史的不是皇帝，是一家人的晚饭",
-      "zh_thesis": "真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。",
-      "zh_text": "教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 1. 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 2. 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 3. 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。",
+      "zh_title": "${EXAMPLE_ZH_TITLE}",
+      "zh_thesis": "${EXAMPLE_ZH_THESIS}",
+      "zh_text": "${EXAMPLE_ZH_TEXT}",
+      "en_thesis": "${EXAMPLE_EN_THESIS}",
+      "en_text": "${EXAMPLE_EN_TEXT}",
       "category": "culture"
     }
   ]
@@ -639,16 +712,30 @@ function renderArticle(
     index === undefined ? article.title : `[${index}] ${article.title}`,
     `source: ${source.name}`,
     `published: ${article.publishedAt}`,
-    // Says CHINESE explicitly: measured with both languages in one reply, 9 of
-    // 10 summaries ran over, and an unqualified "最多 N 字" next to a request
-    // for two languages reads as the budget for the pair.
+    // Says CHINESE explicitly, and says the English does not count — restored
+    // with the English half, because an unqualified "最多 N 字" next to a request
+    // for two languages does not say whose budget it is.
+    //
+    // IT IS NOT THE FIX FOR ANYTHING, and the measurement is worth carrying next
+    // to it so nobody re-discovers this hopefully: with both languages in one
+    // reply 9 of 10 summaries ran over their budget, and adding this exact
+    // qualifier moved that to 8 of 10. The overrun is the price of merging the
+    // two languages into one reply, not a wording bug — see the README section on
+    // the English half. This clause is here because the ambiguity is real, not
+    // because it buys discipline.
+    //
+    // The English gets no number of its own. Its length is pinned to the Chinese
+    // by structure instead — same paragraphs, same headings — which is a rule the
+    // model can check itself, where a second character count would be one more
+    // soft budget to miss.
     //
     // No paragraph count and no per-paragraph ceiling any more — see budgetFor.
     // The only length rule the model gets is this total.
     ...(budget !== undefined
       ? [
-          `budget: 正文最多 ${budget} 字，其中每一段最多 ${PARA_MAX} 字。` +
-            `分几段你自己定，跟着内容走。` +
+          `budget: 中文正文最多 ${budget} 字（英文不计入），` +
+            `其中每一段最多 ${PARA_MAX} 字。` +
+            `分几段你自己定，跟着内容走，英文段数照中文走。` +
             `装不下就砍掉一整个点（收尾那句除外，它永远留着），` +
             `不要把两个点压成一句。`,
         ]
@@ -683,6 +770,7 @@ function emptyVerdict(): Verdict {
     category: resolveCategory(undefined),
     titleZh: "",
     zh: { thesis: "", text: "" },
+    en: null,
   };
 }
 
@@ -799,8 +887,28 @@ function applyScores(
   }
 }
 
-/** Both languages land together; each half is checked on its own so a reply
- *  that stopped after the Chinese is re-asked rather than published half. */
+/**
+ * Both languages land together, and EACH HALF IS TAKEN ON ITS OWN.
+ *
+ * The Chinese decides whether this article was summarized at all: the gap retry
+ * upstream re-asks for anything whose `zh.thesis` is still empty, so a reply that
+ * arrived mangled or short is asked for again.
+ *
+ * THE ENGLISH HALF IS NOT RETRIED, and that is the deliberate half of this
+ * function. Re-asking for it means re-asking for the whole entry — one request
+ * writes both languages — which puts a Chinese summary already safely in hand
+ * back at risk to chase the other one. The Chinese side is the spine of the
+ * product; the English side is worth having, not worth that trade. An article
+ * whose English never arrives publishes with `zh` alone and reads as Chinese on
+ * /en, which is where the site already was.
+ *
+ * `report` counts what came back in each language, so this degrades in the log
+ * rather than silently. If that count is ever routinely bad the escalation is one
+ * line — add the English to the `missing` predicate in the summary pass.
+ *
+ * Both fields are required for the English to count: a thesis with no body is a
+ * card with a claim and nothing under it, which is worse than the fallback.
+ */
 function applySummaries(
   rows: Array<Record<string, unknown>>,
   group: RawArticle[],
@@ -819,6 +927,12 @@ function applySummaries(
         thesis: zhThesis,
         text: asBody(row.zh_text),
       };
+    }
+
+    const enThesis = asText(row.en_thesis);
+    const enText = asBody(row.en_text);
+    if (enThesis && enText) {
+      verdict.en = { thesis: enThesis, text: enText };
     }
   }
 }
@@ -1040,6 +1154,167 @@ function asBody(value: unknown): string {
 }
 
 /**
+ * The client, with the timeouts the retry loops here are written around.
+ *
+ * A helper rather than a literal inside `summarize`, because `englishFor` needs
+ * exactly the same settings and a second copy would be a second place for them
+ * to drift.
+ */
+function makeClient(): OpenAI {
+  return new OpenAI({
+    apiKey: DEEPSEEK_API_KEY,
+    baseURL: DEEPSEEK_BASE_URL,
+    // A single-article reply is ~300 characters and normally lands in well
+    // under 30s. The old 180s × 2 retries let one stalled request hold a
+    // worker for nine minutes, and with our own retry loop on top the tail
+    // reached half an hour — a run that took 28s one time took over ten
+    // minutes the next. Failing fast is better here: our loop re-asks anyway,
+    // and a fresh request is more likely to return than a hung one.
+    maxRetries: 1,
+    timeout: 60_000,
+  });
+}
+
+// --- the backfill pass: English for a digest that shipped without it -------
+
+const BACKFILL_PASS = "backfill-en";
+
+/**
+ * The English of a take that ALREADY EXISTS in Chinese.
+ *
+ * A third prompt rather than a third mode of the summary one, because the input
+ * is a different thing: not an article to summarize but a summary to render in
+ * the other language. It never sees the original article — the digests do not
+ * store the body, and re-fetching a URL that was live weeks ago is a different
+ * job with its own failure modes (dead links, paywalls that closed since).
+ *
+ * WHICH IS NOT A COMPROMISE, and this is the reason the whole backfill is only a
+ * prompt and a loop: the live path writes the English FROM the Chinese too, in
+ * the same call, deliberately, so the two halves cannot drift apart. Working from
+ * the Chinese take is what the daily run does. Doing it a day later, from a take
+ * read off disk instead of one still in memory, is the same operation.
+ *
+ * So the one rule this prompt has that the summary prompt does not: add nothing.
+ * A model given a take and asked for its English has a standing temptation to
+ * improve it — fill a gap the Chinese left, drop a point it finds weak — and any
+ * of that makes /en and /zh disagree about what the article said.
+ */
+const BACKFILL_SYSTEM = `你的任务是把一篇已经写好的中文概要，写成英文。
+
+给你的是这个站已经发布过的中文概要，它是替读者读完原文用的。**原文你看不到，也不需要看。**
+
+## 返回什么
+
+每条概要一条，字段如下：
+- "en_thesis" —— 一句话论点，就是中文 thesis 那一句的英文。
+- "en_text" —— 正文，**一整个字符串，不是数组**。段落之间写 "\\n\\n" 这两个转义。
+
+一条概要一条。绝不允许一条盖住几条、少写几条，或者给没给你的概要编一条。
+
+## 只译不改
+
+**中文里有的都要有，中文里没有的一个都不许加。**
+
+- 不许补充中文没提到的事实、数字、人名、机构、结论 —— 你看不到原文，任何补充都是编的。
+- 不许因为觉得某个要点弱就删掉它，也不许自己合并两个要点。
+- 中文有三个小标题，英文就是三个；中文分了几段，英文就分几段。**逐块对应。**
+- 中文那句收尾（「一句话总结」之类）照样收尾，不要省掉。
+
+${EN_RULES}`;
+
+/**
+ * ONE entry, matching BATCH_SIZE — see the long note on SUMMARY_EXAMPLE for why
+ * an example with one entry is a contract for one entry.
+ *
+ * The Chinese is shown as INPUT rather than as a field to fill: this pass returns
+ * the English alone, and an example carrying a `zh_text` slot would invite the
+ * model to rewrite the Chinese too — which the job would then have to decide
+ * whether to trust. It does not: the backfill only ever writes `summary.en`.
+ */
+const BACKFILL_EXAMPLE = `{
+  "articles": [
+    {
+      "en_thesis": "${EXAMPLE_EN_THESIS}",
+      "en_text": "${EXAMPLE_EN_TEXT}"
+    }
+  ]
+}`;
+
+/** One take to translate: its id, so the caller can put the answer back, and the
+ *  article's own headline, which is how names and products are spelled. */
+export interface EnglishRequest {
+  id: string;
+  title: string;
+  zh: SummaryText;
+}
+
+/**
+ * The English half for takes that never got one.
+ *
+ * Keyed by id, and ONLY ids that came back — a caller writing this into a digest
+ * must be able to tell "no English for this one" from "an empty English for this
+ * one", exactly as `applySummaries` does on the live path.
+ *
+ * ONE REQUEST PER TAKE, like the summary pass and for the same reason: the reply
+ * carries ~2,000 characters of prose, and every malformation in this file scales
+ * with reply size. `chunk` is not used because there is nothing to chunk at size
+ * one; if BATCH_SIZE ever means something here, the example needs a second entry
+ * and an `index` field first — see the note on SUMMARY_EXAMPLE.
+ */
+export async function englishFor(
+  items: EnglishRequest[],
+): Promise<Map<string, SummaryText>> {
+  const out = new Map<string, SummaryText>();
+  if (!items.length) return out;
+
+  if (!DEEPSEEK_API_KEY) {
+    console.warn("[daily] DEEPSEEK_API_KEY unset — no English to backfill with");
+    return out;
+  }
+
+  const client = makeClient();
+
+  await mapLimited(items, REQUEST_CONCURRENCY, async (item, i) => {
+    const label = `${BACKFILL_PASS} ${i + 1}/${items.length}`;
+
+    for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
+      if (out.has(item.id)) return;
+
+      try {
+        const rows = await callModel(
+          client,
+          attempt ? `${label} retry ${attempt}` : label,
+          BACKFILL_SYSTEM,
+          `Here is 1 Chinese summary. Write its English.\n\n` +
+            `title: ${item.title}\n` +
+            `zh_thesis: ${item.zh.thesis}\n` +
+            `zh_text: ${item.zh.text}`,
+          BACKFILL_EXAMPLE,
+        );
+        for (const row of rows) {
+          const thesis = asText(row.en_thesis);
+          const text = asBody(row.en_text);
+          // Both halves, same as the live path: a claim with nothing under it is
+          // worse than falling back to the Chinese.
+          if (thesis && text) out.set(item.id, { thesis, text });
+        }
+      } catch (error) {
+        if (attempt === GAP_RETRIES) {
+          console.error(
+            `[daily] ${label} failed after ${attempt + 1} attempts ` +
+              `(${item.id.slice(0, 8)} keeps its Chinese only): ` +
+              `${(error as Error).message}`,
+          );
+        }
+      }
+    }
+  });
+
+  console.log(`[daily] backfill — ${out.size}/${items.length} English written`);
+  return out;
+}
+
+/**
  * Returns a verdict per article, keyed by article id.
  *
  * TWO passes: score everything, drop what the floor rejects, then summarize
@@ -1077,18 +1352,7 @@ export async function summarize(
     return out;
   }
 
-  const client = new OpenAI({
-    apiKey: DEEPSEEK_API_KEY,
-    baseURL: DEEPSEEK_BASE_URL,
-    // A single-article reply is ~300 characters and normally lands in well
-    // under 30s. The old 180s × 2 retries let one stalled request hold a
-    // worker for nine minutes, and with our own retry loop on top the tail
-    // reached half an hour — a run that took 28s one time took over ten
-    // minutes the next. Failing fast is better here: our loop re-asks anyway,
-    // and a fresh request is more likely to return than a hung one.
-    maxRetries: 1,
-    timeout: 60_000,
-  });
+  const client = makeClient();
 
   // --- pass 1: score every article, one per request ---
   const scoreBatches = chunk(batch, BATCH_SIZE);
@@ -1157,7 +1421,7 @@ export async function summarize(
   );
   if (survivors.length === 0) return out;
 
-  // --- pass 2: both summaries, survivors only ---
+  // --- pass 2: both languages, survivors only ---
   const summaryBatches = chunk(survivors, BATCH_SIZE);
   await mapLimited(summaryBatches, REQUEST_CONCURRENCY, async (group, i) => {
     const label = `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`;
@@ -1198,9 +1462,14 @@ export async function summarize(
 /** Surface what would otherwise degrade silently: a missing half, and
  *  summaries that came back too thin to replace the article. Measured over the
  *  articles that cleared the floor — the rejected ones have no summary on
- *  purpose and would read as failures here. */
+ *  purpose and would read as failures here.
+ *
+ *  THE ENGLISH COUNT IS THE ONLY WARNING THERE IS for the half that is never
+ *  retried (see `applySummaries`). A day where it reads 3/14 is a day most of the
+ *  English site fell back to Chinese, and nothing else anywhere says so. */
 function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
   let zh = 0;
+  let en = 0;
   let thin = 0;
   let over = 0;
   const lengths: number[] = [];
@@ -1209,7 +1478,10 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
     const verdict = out.get(article.id);
     if (!verdict?.zh.thesis) continue;
     zh += 1;
+    if (verdict.en) en += 1;
 
+    // The CHINESE length: `budgetFor` is a Chinese-character budget and the
+    // prompt tells the model the English does not count against it.
     const chars = verdict.zh.thesis.length + verdict.zh.text.length;
     lengths.push(chars);
     if (chars < ZH_MIN) thin += 1;
@@ -1222,7 +1494,7 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
   const median =
     lengths.sort((a, b) => a - b)[Math.floor(lengths.length / 2)] ?? 0;
   console.log(
-    `[daily] summaries — ${zh}/${total} written, ` +
+    `[daily] summaries — ${zh}/${total} written, ${en}/${total} with English, ` +
       `median ${median} chars, over their own budget: ${over}/${total}, ` +
       `under ${ZH_MIN}: ${thin}/${total}`,
   );

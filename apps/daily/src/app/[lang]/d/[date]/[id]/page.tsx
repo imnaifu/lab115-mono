@@ -11,6 +11,7 @@ import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
 import { POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
 import { sourceOf } from "@/lib/sources";
 import { articlePath } from "@/lib/links";
+import { summaryFor } from "@/lib/take";
 import { alternatesFor, JsonLd, publisher } from "@/lib/seo";
 import { readArticle } from "@/lib/store";
 
@@ -44,9 +45,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!found) return { title: `${t.notFoundTitle} · ${t.brand}` };
 
   const { article } = found;
-  // The thesis, for og:description. There is one summary and it is Chinese —
-  // an /en page renders the same one, as the page below does.
-  const summary = article.summary.zh;
+  // The thesis, for og:description — in the language of the page being described,
+  // which is the whole point of a per-language `<meta>`: a link to /en unfurling
+  // with a Chinese sentence under an English title is the mismatch this fixes.
+  const summary = summaryFor(article, pageLang);
   const path = langHref(pageLang, articlePath(date, article.id));
 
   return {
@@ -130,11 +132,19 @@ export default async function ArticlePage({ params }: Params) {
           mainEntityOfPage: `${SITE}${path}`,
           headline: article.title,
           ...(article.titleZh ? { alternativeHeadline: article.titleZh } : {}),
-          description: article.summary.zh.thesis,
-          // The summary is Chinese whichever page it is rendered on — see the
-          // note on `Summary`. Saying `en-US` here because the chrome is English
-          // would misdescribe the body.
-          inLanguage: "zh-CN",
+          description: summaryFor(article, lang).thesis,
+          /**
+           * The language of the BODY THIS PAGE RENDERS, not of the chrome around
+           * it — and now they can differ per page rather than always being Chinese.
+           *
+           * Read off the summary that was actually chosen: an /en page with an
+           * English take is `en-US`, and one that fell back (an archived digest,
+           * or an article whose English half never came back) is still `zh-CN`,
+           * because that is the language of the text a crawler will find there.
+           * Declaring `en-US` over Chinese prose is the same lie in the other
+           * direction.
+           */
+          inLanguage: article.summary.en && lang === "en" ? "en-US" : "zh-CN",
           datePublished: article.publishedAt,
           image: `${SITE}${path}/share.png`,
           author: publisher(t.brand),
@@ -193,7 +203,7 @@ export default async function ArticlePage({ params }: Params) {
             </div>
           </div>
 
-          <Summary summary={article.summary} variant="hero" />
+          <Summary summary={summaryFor(article, lang)} variant="hero" />
 
           {/* Right-aligned, the same way a list card ends — and secondary for the
               same reason it is there: the summary is the product, not the trip

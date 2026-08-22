@@ -207,7 +207,13 @@ export async function runDaily(
         score: verdict.score,
         rank: i + 1,
         ...reviewOf(item.id),
-        summary: { zh: verdict.zh },
+        // The English half only when it came back — the field's absence is how a
+        // renderer knows to fall back, and writing an empty one would make
+        // "no English take" indistinguishable from "an English take that is blank".
+        summary: {
+          zh: verdict.zh,
+          ...(verdict.en ? { en: verdict.en } : {}),
+        },
       };
     });
 

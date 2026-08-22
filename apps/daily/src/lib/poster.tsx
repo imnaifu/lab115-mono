@@ -18,6 +18,7 @@ import { SITE } from "@/lib/config";
 import { sourceOf } from "@/lib/sources";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
+import { summaryFor } from "@/lib/take";
 import type { Article } from "@/lib/types";
 
 /**
@@ -83,7 +84,7 @@ export async function renderPoster({
   lang: Lang;
   part: number;
 }): Promise<Buffer | null> {
-  const summary = article.summary.zh;
+  const summary = summaryFor(article, lang);
   const brand = strings(lang).brand;
   const source = sourceOf(article.sourceId);
 
