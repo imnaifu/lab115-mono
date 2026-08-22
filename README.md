@@ -8,6 +8,7 @@ Traefik routes each domain to its container. Coolify auto-deploys on push.
 ```
 repo/
 ├── apps/
+│   ├── home/                 # lab115.com — the lab's front door
 │   ├── converter/            # converter.lab115.com — bilingual unit converter
 │   │   ├── package.json / next.config.mjs / tsconfig.json / Dockerfile
 │   │   ├── public/
@@ -56,6 +57,40 @@ npm install
 npm run dev      # http://localhost:3000
 npm run build    # production build (output: standalone)
 ```
+
+---
+
+## apps/home
+
+`lab115.com` —— 实验室的门面。一页，中英双语，介绍 LAB115 是个 **AI product lab**
+并把两个在线产品（`daily` 和 Chrome 商店上的 RedNote Exporter）指出去。没有后端、
+没有表单、没有联系方式，就是一张会自己适配深浅色的静态名片。
+
+设计基线是 **Apple HIG**（[dickwu/apple-design-skill](https://github.com/dickwu/apple-design-skill)
+把它整理成了平台无关的规则）：系统字体不外挂 webfont、语义色板而不是写死的
+颜色值、正文对比度 ≥ 4.5:1、触控目标 ≥ 44px、只有浮在内容之上的导航栏用模糊材质。
+
+两套色板，别把它们混用：
+
+- **语义 token**（`--color-ink`、`--color-surface`……）在 `src/index.css` 里声明浅色，
+  再在 `@media (prefers-color-scheme: dark)` 里**只重新声明这些变量**。所以
+  `bg-surface` 这类工具类会自己跟着系统翻转，JSX 里一个 `dark:` 前缀都没有。
+- **`--color-night*`** 恒定不变。Hero 和 footer 是一块**在浅色模式下也保持深色**的
+  画布（apple.com 产品页的开场就是这么干的），它需要保证不会被翻白的颜色。
+
+改文案去 `src/lib/i18n.ts`（两种语言各一个对象，上下对照着读就能看出有没有跑偏），
+改产品卡片和外链去 `src/data/products.ts` —— **产品上架、换域名，只改那一个文件**。
+
+Logo 是手写 SVG，`src/components/Logo.tsx`：三笔等宽等高，两直一弧，读作 1·1·5。
+`public/favicon.svg` 和 `public/apple-touch-icon.svg` 是同一组坐标，**改一个要改三个**。
+
+语言路由抄的 `apps/daily`：`/zh`、`/en` 双前缀，裸路径由 `src/proxy.ts` 按
+`Accept-Language` 重定向，`<html lang>` 通过 `x-lang` 请求头传给 root layout
+（App Router 里 layout 看不到下面的路由段）。代价是页面按请求渲染而不是静态预渲染。
+
+> **部署注意**：这是**根域名**，不在 `*.lab115.com` 通配符的覆盖范围里 ——
+> 通配证书不含 apex。`lab115.com` 和 `www.lab115.com` 都需要各自的 A 记录指向服务器，
+> 首次部署时 Traefik 会为这两个名字单独签一张证书。
 
 ---
 

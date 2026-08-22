@@ -1,0 +1,12 @@
+<!-- The LAB115 mark on a filled rounded square. Filled rather than transparent
+     so it stays legible on both a light and a dark browser tab bar, per HIG's
+     app-icon guidance (full-bleed, no transparency, no text). Geometry mirrors
+     src/components/Logo.tsx — change both together. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#000000"/>
+  <g transform="translate(12 19.83) scale(0.8696)" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round">
+    <path d="M4 4V24"/>
+    <path d="M18 4V24"/>
+    <path d="M32 4a10 10 0 0 1 0 20"/>
+  </g>
+</svg>

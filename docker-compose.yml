@@ -13,6 +13,33 @@
 #        - loadbalancer.server.port  (Next.js: 3000, nginx static: 80)
 #   3. Point the subdomain's DNS at the server, then `git push`.
 services:
+  # The root domain. Two Host rules rather than one because `www` is a separate
+  # certificate SAN to Traefik — a single rule would leave www.lab115.com
+  # unrouted, and an apex-only site still gets typed with the www in front.
+  home:
+    build:
+      context: ./apps/home
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.home-http.entryPoints=http
+      - traefik.http.routers.home-http.rule=Host(`lab115.com`) || Host(`www.lab115.com`)
+      - traefik.http.routers.home-http.middlewares=redirect-to-https
+      # HTTPS router (Let's Encrypt via Coolify's Traefik resolver)
+      - traefik.http.routers.home-https.entryPoints=https
+      - traefik.http.routers.home-https.rule=Host(`lab115.com`) || Host(`www.lab115.com`)
+      - traefik.http.routers.home-https.tls=true
+      - traefik.http.routers.home-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.home-https.middlewares=gzip
+      # Next.js listens on 3000 inside the container
+      - traefik.http.services.home.loadbalancer.server.port=3000
+
   converter:
     build:
       context: ./apps/converter
