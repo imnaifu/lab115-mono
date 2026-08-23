@@ -136,6 +136,17 @@ export const POSTER = {
   thesisRule: 6,
   thesisPad: 32,
   thesisSize: 38,
+  /**
+   * The TL;DR label above the thesis, at the page's proportions rather than at
+   * numbers of its own: 26/38 is the page's 11px label against its 16px thesis,
+   * and the tracking and the gap are that same ratio applied to `tracking-
+   * [0.08em]` and `mb-1`. The label is the one part of the lead that has to be
+   * legible at thumbnail scale, which is why it is drawn at 700 — see the
+   * weights `posterFonts` actually embeds.
+   */
+  thesisLabelSize: 26,
+  thesisLabelTracking: 2,
+  thesisLabelGap: 9,
   /** Headline block → thesis. */
   thesisGap: 35,
   paraSize: 32,

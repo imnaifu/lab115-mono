@@ -190,7 +190,12 @@ export function posterText(article: Article, summary: SummaryText, extra: string
     // Punctuation and digits the layout adds on its own. The slash is the page
     // counter's — `2/4` — and a glyph Google was not asked for renders as nothing
     // at all, so an omission here is an invisible bug, not a fallback.
-    "0123456789/·—、。，：；？！「」（）%<>=~-!",
+    //
+    // `TL;DR` is the lead's label, drawn by the layout and present in no
+    // article: without it here the five glyphs — the HALF-WIDTH semicolon
+    // especially, which the full-width `；` above does not cover — are simply
+    // absent from the subset, and the label renders as blank space.
+    "0123456789/·—、。，：；？！「」（）%<>=~-!TL;DR",
   ].join(""));
 }
 

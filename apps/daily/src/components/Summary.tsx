@@ -6,25 +6,34 @@ import type { SummaryText } from "@/lib/types";
  * Nothing renders a hero card any more, but the single-article page uses the
  * larger size for the one summary it shows.
  *
- * `rule` is the orange bar beside the thesis, one step heavier on the hero. The
- * share poster draws the same bar from POSTER.thesisRule in lib/share.ts — if the
- * weight changes here, change it there.
+ * `rule` is the orange bar beside the thesis and the indent it opens up — the
+ * only thing the two variants still differ by, since every text size is 16px in
+ * both. The share poster draws the same bar from POSTER.thesisRule in
+ * lib/share.ts; the poster has no label line, so the two are close but not
+ * identical.
  */
 const SIZE = {
   hero: {
-    thesis: "text-lg",
-    rule: "border-l-[3px] pl-4",
+    thesis: "text-base",
+    rule: "border-l-3 pl-4",
+    label: "mb-1",
     heading: "text-base",
     para: "text-base",
   },
   card: {
     // Body copy is 16px here too. It was 14px, which reads as a caption next to
-    // the 16px headings and thesis it sits under — and the summary IS the card,
-    // so the list is where the size matters most. thesis and heading each move
-    // up a step with it to keep the lead above the prose rather than level with
-    // it; only `rule` stays lighter than the hero's.
-    thesis: "text-lg",
-    rule: "border-l-2 pl-3",
+    // the 16px headings it sits under — and the summary IS the card, so the list
+    // is where the size matters most. The thesis is 16px as well, and at NORMAL
+    // weight: it used to be the same size AND the same semibold as the numbered
+    // headings below it, so the lead and the section labels read as the same
+    // kind of thing. The TL;DR label carries "this is the lead" now, so the
+    // thesis only needs to sit a HALF step above the prose — `font-medium`, not
+    // semibold — and semibold goes back to meaning one thing: heading. 500 is a
+    // real face in both families (see the Google Fonts link in layout.tsx); ask
+    // for a weight that is not loaded and the browser fakes it.
+    thesis: "text-base",
+    rule: "border-l-3 pl-3",
+    label: "mb-1",
     heading: "text-base",
     para: "text-base",
   },
@@ -71,13 +80,23 @@ export function Summary({
 
   return (
     <div className="mt-4 flex flex-col gap-3">
-      {/* The claim, marked out by the accent bar the site uses for emphasis. */}
+      {/* The claim: the site's orange bar, a TL;DR label on it, and the
+          sentence itself. No panel — a filled block reads as a second card
+          inside the card, and every tint tried against `bg-card` either sat too
+          close to it to look deliberate or too far to look clean.
+
+          `mb-2` on top of the container's `gap-3`: the lead needs more air
+          under it than one paragraph needs under another, or the prose reads as
+          its continuation rather than as the writing starting. */}
       {text.thesis ? (
-        <p
-          className={`border-orange font-semibold text-ink ${size.thesis} ${size.rule}`}
-        >
-          {text.thesis}
-        </p>
+        <div className={`mb-2 border-orange ${size.rule}`}>
+          <p
+            className={`text-[11px] font-bold tracking-[0.08em] text-orange ${size.label}`}
+          >
+            TL;DR
+          </p>
+          <p className={`font-medium text-ink ${size.thesis}`}>{text.thesis}</p>
+        </div>
       ) : null}
 
       {/* `data-para` indexes the blocks in the order the poster route draws

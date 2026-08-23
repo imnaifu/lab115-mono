@@ -424,22 +424,48 @@ export async function renderPoster({
                 </div>
               </div>
 
-              {/* The thesis, styled the way `Summary` styles it: weight, colour,
-                  and the orange accent bar. The bar lives in both places now —
-                  see the `rule` entry in that component's SIZE table. */}
+              {/* The thesis, styled the way `Summary` styles it: the orange
+                  accent bar, a TL;DR label on it, and the sentence at MEDIUM
+                  weight. All three live in both places now — see the `rule`
+                  entry in that component's SIZE table.
+
+                  600 was what this asked for before, and it was never what got
+                  drawn: `posterFonts` embeds 500 and 700 and nothing between,
+                  so Satori was snapping the thesis to one of them. 500 is the
+                  weight the page settled on anyway, and now it is the weight
+                  the file actually contains. */}
               <div
                 style={{
                   display: "flex",
+                  flexDirection: "column",
                   marginTop: POSTER.thesisGap,
                   paddingLeft: POSTER.thesisPad,
                   borderLeft: `${POSTER.thesisRule}px solid #efa050`,
-                  fontSize: POSTER.thesisSize,
-                  fontWeight: 600,
-                  lineHeight: 1.5,
-                  color: "#3b3563",
                 }}
               >
-                {thesis}
+                <div
+                  style={{
+                    display: "flex",
+                    marginBottom: POSTER.thesisLabelGap,
+                    fontSize: POSTER.thesisLabelSize,
+                    fontWeight: 700,
+                    letterSpacing: POSTER.thesisLabelTracking,
+                    color: "#efa050",
+                  }}
+                >
+                  TL;DR
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    fontSize: POSTER.thesisSize,
+                    fontWeight: 500,
+                    lineHeight: 1.5,
+                    color: "#3b3563",
+                  }}
+                >
+                  {thesis}
+                </div>
               </div>
             </div>
           ) : (

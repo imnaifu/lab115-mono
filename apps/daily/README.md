@@ -86,6 +86,15 @@ config.json: source "alienchow" scrape.flags must include "g"
 | Musings on Markets | `aswathdamodaran.blogspot.com/feeds/posts/default` | ~0.06 篇/天 | 全文，中位 31k（**会截断**） |
 | One Useful Thing | `oneusefulthing.org/feed` | ~0.05 篇/天 | 全文 ~10.5k |
 | The Intrinsic Perspective | `theintrinsicperspective.com/feed` | ~0.07 篇/天 | 全文 ~14k |
+| The Conversation | `theconversation.com/us/articles.atom` | ~6.8 篇/天（限 2） | Atom，全文 ~7.8k |
+| Colossal | `thisiscolossal.com/feed/` | ~2.2 篇/天（限 2） | 全文 ~2.4k |
+| JSTOR Daily | `daily.jstor.org/feed/` | ~0.8 篇/天 | 全文 ~9.2k |
+| The Paris Review Daily | `theparisreview.org/blog/feed/` | ~0.4 篇/天 | 全文 ~12.7k |
+| The Honest Broker | `honest-broker.com/feed` | ~0.38 篇/天 | 全文 ~4k |
+| Noema Magazine | `noemamag.com/feed/` | ~0.37 篇/天 | 全文 17k~38k |
+| After Babel | `afterbabel.com/feed` | ~0.11 篇/天 | 全文 ~15k |
+| Dynomight | `dynomight.net/feed.xml` | ~0.08 篇/天 | 全文 ~9.7k |
+| Experimental History | `experimental-history.com/feed` | ~0.07 篇/天 | 全文 ~16k |
 
 几个需要知道的：
 
@@ -117,6 +126,20 @@ config.json: source "alienchow" scrape.flags must include "g"
   于是补：投资 Of Dollars And Data + Damodaran，科学 Works in Progress +
   The Intrinsic Perspective，AI Interconnects + Import AI + One Useful Thing，
   生活 Cal Newport，经济 Conversable Economist，技术 Dan Luu，设计 Craig Mod。
+- **再后来的 9 个源同样是照缺口补的，缺口换成了 `设计` 2 个、`生活` 2 个、`科学` 4 个。**
+  补：科学 The Conversation + Dynomight + Experimental History，人文 JSTOR Daily +
+  Noema + The Paris Review Daily + The Honest Broker，生活 After Babel，设计 Colossal。
+  九个都是 feed 里带全文（2.4k~38k），没有一个需要 `fetchBody`。The Conversation
+  6.8 篇/天、Colossal 2.2 篇/天，两者限 `maxPerRun: 2`。
+- **Reddit 和聚合站测过，只有一种子版块能用，最后一个都没加。** 帖子页是纯 JS 渲染，
+  抓下来 `stripHtml()` 后只剩 6 个字符（`"Reddit"`），所以**正文只能来自 RSS 的
+  self-text，评论区拿不到** —— r/AskHistorians 那种「答案在评论里」的版块摘出来会是
+  一个提问，r/books 那种外链贴正文只有 460 字符。唯一合格的是 r/HobbyDrama（全文
+  中位 30k）。另外 Reddit 对连发请求 429 得很快：并发探 7 个版块中 6 个失败，间隔
+  4 秒仍然失败，单发才正常。同一批还测掉了 Lobsters（正文中位 **8** 字符，且选题是
+  HN 的子集）、MetaFilter（feed 只覆盖 **0.4 天**，违反下面那条 `feed 条数 ÷ 日产量
+  > 1 天`）、Kottke 和 Longreads（正文是推荐语不是文章，中位 224 / 1266）。
+  **聚合站的通病是正文在第三方站上** —— 那正是 HN 走的路，再加一个只是复制它的失败模式。
 - **Dan Luu 和 Damodaran 的正文最长，中位 63k 和 33k。** 加它们的时候 `BODY_CHAR_LIMIT`
   还是 20000，所以只喂得进前三分之一到三分之二；量了一遍发现被截的远不止这两个源，
   于是把上限提到 80000（见下面「正文预算」那节），现在两者都能整篇喂进去。
@@ -1401,6 +1424,36 @@ npm run dev
 以前这里是 `DAILY_DATA_DIR`，compose 给 `/data`、npm scripts 给 `./data`，同一份代码
 按谁启动它读两个不同的路径 —— 本地忘了加前缀就会在根目录上 EACCES。
 
+## 站点自己的 feed
+
+这个站抓 62 个 RSS 源，自己也出一份 —— `src/lib/feed.ts` 生成 Atom，两个路由发出去：
+
+```
+/feed.xml          按 Accept-Language 302 到下面两个之一
+/zh/feed.xml       每日干货
+/en/feed.xml       Daily Takes
+```
+
+几个当时定下来的取舍：
+
+- **entry 里放整篇摘要，不是导语加链接。** 整个 app 的前提是「这份摘要替代读原文」，
+  一个只给标题和链接的 feed 会把这个前提反过来 —— 读者又回到开一堆标签页，而唯一
+  为他写的那段文字恰好是 feed 里没有的。代价只是 XML 体积（实测中文 50KB / 英文 98KB
+  装 37 条），是这里最便宜的东西。
+- **Atom 而不是 RSS 2.0**，为了三样 RSS 没有正经位置放的东西：不等于链接的稳定
+  `<id>`、和 `<published>` 分开的 `<updated>`（原文发表时间 vs. 我们写下这份摘要的
+  时间，读者拿它们做的是两件事），以及 `xml:lang` —— 这个站把 /zh 和 /en 当两份刊物。
+- **一种语言一份 feed**，和隔壁 manifest 同一条理由：一份混合 feed 会把每篇文章的
+  两个语言版本都塞进去，而没有任何阅读器能只显示其中一个。
+- **窗口是 7 天、上限 100 条。** README 前面那条给别人家 feed 定的规矩
+  （`feed 条数 ÷ 日产量 > 1 天`）反过来也约束自己：周poll 的阅读器、停机几天的容器，
+  都得能找回没见过的条目。
+- **`/feed.xml` 是 302 协商，不是另发一份。** 未加语言前缀的路径由 `proxy.ts` 协商，
+  sitemap 的 x-default 也是这么说的；同一个问题有两套行为就多了一套。而且它不能省 ——
+  proxy 的 matcher 跳过带扩展名的路径，没有这个 handler `/feed.xml` 是 404。
+- **`<link rel="alternate" type="application/atom+xml">` 在 `layout.tsx` 的
+  metadata 里**，只声明当前语言那一份。没有它，读者拿到域名找不到订阅地址。
+
 ## 输出的 JSON
 
 `daily/<yyyy>/<mm>/<yyyy-mm-dd>.json`，公开可读：
@@ -1425,6 +1478,7 @@ https://raw.githubusercontent.com/imnaifu/files/main/daily/2026/08/2026-08-10.js
 - `/` 今天（截图目标）。当天还没跑时回退显示磁盘上最新的一天
 - `/d/2026-08-10` 单日固定链接
 - `/archive` 归档列表，直接扫 clone 目录得出，没有索引文件
+- `/feed.xml`、`/zh/feed.xml`、`/en/feed.xml` Atom 输出，见上面「站点自己的 feed」
 
 每条路径都带语言前缀（`/zh/…`、`/en/…`），**两种语言渲染的是各自的摘要**。取哪一份由
 `summaryFor`（`lib/take.ts`）一处决定，poster 和 og:description 也走它 —— 所以

@@ -52,7 +52,20 @@ export async function generateMetadata(): Promise<Metadata> {
     // The home page in both languages — see alternatesFor. It used to declare
     // `${SITE}/` as its own canonical, which is the URL that REDIRECTS here: a
     // canonical pointing at a 307 is a canonical a crawler cannot follow.
-    alternates: alternatesFor(lang, "/"),
+    //
+    // `types` is the feed's AUTODISCOVERY link, and it is the whole reason a
+    // reader can be handed `daily.lab115.com` and find the subscription itself.
+    // THIS LANGUAGE'S FEED ONLY: a document declares the feed it is a rendering
+    // of, and offering both here would leave the reader to guess which of two
+    // equally-advertised feeds is the page it is looking at.
+    alternates: {
+      ...alternatesFor(lang, "/"),
+      types: {
+        "application/atom+xml": [
+          { url: `${SITE}${href(lang, "/feed.xml")}`, title: t.brand },
+        ],
+      },
+    },
     openGraph: {
       type: "website",
       title,

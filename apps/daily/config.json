@@ -660,6 +660,107 @@
       "accent": "#7E6B33",
       "enabled": true,
       "fetchBody": true
+    },
+    {
+      "id": "theconversation",
+      "name": "The Conversation",
+      "site": "https://theconversation.com/us",
+      "feed": "https://theconversation.com/us/articles.atom",
+      "category": "science",
+      "description": "学者本人写的解释性长文，Atom 带全文 ~7.8k；6.8 篇/天且选题从疫苗到中世纪史横跨极大，靠 maxPerRun 2 压量。",
+      "accent": "#2D6E7E",
+      "enabled": true,
+      "fetchBody": false,
+      "maxPerRun": 2
+    },
+    {
+      "id": "jstordaily",
+      "name": "JSTOR Daily",
+      "site": "https://daily.jstor.org/",
+      "feed": "https://daily.jstor.org/feed/",
+      "category": "culture",
+      "description": "把 JSTOR 上的论文改写成通俗文章，全文 ~9.2k，史料与社科向；~0.8 篇/天，偶尔只是论文导读。",
+      "accent": "#8E4F72",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "noema",
+      "name": "Noema Magazine",
+      "site": "https://www.noemamag.com/",
+      "feed": "https://www.noemamag.com/feed/",
+      "category": "culture",
+      "description": "Berggruen 研究院的杂志，技术哲学与地缘政治，全文 17k~38k；作者多为学者，行文偏抽象。",
+      "accent": "#5E4B72",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "parisreview",
+      "name": "The Paris Review Daily",
+      "site": "https://www.theparisreview.org/blog/",
+      "feed": "https://www.theparisreview.org/blog/feed/",
+      "category": "culture",
+      "description": "《巴黎评论》的日更博客，文学随笔与作家访谈，全文 ~12.7k；纯文学向，和现有源零重叠。",
+      "accent": "#B04E72",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "honestbroker",
+      "name": "The Honest Broker",
+      "site": "https://www.honest-broker.com/",
+      "feed": "https://www.honest-broker.com/feed",
+      "category": "culture",
+      "description": "Ted Gioia，音乐与文化批评，全文 ~4k；~0.38 篇/天，偶尔是唱片推荐清单体。",
+      "accent": "#96603E",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "afterbabel",
+      "name": "After Babel",
+      "site": "https://www.afterbabel.com/",
+      "feed": "https://www.afterbabel.com/feed",
+      "category": "living",
+      "description": "Jonathan Haidt 的合著博客，手机、社交媒体与青少年心理，全文 ~15k；立场鲜明，数据解读常被同行质疑。",
+      "accent": "#4F7F3C",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "colossal",
+      "name": "Colossal",
+      "site": "https://www.thisiscolossal.com/",
+      "feed": "https://www.thisiscolossal.com/feed/",
+      "category": "design",
+      "description": "视觉艺术与工艺的图文报道，全文 ~2.4k；文字密度低于其他源，2.2 篇/天，已限 maxPerRun 2。",
+      "accent": "#C96A5C",
+      "enabled": true,
+      "fetchBody": false,
+      "maxPerRun": 2
+    },
+    {
+      "id": "dynomight",
+      "name": "Dynomight",
+      "site": "https://dynomight.net/",
+      "feed": "https://dynomight.net/feed.xml",
+      "category": "science",
+      "description": "匿名作者的量化随笔，用数据认真回答无聊问题，全文 ~9.7k；~13 天一篇，成本可忽略。",
+      "accent": "#5F9E8A",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "experimentalhistory",
+      "name": "Experimental History",
+      "site": "https://www.experimental-history.com/",
+      "feed": "https://www.experimental-history.com/feed",
+      "category": "science",
+      "description": "Adam Mastroianni，心理学与学术体制的批判性随笔，全文 ~16k；风格夸张，论证有时靠比喻推进。",
+      "accent": "#9B6FB5",
+      "enabled": true,
+      "fetchBody": false
     }
   ]
 }
