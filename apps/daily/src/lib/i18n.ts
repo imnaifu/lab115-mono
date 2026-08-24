@@ -98,13 +98,17 @@ const STRINGS = {
     emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天同一时间再来。",
 
     /**
-     * The footer's line, and the description on every page and in the manifest.
+     * The footer's line, and the description on every page, in the manifest and
+     * in the feed's `<subtitle>`.
      *
-     * It said 中英双语 and there has been no English half for a while — one
-     * summary, in Chinese, rendered the same on `/zh` and `/en`. The Chinese copy
-     * simply drops the claim; the English one below says which language instead of
-     * dropping it, because an English reader arriving at `/en` is exactly who needs
-     * telling what they are about to read.
+     * NEITHER COPY NAMES A LANGUAGE. It said 中英双语 back when the claim was
+     * false in one direction — one summary, in Chinese, rendered the same on
+     * `/zh` and `/en` — and the English copy then said "in Chinese" to be honest
+     * about it. `summary.en` exists now (see `summaryFor` in take.ts), so an
+     * English reader on `/en` gets English, and a line telling them otherwise is
+     * false in the other direction. A tagline that has to keep up with which
+     * halves are populated is a tagline that will be wrong again; both copies now
+     * describe what the site DOES, and the page the reader is on says the rest.
      */
     tagline: "每天早上把订阅的博客读一遍，提炼成观点摘要。",
 
@@ -159,7 +163,7 @@ const STRINGS = {
     emptyBody: "No new posts from any source in the last 24 hours. Same time tomorrow.",
 
     tagline:
-      "Every morning, the subscribed blogs read and boiled down to takes in Chinese.",
+      "Every morning, the subscribed blogs read and boiled down to takes.",
 
     /** "Friday, 14 August 2026" */
     date: (y: number, m: number, d: number, weekday: number) =>

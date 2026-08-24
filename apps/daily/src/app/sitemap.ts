@@ -19,7 +19,26 @@ import { listDates, readDigest } from "@/lib/store";
  * do — see `alternatesFor` in lib/seo — and saying it in both places is what makes
  * a crawler confident enough to act on it.
  */
-export const dynamic = "force-dynamic";
+/**
+ * REVALIDATED HOURLY rather than rendered per request.
+ *
+ * This was `force-dynamic`, and of everything in the app it was the worst place
+ * for it: the loop below opens EVERY archived digest to collect the article ids,
+ * so a single crawler hitting this URL paid one file read per day the site has
+ * ever published, and nothing about the answer changes between one hit and the
+ * next. Google fetches a sitemap on its own schedule and often several times over
+ * as the archive grows, so this was pure repeat cost.
+ *
+ * An hour, not a day: `DAILY_SYNC_CRON` pulls every 15 minutes, so a fresh digest
+ * should appear in the sitemap within the hour rather than the next morning.
+ *
+ * Nothing else in the app changes — the READER'S pages stay `force-dynamic`,
+ * because the cron rewrites those files underneath a long-running server and a
+ * reader who pulls to refresh has to get today's digest, not a cached copy of it.
+ * A crawler's index of URLs and a reader's page have genuinely different freshness
+ * needs, and this is the one that can wait.
+ */
+export const revalidate = 3600;
 
 /** The x-default target: the unprefixed path, which the proxy negotiates. */
 function entry(path: string, lastModified: Date): MetadataRoute.Sitemap[number] {

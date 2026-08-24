@@ -12,7 +12,7 @@ import { POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
 import { sourceOf } from "@/lib/sources";
 import { articlePath } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
-import { alternatesFor, JsonLd, publisher } from "@/lib/seo";
+import { alternatesFor, breadcrumb, JsonLd, publisher } from "@/lib/seo";
 import { readArticle } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -146,10 +146,34 @@ export default async function ArticlePage({ params }: Params) {
            */
           inLanguage: article.summary.en && lang === "en" ? "en-US" : "zh-CN",
           datePublished: article.publishedAt,
+          /**
+           * WHEN THE SUMMARY WAS WRITTEN, which is the day, not `publishedAt`.
+           *
+           * The two are genuinely different here and that is the point of stating
+           * both: `datePublished` above is the ORIGINAL article's date, carried
+           * over from the source, and can be days older than this page. What this
+           * page is — our summary of it — was made on the day of the digest and
+           * never touched again. So `dateModified` is the digest's date, and the
+           * pair now says "an article from the 20th, summarised on the 23rd"
+           * rather than leaving a crawler to assume the page has been sitting
+           * unchanged since whenever the source published.
+           */
+          dateModified: date,
           image: `${SITE}${path}/share.png`,
           author: publisher(t.brand),
           publisher: publisher(t.brand),
           articleSection: category.nameEn,
+          /**
+           * Three levels, and the deepest page on the site is the one that needs
+           * them: this URL ends in eight characters of a sha1 (see `articleAnchor`
+           * in lib/links), so its path segment tells a reader nothing. The trail is
+           * what a search result shows in place of it.
+           */
+          breadcrumb: breadcrumb([
+            { name: t.brand, url: `${SITE}${langHref(lang, "/")}` },
+            { name: date, url: `${SITE}${langHref(lang, `/d/${date}`)}` },
+            { name: article.title, url: `${SITE}${path}` },
+          ]),
           isBasedOn: {
             "@type": "Article",
             url: article.url,

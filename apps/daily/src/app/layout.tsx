@@ -8,7 +8,7 @@ import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang, otherLang, type Lang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/config";
-import { alternatesFor } from "@/lib/seo";
+import { alternatesFor, ogCardFor } from "@/lib/seo";
 import "@/index.css";
 
 /** What both the layout and its metadata need: see the note on RootLayout. */
@@ -70,12 +70,47 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       title,
       description: t.tagline,
-      url: `${SITE}/`,
+      /**
+       * THIS LANGUAGE'S HOME PAGE, not the bare root.
+       *
+       * It was `${SITE}/`, which is the same mistake the canonical two fields up
+       * had and the note there describes: the unprefixed URL is the one the proxy
+       * 307s. A canonical pointing at a redirect is one a crawler cannot follow,
+       * and an og:url pointing at one is what an unfurler stores and shows as the
+       * link's identity — so the two now agree, and both name a page that exists.
+       */
+      url: `${SITE}${href(lang, "/")}`,
       siteName: t.brand,
       locale: OG_LOCALE[lang],
       alternateLocale: OG_LOCALE[otherLang(lang)],
+      /**
+       * The card, which the whole site was missing.
+       *
+       * Only the article page had an og:image — it points at its poster — so the
+       * home page, the archive and every day unfurled as a line of grey text in
+       * the one place this site is actually passed around. See lib/og.tsx for why
+       * the card is 1200x630 rather than the poster's 3:4.
+       *
+       * INHERITANCE DOES NOT SAVE THE PAGES BELOW THIS ONE. Next merges metadata
+       * per top-level field, so a page that declares any `openGraph` of its own
+       * replaces this whole object rather than adding to it — which is exactly why
+       * the day page had no image despite this layout being its parent. Every page
+       * that sets `openGraph` therefore sets `images` too.
+       */
+      images: ogCardFor(lang, "/"),
     },
-    twitter: { card: "summary", title, description: t.tagline },
+    /**
+     * `summary_large_image`, now that there is an image worth the space. `summary`
+     * draws a 1:1 thumbnail beside the text — the right card when the only image
+     * available is a favicon, and the wrong one for a 1.91:1 card built to be the
+     * whole preview.
+     */
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: t.tagline,
+      images: ogCardFor(lang, "/").map((image) => image.url),
+    },
     icons: {
       icon: "/favicon.svg",
       // iOS does not read the manifest for home-screen icons, and it ignores

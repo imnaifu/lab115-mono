@@ -1,4 +1,4 @@
-import { PRODUCTS } from "@/data/products";
+import { isOwnProperty, PRODUCTS } from "@/data/products";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import { SectionHead } from "@/components/SectionHead";
@@ -61,10 +61,12 @@ export function Products({ lang }: { lang: Lang }) {
               <a
                 href={product.url}
                 target="_blank"
-                // `noreferrer` alongside `noopener` because these are outbound
-                // links to sites that have no reason to know where the click
-                // came from.
-                rel="noopener noreferrer"
+                /* `noreferrer` for a genuinely OUTBOUND link only — see
+                   `isOwnProperty`. Stripping the referrer on the way to our own
+                   other site made every click from this shelf arrive there as
+                   direct traffic, which is the one number this shelf exists to
+                   move. `noopener` is unconditional. */
+                rel={isOwnProperty(product) ? "noopener" : "noopener noreferrer"}
                 className="mt-6 flex h-11 w-fit items-center rounded-full bg-ink px-5 text-[15px] font-medium text-surface transition-opacity hover:opacity-85"
               >
                 {text.visit} {product.host[lang]}

@@ -5,7 +5,7 @@ import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
 import { articlePath } from "@/lib/links";
-import { alternatesFor, JsonLd, publisher } from "@/lib/seo";
+import { alternatesFor, breadcrumb, JsonLd, ogCardFor, publisher } from "@/lib/seo";
 import { displayTitle } from "@/components/ArticleTitle";
 import { readDigest } from "@/lib/store";
 
@@ -54,10 +54,27 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       type: "website",
       title,
       description,
-      url: `${SITE}${path}`,
+      // LANGUAGE-PREFIXED, like the canonical beside it. `path` here is the bare
+      // form, and the unprefixed URL is the one the proxy 307s — see the note on
+      // og:url in app/layout.tsx.
+      url: `${SITE}${langHref(pageLang, path)}`,
       siteName: t.brand,
+      /**
+       * THIS DAY'S CARD, drawn from these headlines — see the route next door.
+       *
+       * The layout declares one for the home page, but declaring `openGraph` here
+       * at all replaces that whole object rather than extending it (Next merges
+       * metadata per top-level field), which is why this page unfurled with no
+       * image whatsoever despite the layout above it having one.
+       */
+      images: ogCardFor(pageLang, path),
     },
-    twitter: { card: "summary", title, description },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ogCardFor(pageLang, path).map((image) => image.url),
+    },
   };
 }
 
@@ -92,7 +109,30 @@ export default async function DayPage({ params }: Params) {
           name: `${strings(lang).brand} · ${date}`,
           inLanguage: lang === "zh" ? "zh-CN" : "en-US",
           datePublished: date,
+          /**
+           * THE SAME DAY, stated anyway.
+           *
+           * A digest is written once, on the day it is for, and never edited — so
+           * this is not a guess, it is the fact. Saying it matters because the
+           * absence of `dateModified` is not read as "never modified": a crawler
+           * deciding how often to come back for a site that publishes daily has to
+           * fall back to guessing from the fetch, and an explicit stamp equal to
+           * `datePublished` is what tells it this page is finished.
+           */
+          dateModified: date,
           publisher: publisher(strings(lang).brand),
+          /**
+           * The trail, because the URL cannot carry it. See `breadcrumb` in
+           * lib/seo — a day is one level down from the home page, and this is what
+           * puts 每日干货 › 2026-08-23 in a search result instead of a bare path.
+           */
+          breadcrumb: breadcrumb([
+            {
+              name: strings(lang).brand,
+              url: `${SITE}${langHref(lang, "/")}`,
+            },
+            { name: date, url: `${SITE}${langHref(lang, `/d/${date}`)}` },
+          ]),
           mainEntity: {
             "@type": "ItemList",
             numberOfItems: digest.articles.length,

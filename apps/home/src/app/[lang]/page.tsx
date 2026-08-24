@@ -5,7 +5,9 @@ import { Products } from "@/components/Products";
 import { Method } from "@/components/Method";
 import { Footer } from "@/components/Footer";
 import { strings } from "@/lib/i18n";
-import { isLang, LANGS } from "@/lib/lang";
+import { href, isLang, LANGS } from "@/lib/lang";
+import { SITE } from "@/lib/config";
+import { JsonLd, organization, productList, website } from "@/lib/seo";
 
 /**
  * The complete set of languages, so `/zh` and `/en` are the only paths that
@@ -33,6 +35,40 @@ export default async function HomePage({
 
   return (
     <>
+      {/**
+       * WHO PUBLISHES THIS AND WHAT IS ON IT. The page had no structured data at
+       * all — see the note at the top of lib/seo.tsx for why that is the expensive
+       * omission on a two-URL site.
+       *
+       * A `@graph` of three, because there are three separate things to say and
+       * nesting them would collapse distinctions that matter: the ORGANIZATION is
+       * the brand, which owns properties on other domains; the WEBSITE is this
+       * domain in this language; the PAGE is what a reader is looking at, and the
+       * product shelf is its `mainEntity`. Everything cross-references by `@id`
+       * rather than repeating, so a crawler that also reads daily.lab115.com sees
+       * one publisher rather than two that happen to share a name.
+       */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            organization(),
+            website(lang),
+            {
+              "@type": "WebPage",
+              "@id": `${SITE}${href(lang, "/")}#page`,
+              url: `${SITE}${href(lang, "/")}`,
+              name: `${text.brand} — ${text.tagline}`,
+              description: text.metaDescription,
+              inLanguage: lang === "zh" ? "zh-CN" : "en-US",
+              isPartOf: { "@id": `${SITE}${href(lang, "/")}#site` },
+              publisher: { "@id": `${SITE}/#org` },
+              mainEntity: productList(lang),
+            },
+          ],
+        }}
+      />
+
       {/* First thing in the tab order: a keyboard reader should not have to
           walk the whole nav on every visit (HIG — Accessibility). */}
       <a

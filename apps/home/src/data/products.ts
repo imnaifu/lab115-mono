@@ -55,3 +55,28 @@ export const PRODUCTS: Product[] = [
     },
   },
 ];
+
+/**
+ * Is this product hosted on our own domain?
+ *
+ * WHAT IT DECIDES: whether the link to it sends a referrer. Both product links
+ * used to carry `rel="noopener noreferrer"`, on the reasoning that an outbound
+ * link has no business telling the destination where the click came from — right
+ * for the Chrome Web Store, and wrong for daily.lab115.com, which is OURS. With
+ * `noreferrer` on it, daily's analytics saw every visitor from the shelf as direct
+ * traffic, so the one number this page exists to move was the one number it could
+ * not report. `noopener` stays on both: that is about the opened tab's access to
+ * this one, which is nobody's business either way.
+ *
+ * Derived from the url rather than stored as a flag on each product, because the
+ * url is already the single source of truth for where a product lives — a
+ * hand-maintained `own: true` beside it is a second one, free to disagree.
+ *
+ * A suffix test on the HOSTNAME, not on the whole url: `includes("lab115.com")`
+ * would also be true of `evil.example.com/?x=lab115.com`, and the dot in front of
+ * the suffix is what stops it matching a `notlab115.com`.
+ */
+export function isOwnProperty(product: Product): boolean {
+  const { hostname } = new URL(product.url);
+  return hostname === "lab115.com" || hostname.endsWith(".lab115.com");
+}

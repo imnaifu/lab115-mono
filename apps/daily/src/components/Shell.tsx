@@ -268,8 +268,32 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
         </p>
       </div>
 
-      <div className="text-xs font-medium text-ink-soft sm:text-right">
-        © {year} daily.lab115.com
+      <div className="flex flex-col gap-1 text-xs font-medium text-ink-soft sm:items-end sm:text-right">
+        {/**
+         * THE LINK BACK TO THE LAB, and it is the only outbound link in the
+         * footer.
+         *
+         * It was missing entirely: lab115.com links here from its product shelf
+         * and its footer, and nothing here pointed back — so two properties on the
+         * same brand had a one-way relationship, which is the shape a crawler
+         * reads as "this site was linked to" rather than "these two are the same
+         * publisher". The `Organization` markup on both sides says so now; a link
+         * a reader can actually follow is what makes that claim checkable.
+         *
+         * No `target="_blank"`: this is the same brand, not an outbound trip, and
+         * a new tab for it is the kind of thing that leaves a reader with nine of
+         * them. No `noreferrer` either, for the reason spelled out on the other
+         * side of this link — see Products.tsx over there.
+         *
+         * And NO `data-track`: `TrackEvent` in lib/track.ts is a closed union and
+         * TRACKING.md documents every member of it, so counting this click is a
+         * change to the analytics contract rather than to the markup. Worth doing
+         * on its own; not worth smuggling in behind an SEO fix.
+         */}
+        <a className="transition-colors hover:text-ink" href="https://lab115.com">
+          lab115.com
+        </a>
+        <div>© {year} daily.lab115.com</div>
       </div>
     </footer>
   );

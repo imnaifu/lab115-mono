@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://lab115.com/sitemap.xml

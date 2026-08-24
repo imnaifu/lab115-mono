@@ -1,5 +1,5 @@
 import { Logo } from "@/components/Logo";
-import { PRODUCTS } from "@/data/products";
+import { isOwnProperty, PRODUCTS } from "@/data/products";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 
@@ -29,7 +29,8 @@ export function Footer({ lang }: { lang: Lang }) {
               key={product.id}
               href={product.url}
               target="_blank"
-              rel="noopener noreferrer"
+              /* Same split as the shelf above — see `isOwnProperty`. */
+              rel={isOwnProperty(product) ? "noopener" : "noopener noreferrer"}
               className="text-[13px] transition-colors hover:text-night-ink"
             >
               {product.name}

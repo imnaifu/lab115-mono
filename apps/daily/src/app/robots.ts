@@ -20,12 +20,26 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       /**
-       * The poster routes. They serve PNGs, not pages, and a crawler fetching
-       * them costs a Satori render each — for an image it will find anyway
-       * through the og:image tag on the article page, which is the copy that
-       * carries context.
+       * THE POSTER'S EXTRA PAGES ONLY — never the bare `share.png`.
+       *
+       * This used to disallow every `share.png` under a day outright, to save a Satori
+       * render per crawl, and it was suppressing the thing it was protecting: that
+       * exact URL is what every article page declares as `og:image` and
+       * `twitter:image`, and the crawlers that unfurl a link — facebookexternalhit,
+       * Twitterbot, and the ones behind the chat apps this site is designed to be
+       * screenshotted into — read robots.txt before fetching an image. A disallowed
+       * og:image is a link card with no card. Since the poster IS the distribution
+       * mechanism here, that trade was backwards.
+       *
+       * So part 1 is open, and only `?part=2` and up are held back. Those are the
+       * pages of prose, they are built client-side by the share sheet and linked
+       * from no markup, so nothing was ever going to crawl them anyway — the rule
+       * survives as a statement of intent rather than as a load-bearing block. The
+       * render cost that motivated the original line is handled where it belongs:
+       * `share.png/route.tsx` sends `max-age=3600` and `poster-serve` keeps every
+       * image it renders.
        */
-      disallow: ["/*/d/*/*/share.png"],
+      disallow: ["/*/d/*/*/share.png?*"],
     },
     sitemap: `${SITE}/sitemap.xml`,
     host: SITE,
