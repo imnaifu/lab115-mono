@@ -1,10 +1,14 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/config";
-import { LANGS } from "@/lib/lang";
+import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
 
 /**
- * One entry per language. The bare `/` is left out deliberately: it only ever
- * redirects, so listing it would point crawlers at a URL that is never a page.
+ * One entry per language.
+ *
+ * The bare `/` used to be left out deliberately, "because it only ever redirects,
+ * so listing it would point crawlers at a URL that is never a page". It is the
+ * DEFAULT LANGUAGE'S page now rather than a redirect — see lib/lang.ts — so it is
+ * in here, as the first entry, built through `href` like every other URL.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   /**
@@ -22,14 +26,26 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const built = new Date();
 
   return LANGS.map((lang) => ({
-    url: `${SITE}/${lang}`,
+    url: `${SITE}${href(lang, "/")}`,
     lastModified: built,
     changeFrequency: "monthly" as const,
     priority: 1,
+    /**
+     * `x-default` STATED HERE TOO, which it was not before.
+     *
+     * The page's own `<link rel="alternate">` set has carried one all along, and a
+     * sitemap that lists a different set of alternates from the document is a
+     * crawler being told two things. It is the same URL the page names — the
+     * default language's, which is the unprefixed one; see the long note in
+     * app/layout.tsx for why it is no longer the redirecting root.
+     */
     alternates: {
-      languages: Object.fromEntries(
-        LANGS.map((code) => [code, `${SITE}/${code}`]),
-      ),
+      languages: {
+        ...Object.fromEntries(
+          LANGS.map((code) => [code, `${SITE}${href(code, "/")}`]),
+        ),
+        "x-default": `${SITE}${href(DEFAULT_LANG, "/")}`,
+      },
     },
   }));
 }

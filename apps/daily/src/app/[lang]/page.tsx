@@ -1,17 +1,27 @@
 import { notFound } from "next/navigation";
 import { displayTitle } from "@/components/ArticleTitle";
-import { DigestView, EmptyState } from "@/components/DigestView";
+import { EmptyState } from "@/components/DigestView";
+import { FrontPage } from "@/components/FrontPage";
 import { PageShell } from "@/components/Shell";
 import { dateKey, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href as langHref, isLang } from "@/lib/lang";
-import { articlePath } from "@/lib/links";
+import { articlePath, dayPath } from "@/lib/links";
 import { JsonLd, publisher, website } from "@/lib/seo";
-import { readDigest, readLatest } from "@/lib/store";
+import { listDates, readDigest, readLatest } from "@/lib/store";
 
 // Read from the git clone on every request — the cron rewrites those files
 // underneath a long-running server, so nothing here may be cached at build time.
 export const dynamic = "force-dynamic";
+
+/**
+ * How many days back the front page reaches before handing off to the archive.
+ *
+ * Six, so the block is a week's worth counting today. Long enough that a reader
+ * who missed a couple of days can get back without a second page, short enough
+ * that it stays a summary rather than becoming the archive with extra steps.
+ */
+const RECENT_DAYS = 6;
 
 export default async function Home({
   params,
@@ -37,18 +47,45 @@ export default async function Home({
     );
   }
 
+  /**
+   * The days behind the one on show, with each day's lead headline.
+   *
+   * Sliced BY DATE rather than by position: `digest` is whatever is newest on
+   * disk, and on a morning before the run it is yesterday's — so dropping
+   * `dates[0]` would silently show the same day twice, once as the headline list
+   * and once as the first row here.
+   *
+   * One file read per row, which is the same thing the archive page already does
+   * and for the same reason: the lead headline only exists inside the digest.
+   * Bounded at RECENT_DAYS, so this does not grow with the archive.
+   */
+  const dates = await listDates();
+  const recent = (
+    await Promise.all(
+      dates
+        .filter((date) => date < digest.date)
+        .slice(0, RECENT_DAYS)
+        .map(async (date) => {
+          const day = await readDigest(date);
+          const lead = day?.articles[0];
+          return day && lead
+            ? {
+                date,
+                lead: displayTitle(lead, lang),
+                count: day.stats.shown,
+              }
+            : null;
+        }),
+    )
+  ).filter((day) => day !== null);
+
   const t = strings(lang);
   const home = `${SITE}${langHref(lang, "/")}`;
 
   return (
     <>
       {/**
-       * WHAT THIS SITE IS, declared at last on the page that most needs it.
-       *
-       * The day page has described itself as a `CollectionPage` and the article page
-       * as a `BlogPosting` for a while; the home page — the most-linked URL on the
-       * domain and the one a crawler reaches first — declared nothing at all, so
-       * there was no object for the site's name, language or publisher to hang off.
+       * WHAT THIS SITE IS, declared on the page that most needs it.
        *
        * A `@graph` rather than one object, because there are genuinely two things
        * here and they are not nested: the SITE, which is what `@id` ends in `#site`
@@ -56,9 +93,16 @@ export default async function Home({
        * entity that happens to be what the site is currently showing. Flattening
        * them would mean claiming the site IS one day's list.
        *
-       * `mainEntity` is the ranked order the page renders, the same way the day page
-       * does it — the one thing the markup cannot express, since every card is the
-       * same `<article>` shape.
+       * `CollectionPage` and not `WebPage`, still: this page's subject is a set of
+       * things, and `mainEntity` is the ranked order it renders them in — the one
+       * thing the markup cannot express, since every row is the same shape.
+       *
+       * WHAT CHANGED WITH THE FRONT PAGE: `isPartOf` now names the DAY this list
+       * came from. The page shows headlines and the summaries live at the dated
+       * URL, so a crawler that reads this and then reads `/2026/08/24` should be
+       * told the second is where the first points rather than left to work out
+       * whether it has found a duplicate. It is the same relationship the "read the
+       * whole day" link states in the markup, said in the vocabulary a crawler has.
        */}
       <JsonLd
         data={{
@@ -78,6 +122,7 @@ export default async function Home({
               datePublished: digest.date,
               dateModified: digest.date,
               isPartOf: { "@id": `${home}#site` },
+              mainEntityOfPage: `${SITE}${langHref(lang, dayPath(digest.date))}`,
               publisher: publisher(t.brand),
               mainEntity: {
                 "@type": "ItemList",
@@ -85,7 +130,7 @@ export default async function Home({
                 itemListElement: digest.articles.map((article, i) => ({
                   "@type": "ListItem",
                   position: i + 1,
-                  url: `${SITE}${langHref(lang, articlePath(digest.date, article.id))}`,
+                  url: `${SITE}${langHref(lang, articlePath(digest.date, article))}`,
                   name: displayTitle(article, lang),
                 })),
               },
@@ -93,7 +138,7 @@ export default async function Home({
           ],
         }}
       />
-      <DigestView digest={digest} lang={lang} path="/" />
+      <FrontPage digest={digest} recent={recent} lang={lang} />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { SITE } from "./config";
-import { href, LANGS, type Lang } from "./lang";
+import { DEFAULT_LANG, href, LANGS, type Lang } from "./lang";
+import { ogUrl } from "./links";
 
 /**
  * The metadata every page repeats: which URL is the canonical one, and where the
@@ -40,32 +41,47 @@ export const OG_HEIGHT = 630;
  * URL alone makes a crawler fetch and decode the image before it can lay out the
  * card, and the ones that will not wait render the text with a blank frame.
  *
- * `path` is the bare page path — `/`, `/archive`, `/d/2026-08-14` — and the card
- * route is that path plus `/og.png`, per language, because the headlines drawn on
- * it are in the language of the page it belongs to.
+ * `name` is the CARD'S name, not a page path — `site` or a date — because the
+ * cards live in their own `/og/<lang>/` namespace rather than hanging off the page
+ * they belong to. See `ogUrl` in lib/links for why they moved out. Still one per
+ * language: the headlines drawn on the card are in the language of the page.
  */
-export function ogCardFor(lang: Lang, path: string) {
-  const at = path === "/" ? "/og.png" : `${path}/og.png`;
-  return [{ url: `${SITE}${href(lang, at)}`, width: OG_WIDTH, height: OG_HEIGHT }];
+export function ogCardFor(lang: Lang, name: string) {
+  return [{ url: `${SITE}${ogUrl(lang, name)}`, width: OG_WIDTH, height: OG_HEIGHT }];
 }
 
 /**
  * `alternates` for one page, in every language it exists in.
  *
- * WHY HREFLANG MATTERS HERE: every page of this site exists twice, at `/zh/…` and
- * `/en/…`, and without these tags a crawler sees two URLs it has to guess about —
- * usually by picking one and dropping the other. The tags say "these are the same
- * page for different readers", which is the difference between two indexed
- * versions and one indexed version plus a duplicate.
+ * WHY HREFLANG MATTERS HERE: every page of this site exists twice, unprefixed and
+ * under `/en/…`, and without these tags a crawler sees two URLs it has to guess
+ * about — usually by picking one and dropping the other. The tags say "these are
+ * the same page for different readers", which is the difference between two
+ * indexed versions and one indexed version plus a duplicate.
  *
- * `x-default` points at the UNPREFIXED path, and that is not a shortcut: the proxy
- * redirects any path without a language prefix to whichever language the browser
- * asked for (see proxy.ts), so the unprefixed URL is literally the
- * language-negotiating one — exactly what x-default is defined to mean.
+ * `x-default` NAMES THE SAME URL AS `zh-CN`, and the previous version of this
+ * comment argued for the opposite so it is worth being explicit about what was
+ * wrong. It used to point at the unprefixed path on the reasoning that the proxy
+ * negotiated it by Accept-Language, which made it "literally the
+ * language-negotiating URL — exactly what x-default is defined to mean".
+ *
+ * The reasoning was sound and the outcome was a bug. Googlebot sends no
+ * Accept-Language, so for the one crawler that matters the negotiation was not a
+ * negotiation: `/archive` resolved to the Chinese page, every single time. This
+ * tag then declared that address as a valid URL for the content — so Google had
+ * two URLs, both nominated by the site, for one page. It clustered them and chose
+ * the unprefixed one over the page's own `<link rel="canonical">`, which is
+ * precisely what Search Console reported: "Duplicate, Google chose different
+ * canonical than user", on three Chinese pages and no English one.
+ *
+ * There is no negotiating URL to name any more — the default language is
+ * unprefixed and `/` is a real page (see lib/lang.ts) — so x-default points where
+ * a reader who asked for nothing in particular actually lands. Pointing it at the
+ * same URL as `zh-CN` is a documented configuration, not a workaround.
  */
 export function alternatesFor(lang: Lang, path: string) {
   const languages: Record<string, string> = {
-    "x-default": `${SITE}${path}`,
+    "x-default": url(DEFAULT_LANG, path),
   };
   for (const other of LANGS) {
     languages[other === "zh" ? "zh-CN" : "en-US"] = url(other, path);
@@ -113,14 +129,20 @@ export function publisher(brand: string) {
 /**
  * A `BreadcrumbList`, from the trail a page sits on.
  *
- * WHY THIS SITE NEEDS IT MORE THAN MOST: an article's URL is
- * `/zh/d/2026-08-23/dc27b4ba`, and that last segment is the first eight
- * characters of a sha1 (see `articleAnchor` in lib/links). It is unreadable by
- * design — the alternative was a slug built from a headline this site did not
- * write — but it means the URL line of a search result carries no information at
- * all. Breadcrumbs are what replace it: Google draws the trail in place of the
- * path, so a result for a two-week-old summary shows 每日干货 › 2026-08-23 rather
- * than eight hex digits.
+ * WHY THIS SITE ADDED IT: an article's URL used to be `/zh/d/2026-08-23/dc27b4ba`,
+ * whose last segment is the first eight characters of a sha1 (see `articleAnchor`
+ * in lib/links). The URL line of a search result therefore carried no information
+ * at all, and breadcrumbs were what replaced it — Google draws the trail in place
+ * of the path, so a result showed 每日干货 › 2026-08-23 rather than eight hex
+ * digits.
+ *
+ * THAT IS NO LONGER THE JUSTIFICATION, and the trail stays anyway. The URL is
+ * `/2026/08/23/why-async-rust-is-hard-dc27b4ba` now — see `articleSlug` in
+ * lib/links — so the path carries the headline and the date on its own. What
+ * breadcrumbs still do that a path cannot is name the levels: a crawler reading
+ * `/2026/08/23` has to infer that this is a date and that the site's home page is
+ * its parent, and this states both. Cheap, and it survived the thing it was
+ * originally compensating for.
  *
  * `items` is ordered from the root inward, and the LAST item is the page itself.
  * Its `item` URL is included rather than omitted: the schema allows dropping it
@@ -148,8 +170,9 @@ export function breadcrumb(items: { name: string; url: string }[]) {
  * home page, the most-linked URL on the domain, declared nothing whatsoever, so a
  * crawler had no object to attach the site's name, language or publisher to.
  *
- * `@id` is the LANGUAGE-PREFIXED home page for the same reason every canonical
- * here is: the bare `${SITE}/` is the URL the proxy redirects.
+ * `@id` goes through `href` like every other URL here. On the Chinese side that is
+ * now the bare `${SITE}/` — which is a real page rather than the redirect it used
+ * to be, so the note that used to warn against naming it no longer applies.
  */
 export function website(lang: Lang, brand: string, tagline: string) {
   return {

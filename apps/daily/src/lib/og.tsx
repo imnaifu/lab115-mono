@@ -273,7 +273,7 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
  *
  * The LENGTH is the whole reason this is a function rather than `return image`:
  * see renderOgCard above, and the longer version of the same lesson in
- * share.png/route.tsx.
+ * app/share/[lang]/[date]/[id]/[part]/route.tsx.
  *
  * An hour of caching, matching the poster route. A card is fetched the moment a
  * link is posted anywhere, often by several unfurlers at once for the same URL,

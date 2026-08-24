@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/config";
-import { href, LANGS } from "@/lib/lang";
-import { articlePath } from "@/lib/links";
+import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
+import { articlePath, dayPath } from "@/lib/links";
 import { listDates, readDigest } from "@/lib/store";
 
 /**
@@ -40,15 +40,28 @@ import { listDates, readDigest } from "@/lib/store";
  */
 export const revalidate = 3600;
 
-/** The x-default target: the unprefixed path, which the proxy negotiates. */
+/**
+ * One page, in every language, as a sitemap entry.
+ *
+ * `x-default` NAMES THE DEFAULT LANGUAGE'S URL, and it used to name the
+ * unprefixed path on the grounds that the proxy negotiated it. Those are the same
+ * URL now — the default language is unprefixed — but the reasoning had to change
+ * before the code could stay still: the unprefixed path was a 307 then, and
+ * nominating a redirect here is half of what put three pages in Search Console as
+ * duplicates with a Google-chosen canonical. See `alternatesFor` in lib/seo for
+ * the full account; this file says the same thing in the sitemap's vocabulary and
+ * the two must not drift.
+ */
 function entry(path: string, lastModified: Date): MetadataRoute.Sitemap[number] {
-  const languages: Record<string, string> = { "x-default": `${SITE}${path}` };
+  const languages: Record<string, string> = {
+    "x-default": `${SITE}${href(DEFAULT_LANG, path)}`,
+  };
   for (const lang of LANGS) {
     languages[lang === "zh" ? "zh-CN" : "en-US"] = `${SITE}${href(lang, path)}`;
   }
   return {
     // The default language's URL is the one listed; the rest hang off it.
-    url: `${SITE}${href("zh", path)}`,
+    url: `${SITE}${href(DEFAULT_LANG, path)}`,
     lastModified,
     alternates: { languages },
   };
@@ -73,16 +86,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /**
    * Every day, and every article inside it.
    *
+   * INCLUDING TODAY'S, with nothing skipped and no notion of a "current" edition
+   * to skip it by. That is worth stating because the obvious alternative was
+   * considered and is now unnecessary: while the home page rendered the newest
+   * digest verbatim, the newest day page was its duplicate, and keeping it out of
+   * here until the day rolled over would have been the way to stop the two
+   * competing. The front page carries headlines only now — see FrontPage.tsx — so
+   * no day page has a twin at any moment, and every one of them is indexable from
+   * the hour it is written rather than the morning after.
+   *
    * The digests are read rather than inferred from the date list, because the
    * article ids only exist inside them. That is one file open per archived day on
    * a request a crawler makes rarely — the same thing the archive page already
    * does, and it is not on the reader's path.
    */
   for (const date of dates) {
-    pages.push(entry(`/d/${date}`, stamp(date)));
+    pages.push(entry(dayPath(date), stamp(date)));
     const digest = await readDigest(date);
     for (const article of digest?.articles ?? []) {
-      pages.push(entry(articlePath(date, article.id), stamp(date)));
+      pages.push(entry(articlePath(date, article), stamp(date)));
     }
   }
 

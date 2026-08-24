@@ -17,7 +17,7 @@ import type { Lang } from "./lang";
  * That makes this a CACHE and not a store, with everything that follows: a miss
  * is ordinary — a fresh container, a pruned old date, a digest written before
  * this existed — and the only correct response to one is to render. See the route
- * in app/[lang]/d/[date]/[id]/share.png.
+ * in app/share/[lang]/[date]/[id]/[part].
  *
  * The key is date + article + language + part. Language is in there because the
  * poster is written in the language of the page that linked to it: the brand, the

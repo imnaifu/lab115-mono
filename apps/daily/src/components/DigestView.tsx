@@ -13,6 +13,7 @@ import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
 import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
+import { dayPath } from "@/lib/links";
 import { summaryText, totalReadingMinutes } from "@/lib/reading";
 import { sourceOf } from "@/lib/sources";
 import type { Article, Digest } from "@/lib/types";
@@ -115,18 +116,9 @@ function groupByCategory(articles: Article[]): CategoryGroup[] {
 export function DigestView({
   digest,
   lang,
-  path,
 }: {
   digest: Digest;
   lang: Lang;
-  /**
-   * The bare path of the page this is rendered on, for the language switch.
-   *
-   * The same view serves `/` and `/d/<date>`, and the switch has to land on
-   * the page you were actually on — without this the home page sent you to the
-   * dated permalink, which shows the same digest but is not where you were.
-   */
-  path: string;
 }) {
   const t = strings(lang);
   const groups = groupByCategory(digest.articles);
@@ -153,7 +145,12 @@ export function DigestView({
 
   return (
     <PageShell>
-      <Masthead title={t.brand} lang={lang} path={path}>
+      {/* `path` was a prop here, because this view served both `/` and the dated
+          page and the language switch had to land on whichever one you were
+          actually on. It serves ONE page now — the front page is its own component
+          for the reasons in FrontPage.tsx — so the path is simply this digest's,
+          and a caller can no longer pass one that disagrees with the content. */}
+      <Masthead title={t.brand} lang={lang} path={dayPath(digest.date)}>
         <span>{formatDate(digest.date, lang)}</span>
         <MastheadDot />
         {/* `shown`, not `fetched`: the publish floor drops the rest, so

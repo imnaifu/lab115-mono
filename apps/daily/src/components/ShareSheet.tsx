@@ -203,8 +203,8 @@ export function ShareSheet({
   onClose: () => void;
   /** The permalink, already absolute: it is handed to another origin. */
   page: string;
-  /** The poster route, absolute and WITHOUT a query. Each image is this plus a
-   *  `?part=`; see `posterPartUrl`. */
+  /** The poster base, absolute and WITHOUT a part or an extension. Each image is
+   *  this plus `/<part>.png`; see `posterPartUrl`. */
   poster: string;
   /**
    * How many images this article's share carries — the identity card plus one per
@@ -656,17 +656,21 @@ export function ShareSheet({
                   <img
                     key={part}
                     /**
-                     * `&retry=1` on the second attempt, because without it the
+                     * `?retry=1` on the second attempt, because without it the
                      * reload would be served the same failed entry out of the
-                     * HTTP cache. `part` is a real parameter the route reads;
-                     * `retry` is ignored by it and exists only to miss the cache
-                     * — which is why the two are appended rather than either
-                     * replacing the other.
+                     * HTTP cache. The route ignores the parameter entirely; it
+                     * exists only to miss that cache.
+                     *
+                     * `?` AND NOT `&`, which is what it used to be. The part was a
+                     * query parameter then, so a `?` was already guaranteed to be
+                     * in the URL and appending with `&` was correct. The part is a
+                     * path segment now — see `posterPartUrl` — so this is the
+                     * first parameter on the URL and has to open the query itself.
                      */
                     src={
                       attempts[i] === 0
                         ? posterPartUrl(poster, part)
-                        : `${posterPartUrl(poster, part)}&retry=${attempts[i]}`
+                        : `${posterPartUrl(poster, part)}?retry=${attempts[i]}`
                     }
                     alt={title}
                     className="w-[calc((100%-1.5rem)/4)] flex-none rounded-[10px] shadow-soft"

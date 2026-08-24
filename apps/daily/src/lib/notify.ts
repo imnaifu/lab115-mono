@@ -1,4 +1,5 @@
 import { BARK_URL, DRY_RUN, SITE } from "./config";
+import { dayPath } from "./links";
 import type { Digest } from "./types";
 
 /**
@@ -40,7 +41,9 @@ export async function notify(digest: Digest): Promise<void> {
     `${BARK_URL.replace(/\/+$/, "")}/${encodeURIComponent(title)}/${encodeURIComponent(body)}`,
   );
   // Tapping the notification opens that day's permalink.
-  url.searchParams.set("url", `${SITE}/d/${digest.date}`);
+  // Through `dayPath`, and unprefixed: the default language needs no prefix and
+  // the bare form is a real page now, so this no longer opens on a redirect.
+  url.searchParams.set("url", `${SITE}${dayPath(digest.date)}`);
   url.searchParams.set("group", "daily");
 
   try {

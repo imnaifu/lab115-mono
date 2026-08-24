@@ -1,151 +1,32 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { DigestView } from "@/components/DigestView";
-import { SITE } from "@/lib/config";
-import { strings } from "@/lib/i18n";
-import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
-import { articlePath } from "@/lib/links";
-import { alternatesFor, breadcrumb, JsonLd, ogCardFor, publisher } from "@/lib/seo";
-import { displayTitle } from "@/components/ArticleTitle";
-import { readDigest } from "@/lib/store";
+import { permanentRedirect } from "next/navigation";
+import { href as langHref, isLang, DEFAULT_LANG } from "@/lib/lang";
+import { dayPath } from "@/lib/links";
 
 export const dynamic = "force-dynamic";
 
-type Params = { params: Promise<{ lang: string; date: string }> };
-
 /**
- * A DAY is a page worth describing, and it had only a title.
+ * The old shape of a day's URL, kept alive as a redirect and nothing else.
  *
- * No canonical, no hreflang, no description and no og — so a link to a specific
- * day unfurled with the site-wide tagline and read as the home page. The headlines
- * are what makes it a different page from yesterday, so the headlines are the
- * description.
+ * `/zh/d/2026-08-14` → `/2026/08/14`. Two things changed at once — the language
+ * prefix went away for the default language, and the date went hierarchical — so
+ * a link saved before either could name a path that no longer resolves.
+ *
+ * IT DOES NOT VALIDATE THE DATE. A garbage segment redirects to a URL that 404s,
+ * which is the same answer one hop later, and the alternative is a second copy of
+ * `readDigest`'s pattern check that could drift from it. The redirect is a URL
+ * rewrite, not a lookup.
+ *
+ * `/zh/d/…` reaches this at all only because `proxy.ts` redirects the prefix away
+ * first: a reader following an old link pays two hops. That is deliberate — the
+ * single-hop version needs the proxy to know the new path shape, and it runs on
+ * the edge where the digests are not readable. A handful of links, none of them
+ * hot, is not worth a second definition of these rules.
  */
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export default async function LegacyDayPage({
+  params,
+}: {
+  params: Promise<{ lang: string; date: string }>;
+}) {
   const { lang, date } = await params;
-  // `[lang]` matches any segment, and this runs before the page's own check
-  // rejects an unknown one — so fall back rather than throw on the title.
-  const pageLang = isLang(lang) ? lang : DEFAULT_LANG;
-  const t = strings(pageLang);
-  const title = `${t.brand} · ${date}`;
-  const path = `/d/${date}`;
-
-  const digest = await readDigest(date);
-  if (!digest) return { title, alternates: alternatesFor(pageLang, path) };
-
-  /**
-   * The first few headlines, which is the only honest summary of a day.
-   *
-   * Truncated at three rather than at a character count: a description cut
-   * mid-headline reads as a bug, and three of these is already past the ~160
-   * characters a result snippet shows.
-   */
-  const description =
-    digest.articles
-      .slice(0, 3)
-      .map((article) => displayTitle(article, pageLang))
-      .join(" · ") || t.tagline;
-
-  return {
-    title,
-    description,
-    alternates: alternatesFor(pageLang, path),
-    openGraph: {
-      type: "website",
-      title,
-      description,
-      // LANGUAGE-PREFIXED, like the canonical beside it. `path` here is the bare
-      // form, and the unprefixed URL is the one the proxy 307s — see the note on
-      // og:url in app/layout.tsx.
-      url: `${SITE}${langHref(pageLang, path)}`,
-      siteName: t.brand,
-      /**
-       * THIS DAY'S CARD, drawn from these headlines — see the route next door.
-       *
-       * The layout declares one for the home page, but declaring `openGraph` here
-       * at all replaces that whole object rather than extending it (Next merges
-       * metadata per top-level field), which is why this page unfurled with no
-       * image whatsoever despite the layout above it having one.
-       */
-      images: ogCardFor(pageLang, path),
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ogCardFor(pageLang, path).map((image) => image.url),
-    },
-  };
-}
-
-export default async function DayPage({ params }: Params) {
-  const { lang, date } = await params;
-  if (!isLang(lang)) notFound();
-
-  // readDigest validates the yyyy-mm-dd shape, so a crafted [date] cannot walk
-  // out of the repo directory.
-  const digest = await readDigest(date);
-  if (!digest) notFound();
-
-  return (
-    <>
-      {/**
-       * The day, as a list a crawler can read.
-       *
-       * `CollectionPage` says what this page is and `ItemList` says what is on it,
-       * in the ranked order the page itself uses — which is the one thing the
-       * markup cannot express, since every card is the same `<article>` shape. It
-       * costs nothing at render and it is how a list page becomes eligible for a
-       * result that shows more than its title.
-       */}
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          // LANGUAGE-PREFIXED, like the canonical. The unprefixed form is the one
-          // the proxy redirects, so an @id built from it names a 307 rather than
-          // the page it is describing.
-          "@id": `${SITE}${langHref(lang, `/d/${date}`)}`,
-          name: `${strings(lang).brand} · ${date}`,
-          inLanguage: lang === "zh" ? "zh-CN" : "en-US",
-          datePublished: date,
-          /**
-           * THE SAME DAY, stated anyway.
-           *
-           * A digest is written once, on the day it is for, and never edited — so
-           * this is not a guess, it is the fact. Saying it matters because the
-           * absence of `dateModified` is not read as "never modified": a crawler
-           * deciding how often to come back for a site that publishes daily has to
-           * fall back to guessing from the fetch, and an explicit stamp equal to
-           * `datePublished` is what tells it this page is finished.
-           */
-          dateModified: date,
-          publisher: publisher(strings(lang).brand),
-          /**
-           * The trail, because the URL cannot carry it. See `breadcrumb` in
-           * lib/seo — a day is one level down from the home page, and this is what
-           * puts 每日干货 › 2026-08-23 in a search result instead of a bare path.
-           */
-          breadcrumb: breadcrumb([
-            {
-              name: strings(lang).brand,
-              url: `${SITE}${langHref(lang, "/")}`,
-            },
-            { name: date, url: `${SITE}${langHref(lang, `/d/${date}`)}` },
-          ]),
-          mainEntity: {
-            "@type": "ItemList",
-            numberOfItems: digest.articles.length,
-            itemListElement: digest.articles.map((article, i) => ({
-              "@type": "ListItem",
-              position: i + 1,
-              url: `${SITE}${langHref(lang, articlePath(date, article.id))}`,
-              name: displayTitle(article, lang),
-            })),
-          },
-        }}
-      />
-      <DigestView digest={digest} lang={lang} path={`/d/${date}`} />
-    </>
-  );
+  permanentRedirect(langHref(isLang(lang) ? lang : DEFAULT_LANG, dayPath(date)));
 }

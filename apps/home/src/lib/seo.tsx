@@ -130,7 +130,7 @@ export const OG_HEIGHT = 630;
 export function ogCardFor(lang: Lang) {
   return [
     {
-      url: `${SITE}${href(lang, "/og.png")}`,
+      url: `${SITE}/og/${lang}.png`,
       width: OG_WIDTH,
       height: OG_HEIGHT,
     },

@@ -94,6 +94,11 @@ const STRINGS = {
     nothingArchived: "还没有任何归档。",
     otherUpdates: "其余更新",
 
+    /* The front page's two section headings. It lists today's headlines and then
+       the days before them, and those are the only two things on it. */
+    todayHeading: "今日",
+    recentHeading: "最近",
+
     emptyTitle: "今日无更新",
     emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天同一时间再来。",
 
@@ -158,6 +163,9 @@ const STRINGS = {
     archiveTitle: "Archive",
     nothingArchived: "Nothing archived yet.",
     otherUpdates: "Also today",
+
+    todayHeading: "Today",
+    recentHeading: "Recently",
 
     emptyTitle: "Nothing today",
     emptyBody: "No new posts from any source in the last 24 hours. Same time tomorrow.",

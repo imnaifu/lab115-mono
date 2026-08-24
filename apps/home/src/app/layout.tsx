@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { strings } from "@/lib/i18n";
-import { DEFAULT_LANG, isLang, LANGS, otherLang, type Lang } from "@/lib/lang";
+import { DEFAULT_LANG, href, isLang, LANGS, otherLang, type Lang } from "@/lib/lang";
 import { SITE } from "@/lib/config";
 import { ogCardFor } from "@/lib/seo";
 import "@/index.css";
@@ -35,12 +35,32 @@ export async function generateMetadata(): Promise<Metadata> {
     title,
     description: text.metaDescription,
     alternates: {
-      canonical: `/${lang}`,
-      // `x-default` points at the bare root, which the proxy resolves by
-      // Accept-Language — the right answer for a crawler with no preference.
+      canonical: href(lang, "/"),
+      /**
+       * `x-default` NAMES THE DEFAULT LANGUAGE'S PAGE, not the bare root.
+       *
+       * It used to be `/`, on the reasoning that the proxy resolves that by
+       * Accept-Language and so it is "the right answer for a crawler with no
+       * preference". The reasoning was sound and the outcome was a bug.
+       *
+       * A crawler with no preference does not get a negotiation — it gets Chinese,
+       * every time, because Googlebot sends no Accept-Language and `detectLang`
+       * falls back to DEFAULT_LANG. So `/` was a stable second address for `/zh`,
+       * and this tag was the site NOMINATING it. Google clustered the two and chose
+       * `/` over the page's own `<link rel="canonical">`; Search Console reported
+       * `lab115.com/zh` as "Duplicate, Google chose different canonical than user".
+       * apps/daily had the identical tag and the identical symptom on three pages.
+       *
+       * THE REDIRECT WENT TOO, which is what makes this simple rather than a
+       * mitigation. The default language is unprefixed now, so `/` is the Chinese
+       * page — there is no negotiating URL left anywhere to name. `x-default` and
+       * `zh` therefore point at the same URL, which is a documented configuration
+       * and not a workaround: it says that a reader who asked for nothing in
+       * particular gets the page they actually land on.
+       */
       languages: {
-        ...Object.fromEntries(LANGS.map((code) => [code, `/${code}`])),
-        "x-default": "/",
+        ...Object.fromEntries(LANGS.map((code) => [code, href(code, "/")])),
+        "x-default": href(DEFAULT_LANG, "/"),
       },
     },
     openGraph: {
@@ -48,7 +68,10 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: text.brand,
       title,
       description: text.metaDescription,
-      url: `/${lang}`,
+      // Through `href` like the canonical above, so the two can never disagree.
+      // An og:url is what an unfurler stores and shows as the link's identity, so
+      // it has to name a page rather than a redirect.
+      url: href(lang, "/"),
       locale: OG_LOCALE[lang],
       alternateLocale: OG_LOCALE[otherLang(lang)],
       /**

@@ -6,7 +6,7 @@ import { sourceOf } from "@/lib/sources";
 import { posterParts } from "@/lib/share";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
-import { articlePath } from "@/lib/links";
+import { articlePath, posterBase } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
 import type { Article } from "@/lib/types";
 
@@ -91,8 +91,11 @@ function Actions({
         {t.readFull}
       </a>
       <ShareButton
-        url={href(lang, articlePath(date, article.id))}
-        imageUrl={`${href(lang, articlePath(date, article.id))}/share.png`}
+        url={href(lang, articlePath(date, article))}
+        /* The poster BASE, not an image: the sheet asks for several parts off it.
+           It no longer hangs off the article's own path — see `posterBase` in
+           lib/links — so it is built independently rather than by appending. */
+        posterBase={posterBase(lang, date, article.id)}
         /* Counted HERE, on the server, where the summary and the poster's layout
            table both already are. The sheet is a client component and needs the
            number to know how many images to fetch and preview. */

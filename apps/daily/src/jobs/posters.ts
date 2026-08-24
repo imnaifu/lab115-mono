@@ -33,7 +33,7 @@ const CONCURRENCY = 4;
  * Every image of every article, in every language the site serves.
  *
  * BOTH LANGUAGES, which doubles the work for a digest that is Chinese-only. It is
- * still right: `/en/d/…/share.png` is a real URL that a real reader can share
+ * still right: `/share/en/…` is a real URL that a real reader can share
  * from, and the poster it renders genuinely differs — the brand, the meta line and
  * the choice of headline are all language-dependent (see `renderPoster`). Warming
  * one language and not the other would make the other quietly slower forever,

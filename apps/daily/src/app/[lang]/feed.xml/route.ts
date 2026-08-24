@@ -8,7 +8,7 @@ import { isLang } from "@/lib/lang";
  * article, and no reader has a way to show one and hide the other.
  *
  * A directory named with the extension plus `route.ts`, the same trick
- * `manifest.webmanifest/route.ts` and `share.png/route.tsx` use.
+ * `manifest.webmanifest/route.ts` next door uses.
  *
  * NOT reached through `proxy.ts`: its matcher excludes anything ending in a file
  * extension, so this handler sees the request directly and takes the language

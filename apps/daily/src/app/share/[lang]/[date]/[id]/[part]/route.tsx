@@ -6,7 +6,7 @@ import { DEFAULT_LANG, isLang } from "@/lib/lang";
 export const dynamic = "force-dynamic";
 
 /**
- * One image of an article's share, as a PNG.
+ * One image of an article's share, as a PNG: `/share/zh/2026-08-14/ff36a72e/1.png`.
  *
  * THE LAYOUT IS NOT HERE, and neither is the caching. The layout is lib/poster.tsx
  * — the daily job renders every image of every article the moment a digest is
@@ -18,18 +18,30 @@ export const dynamic = "force-dynamic";
  *
  * A route handler rather than Next's `opengraph-image` file convention, because
  * that convention gives one image per page and a share is a set of them.
+ *
+ * MOVED OUT of `/[lang]/d/[date]/[id]/share.png`, and the part moved out of the
+ * query string with it. Both for the reasons on `ogUrl` in lib/links: an image
+ * route under the page tree cannot be reached now that Chinese is served
+ * unprefixed, and `?part=` was what forced robots.txt to match a query pattern and
+ * the share sheet's retry to append `&` to a URL that only had a `?` by luck.
+ *
+ * `[part]` arrives as `1.png`; `posterPart` strips the extension — see the note
+ * there for why that lives beside the builder rather than here.
  */
 export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ lang: string; date: string; id: string }> },
+  _req: Request,
+  {
+    params,
+  }: {
+    params: Promise<{ lang: string; date: string; id: string; part: string }>;
+  },
 ) {
-  const { lang, date, id } = await params;
-  const part = posterPart(new URL(req.url).searchParams.get("part"));
+  const { lang, date, id, part } = await params;
   // The poster is written in the language of the page that linked to it — see the
   // note on the cache key in lib/poster-store.ts.
   const posterLang = isLang(lang) ? lang : DEFAULT_LANG;
 
-  const bytes = await posterBytes(date, id, posterLang, part);
+  const bytes = await posterBytes(date, id, posterLang, posterPart(part));
   // null covers both "no such article" and "no such part" — a stale link, or
   // someone counting past the end. A 404 says so; a blank canvas would not.
   if (!bytes) return new Response("Not found", { status: 404 });

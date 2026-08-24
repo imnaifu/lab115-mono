@@ -64,8 +64,19 @@ export type TrackEvent =
    * came back to the same window rather than opening a new tab.
    */
   | "pull_refresh"
-  /** A single day opened — from an archive row or from an article page. */
-  | "day_open";
+  /** A single day opened — from an archive row, an article page, or the front
+   *  page (`from` says which). */
+  | "day_open"
+  /**
+   * One article opened from the front page's headline list.
+   *
+   * NEW WITH THE FRONT PAGE, and it is the number that says whether splitting the
+   * home page from the day page was right: a reader who lands on `/` either taps a
+   * headline (this) or takes the whole edition (`day_open` with `from=front`). If
+   * almost nobody does the former, the headline list is decoration and the front
+   * page should be a shorter route to the day.
+   */
+  | "article_open";
 
 /**
  * Fire and forget.

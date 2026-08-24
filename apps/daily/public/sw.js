@@ -24,8 +24,14 @@
  * The name is the whole invalidation mechanism — `activate` deletes anything that
  * does not match — so a change that makes old cached entries wrong needs a new
  * version here, not a migration.
+ *
+ * v2: EVERY URL ON THE SITE CHANGED. The default language lost its prefix and the
+ * dates went hierarchical, so a v1 cache is a set of documents at addresses that
+ * now answer with a redirect. Nothing there is worth keeping — the offline
+ * fallback is the only thing this cache is for, and a fallback to a stale URL is
+ * worse than a miss.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `daily-static-${VERSION}`;
 const PAGE_CACHE = `daily-pages-${VERSION}`;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];
@@ -45,14 +51,15 @@ const IMMUTABLE = /^\/_next\/static\//;
 const ASSETS = /^\/(favicon\.svg|icon-\d+\.png|icon-maskable-\d+\.png|apple-touch-icon\.png)$/;
 
 /**
- * The share poster. Deliberately NOT cached here.
+ * The share posters, which live under `/share/` now rather than ending in
+ * `share.png`. Deliberately NOT cached here.
  *
  * It is ~200KB per article, it is already served with an hour of HTTP caching, and
  * the sheet fetches it twice on purpose — once to show, once to hand to the OS.
  * The browser cache handles that pair; a second copy in here would double the
  * storage for no gain.
  */
-const POSTER = /\/share\.png$/;
+const POSTER = /^\/share\//;
 
 self.addEventListener("install", (event) => {
   // Nothing to precache: there is no static shell to warm, since every document

@@ -57,7 +57,7 @@ function preloadPoster(href: string): Promise<void> {
  */
 export function ShareButton({
   url,
-  imageUrl,
+  posterBase,
   parts,
   title,
   thesis,
@@ -72,7 +72,9 @@ export function ShareButton({
    */
   url: string;
   /** The poster route for this article, WITHOUT a `?part=`. */
-  imageUrl: string;
+  /** The base of this article's posters, WITHOUT a part or an extension —
+   *  `posterPartUrl` adds those. See `posterBase` in lib/links. */
+  posterBase: string;
   /** How many images this article's share carries — see the same prop on
    *  ShareSheet, and `posterParts` in lib/share.ts. */
   parts: number;
@@ -92,7 +94,7 @@ export function ShareButton({
    * Seeded with the props so the first paint has real hrefs, then resolved
    * against the document after mount, which is the earliest `location` exists.
    */
-  const [links, setLinks] = useState({ page: url, poster: imageUrl });
+  const [links, setLinks] = useState({ page: url, poster: posterBase });
   /**
    * Whether the press is still waiting on the posters. TWO OF THEM, and they are
    * not redundant — the same split as `saving`/`savingRef` in ShareSheet.
@@ -120,9 +122,9 @@ export function ShareButton({
   useEffect(() => {
     setLinks({
       page: new URL(url, location.href).href,
-      poster: new URL(imageUrl, location.href).href,
+      poster: new URL(posterBase, location.href).href,
     });
-  }, [url, imageUrl]);
+  }, [url, posterBase]);
 
   /**
    * Open the sheet, but not before there is something to see in it.

@@ -2,7 +2,18 @@ import { DEFAULT_LANG, isLang } from "@/lib/lang";
 import { renderOgCard } from "@/lib/og";
 
 /**
- * The site's link-preview card, per language.
+ * The site's link-preview card, per language: `/og/zh.png` and `/og/en.png`.
+ *
+ * OUTSIDE THE PAGE TREE, where it used to live as `/[lang]/og.png`. It had to
+ * move: `proxy.ts` skips any path ending in a file extension, so a
+ * language-prefixed image route is unreachable now that Chinese is served
+ * unprefixed and reaching `/[lang]/…` needs the rewrite that matcher denies to
+ * dotted paths. Carrying the language as an ordinary path segment sidesteps it,
+ * and it is what apps/daily does — see `ogUrl` in its lib/links.
+ *
+ * `[name]` arrives WITH the extension, because a dynamic segment matches the whole
+ * segment. Stripping it here is the price of not needing a `[lang].png` directory,
+ * which is not a shape the App Router promises.
  *
  * PER LANGUAGE because the headline on it is the hero's, and that is the one line
  * on this site most worth getting right in the reader's own language — a Chinese
@@ -16,11 +27,12 @@ import { renderOgCard } from "@/lib/og";
  */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ lang: string }> },
+  { params }: { params: Promise<{ name: string }> },
 ) {
-  const { lang } = await params;
-  // `[lang]` matches any first segment. A card is not a page, so an unknown one
-  // falls back rather than 404s — an unfurler that gets no image drops the whole
+  const { name } = await params;
+  const lang = name.replace(/\.png$/, "");
+  // `[name]` matches any segment. A card is not a page, so an unknown one falls
+  // back rather than 404s — an unfurler that gets no image drops the whole
   // preview, and there is nothing language-specific enough here to be worth that.
   const bytes = await renderOgCard(isLang(lang) ? lang : DEFAULT_LANG);
 

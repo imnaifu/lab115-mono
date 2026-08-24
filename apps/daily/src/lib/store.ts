@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { REPO_SUBDIR } from "./config";
+import { articleSlug, idFromSlug } from "./links";
 import { REPO_PATH } from "./paths";
 import type { Article, Digest } from "./types";
 
@@ -98,4 +99,37 @@ export async function readArticle(
   const digest = await readDigest(date);
   const article = digest?.articles.find((a) => a.id.startsWith(idPrefix));
   return digest && article ? { digest, article } : null;
+}
+
+/**
+ * One article by the last segment of its URL, which is now `<slug>-<id>`.
+ *
+ * TWO LOOKUPS, IN THIS ORDER, and the order is the whole correctness argument.
+ *
+ * The exact slug match comes first because it cannot be fooled. `idFromSlug` can
+ * be: hex digits are also letters, so a headline ending in a word spelled from
+ * `a-f` would hand back an id that names nothing, and falling through to it first
+ * would 404 a URL this site itself generated.
+ *
+ * The id match is second, and it is what makes every link ever shared keep
+ * working — the eight-character URLs from before slugs existed, a link whose
+ * headline has since been edited, a URL someone retyped without the words. It
+ * also reports whether the segment it was handed is the canonical one, so the
+ * page can 308 to the right URL instead of serving the same article at two
+ * addresses. That flag is the reason this returns a shape rather than an article.
+ */
+export async function readArticleBySlug(
+  date: string,
+  segment: string,
+): Promise<{ digest: Digest; article: Article; canonical: boolean } | null> {
+  const digest = await readDigest(date);
+  if (!digest) return null;
+
+  const exact = digest.articles.find((a) => articleSlug(a) === segment);
+  if (exact) return { digest, article: exact, canonical: true };
+
+  const id = idFromSlug(segment);
+  if (!id) return null;
+  const byId = digest.articles.find((a) => a.id.startsWith(id));
+  return byId ? { digest, article: byId, canonical: false } : null;
 }

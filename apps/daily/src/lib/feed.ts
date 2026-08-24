@@ -112,7 +112,7 @@ function contentHtml(article: Article, lang: Lang, url: string): string {
 }
 
 function entryFor(article: Article, digest: Digest, lang: Lang): string {
-  const path = articlePath(digest.date, article.id);
+  const path = articlePath(digest.date, article);
   const url = `${SITE}${href(lang, path)}`;
   const category = categoryOf(article.category);
   /**

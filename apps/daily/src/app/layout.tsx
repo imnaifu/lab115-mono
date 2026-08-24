@@ -49,9 +49,10 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE),
     title,
     description: t.tagline,
-    // The home page in both languages — see alternatesFor. It used to declare
-    // `${SITE}/` as its own canonical, which is the URL that REDIRECTS here: a
-    // canonical pointing at a 307 is a canonical a crawler cannot follow.
+    // The home page in both languages — see alternatesFor. On the Chinese side
+    // that canonical is now `${SITE}/` itself. An older note here warned against
+    // exactly that, because the bare URL used to be the one that REDIRECTED here;
+    // it is the page now, so naming it is correct rather than dangerous.
     //
     // `types` is the feed's AUTODISCOVERY link, and it is the whole reason a
     // reader can be handed `daily.lab115.com` and find the subscription itself.
@@ -71,13 +72,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description: t.tagline,
       /**
-       * THIS LANGUAGE'S HOME PAGE, not the bare root.
+       * THIS LANGUAGE'S HOME PAGE, through `href` like the canonical above, so the
+       * two can never disagree. On the Chinese side both are the bare `${SITE}/`.
        *
-       * It was `${SITE}/`, which is the same mistake the canonical two fields up
-       * had and the note there describes: the unprefixed URL is the one the proxy
-       * 307s. A canonical pointing at a redirect is one a crawler cannot follow,
-       * and an og:url pointing at one is what an unfurler stores and shows as the
-       * link's identity — so the two now agree, and both name a page that exists.
+       * The point the old note here made still holds and is worth keeping: an
+       * og:url is what an unfurler stores and shows as the link's identity, so it
+       * has to name a page rather than a redirect. What changed is which URL that
+       * is.
        */
       url: `${SITE}${href(lang, "/")}`,
       siteName: t.brand,
@@ -91,13 +92,16 @@ export async function generateMetadata(): Promise<Metadata> {
        * the one place this site is actually passed around. See lib/og.tsx for why
        * the card is 1200x630 rather than the poster's 3:4.
        *
+       * `"site"` is the card's NAME, not a path: the cards live in `/og/<lang>/`
+       * rather than hanging off the page they belong to. See `ogUrl` in lib/links.
+       *
        * INHERITANCE DOES NOT SAVE THE PAGES BELOW THIS ONE. Next merges metadata
        * per top-level field, so a page that declares any `openGraph` of its own
        * replaces this whole object rather than adding to it — which is exactly why
        * the day page had no image despite this layout being its parent. Every page
        * that sets `openGraph` therefore sets `images` too.
        */
-      images: ogCardFor(lang, "/"),
+      images: ogCardFor(lang, "site"),
     },
     /**
      * `summary_large_image`, now that there is an image worth the space. `summary`
@@ -109,7 +113,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description: t.tagline,
-      images: ogCardFor(lang, "/").map((image) => image.url),
+      images: ogCardFor(lang, "site").map((image) => image.url),
     },
     icons: {
       icon: "/favicon.svg",
