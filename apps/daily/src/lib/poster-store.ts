@@ -30,8 +30,8 @@ const POSTER_DIR = path.join(DATA_PATH, "posters");
  * How many days of posters to keep.
  *
  * A cap rather than forever, because this is a mounted volume in a container and
- * nothing else would ever delete from it. 30 days covers the archive page's
- * recent reach; older dates still work, they just render on demand the first time
+ * nothing else would ever delete from it. 30 days covers how far back the front
+ * page's list is usually opened; older dates still work, they just render on demand the first time
  * anyone asks, which for a two-month-old digest is approximately never.
  */
 const KEEP_DAYS = 30;

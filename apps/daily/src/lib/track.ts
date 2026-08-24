@@ -47,8 +47,8 @@ export type TrackEvent =
   | "category_tab"
   /** The language switch, which has just come back from being hidden. */
   | "lang_switch"
-  | "archive_open"
-  | "today_open"
+  /** The end-of-page link on a day page, back to the front page's list of days. */
+  | "all_days_open"
   /** The masthead's install control was pressed — one per press, whether or not
    *  the browser had a native offer to make (`can_prompt` says which). */
   | "install_open"
@@ -64,19 +64,9 @@ export type TrackEvent =
    * came back to the same window rather than opening a new tab.
    */
   | "pull_refresh"
-  /** A single day opened — from an archive row, an article page, or the front
+  /** A single day opened — from a row on the home page's list, or from an article
    *  page (`from` says which). */
-  | "day_open"
-  /**
-   * One article opened from the front page's headline list.
-   *
-   * NEW WITH THE FRONT PAGE, and it is the number that says whether splitting the
-   * home page from the day page was right: a reader who lands on `/` either taps a
-   * headline (this) or takes the whole edition (`day_open` with `from=front`). If
-   * almost nobody does the former, the headline list is decoration and the front
-   * page should be a shorter route to the day.
-   */
-  | "article_open";
+  | "day_open";
 
 /**
  * Fire and forget.

@@ -78,27 +78,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // The newest digest is when the site as a whole last changed.
   const newest = dates.length ? stamp(dates[0]) : new Date(0);
 
-  const pages: MetadataRoute.Sitemap = [
-    entry("/", newest),
-    entry("/archive", newest),
-  ];
+  /**
+   * `/` and nothing else above the days. `/archive` used to be listed beside it and
+   * is a 308 to `/` now — the home page IS the list of days. A sitemap is a list of
+   * pages worth indexing, and a redirect is not one.
+   */
+  const pages: MetadataRoute.Sitemap = [entry("/", newest)];
 
   /**
-   * Every day, and every article inside it.
+   * Every day, and every article inside it — EXCEPT the day currently on the front
+   * page, whose own entry is held back.
    *
-   * INCLUDING TODAY'S, with nothing skipped and no notion of a "current" edition
-   * to skip it by. That is worth stating because the obvious alternative was
-   * considered and is now unnecessary: while the home page rendered the newest
-   * digest verbatim, the newest day page was its duplicate, and keeping it out of
-   * here until the day rolled over would have been the way to stop the two
-   * competing. The front page carries headlines only now — see FrontPage.tsx — so
-   * no day page has a twin at any moment, and every one of them is indexable from
-   * the hour it is written rather than the morning after.
+   * That day's page names `/` as its canonical, because the home page renders the
+   * full digest and the two would otherwise be one body at two URLs; see the note
+   * in the day page's `generateMetadata`. Listing a URL here while it points its
+   * canonical somewhere else is asking a crawler to spend a fetch on a page that
+   * tells it to go elsewhere — a sitemap is a list of pages worth indexing, and for
+   * one day that page is not one of them. It appears tomorrow, when the next digest
+   * lands and it becomes self-canonical.
+   *
+   * ITS ARTICLES ARE STILL LISTED. They are not duplicates of anything: the front
+   * page holds summaries, an article page holds one summary plus its cover, source
+   * and poster, and no other URL carries that. Holding those back too would delay
+   * the deepest and most numerous pages on the site for no reason at all.
    *
    * The digests are read rather than inferred from the date list, because the
    * article ids only exist inside them. That is one file open per archived day on
-   * a request a crawler makes rarely — the same thing the archive page already
-   * does, and it is not on the reader's path.
+   * a request a crawler makes rarely — the same thing the home page's list of
+   * days already does, and it is not on the reader's path.
    */
   for (const date of dates) {
     pages.push(entry(dayPath(date), stamp(date)));

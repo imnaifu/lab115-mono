@@ -24,16 +24,16 @@ export const PRODUCTS: Product[] = [
     url: "https://daily.lab115.com",
     host: { zh: "daily.lab115.com", en: "daily.lab115.com" },
     tagline: {
-      zh: "每天一版 AI 技术摘要",
-      en: "One AI-written tech digest a day",
+      zh: "各个领域最新的观点，每天一版",
+      en: "The latest takes from every field, once a day",
     },
     description: {
-      zh: "每天早上抓一遍订阅的技术博客，让大模型先打分、筛掉噪音，只留下值得看的几篇，再写成中英双语的观点摘要，排成一张可以直接截图分享的竖版长图。没有账号，没有信息流，一天只更新一次。",
-      en: "Every morning it sweeps a list of engineering blogs, has a model score each piece before writing anything, keeps only what clears the bar, and turns the survivors into bilingual summaries laid out as one tall page built to be screenshotted and shared. No account, no feed, updated once a day.",
+      zh: "每天把各个领域值得读的观点汇成一份。大模型先给每篇打分、筛掉噪音，只留下值得看的几篇，再写成中英双语摘要，排成一张可以直接截图分享的竖版长图。没有账号，没有信息流，一天只更新一次。",
+      en: "Gathers the current thinking across every field into one edition a day. A model scores each piece before anything is written and keeps only what clears the bar; the survivors become bilingual summaries laid out as one tall page built to be screenshotted and shared. No account, no feed, updated once a day.",
     },
     facts: {
-      zh: ["中英双语", "每天 07:00 更新", "无需注册"],
-      en: ["Chinese & English", "Updated daily at 07:00", "No sign-up"],
+      zh: ["中英双语", "多家来源", "无需注册"],
+      en: ["Chinese & English", "Many sources", "No sign-up"],
     },
   },
   {

@@ -15,8 +15,8 @@ import { barePath, DEFAULT_LANG, isLang } from "@/lib/lang";
  *             new one in the index.
  *   `/en/…`   through, with `x-lang: en`.
  *   anything  REWRITTEN to `/zh/…`, with `x-lang: zh`. A rewrite, not a redirect:
- *             the reader's URL bar keeps saying `/archive` while the App Router
- *             matches `src/app/[lang]/archive`. That is what lets the whole page
+ *             the reader's URL bar keeps saying `/2026/08/24` while the App Router
+ *             matches `src/app/[lang]/[year]/[month]/[day]`. That is what lets the page
  *             tree stay where it is rather than being duplicated at the root.
  *
  * WHAT IS GONE: the Accept-Language negotiation that used to decide where `/`
@@ -72,7 +72,7 @@ export const config = {
    * silently redirected, and a service worker that 404s does not register.
    *
    * A dot in the last segment stands in for "this is a file, not a page", which
-   * holds for every route on this site: the paths are `/`, `/archive`,
+   * holds for every route on this site: the paths are `/`,
    * `/<yyyy>/<mm>/<dd>` and `/<yyyy>/<mm>/<dd>/<slug>-<id>`, and none of those
    * segments contains one. The slug is built by `slugify` in lib/links, which
    * emits `[a-z0-9-]` and therefore cannot produce one either.

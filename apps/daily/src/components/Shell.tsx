@@ -215,8 +215,8 @@ export function EndLink({
   sub: string;
   /**
    * Which event this one counts as. NAMED BY THE CALLER rather than derived from
-   * the href, because the same component is the way to the archive, the way back
-   * to today and the way to a single day — three different things a reader wants,
+   * the href, because the same component is the way to the list of every day and
+   * the way to a single day — two different things a reader wants,
    * and a regex over a path is a fragile way to tell them apart.
    */
   track?: TrackEvent;

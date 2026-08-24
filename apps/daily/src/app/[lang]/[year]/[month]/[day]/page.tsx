@@ -72,8 +72,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       title,
       description,
       // Through `langHref` like the canonical beside it, so the two always name
-      // the same URL. On the Chinese side that is the unprefixed form, which is a
-      // real page now rather than the redirect the old note here warned about.
+      // the same URL — an unfurler stores og:url as the link's identity.
       url: `${SITE}${langHref(pageLang, path)}`,
       siteName: t.brand,
       /**

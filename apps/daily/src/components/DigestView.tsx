@@ -145,11 +145,10 @@ export function DigestView({
 
   return (
     <PageShell>
-      {/* `path` was a prop here, because this view served both `/` and the dated
-          page and the language switch had to land on whichever one you were
-          actually on. It serves ONE page now — the front page is its own component
-          for the reasons in FrontPage.tsx — so the path is simply this digest's,
-          and a caller can no longer pass one that disagrees with the content. */}
+      {/* `path` was a prop, back when this view also rendered the home page and the
+          language switch had to land on whichever of the two you were actually on.
+          The home page is a list of days now — see app/[lang]/page.tsx — so this
+          serves one URL and the path is simply this digest's. */}
       <Masthead title={t.brand} lang={lang} path={dayPath(digest.date)}>
         <span>{formatDate(digest.date, lang)}</span>
         <MastheadDot />
@@ -179,10 +178,10 @@ export function DigestView({
 
       <div className={PAD}>
         <EndLink
-          href={href(lang, "/archive")}
-          label={t.archive}
-          sub={t.archiveSub}
-          track="archive_open"
+          href={href(lang, "/")}
+          label={t.allDays}
+          sub={t.allDaysSub}
+          track="all_days_open"
         />
       </div>
 

@@ -83,24 +83,20 @@ const STRINGS = {
     /** A platform name, so it takes the name that platform uses here. */
     weibo: "微博",
 
-    archive: "往期回顾",
-    archiveSub: "看看前几天读到了什么",
-    today: "回到今日",
-    todaySub: "看今天这一期",
+    /* The end-of-page link on a day page, back to the front page. It names what
+       the destination IS — every day the site has published — rather than calling
+       it an archive, which was the name of a separate page that no longer exists. */
+    allDays: "全部日期",
+    allDaysSub: "每一天的那一期",
     wholeDay: "看这一天的全部",
     wholeDaySub: (date: string, n: number) => `${date} · 共 ${n} 篇`,
 
-    archiveTitle: "归档",
-    nothingArchived: "还没有任何归档。",
+    nothingYet: "还没有任何内容。",
     otherUpdates: "其余更新",
 
-    /* The front page's two section headings. It lists today's headlines and then
-       the days before them, and those are the only two things on it. */
-    todayHeading: "今日",
-    recentHeading: "最近",
 
     emptyTitle: "今日无更新",
-    emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天同一时间再来。",
+    emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天再来看看。",
 
     /**
      * The footer's line, and the description on every page, in the manifest and
@@ -114,8 +110,23 @@ const STRINGS = {
      * false in the other direction. A tagline that has to keep up with which
      * halves are populated is a tagline that will be wrong again; both copies now
      * describe what the site DOES, and the page the reader is on says the rest.
+     *
+     * IT NAMES NO MACHINERY AT ALL, which is the harder rule and the one this line
+     * kept breaking. Three versions in a row described the PROCESS — when the cron
+     * fires (每天早上), what it reads (订阅的博客), what it does to it (读一遍、
+     * 提炼、收拢) — none of which is a reason for anyone to open the site. A reader
+     * does not want a blog reader; they want to know what is being argued this week
+     * in fields they have no time to follow.
+     *
+     * SO IT PROMISES THE OUTCOME: many fields, the current thinking in each, already
+     * gathered. 各个领域 is a claim the content actually supports — the categories in
+     * config.json run 技术/商业/投资/经济/科学/设计/生活/人文, so this is not a
+     * tech feed wearing a wider label.
+     *
+     * It also names no count and no schedule beyond 每天, on the same principle as
+     * the paragraph above: a number in a tagline is a number that goes stale.
      */
-    tagline: "每天早上把订阅的博客读一遍，提炼成观点摘要。",
+    tagline: "每天替你汇总各个领域最新的观点。",
 
     /** "2026年8月14日 · 星期五" */
     date: (y: number, m: number, d: number, weekday: number) =>
@@ -153,25 +164,23 @@ const STRINGS = {
       "It gets an icon of its own, opens full screen with no address bar, and the pages you have already opened stay readable with no network.",
     weibo: "Weibo",
 
-    archive: "Past editions",
-    archiveSub: "What ran on the days before",
-    today: "Back to today",
-    todaySub: "The current edition",
+    allDays: "All editions",
+    allDaysSub: "Every day the site has published",
     wholeDay: "See the whole day",
     wholeDaySub: (date: string, n: number) => `${date} · ${n} in total`,
 
-    archiveTitle: "Archive",
-    nothingArchived: "Nothing archived yet.",
+    nothingYet: "Nothing published yet.",
     otherUpdates: "Also today",
 
-    todayHeading: "Today",
-    recentHeading: "Recently",
 
     emptyTitle: "Nothing today",
-    emptyBody: "No new posts from any source in the last 24 hours. Same time tomorrow.",
+    emptyBody: "No new posts from any source in the last 24 hours. Try again tomorrow.",
 
-    tagline:
-      "Every morning, the subscribed blogs read and boiled down to takes.",
+    /* Written tighter than a literal rendering of the Chinese, and deliberately:
+       this string is drawn across the bottom of the 1200px OG card (see lib/og.tsx),
+       and CJK carries more meaning per character — the two lines land at similar
+       widths only if the English is composed rather than translated. */
+    tagline: "The latest takes from every field, gathered for you daily.",
 
     /** "Friday, 14 August 2026" */
     date: (y: number, m: number, d: number, weekday: number) =>

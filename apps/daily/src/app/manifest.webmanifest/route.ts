@@ -8,7 +8,7 @@ import { DEFAULT_LANG } from "@/lib/lang";
  * IT NEEDS ITS OWN ROUTE rather than being reached through `[lang]`, and the
  * reason is `proxy.ts`: its matcher skips any path ending in a file extension, so
  * `/manifest.webmanifest` never gets rewritten into the `[lang]` tree the way
- * `/archive` does. That exclusion is deliberate and load-bearing — it is what
+ * `/2026/08/24` does. That exclusion is deliberate and load-bearing — it is what
  * keeps `/sw.js` and the icons in `public/` from being rewritten — so the answer
  * is a route here rather than a hole in the matcher.
  *

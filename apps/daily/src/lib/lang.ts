@@ -2,7 +2,7 @@
  * The reader's language, carried in the URL.
  *
  * THE DEFAULT LANGUAGE IS UNPREFIXED and the other one is not: Chinese lives at
- * `/archive`, English at `/en/archive`. It used to be symmetric — `/zh/…` and
+ * `/2026/08/24`, English at `/en/2026/08/24`. It used to be symmetric — `/zh/…` and
  * `/en/…`, with the bare path redirected by middleware to whatever the request's
  * Accept-Language asked for — and that symmetry cost more than it was worth.
  *
@@ -55,7 +55,7 @@ export function href(lang: Lang, path: string): string {
 /**
  * The bare path behind a language-prefixed one — the inverse of `href`.
  *
- * `proxy.ts` needs it to turn a legacy `/zh/archive` back into `/archive`, and
+ * `proxy.ts` needs it to turn a legacy `/zh/2026/08/24` back into `/2026/08/24`, and
  * it lives here rather than there so the prefix rules are stated once.
  */
 export function barePath(path: string): string {

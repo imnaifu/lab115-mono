@@ -12,7 +12,7 @@ import { ogUrl } from "./links";
  * canonical, so this is not a place for four independent attempts.
  */
 
-/** The full URL of a bare path in one language. `path` is `/`, `/archive`, … */
+/** The full URL of a bare path in one language. `path` is `/`, `/2026/08/24`, … */
 function url(lang: Lang, path: string): string {
   return `${SITE}${href(lang, path)}`;
 }

@@ -301,7 +301,7 @@ export default async function ArticlePage({ params }: Params) {
 
       <div className={PAD}>
         <EndLink
-          href={langHref(lang, `/d/${date}`)}
+          href={langHref(lang, dayPath(date))}
           label={t.wholeDay}
           sub={t.wholeDaySub(date, found.digest.stats.shown)}
           track="day_open"

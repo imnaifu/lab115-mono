@@ -109,10 +109,12 @@ export function idFromSlug(slug: string): string | null {
  * that change: the `/d/` segment, which was namespacing the date space against
  * nothing — no other route ever sat beside it — and the flatness, which made
  * `/2026/08` and `/2026` unreachable. Those two are NOT built yet and this is the
- * note that says why: with a few days on the site a year page would list exactly
- * what `/archive` lists, which is the duplicate-canonical problem this whole
- * change is fixing, self-inflicted. The path shape is the durable half and it is
- * settled now; the index pages come when `/archive` grows past one screen.
+ * note that says why: the FRONT PAGE is now the list of every day, so a year page
+ * would list exactly what `/` lists — the duplicate-canonical problem this whole
+ * change is fixing, self-inflicted one route over. The path shape is the durable
+ * half and it is settled; the index pages become worth building only once `/` has
+ * to be paginated, which is the point at which a year page shows something the
+ * front page no longer does.
  *
  * A four-digit first segment can never collide with a named page, so nothing is
  * fenced off by giving the dates the top level.
