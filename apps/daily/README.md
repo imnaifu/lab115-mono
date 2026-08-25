@@ -29,8 +29,8 @@ git pull ──→ 当天已有就退出 ──→ 拉全部源，筛出过去 2
 - `fallbackCategory` —— 分不出来时落到哪一栏
 - `publishMinScore` —— 唯一一道分数门槛：低于它就不发布
 
-和 `src/lib/config.ts` 的分工：**编辑决策进 `config.json`，运维参数进环境变量**
-（密钥、cron、时区、时间窗口）。
+和 `src/lib/config.ts` 的分工：**编辑决策进 `config.json`，运维参数进 `config.ts`
+的常量**（cron、时区、时间窗口、模型）。环境变量只剩密钥，见「## 环境变量与常量」。
 
 它是被 `import` 进来的、打进镜像的，所以改完要 push 并重新部署才生效。
 
@@ -224,10 +224,10 @@ config.json: source "alienchow" scrape.flags must include "g"
 
 | | 频率 | 做什么 |
 |---|---|---|
-| `DAILY_CRON` | 默认每天 07:00 | 拉取 → **当天已有就跳过** → 抓取 + 摘要 + commit + push |
-| `DAILY_SYNC_CRON` | 默认每小时的 7/22/37/52 分 | **只 `git pull`**，不调模型、不 commit |
+| `CRON` | 默认每天 07:00 | 拉取 → **当天已有就跳过** → 抓取 + 摘要 + commit + push |
+| `SYNC_CRON` | 默认每小时的 7/22/37/52 分 | **只 `git pull`**，不调模型、不 commit |
 
-两者的分钟必须错开。两个 cron 共用 `jobs/daily.ts` 里的同一把锁，而抢不到锁时的行为是不对称的：sync 安静跳过（15 分钟后还有下一次），daily 直接抛错（下一次是 24 小时后）。所以 sync 不能落在整点 —— 否则它会先拿到锁，把当天的 digest 挤掉。改 `DAILY_CRON` 时记得同步挪开 `DAILY_SYNC_CRON`。
+两者的分钟必须错开。两个 cron 共用 `jobs/daily.ts` 里的同一把锁，而抢不到锁时的行为是不对称的：sync 安静跳过（15 分钟后还有下一次），daily 直接抛错（下一次是 24 小时后）。所以 sync 不能落在整点 —— 否则它会先拿到锁，把当天的 digest 挤掉。改 `CRON` 时记得同步挪开 `SYNC_CRON`。
 
 定时任务带 `skipIfPublished`：仓库里已经有当天的 digest 就直接退出，不抓取也不调模型。
 因为那一天可能已经在别处生成过（笔记本手动跑、上一个容器实例），重跑等于为同一天付两次
@@ -1154,7 +1154,7 @@ prompt 里用中文直接写（用英文描述中文文风是隔了一层）：
 一层嵌套，那是**另一个可靠性区间**，不是同一件事的小号版本。
 
 代价是延迟和 system prompt 每篇重发一次，分别由 `REQUEST_CONCURRENCY`（默认 8，
-`DAILY_CONCURRENCY` 可调）和 DeepSeek 的缓存命中价（$0.0028/M 对 $0.14/M）抵掉。
+`REQUEST_CONCURRENCY` 可调）和 DeepSeek 的缓存命中价（$0.0028/M 对 $0.14/M）抵掉。
 现在坏一次只损失一篇。
 
 另外两个实测撞到的坑：
@@ -1321,8 +1321,8 @@ date         生成时刻(UTC)   窗口
 1.2 小时的缝，那段时间的文章**一篇都没发过，也永远不会发**。重复是看得见的那一半，
 静默丢失是更糟的那一半。
 
-现在窗口是**固定的每日时段**：`前一天 07:00 → 当天 07:00`（`DAILY_TZ` 时区，锚点小时由
-`DAILY_WINDOW_ANCHOR_HOUR` 决定，应与 `DAILY_CRON` 的小时一致）。同一天 8 点跑、9 点跑、
+现在窗口是**固定的每日时段**：`前一天 07:00 → 当天 07:00`（`TZ` 时区，锚点小时由
+`WINDOW_ANCHOR_HOUR` 决定，应与 `CRON` 的小时一致）。同一天 8 点跑、9 点跑、
 下午跑，窗口完全相同，结果也就完全相同。
 
 在锚点之前跑（比如 LA 06:00）时 `to` 会夹到「现在」—— 还没发生的时间不能算覆盖过。
@@ -1335,7 +1335,7 @@ date         生成时刻(UTC)   窗口
 所以两端都锚在墙上时钟，换季那两天的窗口自然是 23 或 25 小时 —— 这是对的，它正好覆盖
 一个 07:00 到下一个 07:00 之间的全部时间。
 
-`DAILY_WINDOW_DAYS`（默认 1）也因此以**天**为单位而不是小时：以小时计的窗口跨不过夏令时。
+`WINDOW_DAYS`（默认 1）也因此以**天**为单位而不是小时：以小时计的窗口跨不过夏令时。
 
 实测：连续 400 天逐日检查，0 重叠 0 缝隙，时长分布 `24h×398, 23h×1, 25h×1`。
 
@@ -1343,7 +1343,8 @@ date         生成时刻(UTC)   窗口
 
 用 `deepseek-v4-flash`。DeepSeek 提供的是 **OpenAI 兼容接口**，所以代码里装的是
 官方 `openai` SDK，只把 `baseURL` 指到 `https://api.deepseek.com` —— 换回别的
-OpenAI 兼容服务商只需要改 `DEEPSEEK_BASE_URL` 和 `DAILY_MODEL`，代码不用动。
+OpenAI 兼容服务商只需要改 `config.ts` 里的 `DEEPSEEK_BASE_URL` 和 `MODEL` 两个常量，
+其余代码不用动。
 
 | | `deepseek-v4-flash` |
 |---|---|
@@ -1419,29 +1420,42 @@ DeepSeek **不支持 `json_schema`**（`response_format` 只有 `text` 和 `json
 就整批退化成纯标题；`logParseFailure()` 保留着，出错时打印出错位置前后 120 字符，
 那是判断新坏法的唯一线索。
 
-## 环境变量
+## 环境变量与常量
 
-本地写进 `.env`（见 `.env.example`）；生产由 Coolify 经 docker-compose 注入。
+**环境变量只放密钥。**本地写进 `.env`（见 `.env.example`）；生产由 Coolify 经
+docker-compose 注入。整张表就这么长：
 
 | 变量 | 必需 | 说明 |
 |---|---|---|
 | `DEEPSEEK_API_KEY` | 是 | 不填则跳过摘要，页面只剩标题列表 |
 | `GIT_TOKEN` | 容器需要 | fine-grained PAT，只授目标仓库的 `contents:write`。本机有 SSH key 时不需要 |
-| `GIT_REMOTE` | 否 | 覆盖远端 URL。不设时按上面的三条规则推导 |
+| `GIT_REMOTE` | 否 | 覆盖远端 URL。不设时按上面的三条规则推导。本机专用，容器里不设 |
 | `BARK_URL` | 否 | 形如 `https://api.day.app/<key>`，不填则不推送 |
-| `GIT_REPO` | 否 | 默认 `imnaifu/files` |
-| `DAILY_CRON` | 否 | 默认 `0 7 * * *`，生成当日 digest |
-| `DAILY_SYNC_CRON` | 否 | 默认 `7,22,37,52 * * * *`，只拉取不生成。分钟必须与 `DAILY_CRON` 错开 |
-| `DAILY_TZ` | 否 | 默认 `America/Los_Angeles` |
-| `DAILY_WINDOW_DAYS` | 否 | 默认 `1`，一次运行覆盖几个每日时段 |
-| `DAILY_WINDOW_ANCHOR_HOUR` | 否 | 默认 `7`，每日窗口的分界小时（`DAILY_TZ` 时区），应与 `DAILY_CRON` 的小时一致 |
-| `DAILY_MODEL` | 否 | 默认 `deepseek-v4-flash` |
-| `DAILY_CONCURRENCY` | 否 | 默认 `8`，同时在飞的模型请求数 |
-| `DAILY_BODY_CHARS` | 否 | 默认 `80000`，单篇正文喂给模型的上限 |
-| `DEEPSEEK_BASE_URL` | 否 | 默认 `https://api.deepseek.com` |
-| `GIT_BRANCH` | 否 | 默认 `main` |
-| `GIT_AUTHOR_NAME` / `GIT_AUTHOR_EMAIL` | 否 | commit 署名 |
 | `DRY_RUN` | 否 | `=1` 时跑完整流程但不 push、不推送 |
+
+**其余全部是 `src/lib/config.ts` 里的常量**，改它们要 push 并重新部署：
+
+| 常量 | 值 | 说明 |
+|---|---|---|
+| `REPO_SLUG` / `REPO_BRANCH` | `imnaifu/files` / `main` | digest 提交去哪 |
+| `GIT_AUTHOR_NAME` / `GIT_AUTHOR_EMAIL` | `daily-bot` / `daily-bot@lab115.com` | commit 署名 |
+| `CRON` | `0 7 * * *` | 生成当日 digest |
+| `SYNC_CRON` | `7,22,37,52 * * * *` | 只拉取不生成。分钟必须与 `CRON` 错开 |
+| `TZ` | `America/Los_Angeles` | 出版时区。与容器时钟的 `TZ` 环境变量同名但不同物 |
+| `WINDOW_DAYS` / `WINDOW_ANCHOR_HOUR` | `1` / `7` | 每日窗口的长度与分界小时，后者应与 `CRON` 的小时一致 |
+| `MODEL` / `DEEPSEEK_BASE_URL` | `deepseek-v4-flash` / `https://api.deepseek.com` | 换 OpenAI 兼容服务商改这两个 |
+| `BODY_CHAR_LIMIT` | `80000` | 单篇正文喂给模型的上限 |
+| `REQUEST_CONCURRENCY` | `8` | 同时在飞的模型请求数（在 `src/lib/summarize.ts`，和 `BATCH_SIZE` 放一起） |
+
+**为什么不留成环境变量**：它们从来就不是真的可配置。compose 里每一条都写成
+`${DAILY_MODEL:-deepseek-v4-flash}` —— 默认值和代码里的一模一样，于是这层间接
+没换来任何灵活性，只换来「要看三个地方才敢相信眼前这个值」。`DAILY_TOP_N` 是这条
+路的终点：compose 和 `.env.example` 里都还写着它，`src/` 里早就没人读，不 grep 一遍
+就跟一个生效中的配置长得一模一样。
+
+代价是改 cron、改模型现在要一次提交和一次部署，而不是在 Coolify 面板里改个格子。
+`config.json` 本来就是这个模型（打进镜像、改完要重新部署），所以这是把两套部署故事
+合成了一套。
 
 ## 本地跑
 
@@ -1475,7 +1489,7 @@ vim data/repo/daily/2026/08/2026-08-24.json   # 改 articles[].score
 npm run summary -- --date=2026-08-24 # 按改后的分数写摘要 + commit + push
 ```
 
-`npm run summary` 不带 `--date` 就是今天（按 `DAILY_TZ`）。
+`npm run summary` 不带 `--date` 就是今天（按 `TZ`）。
 
 **没有中间文件，改的就是当天那份 digest。** 两个命令各自只管自己那一半，都不带条件：
 
@@ -1534,7 +1548,7 @@ HN 指向的第三方页面隔几小时就可能消失。发布时不用「剥�
 
 1. 设了 `GIT_REMOTE` → 原样使用
 2. 否则设了 `GIT_TOKEN` → HTTPS + token（**容器走这条**，它没有 SSH key）
-3. 否则 → `git@github.com:<GIT_REPO>.git`，用你本机已加载的 SSH key
+3. 否则 → `git@github.com:<REPO_SLUG>.git`，用你本机已加载的 SSH key
 
 顺序不是随意的：直接把 SSH 设成默认值会更简单，但会让每次部署都挂。
 

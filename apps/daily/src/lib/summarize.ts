@@ -84,7 +84,7 @@ const BATCH_SIZE = 1;
  * rather than unlimited so a slow API cannot open fifty sockets at once, and
  * so a burst never looks like abuse from the other end.
  */
-const REQUEST_CONCURRENCY = Number(process.env.DAILY_CONCURRENCY ?? 8);
+const REQUEST_CONCURRENCY = 8;
 
 /** Run `mapper` over items with at most `limit` in flight. */
 async function mapLimited<In>(

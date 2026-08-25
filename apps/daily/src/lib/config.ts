@@ -1,5 +1,26 @@
 /**
- * Everything tunable lives here so Coolify env vars are the only knob.
+ * Every tunable value in the app, as a plain constant.
+ *
+ * THE ENVIRONMENT IS FOR SECRETS ONLY. Five names are read from it and no more:
+ * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `BARK_URL`, `DRY_RUN` — three
+ * credentials, one machine-specific remote, one switch for a single invocation.
+ * Everything else used to have one too (`GIT_REPO`, `DAILY_CRON`, `DAILY_TZ`,
+ * `DAILY_MODEL`, `DAILY_BODY_CHARS`, `DAILY_CONCURRENCY` and half a dozen more)
+ * and they are all literals now.
+ *
+ * WHY, when an env var looks strictly more flexible: because it was not. Every
+ * one of them was passed through docker-compose as
+ * `${DAILY_MODEL:-deepseek-v4-flash}` — the same default the code already
+ * carried — so the indirection bought no configurability at all, only a second
+ * and a third place to look before you could believe the value in front of you.
+ * `DAILY_TOP_N` is where that ends: declared in compose and in `.env.example`,
+ * read by nothing in `src/` for however long, and impossible to tell apart from
+ * a live setting without grepping. It is deleted along with the rest.
+ *
+ * The cost is real and small: changing the cron or the model is now a commit and
+ * a redeploy rather than a field in the Coolify UI. That is already how
+ * `config.json` works — imported, baked into the image, "改完要 push 并重新部署"
+ * — so this makes one deployment story instead of two.
  *
  * Deliberately free of `node:*` imports: `instrumentation.ts` and the root
  * layout both read from this module, and Next compiles those for the edge
@@ -31,9 +52,9 @@ export const SITE = "https://daily.lab115.com";
  */
 export const DATA_DIR = "./data";
 
-/** github.com/<slug> — the digests are committed here. */
-export const REPO_SLUG = process.env.GIT_REPO ?? "imnaifu/files";
-export const REPO_BRANCH = process.env.GIT_BRANCH ?? "main";
+/** github.com/<slug> — the digests are committed here. Private. */
+export const REPO_SLUG = "imnaifu/files";
+export const REPO_BRANCH = "main";
 /** Subdirectory inside that repo, so `files` stays usable for other things. */
 export const REPO_SUBDIR = "daily";
 
@@ -47,12 +68,20 @@ export const GIT_TOKEN = process.env.GIT_TOKEN ?? "";
  * that already has one, setting this pushes with the existing key and no PAT.
  */
 export const GIT_REMOTE = process.env.GIT_REMOTE ?? "";
-export const GIT_AUTHOR_NAME = process.env.GIT_AUTHOR_NAME ?? "daily-bot";
-export const GIT_AUTHOR_EMAIL =
-  process.env.GIT_AUTHOR_EMAIL ?? "daily-bot@lab115.com";
+export const GIT_AUTHOR_NAME = "daily-bot";
+export const GIT_AUTHOR_EMAIL = "daily-bot@lab115.com";
 
-export const CRON = process.env.DAILY_CRON ?? "0 7 * * *";
-export const TZ = process.env.DAILY_TZ ?? "America/Los_Angeles";
+export const CRON = "0 7 * * *";
+/**
+ * The zone every date in this app is expressed in.
+ *
+ * NOT `process.env.TZ`, which compose also sets to the same string — that one is
+ * the container's clock, and this one is the publication's timezone. They agree
+ * today and they are still two different facts: `dateKey` and `dailyWindow` pass
+ * this to `Intl`, so a digest is dated Los Angeles time no matter what clock the
+ * host that runs it keeps.
+ */
+export const TZ = "America/Los_Angeles";
 
 /**
  * How often to `git pull` without generating anything. The pages serve
@@ -64,9 +93,9 @@ export const TZ = process.env.DAILY_TZ ?? "America/Los_Angeles";
  * same tick and fight over the one lock in `jobs/daily.ts`. The sync grabs it
  * first and the daily run, which has no second chance for 24h, dies on "a run
  * is already in progress". Keep the two minute sets disjoint if CRON is ever
- * overridden.
+ * changed.
  */
-export const SYNC_CRON = process.env.DAILY_SYNC_CRON ?? "7,22,37,52 * * * *";
+export const SYNC_CRON = "7,22,37,52 * * * *";
 
 /**
  * How many daily slots one run covers. No cross-day dedup state — the window
@@ -76,7 +105,7 @@ export const SYNC_CRON = process.env.DAILY_SYNC_CRON ?? "7,22,37,52 * * * *";
  * tile across a DST change, because the two anchors either side of one are 23
  * or 25 real hours apart. See dailyWindow().
  */
-export const WINDOW_DAYS = Number(process.env.DAILY_WINDOW_DAYS ?? 1);
+export const WINDOW_DAYS = 1;
 
 /**
  * The hour, in TZ, that one day's window ends and the next begins.
@@ -85,15 +114,13 @@ export const WINDOW_DAYS = Number(process.env.DAILY_WINDOW_DAYS ?? 1);
  * cron string because cron expressions can name several hours and this needs
  * exactly one.
  */
-export const WINDOW_ANCHOR_HOUR = Number(
-  process.env.DAILY_WINDOW_ANCHOR_HOUR ?? 7,
-);
+export const WINDOW_ANCHOR_HOUR = 7;
+
 /** DeepSeek serves an OpenAI-compatible API, so the `openai` SDK talks to it
  *  unchanged — only the base URL and key differ. */
 export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? "";
-export const DEEPSEEK_BASE_URL =
-  process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com";
-export const MODEL = process.env.DAILY_MODEL ?? "deepseek-v4-flash";
+export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+export const MODEL = "deepseek-v4-flash";
 
 /**
  * Per-article body budget handed to the model, in characters.
@@ -121,14 +148,14 @@ export const MODEL = process.env.DAILY_MODEL ?? "deepseek-v4-flash";
  * maxPerRun 5 and XDA to 3, so this lands at roughly $2.7/year, still under
  * the $5.40 the job cost before either change.
  */
-export const BODY_CHAR_LIMIT = Number(process.env.DAILY_BODY_CHARS ?? 80_000);
+export const BODY_CHAR_LIMIT = 80_000;
 
 export const BARK_URL = process.env.BARK_URL ?? "";
 
 /** DRY_RUN=1 → run the whole pipeline but skip `git push` and Bark. */
 export const DRY_RUN = process.env.DRY_RUN === "1";
 
-/** yyyy-mm-dd for an instant, in DAILY_TZ (not the server's local zone). */
+/** yyyy-mm-dd for an instant, in TZ (not the server's local zone). */
 export function dateKey(when: Date, timeZone = TZ): string {
   // en-CA formats as yyyy-mm-dd, which is exactly the key format we want.
   return new Intl.DateTimeFormat("en-CA", {

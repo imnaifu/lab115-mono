@@ -288,7 +288,7 @@ export interface SourceStatus {
 }
 
 export interface Digest {
-  /** yyyy-mm-dd in DAILY_TZ — also the filename. */
+  /** yyyy-mm-dd in TZ — also the filename. */
   date: string;
   generatedAt: string;
   /** The publication window actually scanned, both ISO 8601 UTC. */

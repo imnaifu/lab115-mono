@@ -30,7 +30,7 @@ import { listDates, readDigest, shownArticles } from "@/lib/store";
  * next. Google fetches a sitemap on its own schedule and often several times over
  * as the archive grows, so this was pure repeat cost.
  *
- * An hour, not a day: `DAILY_SYNC_CRON` pulls every 15 minutes, so a fresh digest
+ * An hour, not a day: `SYNC_CRON` pulls every 15 minutes, so a fresh digest
  * should appear in the sitemap within the hour rather than the next morning.
  *
  * Nothing else in the app changes — the READER'S pages stay `force-dynamic`,

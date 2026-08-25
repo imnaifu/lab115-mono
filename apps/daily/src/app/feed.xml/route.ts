@@ -33,7 +33,7 @@ export async function GET() {
       "Content-Type": "application/atom+xml; charset=utf-8",
       /**
        * Half an hour, matching the prefixed route next door. The digest lands once
-       * a day and `DAILY_SYNC_CRON` pulls it every 15 minutes, so nothing this feed
+       * a day and `SYNC_CRON` pulls it every 15 minutes, so nothing this feed
        * reports can be more than ~15 minutes newer than the last sync anyway.
        */
       "Cache-Control": "public, max-age=1800, s-maxage=1800",

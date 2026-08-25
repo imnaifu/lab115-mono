@@ -28,7 +28,7 @@ export async function GET(
     headers: {
       "Content-Type": "application/atom+xml; charset=utf-8",
       /**
-       * Half an hour. The digest lands once a day and `DAILY_SYNC_CRON` pulls
+       * Half an hour. The digest lands once a day and `SYNC_CRON` pulls
        * it every 15 minutes, so nothing this feed reports can be more than ~15
        * minutes newer than the last sync anyway — and readers poll on their own
        * schedule regardless. The header is here to keep an aggregator that

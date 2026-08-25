@@ -20,7 +20,7 @@
  * requested, so pushing one article over the line costs that article's summary
  * and not the day's.
  *
- *   npm run summary                     # today, in DAILY_TZ
+ *   npm run summary                     # today, in TZ
  *   npm run summary -- --date=2026-08-23
  *
  * Pair it with DRY_RUN=1 to write the digest locally without pushing to GitHub

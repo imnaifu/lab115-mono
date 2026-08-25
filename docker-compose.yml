@@ -115,10 +115,16 @@ services:
       context: ./apps/daily
     restart: unless-stopped
     environment:
+      # SECRETS ONLY. The cron, the timezone, the model, the repo slug and the
+      # rest were all passed through here with the same default the code already
+      # carried, which bought nothing but a second place to look — they are
+      # constants in src/lib/config.ts now, changed by a commit and a redeploy.
+      # (DAILY_TOP_N was declared here and read by no code at all.)
       - NODE_ENV=production
       - PORT=3000
+      # The container's clock. Distinct from the publication timezone, which is
+      # the TZ constant in src/lib/config.ts.
       - TZ=America/Los_Angeles
-      # Required — set these in Coolify, they have no safe default.
       # DeepSeek key from https://platform.deepseek.com/api_keys
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       # Fine-grained PAT with contents:write on the digest repo. The container
@@ -126,16 +132,6 @@ services:
       # set GIT_REMOTE to an SSH URL instead — see apps/daily/README.md).
       - GIT_TOKEN=${DAILY_GIT_TOKEN:-}
       - BARK_URL=${DAILY_BARK_URL:-}
-      # Optional overrides.
-      - GIT_REPO=${DAILY_GIT_REPO:-imnaifu/files}
-      - DAILY_MODEL=${DAILY_MODEL:-deepseek-v4-flash}
-      - DAILY_CRON=${DAILY_CRON:-0 7 * * *}
-      # Pull-only, so the site sees digests pushed from anywhere else. The
-      # minutes dodge DAILY_CRON's minute 0 — colliding there would make the
-      # sync take the run lock and kill that day's digest.
-      - DAILY_SYNC_CRON=${DAILY_SYNC_CRON:-7,22,37,52 * * * *}
-      - DAILY_TZ=${DAILY_TZ:-America/Los_Angeles}
-      - DAILY_TOP_N=${DAILY_TOP_N:-10}
     volumes:
       # The git clone of the digest repo, plus the rendered share posters. It is
       # both the job's workspace and the site's read path, so the pages never hit
