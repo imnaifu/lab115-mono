@@ -149,7 +149,12 @@ export function DigestView({
           language switch had to land on whichever of the two you were actually on.
           The home page is a list of days now — see app/[lang]/page.tsx — so this
           serves one URL and the path is simply this digest's. */}
-      <Masthead title={t.brand} lang={lang} path={dayPath(digest.date)}>
+      <Masthead
+        title={t.brand}
+        subtitle={t.tagline}
+        lang={lang}
+        path={dayPath(digest.date)}
+      >
         <span>{formatDate(digest.date, lang)}</span>
         <MastheadDot />
         {/* `shown`, not `fetched`: the publish floor drops the rest, so

@@ -729,18 +729,6 @@
       "fetchBody": false
     },
     {
-      "id": "colossal",
-      "name": "Colossal",
-      "site": "https://www.thisiscolossal.com/",
-      "feed": "https://www.thisiscolossal.com/feed/",
-      "category": "design",
-      "description": "视觉艺术与工艺的图文报道，全文 ~2.4k；文字密度低于其他源，2.2 篇/天，已限 maxPerRun 2。",
-      "accent": "#C96A5C",
-      "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 2
-    },
-    {
       "id": "dynomight",
       "name": "Dynomight",
       "site": "https://dynomight.net/",
@@ -761,6 +749,73 @@
       "accent": "#9B6FB5",
       "enabled": true,
       "fetchBody": false
+    },
+    {
+      "id": "topol",
+      "name": "Ground Truths",
+      "site": "https://erictopol.substack.com/",
+      "feed": "https://erictopol.substack.com/feed",
+      "category": "science",
+      "description": "Eric Topol，医学研究、衰老与医疗 AI，0.12 篇/天，feed 带全文 3k~13.7k；约一半条目是访谈实录而非文章，正文里混着 Substack 的推广尾巴。",
+      "accent": "#2F8C7F",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "yle",
+      "name": "Your Local Epidemiologist",
+      "site": "https://yourlocalepidemiologist.substack.com/",
+      "feed": "https://yourlocalepidemiologist.substack.com/feed",
+      "category": "science",
+      "description": "Katelyn Jetelina，流行病学家写的公共卫生实操（山火烟怎么防、疫苗打不打、季节性疫情），0.36 篇/天，全文 ~8.4k 且全部免费；每周有一条是疫情数字流水账，属于 substance 3-4 的选摘体。",
+      "accent": "#35789B",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "atlantichealth",
+      "name": "The Atlantic · Health",
+      "site": "https://www.theatlantic.com/health/",
+      "feed": "https://www.theatlantic.com/feed/channel/health/",
+      "category": "science",
+      "description": "The Atlantic 健康栏目，0.5 篇/天，feed 给整篇正文（~8.2k，实测结尾自然，不是预览）；栏目边界很宽，会混进与身体健康无关的生活报道。",
+      "accent": "#9E4A3C",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "rpstrength",
+      "name": "Renaissance Periodization",
+      "site": "https://rpstrength.com/blogs/articles",
+      "feed": "https://rpstrength.com/blogs/articles.atom",
+      "category": "living",
+      "description": "教练团队写的训练与营养实操（肌酸、体脂秤准不准、增肌减脂怎么排），0.12 篇/天，Atom 带全文 5k~12k；约四分之一条目是自家 app 的更新软文，靠分数门槛滤。",
+      "accent": "#C97B33",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "dwarkesh",
+      "name": "Dwarkesh Podcast",
+      "site": "https://www.dwarkesh.com/",
+      "feed": "https://www.dwarkesh.com/feed",
+      "category": "tech",
+      "description": "Dwarkesh Patel 的长访谈，对象以 AI 研究者和经济史学者为主，0.18 篇/天；Substack 每期带完整对谈文字稿，中位 22.6k、最长 143k，偶有几百字符的预告条目。",
+      "accent": "#445E9E",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "chinatalk",
+      "name": "ChinaTalk",
+      "site": "https://www.chinatalk.media/",
+      "feed": "https://www.chinatalk.media/feed",
+      "category": "economy",
+      "description": "Jordan Schneider，中国科技与产业政策，编辑过的访谈文字稿加分析，中位 32.8k；0.69 篇/天且正文极长，已限 maxPerRun 2，选题从出口管制横跨到东南亚见闻和朝鲜史。",
+      "accent": "#A83C55",
+      "enabled": true,
+      "fetchBody": false,
+      "maxPerRun": 2
     }
   ]
 }

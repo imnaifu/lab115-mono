@@ -108,7 +108,7 @@ export default async function Home({
         }}
       />
 
-      <Masthead title={t.brand} lang={lang} path="/">
+      <Masthead title={t.brand} subtitle={t.tagline} lang={lang} path="/">
         <span>{t.days(dates.length)}</span>
       </Masthead>
 

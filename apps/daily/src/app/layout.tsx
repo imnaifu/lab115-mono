@@ -202,11 +202,14 @@ export default async function RootLayout({
          * weight is the only thing separating a thesis from the prose beneath
          * it, the real face has to be available.
          *
-         * Neither family ships an italic on Google Fonts, and `.masthead__title
-         * small` / `.section__sub` still ask for one — those two lines now get a
-         * synthesised oblique. Acceptable on secondary text; if it ever looks
-         * wrong, the fix is to drop `font-style: italic` and lean on the size
-         * and colour that already distinguish them.
+         * Neither family ships an italic on Google Fonts, and NOTHING ASKS FOR ONE
+         * ANY MORE. Two lines used to — the masthead's second line and the English
+         * section names — and both got a synthesised oblique, which this note said
+         * was acceptable on secondary text until it looked wrong. It did, once the
+         * masthead's second line started carrying a whole Chinese sentence rather
+         * than a short title: a slant applied to upright CJK glyphs is an artefact
+         * at any size and unmissable at 18px. Both now lean on size and colour,
+         * which were already doing the separating.
          */}
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"

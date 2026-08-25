@@ -110,8 +110,15 @@ const STRINGS = {
     emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天再来看看。",
 
     /**
-     * The footer's line, and the description on every page, in the manifest and
-     * in the feed's `<subtitle>`.
+     * THE MASTHEAD'S SUBTITLE, and the description on every page, in the manifest
+     * and in the feed's `<subtitle>`.
+     *
+     * IT USED TO BE THE FOOTER'S LINE — the site's one claim about itself, set in
+     * 12px grey under a horizontal rule, below everything a reader had already
+     * decided not to keep scrolling for. Moving it to the masthead is what makes
+     * the wording below worth arguing about at all: it is now the second thing on
+     * the page after the wordmark, and on an article page it is the first thing a
+     * reader arriving from a shared link learns about where they have landed.
      *
      * NEITHER COPY NAMES A LANGUAGE. It said 中英双语 back when the claim was
      * false in one direction — one summary, in Chinese, rendered the same on
@@ -129,15 +136,27 @@ const STRINGS = {
      * does not want a blog reader; they want to know what is being argued this week
      * in fields they have no time to follow.
      *
-     * SO IT PROMISES THE OUTCOME: many fields, the current thinking in each, already
-     * gathered. 各个领域 is a claim the content actually supports — the categories in
-     * config.json run 技术/商业/投资/经济/科学/设计/生活/人文, so this is not a
-     * tech feed wearing a wider label.
+     * SO IT PROMISES THE OUTCOME, and now names three things: 快速 (what it costs
+     * the reader), 各个领域专家 (who is talking), 最新 (when they said it).
      *
-     * It also names no count and no schedule beyond 每天, on the same principle as
-     * the paragraph above: a number in a tagline is a number that goes stale.
+     * 各个领域 is a claim the content supports — the categories in config.json run
+     * 技术/商业/投资/经济/科学/设计/生活/人文, so this is not a tech feed wearing a
+     * wider label. 专家 is the newer and more falsifiable half of that claim: it
+     * rests on the source list being signed blogs by people who do the work —
+     * a cardiologist, a valuation professor, an epidemiologist, engineers writing
+     * about their own systems. ADDING A WIRE SERVICE OR AN AGGREGATOR WOULD MAKE
+     * THIS LINE FALSE, which is a better reason to keep them out than any of the
+     * ones already in the README.
+     *
+     * 每天 IS GONE, and nothing is lost: the brand directly above it is 每日干货 /
+     * Daily Takes, so the cadence is already stated one line up and repeating it
+     * spent the subtitle's only sentence on a word the reader had just read. The
+     * slot it freed went to 快速 — the one promise here about the reader's time.
+     *
+     * It still names no count and no machinery, on the same principle as the
+     * paragraph above: a number in a tagline is a number that goes stale.
      */
-    tagline: "每天替你汇总各个领域最新的观点。",
+    tagline: "快速读完各个领域专家的最新观点。",
 
     /** "2026年8月14日 · 星期五" */
     date: (y: number, m: number, d: number, weekday: number) =>
@@ -198,8 +217,11 @@ const STRINGS = {
     /* Written tighter than a literal rendering of the Chinese, and deliberately:
        this string is drawn across the bottom of the 1200px OG card (see lib/og.tsx),
        and CJK carries more meaning per character — the two lines land at similar
-       widths only if the English is composed rather than translated. */
-    tagline: "The latest takes from every field, gathered for you daily.",
+       widths only if the English is composed rather than translated. The same
+       constraint is why this one leads with the verb: as a masthead subtitle it
+       sits under a 5xl wordmark and wraps to two lines on a phone either way, so
+       the half a reader sees first has to carry the claim. */
+    tagline: "Read the latest takes from experts in every field, fast.",
 
     /** "Friday, 14 August 2026" */
     date: (y: number, m: number, d: number, weekday: number) =>

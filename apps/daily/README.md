@@ -95,6 +95,13 @@ config.json: source "alienchow" scrape.flags must include "g"
 | After Babel | `afterbabel.com/feed` | ~0.11 篇/天 | 全文 ~15k |
 | Dynomight | `dynomight.net/feed.xml` | ~0.08 篇/天 | 全文 ~9.7k |
 | Experimental History | `experimental-history.com/feed` | ~0.07 篇/天 | 全文 ~16k |
+| Ground Truths | `erictopol.substack.com/feed` | ~0.12 篇/天 | 全文 3k~13.7k |
+| Your Local Epidemiologist | `yourlocalepidemiologist.substack.com/feed` | ~0.36 篇/天 | 全文 ~8.4k |
+| Sensible Medicine | `sensible-med.com/feed` | ~0.99 篇/天（限 2） | 全文 4k~8.6k；**三成是付费预览** |
+| The Atlantic · Health | `theatlantic.com/feed/channel/health/` | ~0.5 篇/天 | 全文 ~8.2k |
+| Renaissance Periodization | `rpstrength.com/blogs/articles.atom` | ~0.12 篇/天 | Atom，全文 5k~12k |
+| Dwarkesh Podcast | `dwarkesh.com/feed` | ~0.18 篇/天 | 完整文字稿，中位 22.6k |
+| ChinaTalk | `chinatalk.media/feed` | ~0.69 篇/天（限 2） | 文字稿+分析，中位 32.8k |
 
 几个需要知道的：
 
@@ -131,6 +138,40 @@ config.json: source "alienchow" scrape.flags must include "g"
   Noema + The Paris Review Daily + The Honest Broker，生活 After Babel，设计 Colossal。
   九个都是 feed 里带全文（2.4k~38k），没有一个需要 `fetchBody`。The Conversation
   6.8 篇/天、Colossal 2.2 篇/天，两者限 `maxPerRun: 2`。
+- **再后来的 5 个是照着「身体健康」这个缺口补的，也是第一次按一条明确的编辑偏好挑源。**
+  拆出 8 类之后 `科学` 的 hint 里写着 medicine/health、`生活` 的 hint 里写着 health as
+  daily practice，但没有一个源以身体为主题 —— 有判据没内容。补：Ground Truths（Eric Topol，
+  医学研究与医疗 AI）、Your Local Epidemiologist（公共卫生实操）、Sensible Medicine（循证
+  医学与反过度医疗）、The Atlantic 健康栏目、Renaissance Periodization（训练与营养实操，
+  归在 `生活`）。五个的正文都在 feed 里，没有一个需要 `fetchBody`。
+  **同一批测掉的比留下的多，失败模式集中在三种**：播客 show notes（Peter Attia 只有 229
+  字符，和 Heavybit 那一条同一个坑）、新闻电头 + 高频（STAT 6.1 篇/天且 STAT+ 付费，
+  MedPage 6.6 篇/天只有 247 字符）、以及一整排停更的健身/营养博客（Weightology 278 天、
+  Red Pen Reviews 424 天、Sigma Nutrition 496 天、Chris Beardsley 707 天）。中文这边
+  果壳、科学松鼠会的 feed 都已失效，身体健康类的中文内容基本在微信里，没有可订的 RSS。
+- **播客只收「feed 里带完整文字稿」的那一种，show notes 一律不要。** 这是 Heavybit 那条
+  的推论，但反过来也成立：一期两小时的对谈整稿是 2 万~5 万字符的正文，比大多数博客都厚。
+  实测 48 个播客源，只有两个干净到能收 —— Dwarkesh（中位 22.6k）和 ChinaTalk（中位 32.8k）。
+  其余分三类：**只有 show notes 的**（Lex Fridman 2k、Ezra Klein 2.8k、EconTalk 497、
+  Freakonomics 378、80,000 Hours 106……稿在网站上但不在 feed 里，标 `fetchBody` 也抓不到，
+  因为稿在播放器组件里或另一个 URL 上）；**带稿但有杂质的**（Latent Space 约一半是
+  `[AINews]` 每日链接汇总，正是 substance 1-2 档点名的 "selection only"；Sinica 混着
+  "Phrase of the Week" 这类短条目）；**带稿但停更的**（Cognitive Revolution 914 天、
+  patio11 的 Complex Systems 594 天）。
+- **Tim Ferriss 是「同一期发两次」的样本，去重挡不住它。** 每期在 feed 里出现两条：show
+  notes（~8k）和 `The Tim Ferriss Show Transcripts: …`（~50k），URL 不同、隔 2 天发。
+  `idOf(url)` 按 URL 去重，两条都会活下来，而且因为隔了 2 天，24 小时窗口会让它们落在
+  不同的日期上 —— 表现成隔天重复发同一期，看起来完全不像去重的锅。收它要先按标题前缀过滤，
+  那是给一个源开特例，所以没收。
+- **Conversations with Tyler 想收但拿不到，卡在正文抽取上。** 主 feed `/feed/` 是空的
+  （947 字节、0 条 item），`/episodes/feed/` 有条目但 `description` 全空。稿在网页上，而
+  `fetchPage()` 的「先 `<article>` 后 `<main>`」在它的页面上命中的是一张「相关单集」卡片，
+  实测整页抓下来只有 **24 个字符**（`Episode 233 Ross Douthat`）。这是 `<article>` 优先
+  这个启发式的已知失败形态：页面里有多个 `<article>` 而正文不在第一个里。
+- **Derek Lowe 的 In the Pipeline 和 Nature 订不了，原因在解析器不在源。** 它们发的是
+  RSS 1.0（`rdf:RDF`），而 `parseFeed` 只认 `rss.channel.item` / `feed.entry` /
+  `channel.item`，条目挂在 `rdf:RDF.item` 上取不到。要订这类得先加一个分支 —— 记在这里
+  是因为它看起来会像「那个源抓不到东西」，而不是「少写了一行」。
 - **Reddit 和聚合站测过，只有一种子版块能用，最后一个都没加。** 帖子页是纯 JS 渲染，
   抓下来 `stripHtml()` 后只剩 6 个字符（`"Reddit"`），所以**正文只能来自 RSS 的
   self-text，评论区拿不到** —— r/AskHistorians 那种「答案在评论里」的版块摘出来会是
@@ -394,6 +435,22 @@ engineering` 有时判成商业、有时人文），这是模型判断的正常�
 
 清单文的上限也从 7-8 挪到了 5-6：「**一份规则或建议清单外面包一层论点，上限就在这里**
 —— 框架再好，读者带走的还是那份清单」（这条现在在 `substance` 里）。
+
+**这条后来加了条件，因为它连实用文章一起压了。** 原文按「是不是清单」封顶，于是「写作的
+唯一金科玉律：多读」这种文章无论有没有讲清道理，`substance` 都到不了 7；而 `surprise` 那
+边它又正好撞在 1-2 档的例子上（`sleep is good for health`），`relevance` 就算给到 9 也只
+有五分之一权重，拉不回来。现在改成**按有没有给出机制判断，不按体裁判断**：
+
+- `substance` 7-8 增加一条 —— 读者能照做的规则，**只要文章说清了它为什么有效**就算这一档，
+  而且要在 note 里把那个机制写出来，写不出就不是 7；5-6 的封顶改成「**理由单薄**的清单」，
+  3-4 明确写成「只下断言、不给任何理由的 tips」
+- `surprise` 5-6 增加一条 —— 结论老套不等于陈词滥调：**给出了机制或证据**的实用文章走 5-6，
+  它的价值由 `substance` 和 `relevance` 去记；1-2 只留给「说了但没证」的断言
+- `relevance` 9-10 明确写上「**做法也是行动**」—— 一种写作、训练、饮食、睡眠或工作的方式，
+  只要具体到能照着做，和一个关于钱的决定同样是 9
+
+**没有动权重**，这是刻意的：`SCORE_WEIGHTS` 上面记着「2/2/2/2/1/1 改成等权，排序和过线
+文章一模一样」，能真正移动分数的是档位措辞，不是权重。
 
 同时把最容易通胀的几档改成**可否证**的写法，要求 note 里点名具体东西，点不出来就不能给
 高分（下面用的是合并后的维度名）：
@@ -1426,7 +1483,7 @@ npm run dev
 
 ## 站点自己的 feed
 
-这个站抓 62 个 RSS 源，自己也出一份 —— `src/lib/feed.ts` 生成 Atom，两个路由发出去：
+这个站抓 69 个 RSS 源，自己也出一份 —— `src/lib/feed.ts` 生成 Atom，两个路由发出去：
 
 ```
 /feed.xml          按 Accept-Language 302 到下面两个之一
@@ -1489,6 +1546,38 @@ https://raw.githubusercontent.com/imnaifu/files/main/daily/2026/08/2026-08-10.js
 摘要就是 `en-US`，回落到中文就还是 `zh-CN` —— 在中文正文上宣称 `en-US` 是同一个谎的
 另一个方向。
 
+### 报头的副标题：从页脚搬上来的那一句
+
+`t.tagline`（`lib/i18n.ts`）**同时是五样东西**：报头的第二行、每一页的 meta description、
+manifest 的 `description`、Atom feed 的 `<subtitle>`，以及分享海报底部那行（`lib/og.tsx`）。
+所以它只能有一句，改它要一起考虑这五个位置。
+
+**它原来在页脚。** 一条横线下面、12px 的灰字、排在读者已经决定不再往下看的所有东西后面 ——
+那是 fine print 的位置，而它是这个站关于自己的**唯一**一句主张。搬到报头之后它是页面上
+仅次于字标的第二样东西；更重要的是单篇文章页：从分享链接进来的读者，第一次知道自己落在
+哪里就是靠这一行。页脚现在只剩名字、回 lab115.com 的链接和版权 —— 那些本来就是 fine print。
+
+`Masthead` 的 `subtitle` 这个 prop **一直存在但很久没人传**（它原本是给「每日干货 / Daily
+Takes」这种双语孪生标题用的，被「一次只出一种语言」的规矩废掉了）。现在四种页面全都传。
+
+文案现在是「**快速读完各个领域专家的最新观点。**」，三个词各有各的账：
+
+- `各个领域` —— `config.json` 的分类是 技术/商业/投资/经济/科学/设计/生活/人文，撑得住
+- `专家` —— 靠的是源全是署名博客、作者本人在做那件事（心内科医生、估值教授、流行病学家、
+  写自己系统的工程师）。**收一个通讯社或聚合站就会让这句话变成假的**，这比 README 上面
+  任何一条理由都更硬
+- `快速` —— 这里唯一一个关于读者时间的承诺
+- **`每天` 去掉了**，因为它正上方的字标就是「每日干货 / Daily Takes」，节奏已经说过一遍，
+  副标题只有一句话的额度不该花在读者刚读过的词上
+
+两个连带的版式改动，都在 `components/Shell.tsx`：
+
+- **图标和字标的对齐改成按有没有副标题分支。** 有副标题时 `<h1>` 是两行高，`items-center`
+  会把图标压到标题的 cap line 以下 —— 那种情况要 `items-start` 再给图标 `mt-1.5` 顶回来；
+  没有副标题时是单行，`items-center` 才不会让图标显得偏低。这行历史上两种写法都单独存在
+  过，**两种形态同时上线之后哪一种写死都是错的**。
+- **副标题不再用 `italic`**，见上面字体那一节。
+
 设计取自 Uizard 的 "Readium" 读书 App 模板：奶油底 `#FBF3E9`、深靛蓝 `#3B3563`、
 暖橙 `#EFA050`、卡片米色 `#F3E8D8`，页头有机色块 + 书封网格。
 版心固定 750px 竖版，为整页截图设计，不依赖任何 hover 效果。
@@ -1540,6 +1629,10 @@ find-replace 会静默把它拍平。
   （Daily Takes）和 `.section__sub`（英文栏目名）还在要斜体 —— 这两行现在是合成倾斜。
   次要文字上可以接受；真觉得不对，就去掉 `font-style: italic`，它们本来还有字号和
   颜色在区分。原来 Bitter 有真斜体（URL 里的 `1,500` 就是为它加载的）。
+
+  **后来去掉了，两处都是。** 报头第二行改成放 tagline（见下面「报头的副标题」）之后，
+  它承载的从一个短标题变成了一整句中文，而合成倾斜是把直立的汉字整体切斜 —— 短标题上
+  看不出来，18px 的一整句上非常明显。现在全站没有任何一处 `italic`。
 
 顺带少下载两套字体，对一个「打开就截图」的页面是净收益。
 

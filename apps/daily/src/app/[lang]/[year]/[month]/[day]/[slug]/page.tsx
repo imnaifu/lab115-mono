@@ -237,7 +237,12 @@ export default async function ArticlePage({ params }: Params) {
           },
         }}
       />
-      <Masthead title={t.brand} lang={lang} path={articlePath(date, article)}>
+      <Masthead
+        title={t.brand}
+        subtitle={t.tagline}
+        lang={lang}
+        path={articlePath(date, article)}
+      >
         <a href={langHref(lang, dayPath(date))}>{date}</a>
         <span className="size-1 rounded-full bg-orange" />
         <span style={{ color: category.accent }}>{lang === "en" ? category.nameEn : category.name}</span>

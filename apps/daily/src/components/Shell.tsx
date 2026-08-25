@@ -99,11 +99,15 @@ export function Masthead({
   /**
    * A second line under the title, in the SAME language.
    *
-   * Nothing passes one today. It used to carry the title's other-language twin —
-   * 每日干货 above Daily Takes, 归档 above Archive — which the one-language-at-a-
-   * time rule ruled out; see the note in lib/i18n.ts. Kept optional rather than
-   * deleted because a masthead tagline is a plausible thing to want here, and a
-   * caller adding one now has no way to reintroduce the pair by accident.
+   * EVERY PAGE PASSES `t.tagline` HERE NOW. It used to carry the title's
+   * other-language twin — 每日干货 above Daily Takes, 归档 above Archive — which
+   * the one-language-at-a-time rule ruled out, and for a long time nothing passed
+   * anything; the prop survived that stretch because a masthead tagline was a
+   * plausible thing to want, and this is it. See the note in lib/i18n.ts for what
+   * that sentence is now allowed to claim.
+   *
+   * Still optional, and the layout below branches on it — see the alignment note
+   * on the lockup. A page that wants a bare title is one prop away.
    */
   subtitle?: string;
   lang: Lang;
@@ -154,15 +158,17 @@ export function Masthead({
       {/* The mark and the wordmark, laid out the way the share poster lays them
           out — the two are the same lockup and should not drift apart.
 
-          `items-center`, and the mark no longer carries a nudge. This used to be
-          `items-start` plus `mt-1.5` on the mark, and the note here explained why:
-          centring the whole block would drop the mark below the title's cap line,
-          because a `subtitle` is part of that block's height. That is still true
-          WHEN THERE IS A SUBTITLE — and nothing has passed one for a long time
-          (see the prop's own note), so every page was paying an optical correction
-          for a case it never rendered, and the mark sat visibly low against a
-          single line of wordmark. Centred is right for the shape actually shipped;
-          if a subtitle ever comes back, this is the line to revisit. */}
+          BOTH BRANCHES RENDER NOW, so the alignment is conditional rather than
+          picked once. With a subtitle the `<h1>` is two lines tall and centring
+          the row would drop the mark below the title's cap line — that is the
+          `items-start` case, and the mark takes a 1.5 nudge back down onto the
+          cap line. Without one the block is a single line of wordmark and
+          `items-center` is what stops the mark sitting visibly low.
+
+          The history is worth keeping: this was `items-start` + the nudge
+          unconditionally, back when a subtitle was expected, and every page paid
+          an optical correction for a case that never rendered. Then it was
+          `items-center` unconditionally. Neither is right once both shapes ship. */}
       {/* The whole lockup is the link home — the mark and the wordmark read as
           one target, so making only one of them clickable would be a smaller
           hit area for no reason. On the home page it points at itself, which is
@@ -171,18 +177,28 @@ export function Masthead({
       <a
         href={href(lang, "/")}
         aria-label={lang === "en" ? "Daily Takes — home" : "每日干货 · 回到首页"}
-        className="mt-5 flex items-center gap-3 sm:gap-4"
+        className={`mt-5 flex gap-3 sm:gap-4 ${
+          subtitle ? "items-start" : "items-center"
+        }`}
       >
         <img
           src="/favicon.svg"
           alt=""
-          className="size-11 flex-none sm:size-14"
+          className={`size-11 flex-none sm:size-14 ${subtitle ? "mt-1.5" : ""}`}
         />
         {/* `max-w-md` keeps the wordmark clear of the orange blob. */}
         <h1 className="max-w-md text-4xl leading-tight font-bold tracking-tight text-ink sm:text-5xl">
           {title}
           {subtitle ? (
-            <small className="mt-1.5 block text-lg font-medium italic text-ink-mid sm:text-xl">
+            /* NOT italic, and it used to be. Italic was right for the
+               other-language twin this slot was built for — a single short
+               title, set apart from the one above it. What it carries now is a
+               whole sentence, and browsers have no italic for CJK: they synthesise
+               one by slanting the upright glyphs, which is exactly the artefact a
+               15-character Chinese line at 18px shows most. `text-pretty` for the
+               English, which wraps to two lines on a phone and must not leave one
+               word alone on the second. */
+            <small className="mt-1.5 block text-base font-medium text-pretty text-ink-mid sm:text-lg">
               {subtitle}
             </small>
           ) : null}
@@ -254,9 +270,17 @@ export function EndLink({
 }
 
 /**
- * A plain site footer: who made this and what it is.
+ * A plain site footer: who made this, and nothing else.
  *
- * Deliberately carries no navigation — that is `EndLink`'s job now.
+ * Deliberately carries no navigation — that is `EndLink`'s job now — and no
+ * longer the tagline either, which moved to the masthead's `subtitle`. The
+ * argument is the same one that took navigation out: a line set in 12px grey
+ * below a rule, under everything the reader has already stopped reading, is
+ * fine print whatever it says. The site's one claim about itself was the worst
+ * possible thing to leave there.
+ *
+ * What is left is genuinely fine print — a name, a link back to the lab, a
+ * copyright — so the footer is finally the size of its job.
  */
 export function Footer({ year, lang }: { year: string; lang: Lang }) {
   const t = strings(lang);
@@ -264,15 +288,8 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
     <footer
       className={`mt-10 border-t border-line pt-6 ${PAD} flex flex-wrap items-start justify-between gap-x-8 gap-y-4`}
     >
-      <div className="min-w-0">
-        {/* Same single name as the masthead, so the switch changes both. */}
-        <div className="text-lg font-bold text-ink">{t.brand}</div>
-        {/* `text-pretty` so the last line never ends up holding one orphaned
-            character, which is what this sentence did at `max-w-xs`. */}
-        <p className="mt-1 max-w-sm text-xs font-medium text-pretty text-ink-soft">
-          {t.tagline}
-        </p>
-      </div>
+      {/* Same single name as the masthead, so the switch changes both. */}
+      <div className="min-w-0 text-lg font-bold text-ink">{t.brand}</div>
 
       <div className="flex flex-col gap-1 text-xs font-medium text-ink-soft sm:items-end sm:text-right">
         {/**

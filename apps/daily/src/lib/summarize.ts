@@ -424,9 +424,9 @@ Across 30 articles most scores land between 4 and 6, a handful reach 7-8, and 9-
 有没有自己的立场、有没有别人给不出的洞察、揭示的机制能不能搬走 —— 这三件事在实测里高度重合（相关 0.73~0.88），所以合成一条。
 
 9-10: The author's synthesis IS the article — remove them and nothing remains — AND the mechanism it uncovers explains something in a COMPLETELY DIFFERENT domain. Name that domain; without one, not a 9.
-7-8: A contestable position argued from more than one angle, or a mechanism that clearly generalises past its own subject and you can say where to.
-5-6: A clear position argued from one example or one line of reasoning; interesting inside its own subject, travels a little. **THIS IS AN ORDINARY GOOD BLOG POST.** A list of rules or tips with an argument wrapped around it caps here — however good the framing, what the reader takes away is the list.
-3-4: A position is visible but the piece mostly recounts, or it is selection with commentary attached — a link roundup with opinions, a list of tips, a summary of someone else's paper.
+7-8: A contestable position argued from more than one angle, or a mechanism that clearly generalises past its own subject and you can say where to. **A rule the reader can act on counts here WHEN THE PIECE SUPPLIES THE MECHANISM** — "the one golden rule of writing is to read a lot" is a 7 if it says what reading actually does to a writer's ear, and a 3 if it only asserts it. State the mechanism in your note; if you cannot, it is not a 7.
+5-6: A clear position argued from one example or one line of reasoning; interesting inside its own subject, travels a little. **THIS IS AN ORDINARY GOOD BLOG POST.** A list of rules or tips caps here when the reasons behind the items are thin — what the reader takes away is the list, not why any item works.
+3-4: A position is visible but the piece mostly recounts, or it is selection with commentary attached — a link roundup with opinions, a list of tips asserted with no reason given why any of them works, a summary of someone else's paper.
 1-2: Restates as "X happened" with nothing of substance lost (launches, benchmark tables, version bumps, release notes), or selection only: "what I have been reading", a digest of comments, a paragraph passing on another outlet's reporting.
 
 Reviewing someone else's book or paper is NOT relaying, provided the piece argues its own case.
@@ -435,9 +435,9 @@ Reviewing someone else's book or paper is NOT relaying, provided the piece argue
 
 9-10: Contradicts a belief the reader almost certainly holds AND contains one sentence they would repeat almost verbatim. NAME THE BELIEF and QUOTE THE SENTENCE; missing either, not a 9.
 7-8: Points at something the reader had not noticed — a hidden mechanism, an unexpected cause, a specific number or paradox worth mentioning to someone. State it in one sentence.
-5-6: A fresh angle on a familiar topic. Interesting while being read, but it confirms what an informed reader suspected rather than overturning it, and nothing specific survives closing the tab. **MOST ARTICLES ARE HERE.**
+5-6: A fresh angle on a familiar topic. Interesting while being read, but it confirms what an informed reader suspected rather than overturning it, and nothing specific survives closing the tab. **MOST ARTICLES ARE HERE.** A familiar CONCLUSION belongs here too, not below, when the piece supplies the mechanism or the evidence that would actually make the reader do it — an old maxim shown to be true for a reason the reader did not know is not a cliché. Its worth is then scored in "substance" and "relevance", not here.
 3-4: A familiar argument with new examples — predictable from the headline, and only interesting to someone already following the subject.
-1-2: Cliché restated ("AI will change jobs", "sleep is good for health"), or dry throughout — changelogs, corporate announcements, feature lists.
+1-2: Cliché ASSERTED with nothing behind it ("AI will change jobs", "sleep is good for health" — said and not shown), or dry throughout — changelogs, corporate announcements, feature lists.
 
 ## 3. "accessible" — 是否抛弃了行业黑话 (通俗度)
 
@@ -449,7 +449,7 @@ Reviewing someone else's book or paper is NOT relaying, provided the piece argue
 
 ## 4. "relevance" — 能否触发智力共鸣 (好奇心关联)
 
-9-10: The reader will do something differently after reading — money, health, work, family, housing, the city they live in. NAME THE ACTION; no action, no 9.
+9-10: The reader will do something differently after reading — money, health, work, family, housing, the city they live in. **A PRACTICE COUNTS AS AN ACTION**: a way of writing, training, eating, sleeping or working that the reader could adopt this week is as much a 9 as a decision about money, provided the piece is specific enough to be followed. NAME THE ACTION; no action, no 9.
 7-8: Not their own action, but a system they live inside and feel: prices, schools, platforms they use, their country's politics.
 5-6: **Genuinely interesting but detached — history, science, another industry, another era. MOST ARTICLES IN THIS DIGEST BELONG HERE**, including the excellent ones. Being fascinating is not being relevant.
 3-4: Interesting to a hobbyist in that field; the reader has no stake in it whatsoever.

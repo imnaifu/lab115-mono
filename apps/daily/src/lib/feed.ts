@@ -10,7 +10,7 @@ import { summaryFor } from "./take";
 import type { Article, Digest } from "./types";
 
 /**
- * The site's own Atom feed — the thing it asks of 62 other blogs and did not
+ * The site's own Atom feed — the thing it asks of 69 other blogs and did not
  * publish itself.
  *
  * IT CARRIES THE WHOLE SUMMARY, not a teaser. Every other decision in this app

@@ -67,7 +67,12 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
         }}
       />
 
-      <Masthead title={t.archiveTitle} lang={lang} path={archivePath(page)}>
+      <Masthead
+        title={t.archiveTitle}
+        subtitle={t.tagline}
+        lang={lang}
+        path={archivePath(page)}
+      >
         <span>{t.days(dates.length)}</span>
         {total > 1 ? (
           <>
