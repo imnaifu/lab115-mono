@@ -144,6 +144,32 @@ export interface Article {
    * order, both of which happen within one run.
    */
   score: number;
+  /**
+   * The score the MODEL gave, when a human overruled it.
+   *
+   * Absent on every article nobody touched, which is nearly all of them — so
+   * its presence is the record that this article's place on the page (or the
+   * fact that it has one) was an editorial decision rather than an arithmetic
+   * one. `score` above is always the number that actually decided; this is the
+   * number it replaced.
+   *
+   * Written by `npm run summary` when the day's file carries a `score` that no
+   * longer matches the `modelScore` beside it. In THAT file `modelScore` is
+   * always present — it is the baseline an edit is recognised against; here it
+   * appears only when the two actually differ, so that "nobody touched this"
+   * and "someone agreed with the model" do not look the same. See
+   * `WorkingDigest` in lib/store.ts.
+   */
+  modelScore?: number;
+  /**
+   * "human" when `score` was hand-edited, absent otherwise.
+   *
+   * Redundant with `modelScore` being present, and kept anyway: the two say
+   * different things when the numbers happen to coincide, and one obvious
+   * string in the file beats a reader of the archive having to know that a
+   * missing field means "the model decided this".
+   */
+  scoredBy?: "human";
   /** 1-based position after sorting by score. */
   rank: number;
   /** How the score was arrived at. See ScoreReview. */
@@ -204,6 +230,12 @@ export interface RejectedArticle {
    *  keeping a rejection list is answering "why is that post missing", and the
    *  score alone never answered it. */
   review?: ScoreReview;
+  /** Same meaning as on `Article`, and it belongs here for the same reason the
+   *  review does: an article a human pushed BELOW the floor is a decision, and
+   *  a rejection list that cannot tell it apart from a model rejection is the
+   *  list failing at its one job. */
+  modelScore?: number;
+  scoredBy?: "human";
 }
 
 /**

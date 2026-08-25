@@ -23,7 +23,53 @@ function absPathFor(date: string): string {
   return path.join(REPO_PATH, relPathFor(date));
 }
 
-export async function writeDigest(digest: Digest): Promise<string> {
+/**
+ * THE HALF-DONE DIGEST: what `npm run score` leaves on disk for `npm run
+ * summary` to finish, written to the SAME path as the published file.
+ *
+ * There is no separate plan file, and that is the point — the thing you edit is
+ * the thing that gets published, so there is no second format to learn and no
+ * question of which one is authoritative. Two commands, two sets of fields:
+ * `score` owns `score` / `modelScore` / `review`, `summary` owns `summary` /
+ * `category` / `titleZh`, and neither overwrites the other's.
+ *
+ * Two differences from a published digest, both temporary:
+ *
+ * - EVERY fetched article is in `articles`, including the ones under the floor,
+ *   because raising a score by hand has to be able to promote one. `summary` is
+ *   what applies the floor and moves the rest to `rejected`.
+ * - Each carries its `body`. The summary pass needs it, and re-fetching instead
+ *   would mean summarizing a different text than the one that was scored — an
+ *   HN item's third-party page can be gone hours later. `summary` strips the
+ *   bodies when it writes the published file, so they never reach git.
+ *
+ * IT IS NEVER COMMITTED. `score` writes the file and stops; the working tree is
+ * dirty until `summary` runs. That is also why `summary` reads this file BEFORE
+ * calling `ensureRepo()` — the sync does `git reset --hard origin/BRANCH` when
+ * there is nothing local to preserve, which would throw the edited scores away.
+ */
+export interface WorkingArticle extends Omit<Article, "summary"> {
+  /** Plain text, already truncated to BODY_CHAR_LIMIT — see RawArticle. */
+  body: string;
+  /** Absent until the summary pass writes one; carried over verbatim when a
+   *  re-score runs over a day that already has summaries. */
+  summary?: Article["summary"];
+}
+
+export interface WorkingDigest extends Omit<Digest, "articles"> {
+  articles: WorkingArticle[];
+}
+
+/** null when that day was never scored — or when it was published, since a
+ *  published digest carries no bodies. The caller decides what that means. */
+export async function readWorking(date: string): Promise<WorkingDigest | null> {
+  const digest = (await readDigest(date)) as WorkingDigest | null;
+  return digest;
+}
+
+export async function writeDigest(
+  digest: Digest | WorkingDigest,
+): Promise<string> {
   const rel = relPathFor(digest.date);
   const abs = path.join(REPO_PATH, rel);
   await fs.mkdir(path.dirname(abs), { recursive: true });

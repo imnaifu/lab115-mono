@@ -1,5 +1,10 @@
 /**
- * Local entry point: `npm run once`.
+ * Local entry point: `npm run once` — both passes, one command.
+ *
+ * THE TWO-STEP PATH IS THE OTHER ONE: `npm run score` stops after the scoring
+ * and leaves the day's file open for editing, `npm run summary` finishes and
+ * publishes it. Use that when the question is "should this article have been
+ * published"; use this when it is "give me the day".
  *
  * Pair it with DRY_RUN=1 to exercise the whole pipeline (fetch, summarize,
  * write, local commit) without pushing to GitHub or waking your phone:

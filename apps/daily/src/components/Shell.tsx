@@ -176,18 +176,43 @@ export function Masthead({
           page or the archive expects to find here. */}
       <a
         href={href(lang, "/")}
-        aria-label={lang === "en" ? "Daily Takes — home" : "每日干货 · 回到首页"}
-        className={`mt-5 flex gap-3 sm:gap-4 ${
-          subtitle ? "items-start" : "items-center"
-        }`}
+        aria-label={
+          lang === "en" ? "Daily Takes — home" : "每日干货 · 回到首页"
+        }
+        className="mt-5 flex items-center gap-3 sm:gap-4"
       >
-        <img
-          src="/favicon.svg"
-          alt=""
-          className={`size-11 flex-none sm:size-14 ${subtitle ? "mt-1.5" : ""}`}
-        />
-        {/* `max-w-md` keeps the wordmark clear of the orange blob. */}
-        <h1 className="max-w-md text-4xl leading-tight font-bold tracking-tight text-ink sm:text-5xl">
+        {/* The mark keeps the size it has always had. THE TEXT IS SIZED TO IT,
+            not the other way round: with a subtitle the block beside it has to
+            fit inside 44px on a phone and 56px from `sm:` up, which is what the
+            `<h1>` below is measured against.
+
+            Enlarging the mark instead was tried and rejected — it takes an 88px
+            square to clear a two-line English subtitle, and at that size the
+            mark stops introducing the wordmark and starts competing with it. */}
+        <img src="/favicon.svg" alt="" className="size-11 flex-none sm:size-14" />
+        {/* `max-w-md` keeps the wordmark clear of the orange blob.
+
+            TWO TYPE SCALES, PICKED BY WHETHER THERE IS A SUBTITLE. Alone, the
+            wordmark is the masthead and is set at the size it always was. Above
+            a subtitle it is one of two lines that together must not outgrow the
+            mark, so it steps down and gives up its leading — `leading-none` is
+            what buys the last few pixels, and a wordmark of two to four glyphs
+            is the one string that can afford it. Measured, at the four
+            combinations that ship:
+
+                            phone (<sm)        sm and up
+              Chinese      24+16 = 40 / 44    30+20 = 50 / 56
+              English      24+16 = 40 / 44    30+20 = 50 / 56
+
+            The English subtitle has to stay on ONE line for the phone column to
+            hold — see the note on the tagline in lib/i18n.ts. */}
+        <h1
+          className={`max-w-md font-bold tracking-tight text-ink ${
+            subtitle
+              ? "text-2xl leading-none sm:text-3xl"
+              : "text-4xl leading-tight sm:text-5xl"
+          }`}
+        >
           {title}
           {subtitle ? (
             /* NOT italic, and it used to be. Italic was right for the
@@ -198,7 +223,7 @@ export function Masthead({
                15-character Chinese line at 18px shows most. `text-pretty` for the
                English, which wraps to two lines on a phone and must not leave one
                word alone on the second. */
-            <small className="mt-1.5 block text-base font-medium text-pretty text-ink-mid sm:text-lg">
+            <small className="mt-1 block text-xs font-medium text-pretty text-ink-mid sm:text-sm">
               {subtitle}
             </small>
           ) : null}
@@ -313,7 +338,10 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
          * change to the analytics contract rather than to the markup. Worth doing
          * on its own; not worth smuggling in behind an SEO fix.
          */}
-        <a className="transition-colors hover:text-ink" href="https://lab115.com">
+        <a
+          className="transition-colors hover:text-ink"
+          href="https://lab115.com"
+        >
           lab115.com
         </a>
         <div>© {year} daily.lab115.com</div>

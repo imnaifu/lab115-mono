@@ -315,6 +315,46 @@ export interface Verdict {
   en: SummaryText | null;
 }
 
+/**
+ * Rebuild a verdict map from scores that were written to disk.
+ *
+ * The two-step path (`npm run score` … `npm run summary`) runs the two passes
+ * in separate processes, so pass 2 cannot be handed the map pass 1 built. It
+ * gets this instead: the stored judgement, plus the empty summary fields pass 2
+ * is about to fill. Whatever edited the scores in between is none of this
+ * function's business — it copies the number it is given.
+ */
+export function verdictsFrom(
+  entries: Iterable<{
+    id: string;
+    judged: boolean;
+    score: number;
+    review?: ScoreReview;
+    /** The summary pass's own fields, when the day already has them. Carrying
+     *  them in is what makes a re-run cheap: an article that arrives with a
+     *  thesis is not in `missing`, so no request is made for it. */
+    category?: string;
+    titleZh?: string;
+    summary?: { zh: SummaryText; en?: SummaryText };
+  }>,
+): Map<string, Verdict> {
+  const out = new Map<string, Verdict>();
+  for (const entry of entries) {
+    const empty = emptyVerdict();
+    out.set(entry.id, {
+      ...empty,
+      judged: entry.judged,
+      score: entry.score,
+      review: entry.review ?? empty.review,
+      category: entry.category ?? empty.category,
+      titleZh: entry.titleZh ?? empty.titleZh,
+      zh: entry.summary?.zh ?? empty.zh,
+      en: entry.summary?.en ?? empty.en,
+    });
+  }
+  return out;
+}
+
 // --- pass 1: score only -----------------------------------------------------
 
 /**
@@ -1323,14 +1363,40 @@ export async function englishFor(
  * judged at all because the call failed. The last two both vanish from the
  * page: `Verdict.judged` separates them for the log, not for the floor.
  */
-export async function summarize(
+/**
+ * THE CAP, APPLIED IDENTICALLY BY BOTH HALVES.
+ *
+ * `scoreAll` and `summarizeSurvivors` each slice their input, rather than the
+ * first handing the second a already-capped list, because the two now run in
+ * separate processes: `npm run score` writes every fetched article to the day's
+ * file and `npm run summary` reads them back. Slicing in one place only would mean
+ * the summarize half saw articles the score half never scored — and an unscored
+ * article whose source is `alwaysPublish` would then be summarized, which is
+ * exactly the case the cap exists to stop.
+ *
+ * Newest first — if the cap bites, we drop the stalest items — which is why
+ * `Plan.articles` must keep fetch order.
+ */
+function capped(articles: RawArticle[]): RawArticle[] {
+  return articles.slice(0, MAX_ARTICLES_PER_CALL);
+}
+
+/**
+ * Pass 1 on its own: every article scored, nothing summarized.
+ *
+ * Split out of `summarize` so the score can be looked at, and argued with,
+ * before any of the expensive half runs — see `WorkingDigest` in lib/store.ts.
+ * The returned map
+ * holds an entry for EVERY article, `emptyVerdict()` for the ones the model
+ * never answered for and for the ones the cap dropped.
+ */
+export async function scoreAll(
   articles: RawArticle[],
 ): Promise<Map<string, Verdict>> {
   const out = new Map<string, Verdict>();
   if (articles.length === 0) return out;
 
-  // Newest first — if the cap bites, we drop the stalest items.
-  const batch = articles.slice(0, MAX_ARTICLES_PER_CALL);
+  const batch = capped(articles);
   // Say so when it bites. The cut used to be invisible: the counts below are
   // taken over `batch`, so a run that quietly discarded 18 of 48 articles
   // still reported a clean "scored 30/30", and the discarded ones surfaced
@@ -1392,6 +1458,37 @@ export async function summarize(
     }
   });
 
+  const unjudgedCount = batch.filter((a) => !out.get(a.id)!.judged).length;
+  console.log(
+    `[daily] scored ${batch.length - unjudgedCount}/${batch.length}` +
+      (unjudgedCount ? `, ${unjudgedCount} unscored` : ""),
+  );
+  return out;
+}
+
+/**
+ * Pass 2 on its own: the floor, then a summary for everything above it.
+ *
+ * `verdicts` is whatever `scoreAll` produced — possibly with scores a human has
+ * since edited, which is the point. It is mutated in place and returned, so the
+ * caller can hand the same map to the digest builder.
+ */
+export async function summarizeSurvivors(
+  articles: RawArticle[],
+  out: Map<string, Verdict>,
+): Promise<Map<string, Verdict>> {
+  if (articles.length === 0) return out;
+  const batch = capped(articles);
+
+  if (!DEEPSEEK_API_KEY) {
+    console.warn(
+      "[daily] DEEPSEEK_API_KEY unset — publishing without summaries",
+    );
+    return out;
+  }
+
+  const client = makeClient();
+
   // --- the floor, applied before a single summary is written ---
   //
   // This is the whole reason scoring runs on its own: an article below the
@@ -1404,7 +1501,13 @@ export async function summarize(
   const survivors = batch.filter((a) => {
     const verdict = out.get(a.id)!;
     if (sourceOf(a.sourceId).alwaysPublish) return true;
-    return verdict.judged && verdict.score >= PUBLISH_MIN_SCORE;
+    // THE SCORE ALONE, not `judged && score`. The extra clause was redundant
+    // — an unjudged article carries 0 and 0 is below any floor — and once a
+    // human can write the score it is actively wrong: a number typed into the
+    // file for an article the model never answered for is still a decision to
+    // publish it, and this filter would have silently dropped it while the
+    // floor downstream let it through, i.e. published it with no summary.
+    return verdict.score >= PUBLISH_MIN_SCORE;
   });
   const exempt = survivors.filter(
     (a) =>
@@ -1413,8 +1516,8 @@ export async function summarize(
   ).length;
   const unjudged = batch.filter((a) => !out.get(a.id)!.judged).length;
   console.log(
-    `[daily] scored ${batch.length - unjudged}/${batch.length}; ` +
-      `${survivors.length} at or above the floor (${PUBLISH_MIN_SCORE}), ` +
+    `[daily] ${survivors.length} at or above the floor ` +
+      `(${PUBLISH_MIN_SCORE}), ` +
       `${batch.length - unjudged - survivors.length} dropped unsummarized` +
       (exempt ? `, ${exempt} below it but whitelisted` : "") +
       (unjudged ? `, ${unjudged} unscored and dropped` : ""),

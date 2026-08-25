@@ -218,9 +218,18 @@ const STRINGS = {
        this string is drawn across the bottom of the 1200px OG card (see lib/og.tsx),
        and CJK carries more meaning per character — the two lines land at similar
        widths only if the English is composed rather than translated. The same
-       constraint is why this one leads with the verb: as a masthead subtitle it
-       sits under a 5xl wordmark and wraps to two lines on a phone either way, so
-       the half a reader sees first has to carry the claim. */
+       constraint is why this one leads with the verb: the half a reader sees
+       first has to carry the claim.
+
+       IT HAS TO FIT ON ONE LINE IN THE MASTHEAD, which is a length limit rather
+       than a style note. The mark there is 44px tall and the wordmark plus one
+       line of subtitle fills that exactly, so a second line makes the text block
+       outgrow the mark (see the measurements on the `<h1>` in Shell.tsx). At
+       12px this string needs 264px and a 360px phone leaves 264px — that is the
+       floor it was written to. Below a 340px viewport it wraps, and that is a
+       trade taken deliberately: no phone shipping today is that narrow, and
+       shortening the line for the ones that were would cost the claim on every
+       phone that is not. */
     tagline: "Read the latest takes from experts in every field, fast.",
 
     /** "Friday, 14 August 2026" */
