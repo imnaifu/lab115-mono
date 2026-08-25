@@ -39,6 +39,16 @@ const ORANGE = "#efa050";
  * line, which is inside the range that reads at thumbnail scale — and a link
  * preview is only ever seen at thumbnail scale.
  */
+/**
+ * The lockup's text metrics, hoisted out of CARD because `markSize` is derived
+ * from them and an object literal cannot read its own fields. The mirror of the
+ * same four constants in lib/share.ts, at this canvas's smaller scale.
+ */
+const LINE = 1.2;
+const BRAND_SIZE = 50;
+const TAGLINE_SIZE = 24;
+const TAGLINE_GAP = 8;
+
 const CARD = {
   padX: 72,
   padY: 64,
@@ -47,16 +57,24 @@ const CARD = {
   chipPadY: 8,
   chipTracking: 3,
   metaSize: 26,
-  markSize: 60,
+  /**
+   * THE MARK IS AS TALL AS THE TWO LINES BESIDE IT — the wordmark's line, the
+   * gap, and the tagline's line — the same lockup the poster draws, and derived
+   * the same way so that changing a font size moves the mark with it. See
+   * POSTER.markSize in lib/share.ts for the arithmetic and for why `LINE` is 1.2.
+   */
+  markSize:
+    Math.round(BRAND_SIZE * LINE) + TAGLINE_GAP + Math.round(TAGLINE_SIZE * LINE),
   markGap: 20,
-  brandSize: 50,
+  brandSize: BRAND_SIZE,
   brandGap: 38,
   headlineSize: 34,
   /** The orange rule in front of each headline, and its gap. */
   ruleWidth: 5,
   ruleGap: 18,
   headlineGap: 22,
-  taglineSize: 24,
+  taglineSize: TAGLINE_SIZE,
+  taglineGap: TAGLINE_GAP,
 } as const;
 
 /**
@@ -116,7 +134,13 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
   const t = strings(lang);
   const domain = posterDomain(SITE);
   const brand = posterClean(t.brand);
-  const tagline = posterClean(t.tagline);
+  /**
+   * WITHOUT ITS FULL STOP, for the reason poster.tsx gives at its own tagline:
+   * the string is a sentence in every place that prints it as prose — the
+   * masthead, the meta description, the feed's subtitle — and under a wordmark it
+   * is a label. Trimmed at the draw site so it stays a sentence elsewhere.
+   */
+  const tagline = posterClean(t.tagline).replace(/[。.]$/, "");
 
   /**
    * CLEANED AND TRUNCATED BEFORE THE SUBSET IS ASKED FOR, not after.
@@ -192,7 +216,22 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
           </div>
         </div>
 
-        {/* The lockup, the same mark-beside-wordmark the poster draws on part 1. */}
+        {/**
+         * The lockup, the same one the poster draws on part 1: the mark, and
+         * beside it the wordmark with the site's one claim about itself under it.
+         *
+         * THE TAGLINE USED TO BE THE CARD'S LAST LINE, pinned to the bottom edge
+         * under the headlines. It moved here so that the identity is one object
+         * rather than two things at opposite ends of the canvas — a link preview
+         * is read at thumbnail scale, where a 24px line alone at the bottom is a
+         * grey smudge and the same line under the wordmark is legible as its
+         * subtitle. The headline block below has `flex: 1`, so the space this
+         * vacated goes to the headlines, which are what the card is for.
+         *
+         * `alignItems: center` keeps the mark centred against the pair. They are
+         * the same height by construction — see CARD.markSize — so this only
+         * matters if one of the font sizes changes without the other.
+         */}
         <div
           style={{
             display: "flex",
@@ -205,18 +244,31 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
               `img` and not inline `svg`, and it has no filesystem; the mark is a
               data URI for that reason. See POSTER_MARK. */}
           <img src={POSTER_MARK} width={CARD.markSize} height={CARD.markSize} alt="" />
-          <div style={{ display: "flex", fontSize: CARD.brandSize, fontWeight: 700 }}>
-            {brand}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", fontSize: CARD.brandSize, fontWeight: 700 }}>
+              {brand}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                marginTop: CARD.taglineGap,
+                fontSize: CARD.taglineSize,
+                color: SOFT,
+              }}
+            >
+              {tagline}
+            </div>
           </div>
         </div>
 
         {/**
          * The headlines, or nothing.
          *
-         * `flex: 1` on this block and the tagline pinned under it, so a card with
-         * one headline and a card with three both close on the same line in the
-         * same place — a set of previews from different days should not look like
-         * a set of different templates.
+         * `flex: 1` on this block, which is now the only thing between the lockup
+         * and the bottom padding: a card with one headline and a card with three
+         * both sit centred in the same box, so a set of previews from different
+         * days does not look like a set of different templates. The tagline used
+         * to close the card under this — see the lockup above for where it went.
          */}
         <div
           style={{
@@ -257,9 +309,6 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
           ))}
         </div>
 
-        <div style={{ display: "flex", fontSize: CARD.taglineSize, color: SOFT }}>
-          {tagline}
-        </div>
       </div>
     ),
     { width: OG_WIDTH, height: OG_HEIGHT, fonts: await posterFonts(text) },

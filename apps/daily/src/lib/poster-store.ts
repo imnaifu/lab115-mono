@@ -110,11 +110,74 @@ export async function writePoster(
 }
 
 /**
+ * Drop every cached poster of the named articles, in the named languages.
+ *
+ * INVALIDATION, and the only kind this cache has. Nothing here re-renders: the
+ * next request for one of these images misses, draws it from whatever the digest
+ * says now, and keeps it — which is the same path a fresh container takes.
+ *
+ * IT IS REQUIRED WHERE A DIGEST IS EDITED AFTER THE FACT, which is exactly what
+ * the English backfill does. The key is date + article + language + part and is
+ * consulted before anything is drawn, so an `/en/…` poster drawn from the Chinese
+ * take — back when that was all there was — would be served forever, and the
+ * English page would share a Chinese image.
+ *
+ * BY PREFIX rather than by part number, because the part COUNT is not knowable
+ * from here and changes with the text: the same take paginates wider in English,
+ * so a day that cached three parts may now want five. Deleting `<anchor>-<lang>-`
+ * takes whatever is actually there.
+ *
+ * Returns how many files went. Never throws — a file that will not delete is a
+ * stale image, not a failed backfill.
+ */
+export async function dropPosters(
+  date: string,
+  ids: Iterable<string>,
+  langs: Lang[],
+): Promise<number> {
+  if (!DATE_RE.test(date)) return 0;
+
+  const dir = path.join(POSTER_DIR, date);
+  let files: string[];
+  try {
+    files = await fs.readdir(dir);
+  } catch {
+    return 0; // nothing cached for that day
+  }
+
+  /** `<anchor>-<lang>-`, one per article per language: what a filename starts
+   *  with if it belongs to this drop. Built from the same `articleAnchor` the
+   *  path builder uses, so the two can only agree. */
+  const prefixes: string[] = [];
+  for (const id of ids) {
+    const anchor = articleAnchor(id);
+    if (!/^[0-9a-f]{1,40}$/.test(anchor)) continue;
+    for (const lang of langs) prefixes.push(`${anchor}-${lang}-`);
+  }
+  if (!prefixes.length) return 0;
+
+  let dropped = 0;
+  for (const file of files) {
+    if (!prefixes.some((prefix) => file.startsWith(prefix))) continue;
+    try {
+      await fs.rm(path.join(dir, file));
+      dropped += 1;
+    } catch {
+      // Leaves one stale image behind. Not worth failing a run over.
+    }
+  }
+  return dropped;
+}
+
+/**
  * Drop cached days older than KEEP_DAYS, counting back from `newest`.
  *
- * Called by the job after it has generated the current day, so the cache is
- * trimmed exactly when it grew. Compares date STRINGS: `YYYY-MM-DD` sorts
- * chronologically, which is the whole reason the digests are named that way.
+ * Called by the daily job once the day's digest is written. NOT because the
+ * cache grew — it does not grow at write time any more, the posters are drawn on
+ * first share — but because a cache on a mounted volume needs something that runs
+ * on a schedule to take the far end off, and the daily run is the only thing here
+ * that does. Compares date STRINGS: `YYYY-MM-DD` sorts chronologically, which is
+ * the whole reason the digests are named that way.
  */
 export async function prunePosters(newest: string): Promise<number> {
   if (!DATE_RE.test(newest)) return 0;

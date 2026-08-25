@@ -16,7 +16,7 @@ import {
   type WorkingArticle,
   type WorkingDigest,
 } from "@/lib/store";
-import { cachePosters } from "@/jobs/posters";
+import { prunePosters } from "@/lib/poster-store";
 import {
   scoreAll,
   summarizeSurvivors,
@@ -151,7 +151,7 @@ async function fetchAndScore(now: Date): Promise<WorkingDigest> {
 /**
  * Turn the working digest into the published one: apply the floor to the scores
  * as they now stand, summarize what clears it and still needs a take, then
- * write, push, draw the posters and notify.
+ * write, push and notify.
  *
  * SUMMARY OWNS THE FIELDS SCORE DOES NOT. It never rewrites a score — which is
  * also why an article whose `score` no longer matches its `modelScore` is
@@ -414,18 +414,26 @@ async function publishFrom(
   );
 
   /**
-   * Every share image, rendered now and written to disk.
+   * The share images are NOT rendered here. They are drawn the first time
+   * somebody actually opens a share sheet — see lib/poster-serve.ts.
    *
-   * AFTER the push and BEFORE the notification, which is the one ordering that
-   * makes sense: the digest is the record and it should be safe in git before
-   * this spends a minute on derived files, and the notification is what sends a
-   * reader to the site — so the images should already be there when they arrive
-   * to share one.
+   * This step used to render every image of every article in both languages, on
+   * the argument that one tap should not cost three to seven Satori renders. It
+   * bought that at a fixed price: a minute of CPU every morning drawing the whole
+   * day in both languages, most of which nobody shares. A cold render is ~0.6s for
+   * the cover part and ~0.1s for each page of prose, the sheet asks for every part
+   * at once, and it already has a four-second budget and a spinner to spend it
+   * behind — see PREPARE_WAIT_MS in ShareButton. So the work is now paid for by
+   * the shares that happen rather than by the ones that might.
    *
-   * It cannot fail the run. The posters are a cache; the route renders on a
-   * miss, so the worst case of this whole step failing is the old behaviour.
+   * What is left is the RETENTION, which lived at the end of that step: this is a
+   * mounted volume and nothing else ever deletes from it. It stays on the daily
+   * run because that is the only thing here with a schedule.
    */
-  await cachePosters(digest);
+  const droppedDays = await prunePosters(digest.date);
+  if (droppedDays) {
+    console.log(`[daily] posters: ${droppedDays} old day(s) pruned`);
+  }
 
   await notify(digest);
 

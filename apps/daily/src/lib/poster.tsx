@@ -86,10 +86,19 @@ export async function renderPoster({
 }): Promise<Buffer | null> {
   const summary = summaryFor(article, lang);
   const brand = strings(lang).brand;
-  /** The same sentence the page's masthead prints under the wordmark. Cleaned
-   *  here rather than at the point it is drawn, because it also has to go into
-   *  the font subset below and both have to see the same characters. */
-  const tagline = posterClean(strings(lang).tagline);
+  /**
+   * The same sentence the page's masthead prints under the wordmark. Cleaned
+   * here rather than at the point it is drawn, because it also has to go into
+   * the font subset below and both have to see the same characters.
+   *
+   * WITHOUT ITS FULL STOP, which the string carries because it is a sentence
+   * everywhere else it is used — the masthead, the meta description, the feed's
+   * subtitle. Here it is a label sitting under a wordmark, and a lone 。 hanging
+   * off the end of a two-line lockup reads as punctuation the layout forgot to
+   * remove. Trimmed at the draw site rather than in i18n so the sentence stays a
+   * sentence in the places that print it as one.
+   */
+  const tagline = posterClean(strings(lang).tagline).replace(/[。.]$/, "");
   const source = sourceOf(article.sourceId);
 
   /**

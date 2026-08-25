@@ -88,6 +88,19 @@ export const POSTER_HEIGHT = 1440;
  * drift the first time one of them changed. THE GAPS ARE HERE FOR THAT REASON
  * TOO: they used to be literals in both places.
  */
+/**
+ * The lockup's text metrics, hoisted out of POSTER because `markSize` is derived
+ * from them and an object literal cannot read its own fields.
+ *
+ * LINE is Satori's default line box: nothing in the lockup sets `lineHeight`, so
+ * a row is 1.2x its font size — the same factor POSTER_FRAME already assumes for
+ * the domain chip.
+ */
+const LINE = 1.2;
+const BRAND_SIZE = 58;
+const TAGLINE_SIZE = 26;
+const TAGLINE_GAP = 9;
+
 export const POSTER = {
   /** Canvas edge → card. */
   pad: 58,
@@ -104,10 +117,20 @@ export const POSTER = {
   domainTracking: 3,
   /** Chip row → the wordmark lockup under it. */
   domainGap: 29,
-  /** The lockup: the mark, and the wordmark beside it. */
-  markSize: 70,
+  /**
+   * The lockup: the mark, and the wordmark beside it.
+   *
+   * THE MARK IS EXACTLY AS TALL AS THE COLUMN NEXT TO IT — the wordmark's line,
+   * the gap, and the tagline's line — rather than the flat 70 it was, which was
+   * the wordmark's line alone and left the mark floating against the middle of a
+   * two-line block. Computed rather than written down so that changing either
+   * font size moves the mark with it; the alternative is a number that is right
+   * on the day it is typed.
+   */
+  markSize:
+    Math.round(BRAND_SIZE * LINE) + TAGLINE_GAP + Math.round(TAGLINE_SIZE * LINE),
   markGap: 23,
-  brandSize: 58,
+  brandSize: BRAND_SIZE,
   /**
    * The tagline under the wordmark, on the identity card only.
    *
@@ -122,8 +145,8 @@ export const POSTER = {
    * below, which has `flexGrow: 1`. POSTER_FRAME is untouched on purpose: the
    * lockup is drawn on part 1 only, and part 1 carries no prose to paginate.
    */
-  taglineSize: 26,
-  taglineGap: 9,
+  taglineSize: TAGLINE_SIZE,
+  taglineGap: TAGLINE_GAP,
   dateSize: 32,
   /** Lockup → card. */
   cardTop: 49,

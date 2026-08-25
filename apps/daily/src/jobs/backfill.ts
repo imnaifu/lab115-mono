@@ -7,7 +7,7 @@ import {
   shownArticles,
   writeDigest,
 } from "@/lib/store";
-import { cachePosters } from "@/jobs/posters";
+import { dropPosters } from "@/lib/poster-store";
 import type { Digest } from "@/lib/types";
 
 /**
@@ -147,19 +147,25 @@ export async function backfillEnglish(
     result.changed.push(date);
 
     /**
-     * The English posters for exactly the articles that changed.
+     * The English posters of exactly the articles that changed, thrown away.
      *
      * REQUIRED, not an optimisation. The poster cache is keyed date + article +
      * language + part and is consulted before anything is rendered, so the
-     * `/en/…/share.png` files sitting there — drawn from the Chinese, back when
-     * that was all there was — would be served forever, and the English page
-     * would share a Chinese image.
+     * `/share/en/…` files sitting there — drawn from the Chinese, back when that
+     * was all there was — would be served forever, and the English page would
+     * share a Chinese image.
+     *
+     * DROPPED RATHER THAN REDRAWN, since nothing pre-renders posters any more:
+     * the next reader to open that article's share sheet misses the cache and gets
+     * one drawn from the English take that was just written. See `dropPosters` for
+     * why it deletes by prefix rather than by part.
      *
      * The Chinese ones are left alone: nothing this job wrote can change them.
-     * Part COUNTS change though, and only upward in practice — the same take is
-     * wider in English — so the extra parts are new files rather than replacements.
      */
-    await cachePosters(updated, { ids: new Set(english.keys()), langs: ["en"] });
+    const dropped = await dropPosters(date, english.keys(), ["en"]);
+    if (dropped) {
+      console.log(`[daily] backfill — ${date}: ${dropped} stale poster(s) dropped`);
+    }
     console.log(`[daily] backfill — ${date} written (${relPathFor(date)})`);
   }
 
