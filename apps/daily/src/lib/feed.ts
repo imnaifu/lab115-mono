@@ -5,9 +5,9 @@ import { href, LANGS, type Lang } from "./lang";
 import { articlePath } from "./links";
 import { blocksOf } from "./paragraphs";
 import { sourceOf } from "./sources";
-import { listDates, readDigest } from "./store";
+import { listDates, readDigest, shownArticles } from "./store";
 import { summaryFor } from "./take";
-import type { Article, Digest } from "./types";
+import type { Digest, PublishedArticle } from "./types";
 
 /**
  * The site's own Atom feed — the thing it asks of 69 other blogs and did not
@@ -67,7 +67,7 @@ function stamp(value: string | undefined | null): string | null {
 
 /** The headline in the feed's language, by the same rule `ArticleTitle` uses:
  *  the Chinese title is a translation that only /zh shows. */
-function titleFor(article: Article, lang: Lang): string {
+function titleFor(article: PublishedArticle, lang: Lang): string {
   const translated = lang === "zh" ? article.titleZh?.trim() : "";
   return translated || article.title;
 }
@@ -84,7 +84,11 @@ function titleFor(article: Article, lang: Lang): string {
  * and the ones that do not are showing this in someone else's typography, so
  * anything clever here is at best ignored and at worst fought with.
  */
-function contentHtml(article: Article, lang: Lang, url: string): string {
+function contentHtml(
+  article: PublishedArticle,
+  lang: Lang,
+  url: string,
+): string {
   const t = strings(lang);
   const summary = summaryFor(article, lang);
   const source = sourceOf(article.sourceId);
@@ -111,7 +115,11 @@ function contentHtml(article: Article, lang: Lang, url: string): string {
   return escapeXml(parts.join(""));
 }
 
-function entryFor(article: Article, digest: Digest, lang: Lang): string {
+function entryFor(
+  article: PublishedArticle,
+  digest: Digest,
+  lang: Lang,
+): string {
   const path = articlePath(digest.date, article);
   const url = `${SITE}${href(lang, path)}`;
   const category = categoryOf(article.category);
@@ -161,7 +169,10 @@ export async function atomFeed(lang: Lang): Promise<string> {
 
   const entries: string[] = [];
   for (const digest of digests) {
-    for (const article of digest.articles) {
+    // Only what the site actually published — the list also holds the
+    // articles that were considered and turned down, which have no take to
+    // carry and therefore nothing a feed reader could show.
+    for (const article of shownArticles(digest)) {
       if (entries.length >= FEED_MAX_ENTRIES) break;
       entries.push(entryFor(article, digest, lang));
     }

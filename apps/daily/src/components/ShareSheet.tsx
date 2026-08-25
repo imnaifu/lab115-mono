@@ -195,6 +195,7 @@ export function ShareSheet({
   parts,
   title,
   thesis,
+  tags,
   onCopy,
   copied,
   lang,
@@ -218,6 +219,8 @@ export function ShareSheet({
   title: string;
   /** The summary's opening sentence — see `systemShare`. */
   thesis: string;
+  /** This take's hashtags, WITHOUT their `#` — see `systemShare`. */
+  tags: string[];
   /**
    * The clipboard write, and whether it just happened. Both come from the page
    * rather than being done here: `copied` is a two-second state that outlives the
@@ -448,10 +451,19 @@ export function ShareSheet({
    * rather than an error.
    */
   async function systemShare() {
-    // Blank lines between the three parts: a composer that pastes this whole
-    // string is writing a post, and a headline running into its own summary is
-    // the reader's problem to untangle.
-    const text = `${title}\n\n${thesis}\n\n${page}`;
+    // Blank lines between the parts: a composer that pastes this whole string
+    // is writing a post, and a headline running into its own summary is the
+    // reader's problem to untangle.
+    //
+    // THE HASHTAGS GO LAST, on their own line, and the `#` is added here rather
+    // than stored — see `tags` in lib/types.ts. Last because that is where a
+    // 小红书 note carries them and because it is the one position where a target
+    // that does not understand them leaves the rest of the message readable.
+    // Absent when the take has none, and then the trailing blank line goes too:
+    // an empty tag line is a composer opening with the cursor two rows below
+    // the text.
+    const note = tags.length ? `\n\n${tags.map((tag) => `#${tag}`).join(" ")}` : "";
+    const text = `${title}\n\n${thesis}\n\n${page}${note}`;
 
     const ready = warmed.current
       ? await Promise.race([

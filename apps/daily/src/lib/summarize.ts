@@ -192,6 +192,29 @@ const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 const TITLE_MAX = 24;
 
 /**
+ * The share note's hashtags: how many, and how long each may be.
+ *
+ * FOUR, AND THE PROMPT SPLITS THEM 2 BROAD + 2 NARROW, because the two halves do
+ * different jobs on 小红书 — a broad tag puts the note in front of a crowd that
+ * already exists, a narrow one lets the person who came looking for exactly this
+ * find it. All-broad competes with everything on the platform; all-narrow reaches
+ * nobody who was not already searching.
+ *
+ * CHINESE ONLY, and there is no English counterpart. The tags exist for one
+ * destination, that destination is Chinese, and an English note carrying Chinese
+ * hashtags is worse than one carrying none. `summaryFor` picks the take by
+ * language and the tags travel inside it, so /en shares carry none unless the
+ * English half is missing and the reader is being shown the Chinese take anyway
+ * — in which case Chinese tags are the correct ones.
+ *
+ * EIGHT CHARACTERS is a ceiling rather than a target. Past it a tag has stopped
+ * being a tag and become a sentence, which nobody searches for; the cleaner drops
+ * anything longer rather than truncating, because half a word is a different word.
+ */
+const TAGS_PER_ARTICLE = 4;
+const TAG_MAX = 8;
+
+/**
  * What ONE article is allowed, derived from how long that article is.
  *
  * A CHARACTER TOTAL AND NOTHING ELSE. The paragraph COUNT used to be computed
@@ -565,6 +588,8 @@ const SUMMARY_PASS = "summary";
  */
 const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：同一个论点、同样的证据、同样的段落断点、同样数量的小标题（「## 」照样是正文里唯一允许的 markdown）。中文那边的每条硬要求在这边同样有效 —— 第三人称、最多三个要点、段落写长了就拆。
 
+**英文这边不写标签。** \`zh_tags\` 只有一套，它是给中文分享用的，英文不需要对应的字段。
+
 **写成地道英文，不是把中文一个词一个词换过来。**
 
 上面风格指南要的现代类比在这里要**重新本地化，而不是翻译**。「拼团买大件」是 chipping in with the neighbours，不是 group-buying；「C 位」是 centre stage 或 top billing，不是 the C position；「KPI」「打卡」这类已经进入英文办公语汇的词照用。一个直译过来的中文网络梗，英文读者读到的是一句不知所云的话。
@@ -592,6 +617,7 @@ const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中�
 - "zh_title" —— 中文标题，见下面「标题」。
 - "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。
 - "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间空一行，也就是 JSON 字符串里的 "\\n\\n"。分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
+- "zh_tags" —— ${TAGS_PER_ARTICLE} 个中文标签，**字符串数组**，见下面「标签」。
 - "en_thesis" 和 "en_text" —— 同一篇概要的英文版，见下面「英文」。
 - "category" —— 见下面「分类」。
 
@@ -646,6 +672,20 @@ const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中�
 - **不许写成目录**：「关于 X 的三个要点」「X 的五个启示」不是标题。
 - 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
 - 原标题本身已经够抓人的时候，直接译过来就是最好的答案 —— 重写不是义务。
+
+## 标签 "zh_tags"
+
+这几个词是分享到小红书时贴在文案末尾的话题标签，**既是分类也是搜索入口** —— 它们决定这篇笔记会被谁刷到。
+
+- **正好 ${TAGS_PER_ARTICLE} 个，前 2 个宽、后 2 个窄。**
+  - **宽**的是这个领域本来就有大量内容和关注者的大词（如 AI、职场、投资、健身、读书），作用是把笔记送进一个已经存在的人群。
+  - **窄**的是这篇文章独有的东西：它讲的那个机制、那个人群、那个具体后果（如 AI替代岗位、应届生就业）。作用是让真正冲这件事来的人搜得到。
+- **不要写井号**，只写词本身，井号是发的时候拼上去的。
+- **中间不许有空格**，一个标签遇到空格会被断成两个。
+- **每个最多 ${TAG_MAX} 个字**，宽词通常 2~4 个字。
+- **是词不是句子**：「AI替代岗位」对，「AI正在取代白领」错。
+- **不许编**。四个词都得是文章真的在讲的东西 —— 只看这四个标签能大致猜出文章讲什么，才算写对了。
+- 产品名、公司名、模型名照原样保留（DeepSeek、GPT-5），不要音译。
 
 ## 英文
 
@@ -709,6 +749,9 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
 const EXAMPLE_ZH_TITLE = `推动历史的不是皇帝，是一家人的晚饭`;
 const EXAMPLE_ZH_THESIS = `真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。`;
 const EXAMPLE_ZH_TEXT = `教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 1. 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 2. 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 3. 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。`;
+/** Two broad, two narrow, in that order — the example is where the split is
+ *  actually read rather than merely asked for. */
+const EXAMPLE_ZH_TAGS = ["历史", "冷知识", "古代经济", "农业社会"];
 const EXAMPLE_EN_THESIS = `History was not driven by kings and generals but by the everyday needs of countless ordinary families trying to put dinner on the table.`;
 const EXAMPLE_EN_TEXT = `Textbooks give emperors, generals and wars the centre stage. Zoom in, though, and you find that the ones actually holding the production together — and moving the plot along — were millions of ordinary households going about their day.\\n\\nSo rewind 4,000 years to the ancient Near East and watch how one unremarkable family levered history along:\\n\\n## 1. Getting fed was the original hardcore KPI\\n\\nIn ancient Mesopotamia a family's most important job was growing barley. Two great rivers watered the land, the soil was rich, and more grain meant more mouths could be fed.\\n\\nIn the ancient world people were labour, labour was an army, and an army was national power. Wherever families had more children and enough to feed them, that is where a superpower grew.\\n\\n## 2. Too big for one household? Enter the state\\n\\nSome jobs were simply beyond a single family, however hard it worked:\\n\\nIrrigation: watering the fields and holding back the floods meant thousands of households digging one canal. Somebody had to organise that, direct it, and at times force people to turn up — which is how the earliest states and governments got squeezed into existence.\\n\\nBig-ticket items: an ox and an iron plough were heavy equipment, far beyond one family's savings, so neighbours chipped in together, bought one between them, and took turns.\\n\\n## 3. Shopping built civilisation\\n\\nNo household could make everything it needed. Beyond what they grew themselves, families went to market for what they could not produce — pots, timber, bronze, even someone else's vegetables.\\n\\nOnce millions of households all wanted to buy, trade appeared, cities filled up and trade routes spread out. States went to war over the scarce goods behind all of it, and civilisations rose and fell along with them.\\n\\nIn one line: emperors and generals did not create history. The needs of countless ordinary families trying to eat well and live a little better pushed human society, step by step, into the modern world.`;
 
@@ -718,6 +761,7 @@ const SUMMARY_EXAMPLE = `{
       "zh_title": "${EXAMPLE_ZH_TITLE}",
       "zh_thesis": "${EXAMPLE_ZH_THESIS}",
       "zh_text": "${EXAMPLE_ZH_TEXT}",
+      "zh_tags": ${JSON.stringify(EXAMPLE_ZH_TAGS)},
       "en_thesis": "${EXAMPLE_EN_THESIS}",
       "en_text": "${EXAMPLE_EN_TEXT}",
       "category": "culture"
@@ -963,9 +1007,15 @@ function applySummaries(
     if (zhThesis) {
       verdict.category = resolveCategory(row.category);
       verdict.titleZh = chineseTitle(row.zh_title, article.title);
+      const tags = tagList(row.zh_tags);
       verdict.zh = {
         thesis: zhThesis,
         text: asBody(row.zh_text),
+        // Omitted rather than stored empty, on the same rule as `titleZh` and
+        // the English half: an absent field means "there are none", and an
+        // empty array would make a model that skipped the field look like one
+        // that considered the question and came back with nothing.
+        ...(tags.length ? { tags } : {}),
       };
     }
 
@@ -975,6 +1025,31 @@ function applySummaries(
       verdict.en = { thesis: enThesis, text: enText };
     }
   }
+}
+
+/**
+ * The tag array, cleaned into something that can be pasted into a note.
+ *
+ * Three things get taken out, and each of them has been observed rather than
+ * imagined: a leading `#` the model adds back despite being told not to (both
+ * the ASCII and the full-width one), whitespace ANYWHERE inside the word —
+ * which on 小红书 ends the tag, so "AI 替代岗位" posts as `#AI` followed by
+ * loose text — and duplicates, which turn four tags into two.
+ *
+ * Anything longer than TAG_MAX is DROPPED rather than cut: half a word is a
+ * different word, and a note with three tags reads fine. Same for a short
+ * reply — the count is what the prompt asks for, not something to pad up to.
+ */
+function tagList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const item of value) {
+    const tag = String(item ?? "").replace(/[#\uff03\s]+/g, "");
+    if (!tag || tag.length > TAG_MAX || out.includes(tag)) continue;
+    out.push(tag);
+    if (out.length === TAGS_PER_ARTICLE) break;
+  }
+  return out;
 }
 
 function asText(value: unknown): string {
@@ -1514,13 +1589,24 @@ export async function summarizeSurvivors(
       sourceOf(a.sourceId).alwaysPublish &&
       (out.get(a.id)!.score < PUBLISH_MIN_SCORE || !out.get(a.id)!.judged),
   ).length;
-  const unjudged = batch.filter((a) => !out.get(a.id)!.judged).length;
+  /**
+   * Three counts that partition the batch, and they have to be derived from
+   * `survivors` rather than from `judged`.
+   *
+   * The arithmetic here used to be `batch - unjudged - survivors`, on the
+   * assumption that a survivor is always an article the model scored. That
+   * stopped being true the moment a human could type a number into the file:
+   * a run where every model call failed and one score was set by hand printed
+   * "-1 dropped unsummarized".
+   */
+  const kept = new Set(survivors.map((a) => a.id));
+  const dropped = batch.filter((a) => !kept.has(a.id));
+  const unscored = dropped.filter((a) => !out.get(a.id)!.judged).length;
   console.log(
     `[daily] ${survivors.length} at or above the floor ` +
-      `(${PUBLISH_MIN_SCORE}), ` +
-      `${batch.length - unjudged - survivors.length} dropped unsummarized` +
-      (exempt ? `, ${exempt} below it but whitelisted` : "") +
-      (unjudged ? `, ${unjudged} unscored and dropped` : ""),
+      `(${PUBLISH_MIN_SCORE}), ${dropped.length} below it` +
+      (unscored ? ` (${unscored} of them never scored)` : "") +
+      (exempt ? `, ${exempt} below it but whitelisted` : ""),
   );
   if (survivors.length === 0) return out;
 

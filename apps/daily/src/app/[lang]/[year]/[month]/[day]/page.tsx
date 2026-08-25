@@ -7,7 +7,7 @@ import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
 import { articlePath, dayPath } from "@/lib/links";
 import { alternatesFor, breadcrumb, JsonLd, ogCardFor, publisher } from "@/lib/seo";
 import { displayTitle } from "@/components/ArticleTitle";
-import { readDigest } from "@/lib/store";
+import { readDigest, shownArticles } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -57,8 +57,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
    * mid-headline reads as a bug, and three of these is already past the ~160
    * characters a result snippet shows.
    */
+  // `shownArticles`, not `digest.articles`: the list also holds what was
+  // considered and turned down, and those headlines are not what this day is.
   const description =
-    digest.articles
+    shownArticles(digest)
       .slice(0, 3)
       .map((article) => displayTitle(article, pageLang))
       .join(" · ") || t.tagline;
@@ -108,6 +110,9 @@ export default async function DayPage({ params }: Params) {
   // walk out of the repo directory.
   const digest = await readDigest(date);
   if (!digest) notFound();
+  // The published half of the list — see `shownArticles`. The JSON-LD below
+  // describes what a reader can actually open.
+  const shown = shownArticles(digest);
 
   return (
     <>
@@ -156,8 +161,10 @@ export default async function DayPage({ params }: Params) {
           ]),
           mainEntity: {
             "@type": "ItemList",
-            numberOfItems: digest.articles.length,
-            itemListElement: digest.articles.map((article, i) => ({
+            // The published ones only. An unpublished article has no page, so
+            // listing it here is a structured-data claim about a 404.
+            numberOfItems: shown.length,
+            itemListElement: shown.map((article, i) => ({
               "@type": "ListItem",
               position: i + 1,
               url: `${SITE}${langHref(lang, articlePath(date, article))}`,

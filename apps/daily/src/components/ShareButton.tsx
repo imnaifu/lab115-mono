@@ -61,6 +61,7 @@ export function ShareButton({
   parts,
   title,
   thesis,
+  tags,
   lang,
 }: {
   /**
@@ -81,6 +82,9 @@ export function ShareButton({
   title: string;
   /** The summary's opening sentence — see ShareSheet's `systemShare`. */
   thesis: string;
+  /** This take's hashtags, WITHOUT their `#` — same place. Empty is ordinary:
+   *  every digest archived before tags existed has none. */
+  tags: string[];
   lang: Lang;
 }) {
   const t = strings(lang);
@@ -234,6 +238,7 @@ export function ShareButton({
         parts={parts}
         title={title}
         thesis={thesis}
+        tags={tags}
         onCopy={copy}
         copied={copied}
         lang={lang}

@@ -7,14 +7,16 @@
  * fetched article in it and a `score` on each, sitting dirty in the clone:
  * that file is the thing you edit, and `npm run summary` finishes it.
  *
- * IT ONLY EVER WRITES `score`, `modelScore` AND `review`. Run it over a day
- * that has already been summarized and the takes are carried across untouched,
- * so re-scoring costs the scoring pass and nothing more.
+ * IT REPLACES THE FILE. Not a merge — everything that was in it is gone,
+ * including takes written by an earlier `npm run summary` and including scores
+ * you edited by hand. Run it and the day starts over from the feeds.
  *
- * The reverse is not free: re-running it DOES replace scores you edited,
- * because `score` is one of the three fields it owns. There is no merge,
- * because a merge would have to decide whether the new model score or your
- * override wins, and the honest answer to that depends on why you overrode it.
+ * That is a choice, and the alternative was in place first: carry the takes
+ * across, refresh only the numbers. It makes re-scoring cheap and it makes the
+ * file's contents depend on its own history — the same command run twice on the
+ * same day produces different output the second time, and everything reading
+ * that file needs to handle "the summaries might already be there". Being able
+ * to say what this command produces is worth more than the model calls it saves.
  */
 import { PUBLISH_MIN_SCORE } from "@/lib/categories";
 import { runScore } from "./daily";
@@ -48,10 +50,7 @@ runScore(new Date())
       // to answer for this one and it will publish nothing without a number
       // typed in by hand.
       const flag = article.review ? " " : "!";
-      const done = article.summary ? " ·" : "  "; // already has a take
-      console.log(
-        `  ${score}${flag}${done} ${source}  ${clip(article.title, 50)}`,
-      );
+      console.log(`  ${score}${flag} ${source}  ${clip(article.title, 52)}`);
     }
     if (!floorDrawn) rule();
 
@@ -59,8 +58,6 @@ runScore(new Date())
     const above = working.articles.filter(
       (a) => a.score >= PUBLISH_MIN_SCORE,
     ).length;
-    const kept = working.articles.filter((a) => a.summary).length;
-
     // Counted separately on purpose: "scored" is not "fetched" when a model
     // call dropped, and neither is "above the floor". One number would hide
     // whichever of the three went wrong.
@@ -70,9 +67,8 @@ runScore(new Date())
           ? ` (${working.articles.length - judged} marked ! — the model never ` +
             `answered for them)`
           : "") +
-        `, ${above} above the floor` +
-        (kept ? `, ${kept} already have a take (marked ·)` : "") +
-        `.\n  Edit "score" in the file above, then:\n` +
+        `, ${above} above the floor.` +
+        `\n  Edit "score" in the file above, then:\n` +
         `\n    npm run summary -- --date=${working.date}\n`,
     );
     process.exit(0);

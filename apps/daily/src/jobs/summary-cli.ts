@@ -1,10 +1,16 @@
 /**
  * Local entry point: `npm run summary`.
  *
- * The second half of a run: read the day's file as `npm run score` left it —
- * INCLUDING any score you edited — summarize everything at or above the floor
- * that has no take yet, then write the published digest, push it, draw the
- * posters and send the notification.
+ * Publish a day from the scores in its file — including the ones you edited —
+ * summarizing whatever clears the floor and has no take yet, then writing the
+ * digest, pushing it, drawing the posters and sending the notification.
+ *
+ * IT ONLY WRITES THE SUMMARY SIDE, unconditionally. No score is recomputed, no
+ * article is re-fetched, and nothing branches on what state the file is in: the
+ * file is whatever `npm run score` left plus whatever you edited, and that is a
+ * complete input by construction. Run it twice and the second run changes
+ * nothing but the timestamp — an article that already has a take is not asked
+ * for again.
  *
  * It writes the summary fields and nothing else: a score in that file is
  * whatever you left it as, and one that no longer matches the model's is
@@ -36,14 +42,16 @@ const date = dateArg ?? dateKey(new Date());
 
 runPublish(date)
   .then((digest) => {
-    const edited = digest.articles.filter((a) => a.scoredBy === "human").length;
-    const editedOut = (digest.rejected ?? []).filter(
-      (a) => a.scoredBy === "human",
-    ).length;
+    // Split by whether the hand-set score put the article ON the page or kept
+    // it off: both are edits, and they are opposite decisions.
+    const edited = digest.articles.filter((a) => a.scoredBy === "human");
+    const up = edited.filter((a) => a.summary).length;
+    const down = edited.length - up;
     console.log(
-      `[daily] ${digest.date} published — ${digest.stats.shown} shown` +
-        (edited ? `, ${edited} of them on a hand-set score` : "") +
-        (editedOut ? `, ${editedOut} held back by hand` : ""),
+      `[daily] ${digest.date} published — ${digest.stats.shown} of ` +
+        `${digest.stats.fetched}` +
+        (up ? `, ${up} on a hand-set score` : "") +
+        (down ? `, ${down} held back by hand` : ""),
     );
     process.exit(0);
   })

@@ -3,7 +3,7 @@ import path from "node:path";
 import { REPO_SUBDIR } from "./config";
 import { articleSlug, idFromSlug } from "./links";
 import { REPO_PATH } from "./paths";
-import type { Article, Digest } from "./types";
+import type { Article, Digest, PublishedArticle } from "./types";
 
 /**
  * Read/write side of the git clone. There is no index file: the archive list
@@ -29,31 +29,35 @@ function absPathFor(date: string): string {
  *
  * There is no separate plan file, and that is the point — the thing you edit is
  * the thing that gets published, so there is no second format to learn and no
- * question of which one is authoritative. Two commands, two sets of fields:
- * `score` owns `score` / `modelScore` / `review`, `summary` owns `summary` /
- * `category` / `titleZh`, and neither overwrites the other's.
+ * question of which one is authoritative. Two commands, two halves of the
+ * record: `score` writes `score` / `modelScore` / `review`, `summary` writes
+ * `summary` / `category` / `titleZh`, and neither reads the other's back to
+ * decide anything.
  *
- * Two differences from a published digest, both temporary:
+ * ONE difference from a published digest, and it is temporary: every article
+ * carries its `body`. The summary pass needs it, and re-fetching instead would
+ * mean summarizing a different text than the one that was scored — an HN item's
+ * third-party page can be gone hours later. Nothing strips them on the way out:
+ * `publishFrom` builds `Digest` objects, which have no `body` field anywhere.
  *
- * - EVERY fetched article is in `articles`, including the ones under the floor,
- *   because raising a score by hand has to be able to promote one. `summary` is
- *   what applies the floor and moves the rest to `rejected`.
- * - Each carries its `body`. The summary pass needs it, and re-fetching instead
- *   would mean summarizing a different text than the one that was scored — an
- *   HN item's third-party page can be gone hours later. `summary` strips the
- *   bodies when it writes the published file, so they never reach git.
+ * The list itself does not change shape. A digest already holds every article
+ * the window produced, published or not (see `Digest.articles`), so the
+ * half-done file is that same list with no takes written yet.
  *
  * IT IS NEVER COMMITTED. `score` writes the file and stops; the working tree is
  * dirty until `summary` runs. That is also why `summary` reads this file BEFORE
  * calling `ensureRepo()` — the sync does `git reset --hard origin/BRANCH` when
  * there is nothing local to preserve, which would throw the edited scores away.
  */
-export interface WorkingArticle extends Omit<Article, "summary"> {
-  /** Plain text, already truncated to BODY_CHAR_LIMIT — see RawArticle. */
-  body: string;
-  /** Absent until the summary pass writes one; carried over verbatim when a
-   *  re-score runs over a day that already has summaries. */
-  summary?: Article["summary"];
+export interface WorkingArticle extends Article {
+  /**
+   * Plain text, already truncated to BODY_CHAR_LIMIT — see RawArticle.
+   *
+   * Optional because this type also reads back a PUBLISHED digest, which
+   * carries none. An article with no body cannot be summarized; it is held back
+   * and said so, rather than summarized from its headline.
+   */
+  body?: string;
 }
 
 export interface WorkingDigest extends Omit<Digest, "articles"> {
@@ -65,6 +69,24 @@ export interface WorkingDigest extends Omit<Digest, "articles"> {
 export async function readWorking(date: string): Promise<WorkingDigest | null> {
   const digest = (await readDigest(date)) as WorkingDigest | null;
   return digest;
+}
+
+/**
+ * The articles a page shows: the ones that came back with a take.
+ *
+ * THE ONE PLACE THE FLOOR IS READ BACK. A digest carries every article the
+ * window held in a single list — see `Digest.articles` — and `summary` is what
+ * separates the published from the merely considered. Every renderer goes
+ * through here, which is why it returns the narrowed type: a component that
+ * reached into `digest.articles` itself would be handed entries with no take
+ * and would not compile.
+ *
+ * Order is preserved, and the writer already sorted the list by rank.
+ */
+export function shownArticles(digest: Digest): PublishedArticle[] {
+  return digest.articles.filter(
+    (article): article is PublishedArticle => article.summary !== undefined,
+  );
 }
 
 export async function writeDigest(
@@ -140,10 +162,14 @@ export async function readLatest(): Promise<Digest | null> {
 export async function readArticle(
   date: string,
   idPrefix: string,
-): Promise<{ digest: Digest; article: Article } | null> {
+): Promise<{ digest: Digest; article: PublishedArticle } | null> {
   if (!/^[0-9a-f]{4,40}$/.test(idPrefix)) return null;
   const digest = await readDigest(date);
-  const article = digest?.articles.find((a) => a.id.startsWith(idPrefix));
+  // Published only: this is what the poster route resolves, and an article with
+  // no take has no poster to draw either.
+  const article = digest
+    ? shownArticles(digest).find((a) => a.id.startsWith(idPrefix))
+    : undefined;
   return digest && article ? { digest, article } : null;
 }
 
@@ -167,15 +193,23 @@ export async function readArticle(
 export async function readArticleBySlug(
   date: string,
   segment: string,
-): Promise<{ digest: Digest; article: Article; canonical: boolean } | null> {
+): Promise<{
+  digest: Digest;
+  article: PublishedArticle;
+  canonical: boolean;
+} | null> {
   const digest = await readDigest(date);
   if (!digest) return null;
 
-  const exact = digest.articles.find((a) => articleSlug(a) === segment);
+  // `shownArticles`, not `digest.articles`: an article with no take has no page,
+  // and resolving a slug to one would render a headline over an empty card.
+  const shown = shownArticles(digest);
+
+  const exact = shown.find((a) => articleSlug(a) === segment);
   if (exact) return { digest, article: exact, canonical: true };
 
   const id = idFromSlug(segment);
   if (!id) return null;
-  const byId = digest.articles.find((a) => a.id.startsWith(id));
+  const byId = shown.find((a) => a.id.startsWith(id));
   return byId ? { digest, article: byId, canonical: false } : null;
 }

@@ -19,7 +19,7 @@ import { sourceOf } from "@/lib/sources";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import { summaryFor } from "@/lib/take";
-import type { Article } from "@/lib/types";
+import type { PublishedArticle } from "@/lib/types";
 
 /**
  * The share poster, drawn.
@@ -79,13 +79,17 @@ export async function renderPoster({
   lang,
   part,
 }: {
-  article: Article;
+  article: PublishedArticle;
   date: string;
   lang: Lang;
   part: number;
 }): Promise<Buffer | null> {
   const summary = summaryFor(article, lang);
   const brand = strings(lang).brand;
+  /** The same sentence the page's masthead prints under the wordmark. Cleaned
+   *  here rather than at the point it is drawn, because it also has to go into
+   *  the font subset below and both have to see the same characters. */
+  const tagline = posterClean(strings(lang).tagline);
   const source = sourceOf(article.sourceId);
 
   /**
@@ -146,7 +150,11 @@ export async function renderPoster({
    */
   const [fonts, cover] = await Promise.all([
     posterFonts(
-      posterText(article, summary, `${date}${brand}${translated}${meta}${domain}`),
+      posterText(
+        article,
+        summary,
+        `${date}${brand}${tagline}${translated}${meta}${domain}`,
+      ),
     ),
     part === 1 ? posterCover(article.image) : Promise.resolve(null),
   ]);
@@ -259,15 +267,37 @@ export async function renderPoster({
               height={POSTER.markSize}
               alt=""
             />
+            {/* A column now, not a single line: the wordmark with the site's
+                one claim about itself under it, which is the same pair the
+                page's masthead draws. `alignItems: center` on the row above
+                keeps the mark centred against the taller block rather than
+                pinned to its cap line. */}
             <div
               style={{
                 display: "flex",
+                flexDirection: "column",
                 marginLeft: POSTER.markGap,
-                fontSize: POSTER.brandSize,
-                fontWeight: 700,
               }}
             >
-              {brand}
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: POSTER.brandSize,
+                  fontWeight: 700,
+                }}
+              >
+                {brand}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  marginTop: POSTER.taglineGap,
+                  fontSize: POSTER.taglineSize,
+                  color: "#8a83a8",
+                }}
+              >
+                {tagline}
+              </div>
             </div>
           </div>
         ) : null}

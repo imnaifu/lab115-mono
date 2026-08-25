@@ -32,6 +32,20 @@ export interface SummaryText {
    * Read it with `paragraphsOf` — every renderer splits it the same way.
    */
   text: string;
+  /**
+   * Hashtags for the share note, WITHOUT their `#`.
+   *
+   * Stored bare because the marker is not part of the word and the platforms do
+   * not agree about it — one string with a hash baked in would have to be
+   * un-baked for anything that writes them differently. `ShareSheet` adds the
+   * `#` when it composes the note.
+   *
+   * Optional twice over: every digest archived before this existed has none, and
+   * only the Chinese half is ever written — the tags exist for 小红书, and an
+   * English note carrying Chinese hashtags is worse than one carrying none. See
+   * TAGS_PER_ARTICLE in lib/summarize.ts.
+   */
+  tags?: string[];
 }
 
 /**
@@ -145,52 +159,74 @@ export interface Article {
    */
   score: number;
   /**
-   * The score the MODEL gave, when a human overruled it.
+   * The score the MODEL gave. ALWAYS WRITTEN, even when nothing overruled it.
    *
-   * Absent on every article nobody touched, which is nearly all of them — so
-   * its presence is the record that this article's place on the page (or the
-   * fact that it has one) was an editorial decision rather than an arithmetic
-   * one. `score` above is always the number that actually decided; this is the
-   * number it replaced.
+   * It is the baseline an edit is recognised against, and it has to be in the
+   * published file rather than only in the half-done one: editing a score in a
+   * digest that has already shipped is a supported thing to do, and without a
+   * number to compare against, an edit made there is indistinguishable from the
+   * model's own judgement forever after.
    *
-   * Written by `npm run summary` when the day's file carries a `score` that no
-   * longer matches the `modelScore` beside it. In THAT file `modelScore` is
-   * always present — it is the baseline an edit is recognised against; here it
-   * appears only when the two actually differ, so that "nobody touched this"
-   * and "someone agreed with the model" do not look the same. See
-   * `WorkingDigest` in lib/store.ts.
+   * It was briefly written only when it DIFFERED from `score`, on the argument
+   * that "nobody touched this" should not cost a field. What that actually cost
+   * was the ability to tell "nobody touched this" from "someone edited a file
+   * that had no baseline in it" — which is the one case the field exists for.
+   *
+   * Optional in the type because digests archived before it existed have none.
    */
   modelScore?: number;
   /**
    * "human" when `score` was hand-edited, absent otherwise.
    *
-   * Redundant with `modelScore` being present, and kept anyway: the two say
-   * different things when the numbers happen to coincide, and one obvious
-   * string in the file beats a reader of the archive having to know that a
-   * missing field means "the model decided this".
+   * Derivable from `modelScore !== score` and written anyway: one obvious string
+   * beats every reader of the archive having to know the comparison.
    */
   scoredBy?: "human";
-  /** 1-based position after sorting by score. */
+  /**
+   * 1-based position after sorting by score — among the articles that were
+   * PUBLISHED. 0 on the ones that were not: they have no position, and giving
+   * them one would make `rank` two different measures in one field.
+   */
   rank: number;
   /** How the score was arrived at. See ScoreReview. */
   review?: ScoreReview;
   /**
-   * The take, in each language it was written in.
+   * The take, in each language it was written in — AND THE ONE FIELD THAT SAYS
+   * WHETHER THIS ARTICLE IS PUBLISHED.
    *
-   * `zh` is the spine and is always there — an article with no Chinese summary
-   * never reaches this type. `en` is OPTIONAL, and its absence has two ordinary
-   * causes rather than one exceptional one: a digest archived while the site was
-   * Chinese-only carries no `en` at all, and a run where the model returned the
-   * Chinese half and stopped publishes that article with `zh` alone rather than
-   * holding up the day for it.
+   * Absent means considered and not published: it scored below the floor, or it
+   * cleared the floor and its summary never came back. Those entries are in
+   * `articles` alongside the published ones because ONE LIST is the whole
+   * shape of this file now — see `Digest.rejected` for the two-list version
+   * this replaced — and nothing renders them. Read the list through
+   * `shownArticles` in lib/store.ts, which is where that rule lives.
+   *
+   * `zh` is the spine: an article with a take always has the Chinese one. `en`
+   * is OPTIONAL, and its absence has two ordinary causes rather than one
+   * exceptional one: a digest archived while the site was Chinese-only carries
+   * no `en` at all, and a run where the model returned the Chinese half and
+   * stopped publishes that article with `zh` alone rather than holding up the
+   * day for it.
    *
    * So every renderer reads this through `summaryFor` in lib/take.ts, which falls
    * back to `zh`. That fallback is the one place the site still shows Chinese to a
    * reader who asked for English, and it is deliberate: an archive page with no
    * body is worse than one in the wrong language.
    */
-  summary: { zh: SummaryText; en?: SummaryText };
+  summary?: { zh: SummaryText; en?: SummaryText };
 }
+
+/**
+ * An article that HAS a take, which is the only kind anything renders.
+ *
+ * The narrowing exists so the rule "no summary means it was not published" is
+ * enforced by the compiler rather than remembered: renderers take this type,
+ * and the one function that produces it is `shownArticles` in lib/store.ts. A
+ * component reaching into `digest.articles` directly does not typecheck.
+ */
+export type PublishedArticle = Article & {
+  summary: NonNullable<Article["summary"]>;
+};
 
 /**
  * Fetched and summarized, but not given a card — rendered as a plain title
@@ -259,8 +295,27 @@ export interface Digest {
   window: { from: string; to: string };
   stats: { fetched: number; shown: number; folded: number };
   sources: SourceStatus[];
+  /**
+   * EVERY article the window held, published or not — one list.
+   *
+   * `summary` is what separates them: an entry with a take is on the page, an
+   * entry without one is the record that it was considered and turned down.
+   * `shownArticles` in lib/store.ts is the only place that rule is applied.
+   *
+   * It used to be two lists, `articles` and `rejected` below, and the split
+   * cost more than it bought. A rejection carried four fields, so acting on one
+   * later — raising a score by hand and publishing it — meant reconstructing an
+   * article from a title and a url. And the two lists had to be kept in step by
+   * whoever wrote them: the first version of the merge computed `rejected` as
+   * the complement of the published set and silently dropped articles that were
+   * over the floor with no summary, which appeared in neither.
+   */
   articles: Article[];
   folded: FoldedArticle[];
-  /** Below the floor: written to the file, never rendered. */
+  /**
+   * LEGACY, and no longer written. Digests archived before the lists were
+   * merged carry their turned-down articles here; nothing renders them, and
+   * `RejectedArticle` exists so those files still parse.
+   */
   rejected?: RejectedArticle[];
 }

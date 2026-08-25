@@ -7,7 +7,7 @@ import { strings } from "@/lib/i18n";
 import { track } from "@/lib/track";
 import type { Lang } from "@/lib/lang";
 import { ALL_TAB, type Category } from "@/lib/categories";
-import type { Article } from "@/lib/types";
+import type { PublishedArticle } from "@/lib/types";
 
 /** Every pill-shaped control on the page. Only the colours change per state. */
 const PILL =
@@ -15,7 +15,7 @@ const PILL =
 
 export interface CategoryGroup {
   category: Category;
-  articles: Article[];
+  articles: PublishedArticle[];
 }
 
 /**
@@ -43,7 +43,7 @@ export function DigestBody({
    * would come out of a re-sort in an arbitrary order. Same set as `groups`
    * holds; the two differ only in how they are arranged.
    */
-  articles: Article[];
+  articles: PublishedArticle[];
   groups: CategoryGroup[];
   /** Needed only to build each card's share link — the permalink is
    *  `/d/<date>/<id>`, because the store can only look articles up by day. */

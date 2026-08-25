@@ -28,7 +28,6 @@ import type {
   Article,
   Digest,
   FoldedArticle,
-  RejectedArticle,
   ScoreFinding,
 } from "@/lib/types";
 
@@ -72,22 +71,26 @@ export interface RunOptions {
 }
 
 /**
- * Fetch the day, score it, and fold that into whatever the day already has.
+ * Fetch the day and score it — the whole of `npm run score`.
  *
- * SCORE OWNS THREE FIELDS AND ONLY THREE: `score`, `modelScore` and `review`.
- * Anything the summary pass wrote — the take, the section, the Chinese
- * headline — is carried across by id, so re-scoring a day that has already
- * been summarized costs the scoring pass and nothing else, and the summary
- * pass afterwards has nothing left to write.
+ * IT WRITES A CLEAN SLATE. Everything in the file it replaces is replaced:
+ * there is no merge with what was there before, no carrying over of takes
+ * written earlier, no branch on whether the day was already published. What
+ * comes out is one thing — every article the window holds, each with a score —
+ * and that is the only shape `npm run summary` ever has to read.
+ *
+ * The alternative was tried and it is worse than it looks. Carrying the takes
+ * across makes re-scoring cheap, and it makes the file's contents depend on
+ * what happened to be in it: the same command, run twice on the same day, has
+ * different output the second time, and every reader downstream needs a branch
+ * for "the summaries might already be here". A day is cheap to re-summarize
+ * compared to being unable to say what a file contains.
  *
  * Every fetched article lands in `articles`, under the floor as well as over
  * it, because a score edited by hand has to be able to promote one. The floor
  * is applied later, by `publishFrom`.
  */
-async function fetchAndScore(
-  now: Date,
-  existing: WorkingDigest | null,
-): Promise<WorkingDigest> {
+async function fetchAndScore(now: Date): Promise<WorkingDigest> {
   const date = dateKey(now);
 
   const { articles: raw, statuses, window } = await fetchAll(now);
@@ -97,39 +100,35 @@ async function fetchAndScore(
   );
 
   const verdicts = await scoreAll(raw);
-  const carried = new Map(
-    (existing?.articles ?? []).map((article) => [article.id, article]),
-  );
 
   const articles: WorkingArticle[] = raw
     .map((article) => {
       const verdict = verdicts.get(article.id);
-      const before = carried.get(article.id);
       return {
         id: article.id,
         sourceId: article.sourceId,
-        // The summary pass decides the section; until it has run this is the
+        // The summary pass decides the section. Until it runs this is the
         // fallback, not a classification anyone made.
-        category: before?.category ?? FALLBACK_CATEGORY,
+        category: FALLBACK_CATEGORY,
         title: article.title,
-        ...(before?.titleZh ? { titleZh: before.titleZh } : {}),
         url: article.url,
         author: article.author,
         publishedAt: article.publishedAt,
         image: article.image,
         readingMinutes: article.readingMinutes,
         score: verdict?.score ?? 0,
-        // Always written here, and the baseline the file is read against: an
-        // edited `score` is only recognisable as edited because this one did
-        // not move with it.
+        // Always written, and the baseline the file is read against: an edited
+        // `score` is only recognisable as edited because this one did not move
+        // with it.
         modelScore: verdict?.score ?? 0,
         rank: 0,
         ...(verdict?.judged ? { review: verdict.review } : {}),
         body: article.body,
-        ...(before?.summary ? { summary: before.summary } : {}),
       };
     })
-    .sort((a, b) => b.score - a.score || b.publishedAt.localeCompare(a.publishedAt))
+    .sort(
+      (a, b) => b.score - a.score || b.publishedAt.localeCompare(a.publishedAt),
+    )
     .map((article, i) => ({ ...article, rank: i + 1 }));
 
   return {
@@ -143,10 +142,9 @@ async function fetchAndScore(
     },
     sources: statuses,
     articles,
-    // Empty here and empty on the way out: nothing is folded any more, and
-    // nothing is rejected until the floor runs in `publishFrom`.
+    // Kept in the contract and always empty: archived digests carry entries and
+    // the page still renders those.
     folded: [],
-    rejected: [],
   };
 }
 
@@ -188,7 +186,9 @@ async function publishFrom(
     publishedAt: article.publishedAt,
     image: article.image,
     readingMinutes: article.readingMinutes,
-    body: article.body,
+    // "" rather than undefined: an article the fetch could not bring back is
+    // one with no text, which is a state the summary pass already understands.
+    body: article.body ?? "",
   }));
 
   const verdicts: Map<string, Verdict> = verdictsFrom(
@@ -259,40 +259,26 @@ async function publishFrom(
     return filled ? { review } : {};
   };
 
-  /** The two fields that say a human overruled the model. Written only when
-   *  the numbers actually differ: in the working file `modelScore` is always
-   *  present, and carrying it into the published record unconditionally would
-   *  make "nobody touched this" and "someone agreed with the model" look the
-   *  same. */
+  /**
+   * The model's own number, and whether something overruled it.
+   *
+   * `modelScore` IS ALWAYS WRITTEN. It was briefly written only when it
+   * differed, to save a field on the articles nobody had touched — and that
+   * made editing a score in an already-published digest untraceable, because
+   * the file it was edited in had no baseline to compare against. The baseline
+   * has to survive in the published record for the trace to mean anything.
+   */
   const byId = new Map(working.articles.map((a) => [a.id, a]));
-  const overrideOf = (id: string) => {
+  const scoringOf = (id: string) => {
     const article = byId.get(id);
-    return article && article.modelScore !== undefined &&
-      article.modelScore !== article.score
-      ? { modelScore: article.modelScore, scoredBy: "human" as const }
-      : {};
+    const model = article?.modelScore;
+    if (model === undefined) return {};
+    return {
+      modelScore: model,
+      ...(model !== article!.score ? { scoredBy: "human" as const } : {}),
+    };
   };
 
-  // The complement of `ranked`, kept because a rejection is a decision worth
-  // being able to look up later — it goes into the file, never onto the page.
-  const rejected: RejectedArticle[] = sorted
-    .filter((item) => !ranked.includes(item))
-    .map((item) => ({
-      title: item.title,
-      url: item.url,
-      sourceId: item.sourceId,
-      score: verdicts.get(item.id)?.score ?? 0,
-      ...reviewOf(item.id),
-      ...overrideOf(item.id),
-    }));
-
-  if (rejected.length) {
-    console.log(
-      `[daily] dropped ${rejected.length} article(s) below ` +
-        `the publish floor (${PUBLISH_MIN_SCORE}): ` +
-        rejected.map((item) => `${item.score} ${item.title}`).join(" · "),
-    );
-  }
 
   // Everything that clears the floor is published, and every published
   // article gets a full card. No per-source quota, no overflow, nothing
@@ -326,37 +312,71 @@ async function publishFrom(
     );
   }
 
-  const articles: Article[] = ranked
-    .filter((item) => verdicts.get(item.id)!.zh.thesis)
-    .map((item, i) => {
-      const verdict = verdicts.get(item.id)!;
-      return {
-        id: item.id,
-        sourceId: item.sourceId,
-        category: verdict.category,
-        title: item.title,
-        // Omitted rather than stored empty, so the field's absence means the
-        // same thing in a digest written today as in one written before it
-        // existed: there is no Chinese headline to show.
-        ...(verdict.titleZh ? { titleZh: verdict.titleZh } : {}),
-        url: item.url,
-        author: item.author,
-        publishedAt: item.publishedAt,
-        image: item.image,
-        readingMinutes: item.readingMinutes,
-        score: verdict.score,
-        ...overrideOf(item.id),
-        rank: i + 1,
-        ...reviewOf(item.id),
-        // The English half only when it came back — the field's absence is how a
-        // renderer knows to fall back, and writing an empty one would make
-        // "no English take" indistinguishable from "an English take that is blank".
-        summary: {
-          zh: verdict.zh,
-          ...(verdict.en ? { en: verdict.en } : {}),
-        },
-      };
-    });
+  /** What actually reaches the page: over the floor AND carrying a take. */
+  const published = new Set(
+    ranked
+      .filter((item) => verdicts.get(item.id)!.zh.thesis)
+      .map((item) => item.id),
+  );
+  console.log(
+    `[daily] ${published.size} published, ` +
+      `${sorted.length - published.size} not`,
+  );
+
+  /**
+   * ONE LIST: every article the day held, published or not.
+   *
+   * `summary` is what separates them, and `rank` is only meaningful on the ones
+   * that have it — see `Digest.articles`. Sorted by score throughout, so the
+   * file reads top to bottom as the day's ranking with the cut-off somewhere in
+   * the middle.
+   *
+   * IT WAS TWO LISTS. `articles` held what shipped and `rejected` held four
+   * fields per turned-down article, and the split cost more than it bought:
+   * acting on a rejection later meant reconstructing an article from a title
+   * and a url, and the two lists had to be kept in step by whoever wrote them
+   * — the first version of that dropped every article that was over the floor
+   * with no summary, which landed in neither.
+   */
+  let position = 0;
+  const articles: Article[] = sorted.map((item) => {
+    const verdict = verdicts.get(item.id)!;
+    const take = verdict.zh.thesis
+      ? {
+          // The English half only when it came back — the field's absence is
+          // how a renderer knows to fall back, and writing an empty one would
+          // make "no English take" indistinguishable from "an English take
+          // that is blank".
+          summary: {
+            zh: verdict.zh,
+            ...(verdict.en ? { en: verdict.en } : {}),
+          },
+        }
+      : {};
+    const shown = published.has(item.id);
+    return {
+      id: item.id,
+      sourceId: item.sourceId,
+      category: verdict.category,
+      title: item.title,
+      // Omitted rather than stored empty, so the field's absence means the
+      // same thing in a digest written today as in one written before it
+      // existed: there is no Chinese headline to show.
+      ...(verdict.titleZh ? { titleZh: verdict.titleZh } : {}),
+      url: item.url,
+      author: item.author,
+      publishedAt: item.publishedAt,
+      image: item.image,
+      readingMinutes: item.readingMinutes,
+      score: verdict.score,
+      ...scoringOf(item.id),
+      // Position among the PUBLISHED articles. 0 on the rest: they have no
+      // place on a page, and numbering them would make one field two measures.
+      rank: shown ? (position += 1) : 0,
+      ...reviewOf(item.id),
+      ...take,
+    };
+  });
 
   // Kept in the contract, always empty from here on: archived digests still
   // carry entries and the page still renders them.
@@ -370,14 +390,18 @@ async function publishFrom(
     // day scanned a stretch of time it never looked at.
     window: working.window,
     stats: {
-      fetched: working.articles.length,
-      shown: articles.length,
+      // Both read off the one list now: everything the day held, and the part
+      // of it that reached the page.
+      fetched: articles.length,
+      shown: published.size,
       folded: folded.length,
     },
     sources: working.sources,
     articles,
     folded,
-    rejected,
+    // NO `rejected`. It is a legacy field — archived digests carry one and
+    // `Digest` still declares it so they parse — and writing it here would put
+    // every turned-down article in the file twice.
   };
 
   // Writing the same path the working file lives at is what drops the bodies:
@@ -406,8 +430,8 @@ async function publishFrom(
   await notify(digest);
 
   console.log(
-    `[daily] run done — ${digest.stats.shown} shown, ` +
-      `${digest.stats.folded} folded`,
+    `[daily] run done — ${digest.stats.shown} shown of ` +
+      `${digest.stats.fetched} in the file`,
   );
   return digest;
 }
@@ -455,7 +479,7 @@ export async function runDaily(
       }
     }
 
-    const working = await fetchAndScore(now, null);
+    const working = await fetchAndScore(now);
     return await publishFrom(working, now);
   } finally {
     running = false;
@@ -483,9 +507,8 @@ export async function runScore(
     console.log(`[daily] score start — ${date}`);
 
     await ensureRepo();
-    const existing = await readWorking(date);
 
-    const working = await fetchAndScore(now, existing);
+    const working = await fetchAndScore(now);
     const rel = await writeDigest(working);
     return { working, path: rel };
   } finally {
@@ -496,8 +519,12 @@ export async function runScore(
 /**
  * The second half alone: `npm run summary`.
  *
- * Reads the day's file — including any score edited in it — summarizes what
- * clears the floor and has no take yet, and publishes.
+ * IT ONLY WRITES THE SUMMARY SIDE, and it does so unconditionally: read the
+ * day's file, apply the floor to the scores as they now stand, ask for a take
+ * for everything above it, write the result. No score is recomputed, no article
+ * is re-fetched, and there is no branch on what state the file is in — the file
+ * is whatever `npm run score` left plus whatever you edited, and that is a
+ * complete input by construction.
  *
  * THE READ HAPPENS BEFORE `ensureRepo()`, which is the opposite of the ordering
  * every other path here uses and is not an oversight: the scores you edited are
@@ -505,10 +532,10 @@ export async function runScore(
  * origin whenever there is nothing local to preserve. Reading first means the
  * edits are already in memory when that happens.
  *
- * Throws when the file has no bodies — a published digest carries none, so this
- * is "that day was already finished, or was never scored". Falling back to a
- * fresh fetch would be the more helpful-looking behaviour and the wrong one:
- * this command exists to publish the scores you looked at.
+ * Run twice, the second run changes nothing but `generatedAt`: an article that
+ * already has a take is not in the summary pass's `missing` set, so nothing is
+ * asked for and nothing is rewritten. That falls out of the pass itself rather
+ * than from a check here.
  */
 export async function runPublish(
   date: string,
@@ -525,18 +552,15 @@ export async function runPublish(
           `\`npm run score\` first`,
       );
     }
-    if (!working.articles.some((article) => article.body)) {
-      throw new Error(
-        `${date} carries no article bodies, so it is already published (or ` +
-          `was never scored) — run \`npm run score\` to start it again`,
-      );
-    }
 
     await ensureRepo();
 
+    const withTake = working.articles.filter((a) => a.summary).length;
     console.log(
       `[daily] publish start — ${date} ` +
-        `(${working.articles.length} scored at ${working.generatedAt})`,
+        `(${working.articles.length} in the file` +
+        (withTake ? `, ${withTake} already with a take` : "") +
+        `)`,
     );
     return await publishFrom(working, now);
   } finally {

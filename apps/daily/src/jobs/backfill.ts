@@ -1,6 +1,12 @@
 import { englishFor, type EnglishRequest } from "@/lib/summarize";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
-import { listDates, readDigest, relPathFor, writeDigest } from "@/lib/store";
+import {
+  listDates,
+  readDigest,
+  relPathFor,
+  shownArticles,
+  writeDigest,
+} from "@/lib/store";
 import { cachePosters } from "@/jobs/posters";
 import type { Digest } from "@/lib/types";
 
@@ -86,8 +92,11 @@ export async function backfillEnglish(
       continue;
     }
 
-    const missing = digest.articles.filter((a) => !a.summary.en);
-    result.already += digest.articles.length - missing.length;
+    // `shownArticles`: the list also holds what was considered and turned down,
+    // and an article with no Chinese take is not one that is missing English.
+    const shown = shownArticles(digest);
+    const missing = shown.filter((a) => !a.summary.en);
+    result.already += shown.length - missing.length;
     if (!missing.length) {
       console.log(`[daily] backfill — ${date} already complete`);
       continue;
@@ -121,8 +130,8 @@ export async function backfillEnglish(
     const updated: Digest = {
       ...digest,
       articles: digest.articles.map((article) => {
-        const en = english.get(article.id);
-        return en
+        const en = article.summary ? english.get(article.id) : undefined;
+        return en && article.summary
           ? { ...article, summary: { ...article.summary, en } }
           : article;
       }),

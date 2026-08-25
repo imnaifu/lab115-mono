@@ -11,12 +11,13 @@ import {
 } from "./Shell";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
+import { shownArticles } from "@/lib/store";
 import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
 import { summaryText, totalReadingMinutes } from "@/lib/reading";
 import { sourceOf } from "@/lib/sources";
-import type { Article, Digest } from "@/lib/types";
+import type { PublishedArticle, Digest } from "@/lib/types";
 
 /** Rendered from the date key, not from a Date, so the server's timezone can
  *  never shift it by a day. */
@@ -99,8 +100,8 @@ export function EmptyState({ lang }: { lang: Lang }) {
  * daily publication feel like one. Empty sections are dropped: an "投资 —
  * nothing today" heading is noise on a screenshot.
  */
-function groupByCategory(articles: Article[]): CategoryGroup[] {
-  const groups = new Map<string, Article[]>();
+function groupByCategory(articles: PublishedArticle[]): CategoryGroup[] {
+  const groups = new Map<string, PublishedArticle[]>();
   for (const article of articles) {
     const id = categoryOf(article.category).id;
     const bucket = groups.get(id);
@@ -121,7 +122,11 @@ export function DigestView({
   lang: Lang;
 }) {
   const t = strings(lang);
-  const groups = groupByCategory(digest.articles);
+  // ONE READ of the list, shared by the grouping, the reading-time total and
+  // the body: `shownArticles` is what applies "no take means not published",
+  // and calling it three times would be three chances to forget one.
+  const shown = shownArticles(digest);
+  const groups = groupByCategory(shown);
 
   /**
    * How long THIS PAGE takes, not how long the source articles take.
@@ -140,7 +145,7 @@ export function DigestView({
    * that IS the text on the page.
    */
   const minutes = totalReadingMinutes(
-    digest.articles.map((a) => summaryText(summaryFor(a, lang))),
+    shown.map((a) => summaryText(summaryFor(a, lang))),
   );
 
   return (
@@ -170,7 +175,7 @@ export function DigestView({
 
       {groups.length > 0 ? (
         <DigestBody
-          articles={digest.articles}
+          articles={shown}
           groups={groups}
           date={digest.date}
           lang={lang}

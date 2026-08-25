@@ -108,6 +108,22 @@ export const POSTER = {
   markSize: 70,
   markGap: 23,
   brandSize: 58,
+  /**
+   * The tagline under the wordmark, on the identity card only.
+   *
+   * 26 is the domain chip's size, which is the poster's own smallest step, and
+   * the gap is the same 9 the TL;DR label uses against its thesis. Deliberately
+   * NOT scaled from the page's 12/14px subtitle: the page sets it against a
+   * 36px wordmark and this one sits under a 58px one, so copying the ratio
+   * would put it at 19px — under the size at which anything on this canvas is
+   * meant to be read at arm's length.
+   *
+   * It grows the lockup row by roughly 35px and takes that out of the card
+   * below, which has `flexGrow: 1`. POSTER_FRAME is untouched on purpose: the
+   * lockup is drawn on part 1 only, and part 1 carries no prose to paginate.
+   */
+  taglineSize: 26,
+  taglineGap: 9,
   dateSize: 32,
   /** Lockup → card. */
   cardTop: 49,

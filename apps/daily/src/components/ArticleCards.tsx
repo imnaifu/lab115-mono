@@ -8,7 +8,7 @@ import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
 import { articlePath, posterBase } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
-import type { Article } from "@/lib/types";
+import type { PublishedArticle } from "@/lib/types";
 
 /** The dot between meta items. `bg-current` so it matches whatever colour the
  *  row is drawn in. */
@@ -16,7 +16,7 @@ function Dot() {
   return <span className="size-0.75 rounded-full bg-current opacity-55" />;
 }
 
-function Meta({ article, lang }: { article: Article; lang: Lang }) {
+function Meta({ article, lang }: { article: PublishedArticle; lang: Lang }) {
   const source = sourceOf(article.sourceId);
 
   return (
@@ -62,7 +62,7 @@ function Actions({
   date,
   lang,
 }: {
-  article: Article;
+  article: PublishedArticle;
   date: string;
   lang: Lang;
 }) {
@@ -102,6 +102,12 @@ function Actions({
         parts={posterParts(summaryFor(article, lang))}
         title={displayTitle(article, lang)}
         thesis={summaryFor(article, lang).thesis}
+        /* From the SAME take as the thesis above, not from `summary.zh`
+           directly: the tags belong to whichever half is being shared, so a
+           reader on /en with an English take shares no Chinese hashtags — and
+           one whose English never arrived is reading the Chinese take, where
+           Chinese tags are the right ones. */
+        tags={summaryFor(article, lang).tags ?? []}
         lang={lang}
       />
     </div>
@@ -122,7 +128,7 @@ export function ArticleCard({
   date,
   lang,
 }: {
-  article: Article;
+  article: PublishedArticle;
   date: string;
   lang: Lang;
 }) {

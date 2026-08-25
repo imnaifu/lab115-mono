@@ -2,7 +2,7 @@ import { dateKey } from "@/lib/config";
 import { displayTitle } from "@/components/ArticleTitle";
 import { DEFAULT_LANG, isLang } from "@/lib/lang";
 import { ogPng, renderOgCard } from "@/lib/og";
-import { readDigest, readLatest } from "@/lib/store";
+import { readDigest, readLatest, shownArticles } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +69,9 @@ export async function GET(
       // The digest's own date, not `today`: on a fallback those differ, and the
       // card must say which day the headlines under it are from.
       meta: digest?.date ?? today,
-      headlines: (digest?.articles ?? []).map((article) =>
+      // The published headlines. The list also holds what was turned down, and
+      // a share card is a claim about what the day contains.
+      headlines: (digest ? shownArticles(digest) : []).map((article) =>
         displayTitle(article, cardLang),
       ),
     }),

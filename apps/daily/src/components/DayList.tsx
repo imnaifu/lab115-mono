@@ -3,7 +3,7 @@ import { PAD, SECTION } from "./Shell";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
-import { readDigest } from "@/lib/store";
+import { readDigest, shownArticles } from "@/lib/store";
 
 /**
  * A run of days, one row each: the date, how many pieces, and that day's lead
@@ -37,7 +37,15 @@ export async function DayList({
 }) {
   const t = strings(lang);
   const rows = await Promise.all(
-    dates.map(async (date) => ({ date, digest: await readDigest(date) })),
+    dates.map(async (date) => {
+      const digest = await readDigest(date);
+      return {
+        date,
+        digest,
+        // Resolved here, with the read, so the row below stays markup.
+        top: digest ? shownArticles(digest)[0] : undefined,
+      };
+    }),
   );
 
   if (rows.length === 0) {
@@ -50,7 +58,7 @@ export async function DayList({
 
   return (
     <section className={`${SECTION} flex flex-col gap-2.5 ${PAD}`}>
-      {rows.map(({ date, digest }, at) => (
+      {rows.map(({ date, digest, top }, at) => (
         <a
           className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4"
           key={date}
@@ -69,9 +77,13 @@ export async function DayList({
               {digest ? t.sectionCount(digest.stats.shown) : "—"}
             </span>
           </span>
-          {digest?.articles[0] ? (
+          {/* The day's top PUBLISHED headline. `digest.articles[0]` would be
+              the highest-scoring article whether or not it was published, and
+              on a day where the top of the list was held back that is a
+              headline the reader cannot open. */}
+          {top ? (
             <span className="line-clamp-1 text-sm text-ink-mid">
-              {displayTitle(digest.articles[0], lang)}
+              {displayTitle(top, lang)}
             </span>
           ) : null}
         </a>

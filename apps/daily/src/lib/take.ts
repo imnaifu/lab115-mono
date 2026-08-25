@@ -1,5 +1,5 @@
 import type { Lang } from "./lang";
-import type { Article, SummaryText } from "./types";
+import type { PublishedArticle, SummaryText } from "./types";
 
 /**
  * The take a reader on `lang` should see, with ONE fallback.
@@ -21,6 +21,9 @@ import type { Article, SummaryText } from "./types";
  * for exactly as long as the archive predates the English half, which is a cost
  * with an end date.
  */
-export function summaryFor(article: Article, lang: Lang): SummaryText {
+export function summaryFor(
+  article: PublishedArticle,
+  lang: Lang,
+): SummaryText {
   return (lang === "en" ? article.summary.en : undefined) ?? article.summary.zh;
 }

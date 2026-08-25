@@ -3,7 +3,7 @@ import { SITE } from "@/lib/config";
 import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
 import { articlePath, dayPath } from "@/lib/links";
 import { archivePages, archivePath } from "@/lib/paging";
-import { listDates, readDigest } from "@/lib/store";
+import { listDates, readDigest, shownArticles } from "@/lib/store";
 
 /**
  * Every page of the site, in every language.
@@ -124,7 +124,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const date of dates) {
     pages.push(entry(dayPath(date), stamp(date)));
     const digest = await readDigest(date);
-    for (const article of digest?.articles ?? []) {
+    // Published only: an article with no take has no page, and asking a crawler
+    // to index one is asking it to index a 404.
+    for (const article of digest ? shownArticles(digest) : []) {
       pages.push(entry(articlePath(date, article), stamp(date)));
     }
   }

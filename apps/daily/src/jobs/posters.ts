@@ -1,5 +1,6 @@
 import { posterParts, renderPoster } from "@/lib/poster";
 import { prunePosters, writePoster } from "@/lib/poster-store";
+import { shownArticles } from "@/lib/store";
 import { LANGS, type Lang } from "@/lib/lang";
 import { summaryFor } from "@/lib/take";
 import type { Digest } from "@/lib/types";
@@ -73,7 +74,7 @@ export async function cachePosters(
    * One list means the limiter always has something to hand out.
    */
   const langs = only?.langs ?? LANGS;
-  const jobs = digest.articles
+  const jobs = shownArticles(digest)
     .filter((article) => !only?.ids || only.ids.has(article.id))
     .flatMap((article) =>
     langs.flatMap((lang) =>

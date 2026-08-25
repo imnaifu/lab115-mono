@@ -1,5 +1,6 @@
 import { BARK_URL, DRY_RUN, SITE } from "./config";
 import { dayPath } from "./links";
+import { shownArticles } from "./store";
 import type { Digest } from "./types";
 
 /**
@@ -24,10 +25,11 @@ export async function notify(digest: Digest): Promise<void> {
   // `.zh` ON PURPOSE, not through `summaryFor`: this push goes to one device that
   // belongs to whoever runs the digest, and the title beside it is Chinese too.
   // There is no reader language to honour here — there is one reader.
+  // `shownArticles`, because `digest.articles` also holds what was turned down
+  // and the first entry in it may be an article with no take at all.
+  const top = shownArticles(digest)[0];
   const lead =
-    digest.articles[0]?.summary.zh.thesis ||
-    digest.articles[0]?.title ||
-    "各源今天都没有新文章";
+    top?.summary.zh.thesis || top?.title || "各源今天都没有新文章";
   const body = failed.length
     ? `${lead}（${failed.length} 个源抓取失败）`
     : lead;
