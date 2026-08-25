@@ -82,9 +82,11 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
 }
 
 /**
- * The masthead. The language switch lives in the top row beside the domain
- * chip, which is the top-right of the content column — the blobs own the
- * literal top-right corner of the page and nothing readable can go there.
+ * The masthead: a row of controls, the lockup, and whatever meta the page passes
+ * as children.
+ *
+ * The controls sit at the top right of the CONTENT column rather than of the page,
+ * because the blobs own the literal corner and nothing readable can go there.
  */
 export function Masthead({
   title,
@@ -120,43 +122,47 @@ export function Masthead({
       <div className="absolute -top-26 -left-21 -z-10 h-50 w-65 rounded-blob bg-ink" />
       <div className="absolute -top-14 -right-11 -z-10 size-42 rounded-full bg-orange" />
 
-      <div className="flex items-center justify-between gap-3">
-        {/* The domain chip goes home too, same destination as the lockup below.
-            Two links to the same page is what a masthead normally is — the chip
-            is what a reader who has scrolled to an article page reaches for
-            first, and its text already names the destination, so it needs no
-            aria-label of its own. */}
-        <a
-          href={href(lang, "/")}
-          /* No `uppercase`: a domain is written lowercase, and the poster's chip
-             prints it that way too — see posterDomain in lib/share.ts. The
-             literal below is already the form that renders. */
-          className="inline-flex items-center gap-2 rounded-full bg-ink px-3 py-1 text-xs font-bold tracking-widest text-cream"
-        >
-          daily.lab115.com
-        </a>
-        {/* The top-right corner of the CONTENT column, which is as close to the
-            top right of the page as anything readable can go — the orange blob
-            owns the literal corner. Two controls now, both of them about the
-            frame rather than the text: which language the site is in, and whether
-            it lives on the home screen.
+      {/* The controls row: which language the site is in, and whether it lives on
+          the home screen. Nothing else — this is as close to the top right of the
+          page as anything readable can go, since the orange blob owns the literal
+          corner.
 
-            `gap-2` between them and `gap-3` to the chip: the pair reads as one
-            group of controls, which is what keeps a three-item row from looking
-            like three unrelated things. The install button is the mark alone on a
-            phone — see the width note there for the arithmetic. */}
-        <div className="flex flex-none items-center gap-2">
-          <InstallApp lang={lang} />
-          <LangSwitch lang={lang} path={path} />
-        </div>
+          THE DOMAIN CHIP IS GONE, and it used to open this row. It was a second
+          link home reading `daily.lab115.com`, and it was removed rather than
+          merely hidden on phones: the wordmark directly below is the same link to
+          the same page, the browser's address bar already shows the domain, and
+          the image this site is actually shared as is the POSTER, which draws its
+          own domain chip (see `posterDomain` in lib/share.ts) and is untouched by
+          this. What the page loses is the domain appearing in a screenshot OF THE
+          PAGE, which is not the artifact anyone shares.
+
+          It is also what lets the install button keep its label. Measured rather
+          than guessed: the chip was 137px, the language switch is 90px and the
+          install button 95px in Chinese / 114px in English, against the 361px a
+          393px phone leaves after `px-4`. All three never fit — it was 3px short,
+          which is why the label used to vanish below `sm:` and leave a bare glyph
+          nobody could read. The remaining pair needs 193px, so there is now 168px
+          of slack instead of 3px, at every width and in both languages.
+
+          `justify-end` rather than `justify-between`: with one child left,
+          `justify-between` puts it on the LEFT. */}
+      <div className="flex items-center justify-end gap-2">
+        <LangSwitch lang={lang} path={path} />
+        <InstallApp lang={lang} />
       </div>
 
       {/* The mark and the wordmark, laid out the way the share poster lays them
           out — the two are the same lockup and should not drift apart.
 
-          `mt-1.5` rather than `items-center`: centring on the whole block would
-          drop the mark below the cap line of the title, because the subtitle is
-          part of the block's height. */}
+          `items-center`, and the mark no longer carries a nudge. This used to be
+          `items-start` plus `mt-1.5` on the mark, and the note here explained why:
+          centring the whole block would drop the mark below the title's cap line,
+          because a `subtitle` is part of that block's height. That is still true
+          WHEN THERE IS A SUBTITLE — and nothing has passed one for a long time
+          (see the prop's own note), so every page was paying an optical correction
+          for a case it never rendered, and the mark sat visibly low against a
+          single line of wordmark. Centred is right for the shape actually shipped;
+          if a subtitle ever comes back, this is the line to revisit. */}
       {/* The whole lockup is the link home — the mark and the wordmark read as
           one target, so making only one of them clickable would be a smaller
           hit area for no reason. On the home page it points at itself, which is
@@ -165,12 +171,12 @@ export function Masthead({
       <a
         href={href(lang, "/")}
         aria-label={lang === "en" ? "Daily Takes — home" : "每日干货 · 回到首页"}
-        className="mt-5 flex items-start gap-3 sm:gap-4"
+        className="mt-5 flex items-center gap-3 sm:gap-4"
       >
         <img
           src="/favicon.svg"
           alt=""
-          className="mt-1.5 size-11 flex-none sm:size-14"
+          className="size-11 flex-none sm:size-14"
         />
         {/* `max-w-md` keeps the wordmark clear of the orange blob. */}
         <h1 className="max-w-md text-4xl leading-tight font-bold tracking-tight text-ink sm:text-5xl">

@@ -47,8 +47,12 @@ export type TrackEvent =
   | "category_tab"
   /** The language switch, which has just come back from being hidden. */
   | "lang_switch"
-  /** The end-of-page link on a day page, back to the front page's list of days. */
+  /** The end-of-page link on a day page, to the archive's full run of dates. */
   | "all_days_open"
+  /** The front page's "更多" link into the archive, and the archive's own pager. */
+  | "archive_open"
+  /** The archive's end-of-page link back to the front page. */
+  | "home_open"
   /** The masthead's install control was pressed — one per press, whether or not
    *  the browser had a native offer to make (`can_prompt` says which). */
   | "install_open"

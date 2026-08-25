@@ -95,6 +95,32 @@ export function InstallApp({ lang }: { lang: Lang }) {
   useEffect(() => {
     setKey(guideKey(navigator.userAgent, navigator.maxTouchPoints));
 
+    /**
+     * ALREADY RUNNING AS AN INSTALLED APP? Then there is nothing to offer.
+     *
+     * The button also carries `[@media(display-mode:standalone)]:hidden`, and the
+     * two are not redundant — they cover different moments and different browsers.
+     * The CSS applies before this component has hydrated, so on a cold start of the
+     * installed app there is no frame in which an install button is painted. This
+     * check is what makes the answer RIGHT rather than merely early.
+     *
+     * `navigator.standalone` is the iOS half and it is the reason this exists at
+     * all. Safari shipped `display-mode` media queries late, so on older iOS a
+     * page added to the home screen does NOT match the CSS above and would go on
+     * advertising an install that already happened — on the platform where the
+     * manual add-to-home-screen flow is the only route and the button is therefore
+     * most prominent. It is non-standard and absent from lib.dom, hence the cast.
+     *
+     * Not watched for changes: `display-mode` cannot change within a document's
+     * lifetime — a window is standalone or it is a tab — and the one transition
+     * that matters, installing from this very tab, is what `appinstalled` below is
+     * for.
+     */
+    const standalone =
+      window.matchMedia?.("(display-mode: standalone)").matches === true ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (standalone) setInstalled(true);
+
     const catchOffer = (event: Event) => {
       /**
        * `preventDefault` stops Chrome's own mini-infobar so that this button is
@@ -186,18 +212,24 @@ export function InstallApp({ lang }: { lang: Lang }) {
           track("install_open", { platform: key, can_prompt: canPrompt });
         }}
         /**
-         * THE LABEL IS HIDDEN ON A PHONE, and the arithmetic is the reason. This
-         * row already holds the domain chip (~154px at `text-xs` with that
-         * tracking) and the language switch (~92px); on a 393px screen `px-4` of
-         * gutter leaves 361px, so after two `gap-3`s there are about 99px left and
-         * "存成 App" with its mark needs ~96px. That is not a margin worth
-         * shipping — one longer brand string or one wider phone font and the row
-         * wraps under the blobs.
+         * THE LABEL SHOWS AT EVERY SIZE, and it took a layout change to afford it.
          *
-         * So below `sm:` this is the mark alone (~38px, the same height as the
-         * switch beside it) and the accessible name comes from `aria-label`. The
-         * glyph is iOS's own add-to-home-screen square precisely because it has to
-         * carry the meaning by itself here.
+         * It used to be `hidden sm:inline`, and the arithmetic was real: the
+         * masthead row held the domain chip (~154px at `text-xs` with that
+         * tracking) and the language switch (~92px), so on a 393px screen with
+         * `px-4` of gutter — 361px — two `gap-3`s left about 99px, and "存成 App"
+         * with its mark needs ~96px. Three pixels is not a margin worth shipping,
+         * so the control shrank to a bare glyph on exactly the devices where
+         * installing is the point.
+         *
+         * The fix was not to squeeze the text but to stop sharing the line: the
+         * install button sits UNDER the language switch now (see Masthead in
+         * Shell.tsx), where the only width it competes for is its own. The glyph
+         * stays — it is iOS's own add-to-home-screen square and it reads faster
+         * than the words do — but it no longer has to carry the meaning alone.
+         *
+         * `aria-label` stays too, and is not redundant: it keeps the accessible
+         * name stable and stops it being read as the glyph plus the text.
          */
         aria-label={t.saveApp}
         /* Hidden once installed, in CSS: an installed app showing an install
@@ -207,7 +239,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
         className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-2 text-xs font-bold text-ink-mid [@media(display-mode:standalone)]:hidden"
       >
         <AddIcon />
-        <span className="hidden sm:inline">{t.saveApp}</span>
+        <span>{t.saveApp}</span>
       </button>
 
       <dialog

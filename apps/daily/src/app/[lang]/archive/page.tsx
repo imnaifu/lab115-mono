@@ -1,32 +1,67 @@
-import { permanentRedirect } from "next/navigation";
-import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { ArchiveView } from "@/components/ArchiveView";
+import { SITE } from "@/lib/config";
+import { strings } from "@/lib/i18n";
+import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
+import { alternatesFor, ogCardFor } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The archive, which is now the home page.
+ * `/archive` — the first page of the full run of dates.
  *
- * THIS PAGE WAS THE LIST OF DAYS, and when the front page became that list there
- * was no version of keeping both that was not the bug this whole change exists to
- * remove: two URLs, one list of dates, differing only in a heading. That is the
- * same shape as the home page and the newest day page before it — and `/archive`
- * was already IN the Search Console report, as one of the three URLs whose
- * canonical Google had overridden. Rebuilding the collision one page over would
- * have been a poor trade for a heading.
- *
- * A REDIRECT RATHER THAN A DELETION, because the URL is not only ours: it is in
- * the sitemap Google has already fetched, in the index, and in the footer of every
- * page the site has served. 308 so the old URL's accumulated signals land on the
- * page that now holds its content.
- *
- * `/en/archive` redirects to `/en` by the same rule — `langHref` keeps the reader
- * in the language they were in, which a hardcoded `/` would not.
+ * THE BODY IS `ArchiveView`, shared with `/archive/<n>`. This route exists only to
+ * be the page-1 URL: `/archive/1` redirects here rather than rendering, so one page
+ * never has two addresses.
  */
-export default async function LegacyArchivePage({
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const pageLang = isLang(lang) ? lang : DEFAULT_LANG;
+  const t = strings(pageLang);
+  const title = `${t.archiveTitle} · ${t.brand}`;
+
+  return {
+    title,
+    description: t.tagline,
+    alternates: alternatesFor(pageLang, "/archive"),
+    /**
+     * Declared rather than inherited, and the reason is the URL: with no
+     * `openGraph` of its own this page falls back to the layout's, which names the
+     * HOME page as og:url — so an archive link pasted anywhere unfurls as the front
+     * page. Every other field is inherited by hand for that one correction.
+     *
+     * THE CARD IS THE SITE CARD, deliberately. The archive is a list of dates, and
+     * a card drawn from dates is a card with nothing on it; what a reader seeing
+     * this link needs is what the site is and what is on it today.
+     */
+    openGraph: {
+      type: "website",
+      title,
+      description: t.tagline,
+      url: `${SITE}${href(pageLang, "/archive")}`,
+      siteName: t.brand,
+      images: ogCardFor(pageLang, "site"),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: t.tagline,
+      images: ogCardFor(pageLang, "site").map((image) => image.url),
+    },
+  };
+}
+
+export default async function ArchivePage({
   params,
 }: {
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
-  permanentRedirect(langHref(isLang(lang) ? lang : DEFAULT_LANG, "/"));
+  if (!isLang(lang)) notFound();
+  return <ArchiveView lang={lang} page={1} />;
 }

@@ -178,6 +178,12 @@ export function DigestView({
 
       <div className={PAD}>
         <EndLink
+          /* THE FRONT PAGE, not `/archive`. The archive 404s until there are more
+             days than the front page shows (see `hasArchive` in lib/paging), so
+             linking straight to it from here would be a dead link for the site's
+             first week and after any future change to that threshold. `/` is always
+             a page, and it carries the route onward to the archive when there is
+             one — day → front page → archive, with no condition to keep in sync. */
           href={href(lang, "/")}
           label={t.allDays}
           sub={t.allDaysSub}

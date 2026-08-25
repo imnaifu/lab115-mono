@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/config";
 import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
 import { articlePath, dayPath } from "@/lib/links";
+import { archivePages, archivePath } from "@/lib/paging";
 import { listDates, readDigest } from "@/lib/store";
 
 /**
@@ -78,12 +79,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // The newest digest is when the site as a whole last changed.
   const newest = dates.length ? stamp(dates[0]) : new Date(0);
 
-  /**
-   * `/` and nothing else above the days. `/archive` used to be listed beside it and
-   * is a 308 to `/` now — the home page IS the list of days. A sitemap is a list of
-   * pages worth indexing, and a redirect is not one.
-   */
   const pages: MetadataRoute.Sitemap = [entry("/", newest)];
+
+  /**
+   * The archive, one entry per page — but only once it holds something the front
+   * page is not already showing.
+   *
+   * `hasArchive` is the same condition the front page uses to decide whether to
+   * LINK there, stated once in lib/paging. Below the threshold `/` lists every date
+   * itself, so an archive entry here would be asking Google to index that list a
+   * second time — which is the duplicate this site was reported for, rebuilt one
+   * route over. The route 404s in that state for the same reason.
+   *
+   * Every page is listed, not just the first: they are self-canonical and each
+   * holds dates the others do not, so leaving pages 2 and up out would hide most of
+   * the archive from the index.
+   */
+  for (let page = 1; page <= archivePages(dates.length); page++) {
+    pages.push(entry(archivePath(page), newest));
+  }
 
   /**
    * Every day, and every article inside it — EXCEPT the day currently on the front

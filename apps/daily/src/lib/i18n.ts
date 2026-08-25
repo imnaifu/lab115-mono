@@ -84,10 +84,21 @@ const STRINGS = {
     weibo: "微博",
 
     /* The end-of-page link on a day page, back to the front page. It names what
-       the destination IS — every day the site has published — rather than calling
-       it an archive, which was the name of a separate page that no longer exists. */
-    allDays: "全部日期",
-    allDaysSub: "每一天的那一期",
+       is actually there — the newest week, with the archive one step further on —
+       rather than promising every date, which is the archive's job. */
+    allDays: "看其它日期",
+    allDaysSub: "最近一周，以及更早的归档",
+
+    /* The front page's link to the archive, under the newest few days. */
+    more: "更多",
+    moreSub: (n: number) => `共 ${n} 天，按页浏览`,
+
+    archiveTitle: "归档",
+    /* "第 2 页 / 共 4 页" — stated rather than implied, because the two arrows
+       below it cannot say where in the run you are. */
+    pageOf: (page: number, total: number) => `第 ${page} 页 · 共 ${total} 页`,
+    newer: "更近",
+    older: "更早",
     wholeDay: "看这一天的全部",
     wholeDaySub: (date: string, n: number) => `${date} · 共 ${n} 篇`,
 
@@ -164,8 +175,16 @@ const STRINGS = {
       "It gets an icon of its own, opens full screen with no address bar, and the pages you have already opened stay readable with no network.",
     weibo: "Weibo",
 
-    allDays: "All editions",
-    allDaysSub: "Every day the site has published",
+    allDays: "Other editions",
+    allDaysSub: "The past week, and the archive beyond it",
+
+    more: "More",
+    moreSub: (n: number) => `${n} ${n === 1 ? "day" : "days"} in all, by the page`,
+
+    archiveTitle: "Archive",
+    pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
+    newer: "Newer",
+    older: "Older",
     wholeDay: "See the whole day",
     wholeDaySub: (date: string, n: number) => `${date} · ${n} in total`,
 
