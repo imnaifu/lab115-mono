@@ -94,6 +94,19 @@ export const config = {
    * because the proxy's old branch for a prefixed path was a harmless no-op.
    * Neither is true now. `.*` spans the whole path, so the rule is what the
    * paragraph above has always claimed: a dot in the last segment means a file.
+   *
+   * `api/` IS EXCLUDED because the rewrite above is for the page tree and an API
+   * route is not in it. `/api/mail/subscribe` has no extension and no language
+   * prefix, so without this it would be rewritten to `/zh/api/mail/subscribe` —
+   * a path with no route behind it, i.e. a 404 on the subscribe form's POST. The
+   * method and body survive a rewrite, which is what makes this failure quiet:
+   * the request arrives intact at a route that does not exist.
+   *
+   * These routes need no language anyway. They are called by scripts, they
+   * answer in JSON, and where one does need to know the reader's language it is
+   * in the payload — an English form posts `lang: "en"` rather than relying on a
+   * prefix. The pages that report back to a human are ordinary pages under
+   * `[lang]`, and they keep the rewrite.
    */
-  matcher: ["/((?!_next/|.*\\.[a-zA-Z0-9]+$).*)"],
+  matcher: ["/((?!api/|_next/|.*\\.[a-zA-Z0-9]+$).*)"],
 };

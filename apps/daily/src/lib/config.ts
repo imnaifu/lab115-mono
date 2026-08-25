@@ -1,9 +1,10 @@
 /**
  * Every tunable value in the app, as a plain constant.
  *
- * THE ENVIRONMENT IS FOR SECRETS ONLY. Five names are read from it and no more:
- * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `BARK_URL`, `DRY_RUN` — three
- * credentials, one machine-specific remote, one switch for a single invocation.
+ * THE ENVIRONMENT IS FOR SECRETS ONLY. Seven names are read from it and no more:
+ * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `BARK_URL`, `RESEND_API_KEY`,
+ * `MAIL_SECRET`, `DRY_RUN` — five credentials, one machine-specific remote, one
+ * switch for a single invocation.
  * Everything else used to have one too (`GIT_REPO`, `DAILY_CRON`, `DAILY_TZ`,
  * `DAILY_MODEL`, `DAILY_BODY_CHARS`, `DAILY_CONCURRENCY` and half a dozen more)
  * and they are all literals now.
@@ -152,8 +153,98 @@ export const BODY_CHAR_LIMIT = 80_000;
 
 export const BARK_URL = process.env.BARK_URL ?? "";
 
-/** DRY_RUN=1 → run the whole pipeline but skip `git push` and Bark. */
+/** DRY_RUN=1 → run the whole pipeline but skip `git push`, Bark and the mail. */
 export const DRY_RUN = process.env.DRY_RUN === "1";
+
+/**
+ * The email edition.
+ *
+ * THE SUBSCRIBER LIST IS NOT HERE AND NOT ANYWHERE IN THIS REPO. Contacts live
+ * in Resend, which is also what handles unsubscribes, the `List-Unsubscribe`
+ * headers and bounce suppression — so this app stores no reader data at all, and
+ * "delete my data" is one API call rather than a rewrite of git history. The
+ * alternative was a list in the digest repo, which would have meant a lock over
+ * a working tree that two cron jobs already reset, and email addresses in a git
+ * history that cannot forget them.
+ *
+ * The one piece of state we would otherwise need — "this address asked to
+ * subscribe but has not confirmed yet" — is carried in a signed token instead of
+ * being stored. See lib/mail/token.ts.
+ */
+
+/** https://resend.com/api-keys. Empty → the whole feature is off: no form on the
+ *  page, no send after a run. Same shape as BARK_URL. */
+export const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
+
+/**
+ * HMAC key for confirmation links. Any long random string.
+ *
+ * ROTATING IT INVALIDATES EVERY UNCLICKED CONFIRMATION LINK, and nothing else —
+ * confirmed readers are contacts in Resend by then and never need the token
+ * again. That is the whole reason the token carries the pending state: losing
+ * this key costs at most one day of unconfirmed signups.
+ */
+export const MAIL_SECRET = process.env.MAIL_SECRET ?? "";
+
+/**
+ * Resend segment ids, one per language, from the dashboard.
+ *
+ * Empty means that language does not send — which is the correct behaviour
+ * before the segments exist, and the reason these are not `undefined`: a missing
+ * id is an ordinary "not set up yet", not a crash.
+ *
+ * TWO SEGMENTS RATHER THAN ONE WITH A FILTER, because a broadcast takes exactly
+ * one `segment_id` and the two languages are two different emails — different
+ * subject, different prose, different links. If the plan turns out to allow only
+ * one segment, the fallback is one segment plus a topic per language, and only
+ * these constants change: the job passes whichever ids it is given.
+ */
+export const MAIL_SEGMENT: Record<"zh" | "en", string> = {
+  zh: "",
+  en: "",
+};
+
+/**
+ * How many articles one issue carries.
+ *
+ * FIVE, AND THE EMAIL IS NOT THE EDITION. The site publishes everything that
+ * clears the floor — twenty-odd on a busy day — and the mail is a doorway to it,
+ * not a copy of it: title, one-sentence thesis, source, and a link. A reader who
+ * wants the rest is one tap from the day's page, which is where the writing was
+ * always meant to be read.
+ *
+ * That also settles a question the full-text version had to answer badly: Gmail
+ * clips a message over ~102KB behind a "view entire message" link, and twenty
+ * Chinese summaries in UTF-8 land close enough to that line to need a fallback
+ * that trimmed the tail of the digest. Five headlines are ~3KB. The problem is
+ * not mitigated, it is absent.
+ *
+ * No per-category quota: these are `digest.articles` in the order the site ranks
+ * them, so the first mail item is the first item on the page. A diversity rule
+ * would be a second ordering that exists nowhere else on the site.
+ */
+export const MAIL_TOP_N = 5;
+
+/** The From line. A domain rather than a name in either language: it reads the
+ *  same to both halves of a bilingual list, the way the masthead chip does. */
+export const MAIL_FROM = "daily.lab115.com <daily@lab115.com>";
+
+/** Nobody reads replies, so the address says so rather than bouncing silently. */
+export const MAIL_REPLY_TO = "no-reply@lab115.com";
+
+/** How long a confirmation link stays valid. Long enough for "I'll do it
+ *  tonight", short enough that a leaked link is not a standing invitation. */
+export const MAIL_CONFIRM_TTL_HOURS = 24;
+
+/**
+ * Per-IP ceiling on the subscribe form.
+ *
+ * The confirmation mail is transactional, and the free plan meters those by the
+ * day — so a script hammering the form does not just make noise, it spends the
+ * quota that real signups need. Three in five minutes is far above what a person
+ * typing their own address needs and far below what a script wants.
+ */
+export const MAIL_RATE_LIMIT = { windowMs: 5 * 60_000, max: 3 };
 
 /** yyyy-mm-dd for an instant, in TZ (not the server's local zone). */
 export function dateKey(when: Date, timeZone = TZ): string {

@@ -132,6 +132,11 @@ services:
       # set GIT_REMOTE to an SSH URL instead — see apps/daily/README.md).
       - GIT_TOKEN=${DAILY_GIT_TOKEN:-}
       - BARK_URL=${DAILY_BARK_URL:-}
+      # Email subscriptions. Empty RESEND_API_KEY turns the feature off entirely.
+      # The subscriber list lives in Resend, not in this repo or the volume —
+      # see the note above MAIL_SEGMENT in apps/daily/src/lib/config.ts.
+      - RESEND_API_KEY=${DAILY_RESEND_API_KEY:-}
+      - MAIL_SECRET=${DAILY_MAIL_SECRET:-}
     volumes:
       # The git clone of the digest repo, plus the rendered share posters. It is
       # both the job's workspace and the site's read path, so the pages never hit
