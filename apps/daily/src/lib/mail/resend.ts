@@ -136,45 +136,43 @@ export async function sendEmail(message: {
 /**
  * Put a confirmed address on the list, or bring a returning one back.
  *
- * TWO CALLS BECAUSE ONE ENDPOINT CANNOT DO BOTH. `POST /contacts` creates, and
- * what it does with an address already on file is not something the docs commit
- * to — so the second call is not an optimisation, it is the branch that handles a
- * reader who unsubscribed in March and signed up again in August. The PATCH sets
- * `unsubscribed: false`, which is the only thing standing between that reader and
- * a list they are on but never receive.
+ * ONE CALL, AND EVERY DETAIL OF IT WAS MEASURED RATHER THAN READ. The reference
+ * is wrong or silent on all three points that matter here, and each one was a
+ * 422 or a 404 before it was a line of code:
  *
- * ONE KNOWN GAP: `PATCH /contacts/{email}` documents `unsubscribed`, the names
- * and `properties` — but not `segments`. So a reader who first subscribed on the
- * Chinese side and later confirms from the English one gets their `lang` property
- * updated and stays in the segment they were created in, i.e. keeps receiving
- * Chinese. Rare, recoverable by hand in the dashboard, and not worth guessing an
- * endpoint over — if it turns out to happen, the fix is whatever Resend's
- * add-contact-to-segment call is, verified first.
+ *   `segments` TAKES OBJECTS, NOT IDS. `segments: ["<uuid>"]` — which is what the
+ *   field name and every example suggest — answers `422 Invalid input: expected
+ *   object, received string`. It wants `[{ id }]`.
+ *
+ *   POST IS AN UPSERT, so there is no create-then-update dance and no duplicate
+ *   error to catch. Posting an address that already exists returns 201 with the
+ *   SAME contact id, and — this is the part worth having tested — it resets
+ *   `unsubscribed` to false. That single fact is what carries the reader who left
+ *   in March and came back in August; the version of this function that assumed
+ *   otherwise made two calls and failed the second with `Contact not found`.
+ *
+ *   THERE IS NO `properties` TO WRITE. Custom contact properties must be declared
+ *   in the dashboard first, so an undeclared `{ lang: "zh" }` is
+ *   `422 One or more properties do not exist`. Nothing is lost: the segment IS
+ *   the language, and it is what the broadcast selects on, so a `lang` property
+ *   would have been a second copy of the same fact — free to drift, read by
+ *   nobody.
+ *
+ * A SECOND SEGMENT IS ADDED, NOT SWAPPED. Confirming from the English page after
+ * having confirmed from the Chinese one leaves the contact in both, so that
+ * reader gets both editions each morning. They asked twice, from two pages, and
+ * both unsubscribe links work — which is a better failure than guessing at a
+ * remove-from-segment endpoint to enforce a choice nobody stated.
  */
 export async function subscribeContact(
   email: string,
-  lang: Lang,
   segmentId: string,
-): Promise<"created" | "updated"> {
-  try {
-    await call("POST", "/contacts", {
-      email,
-      unsubscribed: false,
-      segments: [segmentId],
-      properties: { lang },
-    });
-    return "created";
-  } catch (error) {
-    // Anything the API refuses outright — the address is already a contact being
-    // much the likeliest — is retried as an update. A PATCH that also fails
-    // throws, and the confirm page says the link did not work, which is honest.
-    if (!(error instanceof ResendError) || error.status >= 500) throw error;
-    await call("PATCH", `/contacts/${encodeURIComponent(email)}`, {
-      unsubscribed: false,
-      properties: { lang },
-    });
-    return "updated";
-  }
+): Promise<void> {
+  await call("POST", "/contacts", {
+    email,
+    unsubscribed: false,
+    segments: [{ id: segmentId }],
+  });
 }
 
 interface Broadcast {

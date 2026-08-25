@@ -200,8 +200,8 @@ export const MAIL_SECRET = process.env.MAIL_SECRET ?? "";
  * these constants change: the job passes whichever ids it is given.
  */
 export const MAIL_SEGMENT: Record<"zh" | "en", string> = {
-  zh: "",
-  en: "",
+  zh: "9d8683f8-4159-45ad-be8f-ed07daf696ae",
+  en: "acf62e33-6778-4be1-9fc2-693286ee7cab",
 };
 
 /**

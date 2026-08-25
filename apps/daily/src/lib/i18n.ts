@@ -118,6 +118,46 @@ const STRINGS = {
     emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天再来看看。",
 
     /**
+     * 订阅表单，以及它之后的两种结果页。
+     *
+     * 「五条」是写死的数字而不是插值，因为它同时是一个承诺：邮件里就是五条，多的在
+     * 网页上。改 MAIL_TOP_N 的时候这句要跟着改，这条注释就是那个提醒。
+     */
+    subscribe: "订阅邮件",
+    subscribeSub: "每天早上一封，五条精选。",
+    subscribeEmail: "你的邮箱",
+    subscribeGo: "订阅",
+    subscribeSending: "正在发送",
+    subscribeSent: (email: string) =>
+      `确认信已经发到 ${email}，点开里面的链接就完成了。`,
+    subscribeError: "没发出去，过一会儿再试一次。",
+    subscribeBadEmail: "这个邮箱看起来不太对。",
+    subscribeTooMany: "试得太频繁了，五分钟后再来。",
+    subscribeNote: "每封信里都有退订链接，随时可以退。",
+
+    confirmedTitle: "订阅成功",
+    confirmedBody: "明天早上七点，第一封就会到。",
+    /** 过期、被改过、邮件客户端截断，对读者是同一件事：这个链接现在没用了。 */
+    confirmInvalidTitle: "链接失效了",
+    confirmInvalidBody: "确认链接只在 24 小时内有效。回到首页重新订阅一次就好。",
+    backHome: "回到首页",
+
+    /** 收件箱那一行：牌子加日期。篇数不写进去 —— 邮件里是五条，当天可能有二十条，
+     *  写哪个数字都会骗人。 */
+    mailSubject: (date: string) => `每日干货 · ${date}`,
+    /** "8月25日"，只给邮件用。页面上的日期带星期，主题行没那个位置。 */
+    mailShortDate: (m: number, d: number) => `${m}月${d}日`,
+    mailWhy: "你收到这封信，是因为订阅了 daily.lab115.com。",
+    mailUnsubscribe: "退订",
+
+    confirmSubject: "确认订阅每日干货",
+    confirmMailLead: "点下面这个链接，订阅就生效了。",
+    confirmMailButton: "确认订阅",
+    confirmMailExpiry: "链接 24 小时内有效。",
+    /** 双向确认的另一半：这封信有可能是别人拿你的邮箱填的表单。 */
+    confirmMailIgnore: "如果这不是你本人操作，忽略这封信即可，不会有任何后续。",
+
+    /**
      * THE MASTHEAD'S SUBTITLE, and the description on every page, in the manifest
      * and in the feed's `<subtitle>`.
      *
@@ -229,6 +269,39 @@ const STRINGS = {
 
     emptyTitle: "Nothing today",
     emptyBody: "No new posts from any source in the last 24 hours. Try again tomorrow.",
+
+    subscribe: "Subscribe by email",
+    subscribeSub: "One email each morning, five picks.",
+    subscribeEmail: "Your email",
+    subscribeGo: "Subscribe",
+    subscribeSending: "Sending",
+    subscribeSent: (email: string) =>
+      `A confirmation is on its way to ${email}. Open it and follow the link.`,
+    subscribeError: "That did not send. Try again in a moment.",
+    subscribeBadEmail: "That address does not look right.",
+    subscribeTooMany: "Too many tries. Give it five minutes.",
+    subscribeNote: "Every email carries an unsubscribe link.",
+
+    confirmedTitle: "You are subscribed",
+    confirmedBody: "The first one arrives tomorrow morning.",
+    confirmInvalidTitle: "This link has expired",
+    confirmInvalidBody:
+      "A confirmation link is good for 24 hours. Subscribe again from the front page and a fresh one will arrive.",
+    backHome: "Back to the front page",
+
+    mailSubject: (date: string) => `Daily Takes · ${date}`,
+    /** "25 Aug" — the day-first order the English date string uses elsewhere. */
+    mailShortDate: (m: number, d: number) =>
+      `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]}`,
+    mailWhy: "You are getting this because you subscribed at daily.lab115.com.",
+    mailUnsubscribe: "Unsubscribe",
+
+    confirmSubject: "Confirm your subscription",
+    confirmMailLead: "Follow this link and you are on the list.",
+    confirmMailButton: "Confirm subscription",
+    confirmMailExpiry: "The link is good for 24 hours.",
+    confirmMailIgnore:
+      "If this was not you, ignore this email and nothing happens.",
 
     /* Written tighter than a literal rendering of the Chinese, and deliberately:
        this string is drawn across the bottom of the 1200px OG card (see lib/og.tsx),
