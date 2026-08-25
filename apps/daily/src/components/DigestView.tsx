@@ -11,6 +11,8 @@ import {
 } from "./Shell";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
+import { Subscribe } from "./Subscribe";
+import { mailEnabled } from "@/lib/mail/resend";
 import { shownArticles } from "@/lib/store";
 import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
@@ -185,6 +187,15 @@ export function DigestView({
       )}
 
       <FoldedList digest={digest} lang={lang} />
+
+      {/* Before the way onward, not after it: a reader who has just finished the
+          day's cards is at the moment they might want tomorrow's delivered, and
+          the next block down sends them somewhere else. */}
+      {mailEnabled() ? (
+        <div className={PAD}>
+          <Subscribe lang={lang} />
+        </div>
+      ) : null}
 
       <div className={PAD}>
         <EndLink

@@ -5,6 +5,7 @@ import {
   PUBLISH_MIN_SCORE,
 } from "@/lib/categories";
 import { fetchAll } from "@/lib/fetcher";
+import { mailDigest } from "@/jobs/mail";
 import { notify } from "@/lib/notify";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
 import { sourceOf } from "@/lib/sources";
@@ -436,6 +437,23 @@ async function publishFrom(
   }
 
   await notify(digest);
+
+  /**
+   * LAST, AND UNABLE TO FAIL THE RUN.
+   *
+   * Last because it is the slowest and least reversible thing here: the digest
+   * is already committed, the posters are already on disk for whoever follows a
+   * link, and Bark has already reached the one device that wanted to know. An
+   * email cannot be recalled, so it goes when everything it points at is
+   * standing.
+   *
+   * The catch is the same contract `notify` has. A Resend outage must not cost
+   * the day its digest — `npm run mail -- <date>` sends it afterwards, and the
+   * broadcast name makes that safe to run more than once.
+   */
+  await mailDigest(digest).catch((error) =>
+    console.error("[daily] mail failed:", error),
+  );
 
   console.log(
     `[daily] run done — ${digest.stats.shown} shown of ` +

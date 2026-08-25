@@ -1,6 +1,13 @@
-import { SITE } from "@/lib/config";
+import { categoryOf } from "@/lib/categories";
+import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
-import type { Lang } from "@/lib/lang";
+import { href, type Lang } from "@/lib/lang";
+import { articlePath, dayPath } from "@/lib/links";
+import { summaryText, totalReadingMinutes } from "@/lib/reading";
+import { sourceOf } from "@/lib/sources";
+import { shownArticles } from "@/lib/store";
+import { summaryFor } from "@/lib/take";
+import type { Digest, PublishedArticle } from "@/lib/types";
 
 /**
  * The HTML this app puts in an inbox.
@@ -152,6 +159,141 @@ ${button(confirmUrl, t.confirmMailButton)}
 /** Absolute, because a link in an email has no page to be relative to. */
 export function absolute(path: string): string {
   return `${SITE}${path}`;
+}
+
+/**
+ * `utm_source=email`, and it is the only way this link can be attributed.
+ *
+ * An email client sends no referrer, so a reader arriving from the inbox is
+ * indistinguishable from one who typed the domain — which would make the whole
+ * point of the mail unmeasurable. Nothing else is tagged: medium and campaign
+ * would be one value each forever.
+ */
+function tagged(path: string): string {
+  return `${absolute(path)}?utm_source=email`;
+}
+
+/**
+ * One issue: five headlines, each with the sentence that says what it argues.
+ *
+ * THE MAIL IS A DOORWAY, NOT THE EDITION. The site publishes everything that
+ * clears the floor and the writing is meant to be read there; what belongs in an
+ * inbox is enough to decide with — the headline, one line, where it came from —
+ * and a way through to the rest. See MAIL_TOP_N in lib/config.ts for the whole
+ * argument, including the Gmail clipping limit this shape never has to think
+ * about.
+ *
+ * THE COUNTS DESCRIBE THE DAY, NOT THE EMAIL. "15 篇 · 读完约 12 分钟" is what the
+ * masthead of the day's page says, computed the same way from the same summaries,
+ * because a reader who follows the link has to land on the page those numbers
+ * described. The mail carries five of them and the button says so.
+ */
+export function digestEmail(
+  digest: Digest,
+  lang: Lang,
+): { subject: string; html: string; text: string } {
+  const t = strings(lang);
+  // `shownArticles`, not `digest.articles`: an article whose summary never came
+  // back is not renderable, and it is the same filter the day's page applies —
+  // so the mail can never lead with something the page does not show.
+  const shown = shownArticles(digest);
+  const picked = shown.slice(0, MAIL_TOP_N);
+  const [year, month, day] = digest.date.split("-").map(Number);
+  // Built from the date key rather than from a Date, so the server's timezone
+  // can never shift the weekday by one. Same arithmetic as `formatDate` in
+  // DigestView, which is the line this one has to agree with.
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  // Over the WHOLE day and via `summaryText`, both because the masthead the
+  // reader is about to land on is computed exactly this way.
+  const minutes = totalReadingMinutes(
+    shown.map((article) => summaryText(summaryFor(article, lang))),
+  );
+
+  const headline = (article: PublishedArticle) =>
+    (lang === "zh" && article.titleZh ? article.titleZh : article.title).trim();
+
+  const cards = picked
+    .map((article) => {
+      const category = categoryOf(article.category);
+      const url = tagged(href(lang, articlePath(digest.date, article)));
+      return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+<tr><td>
+<div style="font:700 12px/1 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};letter-spacing:.04em;padding-bottom:8px;">
+<span style="display:inline-block;width:7px;height:7px;border-radius:7px;background:${escapeHtml(
+        category.accent,
+      )};"></span>&nbsp;${escapeHtml(lang === "zh" ? category.name : category.nameEn)}
+</div>
+<a href="${escapeHtml(url)}" style="font:700 17px/1.4 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK};text-decoration:none;">${escapeHtml(
+        headline(article),
+      )}</a>
+<div style="font:400 15px/1.6 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_MID};padding-top:7px;">${escapeHtml(
+        summaryFor(article, lang).thesis,
+      )}</div>
+<div style="font:400 12px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};padding-top:7px;">${escapeHtml(
+        sourceOf(article.sourceId).name,
+      )}</div>
+</td></tr></table>`;
+    })
+    .join("");
+
+  const dayUrl = tagged(href(lang, dayPath(digest.date)));
+  const bodyHtml = `
+<div style="font:400 14px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_MID};padding-bottom:4px;">${escapeHtml(
+    t.date(year, month, day, weekday),
+  )}</div>
+<div style="font:600 13px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${ORANGE};padding-bottom:22px;">${escapeHtml(
+    `${t.posts(digest.stats.shown)} · ${t.readTime(minutes)}`,
+  )}</div>
+${cards}
+${button(dayUrl, t.wholeDay)}
+<div style="font:400 12px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};">${escapeHtml(
+    t.wholeDaySub(digest.date, digest.stats.shown),
+  )}</div>`;
+
+  /**
+   * `{{{RESEND_UNSUBSCRIBE_URL}}}` IS NOT ESCAPED AND MUST NOT BE. It is a
+   * placeholder Resend swaps for a per-recipient link as it sends, so escaping
+   * the braces would ship the literal text to every reader — and an unsubscribe
+   * link that is not a link is the one failure in this whole file that turns a
+   * subscriber into a spam complaint.
+   */
+  const footerHtml = `${escapeHtml(t.mailWhy)}<br>
+<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:${INK_SOFT};">${escapeHtml(
+    t.mailUnsubscribe,
+  )}</a>`;
+
+  const text = [
+    t.brand,
+    t.date(year, month, day, weekday),
+    `${t.posts(digest.stats.shown)} · ${t.readTime(minutes)}`,
+    "",
+    ...picked.flatMap((article) => [
+      `— ${headline(article)}`,
+      summaryFor(article, lang).thesis,
+      `${sourceOf(article.sourceId).name} · ${tagged(
+        href(lang, articlePath(digest.date, article)),
+      )}`,
+      "",
+    ]),
+    `${t.wholeDay}: ${dayUrl}`,
+    "",
+    t.mailWhy,
+    `${t.mailUnsubscribe}: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+  ].join("\n");
+
+  return {
+    subject: t.mailSubject(t.mailShortDate(month, day)),
+    // The inbox line under the subject: the top headline, which is the one
+    // string that answers "is today's worth opening".
+    html: shell({
+      lang,
+      preheader: picked[0] ? headline(picked[0]) : t.emptyTitle,
+      bodyHtml,
+      footerHtml,
+    }),
+    text,
+  };
 }
 
 export { INK, INK_MID, INK_SOFT, ORANGE, CREAM, PAPER, shell, button };

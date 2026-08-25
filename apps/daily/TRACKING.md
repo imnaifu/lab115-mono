@@ -52,6 +52,7 @@ GA 自己的传输层处理 unload），而为了一个指标去延迟读者的�
 | `install_open` | `platform` `can_prompt` | 按了「存成 App」 | `InstallApp.tsx` |
 | `install_prompt` | `outcome`=`accepted`\|`dismissed`\|`failed`、`platform` | 浏览器自己那个安装弹窗的结局 | `InstallApp.tsx` |
 | `pull_refresh` | — | **下拉刷新真的被用了多少** | `PullToRefresh.tsx` |
+| `mail_subscribe` | `outcome`=`ok`\|`email`\|`rate`\|`error`、`lang` | 提交了订阅表单。**不等于订阅成功** —— 双向确认还要读者去点邮件里的链接，这个数和 Resend 里的联系人数之差，就是确认这一步的成本 | `Subscribe.tsx` |
 
 事件名在 `lib/track.ts` 里是一个**联合类型**，不是 `string`。GA4 会照单全收任何事件名，
 `shre_open` 会被永久归档成一个独立事件，报表上只表现为少了一部分点击 —— 这种错只有

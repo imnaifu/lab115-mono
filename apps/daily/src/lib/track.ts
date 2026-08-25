@@ -68,6 +68,17 @@ export type TrackEvent =
    * came back to the same window rather than opening a new tab.
    */
   | "pull_refresh"
+  /**
+   * The subscribe form was submitted. NOT a subscriber — double opt-in means the
+   * reader still has to open a mail and follow a link, and the two numbers are
+   * different questions: this one is whether the form is found and wanted at
+   * all, and the gap between it and the contact count in Resend is how much the
+   * confirmation step costs.
+   *
+   * `outcome` carries what the server said, so a spike in `error` is visible
+   * here rather than only in the container's log.
+   */
+  | "mail_subscribe"
   /** A single day opened — from a row on the home page's list, or from an article
    *  page (`from` says which). */
   | "day_open"

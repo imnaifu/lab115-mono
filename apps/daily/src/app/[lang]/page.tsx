@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DayList } from "@/components/DayList";
 import { EndLink, Footer, Masthead, PAD, PageShell } from "@/components/Shell";
+import { Subscribe } from "@/components/Subscribe";
+import { mailEnabled } from "@/lib/mail/resend";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
@@ -113,6 +115,12 @@ export default async function Home({
       </Masthead>
 
       <DayList dates={shown} lang={lang} from="home" />
+
+      {mailEnabled() ? (
+        <div className={PAD}>
+          <Subscribe lang={lang} />
+        </div>
+      ) : null}
 
       {/* Only once there is something the front page is not already showing —
           see `hasArchive`. With a week or less on the site this link would lead to

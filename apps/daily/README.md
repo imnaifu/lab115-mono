@@ -1420,6 +1420,74 @@ DeepSeek **不支持 `json_schema`**（`response_format` 只有 `text` 和 `json
 就整批退化成纯标题；`logParseFailure()` 保留着，出错时打印出错位置前后 120 字符，
 那是判断新坏法的唯一线索。
 
+## 邮件订阅
+
+每天 digest 推完之后，把当天**分数最高的 5 条**发给订阅者：标题 + 一句 thesis +
+出处，外加一个「看这一天的全部」按钮。**邮件是入口，不是这一期本身** —— 站点发全部
+十几二十条，写作是给页面读的，收件箱里放够做决定的信息就行。
+
+顺带解决了一个全文方案绕不开的问题：Gmail 超过约 102KB 会把邮件折叠成「显示全部
+内容」，二十条中文摘要按 UTF-8 算离那条线很近。现在一封 8.7KB，差 12 倍。
+
+### 名单不在这个仓库里
+
+联系人存在 **Resend**，退订、`List-Unsubscribe` 头、退信和投诉抑制也都是它的。
+所以这个 app **不存任何读者数据**，「删掉我的数据」是一次 API 调用，而不是重写 git
+历史。曾经考虑过把名单放进 digest 仓库，那需要给一棵已经有两个 cron 在
+`reset --hard` 的工作树加锁，还会把邮箱永久写进一个删不掉的历史。
+
+唯一本该需要存的状态 —— 「这个地址提交了但还没确认」 —— 装在**签名 token** 里：
+地址、语言、截止时间都在链接上，没确认的注册什么都不留下，也就没有过期数据要清理。
+
+```
+POST /api/mail/subscribe ──→ 校验 + 蜜罐 + 限速 ──→ 发确认信（HMAC token）
+                                                        ↓
+                        contacts.create ←── GET /mail/confirm?t=…（验签）
+```
+
+`/api/` 在 `proxy.ts` 的 matcher 里被排除掉了。不排除的话，那个「中文走无前缀路径」
+的 rewrite 会把 `POST /api/mail/subscribe` 改写成 `/zh/api/mail/subscribe` —— 而
+rewrite **保留 method 和 body**，所以表单的 POST 会完好地送达一个不存在的路由。
+
+### 三处文档不准的地方
+
+都是先撞了 422/404 才写成代码的，改动前先看这里：
+
+| 以为 | 实际 |
+|---|---|
+| `segments: ["<uuid>"]` | 要 `[{ id }]`，否则 `422 expected object, received string` |
+| `POST /contacts` 遇到已存在地址会报错 | 是 **upsert**：返回 201 + 同一个 id，**并把 `unsubscribed` 翻回 false** —— 老读者回归就靠这一条 |
+| `properties: { lang }` 可以随便写 | 自定义属性必须先在后台定义，否则 `422 One or more properties do not exist`。也不需要：**segment 就是语言** |
+
+再 POST 另一个 segment 是**追加不是替换**，所以中英都确认过的人每天收两封。
+
+### 幂等
+
+每期 broadcast 叫 `daily-<date>-<lang>`，发之前列一遍 Resend 上的 broadcast 名字。
+`runDaily` 本来就是可重跑的，这道检查是它不会把同一天发两遍的全部原因 —— 没有本地
+状态，没有台账要和卷一起丢。
+
+`mailDigest` 挂在 `runDaily` 最后、`notify()` 之后，整体 try/catch：digest 已经进
+git、海报已经落盘、Bark 已经响过，邮件是这里面最慢也最不可撤回的一步，所以放最后，
+而且它挂了不能带走当天的 digest。**当天没有可发的文章就不发** —— 页面可以诚实地写
+「今日无更新」，邮件不行，那是在训练读者忽略这个发件人。
+
+补发：
+
+```bash
+npm run mail -- 2026-08-25
+```
+
+同名 broadcast 已存在就是空操作。`--test` 会给名字加个后缀，不占用正式那一期的名字；
+`DRY_RUN=1` 只渲染并报字节数，不发。
+
+### 上线前
+
+- Resend 后台确认 `lab115.com` 是**已验证**状态（DKIM 不全不影响能不能发，影响的是
+  进不进垃圾箱）
+- `RESEND_API_KEY` 和 `MAIL_SECRET` 进 Coolify
+- `MAIL_SEGMENT` 两个 id 已经写死在 `config.ts` 里
+
 ## 环境变量与常量
 
 **环境变量只放密钥。**本地写进 `.env`（见 `.env.example`）；生产由 Coolify 经
