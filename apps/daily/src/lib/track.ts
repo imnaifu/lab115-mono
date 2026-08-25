@@ -70,7 +70,13 @@ export type TrackEvent =
   | "pull_refresh"
   /** A single day opened — from a row on the home page's list, or from an article
    *  page (`from` says which). */
-  | "day_open";
+  | "day_open"
+  /**
+   * The floating back-to-top button was pressed. Says whether the pages are long
+   * enough that readers actually want the trip back — if this stays near zero the
+   * button is furniture and can go.
+   */
+  | "back_to_top";
 
 /**
  * Fire and forget.

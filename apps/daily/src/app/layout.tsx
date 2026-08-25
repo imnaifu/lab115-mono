@@ -4,6 +4,7 @@ import { Analytics } from "@/components/Analytics";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { ClickTracking } from "@/components/ClickTracking";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { BackToTop } from "@/components/BackToTop";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang, otherLang, type Lang } from "@/lib/lang";
 import type { Metadata, Viewport } from "next";
@@ -154,6 +155,9 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const lang = await langFromHeader();
+  // Only for BackToTop's label — everything else this layout renders is chrome
+  // with no words in it.
+  const t = strings(lang);
 
   return (
     /**
@@ -221,6 +225,9 @@ export default async function RootLayout({
         {/* Touch screens only, and it attaches nothing on a desktop — see the
             note in the component. */}
         <PullToRefresh />
+        {/* Every page here can outrun a screen, so it is mounted once at the
+            root rather than per page — see the note in the component. */}
+        <BackToTop label={t.backToTop} />
         <ServiceWorker />
         <Analytics />
         {/* One delegated listener for every `data-track` link on the page — see

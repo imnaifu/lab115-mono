@@ -60,6 +60,14 @@ const STRINGS = {
     moreApps: "更多",
 
     /**
+     * The floating button's label. IT IS NEVER PRINTED — the button is an
+     * arrow, and this is its `aria-label` and its tooltip. A word there would
+     * be a second thing hovering over the page in a language the reader has to
+     * read past to get at the summary underneath.
+     */
+    backToTop: "回到顶部",
+
+    /**
      * The masthead's install control, and the sheet it opens.
      *
      * 「App」 IS THE CHINESE WORD, not the English one leaking in — nobody says
@@ -185,6 +193,14 @@ const STRINGS = {
     shareTo: "Share to",
     close: "Close",
     moreApps: "More",
+
+    /**
+     * The floating button's label. IT IS NEVER PRINTED — the button is an
+     * arrow, and this is its `aria-label` and its tooltip. A word there would
+     * be a second thing hovering over the page in a language the reader has to
+     * read past to get at the summary underneath.
+     */
+    backToTop: "Back to top",
 
     saveApp: "Save as app",
     saveAppTitle: "Save this page as an app",
