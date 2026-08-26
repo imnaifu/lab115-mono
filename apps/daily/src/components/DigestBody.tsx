@@ -113,8 +113,8 @@ export function DigestBody({
            re-impose the registry's running order on it, which buries the day's
            best piece under whichever category happens to come first; here the
            order is the score order and nothing else. No dot and no second name
-           on the heading, for the same reason the folded list has neither — 全部
-           is not a category, so it has no colour and no English twin. */
+           on the heading: 全部 is not a category, so it has no colour and no
+           English twin. */
         <section className={`${SECTION} flex flex-col gap-3 ${PAD}`}>
           <SectionHead
             title={t.allTab}

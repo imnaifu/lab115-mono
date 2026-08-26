@@ -395,8 +395,9 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
 /**
  * A section heading with its count on the right.
  *
- * `dot` is optional because the folded-updates section and 全部 are not
- * categories, so they have no accent colour.
+ * `dot` is optional because 全部 is not a category, so it has no accent colour.
+ * (The other caller without one used to be the folded-updates section, which no
+ * longer exists.)
  *
  * There used to be a `sub` beside the title carrying the category's other name —
  * 技术 with Tech next to it. Gone with the rest of the side-by-side pairs; the

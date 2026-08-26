@@ -122,8 +122,10 @@ const STRINGS = {
     wholeDaySub: (date: string, n: number) => `${date} · 共 ${n} 篇`,
 
     nothingYet: "还没有任何内容。",
-    otherUpdates: "其余更新",
 
+    /** 开头那张照片的出处，署名行里夹在作者和许可之间。作者名和许可名都是数据，
+        只有这个词是文案，所以只有它在这里。 */
+    photoSource: "维基共享资源",
 
     emptyTitle: "今日无更新",
     emptyBody: "过去 24 小时里，订阅的几个源都没有发布新文章。明天再来看看。",
@@ -297,7 +299,8 @@ const STRINGS = {
     wholeDaySub: (date: string, n: number) => `${date} · ${n} in total`,
 
     nothingYet: "Nothing published yet.",
-    otherUpdates: "Also today",
+
+    photoSource: "Wikimedia Commons",
 
 
     emptyTitle: "Nothing today",

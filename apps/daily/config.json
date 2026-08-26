@@ -3,6 +3,8 @@
   "summaryMinChars": 150,
   "summaryMaxChars": 650,
   "summaryParaMaxChars": 90,
+  "photoEnabled": true,
+  "photoCaptionMaxChars": 60,
   "categories": [
     {
       "id": "tech",
@@ -824,6 +826,17 @@
       "enabled": true,
       "fetchBody": false,
       "maxPerRun": 2
+    },
+    {
+      "id": "powderworks",
+      "name": "Powderworks",
+      "site": "https://newsletter.powderworks.dev/",
+      "feed": "https://newsletter.powderworks.dev/feed",
+      "category": "tech",
+      "description": "匿名作者的 Substack，写用 coding agent 做大型项目踩出来的教训和为此自制的工具，兼谈软件生产到底是手艺还是工业过程；feed 带全文，实测 2.2k 与 72.9k，都免费。全站只有 2 篇（2026-08-08 / 08-12），频率无法实测，最新一篇距今 14 天 —— 一个还没证明会持续更新的新号。",
+      "accent": "#6E4B3A",
+      "enabled": true,
+      "fetchBody": false
     }
   ]
 }

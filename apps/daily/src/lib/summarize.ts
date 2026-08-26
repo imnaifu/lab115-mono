@@ -1688,3 +1688,136 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
       `under ${ZH_MIN}: ${thin}/${total}`,
   );
 }
+
+// --- the caption pass: one line under the day's photograph ------------------
+
+const CAPTION_PASS = "caption";
+
+/**
+ * The caption's ceiling, in Chinese characters.
+ *
+ * Small for a layout reason rather than an editorial one — it is one line beside
+ * an 80px square, and a caption past it wraps until the card stops reading as a
+ * card. It lives in config.json anyway, next to the summary budgets, because
+ * "how long may this sentence be" is a question answered by looking at the page
+ * rather than at this file.
+ */
+const CAPTION_MAX_CHARS = USER_CONFIG.photoCaptionMaxChars;
+
+/**
+ * A FOURTH PROMPT rather than a mode of the backfill one, and the direction is
+ * the reason: every other pass in this file writes Chinese from a Chinese source
+ * or English from Chinese. This one goes English → Chinese, and it is translating
+ * a stranger's sentence about a photograph rather than rewriting our own prose.
+ *
+ * The invention rule is the same rule as everywhere else in this file, and it
+ * matters more here than it looks: the model cannot see the photograph. Anything
+ * it adds — a colour, a time of day, a mood — is made up about an image the
+ * reader is looking at, which is the one place a fabrication is instantly
+ * visible.
+ */
+const CAPTION_SYSTEM = `你的任务是把一句英文图片说明，写成中文。
+
+给你的是维基共享资源为一张照片写的说明。这张照片会印在页面开头，读者看得见它，你看不见。
+
+## 返回什么
+
+一个字段：
+- "zh" —— 一句中文图说，**不超过 ${CAPTION_MAX_CHARS} 个字**。
+
+## 只译不添
+
+**你看不到这张照片。英文里没有的，一个字都不许加。**
+
+- 不许添颜色、光线、天气、季节、情绪、气氛 —— 这些正是读者一眼就能看出你编了的东西。
+- 不许添地理、历史、人物背景。英文提到了哪个地名、哪一年、哪个人，就只写那些。
+- 英文里的日期和事件照写（「1875 年 8 月 25 日首次横渡英吉利海峡」这类），那是这句话里最实在的部分。
+- 不许写「这张照片展现了」「令人想起」「仿佛在诉说」这类空话，也不许把它和任何新闻扯上关系。
+- 专有名词没有通行中译就留英文原文，不要音译硬造。
+
+## 英文太长的时候，删什么
+
+英文说明经常写得比一句图说长得多，会连照片之后发生的事一起叙述完。**超出 ${CAPTION_MAX_CHARS} 字就必须删，而且删的顺序是定死的。**
+
+留下（按优先级）：
+1. 照片里看得见的东西 —— 主体是什么、在哪。
+2. 那个日期或事件锚点（「1843 年的今天」「今天是乌克兰独立日」这类）。
+
+删掉：
+- 照片拍下之后发生的事。「四小时内烧成残骸」「凌晨三点弹药库爆炸」这类叙述不在照片里，读者对着图找不到它 —— 删它不只是为了短，本来就不该写。
+- 型号、编号、班次号、桥梁名这类只有专业读者认得的串。留一个最主要的就够。
+- 出版社、机构、馆藏这类出处信息 —— 署名行已经有了。
+
+## 怎么写
+
+一句话，陈述语气，句末不加句号以外的标点。地点写清楚，别只写国家。`;
+
+const CAPTION_EXAMPLE = `{
+  "zh": "英吉利海峡畔比奇角的贝尔图特灯塔与白垩崖，1875 年 8 月 25 日 Matthew Webb 由此首次横渡海峡抵达法国"
+}`;
+
+/**
+ * One Chinese caption for the day's photograph, or "" if it could not be
+ * written.
+ *
+ * ONLY CALLED WHEN WIKIMEDIA HAS NO SIMPLIFIED-CHINESE CAPTION of its own — see
+ * `chineseCaption` in lib/photo.ts. Most days it does not, so this normally runs;
+ * on the days it does, the hand-written caption is better than a translation and
+ * free.
+ *
+ * FALLS BACK TO THE ENGLISH rather than to nothing. A photo with an English line
+ * under it is a worse page than one with a Chinese line, and a much better page
+ * than a credited photo with no words at all — which is the only other option,
+ * since a caption is what makes the picture legible as something other than
+ * decoration.
+ */
+export async function captionZh(english: string, date: string): Promise<string> {
+  const source = english.trim();
+  if (!source) return "";
+
+  if (!DEEPSEEK_API_KEY) {
+    console.warn(
+      "[daily] DEEPSEEK_API_KEY unset — the photo keeps its English caption",
+    );
+    return source;
+  }
+
+  const client = makeClient();
+
+  for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
+    const label = attempt
+      ? `${CAPTION_PASS} ${date} retry ${attempt}`
+      : `${CAPTION_PASS} ${date}`;
+    try {
+      const rows = await callModel(
+        client,
+        label,
+        CAPTION_SYSTEM,
+        `Here is 1 English caption. Write its Chinese.\n\nen: ${source}`,
+        CAPTION_EXAMPLE,
+      );
+      for (const row of rows) {
+        const zh = asText(row.zh);
+        if (!zh) continue;
+        // Logged rather than rejected: an over-long caption wraps, which is a
+        // blemish, while dropping it costs the photo its only words.
+        if (zh.length > CAPTION_MAX_CHARS) {
+          console.warn(
+            `[daily] ${CAPTION_PASS} — ${zh.length} chars, over ` +
+              `${CAPTION_MAX_CHARS}`,
+          );
+        }
+        return zh;
+      }
+    } catch (error) {
+      if (attempt === GAP_RETRIES) {
+        console.error(
+          `[daily] ${label} failed after ${attempt + 1} attempts ` +
+            `(the photo keeps its English caption): ${(error as Error).message}`,
+        );
+      }
+    }
+  }
+
+  return source;
+}

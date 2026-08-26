@@ -229,19 +229,6 @@ export type PublishedArticle = Article & {
 };
 
 /**
- * Fetched and summarized, but not given a card — rendered as a plain title
- * link. Carries its score so it is possible to tell WHY it was folded: a low
- * one means the model judged it thin, a high one means its section or its
- * source was already full.
- */
-export interface FoldedArticle {
-  title: string;
-  url: string;
-  sourceId: string;
-  score: number;
-}
-
-/**
  * Below the publish floor and therefore never summarized — a record of what
  * was considered and turned down, NOT something the page renders.
  *
@@ -249,11 +236,11 @@ export interface FoldedArticle {
  * below the floor, and they are turned down like any other. A run whose model
  * calls failed therefore shows up here as a pile of zeroes.
  *
- * Deliberately not `folded`: that list appears on the page as 其他动态, and the
- * whole point of this one is that it does not. It exists so a run can be
- * audited after the fact — "why is that post missing" is answerable, and a
- * rubric that starts rejecting good work is visible in the file before it is
- * visible in the digest.
+ * NOT SOMETHING THE PAGE RENDERS, which is the whole point. It exists so a run
+ * can be audited after the fact — "why is that post missing" is answerable, and
+ * a rubric that starts rejecting good work is visible in the file before it is
+ * visible in the digest. (It used to be contrasted here with `folded`, a list
+ * that WAS rendered; that concept is gone entirely — see the note on `Digest`.)
  *
  * Optional because digests written before it existed do not carry it.
  */
@@ -287,13 +274,81 @@ export interface SourceStatus {
   error?: string;
 }
 
+/**
+ * The day's photograph, and the only image on the page that is not an article's.
+ *
+ * Wikimedia's picture of the day, RESOLVED ONCE BY THE JOB and stored here
+ * rather than looked up when the page renders. The page reads a JSON file off
+ * disk, so an archived day re-rendered a year from now has to show the photo
+ * that ran with it — a render-time lookup would quietly repaint every old day
+ * with today's picture, and nothing about the page would reveal that it had.
+ *
+ * Absent on every digest written before this field existed, and on any day the
+ * fetch came back with nothing. Both mean the same thing to a renderer: no
+ * photo, no card. See `dailyPhoto` in lib/photo.ts for why an empty day is an
+ * ordinary outcome rather than an error.
+ */
+export interface DailyPhoto {
+  /**
+   * A THUMBNAIL on upload.wikimedia.org, never the original file.
+   *
+   * The originals run to 5030×4700 and tens of megabytes, which is reason
+   * enough. The reason that would actually have bitten: a picture of the day is
+   * occasionally an SVG or a video, and Satori-style format checks would then be
+   * needed here too — while Wikimedia renders every thumbnail as a raster JPEG
+   * or PNG. Taking the thumbnail sidesteps the whole question.
+   *
+   * Hot-linked, not copied into the storage repo. That repo is a JSON store; a
+   * photo a day would grow it without bound, and Wikimedia's CDN is steadier
+   * than ours.
+   */
+  src: string;
+  width: number;
+  height: number;
+  /** The Commons file page. The attribution line links here — it is where the
+   *  full licence text and the file's history live. */
+  filePage: string;
+  /** The photographer, plain text. The licence requires it, so it is never
+   *  optional: a photo that arrived without one is not stored at all. */
+  artist: string;
+  /**
+   * The licence, named and — where there is one to link — linked.
+   *
+   * `url` IS OPTIONAL BECAUSE PUBLIC DOMAIN HAS NO DEED. Wikimedia reports those
+   * files as `{ type: "Public domain", code: "pd" }` with no URL, and requiring
+   * one rejected them: the picture for 2026-08-26 was an 1843 lithograph, which
+   * is both the cleanest case legally and the one an over-strict check throws
+   * away. The name is never optional — a reader is owed the difference between a
+   * photo that is free and one that is shared under conditions.
+   */
+  license: { name: string; url?: string };
+  /**
+   * One sentence on what the photograph shows, in the same bilingual shape as a
+   * take's summary and under the same rule: `zh` always, `en` only when there is
+   * one. Read it through `captionFor` in lib/take.ts rather than reaching in.
+   *
+   * It describes THE PHOTO AND NOTHING ELSE. Tying it to the day's headlines was
+   * considered and dropped: the picture of the day has no connection to what the
+   * sources published, so that sentence would be filler of exactly the kind the
+   * summary prompts spend their length forbidding.
+   */
+  caption: { zh: string; en?: string };
+}
+
 export interface Digest {
   /** yyyy-mm-dd in TZ — also the filename. */
   date: string;
   generatedAt: string;
   /** The publication window actually scanned, both ISO 8601 UTC. */
   window: { from: string; to: string };
-  stats: { fetched: number; shown: number; folded: number };
+  /**
+   * TWO NUMBERS, not three. `folded` was a third — the count of articles that
+   * were summarized but shown as a bare title link instead of a card — and both
+   * the list and the section that rendered it are gone. Archived files still
+   * carry the key (always 0 in every one of them, measured across the whole
+   * archive); nothing reads it, and `JSON.parse` does not mind.
+   */
+  stats: { fetched: number; shown: number };
   sources: SourceStatus[];
   /**
    * EVERY article the window held, published or not — one list.
@@ -311,7 +366,9 @@ export interface Digest {
    * over the floor with no summary, which appeared in neither.
    */
   articles: Article[];
-  folded: FoldedArticle[];
+  /** The day's opening photograph. Optional in the same way `titleZh` is: its
+   *  absence is the whole signal, and a digest without one renders without one. */
+  photo?: DailyPhoto;
   /**
    * LEGACY, and no longer written. Digests archived before the lists were
    * merged carry their turned-down articles here; nothing renders them, and

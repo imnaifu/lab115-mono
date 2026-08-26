@@ -30,8 +30,16 @@
  * now answer with a redirect. Nothing there is worth keeping — the offline
  * fallback is the only thing this cache is for, and a fallback to a stale URL is
  * worse than a miss.
+ *
+ * v3: THE MARK CHANGED AND THE ICON URLS DID NOT. `favicon.svg` and the PNGs were
+ * redrawn while their filenames stayed put, and the icons were cache-first — so
+ * every browser that had ever opened the site kept serving the old logo from its
+ * v2 cache, indefinitely, with nothing on the page to reveal it. Bumping is what
+ * releases them. The strategy change below is what stops it recurring; this bump
+ * is still needed, because a v2 cache does not clear itself just because the new
+ * worker would have written it differently.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `daily-static-${VERSION}`;
 const PAGE_CACHE = `daily-pages-${VERSION}`;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];
@@ -47,7 +55,20 @@ const PAGE_LIMIT = 60;
 /** Hashed by the build, so the URL changes whenever the bytes do. */
 const IMMUTABLE = /^\/_next\/static\//;
 
-/** Our own icons and the manifest's siblings: small, and rarely changed. */
+/**
+ * Our own icons and the manifest's siblings.
+ *
+ * NETWORK-FIRST, NOT CACHE-FIRST, and the comment at the top of this file is why:
+ * cache-first is only ever correct for URLs that change with their contents, and
+ * these four do not — `favicon.svg` is `favicon.svg` forever. They were cache-first
+ * on the grounds that they are "rarely changed", which held right up until the mark
+ * was redrawn; then every returning reader kept the old logo and no amount of
+ * reloading dislodged it. See the v3 note above.
+ *
+ * Cheap to be honest about: four files, the largest 20KB, all of them served with
+ * HTTP caching anyway, and none of them on the path to first paint. The cache entry
+ * still exists — it is what answers when the train is in the tunnel.
+ */
 const ASSETS = /^\/(favicon\.svg|icon-\d+\.png|icon-maskable-\d+\.png|apple-touch-icon\.png)$/;
 
 /**
@@ -93,17 +114,25 @@ async function fromCacheFirst(request, cacheName) {
 }
 
 /**
- * Network-first, for documents — with the cached copy as the offline fallback.
+ * Network-first — with the cached copy as the offline fallback.
  *
  * The cache write is deliberately not awaited before the response is returned: the
  * reader should not wait on bookkeeping. The trim is fired the same way.
+ *
+ * TWO CALLERS, TWO CACHES. Documents go to PAGE_CACHE, which `trim` holds at
+ * PAGE_LIMIT; the icons go to STATIC_CACHE, which is four files and needs no
+ * ceiling. Keeping them apart is what stops an icon from occupying a page's slot
+ * and being evicted on a reader's fifty-first article.
  */
-async function fromNetworkFirst(request) {
-  const cache = await caches.open(PAGE_CACHE);
+async function fromNetworkFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
   try {
     const response = await fetch(request);
     if (response.ok) {
-      cache.put(request, response.clone()).then(() => trim(cache));
+      cache
+        .put(request, response.clone())
+        // Only the page cache can grow without bound.
+        .then(() => (cacheName === PAGE_CACHE ? trim(cache) : undefined));
     }
     return response;
   } catch (error) {
@@ -134,8 +163,15 @@ self.addEventListener("fetch", (event) => {
 
   if (POSTER.test(url.pathname)) return;
 
-  if (IMMUTABLE.test(url.pathname) || ASSETS.test(url.pathname)) {
+  // The only cache-first case left, and the one the rule was written for: these
+  // URLs carry a build hash, so a changed file is a changed address.
+  if (IMMUTABLE.test(url.pathname)) {
     event.respondWith(fromCacheFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  if (ASSETS.test(url.pathname)) {
+    event.respondWith(fromNetworkFirst(request, STATIC_CACHE));
     return;
   }
 
@@ -144,6 +180,6 @@ self.addEventListener("fetch", (event) => {
   // the manifest) goes to the network untouched, because serving a stale one
   // beside a fresh document is worse than not answering at all.
   if (request.mode === "navigate") {
-    event.respondWith(fromNetworkFirst(request));
+    event.respondWith(fromNetworkFirst(request, PAGE_CACHE));
   }
 });

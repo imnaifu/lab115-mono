@@ -1,4 +1,3 @@
-import { themedAccent } from "@/lib/accent";
 import { DigestBody, type CategoryGroup } from "./DigestBody";
 import {
   EndLink,
@@ -8,10 +7,10 @@ import {
   PAD,
   PageShell,
   SECTION,
-  SectionHead,
 } from "./Shell";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
+import { PhotoCard } from "./Photo";
 import { Subscribe } from "./Subscribe";
 import { signupOpen } from "@/lib/mail/resend";
 import { shownArticles } from "@/lib/store";
@@ -19,7 +18,6 @@ import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
 import { summaryText, totalReadingMinutes } from "@/lib/reading";
-import { sourceOf } from "@/lib/sources";
 import type { PublishedArticle, Digest } from "@/lib/types";
 
 /** Rendered from the date key, not from a Date, so the server's timezone can
@@ -28,40 +26,6 @@ function formatDate(date: string, lang: Lang): string {
   const [year, month, day] = date.split("-").map(Number);
   const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
   return strings(lang).date(year, month, day, weekday);
-}
-
-function FoldedList({ digest, lang }: { digest: Digest; lang: Lang }) {
-  if (digest.folded.length === 0) return null;
-
-  return (
-    <section className={`${SECTION} flex flex-col gap-3.5 ${PAD}`}>
-      <SectionHead
-        title={strings(lang).otherUpdates}
-        count={strings(lang).sectionCount(digest.folded.length)}
-      />
-      {/* `divide-y` replaces a `+` sibling rule: separators between rows, none
-          above the first or below the last. */}
-      <div className="divide-y divide-line rounded-card bg-page-deep px-5 py-4">
-        {digest.folded.map((item) => (
-          <a
-            className="flex items-baseline gap-2.5 py-2 text-sm"
-            key={item.url}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span
-              className="flex-none text-xs font-extrabold"
-              style={{ color: themedAccent(sourceOf(item.sourceId).accent) }}
-            >
-              {sourceOf(item.sourceId).name}
-            </span>
-            <span>{item.title}</span>
-          </a>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 export function EmptyState({ lang }: { lang: Lang }) {
@@ -176,6 +140,20 @@ export function DigestView({
         ) : null}
       </Masthead>
 
+      {/* Between the masthead and the tabs, which is the only place it can be:
+          it is the day's opening image, and below the tabs it would read as an
+          entry in whichever section happened to be showing.
+
+          No margin of its own — the masthead's `pb-8` is above it and the tab
+          row's `mt-8` is below it. Absent on every digest written before photos
+          existed, and on any day Wikimedia had nothing; both render as no card
+          at all rather than as a gap. */}
+      {digest.photo ? (
+        <div className={PAD}>
+          <PhotoCard photo={digest.photo} lang={lang} />
+        </div>
+      ) : null}
+
       {groups.length > 0 ? (
         <DigestBody
           articles={shown}
@@ -186,8 +164,6 @@ export function DigestView({
       ) : (
         <EmptyState lang={lang} />
       )}
-
-      <FoldedList digest={digest} lang={lang} />
 
       {/* Before the way onward, not after it: a reader who has just finished the
           day's cards is at the moment they might want tomorrow's delivered, and

@@ -8,11 +8,17 @@
     lib/poster-assets.ts, which Satori draws onto the share poster and the OG
     card, and icon-192/icon-512 in this directory.
 
-    IF THIS FILE CHANGES, TWO THINGS DO NOT FOLLOW IT ON THEIR OWN:
+    IF THIS FILE CHANGES, THREE THINGS DO NOT FOLLOW IT ON THEIR OWN:
       1. `POSTER_MARK` — a base64 copy of this artwork, minified. Nothing
          enforces that the two agree, and the copy has already been stale once.
       2. The PNGs here. Regenerate with:
            qlmanage -t -s 512 -o . mark.svg   (then rename, and again at 192)
+      3. `VERSION` in sw.js. THIS ONE HAS ALREADY BEEN MISSED: the mark was
+         redrawn, the icon filenames stayed, and the service worker was serving
+         them cache-first — so every returning reader kept the old logo out of
+         its own cache and nothing on the page said so. The icons are
+         network-first now, which prevents the next one, but a bump is still the
+         only thing that retires caches already written.
 
     See favicon.svg for what the mark is and for the three constraints that fix
     the leg's arc; this file is the same geometry with the colours nailed down

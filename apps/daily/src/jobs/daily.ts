@@ -7,6 +7,7 @@ import {
 import { fetchAll } from "@/lib/fetcher";
 import { mailDigest } from "@/jobs/mail";
 import { notify } from "@/lib/notify";
+import { dailyPhoto } from "@/lib/photo";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
 import { sourceOf } from "@/lib/sources";
 import {
@@ -27,7 +28,6 @@ import type { RawArticle } from "@/lib/fetcher";
 import type {
   Article,
   Digest,
-  FoldedArticle,
   ScoreFinding,
 } from "@/lib/types";
 
@@ -138,13 +138,9 @@ async function fetchAndScore(now: Date): Promise<WorkingDigest> {
     stats: {
       fetched: raw.length,
       shown: articles.filter((a) => a.score >= PUBLISH_MIN_SCORE).length,
-      folded: 0,
     },
     sources: statuses,
     articles,
-    // Kept in the contract and always empty: archived digests carry entries and
-    // the page still renders those.
-    folded: [],
   };
 }
 
@@ -378,9 +374,20 @@ async function publishFrom(
     };
   });
 
-  // Kept in the contract, always empty from here on: archived digests still
-  // carry entries and the page still renders them.
-  const folded: FoldedArticle[] = [];
+  /**
+   * The photograph, resolved BEFORE the literal below rather than inside it.
+   *
+   * `working.date`, not `now`: this step can run hours after the scoring (`npm
+   * run summary`) or against a date long past (the backfill), and the day being
+   * written is the day whose picture belongs on it — the same reasoning as the
+   * `window` field just below.
+   *
+   * No try/catch here, and that is not an oversight: `dailyPhoto` returns null
+   * for every failure it can have, precisely so that a slow Wikimedia cannot
+   * take a day's takes down with it. A photo is decoration; the takes are the
+   * product.
+   */
+  const photo = await dailyPhoto(working.date);
 
   const digest: Digest = {
     date: working.date,
@@ -394,11 +401,13 @@ async function publishFrom(
       // of it that reached the page.
       fetched: articles.length,
       shown: published.size,
-      folded: folded.length,
     },
     sources: working.sources,
     articles,
-    folded,
+    // Omitted rather than written as null, so a day with no photo looks the same
+    // as a day from before there were photos — one absent field, one branch in
+    // the renderer.
+    ...(photo ? { photo } : {}),
     // NO `rejected`. It is a legacy field — archived digests carry one and
     // `Digest` still declares it so they parse — and writing it here would put
     // every turned-down article in the file twice.

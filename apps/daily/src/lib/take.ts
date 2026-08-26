@@ -1,5 +1,5 @@
 import type { Lang } from "./lang";
-import type { PublishedArticle, SummaryText } from "./types";
+import type { DailyPhoto, PublishedArticle, SummaryText } from "./types";
 
 /**
  * The take a reader on `lang` should see, with ONE fallback.
@@ -26,4 +26,17 @@ export function summaryFor(
   lang: Lang,
 ): SummaryText {
   return (lang === "en" ? article.summary.en : undefined) ?? article.summary.zh;
+}
+
+/**
+ * The day photo's caption for a reader on `lang`, with the same single fallback
+ * and for the same reason as `summaryFor` above.
+ *
+ * `en` is absent, not empty, when Wikimedia shipped no English description for
+ * that file — and on those days a Chinese caption under an English-language page
+ * is still the right call: the sentence exists to say what the photograph shows,
+ * and the alternative is a picture with nothing under it.
+ */
+export function captionFor(photo: DailyPhoto, lang: Lang): string {
+  return (lang === "en" ? photo.caption.en : undefined) ?? photo.caption.zh;
 }

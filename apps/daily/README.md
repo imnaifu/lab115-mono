@@ -28,6 +28,7 @@ git pull ──→ 当天已有就退出 ──→ 拉全部源，筛出过去 2
 - `categories` —— 分几栏、每栏叫什么、边界怎么划
 - `fallbackCategory` —— 分不出来时落到哪一栏
 - `publishMinScore` —— 唯一一道分数门槛：低于它就不发布
+- `photoEnabled` / `photoCaptionMaxChars` —— 日页开头那张照片，开关和图说字数上限
 
 和 `src/lib/config.ts` 的分工：**编辑决策进 `config.json`，运维参数进 `config.ts`
 的常量**（cron、时区、时间窗口、模型）。环境变量只剩密钥，见「## 环境变量与常量」。
@@ -43,67 +44,21 @@ config.json: duplicate source id "heavybit"
 config.json: fallbackCategory "nope" is not one of the categories — ...
 config.json: source "alienchow" scrape.pattern is not a valid regex: ...
 config.json: source "alienchow" scrape.flags must include "g"
+config.json: photoEnabled must be true or false
+config.json: photoCaptionMaxChars must be a number between 10 and 200
 ```
 
 正则在 JSON 里存成 `pattern` + `flags` 两个字符串，加载时编译成 `RegExp`。
 
 ## 订阅源
 
-| 源 | Feed / 列表页 | 实测频率 | 正文来源 |
-|---|---|---|---|
-| XDA · AI Tools | `xda-developers.com/feed/ai-tools/` | ~5.9 篇/天（限 3） | 只有导语，抓原文页 |
-| Hacker News | `hnrss.org/frontpage?points=300` | ~3.1 篇/天（限 5） | 无，抓它指向的第三方站点 |
-| WESTENBERG | `joanwestenberg.com/feed` | ~1.1 篇/天 | 全文 1k~8.5k |
-| ByteCode.News | `bytecode.news/feed.xml` | ~0.6 篇/天 | 只有 ~260 字符摘要，抓原文页 |
-| Jake Gold | `jacob.gold/index.xml` | 近期约每周 1~2 篇 | 只有摘要且双重转义，抓原文页 |
-| Uncharted Territories | `unchartedterritories.tomaspueyo.com/feed` | ~1 篇/4 天 | 免费文全文；付费文只有 ~400 字符预览 |
-| the singularity is nearer | `geohot.github.io/blog/feed.xml` | ~1 篇/5 天 | Atom，全文 3k~5k |
-| Heavybit Library | `heavybit.com/library/**blog**/feed` | ~2.7 篇/月 | 全文 7k~17k |
-| Neciu Dan’s Blog | `neciudan.dev/rss.xml` | ~1 篇/周 | 全文，28k~74k 字符 |
-| Alienchow | `alienchow.dev/`（**爬列表页**） | ~5 篇/年 | 无 feed，抓原文页 |
-| Marginal Revolution | `marginalrevolution.com/feed` | ~5 篇/天（限 2） | 短链接贴，~1.6k |
-| Astral Codex Ten | `astralcodexten.com/feed` | ~0.8 篇/天 | 全文 ~10k |
-| Platformer | `platformer.news/rss/` | ~1 篇/3 天 | 全文 ~15k |
-| Construction Physics | `construction-physics.com/feed` | ~1 篇/3 天 | 全文 ~13k |
-| Nielsen Norman Group | `nngroup.com/feed/rss/` | ~1 篇/3 天 | 仅摘要，抓原文页 |
-| Austin Kleon | `austinkleon.com/feed/` | ~0.5 篇/天 | 仅摘要，抓原文页 |
-| Benedict Evans | `ben-evans.com/benedictevans?format=rss` | ~1 篇/月 | 全文 ~10k |
-| Nic Chan | `nicchan.me/feed.xml` | 停更中 | Atom，全文 5k~11k |
-| caolan.uk notes | `caolan.uk/feed/notes/` | ~4 篇/年 | 无，抓原文页 |
-| Not Boring | `notboring.co/feed` | ~1.7 篇/周 | 全文，中位 14k |
-| Noahpinion | `noahpinion.blog/feed` | ~4 篇/周 | 全文，中位 18k |
-| Lenny's Newsletter | `lennysnewsletter.com/feed` | ~6.4 篇/周 | 全文，中位 3.5k；3/20 是付费预览 |
-| Slow Boring | `slowboring.com/feed` | ~2.1 篇/天 | **一半是付费预览**，中位 2k |
-| 阮一峰的网络日志 | `ruanyifeng.com/blog/atom.xml` | ~1.5 篇/周 | 全文 5k~6.5k |
-| Conversable Economist | `conversableeconomist.com/feed/` | ~0.57 篇/天 | 全文 1.5k~12k |
-| Interconnects | `interconnects.ai/feed` | ~0.36 篇/天 | 全文 3.4k~14.5k |
-| Works in Progress | `worksinprogress.co/rss.xml` | ~0.21 篇/天 | 仅 ~108 字符导语，抓原文页 |
-| Craig Mod | `craigmod.com/index.xml` | ~0.21 篇/天 | 仅 ~590 字符导语，抓原文页 |
-| Of Dollars And Data | `ofdollarsanddata.com/feed/` | ~0.14 篇/天 | 全文 ~7.2k |
-| Import AI | `importai.substack.com/feed` | ~0.14 篇/天 | 全文 17k~18.5k |
-| Cal Newport | `calnewport.com/feed/` | ~0.10 篇/天 | 全文 ~4.8k |
-| Dan Luu | `danluu.com/atom.xml` | ~0.07 篇/天 | 全文，中位 71k（**会截断**） |
-| Musings on Markets | `aswathdamodaran.blogspot.com/feeds/posts/default` | ~0.06 篇/天 | 全文，中位 31k（**会截断**） |
-| One Useful Thing | `oneusefulthing.org/feed` | ~0.05 篇/天 | 全文 ~10.5k |
-| The Intrinsic Perspective | `theintrinsicperspective.com/feed` | ~0.07 篇/天 | 全文 ~14k |
-| The Conversation | `theconversation.com/us/articles.atom` | ~6.8 篇/天（限 2） | Atom，全文 ~7.8k |
-| Colossal | `thisiscolossal.com/feed/` | ~2.2 篇/天（限 2） | 全文 ~2.4k |
-| JSTOR Daily | `daily.jstor.org/feed/` | ~0.8 篇/天 | 全文 ~9.2k |
-| The Paris Review Daily | `theparisreview.org/blog/feed/` | ~0.4 篇/天 | 全文 ~12.7k |
-| The Honest Broker | `honest-broker.com/feed` | ~0.38 篇/天 | 全文 ~4k |
-| Noema Magazine | `noemamag.com/feed/` | ~0.37 篇/天 | 全文 17k~38k |
-| After Babel | `afterbabel.com/feed` | ~0.11 篇/天 | 全文 ~15k |
-| Dynomight | `dynomight.net/feed.xml` | ~0.08 篇/天 | 全文 ~9.7k |
-| Experimental History | `experimental-history.com/feed` | ~0.07 篇/天 | 全文 ~16k |
-| Ground Truths | `erictopol.substack.com/feed` | ~0.12 篇/天 | 全文 3k~13.7k |
-| Your Local Epidemiologist | `yourlocalepidemiologist.substack.com/feed` | ~0.36 篇/天 | 全文 ~8.4k |
-| Sensible Medicine | `sensible-med.com/feed` | ~0.99 篇/天（限 2） | 全文 4k~8.6k；**三成是付费预览** |
-| The Atlantic · Health | `theatlantic.com/feed/channel/health/` | ~0.5 篇/天 | 全文 ~8.2k |
-| Renaissance Periodization | `rpstrength.com/blogs/articles.atom` | ~0.12 篇/天 | Atom，全文 5k~12k |
-| Dwarkesh Podcast | `dwarkesh.com/feed` | ~0.18 篇/天 | 完整文字稿，中位 22.6k |
-| ChinaTalk | `chinatalk.media/feed` | ~0.69 篇/天（限 2） | 文字稿+分析，中位 32.8k |
+**源清单不在这里，在 `config.json` 的 `sources` 里。** 这里曾经有一张手写的表
+（feed 地址、实测频率、正文来源），它落后了 16 个源 —— 一份需要跟着每次加源手工同步的
+清单，第一次赶时间就会失效，而一份过期的源清单比没有清单更坏：它会让人照着它做判断。
+每个源的 `description` 本来就要求写它最近实际发了什么、毛病在哪（见 `user-config.ts`
+里 `RawSource.description` 的注释），那一行才是唯一会跟着源一起改的地方。
 
-几个需要知道的：
+下面这些是从实测里换来的、不属于任何单个源的结论，所以留在这里：
 
 - **Hacker News 走 hnrss.org 而不是官方 `/rss`**，因为只有第三方服务能按分数过滤，
   而没过滤的首页在这堆博客旁边基本是噪声。它的条目指向任意第三方站点，正文靠抓那些
@@ -355,6 +310,23 @@ engineering` 有时判成商业、有时人文），这是模型判断的正常�
     能在一百毫秒内回来，一闪而过的 spinner 读起来像出了故障而不像干完了活；后者是因为
     `router.refresh()` 不返回 promise 也不会 reject —— 断网时它不是失败，是永远不到，
     `isPending` 就一直是 true。
+
+- **`sw.js` 的缓存策略，以及一次栽在它上面的教训。** 这个 worker 存在只有两个理由：Chrome
+  不给没有 `fetch` handler 的页面提供安装，以及装了的 app 进隧道时不该显示浏览器报错页。
+  **它不是为了让站变快**，所以文档一律 network-first，缓存只当断网兜底。
+
+  规则写在文件顶部：**只有「内容变了 URL 也跟着变」的资源才配 cache-first。** 而图标曾经
+  以「小、很少改」为理由被放进了 cache-first 名单 —— `favicon.svg` 永远叫 `favicon.svg`。
+  于是换 logo 那次（改了 `favicon.svg`、`mark.svg` 和四个 PNG，没动 `sw.js`）**所有访问过
+  这个站的浏览器都从自己的 v2 缓存里继续吐旧 logo，而且页面上没有任何迹象**，怎么刷都不变。
+
+  修法是两件事，缺一不可：图标改成 network-first（防下次），`VERSION` 提到 `v3`（救这一批
+  —— 已经写好的 v2 缓存不会因为新 worker 换了策略就自己消失，`activate` 里那个 `KEEP`
+  才是唯一的失效机制）。顺带 `fromNetworkFirst` 加了 cacheName 参数：图标写 `STATIC_CACHE`
+  而不是 `PAGE_CACHE`，否则它们会占页面配额、在读者翻到第 61 篇时被 `trim` 挤掉。
+
+  `mark.svg` 顶部那份「改了它，这些不会自动跟着变」的清单因此从两条变成三条。第三条就是
+  `sw.js` 的 `VERSION`，而这次栽的正是它还没被写下来。
 
 - **「存成 App」（`InstallApp.tsx` + `lib/install.ts`）。** PWA 的地基本来就齐了（每种语言
   一份 manifest、带 `fetch` handler 的 `sw.js`、三个尺寸的图标、iOS 那两个 meta），缺的只是
@@ -673,9 +645,10 @@ release notes —— 写给已经在圈里的人看的东西 —— 一律压到
 > 本节后面提到的 35 / 40 都是**旧量纲（0~100）**上的数字，那时候分数是模型自己给的。
 > 换成五维求和之后量纲变成 5~50，两者不可比。
 
-`rejected` 特意不复用 `folded`：后者在页面上是「其他动态」那一栏，会显示出来。留这份
-记录是为了事后能查 —— 「那篇怎么没进来」有答案，评分规则哪天开始误伤好文章，在文件里
-会比在页面上先看出来。没有任何组件读它。
+`rejected` **不显示在页面上**，这就是它的全部意义。留这份记录是为了事后能查 ——
+「那篇怎么没进来」有答案，评分规则哪天开始误伤好文章，在文件里会比在页面上先看出来。
+没有任何组件读它。（它曾经拿 `folded` 作对照 —— 那是一份会显示出来的降级列表，
+现在整个概念都没了，见下面「版面」那节。）
 
 **曾经有两道**，是个阶梯：`publishMinScore` 决定进不进页面，`minScore` 决定上不上
 卡片，夹在中间的降级成一行。改成「全部出卡片」之后，「值不值得一张卡片」和
@@ -1287,14 +1260,172 @@ prompt 现在是两份：`SCORE_SYSTEM`（角色 + 打分三问）和 `SUMMARY_S
 某栏可能整栏都是低分行，打开就是一列光秃秃的链接；现在低分的根本不在页面上，
 存在的栏必然有卡片，直接取第一个。
 
-再往前一版还有个底部的「其余更新」折叠栏，早就删了；`Digest.folded` 字段保留但永远
-为空 —— 归档里的旧 digest 仍带着数据，页面照常渲染它们。
+再往前一版还有个底部的「其余更新」折叠栏。**它和 `folded` 这整套东西现在彻底删干净了**：
+`FoldedArticle` 类型、`Digest.folded` 字段、`stats.folded` 计数、`FoldedList` 组件、
+`otherUpdates` 那两条文案，全没了。
+
+字段之前一直留着，理由是「归档里的旧 digest 仍带着数据」。**删之前量了一遍：全部 7 天，
+`folded` 全是空数组，`stats.folded` 全是 0** —— 那个理由早就不成立了，留下的只是一个
+需要每个读代码的人绕过去的空壳。归档 JSON 文件里那两个键还在，但 `JSON.parse ... as Digest`
+不校验多余的键，所以旧文件照常 parse，只是再没人读它们。
+
+`stats` 因此从三个数字变成两个：`fetched` 和 `shown`。
 
 源配额（原来 HN 3、Marginal Revolution 2）**已全部删除**。当时加它是因为纯按分数排序时
 HN 靠数量霸榜；现在分类本身就限制了每栏的卡片数，高产源最多在自己那栏占 3 张卡，
 其余自动降为行。
 
-`Digest.folded` 字段保留但永远为空 —— 归档里的旧 digest 仍带着数据，页面照常渲染它们。
+## 开头那张照片
+
+日页报头下面一张图版：照片撑满宽度、贴着外壳出血，下面是一句中文图说和一行署名。
+**只在日页**，首页的天列表、海报、邮件、OG 卡片都没有。
+
+### 版式：外壳还是卡片，内部不是
+
+第一版就是照文章卡片做的 —— 80px 方图在左、文字在右。**渲染出来才看清问题：它和它下面
+第一张文章卡片长得一模一样**，同样底色、同样圆角、同样「小方图 + 文字」，在「20 篇新文章」
+底下紧跟着出现，读者没有理由不把它当成今天的第一条内容。
+
+现在保留 `rounded-card bg-card shadow-soft` 这层外壳（它是全站的材质），但内部结构反过来：
+照片横跨整个宽度、贴到外壳边缘，文字在照片下面。同样的材质，不可能被当成一条内容。
+
+**不裁剪，任何情况都不裁。** 实测连续 14 天的每日精选图：6996×2516、3271×3271、
+3919×6064 都出现过，横图 10 天、方图 2 天、竖图 2 天。任何固定长宽比配 `object-cover`
+都意味着每天在裁一张人工评选过的照片，而裁掉的往往正是构图的一部分 —— 08-26 那张石版画
+被 16:9 裁掉的正是底部那行雕版题字。
+
+`max-h-[520px]` 是**版面高度的封顶，不是裁剪**：`w-auto max-w-full` 让两个约束自己解 ——
+横图和方图（86%）先撞到宽度，撑满出血；竖图先撞到高度，按比例整体缩小并居中，两侧露出
+外壳自己的底色。没有 `object-cover`，一个像素都没丢。
+
+为什么是固定 px 而不是 `70vh`：这个封顶存在的理由是别让照片把当天第一篇文章挤出首屏，
+而同一个文件在竖屏手机、横屏手机、桌面窗口上应该是同一块版 —— `70vh` 会让它在一种情况下
+是 200px、另一种情况下是 800px。
+
+### 图源：维基共享资源的每日精选图
+
+`api.wikimedia.org/feed/v1/wikipedia/en/featured/YYYY/MM/DD`，一次调用拿全 —— 缩略图、
+原图尺寸、作者、许可、Commons 文件页、英文描述、多语言结构化图说。**不用第二次调
+`imageinfo`**（第一版以为要，实测 `image.license.type` 就在 featured 的响应里）。
+
+**选它的全部理由是不用 key。** 实测过的四个候选：
+
+| 源 | 要 key | 每天换 | 自带描述 | 实测 |
+|---|---|---|---|---|
+| 维基共享资源每日精选图 | 否 | 是 | 有，且常带当天日期的历史锚点 | 人工评选，带作者/许可/拍摄地 |
+| Pexels curated | 免费 key | 编辑精选滚动 | `alt` 是现成的一句英文图说 | 最「好看」；匿名和假 key 现在都放行，但那不可依赖 |
+| NASA APOD | DEMO_KEY 可跑 | 是 | 917 字符专业解说 | 主题永远是天文，且有些天带 `copyright` 要逐天判断 |
+| Openverse | 否 | 按关键词搜 | 只有标题 | 搜 `data center` 只有 240 条，命中是 2018 年的 Flickr 图 |
+
+Unsplash 和 Pexels 更好看，但都要一个凭证，而凭证是会在某个环境里缺失、过期、或者早上
+七点被限流而没人看着的东西。这张图是装饰，不值得为它引入一个能失败的新维度。
+
+**它不是「最近的照片」。** 8-25 那张拍于 2023 年。把它和当天绑住的是描述里的日期锚点 ——
+「1875 年 8 月 25 日 Matthew Webb 首次横渡英吉利海峡抵达法国」、「今天是乌克兰独立日」、
+「1843 年的这一天起火」。那是维基自己写的事实，不是我们编的，这也是它被允许出现在图说里的
+唯一理由。
+
+### 两个拨盘，其余留在代码里
+
+config.json：
+
+- **`photoEnabled`** —— 关掉整个功能。**false 停的是抓取，不是渲染** —— 归档里已经带了
+  `photo` 的日子照样显示它，因为那天确实有图，关掉这个开关不等于改写历史。这和
+  `sources[].enabled` 是同一个语义。省下的是每跑一次一个 HTTP 请求加最多一次模型调用。
+- **`photoCaptionMaxChars`** —— 图说字数上限，默认 60。它其实是个版面数字（80px 方图旁边
+  一行的宽度），但「这句话能有多长」是看着页面回答的问题，所以放在 config.json 里，
+  和摘要那几个预算并排。校验范围 10~200。
+
+**endpoint、User-Agent、超时留在 `lib/photo.ts` 里，是故意的** —— 它们是运维参数，
+按 README 开头那条分工不进 config.json。换 endpoint 更不是配置项：换一个 feed 就要换一套
+解析（RSS 1.0 那条教训在订阅源那节）。
+
+### 什么时候抓
+
+**抓取在 job 里，不在渲染时。** `publishFrom()` 写 JSON 之前调一次 `dailyPhoto(working.date)`，
+结果连同图说一起写进当天的 JSON；页面只是把 `digest.photo` 读出来渲染，**不发任何请求**。
+必须如此：页面是从磁盘上的 JSON 渲染的，如果放在渲染时抓，明年重新打开一篇归档会拿到
+明年那天的图 —— 而页面上任何地方都看不出它换过。
+
+用的是 `working.date` 而不是 `now`：`npm run summary` 可能在打分几小时后才发布，backfill 跑的
+是很久以前的日期，两者都该拿被写的那一天的图。这和 `window` 字段是同一个理由。
+
+**`npm run once` 会重新抓，也会重新写一遍图说** —— 它不带 `--skip-if-published`，手动重跑
+本来就是这个入口的用途。同一张照片连抓三次，中文图说是三个不同的版本（实测 46 / 52 / 40 字），
+因为每次都是一次新的模型调用；但一天只抓一次并落盘，所以**页面上那一天的图说是固定的，
+不会每次刷新都变**。定时任务那条路带 `skipIfPublished`，当天已发布就整个跳过，连图都不抓。
+
+### 三个实测出来的坑
+
+- **API 自己报的缩略图尺寸是错的。** 8-25 那张 `thumbnail.width/height` 说 640×598，
+  而它给的 `thumbnail.source` 实际返回 **960×897**。宽度从 URL 的 `960px-` 前缀读（那是
+  维基缩略图路径的契约），高度按原图比例算（960 × 4700/5030 = 897，和文件实际一致）。
+- **公有领域的图没有 `license.url`。** 维基把它们报成 `{ type: "Public domain", code: "pd" }`,
+  没有许可书可链。第一版的检查要求「作者 + 许可名 + 许可链接 + 文件页 + 图」五项全有，
+  于是**把 8-26 那张 1843 年的石版画拒了 —— 理由是它太自由了**。现在 `license.url` 可选，
+  组件里没有它就把许可名渲染成纯文本而不是空链接。
+- **`description.text` 带未解码的 HTML 实体。** 8-26 那句是 `published by Ackermann &amp; Co.`。
+  `stripHtml` 那一半它做了（没有标签），实体这一半没做。所以 `fetcher.ts` 的
+  `decodeEntities` 被 export 出来给这里用 —— 抄第二份就是第二个会落后的地方。
+
+### 只取缩略图，不取原图
+
+两个理由，第二个才是关键：原图是 5030×4700 这个量级，而**每日精选图偶尔是 SVG 或视频**，
+维基的缩略图一律转成位图 JPEG/PNG。取缩略图把格式判断整个绕开了，不用在这里再抄一遍
+`posterCover()` 那套 mime 白名单。
+
+图**热链 upload.wikimedia.org，不下载进存储仓库** —— 那个仓库是 JSON 存储层，一天一张图会
+让它无界增长，而维基的 CDN 比我们稳。
+
+### 图说只说照片，不说今天
+
+图说描述的是照片本身：拍的是什么、在哪、什么时候、谁拍的。**不写「这张照片呼应今天关于
+AI 的讨论」这类话**，因为每日精选图和当天收进来的文章确实没有关系，那句话必然是空话 ——
+正是摘要 prompt 花了很多篇幅在禁的东西（见「打分」那节 substance 1-2 档的 selection only）。
+
+中文图说优先取维基自己的 `structured.captions.zh` / `zh-hans`（免费且已是简体），
+**没有才调模型**。实测多数情况会走模型：8-25 那张有 en/fr/ru/hi/pa/sa 和 `zh-hant`，
+偏偏没有简体。繁转简不引入转换表，让模型改写更可靠也顺带润色。英文侧直接用
+`description.text`，不调模型 —— 它比 `structured.captions.en` 长，而且锚点在它里面。
+
+**长度实测：4 天里 3 天在 60 字以内（24、43、46 字），最差 70 字。**
+prompt 第一版只给了上限没给取舍规则，于是「只译不添」和字数限制在长描述上直接冲突，
+模型选了忠实：8-26 那张 100 字、8-22 那张 73 字。加了一节「英文太长的时候删什么」之后
+降到 46 和 70 —— 规则是照片里看得见的东西和日期锚点留下，**照片拍下之后发生的事删掉**
+（「四小时内烧成残骸」「凌晨三点弹药库爆炸」不在照片里，读者对着图找不到它）。
+
+剩下那 70 字是瑞士铁路那张：型号 `SBB Ce 6/8 II 14253` + 班次 31066 + 桥名 + 两个地名，
+最难压的一类。**超限只 warn 不拒** —— 图说是这张照片唯一的文字，丢了它照片就成了没有理由
+存在的装饰。这和「每段 90 字是唯一硬约束，模型基本守得住但不绝对」是同一个处理方式。
+
+### 署名是许可义务，不是礼貌
+
+多数每日精选图是 CC BY-SA 并且报 `AttributionRequired: true`。所以作者、来源、许可三者
+都必须可见，有许可书的还要能点到。`lib/photo.ts` 缺任何一项就整张不用 —— 决定放在那里，
+组件里就不需要一个「部分署名」的分支。
+
+**署名不截断，多长都不截。** 8-26 那张署了四个人（`Thomas Goldsworthy Dutton / Edward
+Duncan / George Pechell Mends / Adam Cuerden`），换行是正确结果，省略号是「许可条件履行了
+一半」。但它**是 11px 而不是 `text-xs`**：渲染出来那行署名占两行、图说也占两行，同一个
+字号下两者读起来像卡片的两个对等部分 —— 义务喊得和读者真正要看的那句话一样响。降一档
+加 `leading-snug`，它完整、可读，并且回到了下面。
+
+### 抓不到就没有图，那不是错误
+
+`dailyPhoto()` 对它所有的失败都返回 `null`：超时、维基当天没有 `image`、缺署名字段、
+算不出尺寸。日页拿不到 `photo` 就整块不渲染，**没有占位、没有报错、没有重试**。
+job 里那次调用也不包在任何能失败整跑的东西里 —— 照片是装饰，摘要才是产品。
+
+字段是可选的（`Digest.photo?`），所以这个功能之前写的每一份归档 JSON 都照常 parse，
+在页面上表现成「那天没有图」，和维基当天没图是同一种表现。这一点和 `titleZh`、
+`summary.en` 是同一个约定：**缺席本身就是全部信号，不写空值。**
+
+### 为什么不进海报和邮件
+
+- **海报**是把图裁切、叠字、合成进一张竖版长图，那更像衍生作品 —— 用 CC BY-SA 的图就意味着
+  那张海报也得以 CC BY-SA 发布，而海报是这个站主要的分享物。要给海报配图，得先换一个
+  许可干净的图源（Unsplash / Pexels），那是另一个决定。
+- **邮件**里图片走 Gmail 的代理、不参与深色模式、尺寸另算，是独立一堆坑。
 
 ## 没有跨天去重，所以窗口必须严丝合缝
 

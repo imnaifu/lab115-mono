@@ -80,6 +80,19 @@ interface RawConfig {
   /** Ceiling on ONE paragraph. Deliberately not derived from summaryMaxChars —
    *  see PARA_MAX in summarize.ts for why the two move independently. */
   summaryParaMaxChars: number;
+  /**
+   * Whether the day page opens on a photograph — Wikimedia's picture of the day.
+   *
+   * FALSE STOPS THE FETCH, NOT THE RENDERING, which is the same distinction
+   * `sources[].enabled` draws: an archived digest that already carries a `photo`
+   * keeps showing it, because that day did have one and repainting history is
+   * not what turning this off means. It saves one HTTP request and at most one
+   * model call per run.
+   */
+  photoEnabled: boolean;
+  /** Ceiling on the photo's caption, in Chinese characters. Small because it is
+   *  one line beside an 80px square — see CAPTION_MAX_CHARS in summarize.ts. */
+  photoCaptionMaxChars: number;
   categories: RawCategory[];
   fallbackCategory: string;
   sources: RawSource[];
@@ -143,6 +156,20 @@ function validate(config: RawConfig): RawConfig {
         `summaryMaxChars (${config.summaryMaxChars}) — at or above it the ` +
         `per-paragraph budget stops constraining anything`,
     );
+  }
+  if (typeof config.photoEnabled !== "boolean") {
+    fail("photoEnabled must be true or false");
+  }
+  // The floor is what a caption needs to name a subject and a place; the ceiling
+  // is where a caption stops being one. Neither is derived from the summary
+  // budgets: this sentence is sized by a line of the card, not by how long a take
+  // may run.
+  if (
+    !Number.isFinite(config.photoCaptionMaxChars) ||
+    config.photoCaptionMaxChars < 10 ||
+    config.photoCaptionMaxChars > 200
+  ) {
+    fail("photoCaptionMaxChars must be a number between 10 and 200");
   }
   if (!Array.isArray(config.categories) || config.categories.length === 0) {
     fail("categories must be a non-empty array");

@@ -130,8 +130,13 @@ const NAMED_ENTITIES: Record<string, string> = {
  * One pass over every entity, so `&amp;lt;` decodes to the literal `&lt;`
  * rather than being decoded twice into `<`. Numeric forms have to accept
  * leading zeros — XDA emits `&#039;`, not `&#39;`.
+ *
+ * EXPORTED for lib/photo.ts, which has the same problem from a different
+ * direction: Wikimedia's `description.text` is already stripped of tags but
+ * still carries entities (`published by Ackermann &amp; Co.`). A second copy of
+ * this table there would be a second place for it to fall behind.
  */
-function decodeEntities(input: string): string {
+export function decodeEntities(input: string): string {
   return input.replace(
     /&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|([a-zA-Z]+));/g,
     (match, dec: string, hex: string, name: string) => {
