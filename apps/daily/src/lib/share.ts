@@ -92,14 +92,26 @@ export const POSTER_HEIGHT = 1440;
  * The lockup's text metrics, hoisted out of POSTER because `markSize` is derived
  * from them and an object literal cannot read its own fields.
  *
- * LINE is Satori's default line box: nothing in the lockup sets `lineHeight`, so
- * a row is 1.2x its font size — the same factor POSTER_FRAME already assumes for
- * the domain chip.
+ * BOTH ROWS ARE DRAWN AT `lineHeight: 1`, and that is what lets the arithmetic
+ * below describe what the eye actually sees.
+ *
+ * It used to be Satori's default 1.2, with `markSize` summing the two LINE BOXES.
+ * The boxes did add up — and the mark still did not line up with the words, by 6px
+ * in Chinese and 12px in English. A line box is the font's ascent and descent, not
+ * the glyphs: at 1.2 there is ~6px of leading above a 58px CJK row and ~9px below,
+ * so `alignItems: center` put the mark's top edge above the wordmark's cap and its
+ * bottom edge above the tagline's, which is the one thing a lockup must not do.
+ * Measured off a rendered poster rather than argued from the spec.
+ *
+ * At `lineHeight: 1` a row is its own em box, the glyphs very nearly fill it, and
+ * the mark's edges land on the text's. THE GAP HAD TO GROW TO PAY FOR IT: at 1.2
+ * the two rows were 28px apart on the canvas even though this constant said 9,
+ * because each box brought its own leading. 18 is what keeps the optical gap close
+ * to where it was now that nothing else is padding it.
  */
-const LINE = 1.2;
 const BRAND_SIZE = 58;
 const TAGLINE_SIZE = 26;
-const TAGLINE_GAP = 9;
+const TAGLINE_GAP = 18;
 
 export const POSTER = {
   /** Canvas edge → card. */
@@ -120,22 +132,24 @@ export const POSTER = {
   /**
    * The lockup: the mark, and the wordmark beside it.
    *
-   * THE MARK IS EXACTLY AS TALL AS THE COLUMN NEXT TO IT — the wordmark's line,
-   * the gap, and the tagline's line — rather than the flat 70 it was, which was
-   * the wordmark's line alone and left the mark floating against the middle of a
-   * two-line block. Computed rather than written down so that changing either
-   * font size moves the mark with it; the alternative is a number that is right
-   * on the day it is typed.
+   * THE MARK IS EXACTLY AS TALL AS THE COLUMN NEXT TO IT — the wordmark's em box,
+   * the gap, and the tagline's — rather than the flat 70 it was, which was the
+   * wordmark alone and left the mark floating against the middle of a two-line
+   * block. Computed rather than written down so that changing either font size
+   * moves the mark with it; the alternative is a number that is right on the day
+   * it is typed.
+   *
+   * The sum is the plain one only because both rows are drawn at `lineHeight: 1`.
+   * See the note on BRAND_SIZE above for what happened when they were not.
    */
-  markSize:
-    Math.round(BRAND_SIZE * LINE) + TAGLINE_GAP + Math.round(TAGLINE_SIZE * LINE),
+  markSize: BRAND_SIZE + TAGLINE_GAP + TAGLINE_SIZE,
   markGap: 23,
   brandSize: BRAND_SIZE,
   /**
    * The tagline under the wordmark, on the identity card only.
    *
    * 26 is the domain chip's size, which is the poster's own smallest step, and
-   * the gap is the same 9 the TL;DR label uses against its thesis. Deliberately
+   * the gap is measured rather than borrowed — see BRAND_SIZE. Deliberately
    * NOT scaled from the page's 12/14px subtitle: the page sets it against a
    * 36px wordmark and this one sits under a 58px one, so copying the ratio
    * would put it at 19px — under the size at which anything on this canvas is

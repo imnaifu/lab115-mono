@@ -127,7 +127,9 @@ export function Masthead({
           needed a class in the stylesheet, and the whole point of that class
           was to hold these two offsets. The top padding above is what the
           wordmark needs to clear them. */}
-      <div className="absolute -top-26 -left-21 -z-10 h-50 w-65 rounded-blob bg-ink" />
+      {/* `bg-blob`, NOT `bg-ink` — see the token in index.css for what inverting
+          this one did to the dark page. */}
+      <div className="absolute -top-26 -left-21 -z-10 h-50 w-65 rounded-blob bg-blob" />
       <div className="absolute -top-14 -right-11 -z-10 size-42 rounded-full bg-orange" />
 
       {/* The controls row: which language the site is in, and whether it lives on

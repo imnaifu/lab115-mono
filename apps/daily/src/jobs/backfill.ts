@@ -7,7 +7,6 @@ import {
   shownArticles,
   writeDigest,
 } from "@/lib/store";
-import { dropPosters } from "@/lib/poster-store";
 import type { Digest } from "@/lib/types";
 
 /**
@@ -147,25 +146,17 @@ export async function backfillEnglish(
     result.changed.push(date);
 
     /**
-     * The English posters of exactly the articles that changed, thrown away.
+     * NOTHING TO INVALIDATE. This used to drop the `/share/en/…` posters of the
+     * articles it had just rewritten, and it was REQUIRED rather than an
+     * optimisation: the disk cache was keyed date + article + language + part and
+     * was consulted before anything was drawn, so an English poster drawn from the
+     * Chinese take — back when that was all there was — would have been served
+     * forever, and the English page would have shared a Chinese image.
      *
-     * REQUIRED, not an optimisation. The poster cache is keyed date + article +
-     * language + part and is consulted before anything is rendered, so the
-     * `/share/en/…` files sitting there — drawn from the Chinese, back when that
-     * was all there was — would be served forever, and the English page would
-     * share a Chinese image.
-     *
-     * DROPPED RATHER THAN REDRAWN, since nothing pre-renders posters any more:
-     * the next reader to open that article's share sheet misses the cache and gets
-     * one drawn from the English take that was just written. See `dropPosters` for
-     * why it deletes by prefix rather than by part.
-     *
-     * The Chinese ones are left alone: nothing this job wrote can change them.
+     * That cache is gone (see lib/poster-serve for why), so a poster is now drawn
+     * from whatever the digest says at the moment it is asked for. The worst this
+     * backfill can leave behind is an hour of `cache-control`.
      */
-    const dropped = await dropPosters(date, english.keys(), ["en"]);
-    if (dropped) {
-      console.log(`[daily] backfill — ${date}: ${dropped} stale poster(s) dropped`);
-    }
     console.log(`[daily] backfill — ${date} written (${relPathFor(date)})`);
   }
 

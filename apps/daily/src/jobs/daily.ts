@@ -17,7 +17,6 @@ import {
   type WorkingArticle,
   type WorkingDigest,
 } from "@/lib/store";
-import { prunePosters } from "@/lib/poster-store";
 import {
   scoreAll,
   summarizeSurvivors,
@@ -427,15 +426,10 @@ async function publishFrom(
    * behind — see PREPARE_WAIT_MS in ShareButton. So the work is now paid for by
    * the shares that happen rather than by the ones that might.
    *
-   * What is left is the RETENTION, which lived at the end of that step: this is a
-   * mounted volume and nothing else ever deletes from it. It stays on the daily
-   * run because that is the only thing here with a schedule.
+   * THE RETENTION SWEEP THAT USED TO CLOSE THIS STEP IS GONE TOO, along with the
+   * disk cache it swept. Nothing this job does touches a poster now; they are
+   * drawn per request and cached only by `cache-control`. See lib/poster-serve.
    */
-  const droppedDays = await prunePosters(digest.date);
-  if (droppedDays) {
-    console.log(`[daily] posters: ${droppedDays} old day(s) pruned`);
-  }
-
   await notify(digest);
 
   /**

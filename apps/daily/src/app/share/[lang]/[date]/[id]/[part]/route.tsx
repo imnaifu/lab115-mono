@@ -8,13 +8,14 @@ export const dynamic = "force-dynamic";
 /**
  * One image of an article's share, as a PNG: `/share/zh/2026-08-14/ff36a72e/1.png`.
  *
- * THE LAYOUT IS NOT HERE, and neither is the caching. The layout is lib/poster.tsx
- * — the daily job renders every image of every article the moment a digest is
- * written, and two copies of that JSX would drift on the first edit. The
- * cache-or-render step is lib/poster-serve.ts, because a cache miss is a policy
- * decision — render it and keep it — rather than an HTTP one.
+ * THE LAYOUT IS NOT HERE. It is lib/poster.tsx, and two copies of that JSX would
+ * drift on the first edit. Finding the article and drawing it is
+ * lib/poster-serve.ts — one policy decision, which is that a request naming no
+ * article is a 404 rather than a blank canvas.
  *
- * What is left here is the HTTP: which part was asked for, and the headers.
+ * What is left here is the HTTP: which part was asked for, and the headers. THAT
+ * NOW INCLUDES THE ONLY CACHING THERE IS — see `png` below. The disk cache these
+ * notes used to describe is gone; lib/poster-serve says why.
  *
  * A route handler rather than Next's `opengraph-image` file convention, because
  * that convention gives one image per page and a share is a set of them.
@@ -37,8 +38,9 @@ export async function GET(
   },
 ) {
   const { lang, date, id, part } = await params;
-  // The poster is written in the language of the page that linked to it — see the
-  // note on the cache key in lib/poster-store.ts.
+  // The poster is written in the language of the page that linked to it: the
+  // brand, the meta line and the choice of headline all differ, so /zh and /en
+  // are two different images of the same article.
   const posterLang = isLang(lang) ? lang : DEFAULT_LANG;
 
   const bytes = await posterBytes(date, id, posterLang, posterPart(part));
@@ -67,6 +69,11 @@ function png(bytes: Buffer): Response {
       "content-type": "image/png",
       "content-length": String(bytes.byteLength),
       /**
+       * AN HOUR, AND IT IS NOW THE ONLY CACHE A POSTER HAS. It was one layer of
+       * two; the disk cache under it was deleted because an entry there never
+       * expired, so a change to the layout went on shipping the old drawing for
+       * up to thirty days. An hour is the whole of the staleness now.
+       *
        * An hour, because each part is fetched TWICE per share: the sheet shows it
        * as an `<img>` and then hands the same bytes to `navigator.share`. Next's
        * default for a dynamic route is `max-age=0, must-revalidate` with no

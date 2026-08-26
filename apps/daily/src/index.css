@@ -59,6 +59,23 @@
      grounds and it holds against each; swapping it would be swapping identity. */
   --color-orange: #efa050;
 
+  /**
+   * The masthead's ink-coloured blob — and the SECOND colour that does not invert,
+   * for the same reason the orange above does not.
+   *
+   * IT USED TO BE `bg-ink`, which is how it turned into glare. `--color-ink`
+   * inverts to #f3ede1, so on the dark page the shape came out as 200×260 of warm
+   * off-white — brighter than anything else on the screen, and drawing the eye to
+   * the one thing up there with nothing to say. The mistake was treating a
+   * decorative shape as if it were text: ink inverts because text has to stay
+   * legible against its ground, and a blob has nothing to be legible about.
+   *
+   * Fixed at the light side's ink, so the light page is unchanged to the pixel and
+   * the dark one gets a soft indigo lift out of its own background instead. The
+   * pair of shapes now behave the same way: neither follows the theme.
+   */
+  --color-blob: #3b3563;
+
   /* Hairline rules and card borders: the ink of the other side, at the same
      weight. */
   --color-line: light-dark(rgb(59 53 99 / 0.14), rgb(243 237 225 / 0.14));

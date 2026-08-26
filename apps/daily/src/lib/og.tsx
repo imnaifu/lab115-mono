@@ -42,12 +42,16 @@ const ORANGE = "#efa050";
 /**
  * The lockup's text metrics, hoisted out of CARD because `markSize` is derived
  * from them and an object literal cannot read its own fields. The mirror of the
- * same four constants in lib/share.ts, at this canvas's smaller scale.
+ * same three constants in lib/share.ts, at this canvas's smaller scale.
  */
-const LINE = 1.2;
 const BRAND_SIZE = 50;
 const TAGLINE_SIZE = 24;
-const TAGLINE_GAP = 8;
+/**
+ * 14, and it is the em-box gap rather than the line-box one — both rows below are
+ * drawn at `lineHeight: 1`. The mirror of the same change in lib/share.ts, which
+ * carries the whole argument and the measurements behind it.
+ */
+const TAGLINE_GAP = 14;
 
 const CARD = {
   padX: 72,
@@ -58,13 +62,14 @@ const CARD = {
   chipTracking: 3,
   metaSize: 26,
   /**
-   * THE MARK IS AS TALL AS THE TWO LINES BESIDE IT — the wordmark's line, the
-   * gap, and the tagline's line — the same lockup the poster draws, and derived
-   * the same way so that changing a font size moves the mark with it. See
-   * POSTER.markSize in lib/share.ts for the arithmetic and for why `LINE` is 1.2.
+   * THE MARK IS AS TALL AS THE TWO LINES BESIDE IT — the wordmark's em box, the
+   * gap, and the tagline's — the same lockup the poster draws, and derived the
+   * same way so that changing a font size moves the mark with it. See
+   * POSTER.markSize in lib/share.ts for the arithmetic, and the note above it for
+   * why this is a plain sum and why both rows have to set `lineHeight: 1` for it
+   * to be one.
    */
-  markSize:
-    Math.round(BRAND_SIZE * LINE) + TAGLINE_GAP + Math.round(TAGLINE_SIZE * LINE),
+  markSize: BRAND_SIZE + TAGLINE_GAP + TAGLINE_SIZE,
   markGap: 20,
   brandSize: BRAND_SIZE,
   brandGap: 38,
@@ -87,10 +92,56 @@ const CARD = {
  */
 const HEADLINES = 3;
 
-/** How wide one character is, in the full-width units below. Mirrors `charUnits`
- *  in lib/share.ts, which is private to that module's line breaker. */
+/**
+ * Manrope 700's advance widths, grouped, in em — MEASURED, not assumed.
+ *
+ * IT USED TO BE A FLAT 0.5 FOR EVERY LATIN CHARACTER, mirroring `charUnits` in
+ * lib/share.ts, and that is what made a truncated headline STILL WRAP: 「A New
+ * Framework for How the Brain Compresses Our Noisy World」 came back with an
+ * ellipsis on it and then took two lines anyway. A flat half-em is the average of
+ * lower-case body copy; a headline is Title Case, and Manrope's capitals run
+ * 0.63–0.98em. Over the site's own archive the flat figure was out by anywhere
+ * from −5.7% to +9.8%, and the negative half of that range is a line that
+ * overruns its column.
+ *
+ * HOW THESE NUMBERS WERE GOT: each character was drawn ten times and forty times
+ * at 34px/700 through the same Satori and the same Manrope subset this file
+ * loads, and the advance is the difference in ink width over the thirty extra
+ * copies — which cancels the side bearings exactly. The groups are the resulting
+ * spread cut where it has natural gaps, each carrying its group's mean.
+ *
+ * Against the whole archive the grouped figures over-estimate by 0.2% to 4.0% and
+ * never under-estimate, which is the right side to be wrong on: over-estimating
+ * costs a character of headline, under-estimating costs the layout.
+ *
+ * THE WEIGHT IS PART OF THE MEASUREMENT. These are 700, which is what the
+ * headline below is set in. `charUnits` in lib/share.ts measures the poster's
+ * body copy at 500 and keeps its own flat figure, which is honest there — that is
+ * lower case, and its `LINE_BUDGET` holds 1.4 units back besides.
+ */
+const LATIN_EM: [string, number][] = [
+  ["ijlI’'‘,./", 0.29],
+  ["1frt-“”\";:!()[]*", 0.42],
+  ["23457acksvxyzEFJL–?+", 0.56],
+  ["0689bdeghnopquBKPRSTVXYZ&$", 0.64],
+  ["ACDGHNOQU=", 0.72],
+  ["mwMW—%#@", 0.87],
+  [" ", 0.2],
+];
+
+/**
+ * How wide one character is, in the full-width units below.
+ *
+ * A CJK glyph is one unit by definition — the unit IS its em — and that half was
+ * never wrong. Everything else is looked up above, and a Latin character the
+ * table does not name falls back to 0.6, which is the middle of the range rather
+ * than the average of the alphabet: an unknown glyph is more likely to be a wide
+ * symbol than a narrow one.
+ */
 function charUnits(ch: string): number {
-  return /[　-〿㐀-鿿豈-﫿＀-￯]/.test(ch) ? 1 : 0.5;
+  if (/[　-〿㐀-鿿豈-﫿＀-￯]/.test(ch)) return 1;
+  for (const [group, em] of LATIN_EM) if (group.includes(ch)) return em;
+  return 0.6;
 }
 
 /**
@@ -110,9 +161,18 @@ function oneLine(text: string, budget: number): string {
   return text;
 }
 
-/** The column a headline is drawn into, in `headlineSize` units. */
+/**
+ * The column a headline is drawn into, in `headlineSize` units.
+ *
+ * Half a unit is held back, the same insurance `LINE_BUDGET` in lib/share.ts
+ * holds 1.4 back for and against the same failure: a line that comes out slightly
+ * too long does not get clipped, it WRAPS, and a wrapped headline pushes the
+ * stack under it. The measurement above is accurate to a few percent on real
+ * headlines and this covers the few percent.
+ */
 const HEADLINE_BUDGET =
-  (OG_WIDTH - CARD.padX * 2 - CARD.ruleWidth - CARD.ruleGap) / CARD.headlineSize;
+  (OG_WIDTH - CARD.padX * 2 - CARD.ruleWidth - CARD.ruleGap) / CARD.headlineSize -
+  0.5;
 
 export interface OgCard {
   lang: Lang;
@@ -245,7 +305,16 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
               data URI for that reason. See POSTER_MARK. */}
           <img src={POSTER_MARK} width={CARD.markSize} height={CARD.markSize} alt="" />
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", fontSize: CARD.brandSize, fontWeight: 700 }}>
+            {/* `lineHeight: 1` on both rows — CARD.markSize is a plain sum only
+                because of it. See lib/share.ts. */}
+            <div
+              style={{
+                display: "flex",
+                fontSize: CARD.brandSize,
+                lineHeight: 1,
+                fontWeight: 700,
+              }}
+            >
               {brand}
             </div>
             <div
@@ -253,6 +322,7 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
                 display: "flex",
                 marginTop: CARD.taglineGap,
                 fontSize: CARD.taglineSize,
+                lineHeight: 1,
                 color: SOFT,
               }}
             >

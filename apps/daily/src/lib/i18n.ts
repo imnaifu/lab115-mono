@@ -116,7 +116,9 @@ const STRINGS = {
     pageOf: (page: number, total: number) => `第 ${page} 页 · 共 ${total} 页`,
     newer: "更近",
     older: "更早",
-    wholeDay: "看这一天的全部",
+    /* 「看这一天的全部」以前是这句，「全部」后面没有名词，悬着。这里的目的地是当天
+       那一页，副标题写的是「共 15 篇」—— 说成一个名词短语，两行才是同一个口径。 */
+    wholeDay: "当天全部文章",
     wholeDaySub: (date: string, n: number) => `${date} · 共 ${n} 篇`,
 
     nothingYet: "还没有任何内容。",
@@ -290,7 +292,8 @@ const STRINGS = {
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
     newer: "Newer",
     older: "Older",
-    wholeDay: "See the whole day",
+    /** A noun phrase, matching the sub line under it — see the Chinese side. */
+    wholeDay: "All posts from that day",
     wholeDaySub: (date: string, n: number) => `${date} · ${n} in total`,
 
     nothingYet: "Nothing published yet.",

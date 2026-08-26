@@ -24,13 +24,16 @@ import type { PublishedArticle } from "@/lib/types";
 /**
  * The share poster, drawn.
  *
- * SPLIT OUT OF THE ROUTE so the daily job can call it too. The job writes every
- * image to disk the moment a digest is written (see lib/poster-store.ts and the
- * end of jobs/daily.ts), and the route serves those files; a route that also held
- * the layout would have meant either the job going through HTTP to reach its own
- * server or a second copy of 300 lines of JSX. This module knows nothing about
- * requests, responses or caching — it takes an article and a part number and
- * returns PNG bytes.
+ * SPLIT OUT OF THE ROUTE, and it is still split out even though the route is the
+ * only thing serving posters now. The reason has outlived its first cause: the
+ * daily job used to draw every image at write time and needed this without going
+ * through HTTP to reach its own server, and `npm run preview` calls it for the
+ * same reason today. What has not changed is that a route holding 300 lines of
+ * layout JSX is 300 lines nothing else can render.
+ *
+ * This module knows nothing about requests, responses or caching — it takes an
+ * article and a part number and returns PNG bytes. There is no disk cache behind
+ * it any more; see lib/poster-serve.
  *
  * `next/og` works outside a Next server, which is what makes the arrangement
  * possible: `npm run once` is a plain `tsx` process and renders these fine.
@@ -280,7 +283,13 @@ export async function renderPoster({
                 one claim about itself under it, which is the same pair the
                 page's masthead draws. `alignItems: center` on the row above
                 keeps the mark centred against the taller block rather than
-                pinned to its cap line. */}
+                pinned to its cap line.
+
+                BOTH ROWS SET `lineHeight: 1`, and POSTER.markSize is the plain
+                sum of the two sizes and the gap BECAUSE THEY DO. Satori's
+                default 1.2 wraps each row in leading the mark cannot see, which
+                is what used to leave its edges 6–12px off the text's. See the
+                note on BRAND_SIZE in lib/share.ts. */}
             <div
               style={{
                 display: "flex",
@@ -292,6 +301,7 @@ export async function renderPoster({
                 style={{
                   display: "flex",
                   fontSize: POSTER.brandSize,
+                  lineHeight: 1,
                   fontWeight: 700,
                 }}
               >
@@ -302,6 +312,7 @@ export async function renderPoster({
                   display: "flex",
                   marginTop: POSTER.taglineGap,
                   fontSize: POSTER.taglineSize,
+                  lineHeight: 1,
                   color: "#8a83a8",
                 }}
               >

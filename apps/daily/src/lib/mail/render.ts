@@ -1,4 +1,3 @@
-import { categoryOf } from "@/lib/categories";
 import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
@@ -17,21 +16,77 @@ import type { Digest, PublishedArticle } from "@/lib/types";
  * inline `style`, and JSX buys nothing when there are no components and no
  * reactivity — only a build step between you and the bytes that get sent.
  *
+ * NOT A RESEND TEMPLATE EITHER, and that was checked rather than assumed.
+ * Resend's hosted templates are `{{{VAR}}}` substitution with a ceiling of 20
+ * variables and no loops — five cards of four fields each spends the whole
+ * allowance before the date line — and the digest goes out as a BROADCAST, which
+ * cannot reference a template at all. What a template would buy is a version of
+ * this file that lives in a dashboard instead of in git, in two copies because
+ * there are two languages, unable to read lib/i18n.ts. See lib/mail/resend.ts.
+ *
  * A PLAIN-TEXT PART IS NOT OPTIONAL. A `text/html`-only message scores worse
  * with every spam filter there is, and the alternative here costs a dozen lines
  * because the mail is already a list of short strings.
  *
+ * THE LAYOUT IS THE SITE'S, ELEMENT FOR ELEMENT. The masthead is the mark, the
+ * wordmark and the tagline (Shell.tsx `Masthead`); a card is the source name in
+ * the source's colour, the headline, the thesis, on the card ground
+ * (ArticleCards.tsx `ArticleCard`); the way through to the day is a panel with a
+ * label, a sub and a round arrow (Shell.tsx `EndLink`); the footer is the brand
+ * against lab115.com (Shell.tsx `Footer`). A reader who follows the button has
+ * to land somewhere that looks like where they came from.
+ *
  * The palette is the site's, written out literally: `src/index.css` declares it
  * as custom properties, and custom properties are exactly the modern CSS an
  * email client will not have.
+ *
+ * NO COVER IMAGES, and the site's card has one. An email client has no
+ * `object-fit`, so the 80px square the page draws would either squash a 16:9
+ * cover or letterbox it into two bands of empty colour — and every one of them is
+ * a remote fetch a client is free to block, which turns five designed squares
+ * into five grey boxes. The card keeps its shape without them.
  */
 
+/* The palette. Names and values from `@theme` in src/index.css; the light side
+   of each `light-dark()` pair, because an inbox has no `color-scheme` to ask and
+   the head below pins the message to light for that reason. */
 const INK = "#3b3563";
 const INK_MID = "#5f5885";
 const INK_SOFT = "#8a83a8";
 const ORANGE = "#efa050";
+/** `--color-page`: the ground the whole message sits on. */
 const CREAM = "#fbf3e9";
+/** `--color-card`: an article card. */
+const CARD = "#f3e8d8";
+/** `--color-paper`: a panel — the confirmation's body, the way onward. */
 const PAPER = "#fffdf9";
+/** `--color-line`, flattened: `rgb()` with an alpha is not safe in Outlook. */
+const LINE = "#e2ddd4";
+
+/** `--font-sans`, minus the two webfonts an inbox cannot load. */
+const FONT = "-apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif";
+
+/**
+ * Type, as FOUR LONGHAND PROPERTIES, never as the `font` shorthand.
+ *
+ * THE SHORTHAND IS DROPPED BY OUTLOOK, whole, and this file was written in it.
+ * Outlook's sanitiser walks every `style` attribute and keeps the declarations it
+ * recognises one at a time; the shorthand is not one of them, so all four
+ * properties it packs went with it and the message arrived in the client's default
+ * face at one size and one weight — no bold headline, no small print, no lockup.
+ * Nothing else was lost: the colours, the card grounds, the radii and the padding
+ * all survived, which is what made the cause legible. The only things missing were
+ * the four inside the shorthand.
+ *
+ * `leading` is a string so it can be either a multiplier (`"1.4"`) or a fixed box
+ * (`"40px"`, which is how the round arrow centres its glyph).
+ */
+function type(weight: number, size: number, leading: string): string {
+  return `font-family:${FONT};font-size:${size}px;font-weight:${weight};line-height:${leading};`;
+}
+
+/** `--radius-card`, the one radius every panel on the site uses. */
+const RADIUS = "18px";
 
 /**
  * `&` FIRST, or the entities written by the later replacements get their own
@@ -47,8 +102,69 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/** Absolute, because a link in an email has no page to be relative to. */
+export function absolute(path: string): string {
+  return `${SITE}${path}`;
+}
+
 /**
- * The frame every message wears: the wordmark, the body, a footer.
+ * The masthead: the mark, the wordmark, the tagline — the page's own lockup.
+ *
+ * A PNG, NOT `mark.svg`. Gmail strips `<img src="…svg">` outright and Outlook
+ * has never rendered one; `icon-192.png` in public/ is the same artwork already
+ * rasterised for the manifest, so this costs nothing new to serve.
+ *
+ * THE MARK IS AS TALL AS THE TWO LINES BESIDE IT — 24 for the wordmark, 5 of gap,
+ * 19 for the tagline's line — which is the same rule the poster and the OG card
+ * follow and the same one Shell.tsx measures its 44px mark against. It is why the
+ * wordmark sets `line-height:1`: leave it at the client's default and the row
+ * grows by a third, the sum stops describing anything, and the mark floats
+ * against the middle of the block instead of spanning it.
+ *
+ * `valign="middle"` on both cells rather than `vertical-align` in the style
+ * attribute: the attribute is the one of the two Outlook honours.
+ *
+ * The whole lockup is one link home, exactly as it is on the page.
+ */
+function masthead(lang: Lang): string {
+  const t = strings(lang);
+  const home = tagged(href(lang, "/"));
+  // Repeated on both lines AND on the anchor: a client that ignores the
+  // anchor's `text-decoration` will not ignore the one on the text itself.
+  const bare = "text-decoration:none;";
+
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td width="48" valign="middle" style="padding-right:14px;">
+<a href="${escapeHtml(home)}" style="${bare}"><img src="${absolute(
+    "/icon-192.png",
+  )}" width="48" height="48" alt="" style="display:block;width:48px;height:48px;border:0;"></a>
+</td>
+<td valign="middle">
+<a href="${escapeHtml(home)}" style="${bare}display:block;">
+<div style="${type(700, 24, "1")}color:${INK};letter-spacing:-.02em;${bare}">${escapeHtml(
+    t.brand,
+  )}</div>
+<div style="${type(500, 13, "19px")}color:${INK_MID};padding-top:5px;${bare}">${escapeHtml(
+    t.tagline,
+  )}</div>
+</a>
+</td>
+</tr></table>`;
+}
+
+/**
+ * The copyright year.
+ *
+ * The site's footer takes it as a prop from a page that renders per request; a
+ * send has no such page, and reading the clock at module scope is the smallest
+ * honest way to get it. It is one number in fine print — the failure mode on the
+ * first of January is a stale year for as long as the process lives, which is
+ * shorter than a day for a job that runs and exits.
+ */
+const SITE_YEAR = String(new Date().getUTCFullYear());
+
+/**
+ * The frame every message wears: the masthead, the body, a footer.
  *
  * `preheader` is the line a client shows next to the subject in the inbox list.
  * Hidden in the message itself — the two-part trick below is `display:none` plus
@@ -60,6 +176,23 @@ export function escapeHtml(value: string): string {
  * and a transactional confirmation must NOT — an unsubscribe control on a
  * message someone has not yet subscribed to is a control that cannot mean
  * anything.
+ *
+ * THE FOOTER IS FINE PRINT AND NOTHING ELSE. The site's own footer opens with
+ * the wordmark and closes with `© 2026 daily.lab115.com`; this one carries
+ * neither, and both were cut for the same reason — a message is not a page you
+ * scrolled to the bottom of, it is one screen with the lockup at the top of it.
+ * The wordmark was the same two words 34px above, and the domain was in its third
+ * place after the mark's link and `mailWhy`. What is left is the link off this
+ * brand and the year.
+ *
+ * The rule moved onto the cell that holds them, so removing the wordmark left no
+ * two-column table behind with one empty side.
+ *
+ * THE COLUMN HAS NO PANEL UNDER IT, and it used to: the whole message sat on a
+ * rounded sheet of `--color-paper`. The site does not do that — the masthead and
+ * the cards sit directly on `--color-page` — so the sheet was a container the
+ * page has no equivalent of, and it flattened the one distinction the cards rely
+ * on, which is card ground against page ground.
  */
 function shell(options: {
   lang: Lang;
@@ -67,7 +200,6 @@ function shell(options: {
   bodyHtml: string;
   footerHtml: string;
 }): string {
-  const t = strings(options.lang);
   return `<!doctype html>
 <html lang="${options.lang}">
 <head>
@@ -79,19 +211,20 @@ function shell(options: {
 <div style="display:none;font-size:1px;color:${CREAM};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(
     options.preheader,
   )}${"&#847;&zwnj;&nbsp;".repeat(60)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM};">
-<tr><td align="center" style="padding:28px 16px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:${PAPER};border-radius:18px;">
-<tr><td style="padding:28px 26px 8px;">
-<div style="font:700 20px/1.3 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK};letter-spacing:-.01em;">${escapeHtml(
-    t.brand,
-  )}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${CREAM};">
+<tr><td align="center" style="padding:32px 16px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+<tr><td>
+${masthead(options.lang)}
 </td></tr>
-<tr><td style="padding:0 26px 26px;">
+<tr><td style="padding-top:26px;">
 ${options.bodyHtml}
 </td></tr>
-<tr><td style="padding:0 26px 26px;">
-<div style="border-top:1px solid rgba(59,53,99,.14);padding-top:16px;font:400 12px/1.6 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};">
+<tr><td style="padding-top:34px;border-top:1px solid ${LINE};">
+<div align="right" style="${type(500, 12, "1.7")}color:${INK_SOFT};">
+<a href="https://lab115.com" style="color:${INK_SOFT};text-decoration:none;">lab115.com</a><br>&copy; ${SITE_YEAR}
+</div>
+<div style="padding-top:14px;${type(400, 12, "1.7")}color:${INK_SOFT};">
 ${options.footerHtml}
 </div>
 </td></tr>
@@ -102,18 +235,57 @@ ${options.footerHtml}
 </html>`;
 }
 
-/** One tappable button, as a table so Outlook draws the background. */
+/** One tappable pill, as a table so Outlook draws the background. Mirrors the
+ *  subscribe form's submit — `rounded-full bg-ink text-paper` on the site. */
 function button(href: string, label: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0;"><tr>
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 14px;"><tr>
 <td style="background:${INK};border-radius:999px;">
-<a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;font:700 15px/1 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${PAPER};text-decoration:none;">${escapeHtml(
+<a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;${type(700, 15, "1")}color:${PAPER};text-decoration:none;">${escapeHtml(
     label,
   )}</a>
 </td></tr></table>`;
 }
 
 /**
+ * The end-of-message destination, and it is `EndLink` from Shell.tsx: a whole
+ * panel with a label, a sub and a round arrow, rather than a line of small type.
+ *
+ * The arrow's cell is `aria-hidden` on the page for the reason it carries no
+ * text here either — the label beside it already names where this goes.
+ */
+function endLink(url: string, label: string, sub: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER};border:1px solid ${LINE};border-radius:${RADIUS};">
+<tr><td style="padding:20px 24px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle">
+<a href="${escapeHtml(url)}" style="display:block;${type(700, 19, "1.35")}color:${INK};text-decoration:none;">${escapeHtml(
+    label,
+  )}</a>
+<div style="padding-top:4px;${type(500, 13, "1.5")}color:${INK_SOFT};">${escapeHtml(
+    sub,
+  )}</div>
+</td>
+<td width="40" valign="middle" align="right">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td width="40" height="40" align="center" valign="middle" style="width:40px;height:40px;background:${INK};border-radius:999px;">
+<a href="${escapeHtml(
+    url,
+  )}" style="display:block;${type(400, 17, "40px")}color:${PAPER};text-decoration:none;">&rarr;</a>
+</td>
+</tr></table>
+</td>
+</tr></table>
+</td></tr></table>`;
+}
+
+/**
  * The double opt-in mail — the only transactional message this app sends.
+ *
+ * The body sits on a `--color-paper` panel with the site's hairline border,
+ * which is the shape the subscribe form and the confirmation page both wear —
+ * and it is headed with `t.subscribe`, the same words as the form, rather than
+ * with the subject line. The subject reads 「确认订阅每日严选」 and the wordmark is
+ * directly above it, so using it here printed the brand name twice in two lines.
  *
  * The URL is spelled out under the button as well. A confirmation whose only
  * control is a styled anchor is unclickable in a client that strips the styling
@@ -126,14 +298,19 @@ export function confirmEmail(
 ): { subject: string; html: string; text: string } {
   const t = strings(lang);
 
-  const bodyHtml = `
-<div style="font:400 16px/1.65 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_MID};">${escapeHtml(
+  const bodyHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER};border:1px solid ${LINE};border-radius:${RADIUS};">
+<tr><td style="padding:22px 24px;">
+<div style="${type(700, 19, "1.35")}color:${INK};">${escapeHtml(
+    t.subscribe,
+  )}</div>
+<div style="padding-top:6px;${type(400, 15, "1.65")}color:${INK_MID};">${escapeHtml(
     t.confirmMailLead,
   )}</div>
 ${button(confirmUrl, t.confirmMailButton)}
-<div style="font:400 13px/1.6 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};word-break:break-all;">${escapeHtml(
+<div style="${type(400, 12, "1.6")}color:${INK_SOFT};word-break:break-all;">${escapeHtml(
     confirmUrl,
-  )}</div>`;
+  )}</div>
+</td></tr></table>`;
 
   const footerHtml = `${escapeHtml(t.confirmMailExpiry)}<br>${escapeHtml(
     t.confirmMailIgnore,
@@ -141,6 +318,7 @@ ${button(confirmUrl, t.confirmMailButton)}
 
   const text = [
     t.brand,
+    t.tagline,
     "",
     t.confirmMailLead,
     confirmUrl,
@@ -154,11 +332,6 @@ ${button(confirmUrl, t.confirmMailButton)}
     html: shell({ lang, preheader: t.confirmMailLead, bodyHtml, footerHtml }),
     text,
   };
-}
-
-/** Absolute, because a link in an email has no page to be relative to. */
-export function absolute(path: string): string {
-  return `${SITE}${path}`;
 }
 
 /**
@@ -187,6 +360,13 @@ function tagged(path: string): string {
  * masthead of the day's page says, computed the same way from the same summaries,
  * because a reader who follows the link has to land on the page those numbers
  * described. The mail carries five of them and the button says so.
+ *
+ * NO CATEGORY ON A CARD, and there used to be one — a coloured dot and 「技术」
+ * above every headline. It named a grouping THE MAIL DOES NOT HAVE: the day's
+ * page sorts its cards into sections and prints the category once as a heading,
+ * while five picks off the top of the ranking arrive in rank order, so the label
+ * was a section marker with no section under it. What replaces it is the line the
+ * site's own card leads with — the source, in the source's colour.
  */
 export function digestEmail(
   digest: Digest,
@@ -214,42 +394,47 @@ export function digestEmail(
 
   const cards = picked
     .map((article) => {
-      const category = categoryOf(article.category);
+      const source = sourceOf(article.sourceId);
       const url = tagged(href(lang, articlePath(digest.date, article)));
+      /* `source.accent` READ DIRECTLY, not through `themedAccent`: that helper
+         returns a `light-dark()` pair, which needs a `color-scheme` no inbox
+         provides. See the note at the top of lib/accent.ts. */
       return `
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
-<tr><td>
-<div style="font:700 12px/1 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};letter-spacing:.04em;padding-bottom:8px;">
-<span style="display:inline-block;width:7px;height:7px;border-radius:7px;background:${escapeHtml(
-        category.accent,
-      )};"></span>&nbsp;${escapeHtml(lang === "zh" ? category.name : category.nameEn)}
-</div>
-<a href="${escapeHtml(url)}" style="font:700 17px/1.4 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK};text-decoration:none;">${escapeHtml(
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${CARD};border-radius:${RADIUS};margin:0 0 14px;">
+<tr><td style="padding:18px 20px;">
+<div style="${type(700, 12, "1.4")}color:${escapeHtml(source.accent)};">${escapeHtml(
+        source.name,
+      )}</div>
+<a href="${escapeHtml(
+        url,
+      )}" style="display:block;padding-top:6px;${type(700, 18, "1.4")}color:${INK};text-decoration:none;">${escapeHtml(
         headline(article),
       )}</a>
-<div style="font:400 15px/1.6 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_MID};padding-top:7px;">${escapeHtml(
+<div style="padding-top:9px;${type(400, 15, "1.65")}color:${INK_MID};">${escapeHtml(
         summaryFor(article, lang).thesis,
-      )}</div>
-<div style="font:400 12px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};padding-top:7px;">${escapeHtml(
-        sourceOf(article.sourceId).name,
       )}</div>
 </td></tr></table>`;
     })
     .join("");
 
   const dayUrl = tagged(href(lang, dayPath(digest.date)));
+  /* The masthead's meta row, as one line with orange separators — the same
+     `date · N 篇新文章 · 读完约 M 分钟` the day's page prints, and `MastheadDot` is
+     what the coloured `·` stands in for. The reading time is dropped at zero for
+     the same reason DigestView drops it. */
+  const dot = `<span style="color:${ORANGE};">&nbsp;·&nbsp;</span>`;
+  const meta = [
+    escapeHtml(t.date(year, month, day, weekday)),
+    escapeHtml(t.posts(digest.stats.shown)),
+    ...(minutes > 0 ? [escapeHtml(t.readTime(minutes))] : []),
+  ].join(dot);
+
   const bodyHtml = `
-<div style="font:400 14px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_MID};padding-bottom:4px;">${escapeHtml(
-    t.date(year, month, day, weekday),
-  )}</div>
-<div style="font:600 13px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${ORANGE};padding-bottom:22px;">${escapeHtml(
-    `${t.posts(digest.stats.shown)} · ${t.readTime(minutes)}`,
-  )}</div>
+<div style="${type(600, 14, "1.5")}color:${INK_MID};padding-bottom:18px;">${meta}</div>
 ${cards}
-${button(dayUrl, t.wholeDay)}
-<div style="font:400 12px/1.5 -apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif;color:${INK_SOFT};">${escapeHtml(
-    t.wholeDaySub(digest.date, digest.stats.shown),
-  )}</div>`;
+<div style="padding-top:12px;">
+${endLink(dayUrl, t.wholeDay, t.wholeDaySub(digest.date, digest.stats.shown))}
+</div>`;
 
   /**
    * `{{{RESEND_UNSUBSCRIBE_URL}}}` IS NOT ESCAPED AND MUST NOT BE. It is a
@@ -265,8 +450,10 @@ ${button(dayUrl, t.wholeDay)}
 
   const text = [
     t.brand,
+    t.tagline,
+    "",
     t.date(year, month, day, weekday),
-    `${t.posts(digest.stats.shown)} · ${t.readTime(minutes)}`,
+    `${t.posts(digest.stats.shown)}${minutes > 0 ? ` · ${t.readTime(minutes)}` : ""}`,
     "",
     ...picked.flatMap((article) => [
       `— ${headline(article)}`,
@@ -296,4 +483,4 @@ ${button(dayUrl, t.wholeDay)}
   };
 }
 
-export { INK, INK_MID, INK_SOFT, ORANGE, CREAM, PAPER, shell, button };
+export { INK, INK_MID, INK_SOFT, ORANGE, CREAM, CARD, PAPER, LINE, shell, button };

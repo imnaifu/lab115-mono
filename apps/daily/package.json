@@ -8,6 +8,7 @@
     "start": "next start",
     "once": "tsx --env-file-if-exists=.env src/jobs/cli.ts",
     "mail": "tsx --env-file-if-exists=.env src/jobs/mail-cli.ts",
+    "preview": "tsx --env-file-if-exists=.env src/jobs/preview-cli.ts",
     "score": "tsx --env-file-if-exists=.env src/jobs/score-cli.ts",
     "summary": "tsx --env-file-if-exists=.env src/jobs/summary-cli.ts",
     "backfill-en": "tsx --env-file-if-exists=.env src/jobs/backfill-cli.ts"
