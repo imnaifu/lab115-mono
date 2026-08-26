@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="每日严选 Daily Picks">
+  <!--
+    THE INK COLOURWAY, fixed.
+
+    IT IS THE LIGHT PAGE'S MARK, and everything that cannot answer a media query
+    uses it: the masthead on the light theme (Shell.tsx renders it beside
+    mark-cream.svg and lets the `dark:` variant choose), `POSTER_MARK` in
+    lib/poster-assets.ts, which Satori draws onto the share poster and the OG
+    card, and icon-192/icon-512 in this directory.
+
+    IF THIS FILE CHANGES, TWO THINGS DO NOT FOLLOW IT ON THEIR OWN:
+      1. `POSTER_MARK` — a base64 copy of this artwork, minified. Nothing
+         enforces that the two agree, and the copy has already been stale once.
+      2. The PNGs here. Regenerate with:
+           qlmanage -t -s 512 -o . mark.svg   (then rename, and again at 192)
+
+    See favicon.svg for what the mark is and for the three constraints that fix
+    the leg's arc; this file is the same geometry with the colours nailed down
+    instead of following the OS.
+
+    Palette from src/index.css: cream #FBF3E9, ink #3B3563, orange #EFA050.
+  -->
+  <rect width="64" height="64" rx="14" fill="#3B3563"/>
+  <g fill="none" stroke="#FBF3E9" stroke-linecap="round">
+    <path stroke-width="7" d="M 13.2 21 H 56"/>
+    <path stroke-width="7" d="M 13.2 43 H 56"/>
+    <path stroke-width="5" d="M 30 25 V 39"/>
+    <path stroke-width="5" d="M 42 25 V 39"/>
+  </g>
+  <path fill="none" stroke="#EFA050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
+</svg>

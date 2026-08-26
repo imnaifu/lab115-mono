@@ -17,7 +17,7 @@ export async function notify(digest: Digest): Promise<void> {
   const title =
     digest.stats.shown === 0
       ? `今日无更新 · ${digest.date}`
-      : `每日干货 ${digest.stats.shown} 篇 · ${digest.date}`;
+      : `每日严选 ${digest.stats.shown} 篇 · ${digest.date}`;
 
   // `||` not `??` — a failed summary is an empty string, not null, and an
   // empty Bark body renders as a blank notification.

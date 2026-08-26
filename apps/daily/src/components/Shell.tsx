@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { InstallApp } from "./InstallApp";
+import { ThemeToggle } from "./ThemeToggle";
 import { strings } from "@/lib/i18n";
 import { href, LANGS, otherLang, type Lang } from "@/lib/lang";
 import type { TrackEvent } from "@/lib/track";
@@ -19,7 +20,7 @@ import type { TrackEvent } from "@/lib/track";
  *  bleed past its edges and must not widen the document. */
 export function PageShell({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-page overflow-x-clip bg-cream pb-10">
+    <div className="mx-auto w-full max-w-page overflow-x-clip bg-page pb-10">
       {children}
     </div>
   );
@@ -100,7 +101,7 @@ export function Masthead({
    * A second line under the title, in the SAME language.
    *
    * EVERY PAGE PASSES `t.tagline` HERE NOW. It used to carry the title's
-   * other-language twin — 每日干货 above Daily Takes, 归档 above Archive — which
+   * other-language twin — 每日严选 above Daily Picks, 归档 above Archive — which
    * the one-language-at-a-time rule ruled out, and for a long time nothing passed
    * anything; the prop survived that stretch because a masthead tagline was a
    * plausible thing to want, and this is it. See the note in lib/i18n.ts for what
@@ -114,6 +115,9 @@ export function Masthead({
   path: string;
   children: ReactNode;
 }) {
+  // Only the theme switch's label — the masthead's own words all arrive as props.
+  const t = strings(lang);
+
   return (
     <header
       className={`relative isolate overflow-hidden pt-24 pb-8 sm:pt-28 ${PAD}`}
@@ -149,9 +153,16 @@ export function Masthead({
           of slack instead of 3px, at every width and in both languages.
 
           `justify-end` rather than `justify-between`: with one child left,
-          `justify-between` puts it on the LEFT. */}
+          `justify-between` puts it on the LEFT.
+
+          THE THEME SWITCH IS THE THIRD CHILD, and the budget above is why it is
+          an icon with no label: 34px of button plus an 8px gap spends 42px of
+          the 168px of slack, leaving 126px. A labelled pill — 「深色浅色切换」
+          would be about 110px — would put the row back within a few pixels of
+          the overflow that cost the install button its label once already. */}
       <div className="flex items-center justify-end gap-2">
         <LangSwitch lang={lang} path={path} />
+        <ThemeToggle label={t.themeToggle} />
         <InstallApp lang={lang} />
       </div>
 
@@ -177,7 +188,7 @@ export function Masthead({
       <a
         href={href(lang, "/")}
         aria-label={
-          lang === "en" ? "Daily Takes — home" : "每日干货 · 回到首页"
+          lang === "en" ? "Daily Picks — home" : "每日严选 · 回到首页"
         }
         className="mt-5 flex items-center gap-3 sm:gap-4"
       >
@@ -189,7 +200,29 @@ export function Masthead({
             Enlarging the mark instead was tried and rejected — it takes an 88px
             square to clear a two-line English subtitle, and at that size the
             mark stops introducing the wordmark and starts competing with it. */}
-        <img src="/favicon.svg" alt="" className="size-11 flex-none sm:size-14" />
+        {/* TWO FILES, ONE SHOWING. The mark has an ink tile on the cream page and
+            a cream tile on the dark one, and neither `favicon.svg` nor a single
+            file can do that job here: an `<img>` resolves `prefers-color-scheme`
+            against the READER'S OS, while this page follows the switch in the row
+            above — a reader on a light Mac who chose dark would get the ink tile
+            on the dark page and watch its edges disappear.
+
+            So the choice is made outside the image, by the `dark:` variant, which
+            index.css defines to mean "the OS unless the reader overrode it". Both
+            files are fetched; they are ~1.5KB each and the alternative is a third
+            copy of the geometry inlined as JSX.
+
+            `alt=""` on both: the link around them already carries the name. */}
+        <img
+          src="/mark.svg"
+          alt=""
+          className="size-11 flex-none sm:size-14 dark:hidden"
+        />
+        <img
+          src="/mark-cream.svg"
+          alt=""
+          className="hidden size-11 flex-none sm:size-14 dark:block"
+        />
         {/* `max-w-md` keeps the wordmark clear of the orange blob.
 
             TWO TYPE SCALES, PICKED BY WHETHER THERE IS A SUBTITLE. Alone, the
@@ -201,8 +234,15 @@ export function Masthead({
             combinations that ship:
 
                             phone (<sm)        sm and up
-              Chinese      24+16 = 40 / 44    30+20 = 50 / 56
-              English      24+16 = 40 / 44    30+20 = 50 / 56
+              Chinese      24+4+16 = 44/44    30+6+20 = 56/56
+              English      24+4+16 = 44/44    30+6+20 = 56/56
+
+            BOTH COLUMNS NOW LAND EXACTLY ON THE MARK, and the gap is what makes
+            them: `mt-1` on the phone, `mt-1.5` from `sm:` up. The larger column
+            used to run 54 against a 56 mark — two pixels short, which read as the
+            text sitting slightly high against a mark that is optically centred on
+            it. The gap is the only free variable here; the two type sizes are
+            fixed by the scale and `leading-none` has already given up the leading.
 
             The English subtitle has to stay on ONE line for the phone column to
             hold — see the note on the tagline in lib/i18n.ts. */}
@@ -223,7 +263,7 @@ export function Masthead({
                15-character Chinese line at 18px shows most. `text-pretty` for the
                English, which wraps to two lines on a phone and must not leave one
                word alone on the second. */
-            <small className="mt-1 block text-xs font-medium text-pretty text-ink-mid sm:text-sm">
+            <small className="mt-1 block text-xs font-medium text-pretty text-ink-mid sm:mt-1.5 sm:text-sm">
               {subtitle}
             </small>
           ) : null}

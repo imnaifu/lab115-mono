@@ -1,10 +1,11 @@
+import { themedAccent } from "@/lib/accent";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ArticleTitle } from "@/components/ArticleTitle";
 import { Cover } from "@/components/Cover";
 import { EndLink, Footer, Masthead, PAD, PageShell, SECTION } from "@/components/Shell";
 import { Summary } from "@/components/Summary";
-import { categoryOf } from "@/lib/categories";
+import { accentColor, categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
@@ -245,7 +246,7 @@ export default async function ArticlePage({ params }: Params) {
       >
         <a href={langHref(lang, dayPath(date))}>{date}</a>
         <span className="size-1 rounded-full bg-orange" />
-        <span style={{ color: category.accent }}>{lang === "en" ? category.nameEn : category.name}</span>
+        <span style={{ color: accentColor(category) }}>{lang === "en" ? category.nameEn : category.name}</span>
       </Masthead>
 
       <section className={`${SECTION} ${PAD} flex flex-col gap-4`}>
@@ -264,7 +265,7 @@ export default async function ArticlePage({ params }: Params) {
             />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-semibold text-ink-soft">
-              <span style={{ color: source.accent }}>{source.name}</span>
+              <span style={{ color: themedAccent(source.accent) }}>{source.name}</span>
               {/* No reading time — see the note in ArticleCards. */}
               {article.author ? (
                 <>

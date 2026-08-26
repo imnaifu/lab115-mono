@@ -1,3 +1,4 @@
+import { THEME_COLOR, THEME_SCRIPT } from "@/lib/theme";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { Analytics } from "@/components/Analytics";
@@ -131,15 +132,33 @@ export async function generateMetadata(): Promise<Metadata> {
     manifest: href(lang, "/manifest.webmanifest"),
     /**
      * iOS reads none of the above from the manifest: `display: standalone` and the
-     * app's name on the home screen come from these two meta tags instead. The
-     * status bar is left `default` so it keeps the page's own cream rather than
-     * being painted over.
+     * app's name on the home screen come from these two meta tags instead.
+     *
+     * `default` STILL, now that there are two themes. It means "let the status
+     * bar take the page's own colour", which is exactly right twice over: cream
+     * on the light side, #1d1a33 on the dark one, with no third value to keep in
+     * step. `black-translucent` would have hardcoded one of them.
      */
     appleWebApp: { capable: true, title: t.brand, statusBarStyle: "default" },
   };
 }
 
-export const viewport: Viewport = { themeColor: "#fbf3e9" };
+/**
+ * Two values, because the browser paints its chrome from this and the page has
+ * two grounds now.
+ *
+ * IT ONLY KNOWS ABOUT THE OS. A reader who used the switch in the masthead has a
+ * preference these media queries cannot see, so `ThemeToggle` rewrites the
+ * rendered tags on every flip, and the pre-paint script below does the same on a
+ * fresh load. This declaration is the state of things for a reader who never
+ * touched it — which is most of them.
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
+  ],
+};
 
 /**
  * The language comes from a header the middleware set, not from the route.
@@ -188,6 +207,31 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/**
+         * THE THEME, STAMPED BEFORE THE FIRST PAINT.
+         *
+         * Everything else about dark mode is CSS — `light-dark()` against
+         * `color-scheme`, see index.css — and CSS alone gets a reader who chose
+         * dark on a light machine no further than the second paint. Without this
+         * script every navigation would flash cream and then correct itself,
+         * which is worse than not offering the switch.
+         *
+         * It has to be INLINE and it has to be here: an external file is a
+         * network round trip the paint will not wait for, and anything React
+         * renders happens after the document has already been shown once.
+         * `<html suppressHydrationWarning>` below is what lets an attribute
+         * appear here that the server did not render — it was already needed for
+         * translation extensions, and this is the same shape of change.
+         *
+         * The absence of the key is "follow the OS", so this touches nothing
+         * unless the reader has actually used the switch. It swallows its own
+         * errors: a private window can refuse the read, and a theme that fails to
+         * load is a page in the OS's theme, not a broken page.
+         *
+         * The literals come from lib/theme.ts, interpolated because a script that
+         * runs before the bundle cannot import.
+         */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/**
@@ -220,7 +264,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-cream font-sans text-ink antialiased">
+      <body className="bg-page font-sans text-ink antialiased">
 {children}
         {/* Touch screens only, and it attaches nothing on a desktop — see the
             note in the component. */}

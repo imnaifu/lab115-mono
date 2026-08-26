@@ -1,3 +1,4 @@
+import { themedAccent } from "@/lib/accent";
 import { ArticleTitle, displayTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
 import { ShareButton } from "./ShareButton";
@@ -21,7 +22,7 @@ function Meta({ article, lang }: { article: PublishedArticle; lang: Lang }) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-semibold text-ink-soft">
-      <span style={{ color: source.accent }}>{source.name}</span>
+      <span style={{ color: themedAccent(source.accent) }}>{source.name}</span>
       {/* NO READING TIME. It was the original article's, which described a page
           the reader was not on; measured on the summary instead it read "1 分钟"
           or "2 分钟" on every card in the digest, which is a column of identical

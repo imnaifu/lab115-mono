@@ -150,7 +150,7 @@ export default async function DayPage({ params }: Params) {
           /**
            * The trail, because the URL cannot carry it. See `breadcrumb` in
            * lib/seo — a day is one level down from the home page, and this is what
-           * puts 每日干货 › 2026-08-23 in a search result instead of a bare path.
+           * puts 每日严选 › 2026-08-23 in a search result instead of a bare path.
            */
           breadcrumb: breadcrumb([
             {

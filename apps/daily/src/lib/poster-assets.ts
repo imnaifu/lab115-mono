@@ -204,10 +204,16 @@ export function posterText(article: Article, summary: SummaryText, extra: string
  *
  * Satori draws `<img>` but not inline `<svg>` elements, and it has no
  * filesystem, so the icon cannot simply be referenced by path. This is the same
- * artwork as `public/favicon.svg`, minified — if that file changes, regenerate
- * this string, because nothing enforces that the two agree.
+ * artwork as `public/mark.svg`, minified — if that file changes, regenerate this
+ * string, because nothing enforces that the two agree. IT HAS ALREADY GONE STALE
+ * ONCE: it sat here still saying 每日干货 / Daily Takes through two renamings,
+ * because a copy nothing checks is a copy nobody remembers.
+ *
+ * `mark.svg` AND NOT `favicon.svg`: the favicon swaps its colours on
+ * `prefers-color-scheme`, Satori does not evaluate media queries, and the poster
+ * it would be drawn on is cream. The ink colourway is the only correct one here.
  */
-export const POSTER_MARK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSLmr4/ml6XlubLotKcgRGFpbHkgVGFrZXMiPiA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0iIzNCMzU2MyIvPiA8cGF0aCBmaWxsPSIjRkJGM0U5IiBkPSJNIDggMjMgQSAxMiAxMiAwIDEgMSAzMiAyMyBDIDMyIDM1LjAgMjUuNCA0NC4wIDE1LjggNDguOCBMIDguNiAzOS4yIEMgMTguOCAzNS42IDIzLjYgMzAuMiAyMy42IDIzIFoiLz4gPHBhdGggZmlsbD0iI0VGQTA1MCIgZD0iTSAzMyAyMyBBIDEyIDEyIDAgMSAxIDU3IDIzIEMgNTcgMzUuMCA1MC40IDQ0LjAgNDAuOCA0OC44IEwgMzMuNiAzOS4yIEMgNDMuOCAzNS42IDQ4LjYgMzAuMiA0OC42IDIzIFoiLz4gPC9zdmc+";
+export const POSTER_MARK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSLmr4/ml6XkuKXpgIkgRGFpbHkgUGlja3MiPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSIjM0IzNTYzIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkJGM0U5IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjxwYXRoIHN0cm9rZS13aWR0aD0iNyIgZD0iTSAxMy4yIDIxIEggNTYiLz48cGF0aCBzdHJva2Utd2lkdGg9IjciIGQ9Ik0gMTMuMiA0MyBIIDU2Ii8+PHBhdGggc3Ryb2tlLXdpZHRoPSI1IiBkPSJNIDMwIDI1IFYgMzkiLz48cGF0aCBzdHJva2Utd2lkdGg9IjUiIGQ9Ik0gNDIgMjUgViAzOSIvPjwvZz48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNFRkEwNTAiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBkPSJNIDggMTEgQSAzNSAzNSAwIDAgMSA4IDUzIi8+PC9zdmc+";
 
 /** A cover fetch that cannot hold up or blow up a poster. */
 const COVER_TIMEOUT_MS = 4000;

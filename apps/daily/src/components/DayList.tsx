@@ -51,7 +51,7 @@ export async function DayList({
   if (rows.length === 0) {
     return (
       <section className={`${SECTION} ${PAD}`}>
-        <div className="rounded-card bg-cream-deep px-5 py-4">{t.nothingYet}</div>
+        <div className="rounded-card bg-page-deep px-5 py-4">{t.nothingYet}</div>
       </section>
     );
   }

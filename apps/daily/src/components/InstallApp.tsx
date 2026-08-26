@@ -317,7 +317,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
                   >
                     <span
                       aria-hidden
-                      className="mt-0.5 flex size-5 flex-none items-center justify-center rounded-full bg-cream-deep text-[11px] font-bold text-ink-mid"
+                      className="mt-0.5 flex size-5 flex-none items-center justify-center rounded-full bg-page-deep text-[11px] font-bold text-ink-mid"
                     >
                       {i + 1}
                     </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BRAND, BrandIcon, ShareIcon, type BrandKey } from "./BrandIcons";
+import { brandColor, BrandIcon, ShareIcon, type BrandKey } from "./BrandIcons";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import { posterPartUrl } from "@/lib/links";
@@ -737,10 +737,16 @@ export function ShareSheet({
             >
               {/* Ink rather than a brand colour, in the same 12% wash as the
                   marks beside it: this tile has no brand, and inventing one for
-                  it would make it look like a fifth platform. */}
+                  it would make it look like a fifth platform.
+                  THE TOKEN, NOT THE HEX. This was a literal `#3b3563` — the ink
+                  of the light theme — and on the dark sheet it left this tile
+                  blank while the four beside it kept their colours. */}
               <span
                 className={TILE_MARK}
-                style={{ color: "#3b3563", background: "#3b35631f" }}
+                style={{
+                  color: "var(--color-ink)",
+                  background: "color-mix(in srgb, currentColor 12%, transparent)",
+                }}
               >
                 <ShareIcon size={20} />
               </span>
@@ -762,12 +768,17 @@ export function ShareSheet({
             >
               <span
                 className={TILE_MARK}
-                /* The brand's own colour, and a wash of it behind the mark. `1f`
-                   is that hex at 12% — enough to seat the icon on the cream
-                   without competing with it. */
+                /* The brand's own colour, and a wash of it behind the mark —
+                   12%, enough to seat the icon on the sheet without competing
+                   with it.
+                   The wash is `currentColor` rather than the hex with `1f` glued
+                   on, which is what it used to be. That trick only works on a
+                   literal six-digit hex, and the colour above is no longer one:
+                   `brandColor` returns a `light-dark()` pair, because X's mark is
+                   black and the sheet is dark half the time. */
                 style={{
-                  color: BRAND[intent.brand].color,
-                  background: `${BRAND[intent.brand].color}1f`,
+                  color: brandColor(intent.brand),
+                  background: "color-mix(in srgb, currentColor 12%, transparent)",
                 }}
               >
                 <BrandIcon brand={intent.brand} />

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="每日严选 Daily Picks">
+  <!--
+    THE MASKED COLOURWAY: same mark, drawn for a launcher that cuts its own shape.
+
+    TWO THINGS DIFFER FROM mark.svg, both forced by the spec:
+
+    NO ROUNDED CORNERS AND NO TRANSPARENCY. A maskable icon supplies the ink and
+    the launcher supplies the silhouette — Android will cut a circle, a squircle
+    or a teardrop out of this square depending on the device. A rounded tile with
+    transparent corners gets cut a second time and shows the launcher's ground
+    through the notches.
+
+    THE MARK IS INSET TO 0.69. Android guarantees only the centre circle at 80%
+    of the icon. The artwork's bounding box is x 4.5–59.5, y 7.5–56.5, and since
+    the mark is centred on both axes the transform is a plain scale about the
+    canvas centre — no recentring term. Half the box's diagonal is 36.8, the safe
+    radius is 25.6, and 25.6 / 36.8 = 0.69. The leg's belly is at x 15, well
+    inside, so the arc's radius can change without touching this number — only the
+    endpoints and the rules' right edge decide the box.
+
+    APPLE-TOUCH-ICON IS GENERATED FROM THIS FILE TOO. iOS crops less than Android
+    does — a superellipse rather than a circle — so 0.69 is safe there by
+    construction, at the cost of the mark sitting a little smaller on the home
+    screen than it strictly needs to. One source beat a fifth file; if that gap
+    ever looks wrong, it is one number here.
+
+    Regenerate the PNGs with:
+      qlmanage -t -s 512 -o . mark-maskable.svg   → icon-maskable-512.png
+      qlmanage -t -s 180 -o . mark-maskable.svg   → apple-touch-icon.png
+  -->
+  <rect width="64" height="64" fill="#3B3563"/>
+  <g transform="translate(32 32) scale(0.69) translate(-32 -32)">
+    <g fill="none" stroke="#FBF3E9" stroke-linecap="round">
+    <path stroke-width="7" d="M 13.2 21 H 56"/>
+    <path stroke-width="7" d="M 13.2 43 H 56"/>
+    <path stroke-width="5" d="M 30 25 V 39"/>
+    <path stroke-width="5" d="M 42 25 V 39"/>
+    </g>
+    <path fill="none" stroke="#EFA050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
+  </g>
+</svg>

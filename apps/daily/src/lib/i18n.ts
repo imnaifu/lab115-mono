@@ -10,7 +10,7 @@ import type { Lang } from "./lang";
  *
  * ONE LANGUAGE AT A TIME, everywhere. This is a site-wide rule, and it is the
  * easiest one to break here, because the tempting move when writing a bilingual
- * digest is to put both halves on screen at once: 每日干货 above Daily Takes,
+ * digest is to put both halves on screen at once: 每日严选 above Daily Picks,
  * "Archive · 看看前几天读到了什么", a section titled 技术 with Tech beside it. The
  * page then states everything twice and reads like two publications stapled
  * together, and neither reader is served — the half they cannot read is noise
@@ -33,7 +33,7 @@ import type { Lang } from "./lang";
  */
 const STRINGS = {
   zh: {
-    brand: "每日干货",
+    brand: "每日严选",
     notFoundTitle: "未找到",
 
     allTab: "全部",
@@ -91,6 +91,15 @@ const STRINGS = {
     /** A platform name, so it takes the name that platform uses here. */
     weibo: "微博",
 
+    /**
+     * 报头上那个明暗开关的可访问名。按钮本身只有一个图标 —— 半黑半白的圆。
+     *
+     * 说的是这个控件是什么，不是「点下去会变成什么」。开关只有两态，而当前是哪
+     * 一态要到浏览器里才知道；服务端渲染出「切换到深色」这种话，在已经是深色的
+     * 读者那里第一屏就是错的。
+     */
+    themeToggle: "深色浅色切换",
+
     /* The end-of-page link on a day page, back to the front page. It names what
        is actually there — the newest week, with the archive one step further on —
        rather than promising every date, which is the archive's job. */
@@ -144,13 +153,13 @@ const STRINGS = {
 
     /** 收件箱那一行：牌子加日期。篇数不写进去 —— 邮件里是五条，当天可能有二十条，
      *  写哪个数字都会骗人。 */
-    mailSubject: (date: string) => `每日干货 · ${date}`,
+    mailSubject: (date: string) => `每日严选 · ${date}`,
     /** "8月25日"，只给邮件用。页面上的日期带星期，主题行没那个位置。 */
     mailShortDate: (m: number, d: number) => `${m}月${d}日`,
     mailWhy: "你收到这封信，是因为订阅了 daily.lab115.com。",
     mailUnsubscribe: "退订",
 
-    confirmSubject: "确认订阅每日干货",
+    confirmSubject: "确认订阅每日严选",
     confirmMailLead: "点下面这个链接，订阅就生效了。",
     confirmMailButton: "确认订阅",
     confirmMailExpiry: "链接 24 小时内有效。",
@@ -177,34 +186,53 @@ const STRINGS = {
      * halves are populated is a tagline that will be wrong again; both copies now
      * describe what the site DOES, and the page the reader is on says the rest.
      *
-     * IT NAMES NO MACHINERY AT ALL, which is the harder rule and the one this line
-     * kept breaking. Three versions in a row described the PROCESS — when the cron
-     * fires (每天早上), what it reads (订阅的博客), what it does to it (读一遍、
+     * IT NAMED NO MACHINERY AT ALL, which was the harder rule and the one this
+     * line kept breaking. Three versions in a row described the PROCESS — when the
+     * cron fires (每天早上), what it reads (订阅的博客), what it does to it (读一遍、
      * 提炼、收拢) — none of which is a reason for anyone to open the site. A reader
      * does not want a blog reader; they want to know what is being argued this week
      * in fields they have no time to follow.
      *
-     * SO IT PROMISES THE OUTCOME, and now names three things: 快速 (what it costs
-     * the reader), 各个领域专家 (who is talking), 最新 (when they said it).
+     * THE CURRENT LINE BENDS THAT RULE ONCE, and the distinction is which side the
+     * mechanism is stated from. 过滤 is a thing the site does, but it is named for
+     * what the reader is spared rather than for how the pipeline runs: 信息噪音 is
+     * the reason someone opens this page instead of the twenty feeds it reads, and
+     * the earlier drafts' 每天早上/订阅的博客/提炼 were the machine describing itself.
+     * A rewrite that puts fetching, scoring or summarising back on this line has
+     * crossed back over — the test is whether the words name what the READER gets
+     * out of the deal.
      *
-     * 各个领域 is a claim the content supports — the categories in config.json run
+     * SO IT NAMES THREE THINGS: 过滤信息噪音 (what it takes away), 各领域 (how wide
+     * it looks), 犀利见解 (what survives the cut).
+     *
+     * 各领域 is a claim the content supports — the categories in config.json run
      * 技术/商业/投资/经济/科学/设计/生活/人文, so this is not a tech feed wearing a
-     * wider label. 专家 is the newer and more falsifiable half of that claim: it
-     * rests on the source list being signed blogs by people who do the work —
-     * a cardiologist, a valuation professor, an epidemiologist, engineers writing
-     * about their own systems. ADDING A WIRE SERVICE OR AN AGGREGATOR WOULD MAKE
-     * THIS LINE FALSE, which is a better reason to keep them out than any of the
-     * ones already in the README.
+     * wider label.
      *
-     * 每天 IS GONE, and nothing is lost: the brand directly above it is 每日干货 /
-     * Daily Takes, so the cadence is already stated one line up and repeating it
-     * spent the subtitle's only sentence on a word the reader had just read. The
-     * slot it freed went to 快速 — the one promise here about the reader's time.
+     * 专家 IS GONE, and that one costs something. It was the most falsifiable claim
+     * this line ever made — it rested on the source list being signed blogs by
+     * people who do the work (a cardiologist, a valuation professor, an
+     * epidemiologist, engineers writing about their own systems), which made
+     * ADDING A WIRE SERVICE OR AN AGGREGATOR a thing that would turn the tagline
+     * false, and that was the hardest argument in the README for keeping them out.
+     * 犀利见解 still implies argued, signed writing rather than reporting, so the
+     * constraint keeps an anchor here — a weaker one. If the source list is ever
+     * argued about again, the README's own reasons now have to carry it.
      *
-     * It still names no count and no machinery, on the same principle as the
-     * paragraph above: a number in a tagline is a number that goes stale.
+     * 快速 IS GONE TOO: there is no promise here about the reader's time any more.
+     * The slot went to what gets kept out instead.
+     *
+     * 严选 REPEATS THE WORDMARK sitting directly above it — 每日严选. An earlier
+     * version of this line dropped 每天 for exactly that reason, so this is the same
+     * objection, accepted rather than answered: 严选 is the verb the brand is named
+     * for and the one the sentence is about, and saying it twice is the cost of
+     * having the name state the method. If the wordmark ever stops saying 严选,
+     * this line gets the slot back.
+     *
+     * It still names no count, on the same principle as the paragraph above: a
+     * number in a tagline is a number that goes stale.
      */
-    tagline: "快速读完各个领域专家的最新观点。",
+    tagline: "过滤信息噪音，严选各领域的犀利见解",
 
     /** "2026年8月14日 · 星期五" */
     date: (y: number, m: number, d: number, weekday: number) =>
@@ -212,7 +240,7 @@ const STRINGS = {
   },
 
   en: {
-    brand: "Daily Takes",
+    brand: "Daily Picks",
     notFoundTitle: "Not found",
 
     allTab: "All",
@@ -249,6 +277,8 @@ const STRINGS = {
     installWhy:
       "It gets an icon of its own, opens full screen with no address bar, and the pages you have already opened stay readable with no network.",
     weibo: "Weibo",
+
+    themeToggle: "Switch between light and dark",
 
     allDays: "Other editions",
     allDaysSub: "The past week, and the archive beyond it",
@@ -289,7 +319,7 @@ const STRINGS = {
       "A confirmation link is good for 24 hours. Subscribe again from the front page and a fresh one will arrive.",
     backHome: "Back to the front page",
 
-    mailSubject: (date: string) => `Daily Takes · ${date}`,
+    mailSubject: (date: string) => `Daily Picks · ${date}`,
     /** "25 Aug" — the day-first order the English date string uses elsewhere. */
     mailShortDate: (m: number, d: number) =>
       `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]}`,
@@ -313,13 +343,22 @@ const STRINGS = {
        IT HAS TO FIT ON ONE LINE IN THE MASTHEAD, which is a length limit rather
        than a style note. The mark there is 44px tall and the wordmark plus one
        line of subtitle fills that exactly, so a second line makes the text block
-       outgrow the mark (see the measurements on the `<h1>` in Shell.tsx). At
-       12px this string needs 264px and a 360px phone leaves 264px — that is the
-       floor it was written to. Below a 340px viewport it wraps, and that is a
-       trade taken deliberately: no phone shipping today is that narrow, and
-       shortening the line for the ones that were would cost the claim on every
-       phone that is not. */
-    tagline: "Read the latest takes from experts in every field, fast.",
+       outgrow the mark (see the measurements on the `<h1>` in Shell.tsx). THE
+       BUDGET IS 264px AT 12px — what a 360px phone leaves after the mark and the
+       gutters. The previous line ("Read the latest takes from experts in every
+       field, fast.") was written to sit exactly on that floor; this one is
+       shorter and has slack, which is room for a future rewrite rather than a
+       reason to spend it. Below a 340px viewport it wraps, and that is a trade
+       taken deliberately: no phone shipping today is that narrow, and shortening
+       the line for the ones that were would cost the claim on every phone that
+       is not.
+
+       THE TRAILING PERIOD IS ABSENT ON PURPOSE, matching the Chinese, which
+       drops its 句号 — six placements and most of them are an isolated line
+       (the OG card, the poster lockup) where a final stop reads as debris. The
+       period inside the line is a different thing: it is what makes 「Cut the
+       noise」 a sentence rather than a fragment, and it stays. */
+    tagline: "Cut the noise. The sharpest takes from every field",
 
     /** "Friday, 14 August 2026" */
     date: (y: number, m: number, d: number, weekday: number) =>

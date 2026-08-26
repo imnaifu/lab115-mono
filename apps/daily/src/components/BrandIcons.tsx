@@ -21,6 +21,11 @@ export const BRAND = {
   },
   x: {
     color: "#000000",
+    /* The only brand here whose own colour fails on one of the two grounds. X's
+       mark is black, which on the dark sheet is the sheet — and white is what
+       the brand itself uses on a dark ground, so this is its guideline, not an
+       invention. Every other mark is saturated enough to hold on both. */
+    colorDark: "#FFFFFF",
     path: "M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z",
   },
   whatsapp: {
@@ -34,6 +39,19 @@ export const BRAND = {
 } as const;
 
 export type BrandKey = keyof typeof BRAND;
+
+/**
+ * A brand's colour, per theme.
+ *
+ * Almost all of them are one value on both grounds — `colorDark` exists for the
+ * one that cannot be. `light-dark()` rather than a branch for the same reason as
+ * lib/accent.ts: the caller applies this through an inline style, which cannot
+ * answer a media query.
+ */
+export function brandColor(brand: BrandKey): string {
+  const entry: { color: string; colorDark?: string } = BRAND[brand];
+  return `light-dark(${entry.color}, ${entry.colorDark ?? entry.color})`;
+}
 
 /** One brand mark, sized by its box and coloured by `currentColor`. */
 export function BrandIcon({ brand, size = 22 }: { brand: BrandKey; size?: number }) {

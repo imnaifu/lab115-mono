@@ -1,3 +1,4 @@
+import { themedAccent } from "./accent";
 import { USER_CONFIG } from "./user-config";
 
 /**
@@ -17,7 +18,20 @@ export interface Category {
   name: string;
   /** Smaller English line under it. */
   nameEn: string;
+  /** Picked against the cream ground. Use `accentColor`, never this directly. */
   accent: string;
+  /**
+   * The same colour re-picked for the dark ground, and OPTIONAL on purpose.
+   *
+   * Eight of these were hand-set rather than derived, because the light set was
+   * hand-set too and a formula gets one of them badly wrong: 技术 is `#3b3563`,
+   * which IS the ink colour, and on a dark page it stops being a colour at all.
+   *
+   * When it is absent `accentColor` lightens the light value instead. That is
+   * the weaker answer, and it is here so that adding a category to config.json
+   * stays a one-line job that cannot ship something invisible.
+   */
+  accentDark?: string;
   /**
    * Handed to the model verbatim. Write it as a boundary, not a topic list —
    * the hard part is not "what is AI" but "what goes here rather than next
@@ -28,6 +42,12 @@ export interface Category {
 }
 
 export const CATEGORIES: Category[] = USER_CONFIG.categories;
+
+/** The section colour, per theme. See lib/accent.ts for why it is a string and
+ *  not a branch. */
+export function accentColor(category: Category): string {
+  return themedAccent(category.accent, category.accentDark);
+}
 
 /** Where an unrecognised or missing classification lands. */
 export const FALLBACK_CATEGORY = USER_CONFIG.fallbackCategory;

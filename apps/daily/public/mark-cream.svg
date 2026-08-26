@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="每日严选 Daily Picks">
+  <!--
+    THE CREAM COLOURWAY, fixed — the tile and the strokes swapped. The orange leg
+    does not swap: it is the accent on both grounds and holds against each.
+
+    THE MASTHEAD SHOWS IT ON THE DARK THEME, chosen by the `dark:` variant in
+    Shell.tsx rather than by anything in this file.
+
+    A WARNING THAT COST THE PREVIOUS ICON ITS DESIGN: a cream tile on a light
+    browser tab strip loses its edges, and the strokes go with them. Do not point
+    the favicon at this. It belongs on a dark ground, or on none.
+
+    See favicon.svg for what the mark is and for the three constraints that fix
+    the leg's arc; this file is the same geometry with the colours nailed down
+    instead of following the OS.
+
+    Palette from src/index.css: cream #FBF3E9, ink #3B3563, orange #EFA050.
+  -->
+  <rect width="64" height="64" rx="14" fill="#FBF3E9"/>
+  <g fill="none" stroke="#3B3563" stroke-linecap="round">
+    <path stroke-width="7" d="M 13.2 21 H 56"/>
+    <path stroke-width="7" d="M 13.2 43 H 56"/>
+    <path stroke-width="5" d="M 30 25 V 39"/>
+    <path stroke-width="5" d="M 42 25 V 39"/>
+  </g>
+  <path fill="none" stroke="#EFA050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
+</svg>

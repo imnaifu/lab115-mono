@@ -124,7 +124,7 @@ export function Subscribe({ lang }: { lang: Lang }) {
           aria-label={t.subscribeEmail}
           autoComplete="email"
           inputMode="email"
-          className="min-w-0 flex-1 rounded-full border border-line bg-cream px-4 py-3 text-base text-ink placeholder:text-ink-soft"
+          className="min-w-0 flex-1 rounded-full border border-line bg-page px-4 py-3 text-base text-ink placeholder:text-ink-soft"
         />
         <button
           type="submit"

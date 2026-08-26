@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { DayList } from "@/components/DayList";
 import { EndLink, Footer, Masthead, PAD, PageShell } from "@/components/Shell";
 import { Subscribe } from "@/components/Subscribe";
-import { mailEnabled } from "@/lib/mail/resend";
+import { signupOpen } from "@/lib/mail/resend";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
@@ -116,7 +116,7 @@ export default async function Home({
 
       <DayList dates={shown} lang={lang} from="home" />
 
-      {mailEnabled() ? (
+      {signupOpen() ? (
         <div className={PAD}>
           <Subscribe lang={lang} />
         </div>

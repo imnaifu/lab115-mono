@@ -5,9 +5,15 @@ import { sourceOf } from "@/lib/sources";
 function gradientFor(id: string, accent: string): string {
   const seed = parseInt(id.slice(0, 4), 16) || 0;
   const tilt = 120 + (seed % 90);
+  // The far end of the ramp used to be a flat `#1d1a33`. That value is now the
+  // dark theme's PAGE colour, so on a dark page the cover faded into the ground
+  // it was supposed to sit on. It leans toward the ink of whichever side is
+  // showing instead: still darker than the accent on cream, now lighter than it
+  // on the dark page, and in both cases a step AWAY from the background.
+  const far = "light-dark(#1d1a33, #f3ede1)";
   return (
     `linear-gradient(${tilt}deg, ${accent} 0%, ${accent} 42%, ` +
-    `color-mix(in srgb, ${accent} 55%, #1d1a33) 100%)`
+    `color-mix(in srgb, ${accent} 55%, ${far}) 100%)`
   );
 }
 
@@ -87,7 +93,7 @@ export function Cover({
 
   return (
     <div
-      className={`relative flex-none overflow-hidden rounded-xl bg-cream-deep shadow-cover ${SIZE[variant]}`}
+      className={`relative flex-none overflow-hidden rounded-xl bg-page-deep shadow-cover ${SIZE[variant]}`}
     >
       {/* The text size lives on the wrapper beside its padding — the two are one
           decision per variant — and the span inherits it. */}

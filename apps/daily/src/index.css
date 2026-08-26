@@ -15,24 +15,58 @@
 @import "tailwindcss";
 
 @theme {
-  /* Paper stack, lightest to warmest. */
-  --color-cream: #fbf3e9;
-  --color-cream-deep: #f5ebdc;
-  --color-card: #f3e8d8;
-  --color-paper: #fffdf9;
+  /**
+   * EVERY COLOUR IS `light-dark()`, and that is the whole dark mode.
+   *
+   * The switch is `color-scheme` on the root, set three times in `@layer base`
+   * below; each colour then resolves itself and the ~200 `bg-page` / `text-ink`
+   * utilities scattered through the components never had to change. Writing the
+   * dark values as a second `:root` block under a media query would have meant
+   * maintaining the same twelve names twice, which is the kind of duplication
+   * that goes stale on the first hurried edit.
+   *
+   * IT COSTS NO BROWSER SUPPORT, which was the worry and is worth recording:
+   * Lightning CSS — the transformer Tailwind v4 runs — compiles `light-dark()`
+   * away rather than shipping it. Each colour becomes a pair of
+   * `var(--lightningcss-light, x) var(--lightningcss-dark, y)` and the three
+   * `color-scheme` rules below become the switch that blanks one side of every
+   * pair. So the floor is custom properties, not a 2024 colour function. Check
+   * the built CSS before assuming otherwise; the source here says `light-dark()`
+   * and the output does not contain it.
+   *
+   * THE POSTER AND THE OG CARD DO NOT PARTICIPATE and must not be wired to these
+   * tokens. They are drawn by Satori in lib/poster.tsx and lib/og.tsx from
+   * hardcoded hex, they end up in someone else's Twitter feed rather than in a
+   * browser with a preference, and cream is what they are. That independence is
+   * deliberate, not an oversight waiting to be tidied up.
+   */
 
-  /* Ink, three steps of emphasis. */
-  --color-ink: #3b3563;
-  --color-ink-mid: #5f5885;
-  --color-ink-soft: #8a83a8;
+  /* Paper stack, lightest to warmest — inverted in the dark, where the same
+     names mean "one step further from the ground". */
+  --color-page: light-dark(#fbf3e9, #1d1a33);
+  --color-page-deep: light-dark(#f5ebdc, #252140);
+  --color-card: light-dark(#f3e8d8, #2a2547);
+  --color-paper: light-dark(#fffdf9, #302a52);
 
+  /* Ink, three steps of emphasis. The dark side is warm off-white rather than
+     pure white, for the same reason the light side is cream rather than paper:
+     nothing on this page is at full contrast. */
+  --color-ink: light-dark(#3b3563, #f3ede1);
+  --color-ink-mid: light-dark(#5f5885, #b7afd4);
+  --color-ink-soft: light-dark(#8a83a8, #8d86ad);
+
+  /* The one colour that does NOT invert. It is the brand's accent on both
+     grounds and it holds against each; swapping it would be swapping identity. */
   --color-orange: #efa050;
 
-  /* Hairline rules and card borders. */
-  --color-line: rgb(59 53 99 / 0.14);
+  /* Hairline rules and card borders: the ink of the other side, at the same
+     weight. */
+  --color-line: light-dark(rgb(59 53 99 / 0.14), rgb(243 237 225 / 0.14));
 
-  --shadow-soft: 0 2px 10px rgb(59 53 99 / 0.06);
-  --shadow-cover: 0 4px 14px rgb(59 53 99 / 0.16);
+  /* An ink-tinted shadow is invisible on a dark ground, so the dark side casts
+     black and casts it harder. */
+  --shadow-soft: 0 2px 10px light-dark(rgb(59 53 99 / 0.06), rgb(0 0 0 / 0.35));
+  --shadow-cover: 0 4px 14px light-dark(rgb(59 53 99 / 0.16), rgb(0 0 0 / 0.5));
 
   /* `max-w-page` — the fixed screenshot column. */
   --container-page: 750px;
@@ -54,9 +88,57 @@
     sans-serif;
 }
 
+/**
+ * `dark:` REDEFINED, because the stock variant only asks the OS.
+ *
+ * This site has a switch in the masthead, so "dark" is a two-part question: the
+ * reader's explicit choice if they made one, the OS otherwise. The three
+ * selectors below mirror the three that set `color-scheme`, and keeping them in
+ * step is the one invariant in this file.
+ *
+ * Almost nothing needs it — the colours handle themselves. It exists for the two
+ * places where the theme picks an ELEMENT rather than a value: the masthead's
+ * mark, which is one of two files, and the toggle's own icon.
+ */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where(:root[data-theme="dark"], :root[data-theme="dark"] *) {
+    @slot;
+  }
+}
+
 @layer base {
-  /* No utility for this one, and it is document-level. */
+  /**
+   * THE SWITCH. No utility for this one, and it is document-level.
+   *
+   * Three rules, in this order and for this reason: the OS decides when the
+   * reader has not, an explicit choice beats the OS in BOTH directions, and the
+   * `:not([data-theme="light"])` guard is what makes a reader on a dark Mac who
+   * asked for light actually get light.
+   *
+   * `data-theme` is stamped before first paint by the inline script in
+   * app/layout.tsx. Without that script every navigation would flash cream at a
+   * reader who chose dark — see the note there.
+   */
   :root {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  :root[data-theme="light"] {
     color-scheme: light;
   }
 }

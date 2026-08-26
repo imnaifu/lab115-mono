@@ -177,6 +177,28 @@ export const DRY_RUN = process.env.DRY_RUN === "1";
 export const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 
 /**
+ * SIGNUPS CLOSED. Set to true to open them.
+ *
+ * A SECOND SWITCH, and not a redundant one: `RESEND_API_KEY` answers "is the
+ * mail configured", which is about the machine, and this answers "is the door
+ * open", which is about us. Both have to be true before a reader is shown the
+ * form or allowed through the endpoint. Emptying the key to hide the form would
+ * be the wrong lever — it also stops the send to anyone already confirmed, and
+ * it makes a deliberate decision look like a missing credential.
+ *
+ * IT CLOSES THE ENDPOINT TOO, not just the form. A hidden form whose API still
+ * accepts posts is open to anyone who read the page source once, and the whole
+ * point of holding this back is that a subscriber acquired now would be a
+ * subscriber acquired against a flow we are not finished checking.
+ *
+ * THE DAILY SEND IS NOT GATED BY THIS. It still runs on `mailEnabled()` alone,
+ * because closing the door on new readers is not a reason to stop delivering to
+ * the ones already behind it. If the edition itself needs holding back, that is
+ * `DRY_RUN` or an empty `MAIL_SEGMENT`, and it is a different decision.
+ */
+export const MAIL_SIGNUP_OPEN = false;
+
+/**
  * HMAC key for confirmation links. Any long random string.
  *
  * ROTATING IT INVALIDATES EVERY UNCLICKED CONFIRMATION LINK, and nothing else —

@@ -20,7 +20,7 @@ export type Product = {
 export const PRODUCTS: Product[] = [
   {
     id: "daily",
-    name: "Daily",
+    name: "Daily Picks",
     url: "https://daily.lab115.com",
     host: { zh: "daily.lab115.com", en: "daily.lab115.com" },
     tagline: {

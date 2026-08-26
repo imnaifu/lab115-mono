@@ -1,4 +1,10 @@
-import { MAIL_FROM, MAIL_REPLY_TO, MAIL_SEGMENT, RESEND_API_KEY } from "@/lib/config";
+import {
+  MAIL_FROM,
+  MAIL_REPLY_TO,
+  MAIL_SEGMENT,
+  MAIL_SIGNUP_OPEN,
+  RESEND_API_KEY,
+} from "@/lib/config";
 import type { Lang } from "@/lib/lang";
 
 /**
@@ -23,6 +29,18 @@ const API = "https://api.resend.com";
 /** Off, not broken: no key means no form on the page and no send after a run. */
 export function mailEnabled(): boolean {
   return Boolean(RESEND_API_KEY);
+}
+
+/**
+ * Whether a reader may join the list right now.
+ *
+ * Configured AND open — see `MAIL_SIGNUP_OPEN` in lib/config.ts for why those
+ * are two separate questions. Everything a reader can reach asks this one: the
+ * form on the front page, the same form under a digest, and the POST endpoint
+ * behind them. `mailEnabled` stays the question the SEND asks.
+ */
+export function signupOpen(): boolean {
+  return mailEnabled() && MAIL_SIGNUP_OPEN;
 }
 
 /** What Resend puts in an error body. Every field optional on purpose — this is

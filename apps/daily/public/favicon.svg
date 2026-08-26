@@ -1,20 +1,84 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="每日干货 Daily Takes">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="每日严选 Daily Picks">
   <!--
-    A pair of quotation marks. A "take" is an argued opinion, which is the one
-    thing this digest selects for — the scorer's first question is literally
-    "argument or announcement?", and news gets pushed to the 30s. The previous
-    icon was an open book, which said "reading", not "opinion".
+    THE SKELETON OF 严, the verb the brand is named for: two rules stacked with a
+    pair of uprights between them, and a leg down the left running the WHOLE
+    height of the mark. The rules begin at the leg rather than crossing it.
 
-    An ink tile rather than the site's cream, because the browser tab is where
-    this has to survive at 16px: a cream tile on a light tab strip loses its
-    edges, and the marks go with them. Checked against a mock tab bar — at that
-    size the two-colour split is still what makes it read as two marks.
+    THE LEG IS ONE CIRCULAR ARC, AND ITS GEOMETRY IS DERIVED, NOT DRAWN.
+
+    Three constraints fix it completely, which is why there are no eyeballed
+    control points here and why nudging one number breaks the other two:
+
+      1. THE CENTRE OF ITS CIRCLE SITS ON THE MARK'S HORIZONTAL MIDLINE — at
+         (-20, 32), level with the centre of the tile. That is what makes the arc
+         symmetric top to bottom: it leaves (8,11), bellies out to x 15 exactly at
+         y 32, and returns to (8,53).
+
+      2. IT BELLIES TOWARD THE RULES, not away from them. The centre is far to the
+         LEFT of the artwork, so the arc is the right-hand side of its circle. An
+         earlier version had this backwards — centre to the right, belly to the
+         left — and it read as a bracket closing the mark off rather than a stroke
+         leaning into it.
+
+      3. THE ENDPOINTS ARE AT x 8 so the whole mark stays centred: 8 minus the
+         3.5 stroke half-width is 4.5, and the rules' right edge is 56 plus 3.5,
+         which is 59.5. Those average to 32.
+
+    From those, the radius is not a choice: with the endpoints 21 above and below
+    the midline, a belly of s to the right of them satisfies 441 = 2us + s² where
+    u = 8 - cx. s = 7 gives centre x -20 and radius 35. Shallower and deeper
+    versions exist — s = 5 gives radius 46.6, s = 10 gives 27.05 — and all three
+    keep the mark centred, because the endpoints do not move. Only the belly does.
+
+    The middle band of the printed glyph also carries two floating dots. They are
+    gone here: four elements between the rules turn to mush below 32px, and the
+    uprights are the half that reads.
+
+    THE RULES START AT x 13.2, which is where the arc is when it passes y 21 and
+    y 43 — the same value at both, by the symmetry above. It is a derived number
+    too: change the radius and this moves.
+
+    THE PREVIOUS ICON WAS A PAIR OF QUOTATION MARKS, and it was right for as long
+    as the brand said Takes — a "take" is an argued opinion, which is what the
+    scorer selects for. The brand says 严选 / Picks now, and the marks pointed at
+    a word that is no longer anywhere on the site.
+
+    THE ORANGE IS THE LEG, and it is the only orange in the mark: one stroke
+    pulled out of the character is the 选 half of the name said in colour.
+
+    THIS FILE FOLLOWS THE OS AND THE OTHERS DO NOT. The browser tab is the one
+    place whose ground changes underneath the icon, so this is where the swap is
+    worth having: ink tile on a light strip, cream tile on a dark one. Chrome and
+    Firefox honour `prefers-color-scheme` inside an SVG favicon; Safari has been
+    unreliable about it, and its fallback is the ink tile, which is what shipped
+    before — not worse.
+
+    THE MASTHEAD USES mark.svg AND mark-cream.svg, NOT THIS FILE. An `<img>`
+    resolves this media query against the READER'S OS, while the page follows the
+    switch in its own masthead — so a reader on a light Mac who chose dark would
+    get the ink tile on the dark page. Shell.tsx renders both files and lets the
+    `dark:` variant pick; see the note there.
+
+    Classes with a `<style>` block rather than `fill="var(--tile)"`: `var()` in a
+    presentation attribute is not resolved everywhere, and a favicon has no
+    console to tell you it failed.
 
     Palette from src/index.css: cream #FBF3E9, ink #3B3563, orange #EFA050.
-    The paths are generated geometry, not hand-tuned curves; adjusting a control
-    point by eye will break the pair's symmetry.
   -->
-  <rect width="64" height="64" rx="14" fill="#3B3563"/>
-  <path fill="#FBF3E9" d="M 8 23 A 12 12 0 1 1 32 23 C 32 35.0 25.4 44.0 15.8 48.8 L 8.6 39.2 C 18.8 35.6 23.6 30.2 23.6 23 Z"/>
-  <path fill="#EFA050" d="M 33 23 A 12 12 0 1 1 57 23 C 57 35.0 50.4 44.0 40.8 48.8 L 33.6 39.2 C 43.8 35.6 48.6 30.2 48.6 23 Z"/>
+  <style>
+    .tile { fill: #3B3563; }
+    .mark { stroke: #FBF3E9; }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: #FBF3E9; }
+      .mark { stroke: #3B3563; }
+    }
+  </style>
+  <rect class="tile" width="64" height="64" rx="14"/>
+  <g class="mark" fill="none" stroke-linecap="round">
+    <path stroke-width="7" d="M 13.2 21 H 56"/>
+    <path stroke-width="7" d="M 13.2 43 H 56"/>
+    <path stroke-width="5" d="M 30 25 V 39"/>
+    <path stroke-width="5" d="M 42 25 V 39"/>
+  </g>
+  <path fill="none" stroke="#EFA050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
 </svg>

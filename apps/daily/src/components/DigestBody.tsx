@@ -6,7 +6,7 @@ import { PAD, SECTION, SectionHead } from "./Shell";
 import { strings } from "@/lib/i18n";
 import { track } from "@/lib/track";
 import type { Lang } from "@/lib/lang";
-import { ALL_TAB, type Category } from "@/lib/categories";
+import { accentColor, ALL_TAB, type Category } from "@/lib/categories";
 import type { PublishedArticle } from "@/lib/types";
 
 /** Every pill-shaped control on the page. Only the colours change per state. */
@@ -93,7 +93,7 @@ export function DigestBody({
             label={lang === "en" ? category.nameEn : category.name}
             count={inCategory.length}
             on={current === category.id}
-            accent={category.accent}
+            accent={accentColor(category)}
             onClick={() => {
               setActive(category.id);
               track("category_tab", { tab: category.id });
@@ -137,7 +137,7 @@ export function DigestBody({
           >
             <SectionHead
               title={lang === "en" ? category.nameEn : category.name}
-              dot={category.accent}
+              dot={accentColor(category)}
               count={t.sectionCount(inCategory.length)}
             />
             {inCategory.map((article) => (

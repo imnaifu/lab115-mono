@@ -1,3 +1,4 @@
+import { themedAccent } from "@/lib/accent";
 import { DigestBody, type CategoryGroup } from "./DigestBody";
 import {
   EndLink,
@@ -12,7 +13,7 @@ import {
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
 import { Subscribe } from "./Subscribe";
-import { mailEnabled } from "@/lib/mail/resend";
+import { signupOpen } from "@/lib/mail/resend";
 import { shownArticles } from "@/lib/store";
 import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
@@ -40,7 +41,7 @@ function FoldedList({ digest, lang }: { digest: Digest; lang: Lang }) {
       />
       {/* `divide-y` replaces a `+` sibling rule: separators between rows, none
           above the first or below the last. */}
-      <div className="divide-y divide-line rounded-card bg-cream-deep px-5 py-4">
+      <div className="divide-y divide-line rounded-card bg-page-deep px-5 py-4">
         {digest.folded.map((item) => (
           <a
             className="flex items-baseline gap-2.5 py-2 text-sm"
@@ -51,7 +52,7 @@ function FoldedList({ digest, lang }: { digest: Digest; lang: Lang }) {
           >
             <span
               className="flex-none text-xs font-extrabold"
-              style={{ color: sourceOf(item.sourceId).accent }}
+              style={{ color: themedAccent(sourceOf(item.sourceId).accent) }}
             >
               {sourceOf(item.sourceId).name}
             </span>
@@ -68,7 +69,7 @@ export function EmptyState({ lang }: { lang: Lang }) {
   return (
     <section className={`${SECTION} ${PAD}`}>
       <div className="rounded-card bg-card px-7 py-14 text-center">
-        <div className="mx-auto mb-5 flex size-22 items-center justify-center rounded-full bg-cream">
+        <div className="mx-auto mb-5 flex size-22 items-center justify-center rounded-full bg-page">
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
             <path
               d="M7 9.5A2.5 2.5 0 0 1 9.5 7H18v26H9.5A2.5 2.5 0 0 1 7 30.5v-21Z"
@@ -191,7 +192,7 @@ export function DigestView({
       {/* Before the way onward, not after it: a reader who has just finished the
           day's cards is at the moment they might want tomorrow's delivered, and
           the next block down sends them somewhere else. */}
-      {mailEnabled() ? (
+      {signupOpen() ? (
         <div className={PAD}>
           <Subscribe lang={lang} />
         </div>

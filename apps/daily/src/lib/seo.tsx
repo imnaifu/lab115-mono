@@ -133,7 +133,7 @@ export function publisher(brand: string) {
  * whose last segment is the first eight characters of a sha1 (see `articleAnchor`
  * in lib/links). The URL line of a search result therefore carried no information
  * at all, and breadcrumbs were what replaced it — Google draws the trail in place
- * of the path, so a result showed 每日干货 › 2026-08-23 rather than eight hex
+ * of the path, so a result showed 每日严选 › 2026-08-23 rather than eight hex
  * digits.
  *
  * THAT IS NO LONGER THE JUSTIFICATION, and the trail stays anyway. The URL is
