@@ -3,7 +3,7 @@ import { CATEGORIES, PUBLISH_MIN_SCORE, resolveCategory } from "./categories";
 import { SCORE_DIMENSIONS, SCORE_MAX, SCORE_MIN, SCORE_WEIGHTS } from "./score";
 import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
 import { USER_CONFIG } from "./user-config";
-import type { RawArticle } from "./fetcher";
+import { bodyFor, type RawArticle } from "./fetcher";
 import { sourceOf } from "./sources";
 import type { ScoreReview, SummaryText } from "./types";
 
@@ -107,15 +107,25 @@ async function mapLimited<In>(
 }
 
 /**
- * How many times to re-ask for articles a batch silently skipped.
+ * NO RETRIES ANYWHERE IN THIS FILE. Every pass asks once and takes what comes
+ * back; `GAP_RETRIES = 2` and the four loops around it are gone.
  *
- * Long replies do not only fail loudly. Asked for 8 summaries the model
- * regularly returns 5 or 6 and no error at all — the JSON is valid, it is just
- * short. Since the gap is detectable (an article with no thesis), the fix is
- * to ask again for exactly the ones missing, which is also a much smaller
- * request and so far more likely to come back whole.
+ * WHAT THAT GIVES UP, kept here because it is a real measurement rather than a
+ * worry: long replies do not only fail loudly — asked for 8 summaries the model
+ * regularly returned 5 or 6 and no error at all, the JSON valid and simply
+ * short. The gap is detectable (an article with no thesis) and re-asking for
+ * exactly the missing ones used to close it. Now it does not get closed: the
+ * article publishes with a bare title, the score pass leaves it unjudged, the
+ * photo keeps its English caption.
+ *
+ * TWO THINGS MAKE THAT LESS BAD THAN IT SOUNDS. BATCH_SIZE is 1, so "returned 5
+ * of 8" is not a shape a request can have any more — a reply is whole or it is
+ * absent. And the client keeps `maxRetries: 1`, which still covers the network
+ * faults that a re-ask was never the right answer to.
+ *
+ * Every failure is logged where it happens, and `report` counts what came back.
+ * That is the whole safety net now.
  */
-const GAP_RETRIES = 2;
 
 /**
  * The CEILING of the per-article curve below, from config.json — summary
@@ -142,12 +152,18 @@ const GAP_RETRIES = 2;
 const ZH_MAX = USER_CONFIG.summaryMaxChars;
 
 /**
- * Kept for `report` alone — no floor is stated to the model any more.
+ * The floor, stated to the model AND counted by `report`.
  *
- * A stated minimum is a padding instruction, and paired with "cover the
- * article" it made compression the one move that satisfied both. Noticing that
- * a summary came back thin is still worth doing, so the number survives as a
- * statistic rather than as a rule.
+ * The comment here used to say no floor was stated any more — that had stopped
+ * being true: SUMMARY_SYSTEM carries 「但下限是 ${ZH_MIN} 字」 next to the budget,
+ * and it is deliberate. A minimum on its own is a padding instruction, and
+ * paired with "cover the article" it made compression the one move that
+ * satisfied both. What it sits next to now is 「装不下就少讲一层」 — the floor says
+ * an empty summary is a failure, and the sentence after it says the way out is
+ * fewer points, not denser ones.
+ *
+ * The 106-character all-platitudes reply recorded in the prompt is what a run
+ * with no floor at all looks like.
  */
 const ZH_MIN = USER_CONFIG.summaryMinChars;
 
@@ -191,28 +207,6 @@ const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
  */
 const TITLE_MAX = 24;
 
-/**
- * The share note's hashtags: how many, and how long each may be.
- *
- * FOUR, AND THE PROMPT SPLITS THEM 2 BROAD + 2 NARROW, because the two halves do
- * different jobs on 小红书 — a broad tag puts the note in front of a crowd that
- * already exists, a narrow one lets the person who came looking for exactly this
- * find it. All-broad competes with everything on the platform; all-narrow reaches
- * nobody who was not already searching.
- *
- * CHINESE ONLY, and there is no English counterpart. The tags exist for one
- * destination, that destination is Chinese, and an English note carrying Chinese
- * hashtags is worse than one carrying none. `summaryFor` picks the take by
- * language and the tags travel inside it, so /en shares carry none unless the
- * English half is missing and the reader is being shown the Chinese take anyway
- * — in which case Chinese tags are the correct ones.
- *
- * EIGHT CHARACTERS is a ceiling rather than a target. Past it a tag has stopped
- * being a tag and become a sentence, which nobody searches for; the cleaner drops
- * anything longer rather than truncating, because half a word is a different word.
- */
-const TAGS_PER_ARTICLE = 4;
-const TAG_MAX = 8;
 
 /**
  * What ONE article is allowed, derived from how long that article is.
@@ -330,10 +324,11 @@ export interface Verdict {
    * The English half, or null when the reply carried only the Chinese one.
    *
    * Null rather than an empty SummaryText because the two are read differently:
-   * `zh.thesis` being empty is what the gap retry hunts for, while a missing
-   * English half is NOT re-asked — see `applySummaries`. Keeping it nullable makes
-   * "there is no English take for this article" a value the job can copy straight
-   * into the optional field on `Article.summary`.
+   * `zh.thesis` being empty is what marks an article as never summarized, while
+   * a missing English half is a take that shipped without one — see
+   * `applySummaries`. Keeping it nullable makes "there is no English take for
+   * this article" a value the job can copy straight into the optional field on
+   * `Article.summary`.
    */
   en: SummaryText | null;
 }
@@ -565,9 +560,10 @@ const SCORE_EXAMPLE = `{
  *
  * That was measured when a request carried a batch of articles. BATCH_SIZE is 1
  * now, so the reply holding both languages for one article is ~1,200 characters
- * against the ~12,000 that broke it. The gap detection below still checks each
- * half separately, so a reply that stops after the Chinese is re-asked rather
- * than published half-empty.
+ * against the ~12,000 that broke it. Each half is still read separately below,
+ * so a reply that stops after the Chinese publishes as Chinese-only rather than
+ * as a half-empty English take — nothing re-asks for it, see the note on
+ * retries at the top of this file.
  */
 const SUMMARY_PASS = "summary";
 
@@ -585,39 +581,111 @@ const SUMMARY_PASS = "summary";
  *
  * The Chinese rules are NOT shared this way and should not be: the backfill never
  * writes Chinese, so there is one caller and nothing to keep in step.
+ *
+ * NOT SHARED IS NOT FREE, and this is the drift it produced. This block used to
+ * say 「中文没有小标题（新写的概要都不该有，见「连着讲」那条）」 — written when the
+ * Chinese rules said to write straight through without headings. The Chinese side
+ * has since flipped to 「尽量用小标题，1 到 3 个」, the 「连着讲」 rule it pointed at
+ * no longer exists, and nothing here noticed: the English half was being told to
+ * drop headings the Chinese half had just been told to write, under a heading that
+ * says 「结构跟着中文走」. It now states the correspondence and nothing else, which
+ * is the only form that cannot go stale when the Chinese rules move again.
  */
-const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：同一个论点、同样的证据、同样的段落断点、同样数量的小标题（「## 」照样是正文里唯一允许的 markdown）。中文那边的每条硬要求在这边同样有效 —— 第三人称、最多三个要点、段落写长了就拆。
+const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：同一个论点、同样的证据、同样的段落断点。中文那边的硬要求这边同样有效 —— 第三人称、不分点、段落写长了就拆。
 
-**英文这边不写标签。** \`zh_tags\` 只有一套，它是给中文分享用的，英文不需要对应的字段。
+**结构跟着中文走。** 中文几个小标题英文就几个、位置一一对应，中文几段英文就几段。不许英文这边自己长出中文没有的标题、编号或分点。
 
-**写成地道英文，不是把中文一个词一个词换过来。**
+**写地道英文，不是逐词换。** 现代类比要**重新本地化，不是翻译**：「拼团买大件」是 chipping in with the neighbours，不是 group-buying；「C 位」是 centre stage，不是 the C position；「KPI」「打卡」这类已经进入英文办公语汇的词照用。直译过来的中文梗，英文读者读到的是一句不知所云的话。
 
-上面风格指南要的现代类比在这里要**重新本地化，而不是翻译**。「拼团买大件」是 chipping in with the neighbours，不是 group-buying；「C 位」是 centre stage 或 top billing，不是 the C position；「KPI」「打卡」这类已经进入英文办公语汇的词照用。一个直译过来的中文网络梗，英文读者读到的是一句不知所云的话。
+英文里不许出现「」『』和中文标点，引话用单引号 —— 直双引号在这边同样会让整条 JSON 失效。
 
-英文里不许出现「」『』和中文标点，要引一段话用单引号。直双引号的禁令在这边同样有效 —— 一个游离的引号就会让整条 JSON 失效。
+**两边的读者不会同时看到两种语言**，英文必须自己站得住：只读英文的人，最后知道的东西要和只读中文的人一样多。产品名、公司名、人名、模型名两边都照原样。`;
 
-**两边的读者不会同时看到两种语言**，是切换过去的，所以英文必须自己站得住：只读英文的人，最后知道的东西要和只读中文的人一样多。产品名、公司名、人名、模型名两边都照原样。`;
+/**
+ * The style guide. CUT BY A FIFTH, from ~5,100 characters to ~4,000, and what
+ * went was duplication rather than rules: every rule that was here is still here,
+ * stated once. What it had accumulated instead was the same rule argued three
+ * times over — the per-paragraph ceiling appeared in the style bullets, in the
+ * field list and again in the format section; the swap-two-paragraphs test
+ * appeared in a worked example and then as a rule; 摘要-versus-讲述 was argued in
+ * the opening and re-argued 2,000 characters later. A rule repeated in three
+ * wordings is three things to keep in step, and the model reads the third one no
+ * more carefully than the first.
+ *
+ * TWO PIECES OF EVIDENCE LEFT THE PROMPT AND LIVE HERE INSTEAD, because they are
+ * reasons for a maintainer not to delete a rule, not instructions for the model:
+ *
+ *   - The emoji ban. Asking Google Fonts for a character like 💣 returns
+ *     something that is not a usable font file at all, so the poster's subset has
+ *     no emoji glyph and any emoji in the body renders as an empty box.
+ *
+ *   - The ✗/✓ worked example (Amazon scanning and pulping books). Its ✗ half —
+ *     conclusion-shaped lede, three headings tracking the article's own three
+ *     sections, blocks that swap freely — survives as prose, because naming the
+ *     bad shape is what the rule cannot do on its own. Its ✓ half was 600
+ *     characters of a second full rewrite whose one exclusive job was showing
+ *     unnumbered headings, and SUMMARY_EXAMPLE shows those now that its own
+ *     numbering is stripped. The swap test itself stays as a rule.
+ *
+ * The rest of the file's measurements stay where they are enforced: PARA_MAX for
+ * the 251-character wall, budgetFor for the length curve.
+ */
+const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，擅长用优雅的幽默和恰到好处的冷嘲热讽解读文章。
 
-const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中历史/社科老师。抓住文章的重点内容和观点，改写成极简、有趣、易懂的风格，让高中生也能轻松理解
+**先把文章读懂，然后合上它，用自己的话讲一遍 —— 讲给一个初中二年级的学生听。**
 
-写作风格指南：
-- 拒绝照本宣科：严禁使用晦涩的学术名词和长难句，多用短句和口语化表达
-- 巧用现代类比：适当引入现代生活中的概念或流行语（如：KPI、拼团、C位、打卡、运营等），帮读者迅速建立脑补画面
-- 场景化/故事化：把宏大的历史概念转化为普通人的“生活视角”
-- 排版极简：多用小标题、序号，结尾简单总结下
-- 生动幽默：语气热情接地气，像在和朋友面对面聊天，而不是在讲台上念课本
+总结是对着原文提取要点，讲述是理解之后从头组织。前者必然是原文的缩小版：顺序跟着原文、每句都是某段的压缩。写完自问：**这读起来像一个懂行的人在讲，还是像一份摘要。**
 
-概要是替读者读完原文的，读完就不必再打开原文。每篇给你的文章都已经判定值得收录，直接写，不要再评价它够不够格。
+**讲清一件事，不是覆盖全文。** 一篇文章通常只有一件事真正值得让人知道 —— 找到它，讲透，其余不提，写不到原文十分之一完全正常。给你的文章都已经判定值得收录，直接写，不要再评价它够不够格。
 
-以下是格式要求（json 格式）。
+## 怎么写
 
-## 返回什么
+- **语气像懂行的朋友在吐槽**，不是讲台上念课本。**刻薄必须落在具体的事上** ——「又一个把用户当韭菜的订阅制」有对象；「这很讽刺」「令人深思」是空话，删掉之后句子反而更好
+- **点出作者在骂谁、在反抗什么。把有立场的文章写成中立综述，是这里最常见的失手**
+- 巧用现代类比（KPI、拼团、C位、打卡、外包）帮读者迅速建立画面
+- **尽量用小标题，1 到 3 个**：它是换气点不是目录条目，标的是「讲到哪儿了」而不是「第几个要点」。短文用一个也行，但**不要一个都不用** —— 那样段落容易越写越长
+- **结尾留一句大实话**：抛开所有高大上的名词，用最接地气的一句话给读者留个东西
+
+## 让初中生读得懂
+
+标准：一个初二学生读完能把这件事讲给同学听 —— 讲不出来就是有台阶没铺。
+
+**一、专有名词第一次出现就当场解释。** 「以色列的 Nimbus 项目」——Nimbus 是什么？读者卡在名字上，后面写得再好也接不上。**但删掉的是名字，不是事实**：名字换成一句人话（「以色列花 12 亿请谷歌和亚马逊替政府建云、后来被曝用于监视巴勒斯坦人」），不是把整件事删掉。实测栽过：这条第一版写成「要么解释要么不提」，模型判定一篇文章「全都不值得提」，交出 106 字全是空话 —— **读得懂每个字却什么也没学到，是最坏的结果。**
+
+**二、行业黑话包括看起来像中文的词。** 「从 0 到 1」写成「自己想出新东西」，「知识产权垄断」写成「专利和版权攥在少数几家公司手里」。**抽象名词堆的句子读着像话，其实没画面。**
+
+**三、数字必须带参照。** 「850 万台设备瘫痪」——多吗？「不到全球 Windows 电脑的 1%，就足够让机场停摆」才有意义。
+
+**四、一句话最多两个逗号**，超过就拆。段落短了，句子照样能长得读不懂。
+
+## 讲述，不是分点
+
+**一篇只讲一件事。** 讲透一件事需要的是背景、机制、后果这类**同一条线上的东西**，不是三个并列的话题。写完**逐段**检查：**任意两个相邻段落，交换顺序而不影响理解，就说明它们是并列条目而不是讲述** —— 合并，或者砍掉一个（实测栽过：一篇讲各国数字主权的文章一段塞一个国家，四段随便换顺序都读得通）。
+
+最常写坏的形状：一句结论式导语，然后三个小标题对应原文的三个部分，顺序跟着原文，每节两句话。**从一个具体动作开口，不要从结论开口**，收尾那句留给讲述者自己的判断。
+
+**小标题少不等于连贯。** 把二十一条规则归并成三个主题、每个主题底下写一大坨，那还是分点，只是分得少了。原文本身是一份清单（十条建议、二十条规则）时这条最容易破：**不要挑几条来讲，去讲这份清单背后的那一件事** —— 它为什么存在、它假设了什么、照着做的人真正会遇到什么。二十一条译成二十一段是翻译，译成三段还是摘要。
+
+**每段最多 ${PARA_MAX} 字。** 不是「大约」，是上限，每一段都算，跟「一篇只讲一件事」是**两道独立的闸**。**写长了拆成两段，不要从里面删字**；一段里塞了四个并列例子，改短的办法是**砍掉三个**，不是把四个压得更紧。小标题也不是写长段的许可：一个小标题下面三四个短段是正常的。
+
+**字数预算跟文章一起给你**，那是上限不是目标，写不满完全没关系，凑字数比短更糟。**但下限是 ${ZH_MIN} 字**：低于它说明写空了，不是写精炼了。装不下就少讲一层，不要把两层压成一句。
+
+## 格式硬要求
+
+**不许用 emoji。** 正文会被画进分享海报，海报的字体子集里没有 emoji 字形，写了就是一个空方框。
+
+**不许在字段值里用直双引号**，中文用「」；**不许在字符串里塞真的换行**，段落之间写 "\\n\\n" 这两个转义。一个游离的引号、一个未转义的换行，都会让 JSON 失效。
+
+**正文里唯一允许的 markdown 是小标题**，写成「## 标题」，单独占一块。其它一概不解析 —— 没有星号加粗、没有减号列表、没有链接、没有引用块，写了就在读者屏幕上显示成字面符号。**小标题里不许有编号**：「## 1. 版权法的护身符」写成「## 版权法成了护身符」，编号是目录的记号，它一出现，三个小标题就变成了三个并列条目。
+
+**第三人称，正文里不许出现「我」「我们」「咱们」「笔者」。** 讲述者不是原文作者：原文写「我发现蓝牙耳机断连」，这里写「作者发现自己的蓝牙耳机断连」；不要用「我们」把概要和读者绑在一起（写「人们」）。要交代是谁在说就点名：「作者认为」「研究者的结论是」。**不知道性别就写「作者」**，不要按名字猜（实测同一篇文章两次跑分别写成「他」和「她」，至少有一次是编的）。**「你」不受影响**，设问和把读者拉进场景都照常用 —— 那个「你」指任何人，不会跟作者的自称打架。
+
+## 返回什么（json 格式）
 
 每篇文章一条，字段如下：
 - "zh_title" —— 中文标题，见下面「标题」。
 - "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。
-- "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间空一行，也就是 JSON 字符串里的 "\\n\\n"。分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
-- "zh_tags" —— ${TAGS_PER_ARTICLE} 个中文标签，**字符串数组**，见下面「标签」。
+- "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间写 "\\n\\n"，分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
 - "en_thesis" 和 "en_text" —— 同一篇概要的英文版，见下面「英文」。
 - "category" —— 见下面「分类」。
 
@@ -625,67 +693,23 @@ const SUMMARY_SYSTEM = `请你充当一位擅长“通俗讲知识”的高中�
 
 一篇文章一条。绝不允许一条盖住几篇、少写几篇，或者给没给你的文章编一条。
 
-## 格式硬要求
-
-**不许在字段值里用直双引号**，中文用「」。一个游离的引号就会让 JSON 失效。
-
-**不许在字符串里塞真的换行**，段落之间写 "\\n\\n" 这两个转义。一个未转义的换行和游离引号一样会让 JSON 失效。
-
-**正文里唯一允许的 markdown 是小标题**，写成「## 标题」，单独占一块。其它一概不解析 —— 没有星号加粗、没有减号列表、没有链接、没有引用块，写了就在读者屏幕上显示成字面符号。序号直接写在文字里就行（「1.」「2.」），或者写在井号后面。
-
-**第三人称，正文里不许出现「我」「我们」「咱们」「笔者」。**
-
-这不是文风偏好，是会让读者读错。概要是替读者读完原文的，它不是原文作者，所以：
-
-- 原文写「我发现蓝牙耳机断连」，概要要写「作者发现自己的蓝牙耳机断连」。照抄成「我发现」，读者会以为是概要作者遇到的事 —— 而那个「我」到底是谁，正文里根本无从判断。
-- 也不要用「我们」把概要和读者绑在一起：「我们总觉得只要把问题说得足够严重」应该写成「人们总觉得」。
-- 要交代是谁在说，就点名：「作者认为」「这位工程师发现」「研究者的结论是」。
-
-**「你」不受影响**，设问和把读者拉进场景都照常用：「你要是那年在长安开个小铺子，光交税就得应付三拨人」—— 那个「你」指任何人，不会跟作者的自称打架。
-
-**每段最多 ${PARA_MAX} 字。** 不是「大约」，是上限，每一段都算。段落写长了是最常见的失误：**把它拆成两段，不要从里面删字。** 一段四百字的墙，读者是直接跳过去的，不是慢慢读完的。
-
-**小标题最多 3 个，一个不多。** 写完数一遍井号，超过三个就是错的：合并、或者砍掉一整节，不要靠缩短每节来凑。一个都不用也完全可以。
-
-**一篇最多讲三个要点，所以小标题也最多 3 个 —— 这是同一条规则的两种说法。** 注意它跟上面那条每段字数的上限是**两道独立的闸**：把二十一条规则归并成三个主题、然后每个主题底下写一大坨，同样是不合格的。 抓住文章最值得带走的三件事，其余全部砍掉 —— 不是压缩，是不写。
-
-原文本身是一份清单（十条建议、二十条规则）的时候这条最容易破：**挑三条最能说明问题的，再点出这类清单的共性，绝不逐条翻译。** 一篇二十一条的清单译成二十一段、配十二个小标题，那不是概要，是翻译。
-
-**整篇的字数预算跟文章一起给你。** 那是上限不是目标，写不满完全没关系，凑字数比短更糟。装不下就再砍掉一个要点，不要把两个要点压成一句。
-
 ## 标题
 
-"zh_title" 是给这篇文章重写一个中文标题，目标是让人想点开 —— 但它得是这篇文章的标题，不是一句随便的耸动话。
+"zh_title" 是给这篇文章重写一个中文标题，目标是让人想点开 —— 但它得是这篇文章的标题，不是一句随便的耸动话。**原标题是中文的也要重写**（原标题会作为文章的本名单独显示在新标题下面）。
 
-**原标题是中文的也要重写**，不要原样返回。原标题会作为文章的本名单独显示在新标题下面，所以这里的任务始终是写一个新的。
-
-怎么写得有人想点：
-- **挑最反常识的那一点。** 文章里最让人「等一下，真的吗」的地方，就是标题该说的事。
+- **挑最反常识的那一点**：文章里最让人「等一下，真的吗」的地方。
 - **给具体的东西**：一个数字、一个名字、一个动作、一个后果。「AI 让资深程序员慢了 19%」比「关于 AI 与生产力的一些思考」强，因为前者有个能被反驳的说法。
 - **疑问句、反转、只说一半都可以**，但留的那一半必须在正文前两段就兑现。
 - **短。最多 ${TITLE_MAX} 字**，越短越好。
 
-下面这几条比「抓眼球」优先，冲突的时候让标题平淡也没关系：
-- **不许骗。** 标题里每个说法都要在正文里站得住。原文说「某些任务上慢了 19%」，标题不能写成「AI 让程序员废了」。
+下面几条比「抓眼球」优先，冲突的时候让标题平淡也没关系：
+- **不许骗。** 每个说法都要在正文里站得住：原文说「某些任务上慢了 19%」，标题不能写成「AI 让程序员废了」。
 - **不许编**数字、人名、机构、结论，原文没有的一个都不许出现。
-- **不许用空心钩子**：「震惊」「太可怕」「你绝对想不到」「细节令人深思」「速看」「多少人还不知道」—— 这些字零信息量，删掉之后标题反而更好。
+- **不许出现「我」**（引号内引用原话除外）：写「作者靠给日记编索引提升了写作」，不写「我如何靠写日记提升写作」。
+- **不许用空心钩子**：「震惊」「太可怕」「你绝对想不到」「细节令人深思」「速看」—— 零信息量，删掉之后标题反而更好。
 - **不许写成目录**：「关于 X 的三个要点」「X 的五个启示」不是标题。
 - 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
 - 原标题本身已经够抓人的时候，直接译过来就是最好的答案 —— 重写不是义务。
-
-## 标签 "zh_tags"
-
-这几个词是分享到小红书时贴在文案末尾的话题标签，**既是分类也是搜索入口** —— 它们决定这篇笔记会被谁刷到。
-
-- **正好 ${TAGS_PER_ARTICLE} 个，前 2 个宽、后 2 个窄。**
-  - **宽**的是这个领域本来就有大量内容和关注者的大词（如 AI、职场、投资、健身、读书），作用是把笔记送进一个已经存在的人群。
-  - **窄**的是这篇文章独有的东西：它讲的那个机制、那个人群、那个具体后果（如 AI替代岗位、应届生就业）。作用是让真正冲这件事来的人搜得到。
-- **不要写井号**，只写词本身，井号是发的时候拼上去的。
-- **中间不许有空格**，一个标签遇到空格会被断成两个。
-- **每个最多 ${TAG_MAX} 个字**，宽词通常 2~4 个字。
-- **是词不是句子**：「AI替代岗位」对，「AI正在取代白领」错。
-- **不许编**。四个词都得是文章真的在讲的东西 —— 只看这四个标签能大致猜出文章讲什么，才算写对了。
-- 产品名、公司名、模型名照原样保留（DeepSeek、GPT-5），不要音译。
 
 ## 英文
 
@@ -714,14 +738,17 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
  * goes above 1, both the field and a second entry with consecutive indices have
  * to come back** — otherwise replies match the wrong articles, silently.
  *
- * The wrapper stays an array even for one article: the retry path re-asks for
- * whatever is missing, so the shape has to survive a batch of any size.
+ * The wrapper stays an array even for one article: BATCH_SIZE is the only thing
+ * deciding how many entries a request carries, so the shape has to survive a
+ * batch of any size.
  *
  * THE PROSE IS A HAND-WRITTEN TARGET, not a previous run's output — it is the
  * voice the style guide is asking for, written out, because that is the only
  * part of the prompt the model imitates rather than interprets. Its `## `
- * headings keep their "1." "2." numbering inside the marker: the numbering is
- * the author's, the marker is what makes the renderers draw it as a heading.
+ * headings carry NO "1." "2." numbering, because the prompt forbids numbering in
+ * headings and this example is read as the stronger of the two: the numbers were
+ * here while that rule was also here, which is a contradiction the model settles
+ * by copying rather than by obeying.
  *
  * BOTH HALVES ARE HAND-WRITTEN, and the English one is doing a second job: it is
  * the only place the prompt can SHOW what "localise the analogy, do not translate
@@ -748,12 +775,9 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
  */
 const EXAMPLE_ZH_TITLE = `推动历史的不是皇帝，是一家人的晚饭`;
 const EXAMPLE_ZH_THESIS = `真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。`;
-const EXAMPLE_ZH_TEXT = `教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 1. 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 2. 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 3. 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。`;
-/** Two broad, two narrow, in that order — the example is where the split is
- *  actually read rather than merely asked for. */
-const EXAMPLE_ZH_TAGS = ["历史", "冷知识", "古代经济", "农业社会"];
+const EXAMPLE_ZH_TEXT = `教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。`;
 const EXAMPLE_EN_THESIS = `History was not driven by kings and generals but by the everyday needs of countless ordinary families trying to put dinner on the table.`;
-const EXAMPLE_EN_TEXT = `Textbooks give emperors, generals and wars the centre stage. Zoom in, though, and you find that the ones actually holding the production together — and moving the plot along — were millions of ordinary households going about their day.\\n\\nSo rewind 4,000 years to the ancient Near East and watch how one unremarkable family levered history along:\\n\\n## 1. Getting fed was the original hardcore KPI\\n\\nIn ancient Mesopotamia a family's most important job was growing barley. Two great rivers watered the land, the soil was rich, and more grain meant more mouths could be fed.\\n\\nIn the ancient world people were labour, labour was an army, and an army was national power. Wherever families had more children and enough to feed them, that is where a superpower grew.\\n\\n## 2. Too big for one household? Enter the state\\n\\nSome jobs were simply beyond a single family, however hard it worked:\\n\\nIrrigation: watering the fields and holding back the floods meant thousands of households digging one canal. Somebody had to organise that, direct it, and at times force people to turn up — which is how the earliest states and governments got squeezed into existence.\\n\\nBig-ticket items: an ox and an iron plough were heavy equipment, far beyond one family's savings, so neighbours chipped in together, bought one between them, and took turns.\\n\\n## 3. Shopping built civilisation\\n\\nNo household could make everything it needed. Beyond what they grew themselves, families went to market for what they could not produce — pots, timber, bronze, even someone else's vegetables.\\n\\nOnce millions of households all wanted to buy, trade appeared, cities filled up and trade routes spread out. States went to war over the scarce goods behind all of it, and civilisations rose and fell along with them.\\n\\nIn one line: emperors and generals did not create history. The needs of countless ordinary families trying to eat well and live a little better pushed human society, step by step, into the modern world.`;
+const EXAMPLE_EN_TEXT = `Textbooks give emperors, generals and wars the centre stage. Zoom in, though, and you find that the ones actually holding the production together — and moving the plot along — were millions of ordinary households going about their day.\\n\\nSo rewind 4,000 years to the ancient Near East and watch how one unremarkable family levered history along:\\n\\n## Getting fed was the original hardcore KPI\\n\\nIn ancient Mesopotamia a family's most important job was growing barley. Two great rivers watered the land, the soil was rich, and more grain meant more mouths could be fed.\\n\\nIn the ancient world people were labour, labour was an army, and an army was national power. Wherever families had more children and enough to feed them, that is where a superpower grew.\\n\\n## Too big for one household? Enter the state\\n\\nSome jobs were simply beyond a single family, however hard it worked:\\n\\nIrrigation: watering the fields and holding back the floods meant thousands of households digging one canal. Somebody had to organise that, direct it, and at times force people to turn up — which is how the earliest states and governments got squeezed into existence.\\n\\nBig-ticket items: an ox and an iron plough were heavy equipment, far beyond one family's savings, so neighbours chipped in together, bought one between them, and took turns.\\n\\n## Shopping built civilisation\\n\\nNo household could make everything it needed. Beyond what they grew themselves, families went to market for what they could not produce — pots, timber, bronze, even someone else's vegetables.\\n\\nOnce millions of households all wanted to buy, trade appeared, cities filled up and trade routes spread out. States went to war over the scarce goods behind all of it, and civilisations rose and fell along with them.\\n\\nIn one line: emperors and generals did not create history. The needs of countless ordinary families trying to eat well and live a little better pushed human society, step by step, into the modern world.`;
 
 const SUMMARY_EXAMPLE = `{
   "articles": [
@@ -761,7 +785,6 @@ const SUMMARY_EXAMPLE = `{
       "zh_title": "${EXAMPLE_ZH_TITLE}",
       "zh_thesis": "${EXAMPLE_ZH_THESIS}",
       "zh_text": "${EXAMPLE_ZH_TEXT}",
-      "zh_tags": ${JSON.stringify(EXAMPLE_ZH_TAGS)},
       "en_thesis": "${EXAMPLE_EN_THESIS}",
       "en_text": "${EXAMPLE_EN_TEXT}",
       "category": "culture"
@@ -869,12 +892,13 @@ function chunk<T>(items: T[], size: number): T[][] {
 /**
  * Match a returned row back to the article it describes.
  *
- * The index is relative to the group that was sent, which is what lets the
- * same helper serve both the first attempt and a smaller retry. But when a
- * request carried exactly ONE article there is nothing to disambiguate, and
- * the index is pure ceremony the model gets wrong — it answered `1` for a
- * request containing only index 0, which silently dropped the result and cost
- * a retry. With one article in flight, whatever comes back is about it.
+ * The index is relative to the group that was sent, which is what lets one
+ * helper serve a group of any size. But when a request carried exactly ONE
+ * article there is nothing to disambiguate, and the index is pure ceremony the
+ * model gets wrong — it answered `1` for a request containing only index 0,
+ * which silently dropped the result. Back when a retry existed that cost a
+ * second request; now it costs the article its take outright. With one article
+ * in flight, whatever comes back is about it.
  */
 function pick(group: RawArticle[], index: unknown): RawArticle | undefined {
   return group.length === 1 ? group[0] : group[Number(index)];
@@ -934,8 +958,8 @@ function totalScore(review: ScoreReview): number {
   return Math.max(SCORE_MIN, Math.min(SCORE_MAX, raw));
 }
 
-/** Index is relative to the group that was sent, so the same helper serves
- *  both the first attempt and the smaller retry. */
+/** Index is relative to the group that was sent, so one helper serves a group
+ *  of any size. */
 function applyScores(
   rows: Array<Record<string, unknown>>,
   group: RawArticle[],
@@ -974,17 +998,16 @@ function applyScores(
 /**
  * Both languages land together, and EACH HALF IS TAKEN ON ITS OWN.
  *
- * The Chinese decides whether this article was summarized at all: the gap retry
- * upstream re-asks for anything whose `zh.thesis` is still empty, so a reply that
- * arrived mangled or short is asked for again.
+ * The Chinese decides whether this article was summarized at all: an empty
+ * `zh.thesis` is what every reader downstream reads as "no take". A reply that
+ * arrives mangled or short leaves it empty, and NOTHING ASKS AGAIN — the retry
+ * loop that used to is gone, see the note at the top of this file.
  *
- * THE ENGLISH HALF IS NOT RETRIED, and that is the deliberate half of this
- * function. Re-asking for it means re-asking for the whole entry — one request
- * writes both languages — which puts a Chinese summary already safely in hand
- * back at risk to chase the other one. The Chinese side is the spine of the
- * product; the English side is worth having, not worth that trade. An article
- * whose English never arrives publishes with `zh` alone and reads as Chinese on
- * /en, which is where the site already was.
+ * NEITHER HALF IS WRITTEN UNLESS IT ARRIVED WHOLE, which is what makes a failed
+ * request safe: the caller does not clear the previous take before asking, so a
+ * rewrite that comes back empty leaves whatever was there. An article whose
+ * English never arrives publishes with `zh` alone and reads as Chinese on /en,
+ * which is where the site already was.
  *
  * `report` counts what came back in each language, so this degrades in the log
  * rather than silently. If that count is ever routinely bad the escalation is one
@@ -1007,7 +1030,6 @@ function applySummaries(
     if (zhThesis) {
       verdict.category = resolveCategory(row.category);
       verdict.titleZh = chineseTitle(row.zh_title, article.title);
-      const tags = tagList(row.zh_tags);
       verdict.zh = {
         thesis: zhThesis,
         text: asBody(row.zh_text),
@@ -1015,7 +1037,6 @@ function applySummaries(
         // the English half: an absent field means "there are none", and an
         // empty array would make a model that skipped the field look like one
         // that considered the question and came back with nothing.
-        ...(tags.length ? { tags } : {}),
       };
     }
 
@@ -1025,31 +1046,6 @@ function applySummaries(
       verdict.en = { thesis: enThesis, text: enText };
     }
   }
-}
-
-/**
- * The tag array, cleaned into something that can be pasted into a note.
- *
- * Three things get taken out, and each of them has been observed rather than
- * imagined: a leading `#` the model adds back despite being told not to (both
- * the ASCII and the full-width one), whitespace ANYWHERE inside the word —
- * which on 小红书 ends the tag, so "AI 替代岗位" posts as `#AI` followed by
- * loose text — and duplicates, which turn four tags into two.
- *
- * Anything longer than TAG_MAX is DROPPED rather than cut: half a word is a
- * different word, and a note with three tags reads fine. Same for a short
- * reply — the count is what the prompt asks for, not something to pad up to.
- */
-function tagList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const out: string[] = [];
-  for (const item of value) {
-    const tag = String(item ?? "").replace(/[#\uff03\s]+/g, "");
-    if (!tag || tag.length > TAG_MAX || out.includes(tag)) continue;
-    out.push(tag);
-    if (out.length === TAGS_PER_ARTICLE) break;
-  }
-  return out;
 }
 
 function asText(value: unknown): string {
@@ -1269,7 +1265,7 @@ function asBody(value: unknown): string {
 }
 
 /**
- * The client, with the timeouts the retry loops here are written around.
+ * The client, with the one retry this file still has anywhere in it.
  *
  * A helper rather than a literal inside `summarize`, because `englishFor` needs
  * exactly the same settings and a second copy would be a second place for them
@@ -1280,11 +1276,14 @@ function makeClient(): OpenAI {
     apiKey: DEEPSEEK_API_KEY,
     baseURL: DEEPSEEK_BASE_URL,
     // A single-article reply is ~300 characters and normally lands in well
-    // under 30s. The old 180s × 2 retries let one stalled request hold a
-    // worker for nine minutes, and with our own retry loop on top the tail
-    // reached half an hour — a run that took 28s one time took over ten
-    // minutes the next. Failing fast is better here: our loop re-asks anyway,
-    // and a fresh request is more likely to return than a hung one.
+    // under 30s. The old 180s × 2 retries let one stalled request hold a worker
+    // for nine minutes, and with the gap loops that used to sit on top the tail
+    // reached half an hour — a run that took 28s one time took over ten minutes
+    // the next.
+    //
+    // ONE RETRY, NOT ZERO, and it is the only one left: it covers a connection
+    // that never opened or a 5xx, which is the class of fault where the same
+    // request sent again genuinely works. Everything above it now asks once.
     maxRetries: 1,
     timeout: 60_000,
   });
@@ -1332,7 +1331,7 @@ const BACKFILL_SYSTEM = `你的任务是把一篇已经写好的中文概要，�
 
 - 不许补充中文没提到的事实、数字、人名、机构、结论 —— 你看不到原文，任何补充都是编的。
 - 不许因为觉得某个要点弱就删掉它，也不许自己合并两个要点。
-- 中文有三个小标题，英文就是三个；中文分了几段，英文就分几段。**逐块对应。**
+- 中文有几个小标题，英文就是几个；中文分了几段，英文就分几段。**逐块对应。**
 - 中文那句收尾（「一句话总结」之类）照样收尾，不要省掉。
 
 ${EN_RULES}`;
@@ -1392,36 +1391,30 @@ export async function englishFor(
   await mapLimited(items, REQUEST_CONCURRENCY, async (item, i) => {
     const label = `${BACKFILL_PASS} ${i + 1}/${items.length}`;
 
-    for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
-      if (out.has(item.id)) return;
-
-      try {
-        const rows = await callModel(
-          client,
-          attempt ? `${label} retry ${attempt}` : label,
-          BACKFILL_SYSTEM,
-          `Here is 1 Chinese summary. Write its English.\n\n` +
-            `title: ${item.title}\n` +
-            `zh_thesis: ${item.zh.thesis}\n` +
-            `zh_text: ${item.zh.text}`,
-          BACKFILL_EXAMPLE,
-        );
-        for (const row of rows) {
-          const thesis = asText(row.en_thesis);
-          const text = asBody(row.en_text);
-          // Both halves, same as the live path: a claim with nothing under it is
-          // worse than falling back to the Chinese.
-          if (thesis && text) out.set(item.id, { thesis, text });
-        }
-      } catch (error) {
-        if (attempt === GAP_RETRIES) {
-          console.error(
-            `[daily] ${label} failed after ${attempt + 1} attempts ` +
-              `(${item.id.slice(0, 8)} keeps its Chinese only): ` +
-              `${(error as Error).message}`,
-          );
-        }
+    try {
+      const rows = await callModel(
+        client,
+        label,
+        BACKFILL_SYSTEM,
+        `Here is 1 Chinese summary. Write its English.\n\n` +
+          `title: ${item.title}\n` +
+          `zh_thesis: ${item.zh.thesis}\n` +
+          `zh_text: ${item.zh.text}`,
+        BACKFILL_EXAMPLE,
+      );
+      for (const row of rows) {
+        const thesis = asText(row.en_thesis);
+        const text = asBody(row.en_text);
+        // Both halves, same as the live path: a claim with nothing under it is
+        // worse than falling back to the Chinese.
+        if (thesis && text) out.set(item.id, { thesis, text });
       }
+    } catch (error) {
+      console.error(
+        `[daily] ${label} failed ` +
+          `(${item.id.slice(0, 8)} keeps its Chinese only): ` +
+          `${(error as Error).message}`,
+      );
     }
   });
 
@@ -1498,38 +1491,30 @@ export async function scoreAll(
   // --- pass 1: score every article, one per request ---
   const scoreBatches = chunk(batch, BATCH_SIZE);
 
-  // Retries live inside the worker so a stumble on one article never blocks
-  // the others; the whole pass is bounded by REQUEST_CONCURRENCY.
+  // One request per group, and a failure stays inside the worker so a stumble
+  // on one article never blocks the others; the whole pass is bounded by
+  // REQUEST_CONCURRENCY.
   await mapLimited(scoreBatches, REQUEST_CONCURRENCY, async (group, i) => {
     const label = `${SCORE_PASS} ${i + 1}/${scoreBatches.length}`;
 
-    for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
-      // Covers both failure modes at once: a request that threw, and one that
-      // returned valid JSON with entries silently missing.
-      const missing = group.filter((a) => !out.get(a.id)?.judged);
-      if (!missing.length) return;
-
-      try {
-        const rows = await callModel(
-          client,
-          attempt ? `${label} retry ${attempt}` : label,
-          SCORE_SYSTEM,
-          `Here ${missing.length === 1 ? "is 1 article" : `are ${missing.length} articles`}. ` +
-            `Score every one of them.\n\n` +
-            missing.map((a) => renderArticle(a, undefined)).join("\n\n---\n\n"),
-          SCORE_EXAMPLE,
-          SCORE_TEMPERATURE,
-        );
-        applyScores(rows, missing, out);
-      } catch (error) {
-        if (attempt === GAP_RETRIES) {
-          console.error(
-            `[daily] ${label} failed after ${attempt + 1} attempts ` +
-              `(${group.length} article(s) keep bare titles): ` +
-              `${(error as Error).message}`,
-          );
-        }
-      }
+    try {
+      const rows = await callModel(
+        client,
+        label,
+        SCORE_SYSTEM,
+        `Here ${group.length === 1 ? "is 1 article" : `are ${group.length} articles`}. ` +
+          `Score every one of them.\n\n` +
+          group.map((a) => renderArticle(a, undefined)).join("\n\n---\n\n"),
+        SCORE_EXAMPLE,
+        SCORE_TEMPERATURE,
+      );
+      applyScores(rows, group, out);
+    } catch (error) {
+      console.error(
+        `[daily] ${label} failed ` +
+          `(${group.length} article(s) keep bare titles): ` +
+          `${(error as Error).message}`,
+      );
     }
   });
 
@@ -1615,32 +1600,76 @@ export async function summarizeSurvivors(
   await mapLimited(summaryBatches, REQUEST_CONCURRENCY, async (group, i) => {
     const label = `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`;
 
-    for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
-      const missing = group.filter((a) => !out.get(a.id)!.zh.thesis);
-      if (!missing.length) return;
+    /**
+     * CLEARED FIRST, WRITTEN BACK ONLY ON SUCCESS.
+     *
+     * Every survivor is rewritten on every run — an article that already has a
+     * take is not skipped, which is what makes re-running the way to replace one
+     * that came back wrong (in the wrong language, over budget, shaped like a
+     * listicle) instead of hand-editing the file.
+     *
+     * THE FIELDS GO EMPTY BEFORE THE REQUEST, and they stay empty if it fails.
+     * The alternative — ask first, overwrite only what comes back — leaves the
+     * old take standing whenever the model stumbles, so a run that "succeeded"
+     * can publish a mix of takes from two different runs with nothing saying
+     * which is which. Empty is a state the rest of the job already handles:
+     * `publishFrom` holds an article with no thesis off the page and says so.
+     *
+     * The cost is real and is the point: A FAILED REWRITE COSTS THAT ARTICLE ITS
+     * TAKE FOR THE DAY. There are no retries here (see the note at the top of
+     * this file), so one failed request is the whole story for that article.
+     *
+     * A MISSING BODY IS FETCHED BACK, NOT WORKED AROUND. A published digest
+     * carries none (see WorkingArticle in lib/store.ts), so a re-run over a day
+     * that already shipped used to have only the headline to work from —
+     * `bodyFor` goes and gets the article again. When even that fails the
+     * request still goes out with no body, because the alternative is a command
+     * that silently does nothing on exactly the days someone is fixing
+     * something; `renderArticle` says so in the request, and what comes back is
+     * a headline-grade take that replaces a better one. Re-score the day
+     * instead if that matters.
+     *
+     * The re-fetched text is not guaranteed to be the text that was SCORED —
+     * see the note on `bodyFor`.
+     */
+    const sending: RawArticle[] = [];
+    for (const article of group) {
+      // Only when the file no longer has one: a normal run's articles arrive
+      // with their bodies and must not be re-fetched, both for the request it
+      // saves and because the body they carry is the one they were scored on.
+      const body = article.body || (await bodyFor(article.url));
+      sending.push(body === article.body ? article : { ...article, body });
 
-      try {
-        const rows = await callModel(
-          client,
-          attempt ? `${label} retry ${attempt}` : label,
-          SUMMARY_SYSTEM,
-          `Here ${missing.length === 1 ? "is 1 article" : `are ${missing.length} articles`}. ` +
-            `Summarize every one of them, in Chinese and then in English.\n\n` +
-            missing
-              .map((a, j) => renderArticle(a, j, budgetFor(a.readingMinutes)))
-              .join("\n\n---\n\n"),
-          SUMMARY_EXAMPLE,
-        );
-        applySummaries(rows, missing, out);
-      } catch (error) {
-        if (attempt === GAP_RETRIES) {
-          console.error(
-            `[daily] ${label} failed after ${attempt + 1} attempts ` +
-              `(${group.length} article(s) keep bare titles): ` +
-              `${(error as Error).message}`,
-          );
-        }
-      }
+      const verdict = out.get(article.id)!;
+      const empty = emptyVerdict();
+      verdict.category = empty.category;
+      verdict.titleZh = empty.titleZh;
+      verdict.zh = empty.zh;
+      verdict.en = empty.en;
+    }
+
+    try {
+      const rows = await callModel(
+        client,
+        label,
+        SUMMARY_SYSTEM,
+        `Here ${sending.length === 1 ? "is 1 article" : `are ${sending.length} articles`}. ` +
+          `Summarize every one of them, in Chinese and then in English.\n\n` +
+          sending
+            .map((a, j) => renderArticle(a, j, budgetFor(a.readingMinutes)))
+            .join("\n\n---\n\n"),
+        SUMMARY_EXAMPLE,
+      );
+      applySummaries(rows, sending, out);
+    } catch (error) {
+      // The fields were cleared above and nothing wrote them back, so these
+      // articles now have no take at all — `publishFrom` holds them off the
+      // page and logs them again there.
+      console.error(
+        `[daily] ${label} failed ` +
+          `(${group.length} article(s) lose their take): ` +
+          `${(error as Error).message}`,
+      );
     }
   });
 
@@ -1653,9 +1682,11 @@ export async function summarizeSurvivors(
  *  articles that cleared the floor — the rejected ones have no summary on
  *  purpose and would read as failures here.
  *
- *  THE ENGLISH COUNT IS THE ONLY WARNING THERE IS for the half that is never
- *  retried (see `applySummaries`). A day where it reads 3/14 is a day most of the
- *  English site fell back to Chinese, and nothing else anywhere says so. */
+ *  THESE COUNTS ARE THE WHOLE SAFETY NET, now that no pass re-asks for anything
+ *  (see the note on retries at the top of this file). A day where the English
+ *  reads 3/14 is a day most of the English site fell back to Chinese, and a day
+ *  where the first number is short is a day some articles kept bare titles —
+ *  nothing else anywhere says so. */
 function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
   let zh = 0;
   let en = 0;
@@ -1784,39 +1815,33 @@ export async function captionZh(english: string, date: string): Promise<string> 
 
   const client = makeClient();
 
-  for (let attempt = 0; attempt <= GAP_RETRIES; attempt += 1) {
-    const label = attempt
-      ? `${CAPTION_PASS} ${date} retry ${attempt}`
-      : `${CAPTION_PASS} ${date}`;
-    try {
-      const rows = await callModel(
-        client,
-        label,
-        CAPTION_SYSTEM,
-        `Here is 1 English caption. Write its Chinese.\n\nen: ${source}`,
-        CAPTION_EXAMPLE,
-      );
-      for (const row of rows) {
-        const zh = asText(row.zh);
-        if (!zh) continue;
-        // Logged rather than rejected: an over-long caption wraps, which is a
-        // blemish, while dropping it costs the photo its only words.
-        if (zh.length > CAPTION_MAX_CHARS) {
-          console.warn(
-            `[daily] ${CAPTION_PASS} — ${zh.length} chars, over ` +
-              `${CAPTION_MAX_CHARS}`,
-          );
-        }
-        return zh;
-      }
-    } catch (error) {
-      if (attempt === GAP_RETRIES) {
-        console.error(
-          `[daily] ${label} failed after ${attempt + 1} attempts ` +
-            `(the photo keeps its English caption): ${(error as Error).message}`,
+  const label = `${CAPTION_PASS} ${date}`;
+  try {
+    const rows = await callModel(
+      client,
+      label,
+      CAPTION_SYSTEM,
+      `Here is 1 English caption. Write its Chinese.\n\nen: ${source}`,
+      CAPTION_EXAMPLE,
+    );
+    for (const row of rows) {
+      const zh = asText(row.zh);
+      if (!zh) continue;
+      // Logged rather than rejected: an over-long caption wraps, which is a
+      // blemish, while dropping it costs the photo its only words.
+      if (zh.length > CAPTION_MAX_CHARS) {
+        console.warn(
+          `[daily] ${CAPTION_PASS} — ${zh.length} chars, over ` +
+            `${CAPTION_MAX_CHARS}`,
         );
       }
+      return zh;
     }
+  } catch (error) {
+    console.error(
+      `[daily] ${label} failed ` +
+        `(the photo keeps its English caption): ${(error as Error).message}`,
+    );
   }
 
   return source;

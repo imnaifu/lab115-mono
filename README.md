@@ -132,7 +132,7 @@ Categories: Length · Weight · Temperature · Volume · Area · Speed.
 变量。订阅源、环境变量、模型文档、JSON 契约和设计说明：
 [`apps/daily/README.md`](apps/daily/README.md)。
 
-Compose env：`DEEPSEEK_API_KEY`、`DAILY_GIT_TOKEN`、`DAILY_BARK_URL`。
+Compose env：`DEEPSEEK_API_KEY`、`DAILY_GIT_TOKEN`。
 
 ---
 

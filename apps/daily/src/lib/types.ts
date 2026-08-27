@@ -33,7 +33,13 @@ export interface SummaryText {
    */
   text: string;
   /**
-   * Hashtags for the share note, WITHOUT their `#`.
+   * LEGACY, and no longer generated. Hashtags for the share note, WITHOUT `#`.
+   *
+   * The prompt stopped asking for these; the field and the components that read
+   * it stay because 35 of the 96 archived takes carry them, and a share note that
+   * silently lost its hashtags would be a regression on those days. New digests
+   * simply omit the field, which the renderers already treat as "no tags".
+   *
    *
    * Stored bare because the marker is not part of the word and the platforms do
    * not agree about it — one string with a hash baked in would have to be

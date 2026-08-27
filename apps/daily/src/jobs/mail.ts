@@ -8,10 +8,10 @@ import type { Digest } from "@/lib/types";
 /**
  * One day's edition, to each language's list.
  *
- * IT CANNOT FAIL THE RUN, and the caller enforces that — same contract as
- * `notify`. By the time this is reached the digest is written, pushed and
- * rendered; a mail that does not go out is a day the site still has and the
- * inbox does not, which is recoverable by hand and not worth losing a run over.
+ * IT CANNOT FAIL THE RUN, and the caller enforces that with a catch. By the
+ * time this is reached the digest is written and pushed; a mail that does not
+ * go out is a day the site still has and the inbox does not, which is
+ * recoverable by hand and not worth losing a run over.
  *
  * IDEMPOTENT WITHOUT LOCAL STATE. `runDaily` is re-runnable on purpose, and a
  * second run must not mail the list twice — so each edition is named

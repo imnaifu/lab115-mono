@@ -444,6 +444,39 @@ async function fetchSource(
   );
 }
 
+/**
+ * The body of ONE article, fetched from its own page. "" when it cannot be had.
+ *
+ * FOR REWRITING A TAKE THAT ALREADY SHIPPED. A published digest carries no
+ * bodies — `Digest` has no such field, so the file that lands in git is the
+ * published shape and the working file's bodies are overwritten by it. That
+ * used to mean `npm run summary` on a day it had already published could only
+ * work from headlines. This is where the body comes back from.
+ *
+ * IT IS NOT NECESSARILY THE TEXT THAT WAS SCORED, and the difference is real
+ * rather than theoretical: a third-party page can be edited, paywalled or gone
+ * hours later, so a rewrite may be reading a different article than the score
+ * was given to. That is the price of redoing a day after the fact. Nothing
+ * calls this during a normal run — `fetchAll` resolves bodies once, at fetch
+ * time, and the summary pass uses those.
+ *
+ * NEVER THROWS. Every caller's next move on a failure is the same — carry on
+ * with no body — so the failure is returned as "" rather than as an exception
+ * each of them would have to catch.
+ */
+export async function bodyFor(url: string): Promise<string> {
+  try {
+    const page = await fetchPage(url);
+    // The same two thresholds the fetch path applies, so a body that arrives
+    // here is one `fetchAll` would also have accepted: too short is no body at
+    // all, and the model never sees more than BODY_CHAR_LIMIT of it.
+    if (page.body.length < MIN_USEFUL_BODY) return "";
+    return page.body.slice(0, BODY_CHAR_LIMIT);
+  } catch {
+    return "";
+  }
+}
+
 export interface FetchResult {
   articles: RawArticle[];
   statuses: SourceStatus[];

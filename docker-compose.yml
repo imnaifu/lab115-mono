@@ -131,7 +131,6 @@ services:
       # has no SSH key, so HTTPS + token is the only route here (locally you can
       # set GIT_REMOTE to an SSH URL instead — see apps/daily/README.md).
       - GIT_TOKEN=${DAILY_GIT_TOKEN:-}
-      - BARK_URL=${DAILY_BARK_URL:-}
       # Email subscriptions. Empty RESEND_API_KEY turns the feature off entirely.
       # The subscriber list lives in Resend, not in this repo or the volume —
       # see the note above MAIL_SEGMENT in apps/daily/src/lib/config.ts.

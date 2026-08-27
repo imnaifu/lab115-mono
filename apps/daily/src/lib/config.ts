@@ -1,9 +1,9 @@
 /**
  * Every tunable value in the app, as a plain constant.
  *
- * THE ENVIRONMENT IS FOR SECRETS ONLY. Seven names are read from it and no more:
- * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `BARK_URL`, `RESEND_API_KEY`,
- * `MAIL_SECRET`, `DRY_RUN` — five credentials, one machine-specific remote, one
+ * THE ENVIRONMENT IS FOR SECRETS ONLY. Six names are read from it and no more:
+ * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `RESEND_API_KEY`,
+ * `MAIL_SECRET`, `DRY_RUN` — four credentials, one machine-specific remote, one
  * switch for a single invocation.
  * Everything else used to have one too (`GIT_REPO`, `DAILY_CRON`, `DAILY_TZ`,
  * `DAILY_MODEL`, `DAILY_BODY_CHARS`, `DAILY_CONCURRENCY` and half a dozen more)
@@ -121,7 +121,54 @@ export const WINDOW_ANCHOR_HOUR = 7;
  *  unchanged — only the base URL and key differ. */
 export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? "";
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-export const MODEL = "deepseek-v4-flash";
+
+/**
+ * The two models this app is written against, side by side because choosing
+ * between them is a real decision that gets revisited — and because a bare id
+ * string in one place tells you nothing about what the alternative costs.
+ *
+ * Valid ids come from `GET /models` (there is also a flash vision preview).
+ * Check there rather than guessing at a name.
+ *
+ * MEASURED ON THE SAME DAY (2026-08-26, 28 articles, one run each):
+ *
+ *                                  flash        pro
+ *   highest / lowest score         38 / 23    44 / 16
+ *   times a dimension scored 9          0         10
+ *   times it scored 1-4                 9         26
+ *   published (floor at 30)            20         17
+ *
+ * The rubric in summarize.ts asks for the full 1-10 range and says so twice;
+ * flash never once used the top of it, so its scores piled up between 30 and 38
+ * and a floor of 30 passed 90% of everything fetched. Pro spreads them out and
+ * rejects what the rubric says to reject — `AWS Acquires DuckLabs` went from 30
+ * to 16, a Qwen release announcement from 33 to 18. That is the same failure the
+ * README's HN notes describe, fixed at the scorer rather than at the source list.
+ *
+ * PRO COSTS EXACTLY 3× FLASH — every line of DeepSeek's price table, so the
+ * multiple holds whatever the usage. Estimated on the run above: flash ~$0.07 a
+ * day, pro ~$0.21, i.e. $2.15 vs $6.44 a month at off-peak rates (the 07:00
+ * Los Angeles cron lands off-peak; peak is UTC 01-04 and 06-10 on weekdays).
+ * Nothing records real token counts yet — `response.usage` is available and
+ * unread — so those are estimates from character counts.
+ */
+export const MODELS = {
+  flash: "deepseek-v4-flash",
+  pro: "deepseek-v4-pro",
+} as const;
+
+/**
+ * The one in use. SWITCHING IS EDITING THIS LINE — `MODELS.pro` and back.
+ *
+ * No environment variable and no CLI flag, which is the decision recorded at the
+ * top of this file rather than an oversight: `DAILY_MODEL` existed once, was
+ * passed through compose as `${DAILY_MODEL:-deepseek-v4-flash}` — the same
+ * default the code already carried — and bought no configurability at all, only
+ * more places to look before you could believe the value in front of you. The
+ * cost is a commit and a redeploy to change models, which is the same
+ * deployment story as config.json.
+ */
+export const MODEL: string = MODELS.flash;
 
 /**
  * Per-article body budget handed to the model, in characters.
@@ -151,9 +198,7 @@ export const MODEL = "deepseek-v4-flash";
  */
 export const BODY_CHAR_LIMIT = 80_000;
 
-export const BARK_URL = process.env.BARK_URL ?? "";
-
-/** DRY_RUN=1 → run the whole pipeline but skip `git push`, Bark and the mail. */
+/** DRY_RUN=1 → run the whole pipeline but skip `git push` and the mail. */
 export const DRY_RUN = process.env.DRY_RUN === "1";
 
 /**
@@ -173,7 +218,7 @@ export const DRY_RUN = process.env.DRY_RUN === "1";
  */
 
 /** https://resend.com/api-keys. Empty → the whole feature is off: no form on the
- *  page, no send after a run. Same shape as BARK_URL. */
+ *  page, no send after a run. */
 export const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 
 /**

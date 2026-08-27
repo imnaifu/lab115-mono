@@ -6,7 +6,6 @@ import {
 } from "@/lib/categories";
 import { fetchAll } from "@/lib/fetcher";
 import { mailDigest } from "@/jobs/mail";
-import { notify } from "@/lib/notify";
 import { dailyPhoto } from "@/lib/photo";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
 import { sourceOf } from "@/lib/sources";
@@ -147,7 +146,7 @@ async function fetchAndScore(now: Date): Promise<WorkingDigest> {
 /**
  * Turn the working digest into the published one: apply the floor to the scores
  * as they now stand, summarize what clears it and still needs a take, then
- * write, push and notify.
+ * write and push.
  *
  * SUMMARY OWNS THE FIELDS SCORE DOES NOT. It never rewrites a score — which is
  * also why an article whose `score` no longer matches its `modelScore` is
@@ -295,7 +294,11 @@ async function publishFrom(
   /**
    * An article over the floor with no take is not publishable, and this is
    * where that becomes visible rather than shipping an empty card. It happens
-   * when the summary pass fails for one article after its retries.
+   * when the summary pass's one request for that article fails: the pass clears
+   * each article's fields before asking and writes them back only on a whole
+   * reply, and there are no retries anywhere in lib/summarize.ts — so one
+   * failed request is the whole story, and on a re-run it can take away a take
+   * the article had a minute earlier.
    */
   const unsummarized = ranked.filter(
     (item) => !verdicts.get(item.id)?.zh.thesis,
@@ -439,20 +442,17 @@ async function publishFrom(
    * disk cache it swept. Nothing this job does touches a poster now; they are
    * drawn per request and cached only by `cache-control`. See lib/poster-serve.
    */
-  await notify(digest);
-
   /**
    * LAST, AND UNABLE TO FAIL THE RUN.
    *
    * Last because it is the slowest and least reversible thing here: the digest
-   * is already committed, the posters are already on disk for whoever follows a
-   * link, and Bark has already reached the one device that wanted to know. An
-   * email cannot be recalled, so it goes when everything it points at is
-   * standing.
+   * is already committed and the posters are drawn per request for whoever
+   * follows a link. An email cannot be recalled, so it goes when everything it
+   * points at is standing.
    *
-   * The catch is the same contract `notify` has. A Resend outage must not cost
-   * the day its digest — `npm run mail -- <date>` sends it afterwards, and the
-   * broadcast name makes that safe to run more than once.
+   * A Resend outage must not cost the day its digest — hence the catch:
+   * `npm run mail -- <date>` sends it afterwards, and the broadcast name makes
+   * that safe to run more than once.
    */
   await mailDigest(digest).catch((error) =>
     console.error("[daily] mail failed:", error),
@@ -467,7 +467,7 @@ async function publishFrom(
 
 /**
  * One full run: pull → fetch → score → summarize → rank → write JSON → push →
- * notify. What the cron fires, and what `npm run once` still does.
+ * mail. What the cron fires, and what `npm run once` still does.
  *
  * The digest is written and pushed even when nothing was found, so every date
  * has a file and the site can render an honest "今日无更新" instead of silently
@@ -522,8 +522,11 @@ export async function runDaily(
  * stops there — no commit, no push, no summaries. The file is left dirty in
  * the clone on purpose: that is the thing you open and edit.
  *
- * It pulls first and reads what is already there, so re-scoring a day that has
- * been summarized keeps the takes.
+ * IT DOES NOT KEEP THE TAKES. `fetchAndScore` rebuilds every record from the
+ * feeds and writes no `summary` field, so re-scoring a day that was already
+ * summarized throws its takes away — see the note at the top of score-cli.ts,
+ * which is the authority on this and says so at length. This comment claimed
+ * the opposite for a while; the code never did it.
  */
 export async function runScore(
   now = new Date(),
@@ -561,10 +564,17 @@ export async function runScore(
  * origin whenever there is nothing local to preserve. Reading first means the
  * edits are already in memory when that happens.
  *
- * Run twice, the second run changes nothing but `generatedAt`: an article that
- * already has a take is not in the summary pass's `missing` set, so nothing is
- * asked for and nothing is rewritten. That falls out of the pass itself rather
- * than from a check here.
+ * RUN TWICE AND EVERY TAKE IS REWRITTEN. This used to be the opposite — an
+ * article that already had a take was skipped, so a second run changed nothing
+ * but `generatedAt` — and re-running is now the way to replace a take that came
+ * back wrong, rather than hand-editing the file.
+ *
+ * Every article's fields are cleared before its own request and written back
+ * only on a whole reply, so a failed rewrite leaves that article with no take
+ * and `unsummarized` below holds it off the page. On a day that has already
+ * been published the bodies are gone, so the rewrite works from headlines —
+ * re-score that date first if the day is meant to be genuinely redone. All of
+ * that falls out of the summary pass itself rather than from a check here.
  */
 export async function runPublish(
   date: string,

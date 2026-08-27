@@ -8,9 +8,20 @@
  * IT ONLY WRITES THE SUMMARY SIDE, unconditionally. No score is recomputed, no
  * article is re-fetched, and nothing branches on what state the file is in: the
  * file is whatever `npm run score` left plus whatever you edited, and that is a
- * complete input by construction. Run it twice and the second run changes
- * nothing but the timestamp — an article that already has a take is not asked
- * for again.
+ * complete input by construction.
+ *
+ * RUN IT TWICE AND EVERY TAKE ABOVE THE FLOOR IS REWRITTEN — that is how you
+ * replace one that came back wrong, without editing the file by hand. It costs
+ * the whole summary half again, so it is not free the way it used to be.
+ *
+ * EACH ARTICLE'S FIELDS ARE CLEARED BEFORE ITS REQUEST and written back only if
+ * the reply arrives whole, so a failed rewrite costs that article its take for
+ * the day rather than leaving the old one standing. There are no retries.
+ *
+ * ON A DAY THAT HAS ALREADY BEEN PUBLISHED THE BODIES ARE GONE — the published
+ * file carries none — so a re-run there summarizes from the headline alone.
+ * That is worse than the original, not better. Run `npm run score` for that
+ * date first if you want the day genuinely redone.
  *
  * It writes the summary fields and nothing else: a score in that file is
  * whatever you left it as, and one that no longer matches the model's is
