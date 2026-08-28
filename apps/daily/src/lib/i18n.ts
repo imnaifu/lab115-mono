@@ -108,6 +108,19 @@ const STRINGS = {
      */
     themeToggle: "深色浅色切换",
 
+    /**
+     * 报头上那个语言开关的可访问名。按钮只有一个图标 —— 翻译符号 —— 所以这句
+     * 话是屏幕阅读器和 hover 提示唯一拿得到的说明。
+     *
+     * 说的是它通向哪里，不是它现在是什么。开关只剩一个方向了（见 Shell.tsx 里
+     * 的 LangSwitch），一个只有一个去处的控件，报出去处最有用。
+     *
+     * 目标语言用它自己的文字写 ——「切换到 English」而不是「切换到英文版」。一
+     * 个不认识中文的读者也认得 English 这个词，而「英文版」三个字对他恰恰是最
+     * 需要这个按钮时看不懂的那部分。
+     */
+    langSwitch: "切换到 English",
+
     /* The end-of-page link on a day page, back to the front page. It names what
        is actually there — the newest week, with the archive one step further on —
        rather than promising every date, which is the archive's job. */
@@ -319,6 +332,10 @@ const STRINGS = {
     weibo: "Weibo",
 
     themeToggle: "Switch between light and dark",
+
+    /* The other direction of the same control — see the note on the Chinese
+       side. 中文 rather than "Chinese", for the same reason. */
+    langSwitch: "Switch to 中文",
 
     allDays: "Other editions",
     allDaysSub: "The past week, and the archive beyond it",

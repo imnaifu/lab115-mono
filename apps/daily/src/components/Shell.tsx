@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { InstallApp } from "./InstallApp";
 import { ThemeToggle } from "./ThemeToggle";
 import { strings } from "@/lib/i18n";
-import { href, LANGS, otherLang, type Lang } from "@/lib/lang";
+import { href, otherLang, type Lang } from "@/lib/lang";
 import type { TrackEvent } from "@/lib/track";
 
 /**
@@ -33,13 +33,44 @@ export const PAD = "px-4 sm:px-7";
 export const SECTION = "mt-8";
 
 /**
- * The language switch: two links, not a toggle.
+ * The translate mark: the glyph on the language switch.
+ *
+ * A SYMBOL RATHER THAN THE WORDS. The control used to spell both languages out —
+ * 中文 / EN — which is the one thing an icon cannot do, and it is why the pair
+ * survived as long as it did. What decided it is that the button now has exactly
+ * one destination and the row it sits in is otherwise icons: see LangSwitch below
+ * for the first, and the budget note on the masthead's control row for the second.
+ *
+ * The accessible name carries what the glyph cannot — see `langSwitch` in
+ * lib/i18n.ts, which names the language it goes to in that language's own script.
+ */
+function TranslateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4 flex-none" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The language switch: ONE link to the other language.
  *
  * `path` is the BARE path of the page it sits on — `/d/2026-08-14`, or `/` for
- * the home page — and each half points at the same page under the other
- * prefix. Making it a pair of `<a>`s rather than one button means the
- * destination is visible on hover, right-click works, and the current language
- * has a real href instead of being a dead control.
+ * the home page — and this points at the same page in the other language.
+ *
+ * STILL AN `<a>` AND NOT A BUTTON, for the reasons the pair had: the destination
+ * shows on hover, right-click and open-in-new-tab work, and nothing here has to
+ * cross a client boundary to know where it goes.
+ *
+ * WHAT THE PAIR COST is why it collapsed into one. Half of it was always a dead
+ * control — the current language linking to the page you were already on — which
+ * had to be excluded from the tracking by hand so that pressing it would not
+ * inflate the one number the event exists to answer. With two languages there is
+ * only ever one destination, so a toggle states it once and every press of it is
+ * a real switch.
  *
  * IT WAS HIDDEN, by an early `return null` right here, for as long as the
  * summaries were Chinese only — a switch that offers a second language and then
@@ -51,34 +82,32 @@ export const SECTION = "mt-8";
  * digest written before the English half returned falls back to Chinese under
  * /en. The switch still belongs there — it changes the chrome, the headline
  * choice and the poster, and on every new digest it changes the prose as well.
+ *
+ * FOLLOWING IT IS WHAT REMEMBERS THE CHOICE, and nothing in here knows that.
+ * `proxy.ts` writes the language cookie from whatever URL the reader lands on, so
+ * an ordinary navigation is the whole mechanism — there is no handler, no
+ * `document.cookie`, and this stays a server component.
  */
 export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
+  const target = otherLang(lang);
+  // The label is in the language being READ, naming the one it goes to.
+  const label = strings(lang).langSwitch;
+
   return (
-    <div
-      className="flex overflow-hidden rounded-full border border-line bg-paper"
-      role="group"
-      aria-label={lang === "en" ? "Language" : "语言"}
+    <a
+      href={href(target, path)}
+      hrefLang={target}
+      aria-label={label}
+      title={label}
+      data-track="lang_switch"
+      data-track-to={target}
+      /* ThemeToggle's shell, to the class. The two are the same size of control
+         doing the same kind of job, and drifting apart would show — they sit
+         side by side. */
+      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid"
     >
-      {LANGS.map((code) => (
-        <a
-          key={code}
-          href={href(code, path)}
-          aria-current={code === lang ? "true" : undefined}
-          hrefLang={code}
-          /* Only the half that would CHANGE the language: the current one is a
-             link for the reasons in the note above, but pressing it is a no-op
-             and counting it as a switch would inflate the one number this event
-             exists to answer — whether anyone uses the switch at all. */
-          data-track={code === lang ? undefined : "lang_switch"}
-          data-track-to={code === lang ? undefined : code}
-          className={`px-3 py-2 text-xs font-bold ${
-            code === lang ? "bg-ink text-paper" : "text-ink-soft"
-          }`}
-        >
-          {code === "zh" ? "中文" : "EN"}
-        </a>
-      ))}
-    </div>
+      <TranslateIcon />
+    </a>
   );
 }
 
@@ -163,21 +192,24 @@ export function Masthead({
           PAGE, which is not the artifact anyone shares.
 
           It is also what lets the install button keep its label. Measured rather
-          than guessed: the chip was 137px, the language switch is 90px and the
-          install button 95px in Chinese / 114px in English, against the 361px a
-          393px phone leaves after `px-4`. All three never fit — it was 3px short,
-          which is why the label used to vanish below `sm:` and leave a bare glyph
-          nobody could read. The remaining pair needs 193px, so there is now 168px
-          of slack instead of 3px, at every width and in both languages.
+          than guessed, against the 361px a 393px phone leaves after `px-4`: the
+          chip was 137px, the language switch was a 90px pill of 中文 / EN, and the
+          install button is 95px in Chinese / 114px in English. All three never fit
+          — it was 3px short, which is why the label used to vanish below `sm:` and
+          leave a bare glyph nobody could read.
 
-          `justify-end` rather than `justify-between`: with one child left,
-          `justify-between` puts it on the LEFT.
+          `justify-end` rather than `justify-between`: `justify-between` would push
+          the row's ends apart across the full column.
 
-          THE THEME SWITCH IS THE THIRD CHILD, and the budget above is why it is
-          an icon with no label: 34px of button plus an 8px gap spends 42px of
-          the 168px of slack, leaving 126px. A labelled pill — 「深色浅色切换」
-          would be about 110px — would put the row back within a few pixels of
-          the overflow that cost the install button its label once already. */}
+          TWO OF THE THREE ARE NOW BARE ICONS, 34px each, and the budget is why.
+          The theme switch never had a label — a labelled pill for 「深色浅色切
+          换」 would be about 110px, which would have put the row straight back
+          within a few pixels of the overflow that cost the install button its
+          label once already. The language switch gave up its words later and for
+          its own reasons (see LangSwitch), and doing so returned 56px. The row is
+          34 + 8 + 34 + 8 + 95 = 179px in Chinese and 198px in English, so the
+          slack is 182px and 163px — the widest it has ever been, at every width
+          and in both languages. */}
       <div className="flex items-center justify-end gap-2">
         <LangSwitch lang={lang} path={path} />
         <ThemeToggle label={t.themeToggle} />

@@ -294,11 +294,12 @@ async function publishFrom(
   /**
    * An article over the floor with no take is not publishable, and this is
    * where that becomes visible rather than shipping an empty card. It happens
-   * when the summary pass's one request for that article fails: the pass clears
-   * each article's fields before asking and writes them back only on a whole
-   * reply, and there are no retries anywhere in lib/summarize.ts — so one
-   * failed request is the whole story, and on a re-run it can take away a take
-   * the article had a minute earlier.
+   * when BOTH of the summary pass's requests for that article fail: pass 2
+   * clears each article's fields before asking and writes them back only on a
+   * whole reply, and pass 3 gives every incomplete take exactly one more ask
+   * (see the note on retries at the top of lib/summarize.ts). Two failures is
+   * the whole story — there is nothing after them — and on a re-run this can
+   * still take away a take the article had a minute earlier.
    */
   const unsummarized = ranked.filter(
     (item) => !verdicts.get(item.id)?.zh.thesis,

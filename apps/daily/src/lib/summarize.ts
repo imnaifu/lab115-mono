@@ -5,6 +5,7 @@ import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
 import { USER_CONFIG } from "./user-config";
 import { bodyFor, type RawArticle } from "./fetcher";
 import { sourceOf } from "./sources";
+import { isCompleteTake } from "./take";
 import type { ScoreReview, SummaryText } from "./types";
 
 /**
@@ -107,24 +108,37 @@ async function mapLimited<In>(
 }
 
 /**
- * NO RETRIES ANYWHERE IN THIS FILE. Every pass asks once and takes what comes
- * back; `GAP_RETRIES = 2` and the four loops around it are gone.
+ * NO RETRY LOOP ANYWHERE IN THIS FILE, and ONE re-ask in one pass — the two are
+ * not the same thing and the difference is the whole point.
  *
- * WHAT THAT GIVES UP, kept here because it is a real measurement rather than a
+ * `GAP_RETRIES = 2` and the four loops around it are gone. A loop asks, checks,
+ * asks again, and its failure mode is a run that will not end — every pass here
+ * asks once and takes what comes back.
+ *
+ * WHAT THAT GAVE UP, kept here because it is a real measurement rather than a
  * worry: long replies do not only fail loudly — asked for 8 summaries the model
  * regularly returned 5 or 6 and no error at all, the JSON valid and simply
  * short. The gap is detectable (an article with no thesis) and re-asking for
- * exactly the missing ones used to close it. Now it does not get closed: the
- * article publishes with a bare title, the score pass leaves it unjudged, the
- * photo keeps its English caption.
+ * exactly the missing ones used to close it.
  *
- * TWO THINGS MAKE THAT LESS BAD THAN IT SOUNDS. BATCH_SIZE is 1, so "returned 5
+ * TWO THINGS MADE THAT LESS BAD THAN IT SOUNDS. BATCH_SIZE is 1, so "returned 5
  * of 8" is not a shape a request can have any more — a reply is whole or it is
  * absent. And the client keeps `maxRetries: 1`, which still covers the network
  * faults that a re-ask was never the right answer to.
  *
- * Every failure is logged where it happens, and `report` counts what came back.
- * That is the whole safety net now.
+ * WHAT A BATCH OF ONE DID NOT FIX is the half-written take: the reply is whole,
+ * the JSON is valid, and the Chinese arrived without the English. `applySummaries`
+ * takes each half on its own, so that article is not summarized-badly, it is
+ * summarized-halfway — and a half is what the /en site was rendering as Chinese.
+ *
+ * SO THERE IS EXACTLY ONE RE-ASK, as pass 3 of `summarizeSurvivors`: after pass 2
+ * finishes, every survivor missing either half is asked once more, down the same
+ * path, and then the pass ends whatever comes back. Bounded by construction —
+ * one list, built once, no re-check — which is what makes it a pass rather than
+ * a loop.
+ *
+ * Every failure is logged where it happens, and `report` counts what came back
+ * AFTER the repair. That is the whole safety net.
  */
 
 /**
@@ -567,6 +581,11 @@ const SCORE_EXAMPLE = `{
  */
 const SUMMARY_PASS = "summary";
 
+/** The one extra ask a half-written take gets. See pass 3 in
+ *  `summarizeSurvivors` — a separate label so the log says which of the two
+ *  requests for an article is the one that failed. */
+const REPAIR_PASS = "repair";
+
 /**
  * What the English half has to be, stated once and interpolated into BOTH
  * prompts that ask for it: the summary pass, which writes it beside the Chinese,
@@ -761,12 +780,14 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
  * example is where the model actually reads it.
  */
 /**
- * The hand-written target, field by field, SHARED between the two examples.
+ * The hand-written target, field by field.
  *
- * `SUMMARY_EXAMPLE` composes all of it; `BACKFILL_EXAMPLE` composes the English
- * pair alone and shows the Chinese as input instead. Split for that reason and no
- * other — a second copy of 2,000 characters of prose is a second thing to edit
- * and a guaranteed drift.
+ * BROKEN OUT OF `SUMMARY_EXAMPLE` rather than written inline, and there is now
+ * only one example composing them — `BACKFILL_EXAMPLE` was the second, and it
+ * went with the translation pass it belonged to (see `repairTakes`). The split
+ * stays because these are the strings a person edits when the target changes,
+ * and reading 2,000 characters of prose out of a JSON literal to do it was the
+ * thing that made them hard to keep mirrored.
  *
  * Every note on `SUMMARY_EXAMPLE` below applies to these strings: they are
  * written by hand rather than lifted from a run, the two halves mirror each other
@@ -1267,9 +1288,9 @@ function asBody(value: unknown): string {
 /**
  * The client, with the one retry this file still has anywhere in it.
  *
- * A helper rather than a literal inside `summarize`, because `englishFor` needs
- * exactly the same settings and a second copy would be a second place for them
- * to drift.
+ * A helper rather than a literal inside `summarize`, because every pass in this
+ * file needs exactly the same settings and a second copy would be a second place
+ * for them to drift.
  */
 function makeClient(): OpenAI {
   return new OpenAI({
@@ -1289,137 +1310,82 @@ function makeClient(): OpenAI {
   });
 }
 
-// --- the backfill pass: English for a digest that shipped without it -------
-
-const BACKFILL_PASS = "backfill-en";
+// --- the repair pass: one more ask for a take that came back half-written ---
 
 /**
- * The English of a take that ALREADY EXISTS in Chinese.
+ * THE ONE EXTRA ASK, over a set the caller has already found to be incomplete.
  *
- * A third prompt rather than a third mode of the summary one, because the input
- * is a different thing: not an article to summarize but a summary to render in
- * the other language. It never sees the original article — the digests do not
- * store the body, and re-fetching a URL that was live weeks ago is a different
- * job with its own failure modes (dead links, paywalls that closed since).
+ * Exported because it has two callers and they are the same operation at two
+ * moments: pass 3 of `summarizeSurvivors` repairs the run it is in the middle
+ * of, and `backfill-summary` repairs a day that already shipped. Neither is a
+ * different kind of ask — both hand a list of broken articles to the same
+ * request the summary pass makes.
  *
- * WHICH IS NOT A COMPROMISE, and this is the reason the whole backfill is only a
- * prompt and a loop: the live path writes the English FROM the Chinese too, in
- * the same call, deliberately, so the two halves cannot drift apart. Working from
- * the Chinese take is what the daily run does. Doing it a day later, from a take
- * read off disk instead of one still in memory, is the same operation.
+ * IT REPLACED `englishFor`, a fourth prompt that translated an existing Chinese
+ * take into English. That pass could only fix one of the three ways a take
+ * breaks, it was the only place in the file that wrote one half from the other
+ * rather than from the article, and keeping it meant every "why is this take
+ * odd" question had to establish which of two prompts had written it. Asking the
+ * summary prompt again is one path, one prompt, and it fixes a missing Chinese
+ * half as readily as a missing English one.
  *
- * So the one rule this prompt has that the summary prompt does not: add nothing.
- * A model given a take and asked for its English has a standing temptation to
- * improve it — fill a gap the Chinese left, drop a point it finds weak — and any
- * of that makes /en and /zh disagree about what the article said.
+ * WHAT IT COSTS: `englishFor` never fetched the article — a translation does not
+ * need one — and this does, for an archived day whose bodies were stripped. So a
+ * dead link or a paywall that closed since is now a repair that cannot happen,
+ * where a translation would have gone through. That is the price of the two
+ * halves being written from the article rather than from each other, which is
+ * the property the whole design is built on. The prompt that used to sit here
+ * spent its length arguing that translating one half from the other was
+ * equivalent to writing both. It was close, and this is the version that does
+ * not have to make the argument at all.
+ *
+ * EXACTLY ONCE, AND `clear: false` — see the note at pass 3 for both. The list
+ * is built once by the caller and never re-checked here, which is what keeps
+ * this a pass rather than the retry loop the top of this file describes deleting.
+ *
+ * `total` is only for the log line: the caller knows how many articles were in
+ * play, and "3/21 came back incomplete" reads differently from "3 came back
+ * incomplete".
  */
-const BACKFILL_SYSTEM = `你的任务是把一篇已经写好的中文概要，写成英文。
-
-给你的是这个站已经发布过的中文概要，它是替读者读完原文用的。**原文你看不到，也不需要看。**
-
-## 返回什么
-
-每条概要一条，字段如下：
-- "en_thesis" —— 一句话论点，就是中文 thesis 那一句的英文。
-- "en_text" —— 正文，**一整个字符串，不是数组**。段落之间写 "\\n\\n" 这两个转义。
-
-一条概要一条。绝不允许一条盖住几条、少写几条，或者给没给你的概要编一条。
-
-## 只译不改
-
-**中文里有的都要有，中文里没有的一个都不许加。**
-
-- 不许补充中文没提到的事实、数字、人名、机构、结论 —— 你看不到原文，任何补充都是编的。
-- 不许因为觉得某个要点弱就删掉它，也不许自己合并两个要点。
-- 中文有几个小标题，英文就是几个；中文分了几段，英文就分几段。**逐块对应。**
-- 中文那句收尾（「一句话总结」之类）照样收尾，不要省掉。
-
-${EN_RULES}`;
-
-/**
- * ONE entry, matching BATCH_SIZE — see the long note on SUMMARY_EXAMPLE for why
- * an example with one entry is a contract for one entry.
- *
- * The Chinese is shown as INPUT rather than as a field to fill: this pass returns
- * the English alone, and an example carrying a `zh_text` slot would invite the
- * model to rewrite the Chinese too — which the job would then have to decide
- * whether to trust. It does not: the backfill only ever writes `summary.en`.
- */
-const BACKFILL_EXAMPLE = `{
-  "articles": [
-    {
-      "en_thesis": "${EXAMPLE_EN_THESIS}",
-      "en_text": "${EXAMPLE_EN_TEXT}"
-    }
-  ]
-}`;
-
-/** One take to translate: its id, so the caller can put the answer back, and the
- *  article's own headline, which is how names and products are spelled. */
-export interface EnglishRequest {
-  id: string;
-  title: string;
-  zh: SummaryText;
-}
-
-/**
- * The English half for takes that never got one.
- *
- * Keyed by id, and ONLY ids that came back — a caller writing this into a digest
- * must be able to tell "no English for this one" from "an empty English for this
- * one", exactly as `applySummaries` does on the live path.
- *
- * ONE REQUEST PER TAKE, like the summary pass and for the same reason: the reply
- * carries ~2,000 characters of prose, and every malformation in this file scales
- * with reply size. `chunk` is not used because there is nothing to chunk at size
- * one; if BATCH_SIZE ever means something here, the example needs a second entry
- * and an `index` field first — see the note on SUMMARY_EXAMPLE.
- */
-export async function englishFor(
-  items: EnglishRequest[],
-): Promise<Map<string, SummaryText>> {
-  const out = new Map<string, SummaryText>();
-  if (!items.length) return out;
+export async function repairTakes(
+  incomplete: RawArticle[],
+  out: Map<string, Verdict>,
+  total: number,
+): Promise<void> {
+  if (!incomplete.length) return;
 
   if (!DEEPSEEK_API_KEY) {
-    console.warn("[daily] DEEPSEEK_API_KEY unset — no English to backfill with");
-    return out;
+    console.warn("[daily] DEEPSEEK_API_KEY unset — nothing to repair with");
+    return;
   }
 
+  console.log(
+    `[daily] repair — ${incomplete.length}/${total} incomplete, ` +
+      `asking once more: ${incomplete.map((a) => a.title).join(" · ")}`,
+  );
+
   const client = makeClient();
+  const batches = chunk(incomplete, BATCH_SIZE);
+  await mapLimited(batches, REQUEST_CONCURRENCY, (group, i) =>
+    summarizeGroup(
+      client,
+      `${REPAIR_PASS} ${i + 1}/${batches.length}`,
+      group,
+      out,
+      false,
+    ),
+  );
 
-  await mapLimited(items, REQUEST_CONCURRENCY, async (item, i) => {
-    const label = `${BACKFILL_PASS} ${i + 1}/${items.length}`;
-
-    try {
-      const rows = await callModel(
-        client,
-        label,
-        BACKFILL_SYSTEM,
-        `Here is 1 Chinese summary. Write its English.\n\n` +
-          `title: ${item.title}\n` +
-          `zh_thesis: ${item.zh.thesis}\n` +
-          `zh_text: ${item.zh.text}`,
-        BACKFILL_EXAMPLE,
-      );
-      for (const row of rows) {
-        const thesis = asText(row.en_thesis);
-        const text = asBody(row.en_text);
-        // Both halves, same as the live path: a claim with nothing under it is
-        // worse than falling back to the Chinese.
-        if (thesis && text) out.set(item.id, { thesis, text });
-      }
-    } catch (error) {
-      console.error(
-        `[daily] ${label} failed ` +
-          `(${item.id.slice(0, 8)} keeps its Chinese only): ` +
-          `${(error as Error).message}`,
-      );
-    }
-  });
-
-  console.log(`[daily] backfill — ${out.size}/${items.length} English written`);
-  return out;
+  // Counted after, because the number that matters is what is STILL broken —
+  // the one the repair could not fix is the one a reader would have met.
+  const stillBroken = incomplete.filter((a) => !isCompleteTake(out.get(a.id)!));
+  console.log(
+    `[daily] repair — ${incomplete.length - stillBroken.length}/` +
+      `${incomplete.length} completed` +
+      (stillBroken.length
+        ? `, still incomplete: ${stillBroken.map((a) => a.title).join(" · ")}`
+        : ""),
+  );
 }
 
 /**
@@ -1527,6 +1493,81 @@ export async function scoreAll(
 }
 
 /**
+ * ONE REQUEST'S WORTH OF SUMMARY, shared by pass 2 and the repair pass below.
+ *
+ * It was inline in pass 2 and is a function now because the repair asks the
+ * SAME question of the same model with the same prompt — a second copy of this
+ * block would be a second place for the request shape to drift, and the whole
+ * point of the repair is that it is not a different kind of ask.
+ *
+ * `clear` IS THE ONE THING THE TWO CALLERS DISAGREE ABOUT. See the note at each
+ * call site; the short version is that pass 2 is replacing a take and the repair
+ * is completing one, and only the first has something to protect.
+ *
+ * A MISSING BODY IS FETCHED BACK, NOT WORKED AROUND. A published digest carries
+ * none (see WorkingArticle in lib/store.ts), so a re-run over a day that already
+ * shipped used to have only the headline to work from — `bodyFor` goes and gets
+ * the article again. When even that fails the request still goes out with no
+ * body, because the alternative is a command that silently does nothing on
+ * exactly the days someone is fixing something; `renderArticle` says so in the
+ * request, and what comes back is a headline-grade take that replaces a better
+ * one. Re-score the day instead if that matters.
+ *
+ * The re-fetched text is not guaranteed to be the text that was SCORED — see
+ * the note on `bodyFor`.
+ */
+async function summarizeGroup(
+  client: OpenAI,
+  label: string,
+  group: RawArticle[],
+  out: Map<string, Verdict>,
+  clear: boolean,
+): Promise<void> {
+  const sending: RawArticle[] = [];
+  for (const article of group) {
+    // Only when the file no longer has one: a normal run's articles arrive
+    // with their bodies and must not be re-fetched, both for the request it
+    // saves and because the body they carry is the one they were scored on.
+    const body = article.body || (await bodyFor(article.url));
+    sending.push(body === article.body ? article : { ...article, body });
+
+    if (!clear) continue;
+    const verdict = out.get(article.id)!;
+    const empty = emptyVerdict();
+    verdict.category = empty.category;
+    verdict.titleZh = empty.titleZh;
+    verdict.zh = empty.zh;
+    verdict.en = empty.en;
+  }
+
+  try {
+    const rows = await callModel(
+      client,
+      label,
+      SUMMARY_SYSTEM,
+      `Here ${sending.length === 1 ? "is 1 article" : `are ${sending.length} articles`}. ` +
+        `Summarize every one of them, in Chinese and then in English.\n\n` +
+        sending
+          .map((a, j) => renderArticle(a, j, budgetFor(a.readingMinutes)))
+          .join("\n\n---\n\n"),
+      SUMMARY_EXAMPLE,
+    );
+    // Each half is written only if it arrived whole — see `applySummaries`. That
+    // is what lets the repair call this with `clear: false` and be unable to
+    // make an article worse than it already was.
+    applySummaries(rows, sending, out);
+  } catch (error) {
+    console.error(
+      `[daily] ${label} failed ` +
+        (clear
+          ? `(${group.length} article(s) lose their take): `
+          : `(${group.length} article(s) keep the half they had): `) +
+        `${(error as Error).message}`,
+    );
+  }
+}
+
+/**
  * Pass 2 on its own: the floor, then a summary for everything above it.
  *
  * `verdicts` is whatever `scoreAll` produced — possibly with scores a human has
@@ -1595,84 +1636,76 @@ export async function summarizeSurvivors(
   );
   if (survivors.length === 0) return out;
 
-  // --- pass 2: both languages, survivors only ---
+  /**
+   * --- pass 2: both languages, survivors only ---
+   *
+   * CLEARED FIRST, WRITTEN BACK ONLY ON SUCCESS — the `true` below.
+   *
+   * Every survivor is rewritten on every run — an article that already has a
+   * take is not skipped, which is what makes re-running the way to replace one
+   * that came back wrong (in the wrong language, over budget, shaped like a
+   * listicle) instead of hand-editing the file.
+   *
+   * THE FIELDS GO EMPTY BEFORE THE REQUEST, and they stay empty if it fails.
+   * The alternative — ask first, overwrite only what comes back — leaves the
+   * old take standing whenever the model stumbles, so a run that "succeeded"
+   * can publish a mix of takes from two different runs with nothing saying
+   * which is which. Empty is a state the rest of the job already handles:
+   * `publishFrom` holds an article with no thesis off the page and says so.
+   *
+   * The cost is real and is the point: A FAILED REWRITE COSTS THAT ARTICLE ITS
+   * TAKE FOR THE DAY — for the length of this pass. The repair below is what
+   * gives it exactly one more chance, and no more.
+   */
   const summaryBatches = chunk(survivors, BATCH_SIZE);
-  await mapLimited(summaryBatches, REQUEST_CONCURRENCY, async (group, i) => {
-    const label = `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`;
+  await mapLimited(summaryBatches, REQUEST_CONCURRENCY, (group, i) =>
+    summarizeGroup(
+      client,
+      `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`,
+      group,
+      out,
+      true,
+    ),
+  );
 
-    /**
-     * CLEARED FIRST, WRITTEN BACK ONLY ON SUCCESS.
-     *
-     * Every survivor is rewritten on every run — an article that already has a
-     * take is not skipped, which is what makes re-running the way to replace one
-     * that came back wrong (in the wrong language, over budget, shaped like a
-     * listicle) instead of hand-editing the file.
-     *
-     * THE FIELDS GO EMPTY BEFORE THE REQUEST, and they stay empty if it fails.
-     * The alternative — ask first, overwrite only what comes back — leaves the
-     * old take standing whenever the model stumbles, so a run that "succeeded"
-     * can publish a mix of takes from two different runs with nothing saying
-     * which is which. Empty is a state the rest of the job already handles:
-     * `publishFrom` holds an article with no thesis off the page and says so.
-     *
-     * The cost is real and is the point: A FAILED REWRITE COSTS THAT ARTICLE ITS
-     * TAKE FOR THE DAY. There are no retries here (see the note at the top of
-     * this file), so one failed request is the whole story for that article.
-     *
-     * A MISSING BODY IS FETCHED BACK, NOT WORKED AROUND. A published digest
-     * carries none (see WorkingArticle in lib/store.ts), so a re-run over a day
-     * that already shipped used to have only the headline to work from —
-     * `bodyFor` goes and gets the article again. When even that fails the
-     * request still goes out with no body, because the alternative is a command
-     * that silently does nothing on exactly the days someone is fixing
-     * something; `renderArticle` says so in the request, and what comes back is
-     * a headline-grade take that replaces a better one. Re-score the day
-     * instead if that matters.
-     *
-     * The re-fetched text is not guaranteed to be the text that was SCORED —
-     * see the note on `bodyFor`.
-     */
-    const sending: RawArticle[] = [];
-    for (const article of group) {
-      // Only when the file no longer has one: a normal run's articles arrive
-      // with their bodies and must not be re-fetched, both for the request it
-      // saves and because the body they carry is the one they were scored on.
-      const body = article.body || (await bodyFor(article.url));
-      sending.push(body === article.body ? article : { ...article, body });
+  /**
+   * --- pass 3: ONE more ask for every take that came back half-written ---
+   *
+   * A take is the Chinese AND the English. Pass 2 takes each half on its own
+   * (see `applySummaries`), so a reply can arrive valid, parse cleanly, and
+   * still leave an article with one half — which is not a smaller take, it is a
+   * broken one: the English site renders the Chinese, or the article publishes
+   * with nothing under its headline. On 2026-08-28 that was the day's rank 1.
+   *
+   * NO LANGUAGE DISTINCTION AND NO SPECIAL CASE FOR EITHER DIRECTION. Missing
+   * English, missing Chinese, missing both — one predicate, one list, the same
+   * question asked down the same path as pass 2. There USED to be a cheaper
+   * option for the commonest of the three: `englishFor`, a fourth prompt that
+   * translated the Chinese half into English. It is deleted, and this is what
+   * replaced it — see `repairTakes` for the argument, which is that a half
+   * written from the other half is a different kind of object from a half
+   * written from the article, and nothing downstream could tell them apart.
+   *
+   * EXACTLY ONCE. This is NOT the retry loop the top of this file describes
+   * deleting — that one re-asked, checked, and re-asked again, and its failure
+   * mode was a run that would not end. This asks once for a known-broken set and
+   * then stops; whatever is still incomplete goes to `report` and, from there,
+   * to the log. `publishFrom` is what decides whether it reaches a page.
+   *
+   * `clear: false`, WHICH IS THE OPPOSITE OF PASS 2 AND FOR THE SAME REASON.
+   * Pass 2 clears because it is replacing a whole take and must not publish half
+   * of the old one beside half of the new. Here there is no whole take to
+   * protect — the article is already broken — so clearing could only turn "half"
+   * into "nothing" when this request fails too. Not clearing means the repair
+   * can improve an article or leave it alone, and cannot make it worse.
+   */
+  const incomplete = survivors.filter(
+    (article) => !isCompleteTake(out.get(article.id)!),
+  );
+  await repairTakes(incomplete, out, survivors.length);
 
-      const verdict = out.get(article.id)!;
-      const empty = emptyVerdict();
-      verdict.category = empty.category;
-      verdict.titleZh = empty.titleZh;
-      verdict.zh = empty.zh;
-      verdict.en = empty.en;
-    }
-
-    try {
-      const rows = await callModel(
-        client,
-        label,
-        SUMMARY_SYSTEM,
-        `Here ${sending.length === 1 ? "is 1 article" : `are ${sending.length} articles`}. ` +
-          `Summarize every one of them, in Chinese and then in English.\n\n` +
-          sending
-            .map((a, j) => renderArticle(a, j, budgetFor(a.readingMinutes)))
-            .join("\n\n---\n\n"),
-        SUMMARY_EXAMPLE,
-      );
-      applySummaries(rows, sending, out);
-    } catch (error) {
-      // The fields were cleared above and nothing wrote them back, so these
-      // articles now have no take at all — `publishFrom` holds them off the
-      // page and logs them again there.
-      console.error(
-        `[daily] ${label} failed ` +
-          `(${group.length} article(s) lose their take): ` +
-          `${(error as Error).message}`,
-      );
-    }
-  });
-
+  // AFTER the repair, so the run's one summary line describes what actually
+  // reached the digest rather than what pass 2 happened to return.
   report(survivors, out);
   return out;
 }
@@ -1682,9 +1715,14 @@ export async function summarizeSurvivors(
  *  articles that cleared the floor — the rejected ones have no summary on
  *  purpose and would read as failures here.
  *
- *  THESE COUNTS ARE THE WHOLE SAFETY NET, now that no pass re-asks for anything
- *  (see the note on retries at the top of this file). A day where the English
- *  reads 3/14 is a day most of the English site fell back to Chinese, and a day
+ *  CALLED AFTER THE REPAIR PASS, so these are final numbers rather than pass 2's.
+ *  A missing half now costs one extra request before it is reported, which means
+ *  a short count here is no longer "the model stumbled once" — it is an article
+ *  that came back broken twice, and that is a different and more interesting
+ *  thing to see in a log.
+ *
+ *  THESE COUNTS ARE THE SAFETY NET past that one re-ask. A day where the English
+ *  reads 3/14 is a day most of the English site had no English take, and a day
  *  where the first number is short is a day some articles kept bare titles —
  *  nothing else anywhere says so. */
 function report(survivors: RawArticle[], out: Map<string, Verdict>): void {

@@ -1,19 +1,26 @@
 import { atomFeed } from "@/lib/feed";
-import { isLang } from "@/lib/lang";
+import { DEFAULT_LANG, isLang } from "@/lib/lang";
 
 /**
- * `/zh/feed.xml` and `/en/feed.xml` — one feed per language, under the language
- * prefix, for the same reason the manifest next door is per-language: ONE
- * LANGUAGE PER DOCUMENT. A single feed would have to carry both takes on every
- * article, and no reader has a way to show one and hide the other.
+ * `/en/feed.xml` — the NON-DEFAULT language's feed, under its prefix, for the same
+ * reason the manifest next door is per-language: ONE LANGUAGE PER DOCUMENT. A
+ * single feed would have to carry both takes on every article, and no reader has
+ * a way to show one and hide the other.
  *
- * A directory named with the extension plus `route.ts`, the same trick
- * `manifest.webmanifest/route.ts` next door uses.
+ * The default language's feed is `app/feed.xml` at the root, because that is where
+ * its pages live.
  *
- * NOT reached through `proxy.ts`: its matcher excludes anything ending in a file
- * extension, so this handler sees the request directly and takes the language
- * from the path segment rather than from the `x-lang` header the proxy would
- * otherwise set.
+ * `/zh/feed.xml` IS A 404 HERE, and it has to be refused in this file rather than
+ * in `proxy.ts`. The site has no `/zh/…` addresses left — see the note in
+ * lib/lang.ts for what having two addresses for one Chinese document cost — and
+ * the proxy enforces that for every page. It CANNOT enforce it here: its matcher
+ * excludes any path ending in a file extension, so this handler is reached
+ * directly and never passes through it. That exclusion is load-bearing (it is
+ * what keeps `/sw.js` and the icons in `public/` from being rewritten), so the
+ * guard belongs at this end.
+ *
+ * The same exclusion is why the language comes from the path segment rather than
+ * from the `x-lang` header the proxy sets on ordinary pages.
  */
 export const dynamic = "force-dynamic";
 
@@ -22,7 +29,10 @@ export async function GET(
   { params }: { params: Promise<{ lang: string }> },
 ) {
   const { lang } = await params;
-  if (!isLang(lang)) return new Response("Not found", { status: 404 });
+  // Not a language at all, or the default one, whose feed is at the root. See above.
+  if (!isLang(lang) || lang === DEFAULT_LANG) {
+    return new Response("Not found", { status: 404 });
+  }
 
   return new Response(await atomFeed(lang), {
     headers: {

@@ -16,11 +16,13 @@ export const dynamic = "force-dynamic";
  * `readDigest`'s pattern check that could drift from it. The redirect is a URL
  * rewrite, not a lookup.
  *
- * `/zh/d/…` reaches this at all only because `proxy.ts` redirects the prefix away
- * first: a reader following an old link pays two hops. That is deliberate — the
- * single-hop version needs the proxy to know the new path shape, and it runs on
- * the edge where the digests are not readable. A handful of links, none of them
- * hot, is not worth a second definition of these rules.
+ * IN PRACTICE THIS IS NOW `/en/d/…` ONLY. `/zh/d/2026-08-14` used to arrive here
+ * in two hops, the proxy stripping the prefix first; the prefixed Chinese form is
+ * a 404 at the proxy now (see the note there), so the oldest shape of a Chinese
+ * link — prefix AND flat date, i.e. one saved before both changes — is gone
+ * rather than redirected. That is the accepted cost of leaving no `/zh/…` address
+ * alive at all. `/d/2026-08-14`, the half-migrated form, still lands here and
+ * still redirects, and it is the one the site actually published.
  */
 export default async function LegacyDayPage({
   params,

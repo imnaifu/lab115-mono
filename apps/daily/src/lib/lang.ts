@@ -17,23 +17,67 @@
  * pages that had been crawled and no English one, which is the fingerprint of
  * this and not of anything else.
  *
- * So there is no negotiating redirect anywhere on the site now. `/` is a page,
- * every URL is self-canonical, and there is no second address for Google to
- * prefer. `detectLang` below survives for the feed's sake and nothing else.
+ * So `/` is a page, every URL is self-canonical, and there is no second address
+ * for Google to prefer. The prefixed Chinese form is not merely unused — it is a
+ * 404 now, see proxy.ts — because a URL that still answers is a URL that can
+ * still be indexed. `detectLang` below has no callers left.
  *
- * THE COST, stated plainly: an English speaker who types the bare domain lands
- * on Chinese and has to use the language switch. That is the trade — any
- * server-side negotiation on `/` rebuilds the alias this removed.
+ * WHAT REPLACED THE NEGOTIATION IS A COOKIE, and the difference is the entire
+ * point rather than an implementation detail. Accept-Language is sent by every
+ * client including the crawler, which is how the bare URLs became aliases;
+ * `LANG_COOKIE` below is sent only by a reader who has been here before, so a
+ * crawler sees the plain Chinese `/` exactly as it does today and nothing
+ * acquires a second address. See the note on the constant for what it does and,
+ * more importantly, what it does not.
  *
- * A route rather than client state or a cookie: every page here is
- * server-rendered anyway, so the language is just a prop. The HTML is right on
- * arrival, with no provider, no hydration step and nothing to keep in sync.
+ * THE COST, stated plainly: an English speaker typing the bare domain for the
+ * FIRST time still lands on Chinese and has to use the language switch. Only the
+ * second visit knows better. That is the trade — reading Accept-Language on `/`
+ * would fix the first visit and rebuild the alias this removed.
+ *
+ * THE LANGUAGE ITSELF IS STILL A ROUTE, not client state — every page here is
+ * server-rendered anyway, so the language is just a prop, and the HTML is right
+ * on arrival with no provider, no hydration step and nothing to keep in sync.
+ * The cookie does not change that. It never decides what a page renders; it only
+ * decides which page the one address that names no language sends you to, and it
+ * is read in `proxy.ts` before any page is reached.
  */
 export const LANGS = ["zh", "en"] as const;
 
 export type Lang = (typeof LANGS)[number];
 
 export const DEFAULT_LANG: Lang = "zh";
+
+/**
+ * WHERE A LANGUAGE CHOICE IS REMEMBERED, and it is deliberately a small promise.
+ *
+ * `proxy.ts` writes it from whatever URL the reader is actually on — landing on
+ * `/en/…` records `en`, landing anywhere unprefixed records `zh` — so it holds
+ * the language last READ, not the language last explicitly picked. That is the
+ * wider of the two readings and the right one: someone who arrives on an English
+ * article from a search result has said as much as someone who pressed the switch,
+ * and a switch that only counts its own presses would ignore them.
+ *
+ * IT IS READ IN EXACTLY ONE PLACE AND AT EXACTLY ONE MOMENT: the bare `/`, and
+ * only when the reader ARRIVES there — typed, bookmarked, followed in from
+ * outside, launched as an app. No deeper path redirects, so every other URL on
+ * the site answers in the language its own shape names and a link someone sends
+ * you is still the page you get.
+ *
+ * FOLLOWING A LINK ON THE SITE IS NOT AN ARRIVAL, and that carve-out is not a
+ * refinement — it is what keeps the language switch alive. On `/en` the switch
+ * points at `/`, so a cookie that applied to in-site navigation would bounce the
+ * reader back to the page they just left and the control would do nothing at all.
+ * `proxy.ts` draws the line; see `fromInsideTheSite` there.
+ *
+ * A YEAR, because the answer does not go stale — someone who reads this in
+ * English in August still does the following July — and because the cost of it
+ * being wrong is one press of a control that is on every page.
+ */
+export const LANG_COOKIE = "lang";
+
+/** A year, in seconds. See above. */
+export const LANG_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export function isLang(value: string | undefined): value is Lang {
   return value === "zh" || value === "en";
@@ -50,20 +94,6 @@ export function isLang(value: string | undefined): value is Lang {
 export function href(lang: Lang, path: string): string {
   if (lang === DEFAULT_LANG) return path;
   return path === "/" ? `/${lang}` : `/${lang}${path}`;
-}
-
-/**
- * The bare path behind a language-prefixed one — the inverse of `href`.
- *
- * `proxy.ts` needs it to turn a legacy `/zh/2026/08/24` back into `/2026/08/24`, and
- * it lives here rather than there so the prefix rules are stated once.
- */
-export function barePath(path: string): string {
-  for (const lang of LANGS) {
-    if (path === `/${lang}`) return "/";
-    if (path.startsWith(`/${lang}/`)) return path.slice(lang.length + 1);
-  }
-  return path;
 }
 
 export function otherLang(lang: Lang): Lang {

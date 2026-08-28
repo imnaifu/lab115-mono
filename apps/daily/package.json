@@ -10,7 +10,7 @@
     "mail": "tsx --env-file-if-exists=.env src/jobs/mail-cli.ts",
     "score": "tsx --env-file-if-exists=.env src/jobs/score-cli.ts",
     "summary": "tsx --env-file-if-exists=.env src/jobs/summary-cli.ts",
-    "backfill-en": "tsx --env-file-if-exists=.env src/jobs/backfill-cli.ts"
+    "backfill-summary": "tsx --env-file-if-exists=.env src/jobs/backfill-summary-cli.ts"
   },
   "dependencies": {
     "fast-xml-parser": "^5.10.1",

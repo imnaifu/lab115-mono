@@ -2,6 +2,29 @@ import type { Lang } from "./lang";
 import type { DailyPhoto, PublishedArticle, SummaryText } from "./types";
 
 /**
+ * A take is the Chinese AND the English. This is the one place that says so.
+ *
+ * ONE PREDICATE OVER TWO SHAPES, which is why the parameter is structural rather
+ * than a named type: the summary pass holds a `Verdict` (`en: SummaryText | null`,
+ * still in memory) and the archive holds an `Article["summary"]` (`en?: SummaryText`,
+ * read off disk). They are the same question asked at two moments, and a second
+ * copy of the expression is a second place for "complete" to drift.
+ *
+ * `zh.thesis` rather than `zh`, because the empty `SummaryText` that
+ * `emptyVerdict` installs is an object: an article the summary pass never
+ * answered for has a `zh` and no thesis in it, and that is not half a take, it
+ * is none.
+ *
+ * Read by pass 3 of `summarizeSurvivors` to decide what to re-ask for, and by
+ * `backfill-summary` to decide what to re-ask for in the archive.
+ */
+export function isCompleteTake(
+  take: { zh: SummaryText; en?: SummaryText | null } | undefined,
+): boolean {
+  return Boolean(take?.zh.thesis && take.en);
+}
+
+/**
  * The take a reader on `lang` should see, with ONE fallback.
  *
  * Every renderer goes through here — the card, the article page, the masthead's
