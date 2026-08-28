@@ -1670,7 +1670,10 @@ npm run mail -- 2026-08-25
 
 - Resend 后台确认 `lab115.com` 是**已验证**状态（DKIM 不全不影响能不能发，影响的是
   进不进垃圾箱）
-- `RESEND_API_KEY` 和 `MAIL_SECRET` 进 Coolify
+- `RESEND_API_KEY` 和 `MAIL_SECRET` 进 Coolify —— **名字就是这两个**，宿主机侧和容器
+  里同名。`docker-compose.yml` 里曾经写成 `${DAILY_RESEND_API_KEY:-}`，于是照这份清单
+  把 `RESEND_API_KEY` 配进 Coolify 之后，compose 又用一个没设过的带前缀变量把它覆盖成
+  空串（`:-` 的默认值），订阅在线上一直是关的而页面上什么都不说。双名制已经去掉了
 - `MAIL_SEGMENT` 两个 id 已经写死在 `config.ts` 里
 
 ## 环境变量与常量
@@ -1684,6 +1687,8 @@ docker-compose 注入。整张表就这么长：
 | `GIT_TOKEN` | 容器需要 | fine-grained PAT，只授目标仓库的 `contents:write`。本机有 SSH key 时不需要 |
 | `GIT_REMOTE` | 否 | 覆盖远端 URL。不设时按上面的三条规则推导。本机专用，容器里不设 |
 | `DRY_RUN` | 否 | `=1` 时跑完整流程但不 push、不发邮件 |
+| `RESEND_API_KEY` | 邮件需要 | https://resend.com/api-keys 。空着 = 整个邮件功能关闭：页面上没有订阅表单，`/api/mail/subscribe` 返回 503，跑完也不发信。它和 `MAIL_SIGNUP_OPEN` 是两道闸，见上面那节 |
+| `MAIL_SECRET` | 邮件需要 | 确认链接的 HMAC 密钥，任意长随机串。**空串也能签出签名**，也就是说只配 key 不配它，表单会正常出现而任何人都能伪造确认链接。轮换它最多让当天没点开的确认链接失效 |
 
 **其余全部是 `src/lib/config.ts` 里的常量**，改它们要 push 并重新部署：
 

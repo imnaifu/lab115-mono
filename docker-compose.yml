@@ -64,26 +64,6 @@ services:
       # Next.js listens on 3000 inside the container
       - traefik.http.services.converter.loadbalancer.server.port=3000
 
-  xhs-watcher:
-    # Not a website — a long-running worker (Playwright + SQLite + Resend), so
-    # no Traefik labels and no exposed port. See apps/xhs-watcher/README.md.
-    build:
-      context: ./apps/xhs-watcher
-    restart: unless-stopped
-    environment:
-      - TZ=Asia/Shanghai
-      - CRON=*/45 * * * *
-      - KEYWORDS=${XHS_KEYWORDS:-}
-      - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - MAIL_FROM=${XHS_MAIL_FROM:-xhs-watcher@lab115.com}
-      - MAIL_TO=${XHS_MAIL_TO:-}
-    volumes:
-      # SQLite DB + the Playwright profile that holds the login session.
-      # The profile must be seeded once from a local `npm run login`.
-      - ./data/xhs:/data
-    # Chromium needs a bigger /dev/shm than Docker's 64MB default.
-    shm_size: 1gb
-
   english:
     # Static site (Claude design-canvas export) served by nginx — no Node build.
     build:
@@ -134,8 +114,22 @@ services:
       # Email subscriptions. Empty RESEND_API_KEY turns the feature off entirely.
       # The subscriber list lives in Resend, not in this repo or the volume —
       # see the note above MAIL_SEGMENT in apps/daily/src/lib/config.ts.
-      - RESEND_API_KEY=${DAILY_RESEND_API_KEY:-}
-      - MAIL_SECRET=${DAILY_MAIL_SECRET:-}
+      #
+      # NOT `${DAILY_RESEND_API_KEY}`, which is what these two read for a while
+      # and what kept subscriptions closed on the live site: the app reads
+      # `RESEND_API_KEY`, the deployment checklist said to set `RESEND_API_KEY`,
+      # and this line quietly overwrote it with an unset `DAILY_`-prefixed
+      # variable — `:-` making that an empty string rather than an error. One name
+      # per credential now, the same on the host and in the container.
+      #
+      # The prefix existed because a second service — the xhs-watcher worker,
+      # which is no longer deployed from this file — took an unprefixed
+      # `RESEND_API_KEY` for its own digest. Nothing competes for the name now.
+      # `DAILY_GIT_TOKEN` above keeps its prefix for the opposite reason:
+      # `GIT_TOKEN` is a name half the world sets for something else, and it is
+      # not what any app here reads.
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - MAIL_SECRET=${MAIL_SECRET:-}
     volumes:
       # The git clone of the digest repo, plus the rendered share posters. It is
       # both the job's workspace and the site's read path, so the pages never hit

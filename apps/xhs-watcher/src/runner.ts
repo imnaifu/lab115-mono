@@ -1,10 +1,12 @@
 /**
- * One full cycle: fetch every enabled watch → dedupe into SQLite → send a
- * single digest for everything still unnotified.
+ * One full cycle: fetch every enabled watch → dedupe into SQLite → report
+ * everything still unnotified, once.
  *
  * Idempotency: the digest is built from `notified_at IS NULL`, and rows are
- * marked only after Resend accepts the mail. A crash between fetch and send
- * costs nothing — the next cycle picks the same notes up.
+ * marked only after it has been reported. It was written for a mail send —
+ * "marked once Resend accepts it" — and the rule survives the mail going away:
+ * it is the only thing stopping one note appearing in the log twice, and a crash
+ * between fetch and report still costs nothing.
  */
 import { config, loadWatches, type WatchConfig } from "./config.js";
 import {
@@ -19,7 +21,7 @@ import {
 } from "./db.js";
 import { BlockedError, politeDelay, withSession, type Session } from "./fetcher.js";
 import { normalizeItems } from "./normalize.js";
-import { sendAlert, sendDigest } from "./notifier.js";
+import { logAlert, logDigest } from "./notifier.js";
 
 const KV_FAILURES = "consecutive_failures";
 const KV_LAST_ALERT = "last_alert_at";
@@ -97,10 +99,10 @@ async function runWatch(session: Session, watch: WatchConfig): Promise<void> {
 async function deliverPending(): Promise<void> {
   const pending = pendingNotes();
   if (pending.length === 0) {
-    console.log("[cycle] 无新增笔记，不发邮件");
+    console.log("[cycle] 无新增笔记");
     return;
   }
-  await sendDigest(pending);
+  logDigest(pending);
   markNotified(
     pending.map((note) => note.noteId),
     Date.now(),
@@ -118,13 +120,15 @@ async function recordCycleFailure(error: unknown): Promise<void> {
     console.warn(`[cycle] 触发退避，暂停 ${config.backoffHours} 小时`);
   }
 
-  // Alerts are rate-limited: a broken login would otherwise mail on every cycle.
+  // Still rate-limited now that the alert is a log line rather than a mail: a
+  // broken login would otherwise repeat itself every cycle, and a log that
+  // repeats is a log nobody skims.
   const lastAlert = Number(kvGet(KV_LAST_ALERT) ?? 0);
   if (Date.now() - lastAlert < config.alertCooldownHours * 3_600_000) return;
 
   kvSet(KV_LAST_ALERT, String(Date.now()));
-  await sendAlert(
+  logAlert(
     error instanceof BlockedError ? "登录态失效或被风控拦截" : "抓取失败",
     `${message}\n\n连续失败次数：${failures}`,
-  ).catch((mailError) => console.error(`[cycle] 告警邮件发送失败：${mailError}`));
+  );
 }

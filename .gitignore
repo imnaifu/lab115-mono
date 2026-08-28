@@ -14,8 +14,6 @@ next-env.d.ts
 /data/
 /apps/*/data/
 
-# `npm run preview` output — rendered emails, posters and OG cards.
-/apps/*/.preview/
 
 # Secrets
 .env

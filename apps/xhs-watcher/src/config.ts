@@ -2,7 +2,7 @@
  * Runtime configuration.
  *
  * Two layers:
- *  - process env  → infra-level knobs (paths, cron, mail credentials)
+ *  - process env  → infra-level knobs (paths, cron, delays)
  *  - watches.json → the actual subscriptions, kept on the data volume so they
  *    can be edited without rebuilding the image.
  */
@@ -16,7 +16,7 @@ export interface WatchConfig {
   id: string;
   keyword: string;
   sort: SortMode;
-  /** Notes below this like count are stored but never emailed. */
+  /** Notes below this like count are stored but never reported. */
   minLike: number;
   enabled: boolean;
 }
@@ -57,27 +57,17 @@ export const config = {
   delayMaxMs: envInt("DELAY_MAX_MS", 8000),
 
   /**
-   * On a watch's very first run, record everything as seen WITHOUT emailing —
-   * otherwise the first mail is a 20-item dump of pre-existing notes.
+   * On a watch's very first run, record everything as seen WITHOUT reporting it —
+   * otherwise the first digest is a 20-item dump of pre-existing notes.
    */
   seedOnFirstRun: envBool("SEED_ON_FIRST_RUN", true),
   /**
    * Notes with a known publish time older than this are stored (so they never
-   * re-trigger) but not emailed — search results mix in popular old posts.
+   * re-trigger) but not reported — search results mix in popular old posts.
    */
   maxAgeDays: envInt("MAX_AGE_DAYS", 7),
 
-  mail: {
-    apiKey: process.env.RESEND_API_KEY ?? "",
-    from: process.env.MAIL_FROM ?? "xhs-watcher@lab115.com",
-    to: (process.env.MAIL_TO ?? "")
-      .split(",")
-      .map((address) => address.trim())
-      .filter(Boolean),
-    subjectPrefix: process.env.MAIL_SUBJECT_PREFIX ?? "[小红书]",
-  },
-
-  /** Don't spam the same "login expired" alert on every failed cycle. */
+  /** Don't repeat the same "login expired" alert on every failed cycle. */
   alertCooldownHours: envInt("ALERT_COOLDOWN_HOURS", 6),
   /** After N consecutive failures, skip cycles instead of hammering a blocked account. */
   backoffAfterFailures: envInt("BACKOFF_AFTER_FAILURES", 3),

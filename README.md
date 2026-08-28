@@ -14,7 +14,7 @@ repo/
 │   │   ├── public/
 │   │   └── src/{app,components,data,hooks,utils,i18n.ts,icons.ts,index.css}
 │   ├── daily/                # daily.lab115.com — site *and* cron in one container
-│   ├── xhs-watcher/          # headless worker — no domain, no exposed port
+│   ├── xhs-watcher/          # local worker — not deployed either
 │   └── xhs-watch-ext/        # Chrome extension — not deployed at all
 ├── docker-compose.yml        # one service per app + Traefik host routing
 └── .github/workflows/ci.yml  # quality gate (builds each app on PR/push)
@@ -138,15 +138,14 @@ Compose env：`DEEPSEEK_API_KEY`、`DAILY_GIT_TOKEN`。
 
 ## apps/xhs-watcher
 
-Headless worker: cron → Playwright 抓小红书搜索结果 → 三层去重 → Resend 邮件摘要.
-No domain, no port; state lives on the `./data/xhs` volume (SQLite + the
-Playwright login profile).
+Local worker: cron → Playwright 抓小红书搜索结果 → 三层去重 → 摘要写进日志和 SQLite.
+**不部署** —— 没有 compose service，也没有 Dockerfile。它曾经两样都有；去掉是因为它
+要先在本地扫码登录、再把 Playwright profile rsync 到服务器才能跑，而登录态几周就失效
+一次，等于每隔几周手动重做一遍部署。邮件推送也一并删了（同一次清理），所以它现在没有
+任何对外出口。
 
-Needs a one-time local `npm run login` (QR scan) whose profile is rsync'd to the
-server — the container has no display. Full details, env vars and known limits:
+Full details, env vars and known limits:
 [`apps/xhs-watcher/README.md`](apps/xhs-watcher/README.md).
-
-Compose env: `XHS_KEYWORDS`, `RESEND_API_KEY`, `XHS_MAIL_TO`, `XHS_MAIL_FROM`.
 
 ---
 
@@ -161,6 +160,7 @@ cd apps/xhs-watch-ext && npm install && npm run build
 # chrome://extensions → 开发者模式 → 加载已解压的扩展程序 → 选 dist/
 ```
 
-和 `xhs-watcher` 是同一件事的两种形态（服务端 24×7 邮件 vs. 本机随开随改推送），
+和 `xhs-watcher` 是同一件事的两种形态（本机 Playwright 抓 + 日志 vs. 浏览器扩展 +
+桌面通知），
 `normalize.ts` 的解析逻辑在两边是移植关系。设计取舍、休眠时的行为和已知限制：
 [`apps/xhs-watch-ext/README.md`](apps/xhs-watch-ext/README.md)。
