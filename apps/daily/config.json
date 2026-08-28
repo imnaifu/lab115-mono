@@ -4,7 +4,6 @@
   "summaryMaxChars": 650,
   "summaryParaMaxChars": 90,
   "photoEnabled": true,
-  "photoCaptionMaxChars": 60,
   "categories": [
     {
       "id": "tech",

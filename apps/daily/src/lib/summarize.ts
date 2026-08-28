@@ -1725,17 +1725,6 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
 const CAPTION_PASS = "caption";
 
 /**
- * The caption's ceiling, in Chinese characters.
- *
- * Small for a layout reason rather than an editorial one — it is one line beside
- * an 80px square, and a caption past it wraps until the card stops reading as a
- * card. It lives in config.json anyway, next to the summary budgets, because
- * "how long may this sentence be" is a question answered by looking at the page
- * rather than at this file.
- */
-const CAPTION_MAX_CHARS = USER_CONFIG.photoCaptionMaxChars;
-
-/**
  * A FOURTH PROMPT rather than a mode of the backfill one, and the direction is
  * the reason: every other pass in this file writes Chinese from a Chinese source
  * or English from Chinese. This one goes English → Chinese, and it is translating
@@ -1745,72 +1734,94 @@ const CAPTION_MAX_CHARS = USER_CONFIG.photoCaptionMaxChars;
  * matters more here than it looks: the model cannot see the photograph. Anything
  * it adds — a colour, a time of day, a mood — is made up about an image the
  * reader is looking at, which is the one place a fabrication is instantly
- * visible.
+ * visible. It is the only rule left.
+ *
+ * FOUR LINES, DOWN FROM THIRTY-FIVE. What went was a length ceiling, a fixed
+ * order for what to delete when the English overran it, a list of the kinds of
+ * detail to drop, and a worked argument for each — machinery for fitting a
+ * translation into 60 characters. None of it is needed once the answer to "how
+ * long should this be" is "as long as the English is": the caption is prose in a
+ * `<p>` under a full-width plate, so the description's own length is the right
+ * length, and a rule that trims it is a rule that makes the Chinese say less than
+ * the English. The ceiling went with it — `photoCaptionMaxChars` is gone from
+ * config.json rather than left there unread.
+ *
+ * The JSON-safety line stays because it is mechanical rather than editorial: one
+ * straight double quote invalidates the whole reply. `callModel` supplies the
+ * shape and the "json only" instruction itself, which is why nothing here
+ * describes the wrapper.
  */
-const CAPTION_SYSTEM = `你的任务是把一句英文图片说明，写成中文。
+const CAPTION_SYSTEM = `把维基共享资源为一张照片写的英文说明，翻译成中文。
 
-给你的是维基共享资源为一张照片写的说明。这张照片会印在页面开头，读者看得见它，你看不见。
+- "zh" —— 译文。英文说了什么就译什么，一句不漏，也不许添英文里没有的东西 —— 你看不到这张照片，读者看得到。
+- **专有名词：给了中文名的，照给的写。** 没给又没有通行中译的就留原文，不要音译硬造，更不要按字面意思拆开翻 —— Coldai 不是「冷」。
+- 中文引号用「」，不许出现直双引号 —— 一个直引号就让整条 json 失效。`;
 
-## 返回什么
-
-一个字段：
-- "zh" —— 一句中文图说，**不超过 ${CAPTION_MAX_CHARS} 个字**。
-
-## 只译不添
-
-**你看不到这张照片。英文里没有的，一个字都不许加。**
-
-- 不许添颜色、光线、天气、季节、情绪、气氛 —— 这些正是读者一眼就能看出你编了的东西。
-- 不许添地理、历史、人物背景。英文提到了哪个地名、哪一年、哪个人，就只写那些。
-- 英文里的日期和事件照写（「1875 年 8 月 25 日首次横渡英吉利海峡」这类），那是这句话里最实在的部分。
-- 不许写「这张照片展现了」「令人想起」「仿佛在诉说」这类空话，也不许把它和任何新闻扯上关系。
-- 专有名词没有通行中译就留英文原文，不要音译硬造。
-
-## 英文太长的时候，删什么
-
-英文说明经常写得比一句图说长得多，会连照片之后发生的事一起叙述完。**超出 ${CAPTION_MAX_CHARS} 字就必须删，而且删的顺序是定死的。**
-
-留下（按优先级）：
-1. 照片里看得见的东西 —— 主体是什么、在哪。
-2. 那个日期或事件锚点（「1843 年的今天」「今天是乌克兰独立日」这类）。
-
-删掉：
-- 照片拍下之后发生的事。「四小时内烧成残骸」「凌晨三点弹药库爆炸」这类叙述不在照片里，读者对着图找不到它 —— 删它不只是为了短，本来就不该写。
-- 型号、编号、班次号、桥梁名这类只有专业读者认得的串。留一个最主要的就够。
-- 出版社、机构、馆藏这类出处信息 —— 署名行已经有了。
-
-## 怎么写
-
-一句话，陈述语气，句末不加句号以外的标点。地点写清楚，别只写国家。`;
-
+/**
+ * The shape, and — more than that — the LENGTH and the completeness.
+ *
+ * It used to be a single 55-character clause, which was the right example while
+ * the ceiling was 60 and the Chinese was allowed to be a label. The model imitates
+ * this string more closely than it follows any rule above it, so an example that
+ * stops at the subject and the anchor teaches exactly the caption this pass is no
+ * longer supposed to write.
+ *
+ * The USS Missouri lithograph on purpose: it is the archive's worst case for the
+ * old rules — most of its description is what happened AFTER the picture — and it
+ * shows that half being translated rather than dropped.
+ */
 const CAPTION_EXAMPLE = `{
-  "zh": "英吉利海峡畔比奇角的贝尔图特灯塔与白垩崖，1875 年 8 月 25 日 Matthew Webb 由此首次横渡海峡抵达法国"
+  "zh": "《直布罗陀港内 USS 密苏里号意外失火》石版画。火起于 1843 年的今天，四小时内这艘蒸汽护卫舰就烧成一具焦黑下沉的空壳，8 月 27 日凌晨 3 点 20 分前部弹药库爆炸，将燃烧的船彻底摧毁"
 }`;
 
 /**
- * One Chinese caption for the day's photograph, or "" if it could not be
- * written.
+ * One Chinese caption for the day's photograph, or "" when there is no Chinese
+ * to be had.
  *
- * ONLY CALLED WHEN WIKIMEDIA HAS NO SIMPLIFIED-CHINESE CAPTION of its own — see
- * `chineseCaption` in lib/photo.ts. Most days it does not, so this normally runs;
- * on the days it does, the hand-written caption is better than a translation and
- * free.
+ * CALLED FOR EVERY PHOTO THAT HAS AN ENGLISH DESCRIPTION, which is nearly all of
+ * them. It used to run only on the days Wikimedia held no simplified-Chinese
+ * caption of its own, on the reasoning that a hand-written caption beats a
+ * translation and is free. Both halves of that were wrong about what the two
+ * strings are: the English is `description.text`, a written sentence carrying the
+ * day's anchor, while the Chinese is a STRUCTURED CAPTION, which is a title —
+ * 「多洛米堤山脚下的科尔代湖」 against 230 characters of English on the same
+ * photograph. Preferring it was not choosing the better sentence, it was choosing
+ * the shorter kind of thing. It is the fallback now; see lib/photo.ts.
  *
- * FALLS BACK TO THE ENGLISH rather than to nothing. A photo with an English line
- * under it is a worse page than one with a Chinese line, and a much better page
- * than a credited photo with no words at all — which is the only other option,
- * since a caption is what makes the picture legible as something other than
- * decoration.
+ * RETURNS "" ON FAILURE, and the caller decides what to do about it. It used to
+ * return the English on the grounds that an English line under the photo beats no
+ * line at all — which is still true, and is still what happens, one level up.
+ * What changed is that there is now a THIRD option worth trying first: on a day
+ * Wikimedia does hold a Chinese title, that title is better than an English
+ * paragraph, and a fallback buried in here could not know it existed.
  */
-export async function captionZh(english: string, date: string): Promise<string> {
+export async function captionZh(
+  english: string,
+  date: string,
+  /**
+   * Wikimedia's own simplified-Chinese label for the file, when it has one.
+   *
+   * NOT A FALLBACK HERE — the caller holds that; see lib/photo.ts. It is passed in
+   * as a GLOSSARY, because it is the one thing in this pass that the model cannot
+   * derive and should not guess: how the subject's name is written in Chinese. Left
+   * to itself it invented three different names for the same lake across three runs
+   * — 科尔代湖, 科达伊湖, and then 冷湖, which is `Coldai` read as the English word
+   * "cold" — while Wikimedia had a hand-written 「多洛米堤山脚下的科尔代湖」 sitting
+   * in the payload the whole time.
+   *
+   * A fact in the user message rather than a rule in the system prompt, which is
+   * the distinction this prompt is now built on: the system prompt says what to do
+   * and stays four lines, and anything that is knowledge about THIS photograph
+   * travels with the photograph.
+   */
+  zhLabel = "",
+): Promise<string> {
   const source = english.trim();
   if (!source) return "";
 
   if (!DEEPSEEK_API_KEY) {
-    console.warn(
-      "[daily] DEEPSEEK_API_KEY unset — the photo keeps its English caption",
-    );
-    return source;
+    console.warn("[daily] DEEPSEEK_API_KEY unset — no Chinese caption");
+    return "";
   }
 
   const client = makeClient();
@@ -1821,28 +1832,21 @@ export async function captionZh(english: string, date: string): Promise<string> 
       client,
       label,
       CAPTION_SYSTEM,
-      `Here is 1 English caption. Write its Chinese.\n\nen: ${source}`,
+      `Here is 1 English caption. Write its Chinese.\n\nen: ${source}` +
+        (zhLabel ? `\n\n维基自己的中文标题（专有名词照它写）: ${zhLabel}` : ""),
       CAPTION_EXAMPLE,
     );
     for (const row of rows) {
       const zh = asText(row.zh);
       if (!zh) continue;
-      // Logged rather than rejected: an over-long caption wraps, which is a
-      // blemish, while dropping it costs the photo its only words.
-      if (zh.length > CAPTION_MAX_CHARS) {
-        console.warn(
-          `[daily] ${CAPTION_PASS} — ${zh.length} chars, over ` +
-            `${CAPTION_MAX_CHARS}`,
-        );
-      }
       return zh;
     }
   } catch (error) {
     console.error(
-      `[daily] ${label} failed ` +
-        `(the photo keeps its English caption): ${(error as Error).message}`,
+      `[daily] ${label} failed (the caller falls back): ` +
+        `${(error as Error).message}`,
     );
   }
 
-  return source;
+  return "";
 }

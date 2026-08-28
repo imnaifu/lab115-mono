@@ -23,12 +23,15 @@ import type { DailyPhoto } from "./types";
  * fact, which is the only reason it is allowed to appear: see the caption note on
  * `DailyPhoto` for what this page will not write.
  *
- * TWO DIALS, BOTH IN config.json: `photoEnabled` turns the whole thing off and
- * `photoCaptionMaxChars` bounds the caption. The endpoint, the User-Agent and the
- * timeout below stay in code on purpose — they are operational, and the split is
- * the one the README states: editorial decisions in config.json, machine settings
- * in the source. Swapping the endpoint is not a setting either way, because a
- * different feed needs different parsing.
+ * ONE DIAL, IN config.json: `photoEnabled` turns the whole thing off. It used to
+ * be two — `photoCaptionMaxChars` bounded the caption — and that one is gone: the
+ * caption is a translation of Wikimedia's description now, so the description's
+ * length IS the right length and a ceiling could only make the Chinese say less
+ * than the English. The endpoint, the User-Agent and the timeout below stay in
+ * code on purpose — they are operational, and the split is the one the README
+ * states: editorial decisions in config.json, machine settings in the source.
+ * Swapping the endpoint is not a setting either way, because a different feed
+ * needs different parsing.
  */
 
 /**
@@ -56,9 +59,11 @@ interface FeaturedResponse {
     artist?: { text?: string };
     license?: { type?: string; url?: string };
     description?: { text?: string; lang?: string };
-    /** Hand-written captions per language code. Which codes exist varies by
-     *  file: the 08-25 photo had en, fr, ru, hi, pa, sa and `zh-hant` — and no
-     *  simplified Chinese, which is the case `captionZh` exists for. */
+    /** Hand-written LABELS per language code — a title for the file rather than
+     *  a description of it, which is why the caption below is translated from
+     *  `description.text` and only falls back to these. Which codes exist varies
+     *  by file: the 08-25 photo had en, fr, ru, hi, pa, sa and `zh-hant`, and no
+     *  simplified Chinese at all. */
     structured?: { captions?: Record<string, string> };
   };
 }
@@ -225,7 +230,33 @@ export async function dailyPhoto(date: string): Promise<DailyPhoto | null> {
      * structured caption is the fallback for the days it is missing.
      */
     const en = english || text(captions?.en);
-    const zh = chineseCaption(captions) || (await captionZh(en, date));
+    /**
+     * THE CHINESE IS A TRANSLATION OF THE ENGLISH DESCRIPTION, and Wikimedia's own
+     * simplified-Chinese caption is what answers when there is no English to
+     * translate.
+     *
+     * The preference used to run the other way, and it was comparing two things
+     * that are not the same kind of string. `description.text` is a written
+     * sentence about the photograph and it carries the day's anchor — the reason
+     * the picture is on today's page at all. `structured.captions.zh` is a LABEL:
+     * 「多洛米堤山脚下的科尔代湖」, twelve characters against 230 of English about
+     * the same lake, with the World Lake Day line that ties it to the date nowhere
+     * in it. Across the archive the Chinese ran 11 to 19 times shorter than the
+     * English, and none of that gap was the two languages' exchange rate.
+     *
+     * The three-step fallback is stated HERE rather than inside `captionZh`
+     * because this is the only place that knows all three strings exist. A
+     * translation failure lands on the label, and a photo with neither keeps the
+     * English line rather than being dropped for want of words.
+     *
+     * THE LABEL IS ALSO HANDED TO THE TRANSLATION, and that is not the same use of
+     * it: as a fallback it is a whole caption, and as an argument it is a glossary
+     * of one entry — how the subject's name is written in Chinese, which is the
+     * one thing the translation cannot work out and kept getting wrong. See the
+     * `zhLabel` note in summarize.ts for the three names one lake was given.
+     */
+    const label = chineseCaption(captions);
+    const zh = (await captionZh(en, date, label)) || label || en;
 
     // A photo with no words under it is a decoration with no reason to be on a
     // page that is otherwise entirely text.

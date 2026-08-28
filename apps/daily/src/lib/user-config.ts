@@ -90,9 +90,6 @@ interface RawConfig {
    * model call per run.
    */
   photoEnabled: boolean;
-  /** Ceiling on the photo's caption, in Chinese characters. Small because it is
-   *  one line beside an 80px square — see CAPTION_MAX_CHARS in summarize.ts. */
-  photoCaptionMaxChars: number;
   categories: RawCategory[];
   fallbackCategory: string;
   sources: RawSource[];
@@ -159,17 +156,6 @@ function validate(config: RawConfig): RawConfig {
   }
   if (typeof config.photoEnabled !== "boolean") {
     fail("photoEnabled must be true or false");
-  }
-  // The floor is what a caption needs to name a subject and a place; the ceiling
-  // is where a caption stops being one. Neither is derived from the summary
-  // budgets: this sentence is sized by a line of the card, not by how long a take
-  // may run.
-  if (
-    !Number.isFinite(config.photoCaptionMaxChars) ||
-    config.photoCaptionMaxChars < 10 ||
-    config.photoCaptionMaxChars > 200
-  ) {
-    fail("photoCaptionMaxChars must be a number between 10 and 200");
   }
   if (!Array.isArray(config.categories) || config.categories.length === 0) {
     fail("categories must be a non-empty array");
