@@ -4,7 +4,7 @@ import { ArchiveView } from "@/components/ArchiveView";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
-import { alternatesFor, ogCardFor } from "@/lib/seo";
+import { alternatesFor, archiveDocTitle, ogCardFor } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ export async function generateMetadata({
   const { lang } = await params;
   const pageLang = isLang(lang) ? lang : DEFAULT_LANG;
   const t = strings(pageLang);
-  const title = `${t.archiveTitle} · ${t.brand}`;
+  const title = archiveDocTitle(t.brand, t.archiveTitle, 1);
 
   return {
     title,

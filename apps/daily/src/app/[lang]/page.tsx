@@ -2,8 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DayList } from "@/components/DayList";
 import { EndLink, Footer, Masthead, PAD, PageShell } from "@/components/Shell";
-import { Subscribe } from "@/components/Subscribe";
-import { signupOpen } from "@/lib/mail/resend";
+import { SubscribeSection } from "@/components/SubscribeSection";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
@@ -47,7 +46,13 @@ export async function generateMetadata({
    * than extend it, and the layout's is already right for this URL: it is the home
    * page it was written for. The canonical and the hreflang set come from there too.
    */
-  return { description: `${t.days(dates.length)} · ${t.tagline}` };
+  /* `recentDays`, matching the masthead — this said `t.days(dates.length)`, so a
+     search snippet advertised 8 days over a page showing 7 and a label saying 7.
+     `dates.length` when the site is younger than a week, which is what the page
+     shows then too. */
+  return {
+    description: `${t.recentDays(Math.min(dates.length, FRONT_DAYS))} · ${t.tagline}`,
+  };
 }
 
 export default async function Home({
@@ -111,16 +116,17 @@ export default async function Home({
       />
 
       <Masthead title={t.brand} subtitle={t.tagline} lang={lang} path="/">
-        <span>{t.days(dates.length)}</span>
+        {/* `shown`, not `dates` — what this page IS, not what the site holds. It
+            read `t.days(dates.length)` until the eighth digest landed and the
+            masthead said 8 over a list of 7. The total is now stated nowhere on
+            this page, deliberately: `moreSub` used to carry it and no longer
+            does. A reader who wants the run counts the archive. */}
+        <span>{t.recentDays(shown.length)}</span>
       </Masthead>
 
       <DayList dates={shown} lang={lang} from="home" />
 
-      {signupOpen() ? (
-        <div className={PAD}>
-          <Subscribe lang={lang} />
-        </div>
-      ) : null}
+      <SubscribeSection lang={lang} />
 
       {/* Only once there is something the front page is not already showing —
           see `hasArchive`. With a week or less on the site this link would lead to
@@ -131,7 +137,7 @@ export default async function Home({
           <EndLink
             href={href(lang, "/archive")}
             label={t.more}
-            sub={t.moreSub(dates.length)}
+            sub={t.moreSub}
             track="archive_open"
             trackFrom="home"
           />

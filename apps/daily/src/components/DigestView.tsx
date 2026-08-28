@@ -1,5 +1,6 @@
 import { DigestBody, type CategoryGroup } from "./DigestBody";
 import {
+  Breadcrumb,
   EndLink,
   Footer,
   Masthead,
@@ -11,8 +12,7 @@ import {
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
 import { PhotoCard } from "./Photo";
-import { Subscribe } from "./Subscribe";
-import { signupOpen } from "@/lib/mail/resend";
+import { SubscribeSection } from "./SubscribeSection";
 import { shownArticles } from "@/lib/store";
 import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
@@ -124,6 +124,25 @@ export function DigestView({
       <Masthead
         title={t.brand}
         subtitle={t.tagline}
+        /* THE SAME TRAIL THE STRUCTURED DATA ALREADY DECLARED — see `breadcrumb`
+           in the day route's JSON-LD, which has said 每日严选 › 2026-08-27 to
+           crawlers for as long as it has existed while the page itself showed no
+           trail at all.
+
+           THE RAW DATE, not `formatDate`: the crumb is a compact trail, and that
+           helper returns 「2026年8月27日 · 星期四」 — a middle dot inside a crumb
+           reads as another separator. The formatted date with its weekday is in
+           the meta row below, where it is the day's own line rather than a step
+           in a path. */
+        crumb={
+          <Breadcrumb
+            label={t.breadcrumb}
+            items={[
+              { label: t.home, href: href(lang, "/") },
+              { label: digest.date },
+            ]}
+          />
+        }
         lang={lang}
         path={dayPath(digest.date)}
       >
@@ -154,6 +173,17 @@ export function DigestView({
         </div>
       ) : null}
 
+      {/* UNDER THE PLATE, ABOVE THE FIRST CARD, which is a move from the bottom of
+          the page. The end of this page is the end of the whole day's reading and
+          most readers never get there; the top is where all of them start, and the
+          plate is the natural thing to sit beneath — the two together read as the
+          edition's masthead furniture rather than as an interruption between two
+          articles.
+
+          `mt-8` because the photograph deliberately has no bottom margin (see its
+          note above) — the tab row's own `mt-8` then spaces this off the day. */}
+      <SubscribeSection lang={lang} className="mt-8" />
+
       {groups.length > 0 ? (
         <DigestBody
           articles={shown}
@@ -164,15 +194,6 @@ export function DigestView({
       ) : (
         <EmptyState lang={lang} />
       )}
-
-      {/* Before the way onward, not after it: a reader who has just finished the
-          day's cards is at the moment they might want tomorrow's delivered, and
-          the next block down sends them somewhere else. */}
-      {signupOpen() ? (
-        <div className={PAD}>
-          <Subscribe lang={lang} />
-        </div>
-      ) : null}
 
       <div className={PAD}>
         <EndLink

@@ -9,6 +9,7 @@ import { barePath, DEFAULT_LANG, isLang } from "@/lib/lang";
  *
  * THREE RULES, and the order matters:
  *
+ *   `/preview` THROUGH UNTOUCHED in development, 404 everywhere else. See below.
  *   `/zh/…`   301 to the unprefixed form. The default language is unprefixed now
  *             — see lib/lang.ts — so every one of these is a legacy URL, and a
  *             permanent redirect is how the old shape stops competing with the
@@ -34,6 +35,29 @@ import { barePath, DEFAULT_LANG, isLang } from "@/lib/lang";
 export default function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const [, first] = pathname.split("/");
+
+  /**
+   * The contact sheet and the emails it renders — `/preview` and everything under
+   * it. THE ONE GATE, and it does two things nothing else can.
+   *
+   * IT IS WHERE DEV-ONLY IS ENFORCED. `NODE_ENV` is production under `next build`
+   * and under `next start`, so this is a 404 in both — the tool answers on a dev
+   * server and nowhere else, including a production build run on this machine.
+   * The page and the mail route each check again; a route that leaks because a
+   * matcher was edited is not a failure worth being one edit away from.
+   *
+   * IT IS ALSO WHY THE PATH RESOLVES AT ALL. Without this, the rewrite at the
+   * bottom would send `/preview` to `/zh/preview`, and the preview tree does not
+   * live under `[lang]` — it has no single language, it renders both. Every other
+   * language-less route on this site ends in an extension and is excluded by the
+   * matcher instead; this one does not, so it is named here.
+   */
+  if (first === "preview") {
+    if (process.env.NODE_ENV === "production") {
+      return new NextResponse(null, { status: 404 });
+    }
+    return NextResponse.next();
+  }
 
   if (first === DEFAULT_LANG) {
     const url = request.nextUrl.clone();

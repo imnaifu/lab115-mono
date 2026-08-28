@@ -79,6 +79,47 @@ export function ogCardFor(lang: Lang, name: string) {
  * a reader who asked for nothing in particular actually lands. Pointing it at the
  * same URL as `zh-CN` is a documented configuration, not a workaround.
  */
+/**
+ * The archive's document title — what the tab, the search result and the unfurl
+ * all say.
+ *
+ * THE BRAND FIRST, THEN THE PAGE: `每日严选 · 归档`. Which is the shape the day page
+ * already used (`每日严选 · 2026-08-27`) while the archive was the other way round
+ * (`归档 · 每日严选`) — that inconsistency was the actual complaint, and the brand
+ * leads because it is the name of the thing; the page is which part of it.
+ *
+ * IT WAS THE BRAND ALONE FOR ONE ROUND, on a reading of "drop the word 归档". That
+ * made `/archive` and `/` byte-identical in `<title>` and `og:title`, which is the
+ * duplicate-signal shape this site has already been bitten by twice — see the note
+ * on the front page being a directory rather than a copy of the newest digest. The
+ * word coming back is what separates them again.
+ *
+ * `·` RATHER THAN `-`, which is what the request typed: the separator is `·`
+ * everywhere else on this site — the day's title, the masthead's meta row, the
+ * photo credit — and one title spelling it differently is a title that looks like
+ * it came from somewhere else.
+ *
+ * THE PAGE NUMBER STAYS on 2 and up: three archive pages sharing one title are
+ * three search results a reader cannot tell apart.
+ *
+ * A HELPER RATHER THAN A LITERAL because there were three copies of this string —
+ * both routes and the `CollectionPage` name in ArchiveView — and they had already
+ * drifted: page 2's `<title>` carried the number while its `og:title` did not, so a
+ * link to page 2 unfurled as page 1. One source, and that cannot recur.
+ *
+ * `brand` and `name` are passed in rather than read here, the same way `publisher`
+ * and `website` below take theirs: this module knows about URLs and shapes, not
+ * about which language is being rendered.
+ */
+export function archiveDocTitle(
+  brand: string,
+  name: string,
+  page: number,
+): string {
+  const title = `${brand} · ${name}`;
+  return page > 1 ? `${title} · ${page}` : title;
+}
+
 export function alternatesFor(lang: Lang, path: string) {
   const languages: Record<string, string> = {
     "x-default": url(DEFAULT_LANG, path),

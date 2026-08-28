@@ -42,6 +42,14 @@ const STRINGS = {
     readTime: (n: number) => `读完约 ${n} 分钟`,
     sectionCount: (n: number) => `${n} 篇`,
     days: (n: number) => `${n} 天`,
+    /**
+     * 首页 masthead 上那一行，说的是这一页在展示什么。
+     *
+     * 和 `days` 分开是因为两者答的不是同一个问题：`days` 是「站上一共几天」，归档页
+     * 用它是对的（归档就是全部）；首页只列最近 FRONT_DAYS 天，却用 `days` 报了总数，
+     * 于是第 8 天上线那天，标题写着「8 天」而下面只有 7 行。
+     */
+    recentDays: (n: number) => `最近 ${n} 天`,
 
     readFull: "阅读全文 →",
     share: "分享",
@@ -106,9 +114,33 @@ const STRINGS = {
     allDays: "看其它日期",
     allDaysSub: "最近一周，以及更早的归档",
 
-    /* The front page's link to the archive, under the newest few days. */
+    /**
+     * The breadcrumb: what the trail calls the front page, and what a screen
+     * reader calls the trail itself.
+     *
+     * 「首页」 rather than 「回到首页」 (`backHome`, further down) or the brand: a crumb
+     * names a place, not an action, and the brand is already the lockup directly
+     * below it — three 「每日严选」 in one header is what naming it here would cost.
+     * The STRUCTURED-DATA trail does name the brand, deliberately: a search result
+     * reading `每日严选 › 归档` is naming the site, where this one is naming a link
+     * whose destination the reader can see for themselves.
+     */
+    home: "首页",
+    breadcrumb: "面包屑导航",
+
+    /**
+     * The front page's link to the archive, under the newest few days.
+     *
+     * NO LONGER COUNTS THE DAYS. It read 「共 N 天，按页浏览」, which spent the one
+     * line under the label on a number and a pagination mechanic — the number is
+     * the site's inventory rather than a reason to click, and how the archive
+     * paginates is something a reader finds out by arriving. What is left says
+     * where the link goes.
+     *
+     * A plain string rather than a function now: nothing here interpolates.
+     */
     more: "更多",
-    moreSub: (n: number) => `共 ${n} 天，按页浏览`,
+    moreSub: "往前翻，看过去的每一天",
 
     archiveTitle: "归档",
     /* "第 2 页 / 共 4 页" — stated rather than implied, because the two arrows
@@ -133,11 +165,14 @@ const STRINGS = {
     /**
      * 订阅表单，以及它之后的两种结果页。
      *
-     * 「五条」是写死的数字而不是插值，因为它同时是一个承诺：邮件里就是五条，多的在
-     * 网页上。改 MAIL_TOP_N 的时候这句要跟着改，这条注释就是那个提醒。
+     * 这里曾经有 subscribeSub「每天早上一封，五条精选。」和 subscribeNote「每封信里
+     * 都有退订链接，随时可以退。」，两句都删了 —— 卡片只剩标题、输入框、按钮。
+     *
+     * 连带删掉的还有一条提醒：那句「五条」是写死的数字而不是插值，因为它同时是一个
+     * 承诺，改 MAIL_TOP_N 就得跟着改。现在站上没有任何一处文案承诺条数，所以那条
+     * 提醒也没有对象了 —— MAIL_TOP_N 只对邮件本身负责。
      */
     subscribe: "订阅邮件",
-    subscribeSub: "每天早上一封，五条精选。",
     subscribeEmail: "你的邮箱",
     subscribeGo: "订阅",
     subscribeSending: "正在发送",
@@ -146,7 +181,6 @@ const STRINGS = {
     subscribeError: "没发出去，过一会儿再试一次。",
     subscribeBadEmail: "这个邮箱看起来不太对。",
     subscribeTooMany: "试得太频繁了，五分钟后再来。",
-    subscribeNote: "每封信里都有退订链接，随时可以退。",
 
     confirmedTitle: "订阅成功",
     confirmedBody: "明天早上七点，第一封就会到。",
@@ -253,6 +287,8 @@ const STRINGS = {
     readTime: (n: number) => `about ${n} min to read`,
     sectionCount: (n: number) => `${n}`,
     days: (n: number) => `${n} ${n === 1 ? "day" : "days"}`,
+    recentDays: (n: number) =>
+      n === 1 ? "the latest day" : `the last ${n} days`,
 
     readFull: "Read the original →",
     share: "Share",
@@ -287,8 +323,11 @@ const STRINGS = {
     allDays: "Other editions",
     allDaysSub: "The past week, and the archive beyond it",
 
+    home: "Home",
+    breadcrumb: "Breadcrumb",
+
     more: "More",
-    moreSub: (n: number) => `${n} ${n === 1 ? "day" : "days"} in all, by the page`,
+    moreSub: "Look back through every past day",
 
     archiveTitle: "Archive",
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
@@ -307,7 +346,6 @@ const STRINGS = {
     emptyBody: "No new posts from any source in the last 24 hours. Try again tomorrow.",
 
     subscribe: "Subscribe by email",
-    subscribeSub: "One email each morning, five picks.",
     subscribeEmail: "Your email",
     subscribeGo: "Subscribe",
     subscribeSending: "Sending",
@@ -316,7 +354,6 @@ const STRINGS = {
     subscribeError: "That did not send. Try again in a moment.",
     subscribeBadEmail: "That address does not look right.",
     subscribeTooMany: "Too many tries. Give it five minutes.",
-    subscribeNote: "Every email carries an unsubscribe link.",
 
     confirmedTitle: "You are subscribed",
     confirmedBody: "The first one arrives tomorrow morning.",

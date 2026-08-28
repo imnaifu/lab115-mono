@@ -25,12 +25,13 @@ import type { PublishedArticle } from "@/lib/types";
 /**
  * The share poster, drawn.
  *
- * SPLIT OUT OF THE ROUTE, and it is still split out even though the route is the
- * only thing serving posters now. The reason has outlived its first cause: the
- * daily job used to draw every image at write time and needed this without going
- * through HTTP to reach its own server, and `npm run preview` calls it for the
- * same reason today. What has not changed is that a route holding 300 lines of
- * layout JSX is 300 lines nothing else can render.
+ * SPLIT OUT OF THE ROUTE, and it is still split out even though the route is now
+ * the only thing that serves posters. Both of the callers that needed it outside
+ * HTTP are gone: the daily job drew every image at write time once, and
+ * `npm run preview` rendered them into a directory until `/preview` replaced it
+ * with links at this route. What has not changed is the reason that outlives
+ * them — a route holding 300 lines of layout JSX is 300 lines nothing else can
+ * render, and `npm run once` is a plain `tsx` process that can still reach this.
  *
  * This module knows nothing about requests, responses or caching — it takes an
  * article and a part number and returns PNG bytes. There is no disk cache behind

@@ -96,8 +96,19 @@ export function Subscribe({ lang }: { lang: Lang }) {
       onSubmit={submit}
       className={`${SECTION} rounded-card border border-line bg-paper px-6 py-5`}
     >
+      {/* THE TITLE AND THE FIELD, and nothing between them. There were two lines
+          of small print here — what the mail is ("one each morning, five picks")
+          and what the mail promises ("every one carries an unsubscribe link") —
+          and both were removed. The card is a title, a field and a button; a
+          reader deciding whether to hand over an address is not reading two more
+          sentences first, and the second one was reassurance about a problem they
+          had not been given yet.
+
+          NEITHER CLAIM IS LOST WHERE IT MATTERS. The unsubscribe link is in every
+          message, which is a fact about the mail rather than about this card — see
+          `mailUnsubscribe` in lib/mail/render.ts, which is what actually satisfies
+          it — and what the edition is is the edition's own job to show. */}
       <div className="text-xl font-bold text-ink">{t.subscribe}</div>
-      <p className="mt-1 text-sm font-medium text-ink-soft">{t.subscribeSub}</p>
 
       {/* The honeypot. `hidden` rather than off-screen positioning: a bot reads
           the DOM and fills every input it finds, and a person never sees this
@@ -135,9 +146,17 @@ export function Subscribe({ lang }: { lang: Lang }) {
         </button>
       </div>
 
-      <p className="mt-3 text-xs font-medium text-ink-soft" role="status">
-        {state.kind === "error" ? state.message : t.subscribeNote}
-      </p>
+      {/* ONLY WHEN THERE IS SOMETHING TO SAY. This line used to carry the
+          unsubscribe note when idle and the error when there was one, so the
+          error arrived in a slot the eye had already learned to skip. With the
+          note gone the row appears only on failure, which is the one thing here
+          worth interrupting for. `role="status"` stays: it is announced when it
+          appears, and it appears because something went wrong. */}
+      {state.kind === "error" ? (
+        <p className="mt-3 text-xs font-medium text-ink-soft" role="status">
+          {state.message}
+        </p>
+      ) : null}
     </form>
   );
 }

@@ -5,7 +5,7 @@ import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { archivePath } from "@/lib/paging";
-import { alternatesFor, ogCardFor } from "@/lib/seo";
+import { alternatesFor, archiveDocTitle, ogCardFor } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +31,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (page === null) return { title: `${t.notFoundTitle} · ${t.brand}` };
 
   const path = archivePath(page);
-  const title = `${t.archiveTitle} · ${t.brand}`;
+  /* Carries the page number from 2 up — see archiveDocTitle, which is also why
+     `openGraph` and `twitter` below now get the same string the tab does. They
+     used to get the un-numbered one, so a link to page 2 unfurled as page 1. */
+  const title = archiveDocTitle(t.brand, t.archiveTitle, page);
 
   return {
-    // The page number is in the <title> because a search result listing three
-    // archive pages with one title is three results a reader cannot tell apart.
-    title: page > 1 ? `${t.archiveTitle} · ${page} · ${t.brand}` : title,
+    title,
     description: t.tagline,
     // SELF-CANONICAL, per page. Pointing every page at `/archive` is the common
     // mistake and it hides pages 2 and up from the index — which here is most of

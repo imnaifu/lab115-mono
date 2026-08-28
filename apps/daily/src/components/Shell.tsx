@@ -92,6 +92,7 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
 export function Masthead({
   title,
   subtitle,
+  crumb,
   lang,
   path,
   children,
@@ -111,6 +112,21 @@ export function Masthead({
    * on the lockup. A page that wants a bare title is one prop away.
    */
   subtitle?: string;
+  /**
+   * A trail above the lockup, for a page that is part of something — see
+   * `Breadcrumb`, which is the only thing passed here.
+   *
+   * A SLOT ON THE MASTHEAD rather than something the page renders itself, because
+   * this header owns its own vertical rhythm: `pt-24` clears the two blobs, the
+   * controls row sits under them and the lockup under that. A trail rendered above
+   * `<Masthead>` by the page would land on top of the blobs, and a page that
+   * reduced the padding to make room would be a page with a different header.
+   *
+   * OPTIONAL, and only the archive passes it today. The day and the article page
+   * both have structured-data trails and no visible one; if either grows one, it
+   * arrives through here rather than through a second arrangement.
+   */
+  crumb?: ReactNode;
   lang: Lang;
   path: string;
   children: ReactNode;
@@ -167,6 +183,8 @@ export function Masthead({
         <ThemeToggle label={t.themeToggle} />
         <InstallApp lang={lang} />
       </div>
+
+      {crumb}
 
       {/* The mark and the wordmark, laid out the way the share poster lays them
           out — the two are the same lockup and should not drift apart.
@@ -276,6 +294,70 @@ export function Masthead({
         {children}
       </div>
     </header>
+  );
+}
+
+/**
+ * A breadcrumb trail, for a page that is a part of something rather than a place
+ * of its own.
+ *
+ * A REAL `<nav>` WITH AN `<ol>`, not a line of links with a chevron between them:
+ * the trail is a list, its order is its meaning, and a screen reader announcing
+ * "list, 2 items" is what tells someone where they are without seeing the page.
+ * `aria-current="page"` marks the last crumb, which is also why it is NOT a link —
+ * a link to the page you are on is a control that does nothing.
+ *
+ * THE SEPARATOR IS `aria-hidden`. It is punctuation between list items, and read
+ * aloud it is noise ("每日严选 greater-than 归档").
+ *
+ * WHERE IT GOES: above the lockup, passed to `Masthead` as `crumb` — see the prop.
+ * It is deliberately small and quiet. The page it sits on has the brand set in
+ * 30px directly underneath, and a trail competing with that would be a second
+ * masthead.
+ */
+export function Breadcrumb({
+  items,
+  label,
+}: {
+  /** Innermost LAST. Every item but the last needs an `href`; the last is where
+   *  the reader already is. */
+  items: { label: string; href?: string }[];
+  /** What the nav is called, for a reader who cannot see it is a trail. */
+  label: string;
+}) {
+  return (
+    <nav aria-label={label} className="mt-6 text-sm font-medium text-ink-soft">
+      <ol className="flex flex-wrap items-center gap-1.5">
+        {items.map((item, at) => (
+          <li key={item.label} className="flex items-center gap-1.5">
+            {at > 0 ? (
+              <span aria-hidden className="text-line">
+                ›
+              </span>
+            ) : null}
+            {item.href ? (
+              <a className="transition-colors hover:text-ink" href={item.href}>
+                {item.label}
+              </a>
+            ) : (
+              /* TRUNCATED, because the last crumb on an article page is a
+                 headline: 「AI 成了新的推责工具：把锅甩给算法，人类就清白了？」 is 24
+                 characters and the trail in front of it is another 14. Wrapping it
+                 turns a one-line trail into three lines of grey text above a
+                 lockup; the full string stays in the DOM and in the `title`, and
+                 the page's own H1 is 40px below it either way. */
+              <span
+                aria-current="page"
+                title={item.label}
+                className="max-w-[14rem] truncate text-ink-mid sm:max-w-sm"
+              >
+                {item.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }
 

@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { DayList } from "./DayList";
-import { EndLink, Footer, Masthead, PAD, PageShell } from "./Shell";
+import { Breadcrumb, Footer, Masthead, MastheadDot, PAD, PageShell } from "./Shell";
+import { SubscribeSection } from "./SubscribeSection";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
 import { archivePages, archivePath, archiveSlice, hasArchive } from "@/lib/paging";
-import { breadcrumb, JsonLd, publisher } from "@/lib/seo";
+import { archiveDocTitle, breadcrumb, JsonLd, publisher } from "@/lib/seo";
 import { listDates } from "@/lib/store";
 
 /**
@@ -43,7 +44,7 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
           "@type": "CollectionPage",
           "@id": url,
           url,
-          name: `${t.archiveTitle} · ${t.brand}`,
+          name: archiveDocTitle(t.brand, t.archiveTitle, page),
           inLanguage: lang === "zh" ? "zh-CN" : "en-US",
           publisher: publisher(t.brand),
           isPartOf: { "@id": `${SITE}${href(lang, "/")}#site` },
@@ -67,16 +68,41 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
         }}
       />
 
+      {/* THE BRAND IS THE TITLE, and 归档 moved down into the meta row.
+          
+          It was the other way round — the masthead read 归档 where every other
+          page on the site reads 每日严选, which made this the one page whose
+          lockup was not the site's. The meta row is where the other pages say
+          WHICH page this is (the day's date and counts on a digest, the span of
+          days on the front page), so that is where this one says it too. Same
+          move, and the same reason, as the document title: see `archiveDocTitle`.
+
+          FIRST IN THE ROW, before the day count and the page number, because it
+          is the label those two numbers are about. */}
       <Masthead
-        title={t.archiveTitle}
+        title={t.brand}
         subtitle={t.tagline}
+        /* The trail replaces the way home that used to sit at the BOTTOM of this
+           page — see the note where that block was. It also takes 归档 back out of
+           the meta row below, where it landed one round earlier: the crumb says
+           which page this is, and says it as a place in the site rather than as a
+           label, so the word twice in one header is once too many. */
+        crumb={
+          <Breadcrumb
+            label={t.breadcrumb}
+            items={[
+              { label: t.home, href: href(lang, "/") },
+              { label: t.archiveTitle },
+            ]}
+          />
+        }
         lang={lang}
         path={archivePath(page)}
       >
         <span>{t.days(dates.length)}</span>
         {total > 1 ? (
           <>
-            <span className="size-1 rounded-full bg-orange" />
+            <MastheadDot />
             <span>{t.pageOf(page, total)}</span>
           </>
         ) : null}
@@ -124,15 +150,18 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
         </nav>
       ) : null}
 
-      <div className={PAD}>
-        <EndLink
-          href={href(lang, "/")}
-          label={t.brand}
-          sub={t.tagline}
-          track="home_open"
-          trackFrom="archive"
-        />
-      </div>
+      {/* After the pager, and now the last block on the page. Same component and
+          same rule as the other three lists: see SubscribeSection. */}
+      <SubscribeSection lang={lang} />
+
+      {/* NO WAY-ONWARD CARD HERE, and the other three lists all have one. It was
+          `每日严选 / 过滤信息噪音…` pointing at `/`, which read as a brand banner
+          rather than as a way back, and it was the THIRD link home on this page —
+          the lockup is one, and the breadcrumb at the top is now the other, named
+          and in the place a reader looks for it. `track="home_open"` from
+          `trackFrom="archive"` goes with it; the crumb is not tracked, because
+          "did anyone leave the archive upwards" is not a question worth an event
+          on a page whose whole job is to be passed through. */}
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}

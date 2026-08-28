@@ -1,10 +1,19 @@
 import { themedAccent } from "@/lib/accent";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ArticleTitle } from "@/components/ArticleTitle";
+import { ArticleTitle, displayTitle } from "@/components/ArticleTitle";
 import { Cover } from "@/components/Cover";
-import { EndLink, Footer, Masthead, PAD, PageShell, SECTION } from "@/components/Shell";
+import {
+  Breadcrumb,
+  EndLink,
+  Footer,
+  Masthead,
+  PAD,
+  PageShell,
+  SECTION,
+} from "@/components/Shell";
 import { Summary } from "@/components/Summary";
+import { SubscribeSection } from "@/components/SubscribeSection";
 import { accentColor, categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
@@ -241,6 +250,25 @@ export default async function ArticlePage({ params }: Params) {
       <Masthead
         title={t.brand}
         subtitle={t.tagline}
+        /* THREE LEVELS, which is what this page actually is and what its JSON-LD
+           has always said: the front page, the day, and this take. The middle
+           crumb is the one that matters — a reader arriving from a share or a
+           search has no idea this article belongs to a daily edition, and the
+           trail is where that is legible without reading to the bottom.
+
+           The headline is the last crumb and is truncated there; see Breadcrumb.
+           `displayTitle` rather than `article.title`, so the crumb says what the
+           H1 below it says in this language. */
+        crumb={
+          <Breadcrumb
+            label={t.breadcrumb}
+            items={[
+              { label: t.home, href: langHref(lang, "/") },
+              { label: date, href: langHref(lang, dayPath(date)) },
+              { label: displayTitle(article, lang) },
+            ]}
+          />
+        }
         lang={lang}
         path={articlePath(date, article)}
       >
@@ -304,6 +332,12 @@ export default async function ArticlePage({ params }: Params) {
           </div>
         </div>
       </section>
+
+      {/* The one page that did not offer this. A reader here arrived from a share
+          or a search and read the whole take — which is a better moment to ask
+          than the bottom of a list they were scanning. Above the way back to the
+          day, on the rule in SubscribeSection. */}
+      <SubscribeSection lang={lang} />
 
       <div className={PAD}>
         <EndLink
