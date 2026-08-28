@@ -59,9 +59,19 @@
     get the ink tile on the dark page. Shell.tsx renders both files and lets the
     `dark:` variant pick; see the note there.
 
-    Classes with a `<style>` block rather than `fill="var(--tile)"`: `var()` in a
-    presentation attribute is not resolved everywhere, and a favicon has no
-    console to tell you it failed.
+    Classes with a `<style>` block rather than a custom property in the `fill`
+    presentation attribute: `var()` there is not resolved everywhere, and a
+    favicon has no console to tell you it failed.
+
+    THE CUSTOM PROPERTY IS DESCRIBED RATHER THAN NAMED, and that is not fussiness.
+    An SVG is XML, XML forbids a double hyphen inside a comment, and a custom
+    property's name begins with one — so the earlier version of this sentence,
+    which quoted `fill="var(` and the property name in full, made THIS FILE
+    unparseable. Not the comment: the document. Every strict parser rejects the
+    whole thing, so the tab fell back to whatever icon the browser already had and
+    the redrawn mark below was never once displayed. There is no console on a
+    favicon and no build step over `public/`, so nothing said a word for two days.
+    If a note here ever needs to name one, write it without the hyphens.
 
     Palette from src/index.css: cream #FBF3E9, ink #3B3563, orange #EFA050.
   -->

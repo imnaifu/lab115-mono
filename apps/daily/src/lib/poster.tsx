@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import {
   coverGradient,
+  PARA_LEADING,
   POSTER,
   posterAuthor,
   posterClean,
@@ -223,6 +224,10 @@ export async function renderPoster({
         <div
           style={{
             display: "flex",
+            // Stated, not left to the chip's line box — `POSTER.domainRow` is the
+            // measured height and POSTER_FRAME subtracts exactly this number, so
+            // the page of prose below is planned against the card it really gets.
+            height: POSTER.domainRow,
             alignItems: "center",
             justifyContent: "space-between",
           }}
@@ -340,7 +345,25 @@ export async function renderPoster({
          *
          * `justifyContent` is the one thing the two kinds of part disagree about.
          * The identity card is a COVER and its content is centred; a page of prose
-         * starts at the top, because that is where reading starts.
+         * starts at the TOP, because that is where reading starts.
+         *
+         * CENTRING THE PROSE WAS TRIED AND TAKEN BACK OUT. The case for it is that
+         * a page rarely fills — a summary does not divide into whole pages, so what
+         * is left over collects under the last line: on one real digest, 234px on
+         * the Chinese page and 333 and 451px on the English ones. Centred, that
+         * same space splits above and below and reads as chosen rather than as an
+         * image that stopped early.
+         *
+         * It was taken out because it buys the bottom margin by moving the FIRST
+         * line, and the first line is the one thing every page of a deck should
+         * agree on: pages hold different amounts, so each would start at a
+         * different height and the text would jump between swipes.
+         *
+         * Which leaves the leftover space a pagination question rather than an
+         * alignment one. It is smaller than it was — see BODY_SLACK, which gave
+         * 25px a page back to the text by retiring a margin that was insuring
+         * against arithmetic since checked against the pixels — and what remains is
+         * the cost of keeping a paragraph whole on one page.
          */}
         <div
           style={{
@@ -543,7 +566,9 @@ export async function renderPoster({
                 flexDirection: "column",
                 fontSize: POSTER.paraSize,
                 color: "#3b3563",
-                lineHeight: 1.85,
+                // The packer counts rows at this leading; see PARA_LEADING for why
+                // the number is imported rather than typed here a second time.
+                lineHeight: PARA_LEADING,
               }}
             >
               {rows.map((row, at) => (

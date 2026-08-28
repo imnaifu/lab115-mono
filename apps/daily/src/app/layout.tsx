@@ -118,7 +118,22 @@ export async function generateMetadata(): Promise<Metadata> {
       images: ogCardFor(lang, "site").map((image) => image.url),
     },
     icons: {
-      icon: "/favicon.svg",
+      /**
+       * `?v=2`, and the query is the whole point of it.
+       *
+       * A browser's favicon store is keyed by URL and is not the HTTP cache: it
+       * survives a reload, a hard reload, and `max-age=0` on the response. So an
+       * icon redrawn at a fixed address is an icon a returning reader may never
+       * see — which is not hypothetical here twice over. The service worker had
+       * it cache-first once (see VERSION in sw.js), and the file was unparseable
+       * XML for two days (see the comment in it), and in both cases the tab kept
+       * an icon nobody could dislodge with any amount of reloading.
+       *
+       * Bumping this is the only thing that changes the address, so it belongs to
+       * the list in mark.svg of what does not follow the artwork on its own. The
+       * pathname is untouched, which is what keeps `ASSETS` in sw.js matching.
+       */
+      icon: "/favicon.svg?v=2",
       // iOS does not read the manifest for home-screen icons, and it ignores
       // transparency — so this is a separate, full-bleed PNG.
       apple: "/apple-touch-icon.png",

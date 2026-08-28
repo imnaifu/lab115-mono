@@ -127,6 +127,23 @@ export const POSTER = {
   domainPadX: 23,
   domainPadY: 9,
   domainTracking: 3,
+  /**
+   * The masthead row's height, STATED HERE AND SET ON THE ROW rather than left to
+   * come out of the chip's own line box.
+   *
+   * `POSTER_FRAME` used to predict it as `round(domainSize * 1.2) + 2 * domainPadY`
+   * = 49, on the assumption that Satori's default line height is 1.2. Measured off
+   * a rendered poster the row is 54: the chip's line box comes out at 1.385em, not
+   * 1.2em, so every page of prose was planned against a card 5px taller than the
+   * one it got.
+   *
+   * 54 is that measurement, and the renderer now sets it as the row's `height` —
+   * which is the whole point of moving it here. A number that PREDICTS what Satori
+   * will do is wrong the day Satori changes its mind about a default; a number the
+   * layout is told to use cannot drift from the number the arithmetic uses. It is
+   * also exactly what the row renders at today, so nothing moves on the canvas.
+   */
+  domainRow: 54,
   /** Chip row → the wordmark lockup under it. */
   domainGap: 29,
   /**
@@ -243,8 +260,28 @@ export const POSTER_TEXT_WIDTH =
 export const POSTER_BESIDE_COVER =
   POSTER_TEXT_WIDTH - POSTER.cover - POSTER.coverGap;
 
-/** One drawn line of body text, top to top. */
-const PARA_LINE = Math.round(POSTER.paraSize * 1.85);
+/**
+ * The body copy's leading, and the ONE place it is written down.
+ *
+ * It used to be the literal 1.85 here and the literal 1.85 in the renderer's
+ * `lineHeight`, which is two copies of the number that decides both how tall a
+ * drawn row is and how many rows the packer thinks fit. Change one and pagination
+ * plans for a page height the poster does not have — the failure being a page
+ * whose last line is drawn past the card's edge, which is invisible in the arithmetic
+ * and obvious in the PNG. `Summary.tsx` sets the same leading on the page, in the
+ * unit Tailwind takes.
+ */
+export const PARA_LEADING = 1.85;
+
+/**
+ * One drawn line of body text, top to top.
+ *
+ * ROUNDED, and the rounding is not a fudge: Satori lays rows out on whole pixels,
+ * and the ink bands on a rendered page are 59px apart to the pixel — `32 * 1.85`
+ * is 59.2 and what gets drawn is 59. Measured on both languages, since the leading
+ * is a multiple of the font SIZE and so is the same in either face.
+ */
+const PARA_LINE = Math.round(POSTER.paraSize * PARA_LEADING);
 
 /**
  * Everything on a BODY PAGE that is not the body copy: the two canvas margins,
@@ -263,25 +300,38 @@ const PARA_LINE = Math.round(POSTER.paraSize * 1.85);
  */
 const POSTER_FRAME =
   (POSTER.pad + 16) * 2 +
-  (Math.round(POSTER.domainSize * 1.2) + POSTER.domainPadY * 2) +
+  POSTER.domainRow +
   POSTER.cardTop +
   POSTER.cardPad * 2 +
   POSTER.pageRow;
 
 /**
- * How much of a body page is left for lines, with slack held back.
+ * The paint-rounding allowance, and it is now the ONLY thing held back.
  *
- * The slack matters more than it did before the canvas was fixed: it cannot grow,
- * so an over-estimate here does not make a taller image, it clips the last line
- * off a page. Under-filling is invisible, so the asymmetry is worth paying for.
+ * It was half a line — 30px — and that was insurance against an arithmetic nobody
+ * had checked against a rendered image. Checked, the arithmetic is exact: the ink
+ * bands on a page of prose are 59px apart where `PARA_LINE` says 59, a paragraph
+ * boundary measures 79 where the model says 79, and the card's bottom edge lands
+ * on the pixel `POSTER_FRAME` puts it on. The one term that was wrong is fixed at
+ * source — see `POSTER.domainRow`, which was over-predicted by 5px — so the other
+ * 25 were buying nothing, and they were not free: they cost a whole page on 36 of
+ * the article/language pairs in the archive. One of them put four lines alone on a
+ * fourth image while the third sat 249px empty, because a 4-line paragraph missed
+ * fitting by 27px of margin that did not exist on the canvas.
  *
- * HALF A LINE, though, not the whole one it was. A full line was picked when
- * nothing had been measured; across every archived summary the tallest page then
- * came out 114px under what the card could hold, which is a line and a half of
- * insurance on top of the 1.4 units `LINE_BUDGET` already holds back horizontally.
- * Two layers of the same guess is one too many.
+ * 8px is what an integer layout can still be off by once at paint time, and there
+ * is another ~9px of slack under it that costs nothing: a row's ink sits inside its
+ * 59px box, ~9px clear of the bottom, so a page filled to the last pixel loses no
+ * ink even if this is wrong by a line's descender.
+ *
+ * The asymmetry the old comment named is still real — under-filling is invisible,
+ * over-filling clips — which is why this is 8 and not 0. What changed is that it is
+ * now an allowance for rounding rather than a hedge against the model.
  */
-const BODY_BUDGET = POSTER_HEIGHT - POSTER_FRAME - Math.round(PARA_LINE / 2);
+const BODY_SLACK = 8;
+
+/** How much of a body page is left for lines. */
+const BODY_BUDGET = POSTER_HEIGHT - POSTER_FRAME - BODY_SLACK;
 
 /**
  * The cover gradient, as a plain `linear-gradient` string.
