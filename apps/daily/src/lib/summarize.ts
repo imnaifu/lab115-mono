@@ -1,10 +1,17 @@
 import OpenAI from "openai";
 import { CATEGORIES, PUBLISH_MIN_SCORE, resolveCategory } from "./categories";
-import { SCORE_DIMENSIONS, SCORE_MAX, SCORE_MIN, SCORE_WEIGHTS } from "./score";
+import {
+  clearsEveryDimension,
+  MIN_PER_DIMENSION,
+  SCORE_DIMENSIONS,
+  SCORE_MAX,
+  SCORE_MIN,
+  SCORE_WEIGHTS,
+} from "./score";
 import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
 import { USER_CONFIG } from "./user-config";
 import { bodyFor, type RawArticle } from "./fetcher";
-import { sourceOf } from "./sources";
+import { PUBLISH_PER_SOURCE, sourceOf } from "./sources";
 import { isCompleteTake } from "./take";
 import type { ScoreReview, SummaryText } from "./types";
 
@@ -467,7 +474,41 @@ const SCORE_PASS = "score";
  */
 const SCORE_TEMPERATURE = 0;
 
-const SCORE_SYSTEM = `You are the chief curator for a daily curiosity digest. The digest exists to make a bright, non-specialist reader say: "I never thought about it that way before!" Your job is to score whether an article is intellectually thrilling, counter-intuitive, and fun to retold at a dinner table.
+/**
+ * EXPORTED FOR THE CALIBRATION HARNESS, not for the app — `data/experiment*.ts`
+ * scores an archived day against this exact string plus one extra dimension, and
+ * a copy of the prompt there would drift from this one the first time it changed.
+ * `npm run bodies` is what makes that cheap: the article text is already local.
+ *
+ * `surprise` 7-8 WAS TIGHTENED, and the measurement that forced it: across 146
+ * archived articles it put 68% of its scores in the 7-8 band while this prompt's
+ * own calibration block says most should land in 4-6 and its 5-6 band says
+ * "MOST ARTICLES ARE HERE". `accessible` (66%) and a candidate `premise`
+ * dimension (68%) drifted the same way, so the pattern is not about this
+ * dimension's subject.
+ *
+ * The cause was one missing clause. Compare the two 7-8 bands as they stood:
+ * `substance` ended "State the mechanism in your note; if you cannot, it is not
+ * a 7" and kept 46% of its scores in 5-6; `surprise` ended "State it in one
+ * sentence" — a requirement nothing fails — and kept 19%. Every band in this
+ * rubric that holds its line names an artifact AND says what happens without
+ * it. So 7-8 now demands both halves of a contrast, and says a note that only
+ * calls the piece interesting is a 6.
+ *
+ * The concrete false positive it was written against: `Asahi Linux Progress
+ * Report: Linux 7.2` scored 7 and then 8 on two independent runs, while the 1-2
+ * band already named "changelogs, corporate announcements, feature lists". A
+ * rule in a distant band does not reach the model — the exclusion had to go
+ * inside the band being over-used, which is why "AN ANNOUNCEMENT IS NEVER A 7"
+ * sits in 7-8 rather than being left implied by 1-2.
+ *
+ * NOT MEASURED YET. Expect roughly a point off every total (this dimension's
+ * mean was 6.45), which acts like raising PUBLISH_MIN_SCORE by one — about two
+ * or three fewer articles on a 20-article day, before the per-source quota.
+ * Watch the first run and adjust the floor rather than the bands.
+ */
+// prettier-ignore
+export const SCORE_SYSTEM = `You are the chief curator for a daily curiosity digest. The digest exists to make a bright, non-specialist reader say: "I never thought about it that way before!" Your job is to score whether an article is intellectually thrilling, counter-intuitive, and fun to retold at a dinner table.
 
 You are given ONE article and you return ONE json object. No wrapper, no array — the reply is the object itself.
 
@@ -484,7 +525,7 @@ Return exactly this shape:
 
 CRITICAL: WRITE THE NOTE BEFORE THE NUMBER in each object. Every note must cite specific claims, examples, or evidence from the text. A generic note that could apply to any article caps the score at 5.
 
-CALIBRATION (5-6 IS THE DEFAULT, AND THE BANDS BELOW ARE WRITTEN THAT WAY):
+Calibration (5-6 is the default, and the bands below are written that way):
 A competent, interesting article that you enjoyed reading scores 5 or 6 on most dimensions. That is not a criticism of it — read the 5-6 band on each dimension and you will find the ordinary good article described there by name. 7-8 is for a piece that does something specific the 5-6 band does not cover, and you have to say what. 9-10 requires the named thing each dimension asks for; without it, it is not a 9.
 
 Across 30 articles most scores land between 4 and 6, a handful reach 7-8, and 9-10 may not appear at all on a given day. Do not be polite — 2 and 3 are ordinary scores for a real weakness, not insults.
@@ -493,51 +534,49 @@ Across 30 articles most scores land between 4 and 6, a handful reach 7-8, and 9-
 
 ## 1. "substance" — 删掉作者还剩什么 (思想密度)
 
-有没有自己的立场、有没有别人给不出的洞察、揭示的机制能不能搬走 —— 这三件事在实测里高度重合（相关 0.73~0.88），所以合成一条。
-
-9-10: The author's synthesis IS the article — remove them and nothing remains — AND the mechanism it uncovers explains something in a COMPLETELY DIFFERENT domain. Name that domain; without one, not a 9.
-7-8: A contestable position argued from more than one angle, or a mechanism that clearly generalises past its own subject and you can say where to. **A rule the reader can act on counts here WHEN THE PIECE SUPPLIES THE MECHANISM** — "the one golden rule of writing is to read a lot" is a 7 if it says what reading actually does to a writer's ear, and a 3 if it only asserts it. State the mechanism in your note; if you cannot, it is not a 7.
-5-6: A clear position argued from one example or one line of reasoning; interesting inside its own subject, travels a little. **THIS IS AN ORDINARY GOOD BLOG POST.** A list of rules or tips caps here when the reasons behind the items are thin — what the reader takes away is the list, not why any item works.
+9-10: The author's synthesis is the article — remove them and nothing remains — and the mechanism it uncovers explains something in a completely different domain. Name that domain; without one, not a 9.
+7-8: A contestable position argued from more than one angle, or a mechanism that clearly generalises past its own subject and you can say where to. A rule the reader can act on counts here when the piece supplies the mechanism — "the one golden rule of writing is to read a lot" is a 7 if it says what reading actually does to a writer's ear, and a 3 if it only asserts it. State the mechanism in your note; if you cannot, it is not a 7.
+5-6: A clear position argued from one example or one line of reasoning; interesting inside its own subject, travels a little. This is an ordinary good blog post. A list of rules or tips caps here when the reasons behind the items are thin — what the reader takes away is the list, not why any item works. Original reporting counts here even with no position of its own, when the piece puts a specific fact on the record that was not there before — a filing read, a source interviewed, a number obtained. Name that fact; what such a piece lacks in argument it supplied in material. A piece that only relays another outlet's reporting stays in 3-4.
 3-4: A position is visible but the piece mostly recounts, or it is selection with commentary attached — a link roundup with opinions, a list of tips asserted with no reason given why any of them works, a summary of someone else's paper.
 1-2: Restates as "X happened" with nothing of substance lost (launches, benchmark tables, version bumps, release notes), or selection only: "what I have been reading", a digest of comments, a paragraph passing on another outlet's reporting.
 
-Reviewing someone else's book or paper is NOT relaying, provided the piece argues its own case.
+Reviewing someone else's book or paper is not relaying, provided the piece argues its own case.
 
 ## 2. "surprise" — 颠覆直觉，还是老生常谈 (值不值得复述)
 
-9-10: Contradicts a belief the reader almost certainly holds AND contains one sentence they would repeat almost verbatim. NAME THE BELIEF and QUOTE THE SENTENCE; missing either, not a 9.
-7-8: Points at something the reader had not noticed — a hidden mechanism, an unexpected cause, a specific number or paradox worth mentioning to someone. State it in one sentence.
-5-6: A fresh angle on a familiar topic. Interesting while being read, but it confirms what an informed reader suspected rather than overturning it, and nothing specific survives closing the tab. **MOST ARTICLES ARE HERE.** A familiar CONCLUSION belongs here too, not below, when the piece supplies the mechanism or the evidence that would actually make the reader do it — an old maxim shown to be true for a reason the reader did not know is not a cliché. Its worth is then scored in "substance" and "relevance", not here.
+9-10: Contradicts a belief the reader almost certainly holds and contains one sentence they would repeat almost verbatim. Name the belief and quote the sentence; missing either, not a 9.
+7-8: Displaces something the reader believed. Not "points at something they had not noticed" — every article points at something somebody had not noticed. Your note must carry both halves: what a reader would have assumed before, and the specific thing in the piece that unseats it — a hidden mechanism, an unexpected cause, a number that comes out the wrong way round. If the note only says the piece is interesting, insightful, timely, important or well argued, that is a 6. An announcement is never a 7, however consequential — a release, a progress report, a funding round, an acquisition, a launch, a shutdown. Such news can matter enormously and still surprise nobody; it belongs in 1-2 with the changelogs.
+5-6: A fresh angle on a familiar topic. Interesting while being read, but it confirms what an informed reader suspected rather than overturning it, and nothing specific survives closing the tab. This is where you start, and most articles stay here — including the ones you were glad to have read. A familiar conclusion belongs here too, not below, when the piece supplies the mechanism or the evidence that would actually make the reader do it — an old maxim shown to be true for a reason the reader did not know is not a cliché. Its worth is then scored in "substance" and "relevance", not here.
 3-4: A familiar argument with new examples — predictable from the headline, and only interesting to someone already following the subject.
-1-2: Cliché ASSERTED with nothing behind it ("AI will change jobs", "sleep is good for health" — said and not shown), or dry throughout — changelogs, corporate announcements, feature lists.
+1-2: Cliché asserted with nothing behind it ("AI will change jobs", "sleep is good for health" — said and not shown), or dry throughout — changelogs, corporate announcements, feature lists, progress and release reports.
 
 ## 3. "accessible" — 是否抛弃了行业黑话 (通俗度)
 
 9-10: Zero domain knowledge needed, and the hard idea is carried by an analogy or a human scene a 15-year-old would follow.
 7-8: One or two technical terms, each explained on the spot in a few words. Everything else is plain language.
-5-6: The subject belongs to an industry the reader does not work in. Followable, but the world has to be explained before the point can land. **IN A TECH-LEANING DIGEST THIS IS MOST ARTICLES.**
+5-6: The subject belongs to an industry the reader does not work in. Followable, but the world has to be explained before the point can land. In a tech-leaning digest this is most articles.
 3-4: Several terms assume a practitioner. The piece can be followed but not retold.
-1-2: DEEP GEEK — internal architecture, API quirks, a debugging story that means nothing to anyone who has not hit that exact bug, jargon the argument cannot survive losing. **Score it low here even when the piece is excellent**; the excellence belongs in "substance", not here.
+1-2: Deep geek — internal architecture, API quirks, a debugging story that means nothing to anyone who has not hit that exact bug, jargon the argument cannot survive losing. Score it low here even when the piece is excellent; the excellence belongs in "substance", not here.
 
 ## 4. "relevance" — 能否触发智力共鸣 (好奇心关联)
 
-9-10: The reader will do something differently after reading — money, health, work, family, housing, the city they live in. **A PRACTICE COUNTS AS AN ACTION**: a way of writing, training, eating, sleeping or working that the reader could adopt this week is as much a 9 as a decision about money, provided the piece is specific enough to be followed. NAME THE ACTION; no action, no 9.
+9-10: The reader will do something differently after reading — money, health, work, family, housing, the city they live in. A practice counts as an action: a way of writing, training, eating, sleeping or working that the reader could adopt this week is as much a 9 as a decision about money, provided the piece is specific enough to be followed. Name the action; no action, no 9.
 7-8: Not their own action, but a system they live inside and feel: prices, schools, platforms they use, their country's politics.
-5-6: **Genuinely interesting but detached — history, science, another industry, another era. MOST ARTICLES IN THIS DIGEST BELONG HERE**, including the excellent ones. Being fascinating is not being relevant.
+5-6: Genuinely interesting but detached — history, science, another industry, another era. Most articles in this digest belong here, including the excellent ones. Being fascinating is not being relevant.
 3-4: Interesting to a hobbyist in that field; the reader has no stake in it whatsoever.
 1-2: An obscure niche with no connection to anything the reader touches.
 
 ## 5. "quality" — 文章本身的做工 (注水程度)
 
-THIS ONE IS MECHANICAL. Count things: repeated passages, claims left standing without the evidence they needed, sections that could be deleted with nothing lost. **Do not consider whether the piece is insightful, whether its subject is interesting, or who it is for** — those are "substance", "relevance" and "accessible", and they are scored elsewhere.
+This one is mechanical. Count things: repeated passages, claims left standing without the evidence they needed, sections that could be deleted with nothing lost. Do not consider whether the piece is insightful, whether its subject is interesting, or who it is for — those are "substance", "relevance" and "accessible", and they are scored elsewhere.
 
-The cross-check, and it is not optional: measured over a run, this dimension correlated 0.73 with "substance", which means it was being scored as a second opinion on whether the piece had a thought in it. **If your note here would also serve as your note for "substance", you have not judged craft.** A piece full of API jargon can score 9 here; a piece with a brilliant thesis that repeats it for 3000 words scores 4.
+The cross-check, and it is not optional: measured over a run, this dimension correlated 0.73 with "substance", which means it was being scored as a second opinion on whether the piece had a thought in it. If your note here would also serve as your note for "substance", you have not judged craft. A piece full of API jargon can score 9 here; a piece with a brilliant thesis that repeats it for 3000 words scores 4.
 
 The test to apply: how much of this could be deleted without losing anything?
 
 9-10: Nothing could be cut. No passage restates an earlier one, and every claim that needed support has it, named and specific.
 7-8: A few paragraphs could go — an over-long opening, one example too many.
-5-6: Roughly a third could be cut with nothing lost: the middle restates the beginning, or the same point arrives three times in different words. **MOST ARTICLES ARE HERE**, including ones you enjoyed reading.
+5-6: Roughly a third could be cut with nothing lost: the middle restates the beginning, or the same point arrives three times in different words. Most articles are here, including ones you enjoyed reading.
 3-4: Half of it is padding, or the piece repeats itself as a structure rather than by accident — a list where every item makes the same point, a section per example where one example was enough.
 1-2: Careless — broken structure, claims with nothing behind them anywhere, obvious filler, or the flat interchangeable prose of generated text.`;
 
@@ -1574,12 +1613,127 @@ async function summarizeGroup(
  * since edited, which is the point. It is mutated in place and returned, so the
  * caller can hand the same map to the digest builder.
  */
+/**
+ * The ids that win their source's PUBLISH_PER_SOURCE slots: highest score
+ * first, ties broken by recency so the choice is deterministic.
+ *
+ * Ranked over every article the source brought back rather than only the ones
+ * over the floor, which is the same answer — a source's best article is the
+ * first to clear any floor — and says the rule once instead of twice.
+ *
+ * Unjudged articles carry 0 and lose to anything the model spoke for, which is
+ * the same treatment the floor gives them.
+ */
+export function bestPerSource(
+  articles: RawArticle[],
+  verdicts: Map<string, Verdict>,
+): Set<string> {
+  const bySource = new Map<string, RawArticle[]>();
+  for (const article of articles) {
+    const kept = bySource.get(article.sourceId);
+    if (kept) kept.push(article);
+    else bySource.set(article.sourceId, [article]);
+  }
+  const winners = new Set<string>();
+  for (const group of bySource.values()) {
+    [...group]
+      .sort((a, b) => {
+        const byScore =
+          (verdicts.get(b.id)?.score ?? 0) - (verdicts.get(a.id)?.score ?? 0);
+        return byScore !== 0
+          ? byScore
+          : b.publishedAt.localeCompare(a.publishedAt);
+      })
+      .slice(0, PUBLISH_PER_SOURCE)
+      .forEach((article) => winners.add(article.id));
+  }
+  return winners;
+}
+
+/**
+ * WHAT IS ALLOWED ON THE PAGE, decided once.
+ *
+ * IT USED TO BE DECIDED TWICE — the same four conditions were written here and
+ * again at the page's gate in jobs/daily.ts, on the argument that both read the
+ * same scores so they could not disagree. That argument is a reason the
+ * duplication was survivable, not a reason to have it: every later rule had to
+ * be added in two places, and the failure it invites is the one the floor's own
+ * comment warns about, an article paid for here and then not drawn there.
+ *
+ * The four questions, and none of them implies another:
+ *
+ *   the per-source quota  — has this source already had its turn today?
+ *   `alwaysPublish`       — is this a source kept for who writes it? (exempt
+ *                            from everything below, see user-config.ts)
+ *   PUBLISH_MIN_SCORE     — is the sum good enough?
+ *   MIN_PER_DIMENSION     — is any single dimension a real weakness?
+ *
+ * Order matters for cost, not for the answer: the quota first, because it is
+ * free to check and rejects the most.
+ *
+ * THE SCORE IT READS IS THE SCORE IN THE FILE, which a human may have typed —
+ * `publishFrom` builds the verdicts from the working digest before any of this
+ * runs, so a hand-edited number decides the quota and the floor alike. What a
+ * hand edit CANNOT do any more is get past MIN_PER_DIMENSION: that reads the
+ * review, so promoting an article with a weak dimension means editing that
+ * dimension too, in the same file.
+ */
+export function publishable(
+  articles: RawArticle[],
+  verdicts: Map<string, Verdict>,
+): RawArticle[] {
+  const winners = bestPerSource(articles, verdicts);
+  const kept = articles.filter((article) => {
+    if (!winners.has(article.id)) return false;
+    // A whitelisted article goes on the page either way, and the one thing
+    // worse than a weak article is a weak article with no take under it.
+    if (sourceOf(article.sourceId).alwaysPublish) return true;
+    const verdict = verdicts.get(article.id)!;
+    // THE SCORE ALONE, not `judged && score`. An unjudged article carries 0 and
+    // 0 is below any floor, and once a human can write the score the extra
+    // clause is actively wrong: a number typed in for an article the model
+    // never answered for is still a decision to publish it.
+    if (verdict.score < PUBLISH_MIN_SCORE) return false;
+    return clearsEveryDimension(verdict.review);
+  });
+
+  // Reported as three reasons rather than one count, because "did not publish"
+  // hides which of the four questions did it — and they are fixed differently:
+  // the floor by editing config, a dimension by arguing with the rubric, the
+  // quota not at all.
+  const rejected = articles.filter((a) => !kept.some((k) => k.id === a.id));
+  const unscored = rejected.filter((a) => !verdicts.get(a.id)!.judged).length;
+  const underDimension = rejected.filter((a) => {
+    const verdict = verdicts.get(a.id)!;
+    return (
+      verdict.judged &&
+      verdict.score >= PUBLISH_MIN_SCORE &&
+      !sourceOf(a.sourceId).alwaysPublish &&
+      !clearsEveryDimension(verdict.review)
+    );
+  }).length;
+  console.log(
+    `[daily] ${kept.length} publishable of ${articles.length} — ` +
+      `${rejected.length} rejected` +
+      (unscored ? `, ${unscored} never scored` : "") +
+      (underDimension
+        ? `, ${underDimension} cleared the floor (${PUBLISH_MIN_SCORE}) but ` +
+          `had a dimension under ${MIN_PER_DIMENSION}`
+        : ""),
+  );
+  return kept;
+}
+
+/**
+ * Pass 2 and 3: the takes, for the articles the caller has already decided to
+ * publish. It does no selecting of its own — see `publishable`, which is what
+ * every caller filters with first.
+ */
 export async function summarizeSurvivors(
   articles: RawArticle[],
   out: Map<string, Verdict>,
 ): Promise<Map<string, Verdict>> {
   if (articles.length === 0) return out;
-  const batch = capped(articles);
 
   if (!DEEPSEEK_API_KEY) {
     console.warn(
@@ -1589,52 +1743,18 @@ export async function summarizeSurvivors(
   }
 
   const client = makeClient();
+  // MAX_ARTICLES_PER_CALL now bites the publishable set rather than everything
+  // fetched, which is the right place for it: it used to slice the day's whole
+  // list before the floor was applied, so on a heavy day it could drop an
+  // article that would have published in favour of one that would not.
+  const survivors = capped(articles);
+  if (survivors.length < articles.length) {
+    console.log(
+      `[daily] ${articles.length} publishable, summarizing the first ` +
+        `${survivors.length} — MAX_ARTICLES_PER_CALL`,
+    );
+  }
 
-  // --- the floor, applied before a single summary is written ---
-  //
-  // This is the whole reason scoring runs on its own: an article below the
-  // floor costs one small reply and then nothing else. Articles the score pass
-  // never spoke for are dropped too — see the floor in jobs/daily.ts for why
-  // the exemption they used to get was removed.
-  // A whitelisted article has to be summarized even when it scores nothing:
-  // it is going on the page either way, and the one thing worse than a weak
-  // article is a weak article with no summary under it.
-  const survivors = batch.filter((a) => {
-    const verdict = out.get(a.id)!;
-    if (sourceOf(a.sourceId).alwaysPublish) return true;
-    // THE SCORE ALONE, not `judged && score`. The extra clause was redundant
-    // — an unjudged article carries 0 and 0 is below any floor — and once a
-    // human can write the score it is actively wrong: a number typed into the
-    // file for an article the model never answered for is still a decision to
-    // publish it, and this filter would have silently dropped it while the
-    // floor downstream let it through, i.e. published it with no summary.
-    return verdict.score >= PUBLISH_MIN_SCORE;
-  });
-  const exempt = survivors.filter(
-    (a) =>
-      sourceOf(a.sourceId).alwaysPublish &&
-      (out.get(a.id)!.score < PUBLISH_MIN_SCORE || !out.get(a.id)!.judged),
-  ).length;
-  /**
-   * Three counts that partition the batch, and they have to be derived from
-   * `survivors` rather than from `judged`.
-   *
-   * The arithmetic here used to be `batch - unjudged - survivors`, on the
-   * assumption that a survivor is always an article the model scored. That
-   * stopped being true the moment a human could type a number into the file:
-   * a run where every model call failed and one score was set by hand printed
-   * "-1 dropped unsummarized".
-   */
-  const kept = new Set(survivors.map((a) => a.id));
-  const dropped = batch.filter((a) => !kept.has(a.id));
-  const unscored = dropped.filter((a) => !out.get(a.id)!.judged).length;
-  console.log(
-    `[daily] ${survivors.length} at or above the floor ` +
-      `(${PUBLISH_MIN_SCORE}), ${dropped.length} below it` +
-      (unscored ? ` (${unscored} of them never scored)` : "") +
-      (exempt ? `, ${exempt} below it but whitelisted` : ""),
-  );
-  if (survivors.length === 0) return out;
 
   /**
    * --- pass 2: both languages, survivors only ---

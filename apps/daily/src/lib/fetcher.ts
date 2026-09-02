@@ -2,7 +2,12 @@ import crypto from "node:crypto";
 import { XMLParser } from "fast-xml-parser";
 import { BODY_CHAR_LIMIT, dailyWindow } from "./config";
 import { readingMinutes } from "./reading";
-import { ACTIVE_SOURCES, sourceOf, type Source } from "./sources";
+import {
+  ACTIVE_SOURCES,
+  COLLECT_PER_SOURCE,
+  sourceOf,
+  type Source,
+} from "./sources";
 import type { SourceStatus } from "./types";
 
 /** An article after parsing, before the model has seen it. */
@@ -404,13 +409,13 @@ async function fetchSource(
   // Applied HERE, before any body is fetched: the point of the cap is to not
   // pay for these articles, and both the page requests and the summarizer's
   // input tokens are spent below. Capping later would save nothing.
-  if (source.maxPerRun && parsed.length > source.maxPerRun) {
-    const dropped = parsed.length - source.maxPerRun;
+  if (parsed.length > COLLECT_PER_SOURCE) {
+    const dropped = parsed.length - COLLECT_PER_SOURCE;
     parsed = [...parsed]
       .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-      .slice(0, source.maxPerRun);
+      .slice(0, COLLECT_PER_SOURCE);
     console.log(
-      `[daily] ${source.name}: kept the newest ${source.maxPerRun}, ` +
+      `[daily] ${source.name}: kept the newest ${COLLECT_PER_SOURCE}, ` +
         `skipped ${dropped}`,
     );
   }

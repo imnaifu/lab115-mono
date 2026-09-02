@@ -1,5 +1,8 @@
 {
   "publishMinScore": 30,
+  "minPerDimension": 5,
+  "collectPerSource": 3,
+  "publishPerSource": 1,
   "summaryMinChars": 150,
   "summaryMaxChars": 650,
   "summaryParaMaxChars": 90,
@@ -89,11 +92,10 @@
       "site": "https://news.ycombinator.com/",
       "feed": "https://hnrss.org/frontpage?points=300",
       "category": "tech",
-      "description": "Hacker News 头条聚合，内容取决于当天社区，质量与主题都不可控；已限 maxPerRun 5。",
+      "description": "Hacker News 头条聚合，内容取决于当天社区，质量与主题都不可控。",
       "accent": "#D2601A",
       "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 5
+      "fetchBody": true
     },
     {
       "id": "platformer",
@@ -127,17 +129,6 @@
       "accent": "#7A6A55",
       "enabled": true,
       "fetchBody": false
-    },
-    {
-      "id": "nngroup",
-      "name": "Nielsen Norman Group",
-      "site": "https://www.nngroup.com/",
-      "feed": "https://www.nngroup.com/feed/rss/",
-      "category": "design",
-      "description": "Nielsen Norman Group 的 UX 研究，近期大量 AI 与设计流程话题，偶有课程广告。",
-      "accent": "#A85C6B",
-      "enabled": true,
-      "fetchBody": true
     },
     {
       "id": "benedict-evans",
@@ -272,28 +263,6 @@
       "fetchBody": false
     },
     {
-      "id": "interconnects",
-      "name": "Interconnects",
-      "site": "https://www.interconnects.ai/",
-      "feed": "https://www.interconnects.ai/feed",
-      "category": "tech",
-      "description": "Nathan Lambert，大模型后训练与开源模型进展的技术分析。",
-      "accent": "#4A4E8C",
-      "enabled": true,
-      "fetchBody": false
-    },
-    {
-      "id": "importai",
-      "name": "Import AI",
-      "site": "https://importai.substack.com/",
-      "feed": "https://importai.substack.com/feed",
-      "category": "tech",
-      "description": "Jack Clark 的 AI 周报，逐条点评论文与行业动态，篇幅长。",
-      "accent": "#6D5AA8",
-      "enabled": true,
-      "fetchBody": false
-    },
-    {
       "id": "mollick",
       "name": "One Useful Thing",
       "site": "https://www.oneusefulthing.org/",
@@ -376,11 +345,10 @@
       "site": "https://www.404media.co/",
       "feed": "https://www.404media.co/rss/",
       "category": "tech",
-      "description": "记者自营的科技调查报道，监控、平台滥用、AI 乱象；已限 maxPerRun 3。",
+      "description": "记者自营的科技调查报道，监控、平台滥用、AI 乱象。",
       "accent": "#A63D3D",
       "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 3
+      "fetchBody": false
     },
     {
       "id": "wheresyoured",
@@ -449,17 +417,6 @@
       "fetchBody": false
     },
     {
-      "id": "simonwillison",
-      "name": "Simon Willison",
-      "site": "https://simonwillison.net/",
-      "feed": "https://simonwillison.net/atom/entries/",
-      "category": "tech",
-      "description": "LLM 工程一线实践，模型评测与工具发布，更新频繁且信息密度高。",
-      "accent": "#4C5FA8",
-      "enabled": true,
-      "fetchBody": false
-    },
-    {
       "id": "marcbrooker",
       "name": "Marc Brooker",
       "site": "https://brooker.co.za/blog/",
@@ -479,8 +436,7 @@
       "description": "宝玉，AI 工程实践与行业观察，中文，也发翻译。",
       "accent": "#4E7FA8",
       "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 3
+      "fetchBody": true
     },
     {
       "id": "acoup",
@@ -499,11 +455,10 @@
       "site": "https://www.quantamagazine.org/",
       "feed": "https://www.quantamagazine.org/feed/",
       "category": "science",
-      "description": "数学与基础科学报道，专业记者撰写，是 science 分类的主力；已限 maxPerRun 3。",
+      "description": "数学与基础科学报道，专业记者撰写，是 science 分类的主力。",
       "accent": "#2A8CA0",
       "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 3
+      "fetchBody": true
     },
     {
       "id": "bitsaboutmoney",
@@ -569,8 +524,7 @@
       "description": "影评站，含影展报道与讣告；产出中影展片单、游戏评测这类小众条目占比高。",
       "accent": "#B4536D",
       "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 3
+      "fetchBody": false
     },
     {
       "id": "nautilus",
@@ -578,11 +532,10 @@
       "site": "https://nautil.us/",
       "feed": "https://nautil.us/feed/",
       "category": "science",
-      "description": "科普长文，衰老、神经、演化，面向大众；已限 maxPerRun 3。",
+      "description": "科普长文，衰老、神经、演化，面向大众。",
       "accent": "#327E86",
       "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 3
+      "fetchBody": true
     },
     {
       "id": "psyche",
@@ -590,11 +543,10 @@
       "site": "https://psyche.co/",
       "feed": "https://psyche.co/feed",
       "category": "living",
-      "description": "Aeon 旗下，心理学与生活实践的短文，teaser feed 需抓正文；已限 maxPerRun 3。",
+      "description": "Aeon 旗下，心理学与生活实践的短文，teaser feed 需抓正文。",
       "accent": "#7A9450",
       "enabled": true,
-      "fetchBody": true,
-      "maxPerRun": 3
+      "fetchBody": true
     },
     {
       "id": "designobserver",
@@ -624,11 +576,10 @@
       "site": "https://klementoninvesting.substack.com/",
       "feed": "https://klementoninvesting.substack.com/feed",
       "category": "investing",
-      "description": "Joachim Klement，用学术研究讲投资与宏观，每篇很短；已限 maxPerRun 2。",
+      "description": "Joachim Klement，用学术研究讲投资与宏观，每篇很短。",
       "accent": "#C4A24A",
       "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 2
+      "fetchBody": false
     },
     {
       "id": "guigujushi",
@@ -636,12 +587,11 @@
       "site": "https://blog.wenxuecity.com/myoverview/80634/",
       "feed": "",
       "category": "investing",
-      "description": "硅谷居士，中文的指数投资与 FIRE，文学城博客，靠 scrape 抓取；已限 maxPerRun 3。",
+      "description": "硅谷居士，中文的指数投资与 FIRE，文学城博客，靠 scrape 抓取。",
       "accent": "#C08F5A",
       "enabled": true,
       "alwaysPublish": true,
       "fetchBody": true,
-      "maxPerRun": 3,
       "scrape": {
         "index": "https://blog.wenxuecity.com/myoverview/80634/",
         "pattern": "class=\"blog_title\"[^>]*>[\\s\\S]*?<a[^>]*href=\"(?<url>[^\"]+)\"[^>]*>(?<title>[\\s\\S]*?)</a>[\\s\\S]*?class=\"time[^\"]*\">\\((?<date>[^)]+)\\)",
@@ -676,11 +626,10 @@
       "site": "https://theconversation.com/us",
       "feed": "https://theconversation.com/us/articles.atom",
       "category": "science",
-      "description": "学者本人写的解释性长文，Atom 带全文 ~7.8k；6.8 篇/天且选题从疫苗到中世纪史横跨极大，靠 maxPerRun 2 压量。",
+      "description": "学者本人写的解释性长文，Atom 带全文 ~7.8k；6.8 篇/天且选题从疫苗到中世纪史横跨极大。",
       "accent": "#2D6E7E",
       "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 2
+      "fetchBody": false
     },
     {
       "id": "jstordaily",
@@ -820,11 +769,10 @@
       "site": "https://www.chinatalk.media/",
       "feed": "https://www.chinatalk.media/feed",
       "category": "economy",
-      "description": "Jordan Schneider，中国科技与产业政策，编辑过的访谈文字稿加分析，中位 32.8k；0.69 篇/天且正文极长，已限 maxPerRun 2，选题从出口管制横跨到东南亚见闻和朝鲜史。",
+      "description": "Jordan Schneider，中国科技与产业政策，编辑过的访谈文字稿加分析，中位 32.8k；0.69 篇/天且正文极长，选题从出口管制横跨到东南亚见闻和朝鲜史。",
       "accent": "#A83C55",
       "enabled": true,
-      "fetchBody": false,
-      "maxPerRun": 2
+      "fetchBody": false
     },
     {
       "id": "powderworks",

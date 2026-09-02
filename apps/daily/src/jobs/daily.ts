@@ -9,6 +9,7 @@ import { mailDigest } from "@/jobs/mail";
 import { dailyPhoto } from "@/lib/photo";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
 import { sourceOf } from "@/lib/sources";
+import { isCompleteTake } from "@/lib/take";
 import {
   readDigest,
   readWorking,
@@ -18,6 +19,7 @@ import {
   type WorkingDigest,
 } from "@/lib/store";
 import {
+  publishable,
   scoreAll,
   summarizeSurvivors,
   verdictsFrom,
@@ -198,10 +200,25 @@ async function publishFrom(
     })),
   );
 
-  await summarizeSurvivors(raw, verdicts);
+  /**
+   * ONE DECISION, then the work. `publishable` answers all four questions — the
+   * per-source quota, `alwaysPublish`, the floor and MIN_PER_DIMENSION — and it
+   * is the only place they are asked; see it in lib/summarize.ts for what each
+   * one is for. What used to be here was a second copy of the same four
+   * conditions, kept in step with that one by hand.
+   *
+   * It runs BEFORE the takes are written so the run pays for nothing it will not
+   * draw, and the scores it reads are the ones in the working file, hand edits
+   * included.
+   */
+  const eligible = publishable(raw, verdicts);
+  await summarizeSurvivors(eligible, verdicts);
 
-  // Rank purely by the score; ties fall back to recency so the ordering is
-  // deterministic.
+  /**
+   * EVERY article the day held, in score order — what the FILE is written from.
+   * One list, published and rejected together: see the note on `articles` below
+   * for why the two-list version was worse.
+   */
   const sorted = [...raw].sort((a, b) => {
     const diff =
       (verdicts.get(b.id)?.score ?? 0) - (verdicts.get(a.id)?.score ?? 0);
@@ -209,32 +226,17 @@ async function publishFrom(
   });
 
   /**
-   * The publish floor: one rule, no exemptions — nothing below
-   * PUBLISH_MIN_SCORE reaches the page.
+   * The page's own order: by score, ties by recency so it is deterministic.
    *
-   * The score alone decides, so an article the score pass never spoke for is
-   * dropped along with the ones it rejected: it carries 0, and 0 is below any
-   * floor. That is deliberate. Unjudged articles USED to be exempted and
-   * published as bare titles, on the reasoning that a model outage must not
-   * empty the digest. What that actually bought was a page padded with empty
-   * cards: the run of 2026-08-18 published 39 articles of which 18 were
-   * unscored stubs — Open Thread 447, Monday assorted links — every one of
-   * them something the floor would have rejected on merit had the call
-   * succeeded. An honest empty digest beats a full page of nothing.
-   *
-   * The cost is real and accepted: if the score pass fails wholesale, the day
-   * publishes nothing. `stats.fetched` and the per-source statuses still
-   * record that the run happened, so the outage is visible in the file.
-   *
-   * "The score" means THE SCORE IN THE FILE, which a human may have written.
-   * That does not weaken the rule — it is still one number against one floor,
-   * and the digest records who set the number.
+   * Unjudged and rejected articles are not here at all — they are in `sorted`
+   * below, which is what the FILE is written from, because the file carries
+   * every article the day held whether it published or not.
    */
-  const ranked = sorted.filter(
-    (item) =>
-      sourceOf(item.sourceId).alwaysPublish ||
-      (verdicts.get(item.id)?.score ?? 0) >= PUBLISH_MIN_SCORE,
-  );
+  const ranked = [...eligible].sort((a, b) => {
+    const diff =
+      (verdicts.get(b.id)?.score ?? 0) - (verdicts.get(a.id)?.score ?? 0);
+    return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
+  });
 
   // Only when the score pass actually spoke. An article it never answered for
   // would otherwise carry five zeroes, which reads like a review that scored
@@ -275,11 +277,10 @@ async function publishFrom(
   };
 
 
-  // Everything that clears the floor is published, and every published
-  // article gets a full card. No per-source quota, no overflow, nothing
-  // folded: an article's section comes from the model's classification and
-  // its place inside that section from its score. This filter is the page's
-  // only gate — the components draw whatever survives it.
+  // Everything `publishable` allowed gets a full card. No overflow and nothing
+  // folded: an article's section comes from the model's classification and its
+  // place inside that section from its score. The only thing that can still
+  // stop one here is a take that never came back — see `unsummarized` below.
   const perCategory = new Map<string, number>();
   for (const item of ranked) {
     const category = verdicts.get(item.id)?.category ?? FALLBACK_CATEGORY;
@@ -292,17 +293,25 @@ async function publishFrom(
   );
 
   /**
-   * An article over the floor with no take is not publishable, and this is
-   * where that becomes visible rather than shipping an empty card. It happens
-   * when BOTH of the summary pass's requests for that article fail: pass 2
-   * clears each article's fields before asking and writes them back only on a
-   * whole reply, and pass 3 gives every incomplete take exactly one more ask
-   * (see the note on retries at the top of lib/summarize.ts). Two failures is
-   * the whole story — there is nothing after them — and on a re-run this can
-   * still take away a take the article had a minute earlier.
+   * An article past `publishable` without a take in both languages is not
+   * publishable, and this is where that becomes visible rather than shipping an
+   * empty card.
+   *
+   * It happens when both of the summary pass's asks for that article come back
+   * incomplete: pass 2 clears each article's fields before asking and writes
+   * them back only on a whole reply, and pass 3 gives every incomplete take
+   * exactly one more ask (see the note on retries at the top of
+   * lib/summarize.ts). Two failures is the whole story — there is nothing after
+   * them — and on a re-run this can still take away a take the article had a
+   * minute earlier.
+   *
+   * "Incomplete" includes an English half that did not come back on its own,
+   * which pass 3 already re-asks for. That case has not happened in the 172
+   * articles on disk, so this line is expected to stay quiet; it is the only
+   * alarm for it if it stops being true.
    */
   const unsummarized = ranked.filter(
-    (item) => !verdicts.get(item.id)?.zh.thesis,
+    (item) => !isCompleteTake(verdicts.get(item.id)),
   );
   if (unsummarized.length) {
     console.error(
@@ -312,10 +321,21 @@ async function publishFrom(
     );
   }
 
-  /** What actually reaches the page: over the floor AND carrying a take. */
+  /**
+   * What actually reaches the page: past `publishable` AND carrying a take in
+   * BOTH languages.
+   *
+   * IT USED TO BE THE CHINESE ALONE, on the reasoning in `summaryFor` — that an
+   * English reader is better served by the Chinese take than by a headline over
+   * an empty card. That reasoning still holds for the ARCHIVE, which is why the
+   * fallback stays; it stops holding for a run happening now, because the
+   * English half no longer fails alone. Over the 172 published articles on disk
+   * there is not one missing `en`, so requiring it costs nothing and buys the
+   * thing the fallback was covering for: /en never quietly serves Chinese.
+   */
   const published = new Set(
     ranked
-      .filter((item) => verdicts.get(item.id)!.zh.thesis)
+      .filter((item) => isCompleteTake(verdicts.get(item.id)))
       .map((item) => item.id),
   );
   console.log(
@@ -341,19 +361,33 @@ async function publishFrom(
   let position = 0;
   const articles: Article[] = sorted.map((item) => {
     const verdict = verdicts.get(item.id)!;
-    const take = verdict.zh.thesis
+    const shown = published.has(item.id);
+    /**
+     * WRITTEN FOR EXACTLY THE ARTICLES THAT PUBLISHED, because `summary` is not
+     * a record of what was written — it IS the published flag, read that way by
+     * `shownArticles` in lib/store.ts and documented that way on the field in
+     * lib/types.ts.
+     *
+     * It used to be written for any article holding a Chinese take, which
+     * agreed with `published` only because the two tested the same expression.
+     * A take can outlive the decision to publish it: `npm run summary` reads a
+     * working file an earlier run already summarized, so an article that has
+     * since failed a gate — a score edited down, a source that now loses its
+     * slot to a higher-scoring sibling — carries a take that must not put it
+     * back on the page.
+     *
+     * The English half is still spread conditionally rather than asserted: a
+     * shown article always has it now, and this stays correct if that ever
+     * loosens again.
+     */
+    const take = shown
       ? {
-          // The English half only when it came back — the field's absence is
-          // how a renderer knows to fall back, and writing an empty one would
-          // make "no English take" indistinguishable from "an English take
-          // that is blank".
           summary: {
             zh: verdict.zh,
             ...(verdict.en ? { en: verdict.en } : {}),
           },
         }
       : {};
-    const shown = published.has(item.id);
     return {
       id: item.id,
       sourceId: item.sourceId,

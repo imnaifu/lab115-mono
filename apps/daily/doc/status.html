@@ -1,0 +1,467 @@
+<meta charset="utf-8">
+<title>Daily 运行现状</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    /* 取自 config.json 里各分类自己的 accent */
+    --gate: #3B3563;      /* tech 靛 —— 闸门与阈值 */
+    --pass: #2F7D91;      /* science 青 —— 通过的量 */
+    --drop: #A9523C;      /* design 陶土 —— 落选 */
+    --warn: #B08D2E;      /* investing 铜 —— 未上线 */
+    --ink: #1B1826;
+    --ink-soft: #514C63;
+    --ink-faint: #7C7690;
+    --ground: #F6F4F1;
+    --card: #FFFFFF;
+    --rule: #DDD8E2;
+    --rule-soft: #EAE6EE;
+    --code-bg: #EFEBF1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --gate: #9A90D6; --pass: #63B6C8; --drop: #D98B70; --warn: #D9B657;
+      --ink: #EDEAF2; --ink-soft: #B0AAC2; --ink-faint: #857E99;
+      --ground: #131019; --card: #1C1826; --rule: #322C40; --rule-soft: #262133;
+      --code-bg: #241F31;
+    }
+  }
+  :root[data-theme="dark"] {
+    --gate: #9A90D6; --pass: #63B6C8; --drop: #D98B70; --warn: #D9B657;
+    --ink: #EDEAF2; --ink-soft: #B0AAC2; --ink-faint: #857E99;
+    --ground: #131019; --card: #1C1826; --rule: #322C40; --rule-soft: #262133;
+    --code-bg: #241F31;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: Archivo, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 72px 28px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  code { font-size: 0.88em; background: var(--code-bg); padding: 0.1em 0.36em; border-radius: 3px; }
+
+  header { display: flex; flex-direction: column; gap: 18px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gate);
+  }
+  h1 {
+    margin: 0; font-size: clamp(34px, 5vw, 52px); font-weight: 700;
+    letter-spacing: -0.022em; line-height: 1.06; text-wrap: balance;
+  }
+  .lede { margin: 0; max-width: 64ch; font-size: 18px; color: var(--ink-soft); }
+
+  h2 {
+    margin: 0 0 20px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-faint);
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  /* 数字面板 */
+  .panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  }
+  .cell { background: var(--card); padding: 18px 20px; display: flex; flex-direction: column; gap: 3px; }
+  .cell .num {
+    font-family: "IBM Plex Mono", monospace; font-size: 26px; font-weight: 500;
+    letter-spacing: -0.02em; color: var(--gate); font-variant-numeric: tabular-nums;
+  }
+  .cell .lbl { font-size: 13px; color: var(--ink-soft); }
+  .cell .sub { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-faint); }
+
+  /* 图 */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 16px; }
+  .scroller { overflow-x: auto; padding-bottom: 4px; }
+  svg { display: block; max-width: 100%; height: auto; min-width: 720px; }
+  figcaption { font-size: 14px; color: var(--ink-soft); max-width: 68ch; }
+
+  /* 判据 */
+  .gate-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(224px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  }
+  .q { background: var(--card); padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .q .ask {
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .q .rule-name { font-weight: 600; font-size: 15.5px; }
+  .q .rule-name .mono { color: var(--gate); font-weight: 500; font-size: 0.92em; }
+  .q p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .q .cut { margin-top: 2px; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--drop); }
+  .q .cut.none { color: var(--ink-faint); }
+
+  /* 阶段 */
+  .stages { display: flex; flex-direction: column; gap: 0; }
+  .stage {
+    display: grid; grid-template-columns: 142px 1fr; gap: 28px;
+    padding: 22px 0; border-top: 1px solid var(--rule-soft);
+  }
+  .stage:first-of-type { border-top: 1px solid var(--rule); }
+  .stage-id { display: flex; flex-direction: column; gap: 3px; }
+  .stage-id .n { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--gate); }
+  .stage-id .name { font-weight: 600; font-size: 16.5px; letter-spacing: -0.01em; }
+  .stage-id .file { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-faint); }
+  .stage-body { display: flex; flex-direction: column; gap: 11px; }
+  .stage-body p { margin: 0; max-width: 66ch; color: var(--ink-soft); font-size: 15px; }
+  .knobs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .knob {
+    display: inline-flex; align-items: baseline; gap: 7px;
+    padding: 3px 10px; border: 1px solid var(--rule); border-radius: 2px;
+    background: var(--card); font-family: "IBM Plex Mono", monospace; font-size: 12.5px;
+  }
+  .knob .k { color: var(--ink-faint); }
+  .knob .v { color: var(--gate); font-weight: 500; }
+
+  /* 表 */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  caption { text-align: left; color: var(--ink-soft); font-size: 14px; padding-bottom: 12px; }
+  th, td { text-align: left; padding: 10px 14px 10px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-faint); font-weight: 500;
+    border-bottom: 1px solid var(--rule);
+  }
+  td.v { font-family: "IBM Plex Mono", monospace; color: var(--gate); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.where { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--ink-faint); white-space: nowrap; }
+
+  /* 条形分布 */
+  .bars { display: flex; flex-direction: column; gap: 9px; }
+  .bar-row { display: grid; grid-template-columns: 64px 1fr 40px; gap: 12px; align-items: center; font-size: 14px; }
+  .bar-track { height: 9px; background: var(--rule-soft); }
+  .bar-fill { height: 9px; background: var(--pass); }
+  .bar-row .n { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--ink-faint); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* 未上线 */
+  .pending { display: flex; flex-direction: column; gap: 0; }
+  .pend {
+    display: grid; grid-template-columns: 132px 1fr; gap: 20px;
+    padding: 15px 0; border-top: 1px solid var(--rule-soft); font-size: 15px;
+  }
+  .pend:first-of-type { border-top: 1px solid var(--rule); }
+  .pend .what { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--warn); }
+  .pend p { margin: 0; color: var(--ink-soft); max-width: 66ch; }
+  .note { margin: 0; font-size: 14px; color: var(--ink-faint); max-width: 68ch; }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 48px 20px 80px; gap: 48px; }
+    .stage, .pend { grid-template-columns: 1fr; gap: 12px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">daily.lab115.com · 运行现状 · 2026-09-01</div>
+    <h1>一份每天自己长出来的日报</h1>
+    <p class="lede">每天洛杉矶时间 07:00 抓一遍 64 个订阅源，用 DeepSeek 打分和写中文摘要，生成一张适合截图分享的竖版长图。网站和 worker 是同一个容器，数据不进数据库 —— 一个 git 仓库就是存储层。</p>
+  </header>
+
+  <section>
+    <h2>当前规模</h2>
+    <div class="panel">
+      <div class="cell"><span class="num">64</span><span class="lbl">启用的订阅源</span><span class="sub">43 个出过稿 · 21 个沉默</span></div>
+      <div class="cell"><span class="num">172</span><span class="lbl">已发布文章</span><span class="sub">13 天 · 08-20 → 09-01</span></div>
+      <div class="cell"><span class="num">5–21</span><span class="lbl">每天发布篇数</span><span class="sub">波动来自源的更新节奏</span></div>
+      <div class="cell"><span class="num">33.2</span><span class="lbl">平均分（满分 50）</span><span class="sub">门槛 30</span></div>
+      <div class="cell"><span class="num">9.9</span><span class="lbl">平均阅读分钟／篇</span><span class="sub">摘要 150–650 字</span></div>
+      <div class="cell"><span class="num">8</span><span class="lbl">分栏</span><span class="sub">分类由模型逐篇判定</span></div>
+    </div>
+  </section>
+
+  <figure>
+    <div class="scroller">
+      <svg viewBox="0 0 860 660" role="img" aria-label="发布漏斗：2026-09-01 抓取 36 篇进入打分，打分阶段不过滤，准入阶段四道判据砍掉 16 篇（每源配额 10、总分不足 5、某一维不足 1、未判定 0），剩 20 篇写摘要并上架">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+            <polygon points="0,0 10,4 0,8" fill="currentColor"></polygon>
+          </marker>
+          <marker id="ar-drop" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+            <polygon points="0,0 10,4 0,8" fill="var(--drop)"></polygon>
+          </marker>
+        </defs>
+
+        <g fill="currentColor" opacity="0.5" font-family="IBM Plex Mono, monospace" font-size="11">
+          <text x="20" y="22">2026-09-01 那次运行 · 条宽 = 篇数 · 1 篇 = 12px</text>
+        </g>
+
+        <text x="20" y="54" fill="currentColor" font-family="IBM Plex Mono, monospace" font-size="12">① 抓取 · 窗口 24h · 摄入上限 3/源 · URL 去重</text>
+        <rect x="20" y="64" width="432" height="42" fill="var(--pass)" opacity="0.16"></rect>
+        <rect x="20" y="64" width="432" height="42" fill="none" stroke="var(--pass)" stroke-width="1.5"></rect>
+        <text x="36" y="90" fill="currentColor" font-family="Archivo, sans-serif" font-size="15" font-weight="600">36 篇</text>
+        <text x="96" y="90" fill="currentColor" opacity="0.62" font-family="IBM Plex Mono, monospace" font-size="11.5">来自 26 个源（启用 64）</text>
+
+        <line x1="236" y1="106" x2="236" y2="140" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"></line>
+
+        <text x="20" y="160" fill="currentColor" font-family="IBM Plex Mono, monospace" font-size="12">② 打分 · 5 维 × 1–10 · 每篇一次调用 · 这一步不过滤任何东西</text>
+        <rect x="20" y="170" width="432" height="42" fill="var(--pass)" opacity="0.16"></rect>
+        <rect x="20" y="170" width="432" height="42" fill="none" stroke="var(--pass)" stroke-width="1.5"></rect>
+        <text x="36" y="196" fill="currentColor" font-family="Archivo, sans-serif" font-size="15" font-weight="600">36 篇</text>
+        <text x="96" y="196" fill="currentColor" opacity="0.62" font-family="IBM Plex Mono, monospace" font-size="11.5">全部写进 working 文件，带分数</text>
+
+        <line x1="236" y1="212" x2="236" y2="246" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"></line>
+
+        <rect x="20" y="252" width="432" height="150" fill="none" stroke="var(--gate)" stroke-width="1.5" stroke-dasharray="3 3"></rect>
+        <text x="36" y="274" fill="var(--gate)" font-family="Archivo, sans-serif" font-size="14" font-weight="600">③ 准入 publishable() · 一处决定，四道判据</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">
+          <text x="36" y="298">1 · 每源配额 publishPerSource = 1（按分数取最高，并列取较新）</text>
+          <text x="36" y="318">2 · alwaysPublish 源豁免下面两条</text>
+          <text x="36" y="338">3 · 总分门槛 publishMinScore = 30（满分 50 的 60%）</text>
+          <text x="36" y="358">4 · 逐维下限 minPerDimension = 5（任一维不足即丢弃）</text>
+        </g>
+        <text x="36" y="386" fill="currentColor" opacity="0.62" font-family="IBM Plex Mono, monospace" font-size="11">配额先算，因为它免费且拒得最多</text>
+
+        <g stroke="var(--drop)" stroke-width="1.5" fill="none">
+          <path d="M452 298 H 560" marker-end="url(#ar-drop)"></path>
+          <path d="M452 318 H 560" marker-end="url(#ar-drop)"></path>
+          <path d="M452 338 H 560" marker-end="url(#ar-drop)"></path>
+          <path d="M452 358 H 560" marker-end="url(#ar-drop)"></path>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--drop)">
+          <text x="572" y="302">−10 篇　同源已有更高分</text>
+          <text x="572" y="322">　 0 篇　白名单豁免（今天无）</text>
+          <text x="572" y="342">−5 篇　总分 &lt; 30</text>
+          <text x="572" y="362">−1 篇　某一维 &lt; 5</text>
+        </g>
+        <line x1="566" y1="376" x2="800" y2="376" stroke="var(--drop)" stroke-width="1" opacity="0.4"></line>
+        <text x="572" y="394" fill="var(--drop)" font-family="IBM Plex Mono, monospace" font-size="12">−16 篇　合计落选</text>
+
+        <line x1="236" y1="402" x2="236" y2="436" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"></line>
+
+        <text x="20" y="456" fill="currentColor" font-family="IBM Plex Mono, monospace" font-size="12">④ 摘要 · 中英一次回复 · 150–650 字 · 失败清空，修复轮再问一次</text>
+        <rect x="20" y="466" width="240" height="42" fill="var(--pass)" opacity="0.16"></rect>
+        <rect x="20" y="466" width="240" height="42" fill="none" stroke="var(--pass)" stroke-width="1.5"></rect>
+        <text x="36" y="492" fill="currentColor" font-family="Archivo, sans-serif" font-size="15" font-weight="600">20 篇</text>
+        <text x="96" y="492" fill="currentColor" opacity="0.62" font-family="IBM Plex Mono, monospace" font-size="11.5">分类也在这一轮定</text>
+
+        <path d="M260 487 H 560" stroke="var(--drop)" stroke-width="1.5" fill="none" stroke-dasharray="4 3" marker-end="url(#ar-drop)"></path>
+        <text x="572" y="491" fill="var(--drop)" font-family="IBM Plex Mono, monospace" font-size="12">中英任一半两次都没回来 → 扣下</text>
+
+        <line x1="140" y1="508" x2="140" y2="542" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"></line>
+
+        <text x="20" y="562" fill="currentColor" font-family="IBM Plex Mono, monospace" font-size="12">⑤ 上架 · 中英摘要都非空 · rank 按分数</text>
+        <rect x="20" y="572" width="240" height="42" fill="var(--pass)" opacity="0.3"></rect>
+        <rect x="20" y="572" width="240" height="42" fill="none" stroke="var(--pass)" stroke-width="2"></rect>
+        <text x="36" y="598" fill="currentColor" font-family="Archivo, sans-serif" font-size="15" font-weight="700">20 篇</text>
+        <text x="96" y="598" fill="currentColor" opacity="0.62" font-family="IBM Plex Mono, monospace" font-size="11.5">写文件 → 推送 → 邮件</text>
+
+        <text x="20" y="644" fill="currentColor" opacity="0.5" font-family="IBM Plex Mono, monospace" font-size="11">文件里仍存 36 篇 —— 一份列表，summary 字段只出现在发布的那 20 篇上</text>
+      </svg>
+    </div>
+    <figcaption>整条链上只有一处会把文章筛掉：准入。抓取阶段的上限决定花不花钱（少抓 = 少付正文和打分），打分阶段完全不过滤，摘要阶段只会因为模型两次都没答上来而丢件。</figcaption>
+  </figure>
+
+  <section>
+    <h2>四道准入判据</h2>
+    <div class="gate-grid">
+      <div class="q">
+        <div class="ask">这个源今天出过了吗</div>
+        <div class="rule-name">每源配额 <span class="mono">publishPerSource = 1</span></div>
+        <p>按分数取该源最高的一篇，并列取较新。它跑在摘要之前，所以省下的是摘要的钱，不只是版面。</p>
+        <div class="cut">09-01 砍掉 10 篇</div>
+      </div>
+      <div class="q">
+        <div class="ask">这个源是因为谁在写才留的吗</div>
+        <div class="rule-name">白名单 <span class="mono">alwaysPublish</span></div>
+        <p>豁免总分门槛和逐维下限。目前只有一个源用它：硅谷居士，短篇个人投资随笔，rubric 会正确地把它判成「有轶事没论证」。</p>
+        <div class="cut none">09-01 没触发</div>
+      </div>
+      <div class="q">
+        <div class="ask">总分够不够</div>
+        <div class="rule-name">总分门槛 <span class="mono">publishMinScore = 30</span></div>
+        <p>五个维度求和，满分 50，门槛取 60%。未判定的文章带 0 分，所以和被拒的一起落选。</p>
+        <div class="cut">09-01 砍掉 5 篇</div>
+      </div>
+      <div class="q">
+        <div class="ask">有没有哪一维是真短板</div>
+        <div class="rule-name">逐维下限 <span class="mono">minPerDimension = 5</span></div>
+        <p>因为总分是五张等权的票，四票能压过第五票。加权做不到这件事：乘数是对称的，门是单向的。</p>
+        <div class="cut">09-01 砍掉 1 篇</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>订阅源现状</h2>
+    <div class="panel" style="margin-bottom:24px">
+      <div class="cell"><span class="num">43</span><span class="lbl">13 天内出过稿</span></div>
+      <div class="cell"><span class="num">21</span><span class="lbl">一篇都没发</span><span class="sub">低频博客与停更的混在一起</span></div>
+      <div class="cell"><span class="num">12</span><span class="lbl">需要抓原文页</span><span class="sub">feed 只给导语</span></div>
+      <div class="cell"><span class="num">1</span><span class="lbl">靠 scrape</span><span class="sub">该站没有 feed</span></div>
+      <div class="cell"><span class="num">1</span><span class="lbl">白名单</span><span class="sub">alwaysPublish</span></div>
+    </div>
+    <div class="bars">
+      <div class="bar-row"><span>the conv.</span><span class="bar-track"><span class="bar-fill" style="width:100%"></span></span><span class="n">15</span></div>
+      <div class="bar-row"><span>nautilus</span><span class="bar-track"><span class="bar-fill" style="width:87%"></span></span><span class="n">13</span></div>
+      <div class="bar-row"><span>hn</span><span class="bar-track"><span class="bar-fill" style="width:80%"></span></span><span class="n">12</span></div>
+      <div class="bar-row"><span>404media</span><span class="bar-track"><span class="bar-fill" style="width:60%"></span></span><span class="n">9</span></div>
+      <div class="bar-row"><span>restofworld</span><span class="bar-track"><span class="bar-fill" style="width:53%"></span></span><span class="n">8</span></div>
+      <div class="bar-row"><span>noahpinion</span><span class="bar-track"><span class="bar-fill" style="width:47%"></span></span><span class="n">7</span></div>
+    </div>
+    <p class="note" style="margin-top:14px">产出最多的六个源，13 天发布篇数。每源每天最多一篇，所以 15 篇意味着 15 天里有 15 天在榜。源清单在 <code>config.json</code> 的 <code>sources</code> 里，加减源不用碰 TypeScript。</p>
+  </section>
+
+  <section>
+    <h2>分栏分布 · 13 天 172 篇</h2>
+    <div class="bars">
+      <div class="bar-row"><span>人文</span><span class="bar-track"><span class="bar-fill" style="width:100%"></span></span><span class="n">47</span></div>
+      <div class="bar-row"><span>技术</span><span class="bar-track"><span class="bar-fill" style="width:100%"></span></span><span class="n">47</span></div>
+      <div class="bar-row"><span>科学</span><span class="bar-track"><span class="bar-fill" style="width:60%"></span></span><span class="n">28</span></div>
+      <div class="bar-row"><span>经济</span><span class="bar-track"><span class="bar-fill" style="width:34%"></span></span><span class="n">16</span></div>
+      <div class="bar-row"><span>生活</span><span class="bar-track"><span class="bar-fill" style="width:32%"></span></span><span class="n">15</span></div>
+      <div class="bar-row"><span>商业</span><span class="bar-track"><span class="bar-fill" style="width:23%"></span></span><span class="n">11</span></div>
+      <div class="bar-row"><span>投资</span><span class="bar-track"><span class="bar-fill" style="width:17%"></span></span><span class="n">8</span></div>
+      <div class="bar-row"><span>设计</span><span class="bar-track"><span class="bar-fill" style="width:0%"></span></span><span class="n">0</span></div>
+    </div>
+    <p class="note" style="margin-top:14px">分类由模型逐篇判定，源自己的 <code>category</code> 只是给人看的编辑元数据，不约束判定结果。设计栏 13 天空着 —— 两个设计源出的稿都被判进了技术栏。</p>
+  </section>
+
+  <section class="stages">
+    <h2>九个阶段</h2>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">01</span><span class="name">订阅源</span><span class="file">config.json</span></div>
+      <div class="stage-body">
+        <p><code>enabled: false</code> 的源不抓，但仍留在 SOURCES 里 —— 否则旧页面上它的文章会退化成一个裸 id 加死链。</p>
+        <div class="knobs"><span class="knob"><span class="k">启用</span><span class="v">64</span></span><span class="knob"><span class="k">09-01 出稿</span><span class="v">26</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">02</span><span class="name">时间窗口</span><span class="file">config.ts</span></div>
+      <div class="stage-body">
+        <p>固定的每日档：昨天 07:00 到今天 07:00（洛杉矶时间）。没有跨天去重状态 —— 窗口本身就是过滤器。</p>
+        <div class="knobs"><span class="knob"><span class="k">CRON</span><span class="v">0 7 * * *</span></span><span class="knob"><span class="k">TZ</span><span class="v">America/Los_Angeles</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">03</span><span class="name">摄入上限</span><span class="file">fetcher.ts</span></div>
+      <div class="stage-body">
+        <p>每个源最多进来 3 篇，按发布时间取最新。加在抓正文之前 —— 这个上限的意义就是不为这些文章花钱，而钱花在抓第三方页面和打分的 token 上，放在后面截断等于白截。</p>
+        <div class="knobs"><span class="knob"><span class="k">collectPerSource</span><span class="v">3</span></span><span class="knob"><span class="k">依据</span><span class="v">publishedAt</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">04</span><span class="name">取正文</span><span class="file">fetcher.ts</span></div>
+      <div class="stage-body">
+        <p>feed 里带全文就用它；短于 1200 字符视为导语，去抓原文页；抓回来还不到 200 字符就当没有正文，prompt 会改成「只看标题判断」。</p>
+        <div class="knobs"><span class="knob"><span class="k">导语判定</span><span class="v">&lt; 1200</span></span><span class="knob"><span class="k">视为无正文</span><span class="v">&lt; 200</span></span><span class="knob"><span class="k">上限</span><span class="v">80 000</span></span><span class="knob"><span class="k">并发</span><span class="v">6</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">05</span><span class="name">URL 去重</span><span class="file">fetcher.ts</span></div>
+      <div class="stage-body">
+        <p>文章 id 就是规范化 URL 的 sha1，所以同一条链接不管从哪个源进来都只留一份。同一事件不同链接的撞车这里管不了 —— 13 天里发生过 2 次。</p>
+        <div class="knobs"><span class="knob"><span class="k">id</span><span class="v">sha1(canonical url)</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">06</span><span class="name">打分</span><span class="file">summarize.ts · score.ts</span></div>
+      <div class="stage-body">
+        <p>五个维度各 1–10 分，每篇一次调用，note 必须写在 score 之前。模型不报总分 —— 问它要一个 0–100 的数字只会得到六七个取整值，而五个小判断加算术能铺得开得多。回复不完整的文章记为未判定，带 0 分。</p>
+        <div class="knobs"><span class="knob"><span class="k">维度</span><span class="v">substance · surprise · accessible · relevance · quality</span></span><span class="knob"><span class="k">量表</span><span class="v">5–50</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">07</span><span class="name">准入</span><span class="file">summarize.ts</span></div>
+      <div class="stage-body">
+        <p>四道判据在同一个函数 <code>publishable()</code> 里问一次，摘要之前。整条链上只有这里会把文章筛掉。</p>
+        <div class="knobs"><span class="knob"><span class="k">09-01 通过</span><span class="v">20 / 36</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">08</span><span class="name">写摘要</span><span class="file">summarize.ts</span></div>
+      <div class="stage-body">
+        <p>中英文一次回复，一篇一次调用。字段先清空、整份回复回来才写回：反过来做的话，模型出错时旧摘要还留着，一次「成功」的运行可能混着两次运行的产物而没有任何标记说明哪句是哪次的。分类也在这一轮定。</p>
+        <div class="knobs"><span class="knob"><span class="k">字数</span><span class="v">150–650</span></span><span class="knob"><span class="k">单段上限</span><span class="v">90</span></span><span class="knob"><span class="k">修复轮</span><span class="v">1 次，仅 1 次</span></span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-id"><span class="n">09</span><span class="name">上架</span><span class="file">jobs/daily.ts</span></div>
+      <div class="stage-body">
+        <p>中英摘要都非空才上架，任一半缺了就扣下并打到 stderr —— 那是模型两次都没答上来，而一张空卡片比少一张更坏。文件里存当天全部文章，<code>summary</code> 字段是唯一区分发布与否的东西。</p>
+        <div class="knobs"><span class="knob"><span class="k">上架条件</span><span class="v">zh + en 都非空</span></span><span class="knob"><span class="k">之后</span><span class="v">commit → push → 邮件</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>全部旋钮</h2>
+    <table>
+      <caption>编辑决策进 <code>config.json</code>，运维参数留在 <code>config.ts</code> 的常量里。</caption>
+      <thead>
+        <tr><th>旋钮</th><th>值</th><th>管什么</th><th>在哪</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>publishMinScore</td><td class="v">30</td><td>总分门槛，满分 50 的 60%</td><td class="where">config.json</td></tr>
+        <tr><td>minPerDimension</td><td class="v">5</td><td>任一维低于它就丢弃</td><td class="where">config.json</td></tr>
+        <tr><td>collectPerSource</td><td class="v">3</td><td>每源最多抓几篇（花不花钱）</td><td class="where">config.json</td></tr>
+        <tr><td>publishPerSource</td><td class="v">1</td><td>每源最多发几篇（上不上页面）</td><td class="where">config.json</td></tr>
+        <tr><td>summaryMinChars / MaxChars</td><td class="v">150 / 650</td><td>一篇摘要的字数区间</td><td class="where">config.json</td></tr>
+        <tr><td>summaryParaMaxChars</td><td class="v">90</td><td>单段上限，独立于全文上限</td><td class="where">config.json</td></tr>
+        <tr><td>photoEnabled</td><td class="v">true</td><td>日页开头那张 Wikimedia 每日图</td><td class="where">config.json</td></tr>
+        <tr><td>alwaysPublish</td><td class="v">1 个源</td><td>豁免门槛与逐维下限</td><td class="where">config.json · sources[]</td></tr>
+        <tr><td>模型</td><td class="v">deepseek-v4-flash</td><td>打分与摘要共用</td><td class="where">config.ts · MODELS</td></tr>
+        <tr><td>BODY_CHAR_LIMIT</td><td class="v">80 000</td><td>送模型的正文上限</td><td class="where">config.ts</td></tr>
+        <tr><td>MAX_ARTICLES_PER_CALL</td><td class="v">60</td><td>一次运行的批次上限</td><td class="where">summarize.ts</td></tr>
+        <tr><td>SCORE_WEIGHTS</td><td class="v">五个 1</td><td>各维度权重，刻意等权</td><td class="where">score.ts</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="pending">
+    <h2>已改动未上线</h2>
+    <p class="note" style="margin-bottom:20px">线上容器跑的是上一个提交。下面这些在工作区里，<code>tsc</code> 通过、在归档数据上试跑过，但还没部署 —— 所以 09-01 那天实际发布的是 21 篇（旧规则），图上的 20 篇是新规则在同一批数据上回算的结果。13 天回算合计：172 篇 → 149 篇。</p>
+
+    <div class="pend">
+      <div class="what">每源上限</div>
+      <p><code>collectPerSource</code> / <code>publishPerSource</code> 取代了原来散在 11 个源上的 <code>maxPerRun</code>。拆成两个数是因为排序依据不同：抓的时候只能按发布时间，发的时候才有分数。</p>
+    </div>
+    <div class="pend">
+      <div class="what">逐维下限</div>
+      <p><code>minPerDimension: 5</code>。13 天回算砍掉 7 篇，每篇都有一个维度落在最低那两档。</p>
+    </div>
+    <div class="pend">
+      <div class="what">准入收成一处</div>
+      <p>四道判据原来写在两个地方（摘要轮一份、页面闸门一份），现在只有 <code>publishable()</code> 一处。附带修掉一个隐患：批次上限原来在过滤之前截断整天的列表，重的一天可能砍掉一篇本会发布的。</p>
+    </div>
+    <div class="pend">
+      <div class="what">上架条件</div>
+      <p>从「中文摘要非空」改成「中英都非空」。归档 172 篇里缺英文的有 0 篇，所以历史数据上零代价。</p>
+    </div>
+    <div class="pend">
+      <div class="what">rubric 校准</div>
+      <p><code>surprise</code> 的 7-8 档加了硬门（原来 68% 的打分挤在这一档，而 prompt 自己说大多数该在 5-6）；<code>substance</code> 的 5-6 档加了原创报道条款；判据里的加粗和大写全部去掉，只保留格式约束。</p>
+    </div>
+    <div class="pend">
+      <div class="what">正文缓存</div>
+      <p><code>npm run bodies</code> 把归档文章的正文抓到 <code>data/bodies/</code>，133/146 篇拿得回来。改完 rubric 重跑打分不再产生抓取成本。</p>
+    </div>
+  </section>
+
+</div>

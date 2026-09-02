@@ -10,7 +10,7 @@ import { USER_CONFIG } from "./user-config";
  * makes a once-a-day poll safe. XDA's site-wide feed is the case that fails it —
  * ~69 articles/day against a 10-item feed covers about 3.5 hours, so a daily
  * fetch would miss 95% of what it published. A source that busy needs a section
- * feed, or a `maxPerRun`, or both.
+ * feed — COLLECT_PER_SOURCE is global, so it cannot be raised for one source.
  *
  * A FLOOR on volume: more than one post a MONTH. Deliberately low. A blog that
  * publishes three essays a month contributes on the days it publishes and is
@@ -62,23 +62,39 @@ export interface Source {
    * SHORT_BODY_CHARS in fetcher.ts.
    */
   fetchBody: boolean;
-  /**
-   * Cap on how many of this source's articles enter a run AT ALL — applied
-   * after the time window and BEFORE bodies are fetched, so it saves both the
-   * page requests and the summarizer's input tokens.
-   *
-   * Not to be confused with the layout quota that used to live here: that one
-   * decided how many CARDS a source could occupy and was removed. This one
-   * decides how many articles are paid for. Hacker News alone was 13 of 27
-   * articles and 53% of all body text, because it links to arbitrary sites and
-   * each one is fetched up to BODY_CHAR_LIMIT.
-   *
-   * Selection is by recency, the only ordering available before scoring.
-   */
-  maxPerRun?: number;
   /** Set only when the site publishes no feed. */
   scrape?: ScrapeConfig;
 }
+
+/**
+ * How many of one source's articles a run PAYS FOR — applied after the time
+ * window and BEFORE bodies are fetched, so it caps both the page requests and
+ * the scoring tokens. Selection is by recency, the only ordering that exists
+ * before scoring.
+ *
+ * Hacker News alone was once 13 of 27 articles and 53% of all body text,
+ * because it links to arbitrary sites and each one is fetched up to
+ * BODY_CHAR_LIMIT.
+ */
+export const COLLECT_PER_SOURCE = USER_CONFIG.collectPerSource;
+
+/**
+ * How many of one source's collected articles reach the PAGE — applied after
+ * scoring, so the ones kept are the highest-scoring rather than the newest.
+ *
+ * THIS IS THE LAYOUT QUOTA COMING BACK, and knowing why it left matters. The
+ * old `Source.maxPerDay` capped cards per source because ranking purely by
+ * score meant whoever published most owned the page (one day Hacker News held
+ * 10 of 14 cards). It needed a second backfill pass, because the page had a
+ * fixed slot count and quotas left slots empty on quiet days. The page has no
+ * fixed slot count any more — everything over the floor is drawn — so there is
+ * nothing to backfill, and the quota now sits BEFORE the summary spend rather
+ * than after it, so what it saves is real money and not just space.
+ *
+ * See RawConfig.publishPerSource in user-config.ts for why this is a separate
+ * number from COLLECT_PER_SOURCE rather than one cap applied earlier.
+ */
+export const PUBLISH_PER_SOURCE = USER_CONFIG.publishPerSource;
 
 export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   id: source.id,
@@ -91,7 +107,6 @@ export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   enabled: source.enabled ?? true,
   alwaysPublish: source.alwaysPublish ?? false,
   fetchBody: source.fetchBody,
-  ...(source.maxPerRun ? { maxPerRun: source.maxPerRun } : {}),
   ...(source.scrape
     ? {
         scrape: {

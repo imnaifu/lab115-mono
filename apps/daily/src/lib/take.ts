@@ -32,17 +32,20 @@ export function isCompleteTake(
  * used to reach for `article.summary.zh` directly, and that hardcoded Chinese
  * into six places that each already knew the reader's language.
  *
- * `zh` IS THE FALLBACK, AND IT IS NOT AN ERROR PATH. Two ordinary situations land
- * there: a digest written while the site was Chinese-only, and one article whose
- * English half did not come back on a run where the Chinese did (see
- * `applySummaries` in lib/summarize.ts — the English is never worth re-asking at
- * the price of the Chinese already in hand).
+ * `zh` IS THE FALLBACK, AND IT IS NOT AN ERROR PATH — but it now serves ONE
+ * situation rather than two: a digest written while the site was Chinese-only.
  *
- * The alternative was rendering nothing for those, and nothing is worse: the
- * summary IS the page, so an English reader would get a headline over an empty
- * card. Showing the Chinese breaks the one-language-at-a-time rule in lib/i18n.ts
- * for exactly as long as the archive predates the English half, which is a cost
- * with an end date.
+ * The second one is gone. An article whose English half did not come back used
+ * to publish Chinese-only and land here, and `publishFrom` now holds it back
+ * instead: a take is both languages at the page's gate, the same definition
+ * `isCompleteTake` above has always used for the repair pass. So for anything
+ * written from that change onward this fallback cannot fire.
+ *
+ * It stays because the archive predates it, and because rendering nothing is
+ * worse than rendering the Chinese: the summary IS the page, so an English
+ * reader would get a headline over an empty card. Breaking the
+ * one-language-at-a-time rule in lib/i18n.ts is a cost with an end date — the
+ * date the last Chinese-only digest falls out of what anyone reads.
  */
 export function summaryFor(
   article: PublishedArticle,

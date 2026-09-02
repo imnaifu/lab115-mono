@@ -57,7 +57,6 @@ export interface RawSource {
    *  as enabled. */
   enabled?: boolean;
   fetchBody: boolean;
-  maxPerRun?: number;
   scrape?: RawScrape;
 }
 
@@ -74,6 +73,38 @@ interface RawConfig {
    *  ON THE 6-60 SCALE, not 0-100 — see SCORE_WEIGHTS in summarize.ts. 36 is
    *  60% of the 60 maximum. See PUBLISH_MIN_SCORE in categories.ts. */
   publishMinScore: number;
+  /**
+   * The floor under each dimension separately — see MIN_PER_DIMENSION in
+   * score.ts for what it is for and why it is 5 rather than 6.
+   */
+  minPerDimension: number;
+  /**
+   * THE PER-SOURCE PAIR, and they are two limits because they buy two different
+   * things. Both are global: every source gets the same two numbers.
+   *
+   * `collectPerSource` is how many of a source's articles are PAID FOR — it is
+   * applied after the time window and before any body is fetched, so it caps
+   * the page requests and the scoring tokens. Selection there is by recency,
+   * the only ordering that exists before scoring.
+   *
+   * `publishPerSource` is how many of them can reach the PAGE, and it is
+   * applied after scoring, so selection there is by score. That ordering is the
+   * whole reason the two are separate: a cap of 1 on collection alone would
+   * keep each source's NEWEST article, and over the nine archived days that
+   * dropped five articles that outscored the one kept in their place — 08-28
+   * would have kept a newer Conversation piece over the 37-point one on
+   * antibiotics. Collecting three and publishing the best of them costs three
+   * score calls per source and never drops a source's best article.
+   *
+   * They replaced `sources[].maxPerRun`, which was set on eleven sources and
+   * absent on the rest — the answer to "how many can this source send" was
+   * eleven different numbers and a default of infinity. It also pointed at the
+   * wrong thing: the busy days were never one source flooding (08-28 was 32
+   * articles from 22 sources), so what needed limiting was how many of a
+   * source's articles reach the page, not how many arrive.
+   */
+  collectPerSource: number;
+  publishPerSource: number;
   /** Bounds for one article's Chinese summary, in characters. */
   summaryMinChars: number;
   summaryMaxChars: number;
@@ -129,6 +160,38 @@ function validate(config: RawConfig): RawConfig {
     config.publishMinScore > 100
   ) {
     fail("publishMinScore must be a number between 0 and 100");
+  }
+  // Above 10 nothing can ever clear it and every digest is empty; at 1 it is a
+  // rule that cannot fire, since the model's scale starts there.
+  if (
+    !Number.isInteger(config.minPerDimension) ||
+    config.minPerDimension < 1 ||
+    config.minPerDimension > 10
+  ) {
+    fail("minPerDimension must be a whole number between 1 and 10");
+  }
+  for (const key of ["collectPerSource", "publishPerSource"] as const) {
+    if (!Number.isInteger(config[key]) || config[key] < 1) {
+      fail(`${key} must be a whole number of at least 1`);
+    }
+  }
+  // Publishing more per source than is collected is not a stricter or looser
+  // setting, it is a number that cannot happen: the publish step only ever sees
+  // what collection brought back. Reading it as "publish everything collected"
+  // would hide a typo that was meant to change something.
+  if (config.publishPerSource > config.collectPerSource) {
+    fail(
+      `publishPerSource (${config.publishPerSource}) is above ` +
+        `collectPerSource (${config.collectPerSource}) — a source can never ` +
+        `publish more articles than the run collects from it`,
+    );
+  }
+  if ((config as unknown as Record<string, unknown>).maxPerRun !== undefined) {
+    fail(
+      `maxPerRun is gone — it is now the pair "collectPerSource" (how many of ` +
+        `a source's articles are fetched and scored) and "publishPerSource" ` +
+        `(how many of those reach the page)`,
+    );
   }
   if (
     !Number.isFinite(config.summaryMinChars) ||
@@ -204,11 +267,18 @@ function validate(config: RawConfig): RawConfig {
     ) {
       fail(`source "${source.id}" alwaysPublish must be true or false`);
     }
+    // The cap moved to the top level, and a per-source one left behind here
+    // would be read by nobody. Throw rather than ignore it: a cap that is
+    // silently not applied looks exactly like a cap that is, and the source
+    // would quietly send as many articles as it likes.
     if (
-      source.maxPerRun !== undefined &&
-      (!Number.isFinite(source.maxPerRun) || source.maxPerRun < 1)
+      (source as unknown as Record<string, unknown>).maxPerRun !== undefined
     ) {
-      fail(`source "${source.id}" maxPerRun must be at least 1`);
+      fail(
+        `source "${source.id}" still carries maxPerRun — the caps are now the ` +
+          `global "collectPerSource" and "publishPerSource" at the top level ` +
+          `of config.json, and they apply to every source`,
+      );
     }
     // A source needs one way in or the other, and scraping needs a pattern
     // that actually compiles — otherwise the failure surfaces mid-run.

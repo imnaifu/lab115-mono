@@ -9,6 +9,7 @@
     "once": "tsx --env-file-if-exists=.env src/jobs/cli.ts",
     "mail": "tsx --env-file-if-exists=.env src/jobs/mail-cli.ts",
     "score": "tsx --env-file-if-exists=.env src/jobs/score-cli.ts",
+    "bodies": "tsx --env-file-if-exists=.env src/jobs/bodies-cli.ts",
     "summary": "tsx --env-file-if-exists=.env src/jobs/summary-cli.ts",
     "backfill-summary": "tsx --env-file-if-exists=.env src/jobs/backfill-summary-cli.ts"
   },
