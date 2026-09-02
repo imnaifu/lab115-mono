@@ -141,6 +141,46 @@ export function articlePath(date: string, article: Article): string {
 }
 
 /**
+ * The admin tree. NOT LANGUAGE-PREFIXED, and it is the second route on the site
+ * that is not — `/preview` is the other.
+ *
+ * `proxy.ts` names both explicitly for the same reason: they do not live under
+ * `[lang]`, so without a branch the rewrite there would send them to
+ * `/zh/admin`, which is nothing. See the note beside that branch. The admin
+ * pages are Chinese only and have one reader — an `/en/admin` would be a
+ * translation for nobody.
+ */
+export const ADMIN_PATH = "/admin";
+
+/** One day's scoring detail, e.g. `/admin/2026-09-02`. */
+export function adminDayPath(date: string): string {
+  return `${ADMIN_PATH}/${date}`;
+}
+
+/** The list of every blog this site reads. */
+export const SOURCES_PATH = "/s";
+
+/**
+ * One source's page, e.g. `/s/simonwillison`.
+ *
+ * `/s/` RATHER THAN A TOP-LEVEL `/simonwillison`, and the dates got the top level
+ * instead — see the note on `dayPath`. A four-digit segment can never collide with
+ * a named page, but a source id is arbitrary text from config.json and would be
+ * competing with every future page name on the site. One letter of namespace
+ * settles that permanently.
+ *
+ * THE ID IS THE SLUG. Source ids in config.json are already lowercase ASCII words
+ * (`simonwillison`, `404media`, `ofdollars`) because they are used as object keys
+ * and log labels, so there is nothing to slugify and no second spelling to keep in
+ * step — which also means a link here cannot rot as long as the id does not
+ * change. Renaming an id was always a breaking edit for the archive (`sourceOf`
+ * falls back to a placeholder), and this adds a URL to that list.
+ */
+export function sourcePath(id: string): string {
+  return `${SOURCES_PATH}/${id}`;
+}
+
+/**
  * A link-preview card: `/og/zh/site.png`, or `/og/zh/2026-08-14.png` for a day.
  *
  * OUTSIDE THE PAGE TREE, where these used to live as `/<lang>/og.png` and

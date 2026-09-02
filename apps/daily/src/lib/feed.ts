@@ -1,5 +1,5 @@
 import { categoryOf } from "./categories";
-import { SITE } from "./config";
+import { SITE, WEBSUB_HUB } from "./config";
 import { strings } from "./i18n";
 import { href, LANGS, type Lang } from "./lang";
 import { articlePath } from "./links";
@@ -205,6 +205,22 @@ export async function atomFeed(lang: Lang): Promise<string> {
     `  <title type="text">${escapeXml(t.brand)}</title>`,
     `  <subtitle type="text">${escapeXml(t.tagline)}</subtitle>`,
     `  <link rel="self" type="application/atom+xml" href="${self}"/>`,
+    /**
+     * WHERE TO SUBSCRIBE FOR PUSH, rather than polling this document forever.
+     *
+     * `rel="hub"` plus the `rel="self"` above is the whole publisher side of
+     * WebSub: a reader's client sees the pair, subscribes to `self` AT the hub,
+     * and from then on the hub delivers new entries to it within seconds of a
+     * publish instead of it re-fetching this file on a timer. Without the link
+     * there is nothing for a client to discover and the ping from lib/ping.ts
+     * would be a message to an empty room — the two halves are useless apart.
+     *
+     * THE SELF LINK IS WHAT IS SUBSCRIBED TO, and it is per-language, so the two
+     * feeds are two topics at one hub. That is what keeps an /en subscriber from
+     * being delivered Chinese prose. See WEBSUB_HUB in lib/config for why it is
+     * someone else's hub and what happens when it goes away.
+     */
+    `  <link rel="hub" href="${WEBSUB_HUB}"/>`,
     `  <link rel="alternate" type="text/html" href="${site}"/>`,
     ...links,
     `  <updated>${updated}</updated>`,

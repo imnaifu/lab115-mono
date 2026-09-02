@@ -49,6 +49,7 @@ GA 自己的传输层处理 unload），而为了一个指标去延迟读者的�
 | `archive_open` | — | 首页 → 归档 | `DigestView.tsx` |
 | `today_open` | `from` | 归档 → 今天 | archive 页 |
 | `day_open` | `from`=`archive`\|`article`、`age` | 打开某一天 | archive 页、文章页 |
+| `source_open` | `from`=`sources`\|`home`、`age` | 打开某个来源页。**这个数字是用来看它「没被本站读者用」的** —— 来源页是给搜索和 AI 做的落地页，站内点击接近零而自然流量在涨，就是它按设计工作 | `SourcesView.tsx`、`DigestView.tsx` |
 | `install_open` | `platform` `can_prompt` | 按了「存成 App」 | `InstallApp.tsx` |
 | `install_prompt` | `outcome`=`accepted`\|`dismissed`\|`failed`、`platform` | 浏览器自己那个安装弹窗的结局 | `InstallApp.tsx` |
 | `pull_refresh` | — | **下拉刷新真的被用了多少** | `PullToRefresh.tsx` |

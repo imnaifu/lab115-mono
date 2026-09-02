@@ -7,6 +7,7 @@ import {
 import { fetchAll } from "@/lib/fetcher";
 import { mailDigest } from "@/jobs/mail";
 import { dailyPhoto } from "@/lib/photo";
+import { announcePublished } from "@/lib/ping";
 import { commitAndPush, ensureRepo } from "@/lib/repo";
 import { sourceOf } from "@/lib/sources";
 import { isCompleteTake } from "@/lib/take";
@@ -148,7 +149,7 @@ async function fetchAndScore(now: Date): Promise<WorkingDigest> {
 /**
  * Turn the working digest into the published one: apply the floor to the scores
  * as they now stand, summarize what clears it and still needs a take, then
- * write and push.
+ * write, push, and announce.
  *
  * SUMMARY OWNS THE FIELDS SCORE DOES NOT. It never rewrites a score — which is
  * also why an article whose `score` no longer matches its `modelScore` is
@@ -461,6 +462,22 @@ async function publishFrom(
   );
 
   /**
+   * NOW TELL THE OUTSIDE WORLD, before the mail and after the commit.
+   *
+   * Before the mail because these are cheap and it is not: two POSTs against a
+   * ten-second timeout, versus a broadcast that cannot be recalled. After the
+   * commit because the URLs being announced have to resolve when somebody
+   * follows them — and by this line they do, since the pages read the clone that
+   * `writeDigest` just wrote.
+   *
+   * IT CANNOT FAIL THE RUN and needs no catch here, unlike `mailDigest` below:
+   * every request inside it is already wrapped, because an index that did not
+   * hear about today is the slow path this feature exists to skip, not a reason
+   * to lose the digest. See lib/ping.ts.
+   */
+  await announcePublished(digest);
+
+  /**
    * The share images are NOT rendered here. They are drawn the first time
    * somebody actually opens a share sheet — see lib/poster-serve.ts.
    *
@@ -502,7 +519,7 @@ async function publishFrom(
 
 /**
  * One full run: pull → fetch → score → summarize → rank → write JSON → push →
- * mail. What the cron fires, and what `npm run once` still does.
+ * announce → mail. What the cron fires, and what `npm run once` still does.
  *
  * The digest is written and pushed even when nothing was found, so every date
  * has a file and the site can render an honest "今日无更新" instead of silently

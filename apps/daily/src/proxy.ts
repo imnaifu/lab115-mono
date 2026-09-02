@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { ADMIN_PASSWORD } from "@/lib/config";
 import {
   DEFAULT_LANG,
   isLang,
@@ -66,6 +67,60 @@ import {
  * unparseable Referer reads as an arrival, which is the pre-cookie behaviour and
  * the safe way to be wrong.
  */
+/**
+ * Compare two strings without leaking WHERE they differ through how long the
+ * comparison took.
+ *
+ * `===` on secrets returns as soon as it finds a mismatched byte, which over
+ * enough requests tells an attacker how many leading characters they have right
+ * — the classic way a password check gives up a password one letter at a time.
+ *
+ * `node:crypto`'s `timingSafeEqual` is the usual answer and is not used here:
+ * this file is compiled for the edge runtime, where `node:*` imports are not
+ * available. Written by hand instead, because the fix is eight lines.
+ *
+ * THE LENGTHS ARE FOLDED IN RATHER THAN CHECKED FIRST. Returning early on a
+ * length mismatch is itself a timing signal — it would reveal the password's
+ * length, which is the first thing worth knowing about it. So the loop runs over
+ * the longer of the two either way and a difference in length becomes just
+ * another set of mismatched bytes.
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  const width = Math.max(a.length, b.length);
+  let diff = a.length ^ b.length;
+  for (let at = 0; at < width; at++) {
+    diff |= (a.charCodeAt(at) || 0) ^ (b.charCodeAt(at) || 0);
+  }
+  return diff === 0;
+}
+
+/**
+ * Does this `Authorization` header carry the admin password?
+ *
+ * ONLY THE PASSWORD HALF IS CHECKED — the username is ignored entirely. See
+ * ADMIN_PASSWORD in lib/config: a page with one reader has nobody to identify,
+ * and a second string to remember would protect nothing.
+ *
+ * The password may itself contain a colon, so the split takes only the FIRST
+ * one: `user:pa:ss` is the password `pa:ss`, which is what the spec says and
+ * what a password manager will generate sooner or later.
+ *
+ * `atob` throws on a malformed base64 body, and a request with a mangled header
+ * is an unauthorised request rather than a server error — hence the catch.
+ */
+function authorized(header: string | null): boolean {
+  if (!header?.startsWith("Basic ")) return false;
+  let decoded: string;
+  try {
+    decoded = atob(header.slice("Basic ".length).trim());
+  } catch {
+    return false;
+  }
+  const colon = decoded.indexOf(":");
+  if (colon < 0) return false;
+  return constantTimeEqual(decoded.slice(colon + 1), ADMIN_PASSWORD);
+}
+
 function fromInsideTheSite(request: NextRequest): boolean {
   const site = request.headers.get("sec-fetch-site");
   if (site) return site === "same-origin";
@@ -105,6 +160,59 @@ export default function proxy(request: NextRequest): NextResponse {
       return new NextResponse(null, { status: 404 });
     }
     return NextResponse.next();
+  }
+
+  /**
+   * `/admin` — the only route on this site behind a password.
+   *
+   * IT IS HERE AND NOT IN THE PAGE for the reason the preview branch above is
+   * here: the admin tree does not live under `[lang]`, so without a branch the
+   * rewrite at the bottom would send it to `/zh/admin`, which is nothing. And
+   * checking auth in the middleware covers the WHOLE SUBTREE, including routes
+   * added later — a per-page check is one file away from a page that forgot.
+   *
+   * 404 WHEN UNCONFIGURED, not 401: see ADMIN_PASSWORD in lib/config for why
+   * this route should not announce that there is something to guess at.
+   *
+   * HTTP BASIC, deliberately, over a login form and a signed cookie. There is one
+   * reader, the browser stores the credential itself, and the alternative was a
+   * login page, a POST endpoint and a cookie whose expiry is another decision —
+   * about a hundred lines to replace a header the protocol already defines. The
+   * cost is a native dialog nobody would choose to look at, and a sign-out that
+   * means clearing the browser's saved credential.
+   *
+   * IT IS SAFE ONLY BECAUSE THIS SITE IS HTTPS-ONLY. Basic sends the password on
+   * every request, base64'd, which is not encryption — Traefik terminates TLS in
+   * front of this and there is no plaintext listener, so the header never crosses
+   * a wire in the clear. A deployment that ever answered on plain HTTP would be
+   * handing this password to the network.
+   */
+  if (first === "admin") {
+    if (!ADMIN_PASSWORD) return new NextResponse(null, { status: 404 });
+    if (!authorized(request.headers.get("authorization"))) {
+      return new NextResponse(null, {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="daily", charset="UTF-8"',
+          // Belt and braces with the page's own `robots` metadata: a 401 has no
+          // HTML for a <meta> to live in, and this is the response a crawler
+          // actually receives.
+          "X-Robots-Tag": "noindex, nofollow",
+        },
+      });
+    }
+    /**
+     * `x-admin` TELLS THE ROOT LAYOUT NOT TO LOAD ANALYTICS.
+     *
+     * A layout cannot see the route segments below it, so "is this the admin
+     * tree" travels the same way the language does — as a request header. The
+     * reason it matters is in the layout beside `Analytics`: there is one GA
+     * property, and the person opening this page is the one whose reloads must
+     * not be in it.
+     */
+    const adminHeaders = new Headers(request.headers);
+    adminHeaders.set("x-admin", "1");
+    return NextResponse.next({ request: { headers: adminHeaders } });
   }
 
   /**

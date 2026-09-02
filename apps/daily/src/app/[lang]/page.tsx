@@ -6,7 +6,7 @@ import { SubscribeSection } from "@/components/SubscribeSection";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
-import { dayPath } from "@/lib/links";
+import { dayPath, SOURCES_PATH } from "@/lib/links";
 import { JsonLd, publisher, website } from "@/lib/seo";
 import { FRONT_DAYS, hasArchive } from "@/lib/paging";
 import { listDates } from "@/lib/store";
@@ -143,6 +143,30 @@ export default async function Home({
           />
         </div>
       ) : null}
+
+      {/**
+       * THE WAY IN TO `/s`, and the only internal link to it on the site.
+       *
+       * Which is the reason it is here rather than in the footer: the footer
+       * deliberately carries no navigation (see the note on `Footer`), and a
+       * section nothing links to is one a crawler reaches only through the
+       * sitemap. `EndLink` is where this site puts "what next" — this is a second
+       * one, under the archive's, because they answer two different questions:
+       * that one is another day, this one is where any of it comes from.
+       *
+       * UNCONDITIONAL, unlike the archive link above it. `/s` is never a copy of
+       * what the reader is already looking at — no other page names the blogs —
+       * so there is no threshold for it to wait behind.
+       */}
+      <div className={PAD}>
+        <EndLink
+          href={href(lang, SOURCES_PATH)}
+          label={t.allSources}
+          sub={t.allSourcesSub}
+          track="source_open"
+          trackFrom="home"
+        />
+      </div>
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}

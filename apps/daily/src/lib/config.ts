@@ -1,10 +1,10 @@
 /**
  * Every tunable value in the app, as a plain constant.
  *
- * THE ENVIRONMENT IS FOR SECRETS ONLY. Six names are read from it and no more:
+ * THE ENVIRONMENT IS FOR SECRETS ONLY. Seven names are read from it and no more:
  * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `RESEND_API_KEY`,
- * `MAIL_SECRET`, `DRY_RUN` — four credentials, one machine-specific remote, one
- * switch for a single invocation.
+ * `MAIL_SECRET`, `ADMIN_PASSWORD`, `DRY_RUN` — five credentials, one
+ * machine-specific remote, one switch for a single invocation.
  * Everything else used to have one too (`GIT_REPO`, `DAILY_CRON`, `DAILY_TZ`,
  * `DAILY_MODEL`, `DAILY_BODY_CHARS`, `DAILY_CONCURRENCY` and half a dozen more)
  * and they are all literals now.
@@ -198,8 +198,89 @@ export const MODEL: string = MODELS.flash;
  */
 export const BODY_CHAR_LIMIT = 80_000;
 
+/**
+ * The password for `/admin`, and the seventh secret this app reads from the
+ * environment.
+ *
+ * EMPTY MEANS THE PAGE DOES NOT EXIST — `proxy.ts` answers 404, not 401, and the
+ * distinction is deliberate: a 401 from an unconfigured deployment advertises
+ * that there is something behind it to guess at, and this is the one route on
+ * the site whose existence is not worth confirming to a stranger. It is also the
+ * same shape as `RESEND_API_KEY` — an empty credential turns its whole feature
+ * off rather than half-enabling it.
+ *
+ * THERE IS NO USERNAME. HTTP Basic sends a pair, and the pair is checked as a
+ * pair, but only the password half has to match: a single-reader admin page has
+ * no user to identify, and inventing one would be a second string to remember
+ * that protects nothing. Type anything in the first box.
+ *
+ * IT IS NOT `MAIL_SECRET` AND MUST NOT BECOME IT. That one is an HMAC key whose
+ * rotation costs a day of unconfirmed signups; this is a password a human types.
+ * Sharing one string between a signing key and a typed credential means the
+ * weaker requirement sets the strength of both.
+ */
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+
 /** DRY_RUN=1 → run the whole pipeline but skip `git push` and the mail. */
 export const DRY_RUN = process.env.DRY_RUN === "1";
+
+/**
+ * TELLING THE OUTSIDE WORLD A DIGEST LANDED.
+ *
+ * The sitemap and the feed are both PULL: they sit there correctly and wait for
+ * someone to come and read them. Which is fine for the archive and useless for
+ * the thing this site is — a publication whose whole value is that it is today's.
+ * A crawler on its own schedule finds this morning's digest some hours or some
+ * days from now; the two constants below are the push half of that, and they are
+ * the only mechanism here that makes freshness a decision rather than a hope.
+ *
+ * See lib/ping.ts for what is actually sent.
+ */
+
+/**
+ * IndexNow key. PUBLIC, and hardcoded for exactly that reason.
+ *
+ * The protocol verifies ownership by fetching `${SITE}/${key}.txt` and checking
+ * that the body is the key — so this string is served to anyone who asks, and the
+ * file in `public/` has to match it character for character. It is not a secret
+ * and therefore not an environment variable: this file's rule is that the
+ * environment holds credentials and nothing else, and a value published at a
+ * known URL is the clearest possible non-credential.
+ *
+ * WHAT IT BUYS, AND WHY BING RATHER THAN GOOGLE: Google does not participate in
+ * IndexNow. Bing, Yandex, Seznam and Naver do — and Bing's index is what
+ * ChatGPT search and Copilot answer from, so this is the one lever here that
+ * moves AI visibility directly rather than by hoping a crawler shows up.
+ *
+ * ROTATING IT means changing this line AND renaming the file in `public/`. They
+ * are two halves of one fact; a mismatch is a 403 from the endpoint, which
+ * `pingIndexNow` logs rather than swallows.
+ */
+export const INDEXNOW_KEY = "0a0f874a7dd141a537cc7289393fd1b4";
+
+/**
+ * The shared endpoint rather than `bing.com/indexnow`.
+ *
+ * `api.indexnow.org` forwards a submission to every participating engine, so one
+ * POST reaches all of them. Submitting to each engine's own host would be the
+ * same request four times for no additional coverage.
+ */
+export const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
+
+/**
+ * WebSub hub for the Atom feeds.
+ *
+ * Google's public hub, which is free, has no registration and has outlived
+ * several of its competitors. THE COST OF USING SOMEONE ELSE'S HUB is that a
+ * subscriber's delivery depends on a service we do not run — but the feed itself
+ * is still there to be polled, so a dead hub degrades to exactly the behaviour
+ * this site has today rather than breaking anything.
+ *
+ * It is declared in the feed (`rel="hub"`) and pinged after a publish. Both
+ * halves are required: the link is how a reader's client learns where to
+ * subscribe, and the ping is what turns "up to an hour late" into seconds.
+ */
+export const WEBSUB_HUB = "https://pubsubhubbub.appspot.com/";
 
 /**
  * The email edition.

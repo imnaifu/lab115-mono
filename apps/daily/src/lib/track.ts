@@ -53,6 +53,18 @@ export type TrackEvent =
   | "archive_open"
   /** The archive's end-of-page link back to the front page. */
   | "home_open"
+  /**
+   * A source's page was opened — from the list at `/s`, or from the front page's
+   * way in to it (`from` says which).
+   *
+   * THE COUNTER-QUESTION TO BUILDING THOSE PAGES AT ALL. They exist as a landing
+   * surface for search rather than as a control a regular reader needs, so the
+   * number worth knowing is not how often it is pressed but whether it is pressed
+   * by anybody who is already here. A flat zero against rising search traffic is
+   * the pages working exactly as intended; a flat zero against no search traffic
+   * says they are twenty-five pages nobody asked for.
+   */
+  | "source_open"
   /** The masthead's install control was pressed — one per press, whether or not
    *  the browser had a native offer to make (`can_prompt` says which). */
   | "install_open"

@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/config";
 import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
-import { articlePath, dayPath } from "@/lib/links";
+import { articlePath, dayPath, SOURCES_PATH, sourcePath } from "@/lib/links";
+import { hasSourcePage, SOURCES } from "@/lib/sources";
 import { archivePages, archivePath } from "@/lib/paging";
 import { listDates, readDigest, shownArticles } from "@/lib/store";
 
@@ -121,6 +122,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * a request a crawler makes rarely — the same thing the home page's list of
    * days already does, and it is not on the reader's path.
    */
+  /**
+   * Counted inside the loop below rather than by calling `articlesBySource`.
+   *
+   * That helper answers the same question and is cached — but this route already
+   * opens every digest, so asking it here would be a SECOND full walk of the
+   * archive in the one request where the cache is most likely to be cold (this
+   * page revalidates hourly, the cache holds for ten minutes). Two maps built
+   * from a loop that is already running cost nothing.
+   *
+   * `latest` takes the FIRST date a source is seen on, which is its newest,
+   * because `dates` is newest-first.
+   */
+  const sourceCount = new Map<string, number>();
+  const sourceLatest = new Map<string, string>();
+
   for (const date of dates) {
     pages.push(entry(dayPath(date), stamp(date)));
     const digest = await readDigest(date);
@@ -128,7 +144,70 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // to index one is asking it to index a 404.
     for (const article of digest ? shownArticles(digest) : []) {
       pages.push(entry(articlePath(date, article), stamp(date)));
+      sourceCount.set(
+        article.sourceId,
+        (sourceCount.get(article.sourceId) ?? 0) + 1,
+      );
+      if (!sourceLatest.has(article.sourceId)) {
+        sourceLatest.set(article.sourceId, date);
+      }
     }
+  }
+
+  /**
+   * The source directory, and every source that has a page.
+   *
+   * `hasSourcePage` IS THE SAME GATE THE ROUTE USES, read from the same constant —
+   * which is the whole reason it is a function in lib/sources rather than a
+   * comparison written twice. A sitemap entry for a source below the threshold
+   * would be this file asking Google to index a URL the route 404s, which is the
+   * disagreement `hasArchive` already exists to prevent one route over.
+   *
+   * A SOURCE'S `lastModified` IS ITS OWN NEWEST DAY, not the site's. A blog that
+   * last appeared in June has not changed since June, and claiming otherwise
+   * spends a crawl on every source page every time any digest lands — which for
+   * twenty-five of them is the bulk of what this sitemap would be asking for.
+   *
+   * `/s` itself uses `newest`: its counts move whenever any digest lands.
+   *
+   * IT IS LISTED UNCONDITIONALLY, unlike the archive. `/s` is not a second view of
+   * a list that lives somewhere else — nothing else on this site names the blogs
+   * or carries their descriptions — so there is no state in which it duplicates
+   * another page, and it still says something with every source below the
+   * threshold.
+   */
+  pages.push(entry(SOURCES_PATH, newest));
+  /**
+   * ITERATING `SOURCES` — the list in config.json — AND NOT THE IDS THE ARCHIVE
+   * TURNED UP, which is the same loop written the other way round and is wrong.
+   *
+   * It shipped wrong for one build and the sitemap caught itself: `nngroup` has
+   * three published takes in the archive and has since been REMOVED from
+   * config.json, so counting ids out of the digests listed `/s/nngroup` while the
+   * route 404s it (`SOURCE_BY_ID.get` finds nothing) and `/s` does not show it.
+   * That is exactly the listed-but-404 disagreement the note above swears off,
+   * arrived at from the one direction the threshold check cannot see.
+   *
+   * Driving the loop from config instead makes this sitemap a subset of what `/s`
+   * renders BY CONSTRUCTION rather than by both sides agreeing — a source that is
+   * not in config.json cannot be reached from here at all. The archive is still
+   * where the COUNT comes from; it just no longer decides who is on the list.
+   *
+   * A retired source's articles keep their own pages either way. `sourceOf` falls
+   * back to a placeholder so those still render — see the note there — and they
+   * are listed above with the rest of their days. What goes away is the blog's
+   * directory page, which is right: nothing links to it and it describes a
+   * subscription that no longer exists.
+   */
+  for (const source of SOURCES) {
+    const count = sourceCount.get(source.id) ?? 0;
+    if (!hasSourcePage(count)) continue;
+    pages.push(
+      entry(
+        sourcePath(source.id),
+        stamp(sourceLatest.get(source.id) ?? dates[0]),
+      ),
+    );
   }
 
   return pages;

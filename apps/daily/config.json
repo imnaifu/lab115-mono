@@ -82,6 +82,7 @@
       "feed": "https://www.heavybit.com/library/blog/feed",
       "category": "tech",
       "description": "开发者工具公司的工程与增长访谈，近期几乎全是 AI agent 基础设施话题。",
+      "descriptionEn": "Engineering and growth interviews from a developer-tools VC; lately almost entirely about AI agent infrastructure.",
       "accent": "#3B3563",
       "enabled": true,
       "fetchBody": false
@@ -93,6 +94,7 @@
       "feed": "https://hnrss.org/frontpage?points=300",
       "category": "tech",
       "description": "Hacker News 头条聚合，内容取决于当天社区，质量与主题都不可控。",
+      "descriptionEn": "The Hacker News front page. Whatever the community surfaced that day — topic and quality both out of our hands.",
       "accent": "#D2601A",
       "enabled": true,
       "fetchBody": true
@@ -104,6 +106,7 @@
       "feed": "https://www.platformer.news/rss/",
       "category": "business",
       "description": "Casey Newton 的科技平台报道，聚焦 AI 公司动向与内部访谈。",
+      "descriptionEn": "Casey Newton on tech platforms: what the AI companies are doing, and inside accounts of it.",
       "accent": "#3F6E8C",
       "enabled": true,
       "fetchBody": false
@@ -115,6 +118,7 @@
       "feed": "https://www.astralcodexten.com/feed",
       "category": "culture",
       "description": "Scott Alexander，理性主义长文与书评，但 Open Thread 这类纯站务帖占了不小比例。",
+      "descriptionEn": "Scott Alexander — long rationalist essays and book reviews, with a fair share of pure housekeeping posts like Open Threads.",
       "accent": "#6B4E8E",
       "enabled": true,
       "fetchBody": false
@@ -126,6 +130,7 @@
       "feed": "https://www.construction-physics.com/feed",
       "category": "economy",
       "description": "建造业与住房供给政策分析，间杂「Reading List」链接汇总。",
+      "descriptionEn": "Construction, housing supply and the policy around them, with occasional Reading List link roundups.",
       "accent": "#7A6A55",
       "enabled": true,
       "fetchBody": false
@@ -137,6 +142,7 @@
       "feed": "https://www.ben-evans.com/benedictevans?format=rss",
       "category": "business",
       "description": "科技行业结构性分析，AI 商业模式与市场格局，更新慢但每篇有观点。",
+      "descriptionEn": "Structural analysis of the tech industry — AI business models and the shape of the market. Slow, but every post has an argument.",
       "accent": "#55606E",
       "enabled": true,
       "fetchBody": false
@@ -148,6 +154,7 @@
       "feed": "https://www.joanwestenberg.com/feed",
       "category": "culture",
       "description": "哲学化的生产力与生活方式随笔，标题风格强烈，论证密度参差。",
+      "descriptionEn": "Philosophical essays on productivity and how to live. Strong headlines; the arguments underneath vary.",
       "accent": "#7B3F5E",
       "enabled": true,
       "fetchBody": false
@@ -159,6 +166,7 @@
       "feed": "https://bytecode.news/feed.xml",
       "category": "tech",
       "description": "个人向科技随笔，兼有工具发布公告。",
+      "descriptionEn": "Personal tech essays, mixed with tool release announcements.",
       "accent": "#6E7B3F",
       "enabled": true,
       "fetchBody": true
@@ -170,6 +178,7 @@
       "feed": "https://jacob.gold/index.xml",
       "category": "tech",
       "description": "Jake Gold，安全、网络与 AI 行业短评。",
+      "descriptionEn": "Jake Gold — short notes on security, networking and the AI industry.",
       "accent": "#B08D2E",
       "enabled": true,
       "fetchBody": true
@@ -181,6 +190,7 @@
       "feed": "https://unchartedterritories.tomaspueyo.com/feed",
       "category": "economy",
       "description": "Tomas Pueyo，地缘政治、能源与 AI 的宏观分析，含定期的 Dispatch 汇总栏目。",
+      "descriptionEn": "Tomas Pueyo on geopolitics, energy and AI at the macro scale, plus a recurring Dispatch roundup.",
       "accent": "#2E7D6E",
       "enabled": true,
       "fetchBody": false
@@ -192,6 +202,7 @@
       "feed": "https://geohot.github.io/blog/feed.xml",
       "category": "tech",
       "description": "George Hotz，对 AI 泡沫与行业炒作的尖锐短评。",
+      "descriptionEn": "George Hotz, sharp and brief, on the AI bubble and the hype around it.",
       "accent": "#B4523D",
       "enabled": true,
       "fetchBody": false
@@ -203,6 +214,7 @@
       "feed": "https://www.notboring.co/feed",
       "category": "business",
       "description": "Packy McCormick，创业公司深度与乐观主义叙事；「Weekly Dose of Optimism」是链接汇总。",
+      "descriptionEn": "Packy McCormick — deep dives on startups, told optimistically; the Weekly Dose of Optimism is a link roundup.",
       "accent": "#C4622D",
       "enabled": true,
       "fetchBody": false
@@ -214,6 +226,7 @@
       "feed": "https://www.lennysnewsletter.com/feed",
       "category": "business",
       "description": "产品管理与增长，访谈和播客转录占多数，夹带自家招聘与产品公告。",
+      "descriptionEn": "Product management and growth. Mostly interviews and podcast transcripts, with the newsletter's own hiring and product notices mixed in.",
       "accent": "#3E7A5E",
       "enabled": true,
       "fetchBody": false
@@ -225,6 +238,7 @@
       "feed": "https://www.noahpinion.blog/feed",
       "category": "economy",
       "description": "Noah Smith，宏观经济与产业政策，间有旅行和美食这类私人话题。",
+      "descriptionEn": "Noah Smith on macroeconomics and industrial policy, with the occasional travel or food post.",
       "accent": "#8C4A6B",
       "enabled": true,
       "fetchBody": false
@@ -236,6 +250,7 @@
       "feed": "https://www.ruanyifeng.com/blog/atom.xml",
       "category": "tech",
       "description": "科技爱好者周刊，每周一期的链接与工具汇总，中文。",
+      "descriptionEn": "A weekly roundup of links and tools for developers. In Chinese.",
       "accent": "#4A7C8C",
       "enabled": true,
       "fetchBody": false
@@ -247,6 +262,7 @@
       "feed": "https://ofdollarsanddata.com/feed/",
       "category": "investing",
       "description": "Nick Maggiulli，用数据讲个人理财与长期投资心态。",
+      "descriptionEn": "Nick Maggiulli — personal finance and the temperament of long-term investing, argued from data.",
       "accent": "#3D7A4F",
       "enabled": true,
       "fetchBody": false
@@ -258,6 +274,7 @@
       "feed": "https://aswathdamodaran.blogspot.com/feeds/posts/default",
       "category": "investing",
       "description": "Aswath Damodaran，估值方法与个股拆解，专业度最高的一个投资源。",
+      "descriptionEn": "Aswath Damodaran on valuation method and individual companies. The most technical of the investing sources here.",
       "accent": "#7A3B4A",
       "enabled": true,
       "fetchBody": false
@@ -269,6 +286,7 @@
       "feed": "https://www.oneusefulthing.org/feed",
       "category": "tech",
       "description": "Ethan Mollick，AI 的实际使用方式与对工作的影响，面向非专家。",
+      "descriptionEn": "Ethan Mollick on how AI actually gets used and what it does to work, written for non-experts.",
       "accent": "#3E8C9E",
       "enabled": true,
       "fetchBody": false
@@ -280,6 +298,7 @@
       "feed": "https://www.theintrinsicperspective.com/feed",
       "category": "science",
       "description": "Erik Hoel，意识研究、神经科学与学术圈批评。",
+      "descriptionEn": "Erik Hoel — consciousness research, neuroscience, and criticism of academia.",
       "accent": "#4E8C7A",
       "enabled": true,
       "fetchBody": false
@@ -291,6 +310,7 @@
       "feed": "https://calnewport.com/feed/",
       "category": "living",
       "description": "Cal Newport，深度工作、注意力与 AI 对脑力劳动的影响。",
+      "descriptionEn": "Cal Newport on deep work, attention, and what AI does to knowledge work.",
       "accent": "#5F7A2E",
       "enabled": true,
       "fetchBody": false
@@ -302,6 +322,7 @@
       "feed": "https://conversableeconomist.com/feed/",
       "category": "economy",
       "description": "Timothy Taylor，经济学论文与史料的通俗解读，学术味重。",
+      "descriptionEn": "Timothy Taylor turning economics papers and archives into plain prose. Academic in flavour.",
       "accent": "#46688F",
       "enabled": true,
       "fetchBody": false
@@ -313,6 +334,7 @@
       "feed": "https://danluu.com/atom.xml",
       "category": "tech",
       "description": "Dan Luu，实证导向的系统与工程分析，长文，一年只有几篇。",
+      "descriptionEn": "Dan Luu — empirical analysis of systems and engineering practice. Long, and only a few posts a year.",
       "accent": "#4A5A6B",
       "enabled": true,
       "fetchBody": false
@@ -324,6 +346,7 @@
       "feed": "https://craigmod.com/index.xml",
       "category": "culture",
       "description": "Craig Mod，日本、徒步、摄影与出版的随笔；含 RODEN/RIDGELINE 等多个栏目。",
+      "descriptionEn": "Craig Mod on Japan, walking, photography and publishing, across several separate letters (RODEN, RIDGELINE).",
       "accent": "#B5714A",
       "enabled": true,
       "fetchBody": true
@@ -335,6 +358,7 @@
       "feed": "https://worksinprogress.co/rss.xml",
       "category": "science",
       "description": "进步研究，医学、农业、城市的长篇实证文章，质量稳定。",
+      "descriptionEn": "Progress studies: long empirical pieces on medicine, agriculture and cities. Consistently good.",
       "accent": "#8C6A9E",
       "enabled": true,
       "fetchBody": true
@@ -346,6 +370,7 @@
       "feed": "https://www.404media.co/rss/",
       "category": "tech",
       "description": "记者自营的科技调查报道，监控、平台滥用、AI 乱象。",
+      "descriptionEn": "Journalist-owned tech investigations — surveillance, platform abuse, and the mess around AI.",
       "accent": "#A63D3D",
       "enabled": true,
       "fetchBody": false
@@ -357,6 +382,7 @@
       "feed": "https://www.wheresyoured.at/rss/",
       "category": "business",
       "description": "Ed Zitron，对 AI 商业模式的尖锐批判，长文，立场极强。",
+      "descriptionEn": "Ed Zitron's case against AI business models. Long, and about as opinionated as writing gets.",
       "accent": "#8A5A2E",
       "enabled": true,
       "fetchBody": false
@@ -368,6 +394,7 @@
       "feed": "https://www.bloodinthemachine.com/feed",
       "category": "culture",
       "description": "Brian Merchant，技术批评与劳工视角，反 AI 立场鲜明。",
+      "descriptionEn": "Brian Merchant — technology criticism from a labour perspective, openly against AI.",
       "accent": "#7C3A52",
       "enabled": true,
       "fetchBody": false
@@ -379,6 +406,7 @@
       "feed": "https://www.citationneeded.news/rss/",
       "category": "business",
       "description": "Molly White，加密货币与科技行业问责；「Issue NNN」是周期性链接汇总。",
+      "descriptionEn": "Molly White holding crypto and the tech industry to account; the numbered Issues are periodic link roundups.",
       "accent": "#4C6E8A",
       "enabled": true,
       "fetchBody": false
@@ -390,6 +418,7 @@
       "feed": "https://themarkup.org/feeds/rss.xml",
       "category": "tech",
       "description": "算法问责调查报道，隐私、医疗数据、平台监管。",
+      "descriptionEn": "Investigative reporting on algorithmic accountability — privacy, health data, platform regulation.",
       "accent": "#2E7A85",
       "enabled": true,
       "fetchBody": false
@@ -401,6 +430,7 @@
       "feed": "https://restofworld.org/feed/latest/",
       "category": "business",
       "description": "非西方视角的科技商业报道，中国出海、新兴市场，选题独特。",
+      "descriptionEn": "Tech business reported from outside the West: Chinese companies going abroad, emerging markets. Stories nobody else is covering.",
       "accent": "#5E8C4A",
       "enabled": true,
       "fetchBody": true
@@ -412,6 +442,7 @@
       "feed": "https://pluralistic.net/feed/",
       "category": "culture",
       "description": "Cory Doctorow，版权、反垄断与平台批判，日更且每篇含大段链接汇总。",
+      "descriptionEn": "Cory Doctorow on copyright, antitrust and platforms. Daily, and every post carries a long block of links.",
       "accent": "#5D4E9C",
       "enabled": true,
       "fetchBody": false
@@ -423,6 +454,7 @@
       "feed": "https://brooker.co.za/blog/rss.xml",
       "category": "tech",
       "description": "AWS 首席工程师，分布式系统与数据库，篇篇有原创观点。",
+      "descriptionEn": "A principal engineer at AWS on distributed systems and databases. Every post has an original point.",
       "accent": "#40607A",
       "enabled": true,
       "fetchBody": false
@@ -434,6 +466,7 @@
       "feed": "https://baoyu.io/feed.xml",
       "category": "tech",
       "description": "宝玉，AI 工程实践与行业观察，中文，也发翻译。",
+      "descriptionEn": "AI engineering practice and industry watching, in Chinese; also publishes translations.",
       "accent": "#4E7FA8",
       "enabled": true,
       "fetchBody": true
@@ -445,6 +478,7 @@
       "feed": "https://acoup.blog/feed/",
       "category": "culture",
       "description": "Bret Devereaux，古代军事与社会史的长篇连载，学术但可读性强。",
+      "descriptionEn": "Bret Devereaux — long serialised histories of ancient warfare and society. Scholarly, and very readable with it.",
       "accent": "#7E4A6E",
       "enabled": true,
       "fetchBody": false
@@ -456,6 +490,7 @@
       "feed": "https://www.quantamagazine.org/feed/",
       "category": "science",
       "description": "数学与基础科学报道，专业记者撰写，是 science 分类的主力。",
+      "descriptionEn": "Mathematics and fundamental science, written by specialist reporters. The backbone of the science section.",
       "accent": "#2A8CA0",
       "enabled": true,
       "fetchBody": true
@@ -467,6 +502,7 @@
       "feed": "https://www.bitsaboutmoney.com/archive/rss/",
       "category": "business",
       "description": "Patrick McKenzie，支付与银行系统内幕，更新慢但每篇都是长文。",
+      "descriptionEn": "Patrick McKenzie on how payments and banking actually work from the inside. Slow, and always long.",
       "accent": "#D08A55",
       "enabled": true,
       "fetchBody": false
@@ -478,6 +514,7 @@
       "feed": "https://www.apricitas.io/feed",
       "category": "economy",
       "description": "图表驱动的宏观经济分析，电力、关税、产业政策。",
+      "descriptionEn": "Chart-driven macroeconomics — electricity, tariffs, industrial policy.",
       "accent": "#567FB0",
       "enabled": true,
       "fetchBody": false
@@ -489,6 +526,7 @@
       "feed": "https://www.henrikkarlsson.xyz/feed",
       "category": "culture",
       "description": "Henrik Karlsson，关于思考方式、育儿与社群的个人随笔。",
+      "descriptionEn": "Henrik Karlsson — personal essays on how to think, raising children, and building a scene.",
       "accent": "#B0668C",
       "enabled": true,
       "fetchBody": false
@@ -500,6 +538,7 @@
       "feed": "https://theconvivialsociety.substack.com/feed",
       "category": "culture",
       "description": "L.M. Sacasas，技术哲学，追问技术如何改变人的处境。",
+      "descriptionEn": "L.M. Sacasas on the philosophy of technology: what it changes about the human situation.",
       "accent": "#77527F",
       "enabled": true,
       "fetchBody": false
@@ -511,6 +550,7 @@
       "feed": "https://resobscura.substack.com/feed",
       "category": "culture",
       "description": "Benjamin Breen，历史学者写的科技史与文化史随笔。",
+      "descriptionEn": "Benjamin Breen, a historian, writing essays on the history of science and of culture.",
       "accent": "#8B5D93",
       "enabled": true,
       "fetchBody": false
@@ -522,6 +562,7 @@
       "feed": "https://www.rogerebert.com/feed",
       "category": "culture",
       "description": "影评站，含影展报道与讣告；产出中影展片单、游戏评测这类小众条目占比高。",
+      "descriptionEn": "Film criticism, with festival coverage and obituaries; a high share of the output is festival listings and game reviews.",
       "accent": "#B4536D",
       "enabled": true,
       "fetchBody": false
@@ -533,6 +574,7 @@
       "feed": "https://nautil.us/feed/",
       "category": "science",
       "description": "科普长文，衰老、神经、演化，面向大众。",
+      "descriptionEn": "Long-form popular science — ageing, the brain, evolution — for a general reader.",
       "accent": "#327E86",
       "enabled": true,
       "fetchBody": true
@@ -544,6 +586,7 @@
       "feed": "https://psyche.co/feed",
       "category": "living",
       "description": "Aeon 旗下，心理学与生活实践的短文，teaser feed 需抓正文。",
+      "descriptionEn": "Aeon's sister site: short pieces on psychology and how to live.",
       "accent": "#7A9450",
       "enabled": true,
       "fetchBody": true
@@ -555,6 +598,7 @@
       "feed": "https://designobserver.com/feed/",
       "category": "design",
       "description": "设计评论，谈职业、协作与设计伦理，不是前端技术。",
+      "descriptionEn": "Design criticism about practice, collaboration and ethics — not front-end technique.",
       "accent": "#B96A48",
       "enabled": true,
       "fetchBody": false
@@ -566,6 +610,7 @@
       "feed": "https://www.netinterest.co/feed",
       "category": "investing",
       "description": "Marc Rubinstein，金融业与金融股的深度分析。",
+      "descriptionEn": "Marc Rubinstein on the financial industry and the stocks in it, in depth.",
       "accent": "#9A7C3A",
       "enabled": true,
       "fetchBody": false
@@ -577,6 +622,7 @@
       "feed": "https://klementoninvesting.substack.com/feed",
       "category": "investing",
       "description": "Joachim Klement，用学术研究讲投资与宏观，每篇很短。",
+      "descriptionEn": "Joachim Klement explaining investing and macro through academic research. Very short posts.",
       "accent": "#C4A24A",
       "enabled": true,
       "fetchBody": false
@@ -588,6 +634,7 @@
       "feed": "",
       "category": "investing",
       "description": "硅谷居士，中文的指数投资与 FIRE，文学城博客，靠 scrape 抓取。",
+      "descriptionEn": "Index investing and FIRE, in Chinese, from a Silicon Valley engineer writing about his own accounts.",
       "accent": "#C08F5A",
       "enabled": true,
       "alwaysPublish": true,
@@ -605,6 +652,7 @@
       "feed": "https://earlyretirementnow.com/feed/",
       "category": "investing",
       "description": "SWR 安全提取率的量化研究系列，FIRE 领域最硬的一个，长文。",
+      "descriptionEn": "The quantitative series on safe withdrawal rates. The most rigorous thing in the FIRE world, at length.",
       "accent": "#8E7A45",
       "enabled": true,
       "fetchBody": false
@@ -616,6 +664,7 @@
       "feed": "https://jlcollinsnh.com/feed/",
       "category": "investing",
       "description": "《The Simple Path to Wealth》作者，指数投资入门，更新很少。",
+      "descriptionEn": "The author of The Simple Path to Wealth on index investing for beginners. Rarely updates.",
       "accent": "#7E6B33",
       "enabled": true,
       "fetchBody": true
@@ -627,6 +676,7 @@
       "feed": "https://theconversation.com/us/articles.atom",
       "category": "science",
       "description": "学者本人写的解释性长文，Atom 带全文 ~7.8k；6.8 篇/天且选题从疫苗到中世纪史横跨极大。",
+      "descriptionEn": "Explanatory pieces written by the academics themselves. Prolific, and the range is enormous — vaccines one day, medieval history the next.",
       "accent": "#2D6E7E",
       "enabled": true,
       "fetchBody": false
@@ -638,6 +688,7 @@
       "feed": "https://daily.jstor.org/feed/",
       "category": "culture",
       "description": "把 JSTOR 上的论文改写成通俗文章，全文 ~9.2k，史料与社科向；~0.8 篇/天，偶尔只是论文导读。",
+      "descriptionEn": "Papers from JSTOR rewritten for a general reader — history and social science. Sometimes it is only a reading guide to the paper.",
       "accent": "#8E4F72",
       "enabled": true,
       "fetchBody": false
@@ -649,6 +700,7 @@
       "feed": "https://www.noemamag.com/feed/",
       "category": "culture",
       "description": "Berggruen 研究院的杂志，技术哲学与地缘政治，全文 17k~38k；作者多为学者，行文偏抽象。",
+      "descriptionEn": "The Berggruen Institute's magazine: philosophy of technology and geopolitics. Mostly academic authors, and abstract with it.",
       "accent": "#5E4B72",
       "enabled": true,
       "fetchBody": false
@@ -660,6 +712,7 @@
       "feed": "https://www.theparisreview.org/blog/feed/",
       "category": "culture",
       "description": "《巴黎评论》的日更博客，文学随笔与作家访谈，全文 ~12.7k；纯文学向，和现有源零重叠。",
+      "descriptionEn": "The Paris Review's daily blog — literary essays and writer interviews. Purely literary, and overlaps with nothing else here.",
       "accent": "#B04E72",
       "enabled": true,
       "fetchBody": false
@@ -671,6 +724,7 @@
       "feed": "https://www.honest-broker.com/feed",
       "category": "culture",
       "description": "Ted Gioia，音乐与文化批评，全文 ~4k；~0.38 篇/天，偶尔是唱片推荐清单体。",
+      "descriptionEn": "Ted Gioia on music and culture. Occasionally just a list of records.",
       "accent": "#96603E",
       "enabled": true,
       "fetchBody": false
@@ -682,6 +736,7 @@
       "feed": "https://www.afterbabel.com/feed",
       "category": "living",
       "description": "Jonathan Haidt 的合著博客，手机、社交媒体与青少年心理，全文 ~15k；立场鲜明，数据解读常被同行质疑。",
+      "descriptionEn": "Jonathan Haidt's group blog on phones, social media and adolescent mental health. Clear position, and its reading of the data is often disputed by other researchers.",
       "accent": "#4F7F3C",
       "enabled": true,
       "fetchBody": false
@@ -693,6 +748,7 @@
       "feed": "https://dynomight.net/feed.xml",
       "category": "science",
       "description": "匿名作者的量化随笔，用数据认真回答无聊问题，全文 ~9.7k；~13 天一篇，成本可忽略。",
+      "descriptionEn": "An anonymous writer answering boring questions seriously, with data. Roughly one post every two weeks.",
       "accent": "#5F9E8A",
       "enabled": true,
       "fetchBody": false
@@ -704,6 +760,7 @@
       "feed": "https://www.experimental-history.com/feed",
       "category": "science",
       "description": "Adam Mastroianni，心理学与学术体制的批判性随笔，全文 ~16k；风格夸张，论证有时靠比喻推进。",
+      "descriptionEn": "Adam Mastroianni — critical essays on psychology and the academy. Theatrical style; the argument sometimes runs on analogy.",
       "accent": "#9B6FB5",
       "enabled": true,
       "fetchBody": false
@@ -715,6 +772,7 @@
       "feed": "https://erictopol.substack.com/feed",
       "category": "science",
       "description": "Eric Topol，医学研究、衰老与医疗 AI，0.12 篇/天，feed 带全文 3k~13.7k；约一半条目是访谈实录而非文章，正文里混着 Substack 的推广尾巴。",
+      "descriptionEn": "Eric Topol on medical research, ageing and AI in medicine. About half the entries are interview transcripts rather than essays.",
       "accent": "#2F8C7F",
       "enabled": true,
       "fetchBody": false
@@ -726,6 +784,7 @@
       "feed": "https://yourlocalepidemiologist.substack.com/feed",
       "category": "science",
       "description": "Katelyn Jetelina，流行病学家写的公共卫生实操（山火烟怎么防、疫苗打不打、季节性疫情），0.36 篇/天，全文 ~8.4k 且全部免费；每周有一条是疫情数字流水账，属于 substance 3-4 的选摘体。",
+      "descriptionEn": "Katelyn Jetelina, an epidemiologist, on practical public health — wildfire smoke, which vaccines to get, what is going around. One post a week is a numbers update rather than an argument.",
       "accent": "#35789B",
       "enabled": true,
       "fetchBody": false
@@ -737,6 +796,7 @@
       "feed": "https://www.theatlantic.com/feed/channel/health/",
       "category": "science",
       "description": "The Atlantic 健康栏目，0.5 篇/天，feed 给整篇正文（~8.2k，实测结尾自然，不是预览）；栏目边界很宽，会混进与身体健康无关的生活报道。",
+      "descriptionEn": "The Atlantic's health desk. The section's boundaries are loose, so lifestyle reporting with little to do with health gets in.",
       "accent": "#9E4A3C",
       "enabled": true,
       "fetchBody": false
@@ -748,6 +808,7 @@
       "feed": "https://rpstrength.com/blogs/articles.atom",
       "category": "living",
       "description": "教练团队写的训练与营养实操（肌酸、体脂秤准不准、增肌减脂怎么排），0.12 篇/天，Atom 带全文 5k~12k；约四分之一条目是自家 app 的更新软文，靠分数门槛滤。",
+      "descriptionEn": "Coaches writing practically about training and nutrition — creatine, whether body-fat scales work, how to structure a bulk or a cut. Around a quarter of the entries are soft promotion for their own app.",
       "accent": "#C97B33",
       "enabled": true,
       "fetchBody": false
@@ -759,6 +820,7 @@
       "feed": "https://www.dwarkesh.com/feed",
       "category": "tech",
       "description": "Dwarkesh Patel 的长访谈，对象以 AI 研究者和经济史学者为主，0.18 篇/天；Substack 每期带完整对谈文字稿，中位 22.6k、最长 143k，偶有几百字符的预告条目。",
+      "descriptionEn": "Dwarkesh Patel's long interviews, mostly with AI researchers and economic historians. Full transcripts, occasionally just a short trailer.",
       "accent": "#445E9E",
       "enabled": true,
       "fetchBody": false
@@ -770,6 +832,7 @@
       "feed": "https://www.chinatalk.media/feed",
       "category": "economy",
       "description": "Jordan Schneider，中国科技与产业政策，编辑过的访谈文字稿加分析，中位 32.8k；0.69 篇/天且正文极长，选题从出口管制横跨到东南亚见闻和朝鲜史。",
+      "descriptionEn": "Jordan Schneider on Chinese technology and industrial policy — edited interview transcripts plus analysis. Very long, and the range runs from export controls to travel notes.",
       "accent": "#A83C55",
       "enabled": true,
       "fetchBody": false
@@ -781,6 +844,7 @@
       "feed": "https://newsletter.powderworks.dev/feed",
       "category": "tech",
       "description": "匿名作者的 Substack，写用 coding agent 做大型项目踩出来的教训和为此自制的工具，兼谈软件生产到底是手艺还是工业过程；feed 带全文，实测 2.2k 与 72.9k，都免费。全站只有 2 篇（2026-08-08 / 08-12），频率无法实测，最新一篇距今 14 天 —— 一个还没证明会持续更新的新号。",
+      "descriptionEn": "An anonymous Substack on lessons from building large projects with coding agents, the tools built along the way, and whether software is a craft or an industrial process. Two posts so far — it has not yet shown it will keep going.",
       "accent": "#6E4B3A",
       "enabled": true,
       "fetchBody": false

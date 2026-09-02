@@ -51,6 +51,53 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE),
     title,
     description: t.tagline,
+    /**
+     * HOW MUCH OF THIS PAGE A SEARCH RESULT MAY SHOW — and the answer is all of
+     * it, which was NOT the default it was getting.
+     *
+     * With no directive at all Google applies `max-image-preview:standard`, which
+     * caps a result's thumbnail at roughly 100px on its long edge. On this site
+     * that is the single worst default available: every article page declares its
+     * POSTER as `og:image` (a 1080x1440 card with the cover, the headline and the
+     * claim set on it — see the note in the article page's `generateMetadata`),
+     * and the whole distribution model is that the poster is the thing people
+     * pass around. Rendered at 100px it is an illegible grey rectangle.
+     *
+     * `large` is also the ENTRY REQUIREMENT for Google Discover, which for a
+     * daily bilingual digest is the surface with the most upside of any of them —
+     * and it was unreachable by omission rather than by decision.
+     *
+     * `-1` ON THE OTHER TWO means "no limit" rather than zero: `max-snippet` caps
+     * the characters of text a result may quote, and every page here is a summary
+     * whose point IS the prose, so a truncated snippet is a result that shows less
+     * of the writing than the writing is. `max-video-preview` is declared for
+     * completeness — there is no video on this site and there is no cost to being
+     * explicit about a directive that will one day be inherited by a page that has
+     * one.
+     *
+     * INSIDE `googleBot`, not at the top level, because these three are Google's
+     * directives. The plain `index`/`follow` pair above them is the part every
+     * engine reads.
+     *
+     * INHERITANCE IS THE MECHANISM, and it is the reason this belongs in the root
+     * layout and nowhere else. Next merges metadata per TOP-LEVEL FIELD, so a page
+     * that declares any `robots` of its own replaces this whole object — which is
+     * exactly what the two pages that must never be indexed already do
+     * (`/preview` and `/mail/confirm` both set `robots: { index: false }`), and
+     * they keep working untouched. Every other page declares no `robots` at all
+     * and therefore gets this.
+     */
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
     // The home page in both languages — see alternatesFor. On the Chinese side
     // that canonical is now `${SITE}/` itself. An older note here warned against
     // exactly that, because the bare URL used to be the one that REDIRECTED here;
@@ -192,6 +239,8 @@ export default async function RootLayout({
   // Only for BackToTop's label — everything else this layout renders is chrome
   // with no words in it.
   const t = strings(lang);
+  // Set by the admin branch in proxy.ts. See the note beside `Analytics` below.
+  const isAdmin = (await headers()).get("x-admin") === "1";
 
   return (
     /**
@@ -288,10 +337,35 @@ export default async function RootLayout({
             root rather than per page — see the note in the component. */}
         <BackToTop label={t.backToTop} />
         <ServiceWorker />
-        <Analytics />
-        {/* One delegated listener for every `data-track` link on the page — see
-            the note there for why the links themselves stay server-rendered. */}
-        <ClickTracking />
+        {/**
+         * NOT ON `/admin`, and this is about the integrity of the numbers rather
+         * than about the page.
+         *
+         * There is one GA property for one site (see GA_ID in Analytics), and the
+         * admin page is opened by the one person whose visits must not be in it —
+         * a tuning session is a dozen reloads of the same URL, which is the same
+         * pollution `Analytics` already refuses to send from `npm run dev`. It
+         * would land in exactly the reports being used to judge whether the SEO
+         * work is doing anything.
+         *
+         * `ClickTracking` goes with it for the same reason: it is one delegated
+         * listener that fires `data-track` events, and the admin pages carry
+         * links of their own.
+         *
+         * The flag is a REQUEST HEADER set by the admin branch in proxy.ts, not a
+         * pathname — a root layout cannot see the route segments beneath it, which
+         * is the same constraint that makes `x-lang` a header. See the note on
+         * `langFromHeader`.
+         */}
+        {isAdmin ? null : (
+          <>
+            <Analytics />
+            {/* One delegated listener for every `data-track` link on the page —
+                see the note there for why the links themselves stay
+                server-rendered. */}
+            <ClickTracking />
+          </>
+        )}
       </body>
     </html>
   );

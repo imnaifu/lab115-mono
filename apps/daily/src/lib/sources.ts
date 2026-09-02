@@ -1,3 +1,4 @@
+import type { Lang } from "./lang";
 import { USER_CONFIG } from "./user-config";
 
 /**
@@ -46,8 +47,18 @@ export interface Source {
   /** A `Category.id` describing the source's usual beat. Editorial metadata for
    *  reviewing the list — the model still classifies every article on its own. */
   category: string;
-  /** One line on what it publishes, and its known failure modes. */
+  /**
+   * One line on what it publishes, and its known failure modes.
+   *
+   * TWO AUDIENCES IN ONE FIELD, which is worth knowing before editing it. It was
+   * written for whoever reviews the list — hence the feed measurements and the
+   * per-day rates in some of them — and `/s` now renders it to readers as well.
+   * The English twin below carries only the reader-facing half.
+   */
   description: string;
+  /** The same line in English. See RawSource.descriptionEn for why it is
+   *  required and what it deliberately leaves out. */
+  descriptionEn: string;
   /** Exempt from the publish floor — see alwaysPublish in user-config.ts. */
   alwaysPublish: boolean;
   /** False means "do not fetch". Such a source is still carried here, and on
@@ -96,6 +107,37 @@ export const COLLECT_PER_SOURCE = USER_CONFIG.collectPerSource;
  */
 export const PUBLISH_PER_SOURCE = USER_CONFIG.publishPerSource;
 
+/**
+ * How many published takes a source needs before it gets a page of its own.
+ *
+ * THE SAME SHAPE AS `hasArchive` IN LIB/PAGING, and for the same reason. A source
+ * page's content is the run of takes we have written about that blog; with one of
+ * them on it the page is a heading, a borrowed description and a single link that
+ * the article's own page already carries better. Sixty-four such pages is the
+ * definition of a doorway set, and this site is a daily pile of summaries of other
+ * people's writing — which is close enough to what Google's scaled-content policy
+ * describes that thin pages are a risk it should not take for free.
+ *
+ * THREE, measured rather than picked: over the first fourteen days, 44 sources had
+ * published at least once, 33 at least twice and 25 at least three times. So the
+ * threshold turns on roughly the sources that appear about weekly, and the quiet
+ * ones arrive on their own as the archive fills — a page that does not exist yet
+ * is the honest answer, and it is why the route 404s below the line rather than
+ * rendering an empty run.
+ *
+ * IT GATES THREE THINGS AT ONCE, stated once here: the route (404), the sitemap
+ * (not listed), and the index at `/s` (named as plain text rather than linked).
+ * A URL that is listed but 404s, or linked but not listed, is the kind of
+ * disagreement `hasArchive` exists to prevent one route over.
+ */
+export const SOURCE_MIN_ARTICLES = 3;
+
+/** Whether a source with this many published takes has a page. See the note
+ *  above — every caller asks through here rather than comparing the number. */
+export function hasSourcePage(published: number): boolean {
+  return published >= SOURCE_MIN_ARTICLES;
+}
+
 export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   id: source.id,
   name: source.name,
@@ -104,6 +146,7 @@ export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   accent: source.accent,
   category: source.category,
   description: source.description,
+  descriptionEn: source.descriptionEn,
   enabled: source.enabled ?? true,
   alwaysPublish: source.alwaysPublish ?? false,
   fetchBody: source.fetchBody,
@@ -127,6 +170,23 @@ export const SOURCE_BY_ID = new Map(SOURCES.map((s) => [s.id, s]));
 /** Falls back to a neutral placeholder so a source id that has since been
  *  removed from config.json never crashes a page rendered from an older
  *  digest. */
+/**
+ * The line about a source, in the language being rendered.
+ *
+ * ONE RULE, IN ONE PLACE, because two components ask: the directory row and the
+ * source page's own lead paragraph. Both used to gate on `lang === "zh"` and show
+ * nothing at all on the English side, which is the hole `descriptionEn` fills.
+ *
+ * It can still come back empty — `sourceOf`'s placeholder has no description of
+ * either kind, for a source id that has been removed from config.json — so every
+ * caller still has to branch on the empty string. That is a real state, not a
+ * defensive check: an archived digest naming a retired source renders through
+ * that placeholder.
+ */
+export function descriptionFor(source: Source, lang: Lang): string {
+  return lang === "zh" ? source.description : source.descriptionEn;
+}
+
 export function sourceOf(id: string): Source {
   return (
     SOURCE_BY_ID.get(id) ?? {
@@ -137,6 +197,7 @@ export function sourceOf(id: string): Source {
       accent: "#8A8299",
       category: USER_CONFIG.fallbackCategory,
       description: "",
+      descriptionEn: "",
       enabled: false,
       alwaysPublish: false,
       fetchBody: false,

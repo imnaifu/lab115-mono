@@ -36,6 +36,21 @@ export interface RawSource {
    *  from its recent output rather than its reputation. Exists to make "should
    *  this be dropped" answerable without opening the site. */
   description: string;
+  /**
+   * The same line in English, and REQUIRED rather than optional.
+   *
+   * It was not there at all, and `/s` is what made that a visible hole rather
+   * than a maintainer's shortcut: the directory renders this field, so the
+   * English side of a bilingual site had sixty-four sources with a name, a count
+   * and no line at all. Showing the Chinese one instead was never an option —
+   * see the one-language-at-a-time rule in lib/i18n.
+   *
+   * Required so it cannot quietly go missing on the next source added, which is
+   * exactly how the English side ends up half-populated. The Chinese field is
+   * the one that carries the feed measurements and the "should this be dropped"
+   * notes; this one is the reader-facing half of it.
+   */
+  descriptionEn: string;
   accent: string;
   /**
    * True exempts every article from this source from the publish floor: it is
@@ -247,7 +262,7 @@ function validate(config: RawConfig): RawConfig {
   for (const source of config.sources) {
     requireFields(
       source as unknown as Record<string, unknown>,
-      ["id", "name", "site", "accent", "category", "description"],
+      ["id", "name", "site", "accent", "category", "description", "descriptionEn"],
       `source "${source.id ?? "?"}"`,
     );
     // A typo here is invisible at runtime — nothing reads this field — so it

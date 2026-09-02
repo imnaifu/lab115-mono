@@ -3,6 +3,7 @@ import path from "node:path";
 import { REPO_SUBDIR } from "./config";
 import { articleSlug, idFromSlug } from "./links";
 import { REPO_PATH } from "./paths";
+import type { ScoredEntry } from "./stats";
 import type { Article, Digest, PublishedArticle } from "./types";
 
 /**
@@ -212,4 +213,158 @@ export async function readArticleBySlug(
   if (!id) return null;
   const byId = shown.find((a) => a.id.startsWith(id));
   return byId ? { digest, article: byId, canonical: false } : null;
+}
+
+/** One published take, with the day it ran. */
+export interface SourceArticle {
+  date: string;
+  article: PublishedArticle;
+}
+
+let sourceIndex: {
+  key: string;
+  at: number;
+  value: Map<string, SourceArticle[]>;
+} | null = null;
+
+/** How long the index may be trusted without re-reading the archive. See the
+ *  TTL paragraph on `articlesBySource` below for what the ten minutes are for. */
+const SOURCE_INDEX_TTL_MS = 10 * 60_000;
+
+/**
+ * Every published take, grouped by the blog it was written about — newest day
+ * first, and within a day in the order the digest ranked them.
+ *
+ * ONE WALK FOR THREE CALLERS. `/s` needs a count per source, `/s/<id>` needs one
+ * source's whole run, and the sitemap needs to know which sources clear
+ * `SOURCE_MIN_ARTICLES`. Those are the same question asked three ways, and asking
+ * it three times would be three passes over the archive that could disagree about
+ * where the line falls.
+ *
+ * IT READS EVERY DIGEST, and there is no index to read instead — that is the
+ * deliberate absence at the top of this file, and the reason a source page cannot
+ * be assembled cheaply: `sourceId` lives inside each article, so the only way to
+ * know which days mention a blog is to open all of them. The sitemap already pays
+ * exactly this cost for exactly this reason.
+ *
+ * IT CANNOT BE ANSWERED BY ISR, and that is worth writing down because it was
+ * the obvious plan and it does not work here. `app/sitemap.ts` pays this same
+ * cost behind `revalidate = 3600`; a PAGE cannot, because the root layout reads
+ * `headers()` to get the language the proxy resolved (see the note in
+ * app/layout.tsx), and a dynamic API in a layout makes every route beneath it
+ * dynamic. Every `[lang]` page is `force-dynamic` for that reason, so a source
+ * page would walk the whole archive on every single request, crawler included.
+ *
+ * HENCE THE CACHE ABOVE rather than a smarter query. The archive is append-only
+ * in practice — a digest is written on its day and not edited — so the pair
+ * (how many days, which is newest) identifies the content of the whole run, and
+ * that pair costs one directory walk to check against a hundred file reads to
+ * rebuild.
+ *
+ * THE TTL IS FOR THE ONE CASE THAT PAIR MISSES: `backfill-summary` rewrites
+ * archived digests in place, changing neither the count nor the newest date. It
+ * is a rare manual job, and ten minutes of a stale index after it is a smaller
+ * problem than an invalidation scheme that has to know about it.
+
+ * Sequential, not `Promise.all`: this is a hundred small reads off local disk on a
+ * request no reader is waiting behind, and fanning them out all at once is how a
+ * growing archive turns one page render into an EMFILE.
+ */
+export async function articlesBySource(): Promise<Map<string, SourceArticle[]>> {
+  const dates = await listDates();
+  const key = `${dates.length}:${dates[0] ?? ""}`;
+  if (
+    sourceIndex &&
+    sourceIndex.key === key &&
+    Date.now() - sourceIndex.at < SOURCE_INDEX_TTL_MS
+  ) {
+    return sourceIndex.value;
+  }
+
+  const bySource = new Map<string, SourceArticle[]>();
+
+  for (const date of dates) {
+    const digest = await readDigest(date);
+    if (!digest) continue;
+    // Published only, the same filter the sitemap and every renderer use: an
+    // article with no take has no page to link to and nothing to show in a row.
+    for (const article of shownArticles(digest)) {
+      const run = bySource.get(article.sourceId);
+      if (run) run.push({ date, article });
+      else bySource.set(article.sourceId, [{ date, article }]);
+    }
+  }
+
+  sourceIndex = { key, at: Date.now(), value: bySource };
+  return bySource;
+}
+
+/**
+ * Every article the scorer has ever answered for — published AND turned down,
+ * across both shapes of digest file.
+ *
+ * THE ONLY READER THAT WANTS THE REJECTIONS. Everything on the reader's side of
+ * this app goes through `shownArticles`, which is the rule "no take means it was
+ * not published" stated once. `/admin` is the exception the rejections exist for:
+ * `Digest.articles` keeps them, and `RejectedArticle` is still declared, so that
+ * a run can be audited after the fact — "why is that post missing" — and that
+ * audit is the page this feeds.
+ *
+ * TWO SHAPES, UNIONED HERE. Digests from 2026-08-26 on hold one merged list; the
+ * six days before that split it into `articles` (published only) plus `rejected`.
+ * Reading only the merged field would silently drop 58 turned-down articles from
+ * those days and make the early archive look like a scorer that rejected nothing.
+ *
+ * NOT CACHED, unlike `articlesBySource` next door, and that is the difference in
+ * who asks. That one is on `/s`, which crawlers hit; this one is behind a
+ * password with one reader, so a full walk per render is a cost nobody is
+ * waiting behind — and a stale statistic on a tuning page is worse than a slow
+ * one, because the whole point is to see what this morning's run did.
+ */
+export async function allScored(): Promise<ScoredEntry[]> {
+  const entries: ScoredEntry[] = [];
+
+  for (const date of await listDates()) {
+    const digest = await readDigest(date);
+    if (!digest) continue;
+
+    for (const article of digest.articles) {
+      entries.push({
+        date,
+        title: article.title,
+        url: article.url,
+        sourceId: article.sourceId,
+        score: article.score,
+        modelScore: article.modelScore,
+        scoredBy: article.scoredBy,
+        review: article.review,
+        // The one field that says whether it ran. Read, never recomputed: this
+        // day was published under whatever the rules were that morning.
+        published: article.summary !== undefined,
+        publishedAt: article.publishedAt,
+        category: article.category,
+      });
+    }
+
+    /**
+     * The legacy list. `RejectedArticle` carries four fields and no `id`,
+     * `category` or `publishedAt` — see the type — so those come back undefined
+     * and the statistics that need them say so rather than inventing a value.
+     */
+    for (const rejected of digest.rejected ?? []) {
+      entries.push({
+        date,
+        title: rejected.title,
+        url: rejected.url,
+        sourceId: rejected.sourceId,
+        score: rejected.score,
+        modelScore: rejected.modelScore,
+        scoredBy: rejected.scoredBy,
+        review: rejected.review,
+        published: false,
+      });
+    }
+  }
+
+  return entries;
 }

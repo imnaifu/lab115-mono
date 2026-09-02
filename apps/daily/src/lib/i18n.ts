@@ -166,6 +166,32 @@ const STRINGS = {
     wholeDay: "当天全部文章",
     wholeDaySub: (date: string, n: number) => `${date} · 共 ${n} 篇`,
 
+    /**
+     * 订阅源那一页。
+     *
+     * `sourcesLead` 是整站唯一一段「我们自己写的、不是摘别人」的说明文字，所以它
+     * 存在的理由不只是排版：来源页是给搜索引擎和 AI 看的落地页，而落地页需要一句
+     * 只有这个站能说的话。这句说的是收录规则本身 —— 两条方向相反的门槛，README
+     * 里那两条 —— 因为「凭什么是这 64 个」正是一个读者点进来会问的问题。
+     */
+    sourcesTitle: "订阅源",
+    sourcesSub: "每天早上七点，这些博客的新文章会被读一遍",
+    sourcesLead:
+      "这里是全部订阅源。收进来的标准有两条，方向相反：发得太密的不要 —— feed 只留" +
+      "十条而一天更新几十篇，一天抓一次会漏掉九成；发得太疏的也不要，一个月一篇以下" +
+      "就不再跟。中间那一段，就是下面这些。",
+    sourceCount: (n: number) => `${n} 个来源`,
+    /* 「收录过 N 篇」而不是「N 篇文章」：这些不是它写的文章数，是我们摘过的篇数，
+       两个数字差得远，说错了就是在替别人报一个假的产量。 */
+    sourcePicked: (n: number) => `收录过 ${n} 篇`,
+    /** 篇数不够、还没有自己那一页的源。见 sources.ts 的 SOURCE_MIN_ARTICLES。 */
+    sourceQuiet: (n: number) => (n === 0 ? "还没有收录" : `收录过 ${n} 篇`),
+    sourceTakes: "摘过的文章",
+    sourceSite: "访问原站 →",
+    sourceBeat: "常写",
+    allSources: "看订阅源",
+    allSourcesSub: "每天被读一遍的那些博客",
+
     nothingYet: "还没有任何内容。",
 
     /** 开头那张照片的出处，署名行里夹在作者和许可之间。作者名和许可名都是数据，
@@ -353,6 +379,26 @@ const STRINGS = {
     /** A noun phrase, matching the sub line under it — see the Chinese side. */
     wholeDay: "All posts from that day",
     wholeDaySub: (date: string, n: number) => `${date} · ${n} in total`,
+
+    /** See the Chinese side for why `sourcesLead` is written rather than
+     *  borrowed — it is the one paragraph on this site that is ours. */
+    sourcesTitle: "Sources",
+    sourcesSub: "Every morning at seven, these blogs get read",
+    sourcesLead:
+      "Every blog this site subscribes to. Two rules decide what gets in, and " +
+      "they pull in opposite directions: nothing that publishes too fast — a " +
+      "ten-item feed against forty posts a day means one daily fetch misses " +
+      "most of them — and nothing that publishes less than once a month. What " +
+      "is left is the list below.",
+    sourceCount: (n: number) => `${n} ${n === 1 ? "source" : "sources"}`,
+    /** Takes we have written, NOT the blog's own output. See the Chinese note. */
+    sourcePicked: (n: number) => `${n} picked`,
+    sourceQuiet: (n: number) => (n === 0 ? "none picked yet" : `${n} picked`),
+    sourceTakes: "What we picked",
+    sourceSite: "Visit the site →",
+    sourceBeat: "Usually",
+    allSources: "The sources",
+    allSourcesSub: "The blogs that get read every morning",
 
     nothingYet: "Nothing published yet.",
 

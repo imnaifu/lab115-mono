@@ -76,6 +76,39 @@
    */
   --color-blob: #3b3563;
 
+  /**
+   * CHART MARKS — three, and only `/admin` uses them.
+   *
+   * WHY NOT THE INK TOKENS ABOVE. Those are text and surface colours: `--color-ink`
+   * light is L 0.358, which is below the 0.43 floor a chart mark needs, and every
+   * ink step sits at chroma 0.055-0.078, under the 0.10 floor where a hue stops
+   * doing identity work. A bar painted in body-text colour is a bar that cannot be
+   * told from the bar beside it. So these are the site's own two hue families —
+   * the orange's h64 and the ink's h292 — re-stepped into the band a MARK needs.
+   *
+   * MEASURED, NOT PICKED. Each pair was snapped to the nearest passing step and
+   * then validated per mode against `--color-paper` (charts sit on paper cards):
+   *
+   *   accent + cool, both modes ......... every check passes
+   *   CVD separation .................... ΔE 23.2 light / 24.1 dark (target 8)
+   *   normal vision ..................... ΔE 24.7 / 24.3 (floor 15)
+   *   accent ↔ mute (the pair that TOUCHES, in the stacked columns)
+   *                                       ΔE 17.6 / 18.4, contrast both ≥ 3:1
+   *
+   * `--chart-mute` IS DELIBERATELY UNDER THE CHROMA FLOOR (0.055). It is the
+   * de-emphasis grey of the emphasis form — one series in the accent, the rest
+   * receding — so it is *supposed* not to do identity work; the accent does. It is
+   * the ink-soft step exactly, so the recessive marks match the recessive text.
+   *
+   * THE JOBS ARE FIXED and must not be swapped around per chart:
+   *   accent — 发布 / 通过. The outcome the page is about.
+   *   cool   — neutral magnitude: distributions, the floor curve, the scatter.
+   *   mute   — 被挡下 / context / a bucket below the per-dimension floor.
+   */
+  --chart-accent: light-dark(#b76c03, #ce7c11);
+  --chart-cool: light-dark(#6b5aa8, #8e7ecf);
+  --chart-mute: light-dark(#8a83a8, #8d86ad);
+
   /* Hairline rules and card borders: the ink of the other side, at the same
      weight. */
   --color-line: light-dark(rgb(59 53 99 / 0.14), rgb(243 237 225 / 0.14));
