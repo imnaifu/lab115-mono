@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/config";
 import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
 import { articlePath, dayPath, SOURCES_PATH, sourcePath } from "@/lib/links";
-import { hasSourcePage, SOURCES } from "@/lib/sources";
+import { hasSourcePage, SOURCE_PAGES_LIVE, SOURCES } from "@/lib/sources";
 import { archivePages, archivePath } from "@/lib/paging";
 import { listDates, readDigest, shownArticles } from "@/lib/store";
 
@@ -176,7 +176,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * another page, and it still says something with every source below the
    * threshold.
    */
-  pages.push(entry(SOURCES_PATH, newest));
+  /* Nothing from this section while it is hidden — see SOURCE_PAGES_LIVE. The
+     per-source loop below needs no such guard: it asks `hasSourcePage`, which
+     carries the flag, so listing and 404ing cannot come apart. This entry is the
+     one that has no threshold to hang it on. */
+  if (SOURCE_PAGES_LIVE) pages.push(entry(SOURCES_PATH, newest));
   /**
    * ITERATING `SOURCES` — the list in config.json — AND NOT THE IDS THE ARCHIVE
    * TURNED UP, which is the same loop written the other way round and is wrong.

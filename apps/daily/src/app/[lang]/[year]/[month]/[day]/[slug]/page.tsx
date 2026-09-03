@@ -3,17 +3,16 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ArticleTitle, displayTitle } from "@/components/ArticleTitle";
 import { Cover } from "@/components/Cover";
+import { PageShell } from "@/components/PageShell";
 import {
   Breadcrumb,
   EndLink,
   Footer,
   Masthead,
   PAD,
-  PageShell,
   SECTION,
 } from "@/components/Shell";
 import { Summary } from "@/components/Summary";
-import { SubscribeSection } from "@/components/SubscribeSection";
 import { accentColor, categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
@@ -168,7 +167,7 @@ export default async function ArticlePage({ params }: Params) {
   const category = categoryOf(article.category);
 
   return (
-    <PageShell>
+    <PageShell lang={lang} path={articlePath(date, article)}>
       {/**
        * The summary, as a thing with a date, a source and a subject.
        *
@@ -247,9 +246,10 @@ export default async function ArticlePage({ params }: Params) {
           },
         }}
       />
+      {/* NO TITLE. This page's heading is the headline, set beside the cover in
+          the plate below — it was already an `<h1>` there, under a second one
+          reading 每日严选. See the `title` prop in Shell.tsx. */}
       <Masthead
-        title={t.brand}
-        subtitle={t.tagline}
         /* THREE LEVELS, which is what this page actually is and what its JSON-LD
            has always said: the front page, the day, and this take. The middle
            crumb is the one that matters — a reader arriving from a share or a
@@ -269,8 +269,6 @@ export default async function ArticlePage({ params }: Params) {
             ]}
           />
         }
-        lang={lang}
-        path={articlePath(date, article)}
       >
         <a href={langHref(lang, dayPath(date))}>{date}</a>
         <span className="size-1 rounded-full bg-orange" />
@@ -333,11 +331,6 @@ export default async function ArticlePage({ params }: Params) {
         </div>
       </section>
 
-      {/* The one page that did not offer this. A reader here arrived from a share
-          or a search and read the whole take — which is a better moment to ask
-          than the bottom of a list they were scanning. Above the way back to the
-          day, on the rule in SubscribeSection. */}
-      <SubscribeSection lang={lang} />
 
       <div className={PAD}>
         <EndLink

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { DayList } from "./DayList";
-import { Breadcrumb, Footer, Masthead, MastheadDot, PAD, PageShell } from "./Shell";
-import { SubscribeSection } from "./SubscribeSection";
+import { PageShell } from "./PageShell";
+import { Breadcrumb, Footer, Masthead, MastheadDot, PAD } from "./Shell";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
@@ -37,7 +37,7 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
   const url = `${SITE}${href(lang, archivePath(page))}`;
 
   return (
-    <PageShell>
+    <PageShell lang={lang} path={archivePath(page)}>
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -68,20 +68,19 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
         }}
       />
 
-      {/* THE BRAND IS THE TITLE, and 归档 moved down into the meta row.
-          
-          It was the other way round — the masthead read 归档 where every other
-          page on the site reads 每日严选, which made this the one page whose
-          lockup was not the site's. The meta row is where the other pages say
-          WHICH page this is (the day's date and counts on a digest, the span of
-          days on the front page), so that is where this one says it too. Same
-          move, and the same reason, as the document title: see `archiveDocTitle`.
+      {/* 归档 IS THE TITLE AGAIN, and the round trip is worth recording because
+          both moves were right when they were made.
 
-          FIRST IN THE ROW, before the day count and the page number, because it
-          is the label those two numbers are about. */}
+          It started here. Then it moved down into the meta row, because a
+          heading reading 归档 where every other page on the site read 每日严选
+          made this the one page whose lockup was not the site's — the meta row
+          being where the other pages said WHICH page this was. That reasoning
+          held for exactly as long as the heading was the brand. The lockup is in
+          the bar now (see SiteHeader), so the heading is free to name the page,
+          and this is the page whose name it is. The document title made the same
+          trip: see `archiveDocTitle`. */}
       <Masthead
-        title={t.brand}
-        subtitle={t.tagline}
+        title={t.archiveTitle}
         /* The trail replaces the way home that used to sit at the BOTTOM of this
            page — see the note where that block was. It also takes 归档 back out of
            the meta row below, where it landed one round earlier: the crumb says
@@ -96,8 +95,6 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
             ]}
           />
         }
-        lang={lang}
-        path={archivePath(page)}
       >
         <span>{t.days(dates.length)}</span>
         {total > 1 ? (
@@ -150,9 +147,6 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
         </nav>
       ) : null}
 
-      {/* After the pager, and now the last block on the page. Same component and
-          same rule as the other three lists: see SubscribeSection. */}
-      <SubscribeSection lang={lang} />
 
       {/* NO WAY-ONWARD CARD HERE, and the other three lists all have one. It was
           `每日严选 / 过滤信息噪音…` pointing at `/`, which read as a brand banner

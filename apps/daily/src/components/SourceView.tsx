@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { displayTitle } from "./ArticleTitle";
+import { PageShell } from "./PageShell";
 import {
   Breadcrumb,
   EndLink,
@@ -7,10 +8,8 @@ import {
   Masthead,
   MastheadDot,
   PAD,
-  PageShell,
   SECTION,
 } from "./Shell";
-import { SubscribeSection } from "./SubscribeSection";
 import { themedAccent } from "@/lib/accent";
 import { categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
@@ -71,7 +70,7 @@ export async function SourceView({
   const description = descriptionFor(source, lang);
 
   return (
-    <PageShell>
+    <PageShell lang={lang} path={path}>
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -118,9 +117,10 @@ export async function SourceView({
         }}
       />
 
+      {/* NO TITLE — the blog's name is the heading and it is drawn below, with
+          its accent dot. It was already an `<h1>` there; this block used to put
+          a second one reading 每日严选 above it. */}
       <Masthead
-        title={t.brand}
-        subtitle={t.tagline}
         crumb={
           <Breadcrumb
             label={t.breadcrumb}
@@ -131,8 +131,6 @@ export async function SourceView({
             ]}
           />
         }
-        lang={lang}
-        path={path}
       >
         <span>{t.sourcePicked(picked.length)}</span>
         <MastheadDot />
@@ -142,9 +140,13 @@ export async function SourceView({
       </Masthead>
 
       {/**
-       * THE SOURCE'S NAME IS THE H1, and the masthead above says the brand — the
-       * same division the article page uses, for the same reason. The document is
-       * about this blog; the lockup is whose site it is on.
+       * THE SOURCE'S NAME IS THE H1, and it is now the page's ONLY one. The
+       * block above used to head the page with 每日严选, so this was the second
+       * `<h1>` on the document — the division being that the heading said whose
+       * site you were on and this said what the page was about. The lockup moved
+       * to the bar and took that job with it, so the masthead above passes no
+       * title at all and this stands alone. Same change on the article page,
+       * which had the same pair.
        */}
       <section className={`${SECTION} ${PAD}`}>
         <h1 className="flex items-center gap-2.5 text-3xl font-bold tracking-tight text-ink">
@@ -228,7 +230,6 @@ export async function SourceView({
         />
       </div>
 
-      <SubscribeSection lang={lang} />
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}

@@ -130,6 +130,10 @@ services:
       # not what any app here reads.
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - MAIL_SECRET=${MAIL_SECRET:-}
+      # The password for /admin, the scoring dashboard. Empty means that route
+      # 404s rather than 401s — see ADMIN_PASSWORD in apps/daily/src/lib/config.ts
+      # for why an unconfigured deployment should not announce it exists.
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     volumes:
       # The git clone of the digest repo, plus the rendered share posters. It is
       # both the job's workspace and the site's read path, so the pages never hit

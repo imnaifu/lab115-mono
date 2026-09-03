@@ -3,9 +3,16 @@
    template: cream paper, deep indigo ink, warm orange accents and organic blob
    shapes, all set in 思源黑体 / Manrope.
 
-   The page is a 750px vertical column on purpose — it is meant to be
-   screenshotted whole and shared, so nothing here relies on hover, and the
-   layout never goes wider than a phone-friendly poster.
+   The page is a FULL-WIDTH ground with ONE CENTRED COLUMN on it. The sticky bar
+   at the top is the only thing that spans the viewport — it is split left and
+   right, brand against controls, out at the page's own edges — and everything
+   below it is the column, centred, with the ground showing either side.
+
+   That column is still 750px, which is the one number here that must not move:
+   every measurement written down in the components — the masthead's type scale,
+   the photo card, the summary's measure — was tuned against it, and the page is
+   still meant to be screenshotted whole and shared. Nothing was widened; what
+   changed is that the column stopped being the whole page.
 
    THIS FILE IS TOKENS ONLY. Every rule lives on an element in the components.
    If you are about to add a selector here, that is the signal to check whether
@@ -118,7 +125,17 @@
   --shadow-soft: 0 2px 10px light-dark(rgb(59 53 99 / 0.06), rgb(0 0 0 / 0.35));
   --shadow-cover: 0 4px 14px light-dark(rgb(59 53 99 / 0.16), rgb(0 0 0 / 0.5));
 
-  /* `max-w-page` — the fixed screenshot column. */
+  /**
+   * `max-w-page` — THE READING COLUMN, and the number the whole page is drawn
+   * against. See the note at the top of this file for why it did not change when
+   * the layout around it did.
+   *
+   * THE BAR DOES NOT USE IT. `SiteHeader` is deliberately the full width of the
+   * viewport with a gutter, so the brand sits at the page's left edge and the
+   * controls at its right — constraining its contents to this column instead
+   * would put both of them in the middle of a wide screen and leave the bar
+   * looking like it had lost its ends.
+   */
   --container-page: 750px;
 
   /* `rounded-card` — one radius for every panel on the page. */

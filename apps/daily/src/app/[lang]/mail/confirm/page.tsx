@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { EndLink, Footer, Masthead, PAD, PageShell } from "@/components/Shell";
+import { PageShell } from "@/components/PageShell";
+import { EndLink, Footer, Masthead, PAD } from "@/components/Shell";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { segmentFor, subscribeContact } from "@/lib/mail/resend";
@@ -77,12 +78,8 @@ export default async function ConfirmPage({
   }
 
   return (
-    <PageShell>
-      <Masthead
-        title={confirmed ? t.confirmedTitle : t.confirmInvalidTitle}
-        lang={lang}
-        path="/"
-      >
+    <PageShell lang={lang} path="/">
+      <Masthead title={confirmed ? t.confirmedTitle : t.confirmInvalidTitle}>
         <span>{confirmed ? t.confirmedBody : t.confirmInvalidBody}</span>
       </Masthead>
 

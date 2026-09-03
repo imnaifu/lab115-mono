@@ -1,13 +1,12 @@
+import { PageShell } from "./PageShell";
 import {
   Breadcrumb,
   Footer,
   Masthead,
   PAD,
-  PageShell,
   SECTION,
   SectionHead,
 } from "./Shell";
-import { SubscribeSection } from "./SubscribeSection";
 import { themedAccent } from "@/lib/accent";
 import { accentColor, CATEGORIES, categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
@@ -67,7 +66,7 @@ export async function SourcesView({ lang }: { lang: Lang }) {
   const linkable = SOURCES.filter((source) => hasSourcePage(pickedOf(source)));
 
   return (
-    <PageShell>
+    <PageShell lang={lang} path={SOURCES_PATH}>
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -96,9 +95,11 @@ export async function SourcesView({ lang }: { lang: Lang }) {
         }}
       />
 
+      {/* The directory's own name, where the brand used to be. The paragraph
+          below is what the list IS — see `sourcesLead` — and it reads as an
+          answer now that there is a question above it. */}
       <Masthead
-        title={t.brand}
-        subtitle={t.tagline}
+        title={t.sourcesTitle}
         crumb={
           <Breadcrumb
             label={t.breadcrumb}
@@ -108,8 +109,6 @@ export async function SourcesView({ lang }: { lang: Lang }) {
             ]}
           />
         }
-        lang={lang}
-        path={SOURCES_PATH}
       >
         <span>{t.sourceCount(SOURCES.length)}</span>
       </Masthead>
@@ -147,7 +146,6 @@ export async function SourcesView({ lang }: { lang: Lang }) {
         </section>
       ))}
 
-      <SubscribeSection lang={lang} />
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}

@@ -1,4 +1,5 @@
 import { DigestBody, type CategoryGroup } from "./DigestBody";
+import { PageShell } from "./PageShell";
 import {
   Breadcrumb,
   EndLink,
@@ -6,13 +7,11 @@ import {
   Masthead,
   MastheadDot,
   PAD,
-  PageShell,
   SECTION,
 } from "./Shell";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
 import { PhotoCard } from "./Photo";
-import { SubscribeSection } from "./SubscribeSection";
 import { shownArticles } from "@/lib/store";
 import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
@@ -116,14 +115,20 @@ export function DigestView({
   );
 
   return (
-    <PageShell>
-      {/* `path` was a prop, back when this view also rendered the home page and the
-          language switch had to land on whichever of the two you were actually on.
-          The home page is a list of days now — see app/[lang]/page.tsx — so this
-          serves one URL and the path is simply this digest's. */}
+    /* `path` was a prop of this view, back when it also rendered the home page and
+       the language switch had to land on whichever of the two you were actually
+       on. The home page is a list of days now — see app/[lang]/page.tsx — so this
+       serves one URL and the path is simply this digest's. It goes to the shell
+       rather than to the masthead because the switch moved into the site bar. */
+    <PageShell lang={lang} path={dayPath(digest.date)}>
       <Masthead
-        title={t.brand}
-        subtitle={t.tagline}
+        /* THE DAY IS THE HEADING. It was in the meta row, under a heading that
+           read 每日严选 like every other page's; an edition of a daily is its
+           date, so that is the `<h1>` and the row below keeps the two counts.
+
+           `formatDate`, not the raw key: 「2026年8月27日 · 星期四」 is the day as
+           a reader says it. The crumb keeps the key — see the note on it. */
+        title={formatDate(digest.date, lang)}
         /* THE SAME TRAIL THE STRUCTURED DATA ALREADY DECLARED — see `breadcrumb`
            in the day route's JSON-LD, which has said 每日严选 › 2026-08-27 to
            crawlers for as long as it has existed while the page itself showed no
@@ -143,11 +148,7 @@ export function DigestView({
             ]}
           />
         }
-        lang={lang}
-        path={dayPath(digest.date)}
       >
-        <span>{formatDate(digest.date, lang)}</span>
-        <MastheadDot />
         {/* `shown`, not `fetched`: the publish floor drops the rest, so
             fetched would promise cards that are not on the page. */}
         <span>{t.posts(digest.stats.shown)}</span>
@@ -173,16 +174,6 @@ export function DigestView({
         </div>
       ) : null}
 
-      {/* UNDER THE PLATE, ABOVE THE FIRST CARD, which is a move from the bottom of
-          the page. The end of this page is the end of the whole day's reading and
-          most readers never get there; the top is where all of them start, and the
-          plate is the natural thing to sit beneath — the two together read as the
-          edition's masthead furniture rather than as an interruption between two
-          articles.
-
-          `mt-8` because the photograph deliberately has no bottom margin (see its
-          note above) — the tab row's own `mt-8` then spaces this off the day. */}
-      <SubscribeSection lang={lang} className="mt-8" />
 
       {groups.length > 0 ? (
         <DigestBody

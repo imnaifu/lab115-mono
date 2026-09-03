@@ -5,6 +5,7 @@ import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { SOURCES_PATH } from "@/lib/links";
+import { SOURCE_PAGES_LIVE } from "@/lib/sources";
 import { alternatesFor, ogCardFor } from "@/lib/seo";
 
 /**
@@ -27,6 +28,19 @@ export async function generateMetadata({
   const { lang } = await params;
   const pageLang = isLang(lang) ? lang : DEFAULT_LANG;
   const t = strings(pageLang);
+
+  /**
+   * THE HIDE IS CHECKED HERE TOO, not just in the page below.
+   *
+   * `generateMetadata` runs for a request the page then 404s, and a not-found
+   * page carrying a real `<title>`, a canonical and an og:url is a 404 that
+   * advertises itself as a page. Exactly the reasoning — and the shape — the
+   * per-source route already uses for its threshold; see the note there.
+   */
+  if (!SOURCE_PAGES_LIVE) {
+    return { title: `${t.notFoundTitle} · ${t.brand}` };
+  }
+
   // Brand first, then the page — the shape `archiveDocTitle` settled on. Not that
   // helper, because it also appends a page number and this list does not paginate.
   const title = `${t.brand} · ${t.sourcesTitle}`;
@@ -73,5 +87,9 @@ export default async function SourcesPage({
 }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
+  /* The section is hidden — see SOURCE_PAGES_LIVE. The per-source route gets
+     this through `hasSourcePage`; the directory has no threshold of its own to
+     hang it on, so it asks directly. */
+  if (!SOURCE_PAGES_LIVE) notFound();
   return <SourcesView lang={lang} />;
 }

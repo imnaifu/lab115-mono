@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
-import { InstallApp } from "./InstallApp";
-import { ThemeToggle } from "./ThemeToggle";
 import { strings } from "@/lib/i18n";
-import { href, otherLang, type Lang } from "@/lib/lang";
+import { type Lang } from "@/lib/lang";
 import type { TrackEvent } from "@/lib/track";
 
 /**
- * The chrome both pages wear: the column, the masthead, the footer.
+ * The chrome every page wears: the page head, the trail, the end links, the
+ * footer — and the two or three constants they are all measured with.
  *
  * Sizing is mobile-first, the way Tailwind means it: the bare classes are the
  * phone and `sm:` opens things up.
@@ -14,17 +13,25 @@ import type { TrackEvent } from "@/lib/track";
  * Everything here is a server component. The language is a route parameter, so
  * there is no state to hold and no client boundary to cross — a page arrives
  * already written in the language its URL names.
+ *
+ * THE LANGUAGE SWITCH MOVED OUT, to SiteHeader.tsx, which is now its only
+ * caller.
+ *
+ * NOTHING IN THIS FILE MAY IMPORT A SERVER-ONLY MODULE, and that is a hard
+ * constraint rather than a preference: `DigestBody.tsx` is a `"use client"` file
+ * and it imports `PAD`, `SECTION` and `SectionHead` from here, which drags this
+ * whole module into the browser bundle. An `fs` import anywhere in it is then a
+ * build failure — "the chunking context does not support external modules
+ * (request: node:fs/promises)" — which is exactly what putting `PageShell` here
+ * cost, and why the page's own composition lives in PageShell.tsx instead.
+ * BackToTop.tsx inlines `PAD` rather than importing it for the same reason from
+ * the other direction.
+ *
+ * `Subscribe.tsx` was the client importer this note was originally written
+ * against. It is gone — the subscribe form is `SubscribeDialog.tsx` now and
+ * imports nothing from here — but the constraint is not, because DigestBody
+ * still crosses the same boundary.
  */
-
-/** The fixed screenshot column. `overflow-x-clip` because the masthead blobs
- *  bleed past its edges and must not widen the document. */
-export function PageShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="mx-auto w-full max-w-page overflow-x-clip bg-page pb-10">
-      {children}
-    </div>
-  );
-}
 
 /** The page gutter, on every full-width block. */
 export const PAD = "px-4 sm:px-7";
@@ -32,299 +39,113 @@ export const PAD = "px-4 sm:px-7";
 /** Vertical rhythm between the page's stacked blocks. */
 export const SECTION = "mt-8";
 
-/**
- * The translate mark: the glyph on the language switch.
- *
- * A SYMBOL RATHER THAN THE WORDS. The control used to spell both languages out —
- * 中文 / EN — which is the one thing an icon cannot do, and it is why the pair
- * survived as long as it did. What decided it is that the button now has exactly
- * one destination and the row it sits in is otherwise icons: see LangSwitch below
- * for the first, and the budget note on the masthead's control row for the second.
- *
- * The accessible name carries what the glyph cannot — see `langSwitch` in
- * lib/i18n.ts, which names the language it goes to in that language's own script.
- */
-function TranslateIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-4 flex-none" aria-hidden>
-      <path
-        fill="currentColor"
-        d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
-      />
-    </svg>
-  );
-}
 
 /**
- * The language switch: ONE link to the other language.
+ * The masthead: WHAT THIS PAGE IS, and whatever meta it passes as children.
  *
- * `path` is the BARE path of the page it sits on — `/d/2026-08-14`, or `/` for
- * the home page — and this points at the same page in the other language.
+ * IT IS NO LONGER THE SITE'S LOCKUP, AND NO LONGER THE SITE'S NAME EITHER. Two
+ * rounds took it apart. First the furniture went up into `SiteHeader` — two
+ * organic blobs, 24 units of top padding to clear them, a row of three controls
+ * pinned to the top right of the CONTENT column, and the mark beside the
+ * wordmark at `text-4xl`. Then the words did: the brand and the tagline are the
+ * bar's lockup now, on all seven pages at once.
  *
- * STILL AN `<a>` AND NOT A BUTTON, for the reasons the pair had: the destination
- * shows on hover, right-click and open-in-new-tab work, and nothing here has to
- * cross a client boundary to know where it goes.
+ * WHICH FINALLY MAKES THE `<h1>` SAY SOMETHING. Every page passed `t.brand` as
+ * its title, so all seven had the same heading — 每日严选 over a date, over the
+ * archive, over a blog's directory entry — and the two pages with a real
+ * heading of their own (the article page and a source page) had TWO `<h1>`
+ * elements, the site's name and then the actual subject. Each page now passes
+ * what it is: the day's date, 归档, 订阅源, the run of days on the front page.
+ * The two that already had one pass NO title and keep theirs.
  *
- * WHAT THE PAIR COST is why it collapsed into one. Half of it was always a dead
- * control — the current language linking to the page you were already on — which
- * had to be excluded from the tracking by hand so that pressing it would not
- * inflate the one number the event exists to answer. With two languages there is
- * only ever one destination, so a toggle states it once and every press of it is
- * a real switch.
- *
- * IT WAS HIDDEN, by an early `return null` right here, for as long as the
- * summaries were Chinese only — a switch that offers a second language and then
- * renders the same text is a control that does nothing. The English half is back
- * (see `summaryFor` in lib/take.ts), so the switch is too, and the note is kept
- * because it says what would have to be true to hide it again.
- *
- * One thing it does NOT promise: that every page has both languages. An archived
- * digest written before the English half returned falls back to Chinese under
- * /en. The switch still belongs there — it changes the chrome, the headline
- * choice and the poster, and on every new digest it changes the prose as well.
- *
- * FOLLOWING IT IS WHAT REMEMBERS THE CHOICE, and nothing in here knows that.
- * `proxy.ts` writes the language cookie from whatever URL the reader lands on, so
- * an ordinary navigation is the whole mechanism — there is no handler, no
- * `document.cookie`, and this stays a server component.
- */
-export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
-  const target = otherLang(lang);
-  // The label is in the language being READ, naming the one it goes to.
-  const label = strings(lang).langSwitch;
-
-  return (
-    <a
-      href={href(target, path)}
-      hrefLang={target}
-      aria-label={label}
-      title={label}
-      data-track="lang_switch"
-      data-track-to={target}
-      /* ThemeToggle's shell, to the class. The two are the same size of control
-         doing the same kind of job, and drifting apart would show — they sit
-         side by side. */
-      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid"
-    >
-      <TranslateIcon />
-    </a>
-  );
-}
-
-/**
- * The masthead: a row of controls, the lockup, and whatever meta the page passes
- * as children.
- *
- * The controls sit at the top right of the CONTENT column rather than of the page,
- * because the blobs own the literal corner and nothing readable can go there.
+ * `subtitle` IS GONE WITH THE BRAND. It carried `t.tagline` on every page and
+ * the tagline is in the bar; before that it carried the title's other-language
+ * twin — 每日严选 above Daily Picks — which the one-language-at-a-time rule
+ * ruled out. Nothing has wanted it since. A page that needs a sentence under
+ * its heading has `children`, which is where the mail confirmation puts its
+ * one line.
  */
 export function Masthead({
   title,
-  subtitle,
   crumb,
-  lang,
-  path,
   children,
 }: {
-  title: string;
   /**
-   * A second line under the title, in the SAME language.
+   * This page's heading, or nothing.
    *
-   * EVERY PAGE PASSES `t.tagline` HERE NOW. It used to carry the title's
-   * other-language twin — 每日严选 above Daily Picks, 归档 above Archive — which
-   * the one-language-at-a-time rule ruled out, and for a long time nothing passed
-   * anything; the prop survived that stretch because a masthead tagline was a
-   * plausible thing to want, and this is it. See the note in lib/i18n.ts for what
-   * that sentence is now allowed to claim.
-   *
-   * Still optional, and the layout below branches on it — see the alignment note
-   * on the lockup. A page that wants a bare title is one prop away.
+   * OPTIONAL FOR THE TWO PAGES THAT DRAW THEIR OWN. An article page's heading
+   * is the headline, set beside the cover in its own plate; a source page's is
+   * the blog's name with its accent dot. Both sit below this block and neither
+   * can be lifted into it without taking its layout along, so those two pass no
+   * title and this renders the trail and the meta row around the gap.
    */
-  subtitle?: string;
+  title?: string;
   /**
-   * A trail above the lockup, for a page that is part of something — see
+   * A trail above the title, for a page that is part of something — see
    * `Breadcrumb`, which is the only thing passed here.
    *
-   * A SLOT ON THE MASTHEAD rather than something the page renders itself, because
-   * this header owns its own vertical rhythm: `pt-24` clears the two blobs, the
-   * controls row sits under them and the lockup under that. A trail rendered above
-   * `<Masthead>` by the page would land on top of the blobs, and a page that
-   * reduced the padding to make room would be a page with a different header.
+   * A SLOT rather than something the page renders itself, because this block
+   * owns its own vertical rhythm: the trail sits above the title and under the
+   * bar, and a trail rendered above `<Masthead>` by the page would be a second
+   * arrangement of the same three things. It mattered more when the padding it
+   * had to fit inside was clearing two blobs; it is still one place rather than
+   * seven.
    *
-   * OPTIONAL, and only the archive passes it today. The day and the article page
-   * both have structured-data trails and no visible one; if either grows one, it
-   * arrives through here rather than through a second arrangement.
+   * THE LAST CRUMB OFTEN REPEATS THE TITLE NOW — 首页 › 归档 over an `<h1>`
+   * reading 归档 — and that is accepted rather than overlooked. An older note in
+   * ArchiveView argued the opposite, that "the word twice in one header is once
+   * too many", and it was right about the arrangement it was written for: the
+   * heading then was the BRAND, so 归档 in the crumb was the only thing naming
+   * the page and a second copy in the meta row was redundancy. With the heading
+   * saying what the page is, a trail that ends where it ends is just a trail —
+   * which is what every breadcrumb does and what `aria-current="page"` is for.
    */
   crumb?: ReactNode;
-  lang: Lang;
-  path: string;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
-  // Only the theme switch's label — the masthead's own words all arrive as props.
-  const t = strings(lang);
-
   return (
-    <header
-      className={`relative isolate overflow-hidden pt-24 pb-8 sm:pt-28 ${PAD}`}
-    >
-      {/* Two organic shapes lifted from the template's onboarding screens.
-          Real divs rather than ::before/::after — as pseudo-elements they
-          needed a class in the stylesheet, and the whole point of that class
-          was to hold these two offsets. The top padding above is what the
-          wordmark needs to clear them. */}
-      {/* `bg-blob`, NOT `bg-ink` — see the token in index.css for what inverting
-          this one did to the dark page. */}
-      <div className="absolute -top-26 -left-21 -z-10 h-50 w-65 rounded-blob bg-blob" />
-      <div className="absolute -top-14 -right-11 -z-10 size-42 rounded-full bg-orange" />
-
-      {/* The controls row: which language the site is in, and whether it lives on
-          the home screen. Nothing else — this is as close to the top right of the
-          page as anything readable can go, since the orange blob owns the literal
-          corner.
-
-          THE DOMAIN CHIP IS GONE, and it used to open this row. It was a second
-          link home reading `daily.lab115.com`, and it was removed rather than
-          merely hidden on phones: the wordmark directly below is the same link to
-          the same page, the browser's address bar already shows the domain, and
-          the image this site is actually shared as is the POSTER, which draws its
-          own domain chip (see `posterDomain` in lib/share.ts) and is untouched by
-          this. What the page loses is the domain appearing in a screenshot OF THE
-          PAGE, which is not the artifact anyone shares.
-
-          It is also what lets the install button keep its label. Measured rather
-          than guessed, against the 361px a 393px phone leaves after `px-4`: the
-          chip was 137px, the language switch was a 90px pill of 中文 / EN, and the
-          install button is 95px in Chinese / 114px in English. All three never fit
-          — it was 3px short, which is why the label used to vanish below `sm:` and
-          leave a bare glyph nobody could read.
-
-          `justify-end` rather than `justify-between`: `justify-between` would push
-          the row's ends apart across the full column.
-
-          TWO OF THE THREE ARE NOW BARE ICONS, 34px each, and the budget is why.
-          The theme switch never had a label — a labelled pill for 「深色浅色切
-          换」 would be about 110px, which would have put the row straight back
-          within a few pixels of the overflow that cost the install button its
-          label once already. The language switch gave up its words later and for
-          its own reasons (see LangSwitch), and doing so returned 56px. The row is
-          34 + 8 + 34 + 8 + 95 = 179px in Chinese and 198px in English, so the
-          slack is 182px and 163px — the widest it has ever been, at every width
-          and in both languages. */}
-      <div className="flex items-center justify-end gap-2">
-        <LangSwitch lang={lang} path={path} />
-        <ThemeToggle label={t.themeToggle} />
-        <InstallApp lang={lang} />
-      </div>
-
+    /* `pt-10` where there used to be `pt-24`: that padding existed to clear the
+       blobs, and what is above this now is a 56/64px bar. The bottom padding is
+       untouched — the rhythm between this block and the first thing under it was
+       never about the header's own furniture. */
+    <header className={`pt-10 pb-8 sm:pt-12 ${PAD}`}>
       {crumb}
 
-      {/* The mark and the wordmark, laid out the way the share poster lays them
-          out — the two are the same lockup and should not drift apart.
+      {/* ONE TYPE SCALE. There were two, picked by whether there was a subtitle,
+          which is what remained of measuring this text against a 44/56px mark;
+          with no mark and no subtitle there is one heading to set. `text-3xl`
+          rather than the `text-4xl` the brand had alone, because what goes here
+          is now a date, a category name or a blog's title rather than four
+          display glyphs — 「2026年9月2日 · 星期三」 at 48px is a heading that
+          wraps on a phone and shouts on a desktop.
 
-          BOTH BRANCHES RENDER NOW, so the alignment is conditional rather than
-          picked once. With a subtitle the `<h1>` is two lines tall and centring
-          the row would drop the mark below the title's cap line — that is the
-          `items-start` case, and the mark takes a 1.5 nudge back down onto the
-          cap line. Without one the block is a single line of wordmark and
-          `items-center` is what stops the mark sitting visibly low.
-
-          The history is worth keeping: this was `items-start` + the nudge
-          unconditionally, back when a subtitle was expected, and every page paid
-          an optical correction for a case that never rendered. Then it was
-          `items-center` unconditionally. Neither is right once both shapes ship. */}
-      {/* The whole lockup is the link home — the mark and the wordmark read as
-          one target, so making only one of them clickable would be a smaller
-          hit area for no reason. On the home page it points at itself, which is
-          what every masthead does and what a reader arriving from an article
-          page or the archive expects to find here. */}
-      <a
-        href={href(lang, "/")}
-        aria-label={
-          lang === "en" ? "Daily Picks — home" : "每日严选 · 回到首页"
-        }
-        className="mt-5 flex items-center gap-3 sm:gap-4"
-      >
-        {/* The mark keeps the size it has always had. THE TEXT IS SIZED TO IT,
-            not the other way round: with a subtitle the block beside it has to
-            fit inside 44px on a phone and 56px from `sm:` up, which is what the
-            `<h1>` below is measured against.
-
-            Enlarging the mark instead was tried and rejected — it takes an 88px
-            square to clear a two-line English subtitle, and at that size the
-            mark stops introducing the wordmark and starts competing with it. */}
-        {/* TWO FILES, ONE SHOWING. The mark has an ink tile on the cream page and
-            a cream tile on the dark one, and neither `favicon.svg` nor a single
-            file can do that job here: an `<img>` resolves `prefers-color-scheme`
-            against the READER'S OS, while this page follows the switch in the row
-            above — a reader on a light Mac who chose dark would get the ink tile
-            on the dark page and watch its edges disappear.
-
-            So the choice is made outside the image, by the `dark:` variant, which
-            index.css defines to mean "the OS unless the reader overrode it". Both
-            files are fetched; they are ~1.5KB each and the alternative is a third
-            copy of the geometry inlined as JSX.
-
-            `alt=""` on both: the link around them already carries the name. */}
-        <img
-          src="/mark.svg"
-          alt=""
-          className="size-11 flex-none sm:size-14 dark:hidden"
-        />
-        <img
-          src="/mark-cream.svg"
-          alt=""
-          className="hidden size-11 flex-none sm:size-14 dark:block"
-        />
-        {/* `max-w-md` keeps the wordmark clear of the orange blob.
-
-            TWO TYPE SCALES, PICKED BY WHETHER THERE IS A SUBTITLE. Alone, the
-            wordmark is the masthead and is set at the size it always was. Above
-            a subtitle it is one of two lines that together must not outgrow the
-            mark, so it steps down and gives up its leading — `leading-none` is
-            what buys the last few pixels, and a wordmark of two to four glyphs
-            is the one string that can afford it. Measured, at the four
-            combinations that ship:
-
-                            phone (<sm)        sm and up
-              Chinese      24+4+16 = 44/44    30+6+20 = 56/56
-              English      24+4+16 = 44/44    30+6+20 = 56/56
-
-            BOTH COLUMNS NOW LAND EXACTLY ON THE MARK, and the gap is what makes
-            them: `mt-1` on the phone, `mt-1.5` from `sm:` up. The larger column
-            used to run 54 against a 56 mark — two pixels short, which read as the
-            text sitting slightly high against a mark that is optically centred on
-            it. The gap is the only free variable here; the two type sizes are
-            fixed by the scale and `leading-none` has already given up the leading.
-
-            The English subtitle has to stay on ONE line for the phone column to
-            hold — see the note on the tagline in lib/i18n.ts. */}
+          `mt-6` when there is a trail above it and nothing when there is not —
+          the trail carries its own `mt-6` off the bar, so a second gap between
+          the two would be twice the space inside the block that is between the
+          block and the page. */}
+      {title ? (
         <h1
-          className={`max-w-md font-bold tracking-tight text-ink ${
-            subtitle
-              ? "text-2xl leading-none sm:text-3xl"
-              : "text-4xl leading-tight sm:text-5xl"
+          className={`max-w-2xl text-3xl leading-tight font-bold tracking-tight text-ink sm:text-4xl ${
+            crumb ? "mt-6" : ""
           }`}
         >
           {title}
-          {subtitle ? (
-            /* NOT italic, and it used to be. Italic was right for the
-               other-language twin this slot was built for — a single short
-               title, set apart from the one above it. What it carries now is a
-               whole sentence, and browsers have no italic for CJK: they synthesise
-               one by slanting the upright glyphs, which is exactly the artefact a
-               15-character Chinese line at 18px shows most. `text-pretty` for the
-               English, which wraps to two lines on a phone and must not leave one
-               word alone on the second. */
-            <small className="mt-1 block text-xs font-medium text-pretty text-ink-mid sm:mt-1.5 sm:text-sm">
-              {subtitle}
-            </small>
-          ) : null}
         </h1>
-      </a>
+      ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm font-semibold text-ink-mid">
-        {children}
-      </div>
+      {/* The meta row, and it is skipped rather than rendered empty: the front
+          page's only meta was the run of days, which is its heading now. An
+          empty flex row here would be `mt-6` of nothing between the title and
+          the first card. */}
+      {children ? (
+        <div
+          className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm font-semibold text-ink-mid ${
+            title || crumb ? "mt-6" : ""
+          }`}
+        >
+          {children}
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -454,8 +275,10 @@ export function EndLink({
  * A plain site footer: who made this, and nothing else.
  *
  * Deliberately carries no navigation — that is `EndLink`'s job now — and no
- * longer the tagline either, which moved to the masthead's `subtitle`. The
- * argument is the same one that took navigation out: a line set in 12px grey
+ * longer the tagline either. That line went to the masthead's `subtitle` first
+ * and is in the site bar's lockup now, beside the wordmark on every page; see
+ * SiteHeader. The argument that got it out of here is the same one that took
+ * navigation out: a line set in 12px grey
  * below a rule, under everything the reader has already stopped reading, is
  * fine print whatever it says. The site's one claim about itself was the worst
  * possible thing to leave there.

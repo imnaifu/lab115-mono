@@ -132,9 +132,49 @@ export const PUBLISH_PER_SOURCE = USER_CONFIG.publishPerSource;
  */
 export const SOURCE_MIN_ARTICLES = 3;
 
-/** Whether a source with this many published takes has a page. See the note
- *  above — every caller asks through here rather than comparing the number. */
+/**
+ * WHETHER `/s` AND `/s/<id>` ARE PUBLISHED AT ALL — the whole feature, one
+ * switch, currently OFF.
+ *
+ * A deliberate hide rather than a removal: the pages, the view components, the
+ * strings and the structured data are all still here and still correct, and
+ * turning this back to `true` is the only edit needed to have them back.
+ *
+ * WHY IT IS NOT `SOURCE_MIN_ARTICLES = Infinity`, which would 404 every source
+ * page and is the tempting one-character version. That constant answers "is this
+ * blog written about often enough to deserve a page", and abusing it to mean
+ * "is this section live" would leave the threshold's own note — three, measured
+ * over fourteen days — describing a decision no longer being made. Two
+ * questions, two names.
+ *
+ * IT GATES FOUR THINGS, and the point of the flag is that they cannot disagree:
+ * the directory route (404), each source route (404, through `hasSourcePage`
+ * below), the sitemap (neither listed), and the two places that linked here —
+ * the site bar and the front page's end-of-page card, both of which are gone
+ * rather than gated, because a hidden section should not leave a `null` where a
+ * nav item was.
+ *
+ * THE PAGES 404 RATHER THAN CARRYING `noindex`, which was the alternative and
+ * is the gentler one: a 404 tells Google to drop these URLs, so bringing the
+ * section back means earning their place in the index again. That trade was
+ * chosen deliberately — see the note on SOURCE_MIN_ARTICLES for why this site
+ * treats "a page that does not exist yet" as the honest answer.
+ */
+export const SOURCE_PAGES_LIVE = false;
+
+/**
+ * Whether a source with this many published takes has a page. See the note on
+ * SOURCE_MIN_ARTICLES — every caller asks through here rather than comparing the
+ * number.
+ *
+ * IT ALSO CARRIES THE FEATURE FLAG, so that every caller which already asked the
+ * threshold question gets the hide for free and none of them had to be found and
+ * edited: the source route's two checks and the sitemap's per-source loop were
+ * already routed through here, which is exactly what the note above that
+ * constant claims for it.
+ */
 export function hasSourcePage(published: number): boolean {
+  if (!SOURCE_PAGES_LIVE) return false;
   return published >= SOURCE_MIN_ARTICLES;
 }
 

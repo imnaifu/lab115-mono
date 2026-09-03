@@ -46,10 +46,10 @@ GA 自己的传输层处理 unload），而为了一个指标去延迟读者的�
 | `poster_failed` | `part` `parts` | 一张预览重试后仍然失败 | `ShareSheet.tsx` |
 | `category_tab` | `tab`（含 `all`） | 分类 tab | `DigestBody.tsx` |
 | `lang_switch` | `to` | 语言切换 | `Shell.tsx` |
-| `archive_open` | — | 首页 → 归档 | `DigestView.tsx` |
+| `archive_open` | `from`=`home`\|`pager`\|`header` | 进归档：首页那张卡、归档自己的翻页、顶栏那个链接（**只有它在每个页面上都有**） | 首页、`ArchiveView.tsx`、`SiteHeader.tsx` |
 | `today_open` | `from` | 归档 → 今天 | archive 页 |
 | `day_open` | `from`=`archive`\|`article`、`age` | 打开某一天 | archive 页、文章页 |
-| `source_open` | `from`=`sources`\|`home`、`age` | 打开某个来源页。**这个数字是用来看它「没被本站读者用」的** —— 来源页是给搜索和 AI 做的落地页，站内点击接近零而自然流量在涨，就是它按设计工作 | `SourcesView.tsx`、`DigestView.tsx` |
+| `source_open` | `from`=`sources`、`age` | 打开某个来源页。**订阅源整块目前是隐藏的**（见 `lib/sources.ts` 的 `SOURCE_PAGES_LIVE`）——`/s` 与 `/s/<id>` 都 404，顶栏和首页的两个入口已移除，所以这个事件当下不会有任何量。恢复后它仍是用来看它「没被本站读者用」的：来源页是给搜索和 AI 做的落地页，站内点击接近零而自然流量在涨，就是它按设计工作 | `SourcesView.tsx`（当前不可达） |
 | `install_open` | `platform` `can_prompt` | 按了「存成 App」 | `InstallApp.tsx` |
 | `install_prompt` | `outcome`=`accepted`\|`dismissed`\|`failed`、`platform` | 浏览器自己那个安装弹窗的结局 | `InstallApp.tsx` |
 | `pull_refresh` | — | **下拉刷新真的被用了多少** | `PullToRefresh.tsx` |

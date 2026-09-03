@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DayList } from "@/components/DayList";
-import { EndLink, Footer, Masthead, PAD, PageShell } from "@/components/Shell";
-import { SubscribeSection } from "@/components/SubscribeSection";
+import { PageShell } from "@/components/PageShell";
+import { EndLink, Footer, Masthead, PAD } from "@/components/Shell";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
-import { dayPath, SOURCES_PATH } from "@/lib/links";
+import { dayPath } from "@/lib/links";
 import { JsonLd, publisher, website } from "@/lib/seo";
 import { FRONT_DAYS, hasArchive } from "@/lib/paging";
 import { listDates } from "@/lib/store";
@@ -71,7 +71,7 @@ export default async function Home({
   const home = `${SITE}${href(lang, "/")}`;
 
   return (
-    <PageShell>
+    <PageShell lang={lang} path="/">
       {/**
        * The site, and the days it is currently showing.
        *
@@ -115,18 +115,23 @@ export default async function Home({
         }}
       />
 
-      <Masthead title={t.brand} subtitle={t.tagline} lang={lang} path="/">
-        {/* `shown`, not `dates` — what this page IS, not what the site holds. It
-            read `t.days(dates.length)` until the eighth digest landed and the
-            masthead said 8 over a list of 7. The total is now stated nowhere on
-            this page, deliberately: `moreSub` used to carry it and no longer
-            does. A reader who wants the run counts the archive. */}
-        <span>{t.recentDays(shown.length)}</span>
-      </Masthead>
+      {/* THE RUN OF DAYS IS THE HEADING, promoted out of the meta row — this
+          page is a directory of the newest week, and that sentence is the only
+          thing on it that was ever page-specific. The brand it replaces says
+          itself in the bar above, on this page and on every other.
+
+          `shown`, not `dates` — what this page IS, not what the site holds. It
+          read `t.days(dates.length)` until the eighth digest landed and the
+          masthead said 8 over a list of 7. The total is now stated nowhere on
+          this page, deliberately: `moreSub` used to carry it and no longer
+          does. A reader who wants the run counts the archive.
+
+          NO META ROW AND NO TRAIL. The row held this one string, and the front
+          page is not part of anything. */}
+      <Masthead title={t.recentDays(shown.length)} />
 
       <DayList dates={shown} lang={lang} from="home" />
 
-      <SubscribeSection lang={lang} />
 
       {/* Only once there is something the front page is not already showing —
           see `hasArchive`. With a week or less on the site this link would lead to
@@ -144,29 +149,17 @@ export default async function Home({
         </div>
       ) : null}
 
-      {/**
-       * THE WAY IN TO `/s`, and the only internal link to it on the site.
-       *
-       * Which is the reason it is here rather than in the footer: the footer
-       * deliberately carries no navigation (see the note on `Footer`), and a
-       * section nothing links to is one a crawler reaches only through the
-       * sitemap. `EndLink` is where this site puts "what next" — this is a second
-       * one, under the archive's, because they answer two different questions:
-       * that one is another day, this one is where any of it comes from.
-       *
-       * UNCONDITIONAL, unlike the archive link above it. `/s` is never a copy of
-       * what the reader is already looking at — no other page names the blogs —
-       * so there is no threshold for it to wait behind.
-       */}
-      <div className={PAD}>
-        <EndLink
-          href={href(lang, SOURCES_PATH)}
-          label={t.allSources}
-          sub={t.allSourcesSub}
-          track="source_open"
-          trackFrom="home"
-        />
-      </div>
+      {/* THE WAY IN TO `/s` WAS HERE — a second `EndLink`, under the archive's,
+          answering "where does any of this come from". It is gone with the
+          section itself; see SOURCE_PAGES_LIVE in lib/sources.
+
+          WORTH KNOWING BEFORE PUTTING IT BACK: this card was for most of its life
+          the ONLY internal link to `/s` anywhere on the site, which is what its
+          old note gave as the reason it sat on the front page rather than in the
+          footer — a section nothing links to is one a crawler reaches only
+          through the sitemap. While the section is hidden that is moot, since the
+          sitemap does not list it either. When it returns, it needs at least one
+          real link again, here or in the bar. */}
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}
