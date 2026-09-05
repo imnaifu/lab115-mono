@@ -332,6 +332,9 @@ export async function allScored(): Promise<ScoredEntry[]> {
       entries.push({
         date,
         title: article.title,
+        // Present on the published ones and on nothing else — see `titleZh` on
+        // ScoredEntry for why that is the summarise pass and not a data gap.
+        titleZh: article.titleZh,
         url: article.url,
         sourceId: article.sourceId,
         score: article.score,

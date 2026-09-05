@@ -20,6 +20,7 @@ import {
   StatTile,
   Table,
 } from "./AdminShell";
+import { SortableTable } from "./SortableTable";
 import { PUBLISH_MIN_SCORE } from "@/lib/categories";
 import { MODEL } from "@/lib/config";
 import { adminDayPath } from "@/lib/links";
@@ -325,30 +326,55 @@ export async function AdminOverview() {
         <Legend items={[{ label: `门槛 ${PUBLISH_MIN_SCORE}` }]} />
 
         <div className="mt-4">
-          <Table head={["源", "经过", "发布", "发布率", "均分", "最高"]}>
-            {rows.map((row) => (
-              <Row
-                key={row.sourceId}
-                cells={[
-                  <span key="n">
-                    {row.name}
-                    {row.alwaysPublish ? (
-                      <span className="ml-1.5 text-xs font-medium text-ink-soft">
-                        白名单
-                      </span>
-                    ) : null}
-                  </span>,
-                  row.considered,
-                  row.published,
-                  pct(row.rate),
-                  num(row.meanScore, 1),
-                  row.bestScore,
-                ]}
-              />
-            ))}
-          </Table>
+          {/**
+           * THE ONE SORTABLE TABLE ON THE PAGE — see SortableTable.tsx for why it
+           * is a separate client component and why the other tables are not.
+           *
+           * It earns the interaction because the question it answers is a
+           * different sort each time it is asked: "which source is costing the
+           * most for nothing" is 经过 descending against 发布率 ascending, and
+           * "which brings the best writing" is 均分 descending. Fixed at volume
+           * order — which is still what it opens in — only the first of those is
+           * readable without counting down the column by eye.
+           *
+           * `sort` CARRIES THE RAW NUMBER AND `text` THE FORMATTED ONE, which is
+           * the whole reason this takes data instead of cells: 发布率 shows `42%`
+           * and must order on `0.42`, and 均分 shows one decimal but must not tie
+           * every source that agrees to one decimal.
+           */}
+          <SortableTable
+            columns={[
+              { key: "name", label: "源" },
+              { key: "considered", label: "经过", numeric: true },
+              { key: "published", label: "发布", numeric: true },
+              { key: "rate", label: "发布率", numeric: true },
+              { key: "mean", label: "均分", numeric: true },
+              { key: "best", label: "最高", numeric: true },
+            ]}
+            rows={rows.map((row) => ({
+              id: row.sourceId,
+              sort: {
+                name: row.name,
+                considered: row.considered,
+                published: row.published,
+                rate: row.rate,
+                mean: row.meanScore,
+                best: row.bestScore,
+              },
+              text: {
+                name: row.name,
+                considered: String(row.considered),
+                published: String(row.published),
+                rate: pct(row.rate),
+                mean: num(row.meanScore, 1),
+                best: String(row.bestScore),
+              },
+              ...(row.alwaysPublish ? { note: "白名单" } : {}),
+            }))}
+          />
           <p className="mt-2 max-w-prose text-xs text-ink-soft">
-            发布率不是质量分：每源每天上限 {PUBLISH_PER_SOURCE} 篇，产量高的源再好
+            点表头按那一列排序，再点一次反向 —— 开着的是产量序。发布率不是质量分：
+            每源每天上限 {PUBLISH_PER_SOURCE} 篇，产量高的源再好
             也高不了。发布率要对着「经过」看，质量看均分。
           </p>
         </div>

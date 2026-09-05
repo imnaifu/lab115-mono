@@ -38,8 +38,14 @@
  * releases them. The strategy change below is what stops it recurring; this bump
  * is still needed, because a v2 cache does not clear itself just because the new
  * worker would have written it differently.
+ *
+ * v4: `/admin` WAS BEING CACHED. Every admin page a reader opened went into the
+ * page cache like any other document — see `PRIVATE` below for why that is
+ * wrong. The new worker stops writing them, but a v3 cache does not clear itself
+ * just because the new worker would have written it differently, so the pages
+ * already sitting in one need this bump to be released.
  */
-const VERSION = "v3";
+const VERSION = "v4";
 const STATIC_CACHE = `daily-static-${VERSION}`;
 const PAGE_CACHE = `daily-pages-${VERSION}`;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];
@@ -81,6 +87,36 @@ const ASSETS = /^\/(favicon\.svg|icon-\d+\.png|icon-maskable-\d+\.png|apple-touc
  * storage for no gain.
  */
 const POSTER = /^\/share\//;
+
+/**
+ * The two trees this worker must never store: `/admin` and `/preview`.
+ *
+ * They are the same pair `proxy.ts` singles out and for a related reason — they
+ * are the routes that are not part of the public, language-prefixed site. Four
+ * arguments, any one of which is sufficient:
+ *
+ * THEY ARE BEHIND A PASSWORD. `/admin` is Basic-auth'd, and the pages hold every
+ * score, every rejection and every note the model wrote. Once fetched, a copy sat
+ * in the Cache Storage of that browser profile indefinitely — outliving the
+ * session, readable without the password, and invisible to anyone who would think
+ * to look. Nothing about an admin page should outlive the request for it.
+ *
+ * THEY ARE `force-dynamic`. Both pages re-read the archive on every request, which
+ * is the opposite of a document worth keeping a copy of.
+ *
+ * THE OFFLINE FALLBACK IS MEANINGLESS HERE. This cache exists so a reader in a
+ * tunnel sees the digest instead of a browser error. There is no offline story
+ * for a page whose whole purpose is auditing this morning's run.
+ *
+ * AND THEY EVICT REAL PAGES. `PAGE_LIMIT` is 60 and `trim` is oldest-first, so a
+ * session spent clicking through a fortnight of admin days pushes out exactly the
+ * digests the cache is for.
+ *
+ * `return` rather than a no-store fetch: handing the request back to the browser
+ * untouched is what leaves the HTTP layer, the auth challenge and the 401 to
+ * behave as if no worker existed.
+ */
+const PRIVATE = /^\/(admin|preview)(\/|$)/;
 
 self.addEventListener("install", (event) => {
   // Nothing to precache: there is no static shell to warm, since every document
@@ -162,6 +198,11 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (POSTER.test(url.pathname)) return;
+
+  // Before every other branch: nothing under these paths is ours to store, and
+  // that includes the sub-resources a mistake might later route through one of
+  // the handlers below. See PRIVATE.
+  if (PRIVATE.test(url.pathname)) return;
 
   // The only cache-first case left, and the one the rule was written for: these
   // URLs carry a build hash, so a changed file is a changed address.

@@ -46,6 +46,21 @@ import type { ScoreReview } from "./types";
 export interface ScoredEntry {
   date: string;
   title: string;
+  /**
+   * The Chinese headline, and its ABSENCE IS A FACT rather than a gap.
+   *
+   * It is written by the summarise pass — `verdict.titleZh` in summarize.ts —
+   * which only runs for an article that clears the gate. So an article that was
+   * blocked has never been translated and never will be. Measured over the
+   * archive: 215 of 215 published entries carry one, and 0 of 111 blocked ones
+   * do. Anything rendering this must therefore expect it to be missing on
+   * exactly the rejections, and must not read that as bad data.
+   *
+   * Absent for a second reason on the six legacy days: `RejectedArticle` has
+   * four fields and this is not among them — see the note on the rejected list
+   * in `allScored`. Those are all rejections too, so the two reasons agree.
+   */
+  titleZh?: string;
   url: string;
   sourceId: string;
   /** 5–50. The number in the file, which a human may have typed. */
