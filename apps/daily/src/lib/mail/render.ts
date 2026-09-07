@@ -476,7 +476,7 @@ export function digestEmail(
   );
 
   const headline = (article: PublishedArticle) =>
-    (lang === "zh" && article.titleZh ? article.titleZh : article.title).trim();
+    ((lang === "zh" ? article.titleZh : article.titleEn) || article.title).trim();
 
   const cards = picked
     .map((article) => {

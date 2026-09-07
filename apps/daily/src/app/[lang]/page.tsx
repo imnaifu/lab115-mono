@@ -205,8 +205,8 @@ export default async function Home({
                       "@type": "BlogPosting",
                       "@id": `${SITE}${href(lang, articlePath(latest, lead))}`,
                       headline: lead.title,
-                      ...(lead.titleZh
-                        ? { alternativeHeadline: lead.titleZh }
+                      ...(displayTitle(lead, lang) !== lead.title
+                        ? { alternativeHeadline: displayTitle(lead, lang) }
                         : {}),
                       description: summaryFor(lead, lang).thesis,
                       datePublished: lead.publishedAt,

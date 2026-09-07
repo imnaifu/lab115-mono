@@ -228,6 +228,41 @@ const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
  */
 const TITLE_MAX = 24;
 
+/**
+ * Rough width for "en_title", in WORDS rather than characters — a guide, not a
+ * gate.
+ *
+ * `TITLE_MAX` is 24 CHARACTERS, which is a whole Chinese headline and about four
+ * English words, so the English side needed its own number or it could not finish
+ * a sentence. It is stated softly because the English title is a TRANSLATION now:
+ * a hard cap would make the model rewrite the sentence to fit, which is the one
+ * thing it must not do.
+ *
+ * THE ENGLISH TITLE WAS BRIEFLY WRITTEN INDEPENDENTLY, and it cost the Chinese
+ * one. The prompt asked for two headlines that picked "the same counter-intuitive
+ * point", each idiomatic in its own language — and the model solved that by
+ * choosing an angle that is easy to say in BOTH, which is the blander angle. One
+ * article went from
+ *
+ *   从莎士比亚到抖音：我们是如何把自己刷死的
+ *
+ * to
+ *
+ *   人类正滑向新的黑暗时代？   /   Are We Sliding into a New Dark Age?
+ *
+ * The first is specific and has an image in it; the second is a question anybody
+ * could ask about anything. "从莎士比亚到抖音" is culturally loaded and awkward in
+ * English, "a new dark age" travels for free — so the constraint quietly selected
+ * against the better Chinese headline.
+ *
+ * THE FIX IS ORDER, NOT WORDING: the Chinese is written first with no thought of
+ * how it will translate, and the English renders it afterwards. The English may
+ * swap an image that does not survive the crossing, but not the point. The same
+ * mistake as the `payoff` cap in lib/score — a cross-constraint added to
+ * coordinate two things, which degraded one of them instead.
+ */
+const TITLE_MAX_EN = 10;
+
 
 /**
  * What ONE article is allowed, derived from how long that article is.
@@ -340,6 +375,9 @@ export interface Verdict {
   /** The REWRITTEN Chinese headline; "" when it came back empty or merely echoed
    *  the original. See `titleZh` in types.ts. */
   titleZh: string;
+  /** The REWRITTEN English headline, on the same rule. See `titleEn` in
+   *  types.ts for why the English side needed one of its own. */
+  titleEn: string;
   zh: SummaryText;
   /**
    * The English half, or null when the reply carried only the Chinese one.
@@ -822,6 +860,7 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 - "zh_title" —— 中文标题，见下面「标题」。
 - "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。
 - "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间写 "\\n\\n"，分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
+- "en_title" —— 把写好的 "zh_title" 译成英文，见下面「标题」。
 - "en_thesis" 和 "en_text" —— 同一篇概要的英文版，见下面「英文」。
 - "category" —— 见下面「分类」。
 
@@ -833,10 +872,16 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 
 "zh_title" 是给这篇文章重写一个中文标题，目标是让人想点开 —— 但它得是这篇文章的标题，不是一句随便的耸动话。**原标题是中文的也要重写**（原标题会作为文章的本名单独显示在新标题下面）。
 
+**先把 "zh_title" 写到最好，不要考虑它好不好翻。** 下面每一条都是对它说的。
+
+"en_title" 是**写好之后再把它译成英文**，不是另起炉灶重想一个英文标题。角度、说的那个点、留不留半句，全部跟着中文走 —— 你的任务只是把这句话用英文说出来。
+
+**但要说地道英文，不是逐词换。** 中文标题里的意象、成语、四字结构，直译过去英文读者读到的是一句不知所云的话（「英文」那一节的本地化规则在标题上同样适用）。**意象在英文里落不下就换掉意象，别换掉那个点** —— 说的还得是同一件事。
+
 - **挑最反常识的那一点**：文章里最让人「等一下，真的吗」的地方。
 - **给具体的东西**：一个数字、一个名字、一个动作、一个后果。「AI 让资深程序员慢了 19%」比「关于 AI 与生产力的一些思考」强，因为前者有个能被反驳的说法。
 - **疑问句、反转、只说一半都可以**，但留的那一半必须在正文前两段就兑现。
-- **短。最多 ${TITLE_MAX} 字**，越短越好。
+- **短。最多 ${TITLE_MAX} 字**，越短越好。（"en_title" 是它的英文版，自然落在 ${TITLE_MAX_EN} 个词上下；真的说不完就让它长一点，别为了压词数把话改掉。）
 
 下面几条比「抓眼球」优先，冲突的时候让标题平淡也没关系：
 - **不许骗。** 每个说法都要在正文里站得住：原文说「某些任务上慢了 19%」，标题不能写成「AI 让程序员废了」。
@@ -914,6 +959,7 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
 const EXAMPLE_ZH_TITLE = `推动历史的不是皇帝，是一家人的晚饭`;
 const EXAMPLE_ZH_THESIS = `真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。`;
 const EXAMPLE_ZH_TEXT = `教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。`;
+const EXAMPLE_EN_TITLE = `History was moved by dinner, not by emperors`;
 const EXAMPLE_EN_THESIS = `History was not driven by kings and generals but by the everyday needs of countless ordinary families trying to put dinner on the table.`;
 const EXAMPLE_EN_TEXT = `Textbooks give emperors, generals and wars the centre stage. Zoom in, though, and you find that the ones actually holding the production together — and moving the plot along — were millions of ordinary households going about their day.\\n\\nSo rewind 4,000 years to the ancient Near East and watch how one unremarkable family levered history along:\\n\\n## Getting fed was the original hardcore KPI\\n\\nIn ancient Mesopotamia a family's most important job was growing barley. Two great rivers watered the land, the soil was rich, and more grain meant more mouths could be fed.\\n\\nIn the ancient world people were labour, labour was an army, and an army was national power. Wherever families had more children and enough to feed them, that is where a superpower grew.\\n\\n## Too big for one household? Enter the state\\n\\nSome jobs were simply beyond a single family, however hard it worked:\\n\\nIrrigation: watering the fields and holding back the floods meant thousands of households digging one canal. Somebody had to organise that, direct it, and at times force people to turn up — which is how the earliest states and governments got squeezed into existence.\\n\\nBig-ticket items: an ox and an iron plough were heavy equipment, far beyond one family's savings, so neighbours chipped in together, bought one between them, and took turns.\\n\\n## Shopping built civilisation\\n\\nNo household could make everything it needed. Beyond what they grew themselves, families went to market for what they could not produce — pots, timber, bronze, even someone else's vegetables.\\n\\nOnce millions of households all wanted to buy, trade appeared, cities filled up and trade routes spread out. States went to war over the scarce goods behind all of it, and civilisations rose and fell along with them.\\n\\nIn one line: emperors and generals did not create history. The needs of countless ordinary families trying to eat well and live a little better pushed human society, step by step, into the modern world.`;
 
@@ -923,6 +969,7 @@ const SUMMARY_EXAMPLE = `{
       "zh_title": "${EXAMPLE_ZH_TITLE}",
       "zh_thesis": "${EXAMPLE_ZH_THESIS}",
       "zh_text": "${EXAMPLE_ZH_TEXT}",
+      "en_title": "${EXAMPLE_EN_TITLE}",
       "en_thesis": "${EXAMPLE_EN_THESIS}",
       "en_text": "${EXAMPLE_EN_TEXT}",
       "category": "culture"
@@ -1014,6 +1061,7 @@ function emptyVerdict(): Verdict {
     review: emptyReview(),
     category: resolveCategory(undefined),
     titleZh: "",
+    titleEn: "",
     zh: { thesis: "", text: "" },
     en: null,
   };
@@ -1172,7 +1220,8 @@ function applySummaries(
     const zhThesis = asText(row.zh_thesis);
     if (zhThesis) {
       verdict.category = resolveCategory(row.category);
-      verdict.titleZh = chineseTitle(row.zh_title, article.title);
+      verdict.titleZh = rewrittenTitle(row.zh_title, article.title);
+      verdict.titleEn = rewrittenTitle(row.en_title, article.title);
       verdict.zh = {
         thesis: zhThesis,
         text: asBody(row.zh_text),
@@ -1212,7 +1261,21 @@ function asText(value: unknown): string {
  * A model that ignores the field entirely also lands here, which is the point:
  * the Chinese title is an enhancement, and its absence has to be ordinary.
  */
-function chineseTitle(value: unknown, original: string): string {
+/**
+ * A rewritten headline, or "" when the model gave nothing back or merely echoed
+ * the original.
+ *
+ * IT WAS `chineseTitle`, AND THE ENGLISH SIDE NOW USES IT TOO — the rule is the
+ * same in both languages and always was: a rewrite that equals the original is
+ * not a rewrite, and storing it would put the same string on the page twice,
+ * once as the headline and once as the subtitle under it.
+ *
+ * "" RATHER THAN THE ORIGINAL, deliberately. The renderers fall back to
+ * `article.title` themselves; a stored copy would make "the model declined to
+ * rewrite this" indistinguishable from "the model wrote something identical",
+ * and only the first of those is worth knowing when reading the archive.
+ */
+function rewrittenTitle(value: unknown, original: string): string {
   const rewritten = asText(value);
   return rewritten && rewritten !== original.trim() ? rewritten : "";
 }
@@ -1658,6 +1721,7 @@ async function summarizeGroup(
     const empty = emptyVerdict();
     verdict.category = empty.category;
     verdict.titleZh = empty.titleZh;
+    verdict.titleEn = empty.titleEn;
     verdict.zh = empty.zh;
     verdict.en = empty.en;
   }

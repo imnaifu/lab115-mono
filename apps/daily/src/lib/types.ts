@@ -129,13 +129,27 @@ export interface Article {
    *
    * Optional, and two distinct reasons for it to be absent: a digest archived
    * before this field existed has none, and the model sometimes returns the
-   * original unchanged, which `chineseTitle` in summarize.ts collapses to "" so
+   * original unchanged, which `rewrittenTitle` in summarize.ts collapses to "" so
    * no renderer prints the same string twice. A Chinese-language source is NOT
    * one of those reasons any more — it gets a rewrite like everything else.
-   *
-   * The English side never uses it: there the original headline IS the English.
    */
   titleZh?: string;
+  /**
+   * The REWRITTEN English headline, on exactly the same terms as `titleZh`.
+   *
+   * IT DID NOT USED TO EXIST, and the note above said why: "the English side
+   * never uses it — there the original headline IS the English". That was true
+   * of the FEED's headline and false of what this digest is for. The rewrite is
+   * the one thing the pipeline does that a source cannot: it picks the
+   * counter-intuitive point and puts it in the title. Leaving the English side on
+   * the source's own headline meant the /en reader got the selection but not the
+   * editing, and the two languages were not the same publication.
+   *
+   * Absent for the same two reasons, plus a third: every digest written before
+   * this field existed has none, which is most of the archive. Renderers fall
+   * back to `title`, which is what they did for all of those days anyway.
+   */
+  titleEn?: string;
   url: string;
   author: string | null;
   /** ISO 8601, as published by the feed. */

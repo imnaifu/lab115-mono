@@ -197,6 +197,7 @@ async function publishFrom(
       review: article.review,
       category: article.category,
       titleZh: article.titleZh,
+      titleEn: article.titleEn,
       summary: article.summary,
     })),
   );
@@ -398,6 +399,9 @@ async function publishFrom(
       // same thing in a digest written today as in one written before it
       // existed: there is no Chinese headline to show.
       ...(verdict.titleZh ? { titleZh: verdict.titleZh } : {}),
+      // Omitted rather than written empty, the same rule as titleZh beside it:
+      // an absent field means "no rewrite", not "a rewrite that was blank".
+      ...(verdict.titleEn ? { titleEn: verdict.titleEn } : {}),
       url: item.url,
       author: item.author,
       publishedAt: item.publishedAt,

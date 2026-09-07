@@ -108,7 +108,7 @@ function clearedFloor(article: Article): boolean {
 function writeBack(
   digest: Digest,
   repaired: Map<string, Article["summary"]>,
-  meta: Map<string, { category: string; titleZh: string }>,
+  meta: Map<string, { category: string; titleZh: string; titleEn: string }>,
 ): Digest {
   const articles = digest.articles.map((article) => {
     const summary = repaired.get(article.id);
@@ -118,8 +118,9 @@ function writeBack(
       ...article,
       category: fields.category,
       // Omitted rather than stored empty, on the same rule as the run: an absent
-      // field means "there is no Chinese headline to show".
+      // field means "there is no rewritten headline to show".
       ...(fields.titleZh ? { titleZh: fields.titleZh } : { titleZh: undefined }),
+      ...(fields.titleEn ? { titleEn: fields.titleEn } : { titleEn: undefined }),
       summary,
     };
   });
@@ -224,7 +225,7 @@ export async function backfillSummaries(
     await repairTakes(sending, verdicts, eligible.length);
 
     const repaired = new Map<string, Article["summary"]>();
-    const meta = new Map<string, { category: string; titleZh: string }>();
+    const meta = new Map<string, { category: string; titleZh: string; titleEn: string }>();
     for (const article of take) {
       const verdict = verdicts.get(article.id)!;
       if (!isCompleteTake(verdict)) continue;
@@ -232,6 +233,7 @@ export async function backfillSummaries(
       meta.set(article.id, {
         category: verdict.category,
         titleZh: verdict.titleZh,
+        titleEn: verdict.titleEn,
       });
     }
 

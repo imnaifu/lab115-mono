@@ -35,8 +35,8 @@ const ORIGINAL = {
  * truthiness check rather than a comparison repeated per renderer.
  */
 export function displayTitle(article: Article, lang: Lang): string {
-  const translated = lang === "zh" ? article.titleZh?.trim() : "";
-  return translated || article.title;
+  const rewritten = (lang === "zh" ? article.titleZh : article.titleEn)?.trim();
+  return rewritten || article.title;
 }
 
 export function ArticleTitle({
@@ -48,13 +48,17 @@ export function ArticleTitle({
   lang: Lang;
   variant: keyof typeof ORIGINAL;
 }) {
-  const translated = lang === "zh" ? article.titleZh?.trim() : "";
+  const rewritten = (lang === "zh" ? article.titleZh : article.titleEn)?.trim();
 
-  if (!translated) return <>{article.title}</>;
+  // No rewrite, or one that merely echoed the source — one line, not two
+  // identical ones.
+  if (!rewritten || rewritten === article.title.trim()) {
+    return <>{article.title}</>;
+  }
 
   return (
     <>
-      {translated}
+      {rewritten}
       {/* `font-medium` against the heading's `font-bold`, and one step down in
           size: the original is here to be recognised, not to compete with the
           line that carries the meaning. `break-words` because a headline can

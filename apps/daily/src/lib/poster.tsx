@@ -126,7 +126,10 @@ export async function renderPoster({
    * and a `≠` in a title sends Satori off to the network exactly as one in a
    * paragraph does.
    */
-  const translated = lang === "zh" ? posterClean(article.titleZh ?? "") : "";
+  // Our rewrite in the poster's own language, same rule as the page.
+  const translated = posterClean(
+    (lang === "zh" ? article.titleZh : article.titleEn) ?? "",
+  );
   const headline = translated || posterClean(article.title);
   const original = translated ? posterClean(article.title) : "";
   const thesis = posterClean(summary.thesis ?? "");

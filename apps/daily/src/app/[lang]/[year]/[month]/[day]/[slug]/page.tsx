@@ -190,7 +190,12 @@ export default async function ArticlePage({ params }: Params) {
           "@id": `${SITE}${path}`,
           mainEntityOfPage: `${SITE}${path}`,
           headline: article.title,
-          ...(article.titleZh ? { alternativeHeadline: article.titleZh } : {}),
+          /* The OTHER name this piece goes by. `headline` above is the source's
+             own — the archived, citable one — and this is the headline this site
+             gives it, whichever language the reader is on. */
+          ...(displayTitle(article, lang) !== article.title
+            ? { alternativeHeadline: displayTitle(article, lang) }
+            : {}),
           description: summaryFor(article, lang).thesis,
           /**
            * The language of the BODY THIS PAGE RENDERS, not of the chrome around

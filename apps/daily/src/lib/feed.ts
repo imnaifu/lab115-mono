@@ -68,7 +68,8 @@ function stamp(value: string | undefined | null): string | null {
 /** The headline in the feed's language, by the same rule `ArticleTitle` uses:
  *  the Chinese title is a translation that only /zh shows. */
 function titleFor(article: PublishedArticle, lang: Lang): string {
-  const translated = lang === "zh" ? article.titleZh?.trim() : "";
+  // Our rewrite in whichever language this feed is — see `displayTitle`.
+  const translated = (lang === "zh" ? article.titleZh : article.titleEn)?.trim();
   return translated || article.title;
 }
 
