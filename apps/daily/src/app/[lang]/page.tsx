@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArticleTitle, displayTitle } from "@/components/ArticleTitle";
+import { Meta } from "@/components/ArticleCards";
+import { Cover } from "@/components/Cover";
 import { PageShell } from "@/components/PageShell";
-import { PhotoCard } from "@/components/Photo";
 import { Footer, PAD } from "@/components/Shell";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
@@ -102,7 +103,9 @@ export async function generateMetadata({
      the page was a directory; that sentence describes a page that no longer
      exists. Falls back to the tagline on an empty archive. */
   return {
-    description: lead ? `${displayTitle(lead, pageLang)} · ${t.tagline}` : t.tagline,
+    description: lead
+      ? `${displayTitle(lead, pageLang)} · ${t.tagline}`
+      : t.tagline,
   };
 }
 
@@ -191,7 +194,10 @@ export default async function Home({
               isPartOf: { "@id": `${home}#site` },
               publisher: publisher(t.brand),
               ...(dates.length
-                ? { datePublished: dates[dates.length - 1], dateModified: dates[0] }
+                ? {
+                    datePublished: dates[dates.length - 1],
+                    dateModified: dates[0],
+                  }
                 : {}),
               ...(lead && latest
                 ? {
@@ -230,35 +236,42 @@ export default async function Home({
        */}
       <div className={`divide-y divide-line ${PAD}`}>
         {digest && lead && latest ? (
-          <section className="pt-6 pb-8">
+          <section className="pt-8 pb-8">
             {/**
-             * THE DAY'S PHOTOGRAPH, ABOVE THE PIECE — the same order the day page
-             * uses, so the two open the same way.
+             * NO PHOTOGRAPH HERE. The day's picture is the DAY PAGE's opener and
+             * this page links to it — it stays there, at the top of the edition it
+             * belongs to.
              *
-             * It keeps `PhotoCard`'s 520px ceiling, and on this page that ceiling
-             * is doing more work than anywhere else: the note on it says the plate
-             * must not push the day's first article off the screen, and this page
-             * has exactly one block of text to push.
+             * IT WAS HERE AND KEPT SHRINKING: the plate went 520 to 480 to 300 in
+             * an attempt to stop it pushing the one thing this page exists to show
+             * below the fold. That is the tell that it did not belong. The front
+             * page carries a single teaser, so anything above the headline is the
+             * whole first screen, and a picture chosen for the EDITION cannot earn
+             * that slot ahead of the piece it does not illustrate.
+             *
+             * `PhotoCard` and its 300px ceiling stay — the day page has cards under
+             * the photo, which is what that ceiling was measured against.
              */}
-            {digest.photo ? (
-              /* `mb-10`, wider than the rhythm elsewhere on the page. The photo
-                 is the EDITION's picture and the headline under it belongs to one
-                 article, so the gap has to be big enough to read as a break
-                 between two things rather than as a caption's leading — at the
-                 `mb-7` this started on, the figure's own caption block sat close
-                 enough to the headline that the three read as one stack. */
-              <div className="mb-10">
-                <PhotoCard photo={digest.photo} lang={lang} />
-              </div>
-            ) : null}
 
             {/**
-             * THE LEAD, AND NOTHING UNDER IT BUT THE CLAIM.
+             * THE LEAD: its cover, its headline, its claim, one way in.
              *
-             * Headline, thesis, one way in. No cover, no source line, no share and
-             * no link to the original: every one of those is on the day page a tap
-             * away, and each would be a second thing to decide about on a page
-             * whose only question is "is today worth reading".
+             * THE SAME HEADER BLOCK THE LIST ROWS USE — cover, then source and
+             * author, then the headline — built from the same `Cover` and `Meta`
+             * those rows call. The teaser is one article presented as an article,
+             * so it is assembled from the parts that present one everywhere else;
+             * anything hand-rolled here drifts from them by a separator or an
+             * accent within a couple of edits.
+             *
+             * NO SHARE AND NO LINK TO THE ORIGINAL, though. Those are ACTIONS, and
+             * each is a second thing to decide about on a page whose only question
+             * is "is today worth reading" — both are on the day page a tap away.
+             * A cover and a source line are not decisions; they are what makes this
+             * read as a piece rather than as a paragraph.
+             *
+             * `items-center` for the reason stated on `ArticleCard`: a one-line
+             * headline is shorter than the cover, and centring reads as air above
+             * and below rather than as a hole under the title.
              *
              * THE HEADLINE IS THIS PAGE'S `<h1>`. There was a masthead above it
              * reading 每日严选 — the brand, as the heading — and the site bar
@@ -269,9 +282,20 @@ export default async function Home({
              * `ArticleTitle` rather than the raw headline, so the Chinese side
              * gets the translation with the original under it as the lists do.
              */}
-            <h1 className="text-2xl leading-tight font-bold text-ink sm:text-3xl">
-              <ArticleTitle article={lead} lang={lang} variant="hero" />
-            </h1>
+            <div className="flex items-center gap-4 sm:gap-5">
+              <Cover
+                id={lead.id}
+                sourceId={lead.sourceId}
+                image={lead.image}
+                variant="hero"
+              />
+              <div className="min-w-0 flex-1">
+                <Meta article={lead} lang={lang} />
+                <h1 className="mt-2.5 text-2xl leading-tight font-bold text-ink">
+                  <ArticleTitle article={lead} lang={lang} variant="hero" />
+                </h1>
+              </div>
+            </div>
 
             {summaryFor(lead, lang).thesis ? (
               /**

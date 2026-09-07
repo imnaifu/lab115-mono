@@ -110,7 +110,7 @@ const RADIUS = "18px";
 const COLUMN = 600;
 
 /**
- * The tallest the photograph may be drawn, mirroring `max-h-[480px]` on the site's
+ * The tallest the photograph may be drawn, mirroring `max-h-[300px]` on the site's
  * own plate — see the note in Photo.tsx for why that ceiling exists.
  *
  * It is enforced by making a TALL PHOTO NARROWER, never by stating a height: an
@@ -120,7 +120,7 @@ const COLUMN = 600;
  * be a ~900px plate — the whole first screen of the message, above a single
  * headline.
  */
-const PHOTO_MAX_HEIGHT = 480;
+const PHOTO_MAX_HEIGHT = 300;
 
 /**
  * `&` FIRST, or the entities written by the later replacements get their own

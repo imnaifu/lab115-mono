@@ -39,7 +39,6 @@ export const PAD = "px-4 sm:px-7";
 /** Vertical rhythm between the page's stacked blocks. */
 export const SECTION = "mt-8";
 
-
 /**
  * The masthead: WHAT THIS PAGE IS, and whatever meta it passes as children.
  *
@@ -108,7 +107,7 @@ export function Masthead({
        blobs, and what is above this now is a 56/64px bar. The bottom padding is
        untouched — the rhythm between this block and the first thing under it was
        never about the header's own furniture. */
-    <header className={`pt-10 pb-8 sm:pt-12 ${PAD}`}>
+    <header className={`pt-4 pb-4 sm:pt-4 ${PAD}`}>
       {crumb}
 
       {/* ONE TYPE SCALE. There were two, picked by whether there was a subtitle,
@@ -290,7 +289,7 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
   const t = strings(lang);
   return (
     <footer
-      className={`mt-10 border-t border-line pt-6 ${PAD} flex flex-wrap items-start justify-between gap-x-8 gap-y-4`}
+      className={`mt-10 border-t border-line pt-6 ${PAD} flex flex-wrap items-center justify-between gap-x-8 gap-y-4`}
     >
       {/* Same single name as the masthead, so the switch changes both. */}
       <div className="min-w-0 text-lg font-bold text-ink">{t.brand}</div>
@@ -317,13 +316,9 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
          * change to the analytics contract rather than to the markup. Worth doing
          * on its own; not worth smuggling in behind an SEO fix.
          */}
-        <a
-          className="transition-colors hover:text-ink"
-          href="https://lab115.com"
-        >
-          lab115.com
-        </a>
-        <div>© {year} daily.lab115.com</div>
+        <div className="flex items-center justify-center">
+          © {year} daily.lab115.com
+        </div>
       </div>
     </footer>
   );

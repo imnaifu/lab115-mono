@@ -20,6 +20,51 @@ git pull ──→ 当天已有就退出 ──→ 拉全部源，筛出过去 2
 按分数过门槛 ──→ 按分类排序，每篇一张卡 ──→ 写 JSON ──→ git commit & push ──→ 邮件
 ```
 
+## 命令一览
+
+`package.json` 是 JSON，写不了注释，所以命令的说明只能在这里 —— 每个脚本文件自己
+的开头也有一段，讲的是「为什么这样设计」，这张表讲的是「什么时候用哪个」。
+
+### 日常
+
+| 命令 | 干什么 | 会不会花钱 / 推送 |
+|---|---|---|
+| `npm run dev` | 起网站，读上一次跑出来的数据 | 否 |
+| `npm run once` | 一条命令跑完整天：抓取 + 打分 + 摘要 + commit + push + 邮件 | **两轮模型调用，会推送** |
+| `npm run score` | 只跑前半程：抓取 + 打分，写进当天的 digest 文件然后停 | 一轮调用，不推送 |
+| `npm run summary` | 只跑后半程：按文件里**现在**的分数应用门槛，给过线的写摘要并发布 | 一轮调用，会推送 |
+
+`score` / `summary` 是给「这篇该不该发」这个问题用的 —— 中间那步是你打开 JSON
+改分数。注意 **`score` 是整份替换**，不是合并：它会抹掉上一次 `summary` 写的 take。
+详见下面「分两步跑」。
+
+### 修补
+
+| 命令 | 干什么 |
+|---|---|
+| `npm run mail -- 2026-08-25` | 手动补发某天的邮件。用在定时发送失败那天 —— Resend 挂了、key 过期、跑到一半死了 |
+| `npm run backfill-summary` | 修已经发出去的 digest 里写坏的 take：只有中文没有英文、只有英文没有中文、或超长 |
+| `npm run bodies` | 把归档里缺正文的文章抓进 `data/bodies/<date>.json`。**只读 digest**，不改它 —— 这是下面那些实验脚本的燃料 |
+
+### `data/` 下的一次性脚本
+
+不在 `package.json` 里，用 `npx tsx data/xxx.ts` 跑。**都不写生产数据**，正文一律
+读 `data/bodies` 缓存而不是打原站（所以先跑 `npm run bodies`）。
+
+| 脚本 | 干什么 | 调模型 |
+|---|---|---|
+| `dryrun.ts` | 用真实的 `publishable()` 在归档每一天上重放闸门，看当前的门槛和单维下限会发多少 | 否 |
+| `experiment-pull.ts` | 新五维（pull/stakes/talkable/accessible/payoff）在归档上的实测，对照旧分 | 是 |
+| `experiment.ts` | 候选维度 `firsthand` 的对照实验 —— **已否决**，见 score.ts 的记录 |是 |
+| `experiment-premise.ts` | 候选维度 `premise` —— **已否决**：和 surprise 相关 0.62 | 是 |
+| `experiment-humor.ts` | 候选维度 `humor` —— **已否决**：正交但没有方差 | 是 |
+| `one-article.ts` | 单篇配对测试，验证 prompt 里某一句话的效果 | 是 |
+
+三个 `experiment-*` 都是失败的候选，留着是因为**下一个候选要按同样的方法测**：一次
+调用里同时问新旧维度，同一段正文、同一份 prompt，没有跨轮噪声。判据写在
+`score.ts` 的 `SCORE_WEIGHTS` 上方 —— 一个新维度只有在它的问题不是「这篇好不好」的
+换句话说时才有价值。
+
 ## 配置：`config.json`
 
 **所有需要人工决策的东西都在 `apps/daily/config.json` 里**，改它不用碰 TypeScript：

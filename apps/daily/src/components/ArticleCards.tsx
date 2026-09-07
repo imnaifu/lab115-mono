@@ -16,7 +16,16 @@ function Dot() {
   return <span className="size-0.75 rounded-full bg-current opacity-55" />;
 }
 
-function Meta({ article, lang }: { article: PublishedArticle; lang: Lang }) {
+/**
+ * The source, and the author when there is one.
+ *
+ * EXPORTED because the front page's lead uses it too. It was local while the
+ * only thing that named an article was a list row; the teaser now carries the
+ * same header block — cover, meta, headline — and two copies of a one-line
+ * component are two places for the separator rules and the accent colour to
+ * drift apart.
+ */
+export function Meta({ article, lang }: { article: PublishedArticle; lang: Lang }) {
   const source = sourceOf(article.sourceId);
 
   return (
