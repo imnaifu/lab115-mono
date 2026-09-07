@@ -113,18 +113,6 @@
       "fetchBody": false
     },
     {
-      "id": "acx",
-      "name": "Astral Codex Ten",
-      "site": "https://www.astralcodexten.com/",
-      "feed": "https://www.astralcodexten.com/feed",
-      "category": "culture",
-      "description": "Scott Alexander，理性主义长文与书评，但 Open Thread 这类纯站务帖占了不小比例。",
-      "descriptionEn": "Scott Alexander — long rationalist essays and book reviews, with a fair share of pure housekeeping posts like Open Threads.",
-      "accent": "#6B4E8E",
-      "enabled": true,
-      "fetchBody": false
-    },
-    {
       "id": "construction-physics",
       "name": "Construction Physics",
       "site": "https://www.construction-physics.com/",
