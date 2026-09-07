@@ -90,24 +90,26 @@ export interface ScoreFinding {
  *
  * Optional: digests written before it existed carry no reviews, and an article
  * the score pass never answered for carries none either.
+ *
+ * PARTIAL, AND OPEN — every key optional and unknown keys allowed. It used to
+ * name the five dimensions as required fields, which was true of every file
+ * being written and false of the ones already on disk the moment the rubric
+ * changed. The archive holds 350-odd reviews keyed `substance` / `surprise` /
+ * `relevance` / `quality`; those dimensions no longer exist, and nothing
+ * rewrites them, because relabelling a stored judgement is a lie about what the
+ * scorer did that morning.
+ *
+ * So a review is a BAG OF FINDINGS whose keys may be the current dimensions, the
+ * old ones, or a mixture. Keyed by plain `string` rather than by
+ * `ScoreDimension`, which would mean importing from score.ts and that module
+ * already imports this one — and the looser key buys the property that matters:
+ * every lookup is `ScoreFinding | undefined`, so each reader has to say what it
+ * does when a dimension is missing rather than assuming it is there. That is deliberately
+ * annoying: the alternative is a type that claims a guarantee the data does not
+ * make, and the failure mode is `undefined.score` at request time on a page that
+ * had been working for weeks.
  */
-export interface ScoreReview {
-  /** What is left if you delete the writer — a position, an insight, a mechanism
-   *  that travels. Merged from `opinion` + `judgment` + `transfer`, which
-   *  correlated 0.73-0.88 with each other. */
-  substance: ScoreFinding;
-  /** Counter-intuitive, and worth repeating. Merged from `novelty` + `hook`,
-   *  which correlated 0.76. */
-  surprise: ScoreFinding;
-  /** Readable with no background in the field. Deep-geek pieces score low. The
-   *  one dimension that measured something of its own from the start. */
-  accessible: ScoreFinding;
-  /** Whether it sets off the reader's curiosity. */
-  relevance: ScoreFinding;
-  /** How well the piece is MADE — structure, evidence, whether it is padded.
-   *  Independent of subject: a jargon-heavy piece can be beautifully made. */
-  quality: ScoreFinding;
-}
+export type ScoreReview = Record<string, ScoreFinding | undefined>;
 
 export interface Article {
   /** sha1 of the canonical URL — stable across runs, safe as a React key. */

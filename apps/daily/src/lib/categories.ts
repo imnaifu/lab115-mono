@@ -64,22 +64,10 @@ export const FALLBACK_CATEGORY = USER_CONFIG.fallbackCategory;
  */
 export const CATEGORY_BY_ID = new Map(CATEGORIES.map((c) => [c.id, c]));
 
-/**
- * The id of the page's 「全部」 tab.
- *
- * Not a category: it selects every section at once instead of one of them, so it
- * has no hint, no accent and no entry in config.json. It lives here because it
- * shares the id namespace with the real categories — the tab strip keys on a
- * single string — which is also why no category may claim it.
- */
-export const ALL_TAB = "all";
-
-if (CATEGORY_BY_ID.has(ALL_TAB)) {
-  throw new Error(
-    `config.json: "${ALL_TAB}" is reserved for the page's 「全部」 tab and ` +
-      `cannot be used as a category id`,
-  );
-}
+/* THE `ALL_TAB` GUARD WENT WITH THE TAB. It threw when config.json defined a
+   category whose id collided with the reserved id of the 「全部」 tab; there is no
+   tab row any more — the lists are flat — so no id is reserved and `all` is an
+   ordinary category name a future config is free to use. */
 
 /** Never throws — an archived digest may name a category that has since been
  *  renamed away, and an old page must still render. */

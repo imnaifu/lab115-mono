@@ -34,10 +34,17 @@ function gradientFor(id: string, accent: string): string {
  * of the original and catches whatever letters sit beside the logo, which looked
  * worse than the gap did.
  *
- * 80×80 is the answer to both. A square is the forgiving crop for the logos and
- * hero shots these actually are, and 80 is within a line of the header block, so
- * what remains is 28px at worst — spent as breathing room by the `items-center`
- * on the row in ArticleCards rather than dumped under the title.
+ * A SQUARE is the forgiving crop for the logos and hero shots these actually are,
+ * which is the part of that reasoning that still holds. The SIZE has moved up
+ * since: 80px was chosen to sit within a line of the header block beside it, and
+ * measured against today's rows that block is 78px — so the cover was matching a
+ * text column rather than being a picture. These are the only images in a list of
+ * summaries, and at 80px a photograph in one is a thumbnail of a thumbnail.
+ *
+ * 96px on a row and 112/144 on the article page. Both now run proud of the text
+ * beside them (78px and 96px measured), which the `items-center` on those rows
+ * absorbs as air above and below the headline — the same mechanism the note in
+ * ArticleCards describes for a one-line title.
  */
 const SIZE = {
   /**
@@ -47,21 +54,22 @@ const SIZE = {
    * It was `h-42 w-full sm:h-50 sm:w-36` — a full-width band on a phone, a book
    * spine to the RIGHT of the text above `sm`, and hidden outright below it. That
    * made the one page devoted to a single article the one place whose layout did
-   * not match the list it was reached from. Bigger than the card's 80px because
-   * the headline beside it is `text-3xl` rather than `text-lg`, so the header
-   * block it has to balance is taller.
+   * not match the list it was reached from. Bigger than a row's, because the
+   * headline beside it is `text-3xl` rather than `text-lg` and this is the page
+   * about that one piece — it can afford the picture the size it is worth.
    */
-  hero: "size-24 sm:size-28",
-  card: "size-20",
+  hero: "size-28 sm:size-36",
+  card: "size-24",
 } as const;
 
 /**
  * The placeholder's source name, sized for the box that has to hold it.
  *
- * `text-xs` on the card, because it is 80px wide and the longest source names are
- * long: "the singularity is nearer" needs four lines, which is 64px plus padding
- * at this size and would not fit at all one step up. The hero cover is 112px and
- * gets one step more, not the display size it had as a 144px band.
+ * `text-xs` ON THE ROW STILL, though the box grew to 96px. The binding case is
+ * the longest source name — "the singularity is nearer" wraps to four lines,
+ * which is 64px of text plus padding, and one step up would put it at 80px and
+ * overflow a box that has 96 minus 16 of padding to give. The extra width buys
+ * fewer wrapped lines rather than a bigger face.
  */
 const LABEL = {
   hero: "p-2.5 text-sm",

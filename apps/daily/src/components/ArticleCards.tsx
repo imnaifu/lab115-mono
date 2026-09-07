@@ -2,7 +2,6 @@ import { themedAccent } from "@/lib/accent";
 import { ArticleTitle, displayTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
 import { ShareButton } from "./ShareButton";
-import { Summary } from "./Summary";
 import { sourceOf } from "@/lib/sources";
 import { posterParts } from "@/lib/share";
 import { strings } from "@/lib/i18n";
@@ -70,6 +69,25 @@ function Actions({
   const t = strings(lang);
   return (
     <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+      {/**
+       * THE PRIMARY ACTION, and it is the one that stays on this site.
+       *
+       * A row here shows the headline and the claim and stops — the take itself
+       * lives on the article's own page now. So this is the link that finishes
+       * what the card started, and it is THE ONLY FILLED BUTTON IN THE ROW —
+       * `share` gave up its own dark pill when this arrived, and `readFull`
+       * beside it leads OFF the site, which the note on it has always said the
+       * emphasis should not push a reader towards.
+       */}
+      <a
+        className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper"
+        href={href(lang, articlePath(date, article))}
+        data-track="summary_open"
+        data-track-source={article.sourceId}
+        data-track-from="list"
+      >
+        {t.readSummary}
+      </a>
       {/* Secondary. Reading the original means leaving — this digest exists so
           that most of the time you do not have to, and the emphasis should not
           push you off the page it just spent 450 characters replacing. */}
@@ -116,15 +134,26 @@ function Actions({
 }
 
 /**
- * Every published article — full card with cover and summary.
+ * One article, as much of it as a LIST should show: the headline and the claim.
  *
- * There used to be an `ArticleRow` beside this one, carrying everything past a
- * section's `cardCount` as a single line. It existed because nothing was ever
- * dropped, so a heavy day had to stay readable without running to thirty full
- * cards. The publish floor took over that job: what reaches the page now earns
- * a card, and there is no tail left to compress.
+ * IT WAS THE WHOLE SUMMARY — cover, headline, thesis and three to five
+ * paragraphs of prose, the same text the article's own page carries. Two things
+ * were wrong with that. A day of fifteen of them is a page nobody reaches the
+ * bottom of, and every one of those summaries then existed at two URLs, which is
+ * the duplicate this site has already been through once (see the note in
+ * app/[lang]/page.tsx). The prose now lives at exactly one address and this row
+ * is the way to it.
+ *
+ * THE THESIS IS THE EXCERPT, and it is the right one because it was written to
+ * be: `SummaryText.thesis` is the one-sentence claim the summary opens on, so
+ * the list gets a real sentence rather than the first N characters of a
+ * paragraph cut mid-word.
+ *
+ * NO CATEGORY ANYWHERE. The tabs and the section headings are gone with
+ * `DigestBody`; the registry in lib/categories stays, because the publish floor
+ * lives in it and the scorer still assigns one.
  */
-export function ArticleCard({
+export function ArticleBrief({
   article,
   date,
   lang,
@@ -133,25 +162,14 @@ export function ArticleCard({
   date: string;
   lang: Lang;
 }) {
-  return (
-    // No `gap` on the column: `Summary` and `Actions` each bring their own
-    // `mt-4`, so the existing vertical rhythm is already right.
-    //
-    <div className="flex flex-col rounded-card bg-card p-4 shadow-soft">
-      {/* The cover sits beside the HEADLINE, not beside the whole card.
-          It used to be the left column of a full-height split, which worked
-          while a summary was two lines. At 3–5 paragraphs it stopped working
-          twice over: the cover's 88px sat above ~800px of empty gutter, and it
-          held 80px away from the prose all the way down, leaving a ~246px
-          measure on a phone — about five words a line. Bounding the split to
-          this row gives the summary the card's full width at every size and
-          costs the cover nothing, because the 80px square is within a line of
-          what the meta line plus the title occupy anyway.
+  const thesis = summaryFor(article, lang).thesis;
 
-          `items-center`, not `items-start`: a one-line title leaves the text
-          block 28px shorter than the cover, and centred that reads as air above
-          and below the headline instead of a hole under it. With a two-line
-          title the two are the same height and this does nothing. */}
+  return (
+    <div className="flex flex-col rounded-card bg-card p-4 shadow-soft">
+      {/* The same header row the full card had — see the note that was here on
+          why the cover is bounded to the headline rather than to the whole card.
+          With the prose gone the argument is weaker, but the shape is what a
+          reader already knows this list to look like. */}
       <div className="flex items-center gap-3.5 sm:gap-4">
         <Cover
           id={article.id}
@@ -167,7 +185,23 @@ export function ArticleCard({
         </div>
       </div>
 
-      <Summary summary={summaryFor(article, lang)} variant="card" />
+      {/* The claim, under its label and NOT behind an orange rule — see the note
+          on the front page's teaser for why the bar is kept for the article page
+          only: it exists to separate a lead from the prose it leads, and there is
+          no prose in a row.
+
+          Rendered directly rather than through `Summary`: that component's job is
+          the whole take, and handing it a text with the prose stripped out would
+          be asking it to render an object that does not exist. */}
+      {thesis ? (
+        <div className="mt-4">
+          <p className="mb-1 text-[11px] font-bold tracking-[0.08em] text-orange">
+            TL;DR
+          </p>
+          <p className="text-base font-medium text-ink">{thesis}</p>
+        </div>
+      ) : null}
+
       <Actions article={article} date={date} lang={lang} />
     </div>
   );

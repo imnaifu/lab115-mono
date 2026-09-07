@@ -84,7 +84,12 @@ const SIZES = [
 const HEIGHTS = { digest: 820, confirm: 520 } as const;
 
 /** One email at one width, labelled with the width it is being drawn at. */
-function Frame({ src, title, size, height }: {
+function Frame({
+  src,
+  title,
+  size,
+  height,
+}: {
   src: string;
   title: string;
   size: (typeof SIZES)[number];
@@ -141,10 +146,17 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
         },
       ].map((mail) => (
         <div key={mail.file} className={`${CARD} mb-5`}>
-          <a className="font-bold text-ink" href={mail.file} target="_blank" rel="noreferrer">
+          <a
+            className="font-bold text-ink"
+            href={mail.file}
+            target="_blank"
+            rel="noreferrer"
+          >
             {mail.label}
           </a>
-          <div className="pt-0.5 pb-3 text-xs font-medium text-ink-soft">{mail.file}</div>
+          <div className="pt-0.5 pb-3 text-xs font-medium text-ink-soft">
+            {mail.file}
+          </div>
           {/* The two panes are the same document the route serves, so what renders
               here is what Resend would send — at both widths at once, side by side,
               which is the comparison the message has to survive. They scroll
@@ -170,9 +182,18 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
       {top && parts > 0 ? (
         <div className="flex gap-3 overflow-x-auto pb-2">
           {Array.from({ length: parts }, (_, at) => at + 1).map((part) => {
-            const url = posterPartUrl(posterBase(lang, digest.date, top.id), part);
+            const url = posterPartUrl(
+              posterBase(lang, digest.date, top.id),
+              part,
+            );
             return (
-              <a key={part} className="shrink-0 no-underline" href={url} target="_blank" rel="noreferrer">
+              <a
+                key={part}
+                className="shrink-0 no-underline"
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
@@ -189,10 +210,17 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
           })}
         </div>
       ) : (
-        <div className="text-sm font-medium text-ink-soft">没有可渲染的海报</div>
+        <div className="text-sm font-medium text-ink-soft">
+          没有可渲染的海报
+        </div>
       )}
 
-      <a className="mt-5 block no-underline" href={ogUrl(lang, "site")} target="_blank" rel="noreferrer">
+      <a
+        className="mt-5 block no-underline"
+        href={ogUrl(lang, "site")}
+        target="_blank"
+        rel="noreferrer"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={ogUrl(lang, "site")}
@@ -258,7 +286,10 @@ export default async function PreviewPage({
       ))}
 
       <p className="rounded-card bg-card px-4 py-3 text-xs leading-relaxed font-medium text-ink-soft">
-        邮件里的 logo 和链接都是指向 <code>daily.lab115.com</code> 的绝对地址 —— 收件箱里没有相对路径可言，所以这两样在预览里走的是线上站点。确认信的 token 是假的，点进去会落在「链接失效」页。这个路径只在 dev 存在，线上 404。
+        邮件里的 logo 和链接都是指向 <code>daily.lab115.com</code> 的绝对地址 ——
+        收件箱里没有相对路径可言，所以这两样在预览里走的是线上站点。确认信的
+        token 是假的，点进去会落在「链接失效」页。这个路径只在 dev 存在，线上
+        404。
       </p>
     </div>
   );

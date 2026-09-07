@@ -117,6 +117,33 @@ export function judged(entries: ScoredEntry[]): ScoredEntry[] {
   return entries.filter((entry) => entry.review !== undefined);
 }
 
+/**
+ * Entries judged against the dimensions in force NOW.
+ *
+ * A STRICTER `judged`, and the two are different questions. `judged` asks
+ * whether the model answered at all, which is what the score-level statistics
+ * want: an article's TOTAL is comparable across the archive because it is stored
+ * and was a sum of five 1-10 numbers either way.
+ *
+ * Anything that reads a review PER DIMENSION needs this one instead. The scoring
+ * rubric was rebuilt — see SCORE_WEIGHTS in lib/score — so the archive holds
+ * reviews keyed `substance`/`surprise`/`relevance`/`quality` alongside newer ones
+ * keyed `pull`/`stakes`/`talkable`/`payoff`. Averaging those together would put
+ * two different questions in one histogram and report the result as a property of
+ * the model, which is the kind of number that reads as a finding and is not one.
+ *
+ * The cost is stated on the page rather than hidden: the per-dimension panels on
+ * /admin cover fewer articles than the score panels above them, and their `n`
+ * says so.
+ */
+export function judgedByCurrentRubric(entries: ScoredEntry[]): ScoredEntry[] {
+  return entries.filter(
+    (entry) =>
+      entry.review !== undefined &&
+      SCORE_DIMENSIONS.every((dimension) => entry.review![dimension]),
+  );
+}
+
 function mean(values: number[]): number {
   return values.length
     ? values.reduce((sum, value) => sum + value, 0) / values.length
@@ -183,9 +210,10 @@ export interface DimensionStat {
  * changes when the model does.
  */
 export function dimensionStats(entries: ScoredEntry[]): DimensionStat[] {
-  const scored = judged(entries);
+  // Current-rubric only — see `judgedByCurrentRubric`.
+  const scored = judgedByCurrentRubric(entries);
   return SCORE_DIMENSIONS.map((dimension) => {
-    const values = scored.map((entry) => entry.review![dimension].score);
+    const values = scored.map((entry) => entry.review![dimension]!.score);
     const histogram = Array.from({ length: 10 }, () => 0);
     for (const value of values) {
       // Clamped rather than trusted: the band is 1-10 by the rubric, and a model
@@ -227,11 +255,13 @@ export interface Correlation {
  * quietly collapsed to a single axis.
  */
 export function correlations(entries: ScoredEntry[]): Correlation[] {
-  const scored = judged(entries);
+  // Current-rubric only: a correlation between a dimension that exists and one
+  // that was retired is not a number about anything.
+  const scored = judgedByCurrentRubric(entries);
   const columns = new Map<ScoreDimension, number[]>(
     SCORE_DIMENSIONS.map((dimension) => [
       dimension,
-      scored.map((entry) => entry.review![dimension].score),
+      scored.map((entry) => entry.review![dimension]!.score),
     ]),
   );
 
@@ -449,13 +479,17 @@ export function blockingDimensions(
   entries: ScoredEntry[],
 ): { dimension: ScoreDimension; n: number }[] {
   const outcomes = outcomesAt(entries, PUBLISH_MIN_SCORE);
-  const blocked = entries.filter(
+  /* Blocked AND judged by the current rubric. An older article can still be
+     `under-dimension` — the gate checks whichever keys its review carries — but
+     it was stopped by a dimension that no longer exists, so it cannot be
+     attributed to one of these five. */
+  const blocked = judgedByCurrentRubric(entries).filter(
     (entry) => outcomes.get(entryKey(entry)) === "under-dimension",
   );
   return SCORE_DIMENSIONS.map((dimension) => ({
     dimension,
     n: blocked.filter(
-      (entry) => entry.review![dimension].score < MIN_PER_DIMENSION,
+      (entry) => entry.review![dimension]!.score < MIN_PER_DIMENSION,
     ).length,
   })).sort((a, b) => b.n - a.n);
 }

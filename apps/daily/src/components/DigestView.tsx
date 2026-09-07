@@ -1,23 +1,19 @@
-import { DigestBody, type CategoryGroup } from "./DigestBody";
+import { ArticleBrief } from "./ArticleCards";
 import { PageShell } from "./PageShell";
 import {
   Breadcrumb,
   EndLink,
   Footer,
   Masthead,
-  MastheadDot,
   PAD,
   SECTION,
 } from "./Shell";
-import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
 import { PhotoCard } from "./Photo";
 import { shownArticles } from "@/lib/store";
-import { summaryFor } from "@/lib/take";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
-import { summaryText, totalReadingMinutes } from "@/lib/reading";
-import type { PublishedArticle, Digest } from "@/lib/types";
+import type { Digest } from "@/lib/types";
 
 /** Rendered from the date key, not from a Date, so the server's timezone can
  *  never shift it by a day. */
@@ -54,32 +50,6 @@ export function EmptyState({ lang }: { lang: Lang }) {
   );
 }
 
-/**
- * Every article, grouped into the sections defined in categories.ts.
- *
- * Rank 1 used to be pulled out into a hero card above the tabs. It is gone: it
- * sat outside the category system, so the tabs could not reach it and it needed
- * a 「全部」 tab to be visible alongside everything else.
- *
- * Sections keep the registry's order rather than sorting by best rank, so the
- * page reads the same way every day — a fixed running order is what makes a
- * daily publication feel like one. Empty sections are dropped: an "投资 —
- * nothing today" heading is noise on a screenshot.
- */
-function groupByCategory(articles: PublishedArticle[]): CategoryGroup[] {
-  const groups = new Map<string, PublishedArticle[]>();
-  for (const article of articles) {
-    const id = categoryOf(article.category).id;
-    const bucket = groups.get(id);
-    if (bucket) bucket.push(article);
-    else groups.set(id, [article]);
-  }
-  return CATEGORIES.map((category) => ({
-    category,
-    articles: groups.get(category.id) ?? [],
-  })).filter((group) => group.articles.length > 0);
-}
-
 export function DigestView({
   digest,
   lang,
@@ -88,37 +58,26 @@ export function DigestView({
   lang: Lang;
 }) {
   const t = strings(lang);
-  // ONE READ of the list, shared by the grouping, the reading-time total and
-  // the body: `shownArticles` is what applies "no take means not published",
-  // and calling it three times would be three chances to forget one.
+  // `shownArticles` is what applies "no take means not published" — one read,
+  // used by the count in the masthead and by the list below it.
   const shown = shownArticles(digest);
-  const groups = groupByCategory(shown);
 
   /**
-   * How long THIS PAGE takes, not how long the source articles take.
+   * NO READING TIME IN THE MASTHEAD ANY MORE.
    *
-   * It used to sum `article.readingMinutes`, which is measured on the original
-   * body — "精读约 155 分钟" was the cost of clicking through to all fifteen
-   * pieces and reading them end to end. Nobody is doing that, and the number it
-   * put in the masthead described a page other than this one. The summaries are
-   * the product; this measures the summaries.
-   *
-   * PER LANGUAGE, because the two halves are different lengths: `reading.ts`
-   * normalises CJK at 400 characters a minute against English at 230 words, so
-   * the same take measured on either side lands within a minute of the other —
-   * but only if each side is measured on the text it actually shows. An /en page
-   * that fell back to Chinese is measured on the Chinese, which is also correct:
-   * that IS the text on the page.
+   * It totalled the length of every summary on the page, and the summaries are
+   * not on the page: this is a list of headlines and claims now, and each take
+   * lives at its own URL. Leaving the number would repeat the exact mistake its
+   * own note recorded getting fixed — it once summed the ORIGINAL articles'
+   * lengths and "described a page the reader was not on". A count of pieces is
+   * the honest thing a list can say about itself, and the row still says it.
    */
-  const minutes = totalReadingMinutes(
-    shown.map((a) => summaryText(summaryFor(a, lang))),
-  );
 
   return (
     /* `path` was a prop of this view, back when it also rendered the home page and
        the language switch had to land on whichever of the two you were actually
-       on. The home page is a list of days now — see app/[lang]/page.tsx — so this
-       serves one URL and the path is simply this digest's. It goes to the shell
+       on. The home page is a teaser for the newest day now — see
+       app/[lang]/page.tsx — so this serves one URL and the path is this digest's. It goes to the shell
        rather than to the masthead because the switch moved into the site bar. */
     <PageShell lang={lang} path={dayPath(digest.date)}>
       <Masthead
@@ -152,20 +111,15 @@ export function DigestView({
         {/* `shown`, not `fetched`: the publish floor drops the rest, so
             fetched would promise cards that are not on the page. */}
         <span>{t.posts(digest.stats.shown)}</span>
-        {minutes > 0 ? (
-          <>
-            <MastheadDot />
-            <span>{t.readTime(minutes)}</span>
-          </>
-        ) : null}
       </Masthead>
 
-      {/* Between the masthead and the tabs, which is the only place it can be:
-          it is the day's opening image, and below the tabs it would read as an
-          entry in whichever section happened to be showing.
+      {/* Between the masthead and the list — it is the day's opening image, and
+          below the first headline it would read as an entry rather than as the
+          edition's picture. The front page shows this same photo above its
+          teaser, for the same reason.
 
-          No margin of its own — the masthead's `pb-8` is above it and the tab
-          row's `mt-8` is below it. Absent on every digest written before photos
+          No margin of its own — the masthead's `pb-8` is above it and the list's
+          `mt-8` is below it. Absent on every digest written before photos
           existed, and on any day Wikimedia had nothing; both render as no card
           at all rather than as a gap. */}
       {digest.photo ? (
@@ -175,13 +129,29 @@ export function DigestView({
       ) : null}
 
 
-      {groups.length > 0 ? (
-        <DigestBody
-          articles={shown}
-          groups={groups}
-          date={digest.date}
-          lang={lang}
-        />
+      {/**
+       * ONE FLAT LIST, IN THE DAY'S OWN RANKING.
+       *
+       * The category tabs and the grouped sections are gone with `DigestBody`.
+       * What they cost was the thing a daily is for: the running order. Sections
+       * kept the registry's order rather than the day's, so the best piece of the
+       * morning appeared wherever its category happened to fall, and a tab row
+       * meant part of the edition was hidden behind a control by default.
+       *
+       * `shown` is already ranked — see `shownArticles` — so this is the order
+       * the digest itself chose, top to bottom, with nothing to press first.
+       */}
+      {shown.length > 0 ? (
+        <section className={`${SECTION} flex flex-col gap-3 ${PAD}`}>
+          {shown.map((article) => (
+            <ArticleBrief
+              article={article}
+              date={digest.date}
+              key={article.id}
+              lang={lang}
+            />
+          ))}
+        </section>
       ) : (
         <EmptyState lang={lang} />
       )}

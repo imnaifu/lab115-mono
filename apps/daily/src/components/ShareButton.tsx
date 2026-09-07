@@ -208,13 +208,19 @@ export function ShareButton({
           the action worth making obvious. */}
       <button
         type="button"
-        className="relative cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper disabled:cursor-wait"
+        className="relative cursor-pointer rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid disabled:cursor-wait"
         onClick={openWhenReady}
         disabled={preparing}
       >
         {/* The label KEEPS ITS BOX while the spinner is up — `invisible`, not
             unmounted — so the pill does not change width mid-press and shove the
             rest of the card's action row sideways. */}
+        {/* SECONDARY, and it was the filled dark pill until a third action
+            joined this row. `readSummary` is the way on into the take and is the
+            one thing in the row that should carry emphasis; two identical filled
+            pills a few pixels apart give a reader two primary actions and
+            therefore none. The spinner below follows the text colour for the
+            same reason. */}
         <span className={preparing ? "invisible" : undefined}>{t.share}</span>
         {preparing ? (
           <span
@@ -225,7 +231,7 @@ export function ShareButton({
             aria-label={t.preparing}
             className="absolute inset-0 flex items-center justify-center"
           >
-            <span className="size-4 animate-spin rounded-full border-2 border-paper/30 border-t-paper" />
+            <span className="size-4 animate-spin rounded-full border-2 border-ink-mid/30 border-t-ink-mid" />
           </span>
         ) : null}
       </button>

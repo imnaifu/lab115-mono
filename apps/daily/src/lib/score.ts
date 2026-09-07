@@ -93,12 +93,57 @@ import { USER_CONFIG } from "./user-config";
  * never asks for makes every reply incomplete, every article unjudged, and the
  * digest silently empty — summarize.ts throws at load if the two drift apart.
  */
+/**
+ * THE FIVE, REBUILT AROUND A DIFFERENT QUESTION.
+ *
+ * They used to ask whether an article was GOOD — substance, surprise,
+ * accessible, relevance, quality. They now ask whether anyone would OPEN it,
+ * finish it and repeat it. That is a different publication, and it was a
+ * deliberate change of goal rather than a tuning pass: a well-argued piece
+ * nobody wants to read is now supposed to score low.
+ *
+ * `accessible` IS THE ONLY SURVIVOR, unchanged, because it was the only one of
+ * the five that was never a proxy for quality — it asks whether the reader CAN
+ * follow the piece, which stays exactly as relevant when the goal is clicks.
+ *
+ * `quality` IS GONE OUTRIGHT. Its own rubric admitted it correlated 0.73 with
+ * `substance`, i.e. it was a second opinion on whether the piece had a thought
+ * in it, and craft is explicitly not what this digest now selects for. What
+ * replaced it is `payoff`, which is not the same question wearing a new name:
+ * it asks only whether the headline's promise is kept, and a repetitive,
+ * jargon-filled, badly structured piece can score 9 on it.
+ *
+ * THE ORTHOGONALITY TEST THE OLD NOTES SET — a dimension is only worth its slot
+ * if an excellent article can score low on it and a bad one high — restated for
+ * the new goal: a piece the reader would click must be able to score low, and a
+ * piece they would skip must be able to score high. Each pair below can
+ * disagree, which is the whole reason there are five numbers and not one:
+ *
+ *   pull vs talkable   before reading against after. Pure bait pulls 9 and is
+ *                      talkable 2; a dull headline over the best fact of the
+ *                      week is a 3 and a 9.
+ *   pull vs stakes     a black hole story pulls 9 with stakes 2; a piece on
+ *                      mortgage rates pulls 4 with stakes 9.
+ *   payoff vs the rest the only one that looks back at the text, and the only
+ *                      counterweight to optimising the digest into clickbait.
+ *
+ * ANY CHANGE HERE MUST CHANGE SCORE_SYSTEM TOO. A key named here that the prompt
+ * never asks for makes every reply incomplete, every article unjudged, and the
+ * digest silently empty — summarize.ts throws at load if the two drift apart.
+ *
+ * THE ARCHIVE STILL CARRIES THE OLD KEYS. Nothing rewrites 350-odd stored
+ * reviews, and nothing should: those articles were judged against a different
+ * rubric and relabelling them would be a lie about what the scorer did that
+ * morning. Everything that reads a review by dimension therefore has to tolerate
+ * one that does not carry these keys — see `clearsEveryDimension` below and
+ * `judgedByCurrentRubric` in lib/stats.
+ */
 export const SCORE_WEIGHTS = {
-  substance: 1,
-  surprise: 1,
+  pull: 1,
+  stakes: 1,
+  talkable: 1,
   accessible: 1,
-  relevance: 1,
-  quality: 1,
+  payoff: 1,
 } as const;
 
 export type ScoreDimension = keyof typeof SCORE_WEIGHTS;
@@ -130,14 +175,38 @@ export const SCORE_MAX = SCORE_MIN * 10;
  * dimension while punishing the four that are bad at it. Only a gate is
  * one-directional.
  *
- * FIVE, NOT SIX. At 6 this rule discards 40% of everything published (171 → 102
- * over those days) and the two dimensions doing the discarding are `substance`
- * (35 articles) and `relevance` (29), not `accessible` (8) — and both of their
- * 5-6 bands say in so many words that the ordinary good article lives there. A
- * rule that throws out the band the rubric calls normal is not a quality filter,
- * it is a different publication. At 5 it costs 7 articles of 171, and every one
- * of them has a dimension in the bottom two bands, which is a real weakness by
- * the rubric's own description.
+ * FOUR, AND IT WAS FIVE UNTIL THE RUBRIC CHANGED. The argument has not changed,
+ * only the distribution it is applied to, and both halves are worth keeping
+ * because the same reasoning will decide the next value.
+ *
+ * UNDER THE OLD FIVE DIMENSIONS the answer was 5. At 6 the rule discarded 40% of
+ * everything published (171 → 102) and the dimensions doing the discarding were
+ * `substance` (35 articles) and `relevance` (29), not `accessible` (8) — and both
+ * of their 5-6 bands said in so many words that the ordinary good article lives
+ * there. A rule that throws out the band the rubric calls normal is not a quality
+ * filter, it is a different publication. At 5 it cost 7 articles of 171, about
+ * 4%, and every one of them had a dimension in the bottom two bands.
+ *
+ * THE NEW DIMENSIONS SIT LOWER, so 5 stopped being the tail and became the
+ * middle. Measured over the 131-article run: `stakes` has a mean of 4.9 and 96 of
+ * 131 articles at 5 or below, `pull` a mean of 5.4 — these ask how much a reader
+ * WANTS the subject, and most subjects are ordinary, which is what their 5-6
+ * bands say. At 5 the gate killed 20 of the 95 articles that had cleared the sum,
+ * 21%, with `stakes` (9) and `pull` (7) doing it — the same shape as the 6 that
+ * was rejected above, arrived at without moving the number.
+ *
+ * At 4 it takes the bottom two bands and nothing else, which is what this rule is
+ * for: a dimension in 1-4 is a real weakness by the rubric's own description,
+ * and 5 is not.
+ *
+ * ONE MORE THING THE MEASUREMENT SHOWED, and it is not fixed by this constant:
+ * the new rubric's daily output is far more variable than the old one's — nine
+ * days ran 12.3 articles a day at worst 5 under the old dimensions, and at floor
+ * 30 with this gate at 5 one of those days published NOTHING. Selecting on
+ * subject rather than on craft means good subjects arrive in clumps. `publishable`
+ * has no minimum, so an empty morning is a real state; the site renders
+ * `EmptyState` and the mail job skips, so nothing breaks, but nothing refills it
+ * either.
  *
  * `alwaysPublish` exempts a source from this as it does from the sum — see the
  * field in user-config.ts. 硅谷居士 has a dimension under 5 in five of six
@@ -145,10 +214,26 @@ export const SCORE_MAX = SCORE_MIN * 10;
  */
 export const MIN_PER_DIMENSION = USER_CONFIG.minPerDimension;
 
-/** Every dimension at or above MIN_PER_DIMENSION. False for an unjudged article,
- *  whose review is all zeroes — the same answer the sum gives it. */
+/**
+ * Every dimension at or above MIN_PER_DIMENSION. False for an unjudged article,
+ * whose review is all zeroes — the same answer the sum gives it.
+ *
+ * IT CHECKS THE KEYS THE REVIEW ACTUALLY HAS, not the five named above, and that
+ * is what keeps the archive readable across the rubric change. A digest scored
+ * before the change carries `substance`/`surprise`/`relevance`/`quality`, and
+ * indexing those five names into it returned `undefined` and threw on `.score` —
+ * which would have taken out every page that replays the gate, i.e. all of
+ * /admin, for every day older than the change.
+ *
+ * An EMPTY review returns false rather than vacuously true: `Array.every` on no
+ * elements is true, and "we have no dimensions to check" must not read as "it
+ * cleared every dimension".
+ */
 export function clearsEveryDimension(review: ScoreReview): boolean {
-  return SCORE_DIMENSIONS.every(
-    (dimension) => review[dimension].score >= MIN_PER_DIMENSION,
-  );
+  // `Object.values` on an open record is typed as possibly-undefined per entry;
+  // a key present with no value is not a dimension that cleared anything, so it
+  // is filtered out rather than defaulted.
+  const findings = Object.values(review).filter((finding) => finding !== undefined);
+  if (findings.length === 0) return false;
+  return findings.every((finding) => finding.score >= MIN_PER_DIMENSION);
 }

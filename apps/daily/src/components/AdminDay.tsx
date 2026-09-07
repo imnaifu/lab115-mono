@@ -653,10 +653,21 @@ function EntryCard({
        * A dimension under the per-dimension floor is marked, because that is the
        * one number on the card that can single-handedly explain the verdict.
        */}
-      {entry.review ? (
+      {entry.review && Object.keys(entry.review).length > 0 ? (
         <dl className="mt-3 flex flex-col gap-1.5 border-t border-line pt-3">
-          {SCORE_DIMENSIONS.map((dimension) => {
-            const finding = entry.review![dimension];
+          {/**
+           * THE REVIEW'S OWN KEYS, not the five dimensions in force today.
+           *
+           * The rubric was rebuilt, and this page's whole job is showing what the
+           * scorer actually said that morning. An article from before the change
+           * was asked about `substance` and `surprise`; printing today's names
+           * over its numbers would be inventing a judgement it never made, and
+           * printing today's names with dashes would hide that it was judged at
+           * all. Stored order is rubric order — the model is asked for the keys in
+           * sequence and JSON preserves it — so this needs no sort.
+           */}
+          {Object.entries(entry.review).map(([dimension, finding]) => {
+            if (!finding) return null;
             const weak = finding.score < MIN_PER_DIMENSION;
             return (
               <div className="flex gap-3 text-sm" key={dimension}>

@@ -13,7 +13,7 @@ import {
   SECTION,
 } from "@/components/Shell";
 import { Summary } from "@/components/Summary";
-import { accentColor, categoryOf } from "@/lib/categories";
+import { categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
@@ -270,9 +270,12 @@ export default async function ArticlePage({ params }: Params) {
           />
         }
       >
+        {/* THE DATE, AND ONLY THE DATE. The category used to sit beside it in
+            its own colour; categories are not shown anywhere on the site now —
+            the tabs and the section headings went with `DigestBody`. The
+            registry stays, because the publish floor lives in it and the JSON-LD
+            below still declares `articleSection` for crawlers. */}
         <a href={langHref(lang, dayPath(date))}>{date}</a>
-        <span className="size-1 rounded-full bg-orange" />
-        <span style={{ color: accentColor(category) }}>{lang === "en" ? category.nameEn : category.name}</span>
       </Masthead>
 
       <section className={`${SECTION} ${PAD} flex flex-col gap-4`}>

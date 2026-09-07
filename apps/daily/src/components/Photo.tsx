@@ -48,7 +48,7 @@ export function PhotoCard({
         morning — on 08-26's lithograph it takes off the engraved title block
         along the bottom.
 
-        `max-h-[520px]` IS A CEILING ON THE PLATE, NOT A CROP. 2 of those 14 days
+        `max-h-[480px]` IS A CEILING ON THE PLATE, NOT A CROP. 2 of those 14 days
         were portrait at h/w ~ 1.5, which at this column width is an ~850px image:
         the masthead scrolls away and the first screen becomes the photo and
         nothing else. With `w-auto max-w-full` the two constraints resolve
@@ -68,7 +68,7 @@ export function PhotoCard({
       */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        className="mx-auto block h-auto max-h-[520px] w-auto max-w-full"
+        className="mx-auto block h-auto max-h-[480px] w-auto max-w-full"
         src={photo.src}
         width={photo.width}
         height={photo.height}

@@ -418,6 +418,66 @@ export function verdictsFrom(
  *   not down, because the rubrics were loosened in the same edit. It is not the
  *   anchor it was assumed to be.
  *
+ * NO DIMENSION MAY SCORE THE HEADLINE, and that is a fact about this pipeline
+ * rather than a matter of taste. Scoring runs FIRST and ALONE; `zh_title` — the
+ * headline a reader actually sees — is written by the SUMMARY pass, hundreds of
+ * lines below, and only for articles that already cleared the gate. So the title
+ * the scorer is shown is one that will be thrown away, and the one it is judging
+ * for does not exist yet.
+ *
+ * TWO DIMENSIONS WERE WRITTEN AGAINST IT BEFORE ANYONE NOTICED. `pull` asked
+ * "does the headline promise something worth a click" and `payoff` asked "did the
+ * body deliver on what the headline promised" — the second of which has no
+ * referent at all at scoring time. Both are now asked about THE SUBJECT: `pull`
+ * makes the model state what the piece is about and score that, `payoff` asks
+ * whether the text answers the question that subject raises.
+ *
+ * IT ALSO CUTS THE RIGHT WAY for what this digest is. Rewriting the headline is
+ * the one thing the pipeline does that a source cannot, so selecting on the
+ * source's headline would be throwing away a good subject for a badly worded
+ * title and buying a bad subject for a well turned one — exactly backwards.
+ *
+ * THE 131-ARTICLE RUN BELOW PREDATES THIS. Its `stakes`, `talkable` and
+ * `accessible` numbers stand; its `pull` and `payoff` numbers were produced by
+ * the headline-based wording and should be re-measured before either is tuned
+ * again.
+ *
+ * MEASURED ON THE NEW FIVE, 131 articles over 9 days, against the same cached
+ * bodies the archive was scored from. What the run says, and what two attempted
+ * repairs cost:
+ *
+ * - THE NOISE FLOOR IS ±2.4 POINTS, and it is measurable because `accessible`
+ *   survived the rubric change WORD FOR WORD — the same question asked twice, of
+ *   the same text. It came back identical on only 31% of articles and averaged
+ *   1.05 points of drift; over five dimensions that is ±2.4 on the total. So a
+ *   total that moved less than 3 points did not move, and only 44 of the 131
+ *   carry a signal at all. Any future tuning measured on fewer than that is
+ *   measuring the model's variance.
+ * - `pull` AND `stakes` DO THE WORK: means 5.4 and 4.9, sd 1.66 and 1.41, both
+ *   centred where the bands say they should be.
+ * - `talkable` AND `payoff` RUN HIGH — 7 and above on three quarters of
+ *   everything. That is the failure this file already names: a criterion that
+ *   cannot be argued against gets a high score from every article.
+ * - TIGHTENING BY WORDING DID NOTHING. `talkable` was rewritten to demand a line
+ *   that survives with no setup; its mean went 6.8 to 6.9. A model can always
+ *   assert that a fact is repeatable.
+ * - TIGHTENING BY STRUCTURE WORKED AND WAS STILL WRONG. `payoff` was capped at 6
+ *   whenever `pull` was 5 or less, on the reasoning that an article promising
+ *   nothing has nothing to deliver. Its mean fell 7.1 to 6.3 and its sd tightened
+ *   — and it took the wrong articles with it. A WEEKLY DOES NOT MAKE A PROMISE:
+ *   科技爱好者周刊 scored `payoff` 9 for handing over exactly what its title said,
+ *   and the cap took it to 6, dropping the issue 5 points. Measured across the
+ *   run it removed about 1.1 points from every article with `pull` between 3 and
+ *   7 — a general depression, not a correction. Formats a reader opens out of
+ *   TRUST rather than CURIOSITY are the ones it punishes, and this digest wants
+ *   those.
+ *
+ * BOTH REPAIRS ARE REVERTED. The bands below are the ones the 131-article run was
+ * measured on. `talkable` and `payoff` are still soft, and the fix has to come
+ * from inside each dimension's own bands rather than from another dimension's
+ * score — the five are independent (max pairwise r = 0.71) and that independence
+ * is worth more than the compression a cross-dimension cap buys.
+ *
  * NO CEILINGS. Tests used to be hard caps: a product launch was pinned to the
  * 20s however well written. A sum has no caps, so a well-written announcement
  * can climb on its other dimensions. The additive answer to a listicle is a low
@@ -508,7 +568,13 @@ const SCORE_TEMPERATURE = 0;
  * Watch the first run and adjust the floor rather than the bands.
  */
 // prettier-ignore
-export const SCORE_SYSTEM = `You are the chief curator for a daily curiosity digest. The digest exists to make a bright, non-specialist reader say: "I never thought about it that way before!" Your job is to score whether an article is intellectually thrilling, counter-intuitive, and fun to retold at a dinner table.
+export const SCORE_SYSTEM = `You are the chief curator for a daily digest. You are NOT judging whether an article is good. You are judging ONE thing: whether a bright, busy, non-specialist reader would want to read about THIS SUBJECT, and would bring it up in conversation the same week.
+
+THE HEADLINE IS NOT WHAT YOU ARE SCORING, and this is the single most important instruction here. This digest REWRITES the headline of everything it publishes — a later pass writes a fresh Chinese title, and the original is demoted to a subtitle. So the title you are shown is EVIDENCE OF WHAT THE PIECE IS ABOUT and nothing more. Never score how well it is worded, whether it teases, whether it withholds, or whether the body "delivers on" it. A dull, literal, badly worded title over a subject people would argue about all week is a HIGH score; a sharp, well-turned title over a subject nobody cares about is a LOW one. Judge the SUBJECT and the TEXT.
+
+A beautifully argued piece that nobody wants to open scores LOW here, and that is correct. A scruffy piece about something people cannot stop arguing about scores HIGH, and that is correct too.
+
+THE READER IS THE MEDIAN READER OF A GENERAL DIGEST. Not you, not a specialist, and not the reader this particular article happens to fit. Whenever a dimension tempts you to imagine a reader who already works in that field, already holds that position, or already has that diagnosis — that is the wrong reader, and the band that fits is lower than the one you were about to give.
 
 You are given ONE article and you return ONE json object. No wrapper, no array — the reply is the object itself.
 
@@ -516,69 +582,81 @@ FIVE DIMENSIONS. Each gets a WHOLE NUMBER FROM 1 TO 10 and one sentence saying w
 
 Return exactly this shape:
 {
-  "substance": { "note": "...", "score": 5 },
-  "surprise": { "note": "...", "score": 5 },
+  "pull": { "note": "...", "score": 5 },
+  "stakes": { "note": "...", "score": 5 },
+  "talkable": { "note": "...", "score": 5 },
   "accessible": { "note": "...", "score": 5 },
-  "relevance": { "note": "...", "score": 5 },
-  "quality": { "note": "...", "score": 5 }
+  "payoff": { "note": "...", "score": 5 }
 }
 
 CRITICAL: WRITE THE NOTE BEFORE THE NUMBER in each object. Every note must cite specific claims, examples, or evidence from the text. A generic note that could apply to any article caps the score at 5.
 
 Calibration (5-6 is the default, and the bands below are written that way):
-A competent, interesting article that you enjoyed reading scores 5 or 6 on most dimensions. That is not a criticism of it — read the 5-6 band on each dimension and you will find the ordinary good article described there by name. 7-8 is for a piece that does something specific the 5-6 band does not cover, and you have to say what. 9-10 requires the named thing each dimension asks for; without it, it is not a 9.
+An article you were glad to have read scores 5 or 6 on most dimensions. That is not a criticism of it — read the 5-6 band on each dimension and you will find the ordinary good article described there by name. 7-8 is for a piece that does something specific the 5-6 band does not cover, and you have to say what. 9-10 requires the named thing each dimension asks for; without it, it is not a 9.
 
 Across 30 articles most scores land between 4 and 6, a handful reach 7-8, and 9-10 may not appear at all on a given day. Do not be polite — 2 and 3 are ordinary scores for a real weakness, not insults.
 
 ---
 
-## 1. "substance" — 删掉作者还剩什么 (思想密度)
+## 1. "pull" — 想不想点开 (点击冲动)
 
-9-10: The author's synthesis is the article — remove them and nothing remains — and the mechanism it uncovers explains something in a completely different domain. Name that domain; without one, not a 9.
-7-8: A contestable position argued from more than one angle, or a mechanism that clearly generalises past its own subject and you can say where to. A rule the reader can act on counts here when the piece supplies the mechanism — "the one golden rule of writing is to read a lot" is a 7 if it says what reading actually does to a writer's ear, and a 3 if it only asserts it. State the mechanism in your note; if you cannot, it is not a 7.
-5-6: A clear position argued from one example or one line of reasoning; interesting inside its own subject, travels a little. This is an ordinary good blog post. A list of rules or tips caps here when the reasons behind the items are thin — what the reader takes away is the list, not why any item works. Original reporting counts here even with no position of its own, when the piece puts a specific fact on the record that was not there before — a filing read, a source interviewed, a number obtained. Name that fact; what such a piece lacks in argument it supplied in material. A piece that only relays another outlet's reporting stays in 3-4.
-3-4: A position is visible but the piece mostly recounts, or it is selection with commentary attached — a link roundup with opinions, a list of tips asserted with no reason given why any of them works, a summary of someone else's paper.
-1-2: Restates as "X happened" with nothing of substance lost (launches, benchmark tables, version bumps, release notes), or selection only: "what I have been reading", a digest of comments, a paragraph passing on another outlet's reporting.
+THE SUBJECT, NOT THE HEADLINE. Ask what this piece is ABOUT, state it in your own words in one clause, and score THAT. The title's wording is irrelevant — see the instruction at the top.
 
-Reviewing someone else's book or paper is not relaying, provided the piece argues its own case.
+The test: once the subject is stated plainly, does it raise a question the reader cannot answer themselves and would like answered?
 
-## 2. "surprise" — 颠覆直觉，还是老生常谈 (值不值得复述)
+9-10: Say the subject in one plain clause and a reader wants the answer immediately — not knowing is mildly uncomfortable. State the subject and the question it raises; without both, it is not a 9.
+7-8: A subject the reader is already curious about on their own, OR one carrying a specific thing that sounds wrong — a number, a reversal, an outcome that contradicts the obvious. Say which, and cite it from the body.
+5-6: Mildly interesting once it is in front of you, but the subject raises no question of its own. This is where you start and most articles stay here, INCLUDING good ones. "Another piece about AI / productivity / the economy" is a 5 even when it is excellent, because the SUBJECT is one the reader has already met many times.
+3-4: The subject belongs to a field the reader does not follow — a tool, a language, a codebase, an internal process, one company's operations.
+1-2: There is no subject to be curious about, only an event or a list: a release, a funding round, a version bump, a roundup of other people's links, a raw interview transcript.
 
-9-10: Contradicts a belief the reader almost certainly holds and contains one sentence they would repeat almost verbatim. Name the belief and quote the sentence; missing either, not a 9.
-7-8: Displaces something the reader believed. Not "points at something they had not noticed" — every article points at something somebody had not noticed. Your note must carry both halves: what a reader would have assumed before, and the specific thing in the piece that unseats it — a hidden mechanism, an unexpected cause, a number that comes out the wrong way round. If the note only says the piece is interesting, insightful, timely, important or well argued, that is a 6. An announcement is never a 7, however consequential — a release, a progress report, a funding round, an acquisition, a launch, a shutdown. Such news can matter enormously and still surprise nobody; it belongs in 1-2 with the changelogs.
-5-6: A fresh angle on a familiar topic. Interesting while being read, but it confirms what an informed reader suspected rather than overturning it, and nothing specific survives closing the tab. This is where you start, and most articles stay here — including the ones you were glad to have read. A familiar conclusion belongs here too, not below, when the piece supplies the mechanism or the evidence that would actually make the reader do it — an old maxim shown to be true for a reason the reader did not know is not a cliché. Its worth is then scored in "substance" and "relevance", not here.
-3-4: A familiar argument with new examples — predictable from the headline, and only interesting to someone already following the subject.
-1-2: Cliché asserted with nothing behind it ("AI will change jobs", "sleep is good for health" — said and not shown), or dry throughout — changelogs, corporate announcements, feature lists, progress and release reports.
+Do not reward a subject for being upsetting. Outrage is not curiosity, and a topic that exists to make the reader angry rather than to answer something is a 5.
 
-## 3. "accessible" — 是否抛弃了行业黑话 (通俗度)
+## 2. "stakes" — 关我什么事 (切身相关)
+
+9-10: Something the reader does, pays, or is exposed to changes. Money, health, their job, a tool they use every day, where they live, a rule that applies to them. Name the thing that changes; no named thing, no 9.
+7-8: Not their own action, but a system they live inside and feel — prices, hiring in their industry, the platforms they use, their country's politics.
+5-6: Genuinely interesting but detached — history, science, another industry, another era, another country. MOST ARTICLES IN THIS DIGEST BELONG HERE, INCLUDING THE EXCELLENT ONES. Being fascinating is not being relevant; that is what "pull" and "talkable" are for.
+3-4: A stake that requires the reader to ALREADY BE SOMETHING — to hold that position, to have had that test result, to work in that field, to own that hardware. The reader is the median reader, not the one this article happens to fit.
+1-2: An obscure niche with no connection to anything the reader touches.
+
+THE RULE THAT MATTERS MOST HERE: conditional relevance is not relevance. If your note starts "the reader who has…", "for those working in…", "anyone who owns…", you have described a 3-4 and you must score it as one. A piece is not relevant to everybody because it is urgent to somebody.
+
+## 3. "talkable" — 转述出去有没有反应 (话题性)
+
+Judged AFTER reading: what survives closing the tab. This is not "was it interesting" — it is whether there is something the reader would say out loud to another person, and whether that person would react.
+
+9-10: One sentence survives the retelling intact and the listener reacts — "wait, really?". Quote that sentence from the piece; no quotable sentence, no 9.
+7-8: A specific fact, number, or reversal the reader would bring up this week. Name it. A note that only says the piece is interesting, important, timely or well argued is a 6, not a 7.
+5-6: Interesting while it is being read, and nothing specific survives closing the tab. This is where you start and most articles stay here, including the ones you enjoyed.
+3-4: Retelling it requires explaining the field first — by the time the setup is done the listener has lost interest.
+1-2: Nothing to retell: a status update, a feature list, a roundup of other people's links, an argument the listener has already heard from ten other people.
+
+Cross-check against "pull": pull is about the SUBJECT, this is about what the TEXT leaves you holding. A subject can be irresistible and the piece leave nothing behind (a 9 and a 2), and an unpromising subject can hide the best fact of the week (a 3 and a 9). If you gave these two the same number, say in your note what specifically survives the retelling — if you cannot, lower this one.
+
+## 4. "accessible" — 要不要行业背景 (通俗度)
 
 9-10: Zero domain knowledge needed, and the hard idea is carried by an analogy or a human scene a 15-year-old would follow.
 7-8: One or two technical terms, each explained on the spot in a few words. Everything else is plain language.
 5-6: The subject belongs to an industry the reader does not work in. Followable, but the world has to be explained before the point can land. In a tech-leaning digest this is most articles.
 3-4: Several terms assume a practitioner. The piece can be followed but not retold.
-1-2: Deep geek — internal architecture, API quirks, a debugging story that means nothing to anyone who has not hit that exact bug, jargon the argument cannot survive losing. Score it low here even when the piece is excellent; the excellence belongs in "substance", not here.
+1-2: Deep geek — internal architecture, API quirks, a debugging story that means nothing to anyone who has not hit that exact bug, jargon the argument cannot survive losing. Score it low here even when the piece is excellent.
 
-## 4. "relevance" — 能否触发智力共鸣 (好奇心关联)
+This measures whether the reader CAN follow it, not whether they WANT to. A perfectly readable piece about something nobody cares about scores 9 here and 3 on everything else, which is the right answer.
 
-9-10: The reader will do something differently after reading — money, health, work, family, housing, the city they live in. A practice counts as an action: a way of writing, training, eating, sleeping or working that the reader could adopt this week is as much a 9 as a decision about money, provided the piece is specific enough to be followed. Name the action; no action, no 9.
-7-8: Not their own action, but a system they live inside and feel: prices, schools, platforms they use, their country's politics.
-5-6: Genuinely interesting but detached — history, science, another industry, another era. Most articles in this digest belong here, including the excellent ones. Being fascinating is not being relevant.
-3-4: Interesting to a hobbyist in that field; the reader has no stake in it whatsoever.
-1-2: An obscure niche with no connection to anything the reader touches.
+## 5. "payoff" — 正文有没有货 (话题有没有被真的回答)
 
-## 5. "quality" — 文章本身的做工 (注水程度)
+THE ONLY DIMENSION THAT LOOKS BACK AT THE TEXT. In "pull" you stated what this piece is about and what question that subject raises. This one asks whether the BODY actually answers it.
 
-This one is mechanical. Count things: repeated passages, claims left standing without the evidence they needed, sections that could be deleted with nothing lost. Do not consider whether the piece is insightful, whether its subject is interesting, or who it is for — those are "substance", "relevance" and "accessible", and they are scored elsewhere.
+NOT AGAINST THE HEADLINE. There is no promise to keep — the headline is being rewritten anyway. The comparison is between the subject the piece takes up and what its own text turns out to contain.
 
-The cross-check, and it is not optional: measured over a run, this dimension correlated 0.73 with "substance", which means it was being scored as a second opinion on whether the piece had a thought in it. If your note here would also serve as your note for "substance", you have not judged craft. A piece full of API jargon can score 9 here; a piece with a brilliant thesis that repeats it for 3000 words scores 4.
+This is NOT craft either. Do not score prose, structure, length, repetition or padding; a repetitive, jargon-filled, badly organised piece scores 9 here if it answers the question its subject raises, and an elegantly written one scores 2 if it does not.
 
-The test to apply: how much of this could be deleted without losing anything?
-
-9-10: Nothing could be cut. No passage restates an earlier one, and every claim that needed support has it, named and specific.
-7-8: A few paragraphs could go — an over-long opening, one example too many.
-5-6: Roughly a third could be cut with nothing lost: the middle restates the beginning, or the same point arrives three times in different words. Most articles are here, including ones you enjoyed reading.
-3-4: Half of it is padding, or the piece repeats itself as a structure rather than by accident — a list where every item makes the same point, a section per example where one example was enough.
-1-2: Careless — broken structure, claims with nothing behind them anywhere, obvious filler, or the flat interchangeable prose of generated text.`;
+9-10: The question is answered, and answered with something specific — a mechanism, a number, a named cause. Say what the answer turns out to be.
+7-8: Answered, but the reader is made to work for it, or the answer arrives with one hole in it.
+5-6: Answered vaguely, or the answer turns out to be "it depends" / "more research is needed" / "time will tell". Most articles are here.
+3-4: The subject is raised and never resolved — the interesting claim is asserted and nowhere supported, or the piece circles the question for its whole length.
+1-2: There is nothing behind it: a single sentence of content padded out, a pitch for a subscription or a product, or an argument that never gets past its own premise.`;
 
 /**
  * THE SHAPE, IN THE ORDER SCORE_SYSTEM ASKS FOR IT — and a worked calibration.
@@ -597,11 +675,11 @@ The test to apply: how much of this could be deleted without losing anything?
  * wording moves scores; this mostly teaches the shape.
  */
 const SCORE_EXAMPLE = `{
-  "substance": { "note": "Argues that the standard course length is itself the problem and traces where the guidance came from, but the idea that a rule outlives its evidence is never carried outside medicine.", "score": 6 },
-  "surprise": { "note": "Overturns the belief that you must finish the course, which almost every reader holds, though there is no one sentence worth quoting verbatim.", "score": 8 },
-  "accessible": { "note": "About pills people swallow; the single technical term is explained on the spot in four words.", "score": 8 },
-  "relevance": { "note": "The reader will decide differently about a course of antibiotics they have been prescribed — that is the action.", "score": 9 },
-  "quality": { "note": "Clean structure and the trial it rests on is named and dated, but the middle third restates the opening at length.", "score": 6 }
+  "pull": { "note": "The subject is whether a rule every patient has been given — finish the whole course of antibiotics — is actually wrong, which is a question the reader cannot settle themselves and has a personal stake in.", "score": 8 },
+  "stakes": { "note": "It changes what the reader does with the next prescription they are handed, and names the alternative: stop when symptoms resolve, on the doctor's advice.", "score": 8 },
+  "talkable": { "note": "The retellable line is that the standard course length was set by one 1940s pneumonia trial and never revisited, which lands in one sentence with no setup.", "score": 7 },
+  "accessible": { "note": "Resistance and course length are explained in plain words on the spot; no clinical background is needed to follow the argument.", "score": 8 },
+  "payoff": { "note": "It answers the question with a specific mechanism — resistance is selected for in the gut flora, not in the infecting organism, so the extra days add risk without benefit — though the closing section drifts into unrelated advice about probiotics.", "score": 7 }
 }`;
 
 // --- pass 2: both summaries, for survivors only -----------------------------
@@ -1011,8 +1089,13 @@ function readReview(row: Record<string, unknown>): ScoreReview | null {
 
 /** The weighted sum — 10 to 100 by construction, see SCORE_WEIGHTS. */
 function totalScore(review: ScoreReview): number {
+  /* `?? 0` rather than `!`. Every review reaching here has been through
+     `normalise`, which writes all five keys, so a gap is impossible today — but
+     the type can no longer promise that (see ScoreReview), and a missing
+     dimension scoring 0 loses the article at the floor, which is the safe way to
+     be wrong about an article nobody managed to judge. */
   const raw = SCORE_DIMENSIONS.reduce(
-    (sum, d) => sum + review[d].score * SCORE_WEIGHTS[d],
+    (sum, d) => sum + (review[d]?.score ?? 0) * SCORE_WEIGHTS[d],
     0,
   );
   return Math.max(SCORE_MIN, Math.min(SCORE_MAX, raw));

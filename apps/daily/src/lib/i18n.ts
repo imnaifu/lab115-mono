@@ -52,6 +52,29 @@ const STRINGS = {
     recentDays: (n: number) => `最近 ${n} 天`,
 
     readFull: "阅读全文 →",
+    /**
+     * The way in to one article's full take, from a list that shows only the
+     * headline and the claim.
+     *
+     * 「总结」, NOT 「全文」: `readFull` above already means the original piece on
+     * someone else's site, and a list row now carries both. Two links a few pixels
+     * apart, one leading deeper into this site and one leading off it, have to say
+     * which is which in the words themselves.
+     */
+    readSummary: "阅读总结 →",
+    /** The front page's one action: on into the day this teaser is from. */
+    keepReading: "继续阅读全文 »",
+    /**
+     * The heading over the run of recent pieces on the front page.
+     *
+     * PIECES, NOT DAYS. It listed dates until the front page became a teaser for
+     * one article — and a column of dates under a headline is a table of contents
+     * for a book the reader has not opened. Naming the pieces is what makes the
+     * list worth reading: every row is something they can decide about.
+     */
+    latestPosts: "最新文章",
+    /** The way out of that list, into the archive. */
+    morePosts: "更多文章……",
     share: "分享",
     /** The share button while it waits for the posters — see ShareButton. */
     preparing: "正在生成图片",
@@ -330,6 +353,10 @@ const STRINGS = {
       n === 1 ? "the latest day" : `the last ${n} days`,
 
     readFull: "Read the original →",
+    readSummary: "Read the summary →",
+    keepReading: "Keep reading »",
+    latestPosts: "Latest posts",
+    morePosts: "More posts…",
     share: "Share",
     preparing: "Preparing images",
     copyLink: "Copy link",

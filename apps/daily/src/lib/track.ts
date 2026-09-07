@@ -43,8 +43,16 @@ export type TrackEvent =
   | "save_image"
   /** A preview that failed twice. Diagnostic: it means a poster is not arriving. */
   | "poster_failed"
-  /** A category tab. Says whether the 全部 tab is used at all. */
-  | "category_tab"
+  /**
+   * A summary was opened from a list row — the way in to one article's take.
+   *
+   * IT REPLACES `category_tab`, which went with the tabs themselves: the lists
+   * are flat now and there is nothing to filter. This is the number that says
+   * whether a list of headlines and claims is doing its job, and it reads against
+   * `read_original` on the same row — one is a reader staying, the other is a
+   * reader leaving.
+   */
+  | "summary_open"
   /** The language switch, which has just come back from being hidden. */
   | "lang_switch"
   /** The end-of-page link on a day page, to the archive's full run of dates. */

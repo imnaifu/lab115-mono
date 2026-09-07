@@ -1,6 +1,6 @@
 {
   "publishMinScore": 30,
-  "minPerDimension": 5,
+  "minPerDimension": 4,
   "collectPerSource": 3,
   "publishPerSource": 1,
   "summaryMinChars": 150,

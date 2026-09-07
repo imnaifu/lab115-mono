@@ -157,11 +157,27 @@ export async function AdminOverview() {
           </>
         }
       >
-        {/* Small multiples: one shared y-scale across all five, or the shapes
-            cannot be compared — which is the only reason to put them together. */}
+        {/* THE RUBRIC CHANGE IS VISIBLE HERE FIRST. These panels read reviews per
+            dimension, so they cover only articles scored under the dimensions in
+            force now — see `judgedByCurrentRubric`. Until the first run after a
+            change lands that is nobody, and five empty histograms would read as a
+            broken page rather than as "no data yet". */}
+        {dims[0]?.n === 0 ? (
+          <p className="rounded-card border border-line bg-page-deep px-4 py-3 text-sm text-ink-mid">
+            还没有文章按当前的五维打过分。归档里的评分用的是上一套维度，混在一张
+            分布图里没有意义 —— 下一次 <code className="font-mono">npm run score</code>{" "}
+            之后这里就有内容了。
+          </p>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {dims.map((dim) => {
-            const peak = Math.max(...dims.flatMap((each) => each.histogram));
+            /* `, 1` so an empty set still produces a usable scale. It is
+               reachable now in a way it was not before: these panels count only
+               articles judged under the CURRENT rubric, so on the first morning
+               after a rubric change every histogram is all zeroes and a max of 0
+               is a degenerate linear scale — Nivo draws NaN-wide bars off it
+               rather than an empty chart. */
+            const peak = Math.max(...dims.flatMap((each) => each.histogram), 1);
             return (
               <div key={dim.dimension}>
                 <div className="flex items-baseline justify-between gap-2">
