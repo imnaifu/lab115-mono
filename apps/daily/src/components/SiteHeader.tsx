@@ -77,7 +77,7 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
       /* ThemeToggle's shell, to the class. The two are the same size of control
          doing the same kind of job, and drifting apart would show — they sit
          side by side. */
-      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid"
+      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
     >
       <TranslateIcon />
     </a>
@@ -320,7 +320,7 @@ export function SiteHeader({
           {archiveReady ? (
             <a
               href={href(lang, archivePath(1))}
-              className="hidden rounded-full px-2 py-1 text-sm font-bold text-ink-mid md:block"
+              className="hidden rounded-full px-2 py-1 text-sm font-bold text-ink-mid md:block transition duration-150 ease-out hover:text-ink active:opacity-70"
               /* `from` separates the three ways into the archive: the front
                  page's card, the archive's own pager, and this bar — which is
                  the only one of them that exists on every page. See

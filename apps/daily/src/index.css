@@ -180,6 +180,32 @@
 
 @layer base {
   /**
+   * MOTION IS OPT-OUT, NOT OPT-IN.
+   *
+   * The hover treatments on the buttons are transitions and small transforms,
+   * and a reader who has asked their OS to stop animations has usually asked for
+   * a reason — vestibular disorder, migraine, a low-powered machine. This kills
+   * the movement for them while leaving every colour change, focus ring and
+   * layout exactly where it is: `0.01ms` rather than `none` because a duration of
+   * zero cancels the `transitionend` events some components wait on, and
+   * `PullToRefresh` is one of them.
+   *
+   * IT LIVES HERE RATHER THAN ON EACH BUTTON. A per-component opt-out is one
+   * every future component has to remember; this one is already true of anything
+   * added later.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /**
    * THE SWITCH. No utility for this one, and it is document-level.
    *
    * Three rules, in this order and for this reason: the OS decides when the

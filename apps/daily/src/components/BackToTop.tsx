@@ -121,7 +121,7 @@ export function BackToTop({ label }: { label: string }) {
           tabIndex={shown ? 0 : -1}
           aria-label={label}
           title={label}
-          className={`pointer-events-auto flex size-11 items-center justify-center rounded-full border border-line bg-paper text-ink-mid shadow-soft transition duration-200 ease-out ${
+          className={`pointer-events-auto flex size-11 items-center justify-center rounded-full border border-line bg-paper text-ink-mid shadow-soft transition duration-200 ease-out hover:border-ink-soft hover:text-ink ${
             shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
           }`}
         >

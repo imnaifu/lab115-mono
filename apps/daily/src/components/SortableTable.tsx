@@ -113,7 +113,7 @@ export function SortableTable({
                       `w-full` puts the hit area across the whole cell rather than
                       on the four characters of the label. */}
                   <button
-                    className={`flex w-full cursor-pointer items-center gap-1 ${
+                    className={`flex w-full cursor-pointer items-center gap-1 transition duration-150 ease-out hover:text-ink active:opacity-70 ${
                       at === 0 ? "" : "justify-end"
                     } ${active ? "text-ink" : "text-ink-soft"}`}
                     onClick={() =>

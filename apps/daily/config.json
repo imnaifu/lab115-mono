@@ -3,6 +3,7 @@
   "minPerDimension": 4,
   "collectPerSource": 3,
   "publishPerSource": 1,
+  "bodyMinChars": 300,
   "summaryMinChars": 150,
   "summaryMaxChars": 650,
   "summaryParaMaxChars": 90,
@@ -93,10 +94,10 @@
       "site": "https://news.ycombinator.com/",
       "feed": "https://hnrss.org/frontpage?points=300",
       "category": "tech",
-      "description": "Hacker News 头条聚合，内容取决于当天社区，质量与主题都不可控。",
-      "descriptionEn": "The Hacker News front page. Whatever the community surfaced that day — topic and quality both out of our hands.",
+      "description": "Hacker News 头条聚合，内容取决于当天社区，质量与主题都不可控。已停用：44 篇打分只发出 15 篇，均分 24.7，是高产源里最低的；新五维下 pull 4.7、stakes 3.3 —— 抓来的多是行业内部话题，不是给普通读者的。",
+      "descriptionEn": "The Hacker News front page. Whatever the community surfaced that day — topic and quality both out of our hands. Retired: 15 published out of 44 scored, mean 24.7, the weakest of the high-volume sources.",
       "accent": "#D2601A",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": true
     },
     {

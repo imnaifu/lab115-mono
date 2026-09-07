@@ -598,7 +598,7 @@ export function ShareSheet({
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer text-xs font-bold text-ink-soft"
+            className="cursor-pointer text-xs font-bold text-ink-soft transition duration-150 ease-out hover:text-ink active:opacity-70"
           >
             {t.close}
           </button>

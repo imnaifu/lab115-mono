@@ -201,7 +201,7 @@ export async function SourceView({
         <div className="mt-3 flex flex-col gap-2">
           {picked.map(({ date, article }, at) => (
             <a
-              className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4"
+              className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4 transition duration-150 ease-out hover:border-ink-soft"
               key={`${date}-${article.id}`}
               href={href(lang, articlePath(date, article))}
               /* `day_open` is for a DAY page; this opens an article. `age` is the

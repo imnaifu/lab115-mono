@@ -74,7 +74,7 @@ export function ThemeToggle({ label }: { label: string }) {
       /* The install control's shape, minus the words: two labelled pills side by
          side would make the masthead's top row a toolbar, and only one of the two
          is worth a sentence. */
-      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid"
+      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
     >
       <ContrastIcon />
     </button>

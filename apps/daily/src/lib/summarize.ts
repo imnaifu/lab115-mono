@@ -547,6 +547,29 @@ export function verdictsFrom(
 const SCORE_PASS = "score";
 
 /**
+ * The shortest body worth a model call — see `bodyMinChars` in user-config.
+ *
+ * A PAYWALL LEAVES A FEED ITEM BEHIND. Substack publishes the opening paragraph
+ * and a "keep reading" pitch for a paid post, so the pipeline receives something
+ * that parses as an article and is not one. Measured over this archive those
+ * teasers run about 209 characters against 328 for the shortest genuinely
+ * complete piece, which is the gap this sits in.
+ *
+ * WHY IT IS NOT LEFT TO THE RUBRIC. `payoff` would catch it — a subject raised
+ * and never resolved is its 3-4 band by definition — but only after paying for
+ * the call, and only if the model notices that what it was handed is a fragment.
+ * Nothing in the request says so: `renderArticle` prints the body with no note
+ * that it might be a stub, so the model reads a teaser as a short article. The
+ * cheapest honest answer is not to ask.
+ *
+ * AN EMPTY BODY IS NOT THIS CASE and is deliberately excluded below. A fetch that
+ * returned nothing is a different failure — the source may be fine and the network
+ * was not — and `renderArticle` already tells the model to judge from the title
+ * alone there, which is a decision this file has already made.
+ */
+const BODY_MIN_CHARS = USER_CONFIG.bodyMinChars;
+
+/**
  * Sampling temperature for the SCORE pass only. DeepSeek defaults to 1.0 and
  * recommends 0.0 for work with one right answer, 1.5 for prose; judging against
  * a fixed rubric belongs at the first end and was silently running at the
@@ -1615,7 +1638,32 @@ export async function scoreAll(
   const out = new Map<string, Verdict>();
   if (articles.length === 0) return out;
 
-  const batch = capped(articles);
+  /**
+   * PAYWALL TEASERS NEVER REACH THE MODEL — see `BODY_MIN_CHARS`.
+   *
+   * Filtered here rather than at fetch time on purpose: the article still goes
+   * into the day's file, because that list is the record of what was CONSIDERED
+   * and dropping it silently is the thing `Digest.articles` keeps rejections to
+   * avoid. It simply arrives unscored, a state every reader of the file handles.
+   *
+   * AN EMPTY `body` IS LEFT ALONE — a fetch failure, not a paywall, and
+   * `renderArticle` has its own answer for it.
+   */
+  const scorable = articles.filter(
+    (article) => !article.body || article.body.length >= BODY_MIN_CHARS,
+  );
+  const stubs = articles.filter(
+    (article) => article.body && article.body.length < BODY_MIN_CHARS,
+  );
+  if (stubs.length > 0) {
+    console.log(
+      `[daily] ${stubs.length} under ${BODY_MIN_CHARS} chars, not scored ` +
+        `(paywall teasers): ` +
+        stubs.map((a) => `${a.title} (${a.body.length})`).join(" · "),
+    );
+  }
+
+  const batch = capped(scorable);
   // Say so when it bites. The cut used to be invisible: the counts below are
   // taken over `batch`, so a run that quietly discarded 18 of 48 articles
   // still reported a clean "scored 30/30", and the discarded ones surfaced

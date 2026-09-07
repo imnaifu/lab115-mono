@@ -12,12 +12,13 @@ import {
   PAD,
   SECTION,
 } from "@/components/Shell";
+import { ShareButton } from "@/components/ShareButton";
 import { Summary } from "@/components/Summary";
 import { categoryOf } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
-import { POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
+import { posterParts, POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
 import { sourceOf } from "@/lib/sources";
 import { articlePath, dayPath, posterBase, posterPartUrl } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
@@ -25,6 +26,10 @@ import { alternatesFor, breadcrumb, JsonLd, publisher } from "@/lib/seo";
 import { readArticleBySlug } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
+
+/** The hover system — see the note on these in components/ArticleCards. */
+const ACTION_OUTLINE =
+  " transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80";
 
 type Params = {
   params: Promise<{
@@ -322,7 +327,7 @@ export default async function ArticlePage({ params }: Params) {
               off-site. */}
           <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
             <a
-              className="rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid"
+              className={`rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid${ACTION_OUTLINE}`}
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
@@ -335,6 +340,32 @@ export default async function ArticlePage({ params }: Params) {
             >
               {t.readFull}
             </a>
+            {/**
+             * SHARING IS BACK ON THIS PAGE, and it belongs on both.
+             *
+             * It used to live here as a block of its own; it moved to the list
+             * rows because the pill there was a LINK down to this page, which put
+             * a navigation between deciding to share and being able to — see the
+             * note on `Actions` in ArticleCards. That argument was about the list,
+             * and it never said this page should have none. A reader who arrived
+             * from a search or somebody else's share lands here, finishes the
+             * take, and has nowhere to pass it on.
+             *
+             * IDENTICAL PROPS TO THE LIST'S, deliberately: the same permalink, the
+             * same poster set, the same title and thesis in the same language. A
+             * share made from this page and one made from the day page have to be
+             * the same object, or the poster a reader sends depends on which
+             * screen they happened to press it from.
+             */}
+            <ShareButton
+              url={path}
+              posterBase={posterBase(lang, date, article.id)}
+              parts={posterParts(summaryFor(article, lang))}
+              title={displayTitle(article, lang)}
+              thesis={summaryFor(article, lang).thesis}
+              tags={summaryFor(article, lang).tags ?? []}
+              lang={lang}
+            />
           </div>
         </div>
       </section>

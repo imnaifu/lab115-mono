@@ -94,6 +94,17 @@ interface RawConfig {
    */
   minPerDimension: number;
   /**
+   * The shortest body worth spending a model call on, in characters.
+   *
+   * IT IS A PAYWALL DETECTOR, not a quality bar. A Substack behind a paywall
+   * still publishes a feed item — it just carries the first paragraph and a
+   * "keep reading" pitch. Measured on this archive: those come in around 209
+   * characters, and the shortest article that was genuinely complete was 328.
+   * Anything in that gap is a teaser, and scoring one asks the model to judge a
+   * piece from its opening while telling it nothing was withheld.
+   */
+  bodyMinChars: number;
+  /**
    * THE PER-SOURCE PAIR, and they are two limits because they buy two different
    * things. Both are global: every source gets the same two numbers.
    *
@@ -179,11 +190,16 @@ function validate(config: RawConfig): RawConfig {
   // Above 10 nothing can ever clear it and every digest is empty; at 1 it is a
   // rule that cannot fire, since the model's scale starts there.
   if (
+    !Number.isInteger(config.bodyMinChars) ||
+    config.bodyMinChars < 0 ||
     !Number.isInteger(config.minPerDimension) ||
     config.minPerDimension < 1 ||
     config.minPerDimension > 10
   ) {
-    fail("minPerDimension must be a whole number between 1 and 10");
+    fail(
+      "minPerDimension must be a whole number between 1 and 10, and " +
+        "bodyMinChars a whole number of characters",
+    );
   }
   for (const key of ["collectPerSource", "publishPerSource"] as const) {
     if (!Number.isInteger(config[key]) || config[key] < 1) {

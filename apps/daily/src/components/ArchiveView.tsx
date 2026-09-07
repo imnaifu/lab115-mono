@@ -122,7 +122,7 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
         <nav className={`${PAD} mt-8 flex items-center justify-between gap-3`}>
           {page > 1 ? (
             <a
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid"
+              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
               href={href(lang, archivePath(page - 1))}
               data-track="archive_open"
               data-track-from="pager"
@@ -134,7 +134,7 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
           )}
           {page < total ? (
             <a
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid"
+              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
               href={href(lang, archivePath(page + 1))}
               data-track="archive_open"
               data-track-from="pager"

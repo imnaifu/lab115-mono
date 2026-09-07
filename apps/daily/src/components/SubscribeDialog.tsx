@@ -148,7 +148,7 @@ export function SubscribeDialog({ lang }: { lang: Lang }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden cursor-pointer rounded-full bg-ink px-4 py-1.5 text-sm font-bold text-paper sm:block"
+        className="hidden cursor-pointer rounded-full bg-ink px-4 py-1.5 text-sm font-bold text-paper sm:block transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
       >
         {t.subscribeGo}
       </button>
@@ -182,7 +182,7 @@ export function SubscribeDialog({ lang }: { lang: Lang }) {
             type="button"
             onClick={() => setOpen(false)}
             aria-label={t.close}
-            className="-mt-1 -mr-1 cursor-pointer self-end text-lg leading-none text-ink-soft"
+            className="-mt-1 -mr-1 cursor-pointer self-end text-lg leading-none text-ink-soft transition duration-150 ease-out hover:text-ink active:opacity-70"
           >
             ✕
           </button>
@@ -289,7 +289,7 @@ export function SubscribeDialog({ lang }: { lang: Lang }) {
                   /* Full width, unlike the card's side-by-side row: there is no
                      horizontal space to share in a 24rem sheet, and it is the
                      only action in here. */
-                  className="mt-1 w-full cursor-pointer rounded-full bg-ink px-6 py-3 text-base font-bold text-paper disabled:opacity-60"
+                  className="mt-1 w-full cursor-pointer rounded-full bg-ink px-6 py-3 text-base font-bold text-paper disabled:opacity-60 transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
                 >
                   {state.kind === "sending" ? t.subscribeSending : t.subscribeGo}
                 </button>

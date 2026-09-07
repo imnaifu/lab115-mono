@@ -60,7 +60,7 @@ export async function DayList({
     <section className={`${SECTION} flex flex-col gap-2.5 ${PAD}`}>
       {rows.map(({ date, digest, top }, at) => (
         <a
-          className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4"
+          className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4 transition duration-150 ease-out hover:border-ink-soft"
           key={date}
           href={href(lang, dayPath(date))}
           /* `age` is the row's position IN THIS LIST, not the day's age in the

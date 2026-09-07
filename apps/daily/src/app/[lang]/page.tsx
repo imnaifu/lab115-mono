@@ -19,6 +19,10 @@ import type { PublishedArticle } from "@/lib/types";
 // underneath a long-running server, so nothing here may be cached at build time.
 export const dynamic = "force-dynamic";
 
+/** The hover system — see the note on these in components/ArticleCards. */
+const ACTION_TEXT =
+  " transition duration-150 ease-out hover:opacity-70 active:opacity-55";
+
 /**
  * How many pieces the list under the teaser runs to.
  *
@@ -337,7 +341,7 @@ export default async function Home({
                 link's hit area is the words and not the whole line. */}
             <div className="mt-5 flex justify-end">
               <a
-                className="text-base font-bold text-orange"
+                className={`text-base font-bold text-orange${ACTION_TEXT}`}
                 href={href(lang, dayPath(latest))}
                 data-track="day_open"
                 data-track-from="home"
@@ -372,7 +376,10 @@ export default async function Home({
               {recent.map(({ date, article }, at) => (
                 <li key={`${date}-${article.id}`}>
                   <a
-                    className="flex gap-3 border-b border-line py-2.5 last:border-0 sm:gap-4"
+                    /* The whole row is the target, so the whole row responds —
+                       the date dims in and the headline darkens, which is the
+                       outline treatment applied to a row instead of a pill. */
+                    className="group flex gap-3 border-b border-line py-2.5 transition duration-150 ease-out last:border-0 hover:border-ink-soft sm:gap-4"
                     href={href(lang, articlePath(date, article))}
                     /* `summary_open`, the same event the day page's rows send —
                        both open one article's take. `age` is the row's depth in
@@ -384,12 +391,12 @@ export default async function Home({
                     data-track-age={at}
                   >
                     <time
-                      className="w-11 flex-none pt-0.5 text-sm font-medium tabular-nums text-ink-soft"
+                      className="w-11 flex-none pt-0.5 text-sm font-medium tabular-nums text-ink-soft transition duration-150 ease-out group-hover:text-ink-mid"
                       dateTime={date}
                     >
                       {date.slice(5)}
                     </time>
-                    <span className="min-w-0 flex-1 text-base leading-snug font-medium text-ink">
+                    <span className="min-w-0 flex-1 text-base leading-snug font-medium text-ink transition duration-150 ease-out group-hover:text-orange">
                       {displayTitle(article, lang)}
                     </span>
                   </a>
@@ -407,7 +414,7 @@ export default async function Home({
                 gesture for "there is more" at the foot of a list this quiet. */}
             {hasArchive(dates.length) ? (
               <a
-                className="mt-4 inline-block text-sm font-bold text-orange"
+                className={`mt-4 inline-block text-sm font-bold text-orange${ACTION_TEXT}`}
                 href={href(lang, "/archive")}
                 data-track="archive_open"
                 data-track-from="home"

@@ -7,6 +7,10 @@ import type { Lang } from "@/lib/lang";
 import { posterPartUrl } from "@/lib/links";
 import { track } from "@/lib/track";
 
+/** The hover system — see the note on these in components/ArticleCards. */
+const ACTION_OUTLINE =
+  " transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80";
+
 /**
  * How long the button will wait for the posters before opening the sheet anyway.
  *
@@ -208,7 +212,7 @@ export function ShareButton({
           the action worth making obvious. */}
       <button
         type="button"
-        className="relative cursor-pointer rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid disabled:cursor-wait"
+        className={`relative cursor-pointer rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid disabled:cursor-wait${ACTION_OUTLINE}`}
         onClick={openWhenReady}
         disabled={preparing}
       >

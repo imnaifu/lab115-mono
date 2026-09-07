@@ -10,6 +10,45 @@ import { articlePath, posterBase } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
 import type { PublishedArticle } from "@/lib/types";
 
+/**
+ * ONE HOVER SYSTEM, THREE SURFACES.
+ *
+ * Every action on the site is one of three shapes, so there are three strings and
+ * not one per component — the alternative is what the site had, which is nothing
+ * on the buttons and `hover:text-ink` scattered on a few links.
+ *
+ * NOTHING MOVES. The first version lifted the filled button a pixel and sank the
+ * others on press; it is gone by decision. A control that shifts under a pointer
+ * already on it makes the pointer wrong, and on a list of fifteen rows the effect
+ * reads as the page twitching. Every state below is a change of COLOUR or
+ * LIGHTNESS at a fixed position.
+ *
+ * THE CHANGE FITS THE SURFACE, which is why the three are not identical:
+ *
+ *   OUTLINE  the border and the text darken. These sit on the page's own ground
+ *            and have somewhere to go — `border-line` to `border-ink-soft`,
+ *            `text-ink-mid` to `text-ink`.
+ *   FILLED   `bg-ink` cannot darken, so it goes the other way: `bg-ink-mid`, one
+ *            step lighter. It stays plainly the primary action either way.
+ *   TEXT     an orange link cannot darken without leaving the palette, so it
+ *            dims. `opacity`, not a second colour token, because the accent has
+ *            exactly one value in each theme by design.
+ *
+ * EVERY ONE HAS AN `active:` STATE, and that is the half that matters on a phone,
+ * where there is no hover at all: a press is the only feedback a touch reader
+ * ever gets, so each one pushes its own change a step further.
+ *
+ * 150ms — under the ~200ms where a transition starts being perceived as lag on a
+ * control the pointer is already touching.
+ *
+ * `prefers-reduced-motion` is handled once, globally, in index.css. Nothing here
+ * needs to repeat it.
+ */
+const ACTION_FILLED =
+  " transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid";
+const ACTION_OUTLINE =
+  " transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80";
+
 /** The dot between meta items. `bg-current` so it matches whatever colour the
  *  row is drawn in. */
 function Dot() {
@@ -89,7 +128,7 @@ function Actions({
        * emphasis should not push a reader towards.
        */}
       <a
-        className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper"
+        className={`rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper${ACTION_FILLED}`}
         href={href(lang, articlePath(date, article))}
         data-track="summary_open"
         data-track-source={article.sourceId}
@@ -101,7 +140,7 @@ function Actions({
           that most of the time you do not have to, and the emphasis should not
           push you off the page it just spent 450 characters replacing. */}
       <a
-        className="rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid"
+        className={`rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid${ACTION_OUTLINE}`}
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"

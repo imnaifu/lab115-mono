@@ -51,17 +51,30 @@ const STRINGS = {
      */
     recentDays: (n: number) => `最近 ${n} 天`,
 
-    readFull: "阅读全文 →",
+    /**
+     * 「原文」, NOT 「全文」. This link leaves the site for somebody else's article,
+     * and 全文 does not say whose — a reader who has just been shown a TL;DR reads
+     * it as "the rest of what I am reading", which is the take, which is the OTHER
+     * button. The English half has said "Read the original" all along; the Chinese
+     * was the odd one out.
+     *
+     * 「看」 RATHER THAN 「阅读」, and it is the pair that decides this, not the word
+     * on its own: this sits beside `readSummary` and the two are read together, so
+     * they share a verb and differ only where they actually differ — 原文 against
+     * 总结. Two characters each also keeps the secondary button from outweighing
+     * the primary one it sits next to.
+     */
+    readFull: "看原文 →",
     /**
      * The way in to one article's full take, from a list that shows only the
      * headline and the claim.
      *
-     * 「总结」, NOT 「全文」: `readFull` above already means the original piece on
-     * someone else's site, and a list row now carries both. Two links a few pixels
-     * apart, one leading deeper into this site and one leading off it, have to say
-     * which is which in the words themselves.
+     * 「总结」 AGAINST 「原文」 — see `readFull` above. Two links a few pixels apart,
+     * one leading deeper into this site and one leading off it, have to say which
+     * is which in the words themselves, and these two differ in the only place
+     * that matters: whose text is on the other end.
      */
-    readSummary: "阅读总结 →",
+    readSummary: "看总结 →",
     /** The front page's one action: on into the day this teaser is from. */
     keepReading: "继续阅读全文 »",
     /**
