@@ -174,37 +174,6 @@ export function SampleSize({ n }: { n: number }) {
   );
 }
 
-/**
- * A horizontal bar, as a fraction of the widest value in its group.
- *
- * RELATIVE TO THE GROUP'S MAX rather than to a fixed scale, because every bar
- * chart on this page is a shape question — where does the mass sit, is the top of
- * the range used at all — and a bar scaled to an absolute maximum flattens the
- * differences that answer it. The number is always printed beside it, so the bar
- * never has to carry the value on its own.
- */
-export function Bar({
-  value,
-  max,
-  tone = "ink",
-}: {
-  value: number;
-  max: number;
-  tone?: "ink" | "soft";
-}) {
-  const width = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <span className="block h-1.5 w-full overflow-hidden rounded-full bg-page-deep">
-      <span
-        className={`block h-full rounded-full ${
-          tone === "ink" ? "bg-ink" : "bg-ink-soft"
-        }`}
-        // A width has to be a computed number, so it cannot be a utility class.
-        style={{ width: `${width}%` }}
-      />
-    </span>
-  );
-}
 
 /**
  * A plain table, scrollable sideways on a phone.

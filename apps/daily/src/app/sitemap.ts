@@ -22,25 +22,44 @@ import { listDates, readDigest, shownArticles } from "@/lib/store";
  * a crawler confident enough to act on it.
  */
 /**
- * REVALIDATED HOURLY rather than rendered per request.
+ * CACHED FOR AN HOUR IN THIS MODULE, and rendered per request — NOT `revalidate`.
  *
- * This was `force-dynamic`, and of everything in the app it was the worst place
- * for it: the loop below opens EVERY archived digest to collect the article ids,
- * so a single crawler hitting this URL paid one file read per day the site has
- * ever published, and nothing about the answer changes between one hit and the
- * next. Google fetches a sitemap on its own schedule and often several times over
- * as the archive grows, so this was pure repeat cost.
+ * THE HOURLY CACHE IS RIGHT AND `revalidate` WAS THE WRONG MECHANISM FOR IT. The
+ * loop below opens EVERY archived digest to collect the article ids, so a crawler
+ * hitting this URL pays one file read per day the site has published and nothing
+ * about the answer changes between one hit and the next. That reasoning stands.
  *
- * An hour, not a day: `SYNC_CRON` pulls every 15 minutes, so a fresh digest
- * should appear in the sitemap within the hour rather than the next morning.
+ * WHAT `revalidate = 3600` ALSO DID was make Next PRERENDER this route at BUILD
+ * TIME — and the archive is a git clone the container makes when it STARTS, so at
+ * build time `data/repo` is empty. The baked answer was the home page and nothing
+ * else, with `lastmod` at the unix epoch because `dates[0]` was undefined, and it
+ * was served with `x-nextjs-cache: HIT` for as long as the deployment lived.
  *
- * Nothing else in the app changes — the READER'S pages stay `force-dynamic`,
- * because the cron rewrites those files underneath a long-running server and a
- * reader who pulls to refresh has to get today's digest, not a cached copy of it.
- * A crawler's index of URLs and a reader's page have genuinely different freshness
- * needs, and this is the one that can wait.
+ * IT COST THE SITE ITS INDEX. Google was handed a sitemap declaring ONE url for a
+ * site with ~320 of them, all stamped 1970 — and 234 article pages sat in Search
+ * Console as "Crawled — currently not indexed". Nothing else was wrong with them:
+ * canonical, hreflang and robots were all correct on the pages themselves.
+ *
+ * SO THE CACHE MOVED INTO THE MODULE, where it can only ever run at request time,
+ * with the clone present. `force-dynamic` stops the build-time bake; the memo
+ * below keeps the one-walk-per-hour that ISR was there to buy.
+ *
+ * An hour, not a day: `SYNC_CRON` pulls every 15 minutes, so a fresh digest should
+ * appear within the hour rather than the next morning.
  */
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
+
+/** How long one walk of the archive is reused. See the note above. */
+const SITEMAP_TTL_MS = 60 * 60_000;
+
+/**
+ * The last answer and when it was built.
+ *
+ * MODULE STATE, which is per-process and lost on restart — both fine here. A
+ * restart re-clones the archive anyway, so a cold cache after one is correct, and
+ * there is exactly one long-running server.
+ */
+let cached: { at: number; map: MetadataRoute.Sitemap } | null = null;
 
 /**
  * One page, in every language, as a sitemap entry.
@@ -70,6 +89,13 @@ function entry(path: string, lastModified: Date): MetadataRoute.Sitemap[number] 
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (cached && Date.now() - cached.at < SITEMAP_TTL_MS) return cached.map;
+  const map = await buildSitemap();
+  cached = { at: Date.now(), map };
+  return map;
+}
+
+async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   const dates = await listDates();
   /**
    * A digest's date IS its last-modified time. They are written once, on the day

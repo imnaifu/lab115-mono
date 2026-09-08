@@ -36,20 +36,11 @@ const STRINGS = {
     brand: "每日严选",
     notFoundTitle: "未找到",
 
-    allTab: "全部",
 
     posts: (n: number) => `${n} 篇新文章`,
     readTime: (n: number) => `读完约 ${n} 分钟`,
     sectionCount: (n: number) => `${n} 篇`,
     days: (n: number) => `${n} 天`,
-    /**
-     * 首页 masthead 上那一行，说的是这一页在展示什么。
-     *
-     * 和 `days` 分开是因为两者答的不是同一个问题：`days` 是「站上一共几天」，归档页
-     * 用它是对的（归档就是全部）；首页只列最近 FRONT_DAYS 天，却用 `days` 报了总数，
-     * 于是第 8 天上线那天，标题写着「8 天」而下面只有 7 行。
-     */
-    recentDays: (n: number) => `最近 ${n} 天`,
 
     /**
      * 「原文」, NOT 「全文」. This link leaves the site for somebody else's article,
@@ -189,7 +180,6 @@ const STRINGS = {
      * A plain string rather than a function now: nothing here interpolates.
      */
     more: "更多",
-    moreSub: "往前翻，看过去的每一天",
 
     archiveTitle: "归档",
     /* "第 2 页 / 共 4 页" — stated rather than implied, because the two arrows
@@ -211,7 +201,6 @@ const STRINGS = {
      * 里那两条 —— 因为「凭什么是这 64 个」正是一个读者点进来会问的问题。
      */
     sourcesTitle: "订阅源",
-    sourcesSub: "每天早上七点，这些博客的新文章会被读一遍",
     sourcesLead:
       "这里是全部订阅源。收进来的标准有两条，方向相反：发得太密的不要 —— feed 只留" +
       "十条而一天更新几十篇，一天抓一次会漏掉九成；发得太疏的也不要，一个月一篇以下" +
@@ -356,15 +345,11 @@ const STRINGS = {
     brand: "Daily Picks",
     notFoundTitle: "Not found",
 
-    allTab: "All",
 
     posts: (n: number) => `${n} new ${n === 1 ? "post" : "posts"}`,
     readTime: (n: number) => `about ${n} min to read`,
     sectionCount: (n: number) => `${n}`,
     days: (n: number) => `${n} ${n === 1 ? "day" : "days"}`,
-    recentDays: (n: number) =>
-      n === 1 ? "the latest day" : `the last ${n} days`,
-
     readFull: "Read the original →",
     readSummary: "Read the summary →",
     keepReading: "Keep reading »",
@@ -410,7 +395,6 @@ const STRINGS = {
     breadcrumb: "Breadcrumb",
 
     more: "More",
-    moreSub: "Look back through every past day",
 
     archiveTitle: "Archive",
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
@@ -423,7 +407,6 @@ const STRINGS = {
     /** See the Chinese side for why `sourcesLead` is written rather than
      *  borrowed — it is the one paragraph on this site that is ours. */
     sourcesTitle: "Sources",
-    sourcesSub: "Every morning at seven, these blogs get read",
     sourcesLead:
       "Every blog this site subscribes to. Two rules decide what gets in, and " +
       "they pull in opposite directions: nothing that publishes too fast — a " +
