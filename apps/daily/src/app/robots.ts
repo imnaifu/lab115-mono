@@ -14,9 +14,49 @@ import { SITE } from "@/lib/config";
  * more place to forget on a rename, and the sitemap next door already reads it
  * from there.
  */
+/**
+ * The AI crawlers, named so the policy is a DECISION rather than a default.
+ *
+ * They were already allowed — `User-agent: *` covers them and always did — so
+ * this changes no behaviour. What it changes is that the answer is now written
+ * down: this site exists to be read and passed on, an AI search engine that
+ * summarises it and links back is the same distribution as a human sharing a
+ * poster, and the structured data already tells one exactly what it is looking at
+ * (see `isBasedOn` on the article page — our summary OF someone else's article,
+ * with their byline and publisher attached).
+ *
+ * TO REVERSE IT, change `allow` to `disallow: ["/"]` in the group below. Doing it
+ * here rather than by deleting the group matters: without a named group these
+ * bots fall back to `*` and are allowed again, silently.
+ *
+ * THE GROUP REPEATS THE `/share/` RULES, and that is not redundancy — robots
+ * groups do not inherit. A crawler that matches a named `User-agent` ignores `*`
+ * entirely, so a group holding only `Allow: /` would hand these bots the poster
+ * pages that every other crawler is held back from.
+ *
+ * `Google-Extended` is not Googlebot: it governs Gemini and AI Overviews
+ * grounding, and blocking it does NOT remove the site from Search. They are
+ * separate switches on purpose, which is the reason to name it separately here.
+ */
+const AI_CRAWLERS = [
+  "GPTBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "ClaudeBot",
+  "Claude-User",
+  "PerplexityBot",
+  "Perplexity-User",
+  "Google-Extended",
+  "CCBot",
+  "Applebot-Extended",
+  "meta-externalagent",
+  "Bytespider",
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
+    rules: [
+      {
       userAgent: "*",
       /**
        * `/` and then part 1 of the posters, which is one list rather than two
@@ -55,7 +95,13 @@ export default function robots(): MetadataRoute.Robots {
        * to read than the query pattern was.
        */
       disallow: ["/share/"],
-    },
+      },
+      {
+        userAgent: AI_CRAWLERS,
+        allow: ["/", "/share/*/1.png$"],
+        disallow: ["/share/"],
+      },
+    ],
     sitemap: `${SITE}/sitemap.xml`,
     host: SITE,
   };

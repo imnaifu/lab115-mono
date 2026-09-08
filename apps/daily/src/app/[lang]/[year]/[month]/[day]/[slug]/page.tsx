@@ -91,19 +91,38 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const path = langHref(pageLang, canonicalPath);
   const posterUrl = posterPartUrl(posterBase(pageLang, date, article.id), 1);
 
+  /**
+   * OUR headline, in whichever language this page is — not the source's.
+   *
+   * IT WAS `article.title` IN BOTH LANGUAGES, on the reasoning that a `<title>`
+   * names the piece and the source's headline is its name, the rewrite being "a
+   * reading aid on the page, not a second identity for it". That stopped being
+   * true: the rewrite is the one piece of editing this site does that the source
+   * cannot, and it is now what both languages show as the H1.
+   *
+   * LEAVING IT MEANT THE TAB AND THE SEARCH RESULT DISAGREED WITH THE PAGE — a
+   * Chinese search result reading "Doomscrolling ourselves to death" over a page
+   * whose heading says 「当读书成往事，文明还撑得住吗？」. Google rewrites a title it
+   * finds unrepresentative of the page, and a rewritten title is a title nobody
+   * chose.
+   *
+   * `displayTitle` FALLS BACK TO `article.title` on its own — for a day archived
+   * before the rewrite existed, and for one the model declined — so this is the
+   * old behaviour wherever the old reasoning still applies.
+   */
+  const heading = displayTitle(article, pageLang);
+
   return {
-    // The ORIGINAL headline, in both languages: a <title> is how this page is
-    // identified in a tab, a bookmark and a search result, and the headline is
-    // the article's name. The Chinese rendering is a reading aid on the page,
-    // not a second identity for it.
-    title: `${article.title} · ${t.brand}`,
+    title: `${heading} · ${t.brand}`,
     description: summary.thesis,
     // Both languages, not just this one — see alternatesFor. `path` above is
     // already language-prefixed; this wants the bare form.
     alternates: alternatesFor(pageLang, canonicalPath),
     openGraph: {
       type: "article",
-      title: article.title,
+      // The same headline the tab and the page show — an unfurl that disagrees
+      // with the page it links to is the same mismatch one surface over.
+      title: heading,
       description: summary.thesis,
       url: `${SITE}${path}`,
       /**
@@ -130,7 +149,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: article.title,
+      title: heading,
       description: summary.thesis,
       images: [`${SITE}${posterUrl}`],
     },
