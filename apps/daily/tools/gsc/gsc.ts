@@ -29,13 +29,19 @@ const KEY_FILE =
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 /**
- * READ-ONLY, deliberately.
+ * READ-ONLY, deliberately — AND IT IS THE DEFAULT, not the only option.
  *
- * The write scope (`.../auth/webmasters`) would additionally let this submit and
- * DELETE sitemaps. Nothing in this directory wants that, and a credential sitting
- * on a laptop should not carry a permission its scripts never exercise.
+ * The write scope below additionally allows submitting and DELETING sitemaps, and
+ * a credential sitting on a laptop should not carry a permission its scripts
+ * never exercise. That reasoning survived contact with a script that does need to
+ * write: rather than widening the constant, the scope is a PER-REQUEST argument
+ * that defaults to read-only, so exactly one call in this directory asks for more
+ * and every other one is still incapable of changing anything.
  */
 const SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
+
+/** Submitting a sitemap needs this. Nothing else here asks for it. */
+const WRITE_SCOPE = "https://www.googleapis.com/auth/webmasters";
 
 /**
  * TWO HOSTS, ONE API, and this is not a mistake in the constants.
@@ -96,14 +102,14 @@ function base64Url(input: string): string {
  * An hour is the maximum lifetime Google accepts, and it costs nothing here: the
  * assertion is spent immediately for a token and never stored.
  */
-function signedAssertion(): string {
+function signedAssertion(scope: string): string {
   const key = serviceAccountKey();
   const issuedAt = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claims = base64Url(
     JSON.stringify({
       iss: key.client_email,
-      scope: SCOPE,
+      scope,
       aud: TOKEN_ENDPOINT,
       iat: issuedAt,
       exp: issuedAt + 3600,
@@ -128,18 +134,24 @@ function signedAssertion(): string {
  * The 60-second margin is for the sweep that starts a request at 3599 seconds:
  * a token that expires mid-flight fails the call, not the refresh.
  */
-let cachedToken: { value: string; expiresAt: number } | null = null;
+/**
+ * KEYED BY SCOPE, because two of them can be in play in one process and a token
+ * issued for read-only is not a token that may submit a sitemap. A single slot
+ * would hand whichever scope asked first to whoever asked second — silently, and
+ * as a 403 several calls later.
+ */
+const cachedTokens = new Map<string, { value: string; expiresAt: number }>();
 
-export async function accessToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
-    return cachedToken.value;
-  }
+export async function accessToken(scope: string = SCOPE): Promise<string> {
+  const cached = cachedTokens.get(scope);
+  if (cached && Date.now() < cached.expiresAt - 60_000) return cached.value;
+
   const response = await fetch(TOKEN_ENDPOINT, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: signedAssertion(),
+      assertion: signedAssertion(scope),
     }),
   });
   const payload = (await response.json()) as {
@@ -153,11 +165,11 @@ export async function accessToken(): Promise<string> {
       `换取 access token 失败 (${response.status}): ${payload.error ?? ""} ${payload.error_description ?? ""}`.trim(),
     );
   }
-  cachedToken = {
+  cachedTokens.set(scope, {
     value: payload.access_token,
     expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
-  };
-  return cachedToken.value;
+  });
+  return payload.access_token;
 }
 
 /**
@@ -175,19 +187,28 @@ export async function accessToken(): Promise<string> {
  */
 async function call<T>(
   url: string,
-  init: { method: string; body?: unknown } = { method: "GET" },
+  init: { method: string; body?: unknown; scope?: string } = { method: "GET" },
 ): Promise<T> {
   const maxAttempts = 5;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const response = await fetch(url, {
       method: init.method,
       headers: {
-        authorization: `Bearer ${await accessToken()}`,
+        authorization: `Bearer ${await accessToken(init.scope)}`,
         ...(init.body ? { "content-type": "application/json" } : {}),
       },
       body: init.body ? JSON.stringify(init.body) : undefined,
     });
-    if (response.ok) return (await response.json()) as T;
+    /**
+     * A SUCCESSFUL WRITE HAS NO BODY. `sitemaps.submit` answers 204, and
+     * `response.json()` on an empty body throws a parse error — which would
+     * report the one call that worked as the one call that failed. Read the text
+     * first and only parse when there is something to parse.
+     */
+    if (response.ok) {
+      const text = await response.text();
+      return (text ? JSON.parse(text) : null) as T;
+    }
 
     const retryable = response.status === 429 || response.status >= 500;
     const detail = await response.text();
@@ -250,6 +271,33 @@ export async function resolveSite(host = "daily.lab115.com"): Promise<string> {
     );
   }
   return match.siteUrl;
+}
+
+/**
+ * Hand Google the sitemap again — the one write in this directory.
+ *
+ * WHAT IT ACTUALLY BUYS, stated plainly because it is easy to overrate: it
+ * re-queues a READ of the sitemap. It does not make Google index anything, and on
+ * a site whose pages sit at «已发现 — 尚未编入索引» it will not move that by
+ * itself. What it does is make sure the crawler sees the current `lastModified`
+ * values sooner than it otherwise would, which after a URL migration is the
+ * cheapest correct thing to do and the only Google-facing lever that is an API
+ * call rather than a person clicking.
+ *
+ * IDEMPOTENT. Submitting a sitemap that is already submitted re-registers it; it
+ * does not create a duplicate entry, so running this twice is harmless.
+ *
+ * The feedpath is URL-ENCODED INTO THE PATH — the full absolute sitemap URL as
+ * one path segment, which reads wrong and is what the API specifies.
+ */
+export async function submitSitemap(
+  siteUrl: string,
+  sitemapUrl: string,
+): Promise<void> {
+  await call(
+    `${WEBMASTERS_V3}/sites/${encodeURIComponent(siteUrl)}/sitemaps/${encodeURIComponent(sitemapUrl)}`,
+    { method: "PUT", scope: WRITE_SCOPE },
+  );
 }
 
 export type IndexStatus = {
