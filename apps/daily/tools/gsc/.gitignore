@@ -1,0 +1,3 @@
+# Query results. They are data pulled from an API, re-fetchable at any time, and
+# they name every URL on the site — there is no reason for them in git history.
+out/
