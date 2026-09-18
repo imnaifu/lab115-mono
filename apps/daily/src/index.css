@@ -194,6 +194,34 @@
    * every future component has to remember; this one is already true of anything
    * added later.
    */
+  /**
+   * ONE FOCUS RING, FOR EVERYTHING THAT TAKES FOCUS.
+   *
+   * The site had none of its own, so a keyboard reader got the browser default —
+   * which on this cream ground is a thin near-invisible outline, and in dark mode
+   * lands on a dark page. That is not "no styling", it is a control the reader
+   * cannot find.
+   *
+   * `:focus-visible`, NEVER `:focus`. The plain pseudo-class fires on a MOUSE
+   * click too, which is why so many sites remove focus styling altogether and
+   * break keyboard use in the process: a ring flashing on every press reads as a
+   * bug, so it gets deleted, and the people who needed it lose it. `focus-visible`
+   * is the browser's own answer to which of the two happened.
+   *
+   * `--color-orange` because the ring has to be findable against `--color-ink`
+   * text and the accent is the one hue that is neither the text nor the ground.
+   * `outline-offset` keeps it clear of a pill's own border, so the two read as a
+   * button with a ring rather than a thicker button.
+   *
+   * DECLARED ON THE BARE ELEMENTS rather than a utility class, so anything added
+   * later gets it without remembering to.
+   */
+  :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
