@@ -4,7 +4,12 @@ import { REPO_SUBDIR } from "./config";
 import { articleSlug, idFromSlug } from "./links";
 import { REPO_PATH } from "./paths";
 import type { ScoredEntry } from "./stats";
-import type { Article, Digest, PublishedArticle } from "./types";
+import type {
+  Article,
+  Digest,
+  PublishedArticle,
+  RetiredArticle,
+} from "./types";
 
 /**
  * Read/write side of the git clone. There is no index file: the archive list
@@ -216,6 +221,68 @@ export async function readArticleBySlug(
 }
 
 /** One published take, with the day it ran. */
+/**
+ * Was this URL segment an article this day once published and has since dropped?
+ *
+ * THE LAST QUESTION ASKED BEFORE A 404. `readArticleBySlug` returning null used
+ * to mean "no such page, and there never was one", and for a site whose day files
+ * are rewritten in place that was never true — see `retired` on `Digest`. This is
+ * how the article page tells "never existed" apart from "existed, and we lost it".
+ *
+ * MATCHED BY ID, NOT BY SLUG, and by the same two-step `readArticleBySlug` uses:
+ * a full-slug hit first, then the id at the end of the segment. An old link
+ * carries whatever headline was current the day it was shared, so the slug half
+ * of it is not something to match on — but trying it first costs nothing and
+ * catches an entry whose id was recorded oddly.
+ *
+ * `startsWith`, because the URL carries only the first `SHARE_ID_CHARS` of the id
+ * while the list stores it whole — the same comparison `readArticleBySlug` makes.
+ */
+export function retiredMatch(
+  digest: Digest,
+  segment: string,
+): RetiredArticle | null {
+  const retired = digest.retired ?? [];
+  if (!retired.length) return null;
+
+  const bySlug = retired.find((entry) => entry.slug === segment);
+  if (bySlug) return bySlug;
+
+  const id = idFromSlug(segment);
+  if (!id) return null;
+  return retired.find((entry) => entry.id.startsWith(id)) ?? null;
+}
+
+/**
+ * The retired list a newly built digest should carry: what was already retired,
+ * plus whatever this write is about to drop, minus anything that came back.
+ *
+ * COMPUTED AT WRITE TIME FROM THE FILE ON DISK, which is the only place the
+ * previous published set exists. The job that builds a digest works from a fresh
+ * fetch and has no memory of yesterday's write, so it cannot know what it is
+ * removing — the diff has to happen against what is already there.
+ *
+ * AN ID THAT COMES BACK IS UNRETIRED. A source that 404s for one run and recovers
+ * on the next would otherwise leave a permanent gravestone for an article that is
+ * once again on the page, and the article page would redirect away from a URL it
+ * can serve. The tombstone is for what is gone, and it has to be able to stop
+ * being true.
+ */
+export function retiredFor(
+  previous: Digest | null,
+  next: Digest,
+): RetiredArticle[] {
+  const live = new Set(shownArticles(next).map((article) => article.id));
+
+  const graves = new Map<string, RetiredArticle>();
+  for (const entry of previous?.retired ?? []) graves.set(entry.id, entry);
+  for (const article of previous ? shownArticles(previous) : []) {
+    graves.set(article.id, { id: article.id, slug: articleSlug(article) });
+  }
+
+  return [...graves.values()].filter((entry) => !live.has(entry.id));
+}
+
 export interface SourceArticle {
   date: string;
   article: PublishedArticle;

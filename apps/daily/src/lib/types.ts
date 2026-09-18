@@ -397,4 +397,47 @@ export interface Digest {
    * `RejectedArticle` exists so those files still parse.
    */
   rejected?: RejectedArticle[];
+  /**
+   * ARTICLES THIS DAY ONCE PUBLISHED AND NO LONGER HOLDS — the gravestones.
+   *
+   * A day's file is REPLACED WHOLE on every rerun, and a rerun can come back with
+   * a different set: `2026-08-26.json` was written three times and the third
+   * write dropped `The AI Hater's Manifesto`, which by then was indexed at
+   * position 8 and was the single highest-impression page this site has ever had.
+   * Its URL has returned 404 ever since. Nobody decided that; the write did.
+   *
+   * SO THE ID SURVIVES THE ARTICLE. A published URL is a promise — it was shared
+   * into chat apps, it went out in an email, Google holds it — and the one thing
+   * that must never happen is for it to become a 404. This list is what the
+   * article page consults before giving up, so a retired address redirects to its
+   * day instead. See `retiredMatch` in lib/store and the tombstone branch in the
+   * article page.
+   *
+   * IT DOES NOT RESURRECT THE CONTENT. The summary is gone and this does not
+   * bring it back — the reader lands on the day the article belonged to. That is
+   * the deliberate limit of this fix: it keeps the promise about the URL, not
+   * about what was at it.
+   *
+   * `slug` IS STORED BUT NOT MATCHED ON. Routing goes by the id at the end of the
+   * segment, which is what every old link carries regardless of how the headline
+   * read at the time. The slug is here so that a person reading the JSON can see
+   * WHAT went missing without resolving an eight-character id against git
+   * history.
+   *
+   * Optional, like `photo`: every digest archived before this existed has no such
+   * list, and an absent field is the correct way to say "nothing retired".
+   */
+  retired?: RetiredArticle[];
+}
+
+/**
+ * One article that used to have a page at this date and no longer does.
+ *
+ * See `retired` on `Digest` for why this exists at all.
+ */
+export interface RetiredArticle {
+  /** The full article id. The URL carries its first `SHARE_ID_CHARS`. */
+  id: string;
+  /** The slug it was last published under — for a human reading the file. */
+  slug: string;
 }

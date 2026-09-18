@@ -15,6 +15,7 @@ import {
   readDigest,
   readWorking,
   relPathFor,
+  retiredFor,
   writeDigest,
   type WorkingArticle,
   type WorkingDigest,
@@ -432,6 +433,22 @@ async function publishFrom(
    */
   const photo = await dailyPhoto(working.date);
 
+  /**
+   * WHAT THE PREVIOUS WRITE OF THIS DAY PUBLISHED — read before this one
+   * overwrites it.
+   *
+   * A day's file is replaced whole, and a rerun can come back with a different
+   * set of articles: `2026-08-26.json` was written three times and the third
+   * write dropped an article that was by then indexed at position 8 and was the
+   * highest-impression page this site had. Its URL has 404'd ever since.
+   *
+   * This is the only moment that loss is visible. After `writeDigest` the
+   * previous set is gone from disk, and the job that assembled `articles` above
+   * worked from a fresh fetch — it has no idea what it is about to remove. So the
+   * diff happens here, against the file, and lands in `retired` below.
+   */
+  const previous = await readDigest(working.date);
+
   const digest: Digest = {
     date: working.date,
     generatedAt: now.toISOString(),
@@ -455,6 +472,26 @@ async function publishFrom(
     // `Digest` still declares it so they parse — and writing it here would put
     // every turned-down article in the file twice.
   };
+
+  /**
+   * The gravestones, written only when there are any.
+   *
+   * ASSIGNED AFTER THE LITERAL because `retiredFor` needs the finished `digest`
+   * to know what is still live — an article that came back after a bad run must
+   * come OFF the list, not sit on it redirecting away from a page that exists.
+   *
+   * Omitted when empty, the same rule as `photo` above: a day that never dropped
+   * anything should read identically to a day from before this field existed.
+   */
+  const retired = retiredFor(previous, digest);
+  if (retired.length) {
+    digest.retired = retired;
+    console.log(
+      `[daily] ${retired.length} 篇已发布文章不在本轮结果里，URL 转为墓碑重定向: ${retired
+        .map((entry) => entry.slug)
+        .join(", ")}`,
+    );
+  }
 
   // Writing the same path the working file lives at is what drops the bodies:
   // `digest` has no `body` anywhere, so the file that lands in git is the

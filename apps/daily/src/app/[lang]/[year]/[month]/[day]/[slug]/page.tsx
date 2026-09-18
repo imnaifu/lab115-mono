@@ -23,7 +23,7 @@ import { sourceOf } from "@/lib/sources";
 import { articlePath, dayPath, posterBase, posterPartUrl } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
 import { alternatesFor, breadcrumb, JsonLd, publisher } from "@/lib/seo";
-import { readArticleBySlug } from "@/lib/store";
+import { readArticleBySlug, readDigest, retiredMatch } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -164,7 +164,33 @@ export default async function ArticlePage({ params }: Params) {
   const t = strings(lang);
 
   const found = await readArticleBySlug(date, slug);
-  if (!found) notFound();
+  /**
+   * NOT FOUND IS TWO DIFFERENT ANSWERS, and only one of them is a 404.
+   *
+   * A day's file is rewritten whole on every rerun, so an article that had a page
+   * here yesterday can be absent today — and the URL that was shared, mailed and
+   * indexed would answer 404 forever. `retired` on the digest is the record of
+   * exactly those, written by the publish job when it notices the loss; see the
+   * note on that field.
+   *
+   * The reader goes to the DAY, not the home page. It is the nearest thing that
+   * still exists to what they asked for — the same date, the neighbouring
+   * articles — whereas `/` is whatever happens to be today and answers a question
+   * nobody asked. A 308 rather than rendering something here, because this URL
+   * genuinely has no page any more and saying so permanently is what lets Google
+   * fold it into the day instead of keeping a dead address alive.
+   *
+   * A URL THAT NEVER EXISTED STILL 404s. This branch fires only on an id this
+   * site itself published, which is the distinction the previous code could not
+   * make and the reason a tombstone list has to exist at all.
+   */
+  if (!found) {
+    const digest = await readDigest(date);
+    if (digest && retiredMatch(digest, slug)) {
+      permanentRedirect(langHref(lang, dayPath(date)));
+    }
+    notFound();
+  }
 
   const { article, canonical } = found;
   const path = langHref(lang, articlePath(date, article));
