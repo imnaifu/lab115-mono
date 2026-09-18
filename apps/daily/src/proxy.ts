@@ -216,17 +216,40 @@ export default function proxy(request: NextRequest): NextResponse {
   }
 
   /**
-   * `/zh/…` — 404, where it used to be a 308 to the unprefixed form.
+   * `/zh/…` — A 308 TO THE UNPREFIXED FORM. It was that, then it was a 404, and
+   * it is that again.
    *
-   * The redirect was right while the old shape still had inbound links and index
-   * entries to hand over; that consolidation is done, and what is left is an
-   * address that answers. IT MUST NOT SIMPLY FALL THROUGH: `zh` passes `isLang`,
-   * so without this branch the pass-through below would render the Chinese site
-   * at `/zh/2026/08/24` — a second live address for every Chinese page, which is
-   * precisely the failure lib/lang.ts documents, rebuilt by deletion.
+   * THE 404 RESTED ON A CLAIM THAT WAS NOT CHECKED: "that consolidation is done".
+   * It was not. The Search Console API says so — `/zh/archive` is still in the
+   * index three weeks on, reported as a duplicate whose canonical Google
+   * overrode, and across the whole archive the Chinese side sits at 0 of 379
+   * pages indexed while the English side, which this rename never touched, kept
+   * 74. Removing the prefix on 2026-08-28 turned every Chinese URL Google held
+   * into a 404 on the same day, and the unprefixed replacements have been stuck
+   * at "已发现/已抓取 — 尚未编入索引" ever since. Consolidation had not finished;
+   * it had not started.
+   *
+   * A 308 IS HOW THE OLD ADDRESS HANDS OVER. A 404 tells a crawler the page is
+   * gone and the signals it accumulated die with it; a permanent redirect tells
+   * it where they went. That transfer only happens when the crawler refetches the
+   * old URL, which for this site is a matter of weeks — hence the redirect stays
+   * indefinitely rather than until a date. See the day-redirect route under
+   * `app/[lang]/d/` for the same argument at more length.
+   *
+   * IT STILL MUST NOT FALL THROUGH: `zh` passes `isLang`, so without this branch
+   * the pass-through below would RENDER the Chinese site at `/zh/2026/08/24` — a
+   * second live address for every Chinese page, which is the failure lib/lang.ts
+   * documents. A redirect is not that: one address answers, the other points at
+   * it.
+   *
+   * `clone()` CARRIES THE QUERY STRING, which matters for the mail links —
+   * `?utm_source=…` on a `/zh/` URL from an old edition must survive the hop or
+   * the redirect quietly costs the attribution it was sent to collect.
    */
   if (first === DEFAULT_LANG) {
-    return new NextResponse(null, { status: 404 });
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.slice(`/${DEFAULT_LANG}`.length) || "/";
+    return NextResponse.redirect(url, 308);
   }
 
   const cookie = request.cookies.get(LANG_COOKIE)?.value;
