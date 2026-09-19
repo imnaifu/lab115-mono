@@ -1,9 +1,18 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/config";
 import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
-import { articlePath, dayPath, SOURCES_PATH, sourcePath } from "@/lib/links";
+import {
+  articlePath,
+  dayPath,
+  SOURCES_PATH,
+  sourcePath,
+  TOPIC_PATH,
+  topicPath,
+} from "@/lib/links";
+import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { hasSourcePage, SOURCE_PAGES_LIVE, SOURCES } from "@/lib/sources";
 import { archivePages, archivePath } from "@/lib/paging";
+import { hasTopicPage, topicPages } from "@/lib/topics";
 import { listDates, readDigest, shownArticles } from "@/lib/store";
 
 /**
@@ -163,6 +172,23 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   const sourceCount = new Map<string, number>();
   const sourceLatest = new Map<string, string>();
 
+  /**
+   * The same two maps keyed by TOPIC, filled in the same pass and for the same
+   * reason: this route already opens every digest, so asking `articlesByTopic`
+   * would be a second full walk of the archive in the one request where the
+   * cache is most likely to be cold.
+   *
+   * COUNTED THROUGH `categoryOf`, not off the raw string. The archive holds
+   * category ids that config.json no longer defines, and those resolve to the
+   * catch-all everywhere a reader can see them — including on the topic page
+   * itself, which reads `articlesByTopic` and normalises the same way. Counting
+   * the raw value here would let this file and that page disagree about which
+   * topics clear the threshold, which is the listed-but-404 disagreement the
+   * source loop below already has a paragraph about.
+   */
+  const topicCount = new Map<string, number>();
+  const topicLatest = new Map<string, string>();
+
   for (const date of dates) {
     pages.push(entry(dayPath(date), stamp(date)));
     const digest = await readDigest(date);
@@ -177,8 +203,59 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
       if (!sourceLatest.has(article.sourceId)) {
         sourceLatest.set(article.sourceId, date);
       }
+
+      const topic = categoryOf(article.category).id;
+      topicCount.set(topic, (topicCount.get(topic) ?? 0) + 1);
+      // `dates` is newest-first, so the first sighting is the topic's newest.
+      if (!topicLatest.has(topic)) topicLatest.set(topic, date);
     }
   }
+
+  /**
+   * Every topic that has a page, and every page of it.
+   *
+   * `hasTopicPage` IS THE SAME GATE THE ROUTE USES, read from the same module —
+   * the reason it is a function in lib/topics rather than a comparison written
+   * twice. A sitemap entry for a topic below the threshold would be this file
+   * asking Google to index a URL the route 404s.
+   *
+   * ITERATING `CATEGORIES`, NOT THE IDS THE ARCHIVE TURNED UP, which is the
+   * mistake the source loop below records making once: a category removed from
+   * config.json would otherwise be listed here while the route 404s it. Driving
+   * the loop from config makes this a subset of what exists BY CONSTRUCTION.
+   *
+   * A TOPIC'S `lastModified` IS ITS OWN NEWEST DAY, not the site's. A subject
+   * that last had a piece in June has not changed since June, and claiming
+   * otherwise spends a crawl on all eight of them every time any digest lands.
+   *
+   * EVERY PAGE IS LISTED, not just the first: each is self-canonical and holds
+   * takes the others do not, so leaving pages 2 and up out would hide most of a
+   * long topic from the index — the same argument as the archive's pages above.
+   */
+  let anyTopic = false;
+  for (const category of CATEGORIES) {
+    const count = topicCount.get(category.id) ?? 0;
+    if (!hasTopicPage(count)) continue;
+    anyTopic = true;
+    const stamped = stamp(topicLatest.get(category.id) ?? dates[0]);
+    for (let page = 1; page <= topicPages(count); page++) {
+      pages.push(entry(topicPath(category.id, page), stamped));
+    }
+  }
+
+  /**
+   * The hub, and ONLY once at least one topic has cleared the threshold.
+   *
+   * `anyTopic` is not a third way of asking the question — it is set by the
+   * loop above, so the hub is listed exactly when there is a topic page to
+   * list. On a young archive with every topic still quiet, `/topic` renders a
+   * heading over no cards, and asking Google to index that is asking it to
+   * index an empty state. The same shape as `hasArchive` two blocks up.
+   *
+   * `newest` rather than a topic's own day: the hub shows the two most recent
+   * pieces in every section, so any digest landing changes it.
+   */
+  if (anyTopic) pages.push(entry(TOPIC_PATH, newest));
 
   /**
    * The source directory, and every source that has a page.

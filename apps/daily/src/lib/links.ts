@@ -181,6 +181,57 @@ export function sourcePath(id: string): string {
 }
 
 /**
+ * The topic hub, and the namespace every topic page hangs off.
+ *
+ * THERE IS A PAGE AT `/topic` NOW, and the previous version of this note argued
+ * there should not be — worth keeping the argument, because what changed is one
+ * word in it. It said "eight names with a count beside each is a page whose
+ * entire content is links — the definition of the doorway page". That is a
+ * correct description of a list of links, and the hub is not one: each row
+ * carries a hand-written sentence saying what the section holds (see
+ * `RawCategory.description` in user-config) and the two newest pieces in it, so
+ * a reader who has never been here learns what this site covers and what is in
+ * it this week without following anything.
+ *
+ * WHAT MAKES IT WORTH A URL rather than a row at the foot of every topic page —
+ * which is what it was, and which stays. The sibling row answers "where else
+ * can I go from here" for somebody already inside a topic. It cannot answer
+ * "what is this site about", because you have to already be on a topic page to
+ * see it, and nothing on the front page or in the bar led there. That question
+ * is the one the nav's 话题 link and the front page's chip row now point at.
+ */
+export const TOPIC_PATH = "/topic";
+
+/**
+ * One topic's page, e.g. `/topic/tech`, and `/topic/tech/2` from page two on.
+ *
+ * `/topic/` RATHER THAN THE TOP LEVEL, on the same reasoning as `/s/` above: a
+ * category id is arbitrary text from config.json and a bare `/tech` would be
+ * competing with every future page name on this site. The dates keep the top
+ * level because a four-digit segment can never collide with a word.
+ *
+ * THE ID IS THE SLUG, again like a source: category ids in config.json are
+ * lowercase ASCII words (`tech`, `business`, `investing`) because they are
+ * object keys and the model's enum, so there is nothing to slugify and no second
+ * spelling to keep in step. Renaming one was already a breaking edit for the
+ * archive — `categoryOf` falls back to the catch-all — and this adds a URL to
+ * that list.
+ *
+ * PAGE 1 IS THE BARE PATH, never `/topic/tech/1`, which the `[page]` route
+ * redirects. Exactly `archivePath`'s rule and for exactly its reason: two URLs
+ * for one page is the smallest version of the duplicate this site has already
+ * been reported for once.
+ *
+ * THE HUB AT `/topic` IS ITS PARENT, and the sibling row at the foot of every
+ * topic page stays alongside it rather than being replaced by it — see
+ * `TOPIC_PATH` above for what each of the two answers.
+ */
+export function topicPath(id: string, page = 1): string {
+  const base = `${TOPIC_PATH}/${id}`;
+  return page <= 1 ? base : `${base}/${page}`;
+}
+
+/**
  * A link-preview card: `/og/zh/site.png`, or `/og/zh/2026-08-14.png` for a day.
  *
  * OUTSIDE THE PAGE TREE, where these used to live as `/<lang>/og.png` and

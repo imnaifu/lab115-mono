@@ -1,4 +1,5 @@
 import { themedAccent } from "./accent";
+import type { Lang } from "./lang";
 import { USER_CONFIG } from "./user-config";
 
 /**
@@ -18,6 +19,13 @@ export interface Category {
   name: string;
   /** Smaller English line under it. */
   nameEn: string;
+  /** One reader-facing sentence on what this section holds — see `RawCategory`
+   *  in user-config.ts for why this is not `hint` and why it is hand-written.
+   *  Read it through `topicDescription` below rather than branching on the
+   *  language at each call site. */
+  description: string;
+  /** The same line in English. */
+  descriptionEn: string;
   /** Picked against the cream ground. Use `accentColor`, never this directly. */
   accent: string;
   /**
@@ -47,6 +55,26 @@ export const CATEGORIES: Category[] = USER_CONFIG.categories;
  *  not a branch. */
 export function accentColor(category: Category): string {
   return themedAccent(category.accent, category.accentDark);
+}
+
+/**
+ * The category's NAME in the language being rendered.
+ *
+ * `lang === "zh" ? c.name : c.nameEn` was written out at eight call sites
+ * before this existed — the hub, the topic page's heading, its sibling row, the
+ * article meta row, the list cards, the related block — and a ternary repeated
+ * eight times is eight chances for one of them to render the wrong half. The
+ * pair is the documented exemption to the one-language rule in lib/i18n; this
+ * is where the exemption is applied.
+ */
+export function categoryName(category: Category, lang: Lang): string {
+  return lang === "zh" ? category.name : category.nameEn;
+}
+
+/** The category's reader-facing line, same rule. Mirrors `descriptionFor` in
+ *  lib/sources one level down. */
+export function topicDescription(category: Category, lang: Lang): string {
+  return lang === "zh" ? category.description : category.descriptionEn;
 }
 
 /** Where an unrecognised or missing classification lands. */

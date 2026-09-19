@@ -33,6 +33,38 @@ export interface SummaryText {
    */
   text: string;
   /**
+   * ONE SENTENCE ON WHY THIS PIECE WAS WORTH THE SLOT — rendered under 「为什么
+   * 值得读」 / "Why it matters", and the only line on the site that is OUR
+   * JUDGEMENT rather than a restatement of somebody else's article.
+   *
+   * IT IS NOT A SECOND THESIS. `thesis` says what the article argues; this says
+   * why that argument earned a place in the day's twenty when several hundred
+   * did not — what it changes, who it contradicts, what it is evidence for. The
+   * two are easy to collapse into each other, and a `whyItMatters` that merely
+   * paraphrases the thesis is worse than none: it is the same sentence charging
+   * the reader twice.
+   *
+   * THE FIELD IS SUPPORTED EVERYWHERE AND WRITTEN NOWHERE YET. The type, the
+   * reply parser (`applySummaries` in lib/summarize) and the renderer
+   * (components/Summary) all handle it; the summary PROMPT does not ask for it,
+   * so no digest currently carries one and no page currently shows the section.
+   * That order is deliberate — the plumbing can land, be reviewed and be running
+   * in production before a prompt change starts spending tokens on it, and a
+   * half-written field cannot reach the page in the meantime.
+   *
+   * NOTHING GENERATES A FALLBACK. Absent means absent: the renderer draws no
+   * heading, no rule and no empty block, so an archived take and a take whose
+   * model skipped the field look identical to a reader, which is correct — in
+   * both cases nobody wrote one. Inventing a sentence here would be inventing
+   * exactly the editorial value this field exists to make visible.
+   *
+   * PER LANGUAGE, like everything else on `SummaryText`: it lives on the take,
+   * not on the article, so the Chinese and English halves each carry their own
+   * and `summaryFor` picks one. A shared field would put one language's sentence
+   * on the other language's page.
+   */
+  whyItMatters?: string;
+  /**
    * LEGACY, and no longer generated. Hashtags for the share note, WITHOUT `#`.
    *
    * The prompt stopped asking for these; the field and the components that read

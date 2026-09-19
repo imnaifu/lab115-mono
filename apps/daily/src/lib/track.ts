@@ -73,6 +73,23 @@ export type TrackEvent =
    * says they are twenty-five pages nobody asked for.
    */
   | "source_open"
+  /**
+   * A topic page was opened — from an article's own topic link, from the
+   * sibling row at the foot of another topic, or from a topic's pager (`from`
+   * says which).
+   *
+   * THE SAME COUNTER-QUESTION `source_open` ASKS, and worth restating because
+   * the answer is read the same way: topic pages exist as a landing surface for
+   * search rather than as a control a regular reader needs. A low number here
+   * against rising organic traffic to `/topic/*` is the pages working as
+   * designed; a low number against no organic traffic says they are eight pages
+   * nobody asked for.
+   *
+   * `from=article` is the one value that also measures something else — whether
+   * a reader who has just finished a take wants more of the same subject, which
+   * is the question the related block answers from the other direction.
+   */
+  | "topic_open"
   /** The masthead's install control was pressed — one per press, whether or not
    *  the browser had a native offer to make (`can_prompt` says which). */
   | "install_open"

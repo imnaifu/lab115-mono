@@ -18,6 +18,27 @@ import type { DailyPhoto, PublishedArticle, SummaryText } from "./types";
  * Read by pass 3 of `summarizeSurvivors` to decide what to re-ask for, and by
  * `backfill-summary` to decide what to re-ask for in the archive.
  */
+/**
+ * `whyItMatters` IS DELIBERATELY NOT PART OF "COMPLETE", and this is the note
+ * that has to stop someone adding it.
+ *
+ * The field is optional BY DESIGN, not by accident: the summary prompt tells the
+ * model to return an empty one rather than a platitude when an article has no
+ * real answer to the question (see the 「为什么值得关注」 section there). So an
+ * absent one is frequently the CORRECT output.
+ *
+ * Adding it here would turn every one of those correct outputs into an
+ * incomplete take — which means `repairTakes` re-asks for the whole summary, at
+ * one extra model call per article, to chase a field the model already declined
+ * on purpose; and since the re-ask uses the same prompt, it would mostly decline
+ * again and the article would be logged as "still incomplete" forever. Worse,
+ * the pressure of being re-asked is exactly what produces the platitude the
+ * prompt is written to keep out.
+ *
+ * `report` in summarize.ts counts the field separately for this reason: how many
+ * takes have one is worth watching, and it is not the same question as whether a
+ * take is whole.
+ */
 export function isCompleteTake(
   take: { zh: SummaryText; en?: SummaryText | null } | undefined,
 ): boolean {

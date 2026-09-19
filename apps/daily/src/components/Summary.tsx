@@ -1,4 +1,6 @@
 import { blocksOf } from "@/lib/paragraphs";
+import { strings } from "@/lib/i18n";
+import type { Lang } from "@/lib/lang";
 import type { SummaryText } from "@/lib/types";
 
 /**
@@ -62,9 +64,19 @@ const SIZE = {
 export function Summary({
   summary,
   variant,
+  lang,
 }: {
   summary: SummaryText;
   variant: "hero" | "card";
+  /**
+   * Only the 「为什么值得读」 heading needs it — everything else this component
+   * draws is the take's own prose, already in one language by the time it gets
+   * here. The prop is required rather than optional so that a future caller
+   * cannot silently get a Chinese heading over an English take; this component
+   * stays language-BLIND about the body, which is the property the note above
+   * is about, and language-aware about the one label it prints.
+   */
+  lang: Lang;
 }) {
   const text = summary;
   const size = SIZE[variant];
@@ -126,6 +138,40 @@ export function Summary({
           {block.text}
         </p>
       ))}
+
+      {/**
+       * 「为什么值得读」 — AND NOTHING AT ALL WHEN THERE IS NO SENTENCE.
+       *
+       * No heading, no rule, no empty box: an absent field is the whole signal
+       * (see `SummaryText.whyItMatters`), so a take without one has to render
+       * byte-identically to a take written before the field existed. A section
+       * that appears empty would be the page announcing that we had nothing to
+       * say, which is worse than the page not raising the question.
+       *
+       * A BOX, WHERE THE THESIS GETS A RULE. The two must not look the same:
+       * the thesis is the article's claim and this is ours, and reusing the
+       * orange bar would make one voice out of two. `bg-page` is the ground the
+       * card sits ON, so this reads as a well cut into the card rather than as a
+       * second card — the one tint that is guaranteed to sit right against
+       * `bg-card` in both themes, since the whole palette is defined as that
+       * pair.
+       *
+       * LAST, under the prose. It is a judgement about a piece the reader has
+       * just been given, and a judgement offered before the evidence is a
+       * verdict — which is also why it is not merged into the TL;DR block at the
+       * top. `mt-2` on top of the container's `gap-3`, the same extra air the
+       * thesis takes underneath itself.
+       */}
+      {summary.whyItMatters ? (
+        <div className="mt-2 rounded-xl bg-page px-4 py-3.5">
+          <p className="text-[11px] font-bold tracking-[0.08em] text-ink-soft">
+            {strings(lang).whyItMatters}
+          </p>
+          <p className={`mt-1.5 font-medium text-ink ${size.para}`}>
+            {summary.whyItMatters}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

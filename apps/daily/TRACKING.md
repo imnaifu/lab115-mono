@@ -44,16 +44,25 @@ GA 自己的传输层处理 unload），而为了一个指标去延迟读者的�
 | `copy_link` | — | 复制链接（写入成功之后才发） | `ShareButton.tsx` |
 | `save_image` | `parts` `shape`=`set`\|`single` | 存图 | `ShareSheet.tsx` |
 | `poster_failed` | `part` `parts` | 一张预览重试后仍然失败 | `ShareSheet.tsx` |
-| `category_tab` | `tab`（含 `all`） | 分类 tab | `DigestBody.tsx` |
+| `summary_open` | `source`、`from`=`list`\|`home`\|`topic`\|`topic_hub`\|`related`、`age` | 打开某一篇的概要 —— 站内「留下来」的那一侧，和同一行上的 `read_original` 对读。`from` 分开几个入口：当天的卡片列表、首页那条最新文章、话题页的行、话题总入口卡片里那两条最近更新、文章页底下的「你可能还想读」。`age` 是这一行在列表里的深度 | `ArticleCards.tsx`、首页、`TopicView.tsx`、`TopicHub.tsx`、`RelatedArticles.tsx` |
 | `lang_switch` | `to` | 语言切换 | `Shell.tsx` |
 | `archive_open` | `from`=`home`\|`pager`\|`header` | 进归档：首页那张卡、归档自己的翻页、顶栏那个链接（**只有它在每个页面上都有**） | 首页、`ArchiveView.tsx`、`SiteHeader.tsx` |
 | `today_open` | `from` | 归档 → 今天 | archive 页 |
 | `day_open` | `from`=`archive`\|`article`、`age` | 打开某一天 | archive 页、文章页 |
+| `topic_open` | `topic`、`from`=`homepage`\|`article`\|`archive`\|`topic_hub`\|`topic_page`\|`pager`\|`header`、`lang` | 打开某个话题。**反向指标，和 `source_open` 一个读法**：话题页是给搜索做的落地页，站内点击少而 `/topic*` 的自然流量在涨，就是它按设计工作。三个参数各回答一件事 —— `topic` 说哪个领域真的有人要（GA4 里可以直接按它拆），`from` 说哪个入口在起作用（首页那行 chips？还是读完一篇之后？），`lang` 说中英两侧的读者是不是同一种行为。**`from=article` 额外回答一件事**：读完一篇之后，读者想不想要同一话题的下一篇 —— 这和「你可能还想读」是同一个问题的两个方向。`data-track-topic` 在通往 `/topic` 本身的那两个入口上**故意缺席**（顶栏的「探索话题」、chips 行末尾的「更多」）：它们背后没有某一个话题，硬填 `all` 会造出一个别的 chip 从不发送的值 | 文章页、`ArticleCards.tsx`、`TopicChips.tsx`、`TopicHub.tsx`、`TopicView.tsx`、`SiteHeader.tsx` |
 | `source_open` | `from`=`sources`、`age` | 打开某个来源页。**订阅源整块目前是隐藏的**（见 `lib/sources.ts` 的 `SOURCE_PAGES_LIVE`）——`/s` 与 `/s/<id>` 都 404，顶栏和首页的两个入口已移除，所以这个事件当下不会有任何量。恢复后它仍是用来看它「没被本站读者用」的：来源页是给搜索和 AI 做的落地页，站内点击接近零而自然流量在涨，就是它按设计工作 | `SourcesView.tsx`（当前不可达） |
 | `install_open` | `platform` `can_prompt` | 按了「存成 App」 | `InstallApp.tsx` |
 | `install_prompt` | `outcome`=`accepted`\|`dismissed`\|`failed`、`platform` | 浏览器自己那个安装弹窗的结局 | `InstallApp.tsx` |
 | `pull_refresh` | — | **下拉刷新真的被用了多少** | `PullToRefresh.tsx` |
 | `mail_subscribe` | `outcome`=`ok`\|`email`\|`rate`\|`error`、`lang` | 提交了订阅表单。**不等于订阅成功** —— 双向确认还要读者去点邮件里的链接，这个数和 Resend 里的联系人数之差，就是确认这一步的成本 | `Subscribe.tsx` |
+
+### 首页在 `summary_open` 里叫 `home`，在 `topic_open` 里叫 `homepage`
+
+知道，不改。`summary_open` 的 `from=home` 已经在跑、GA 里有历史数据，改名会把一条指标
+从中间劈成两段；`topic_open` 是新的，取值按这一轮定下来的那一组（`homepage` /
+`article` / `archive` / `topic_hub` / `topic_page`）写。两边各自内部是自洽的，跨事件对
+比「首页贡献了多少」时记得它有两个拼法 —— 这条注释存在的唯一目的，就是让下一个人看到
+这个不一致时知道它是被看见过的，而不是顺手「修」掉其中一个。
 
 事件名在 `lib/track.ts` 里是一个**联合类型**，不是 `string`。GA4 会照单全收任何事件名，
 `shre_open` 会被永久归档成一个独立事件，报表上只表现为少了一部分点击 —— 这种错只有

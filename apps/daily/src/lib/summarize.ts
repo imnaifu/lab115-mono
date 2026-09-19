@@ -215,6 +215,31 @@ const ZH_MIN = USER_CONFIG.summaryMinChars;
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
 /**
+ * The recommended span of "zh_why", in Chinese characters.
+ *
+ * A RANGE RATHER THAN A CEILING, which is the opposite of every other length
+ * rule in this file — and the reason is that this field's failure mode is the
+ * opposite too. `zh_text` fails by running long: it is asked to cover an
+ * article, and a ceiling is what stops it translating one. `zh_why` fails by
+ * being SHORT AND EMPTY OF CONTENT — 「这项研究值得关注」 is nine characters, it
+ * satisfies any ceiling, and it is exactly the shape the prompt is written to
+ * keep out. A floor is what says "one clause of praise is not an answer".
+ *
+ * 50–120. The lower bound is about where a sentence stops being able to name a
+ * consequence and starts being able to only gesture at one; the upper is two
+ * ordinary sentences, past which this stops being a note in the margin and
+ * starts being a second summary — which is the one thing it must never become.
+ *
+ * NOT IN config.json, unlike the summary bounds. Those three are tuned against
+ * the length of the writing and are argued about; this pair describes the SHAPE
+ * of a field rather than a budget, and moving it would mean a maintainer can
+ * change 50 to 300 without reading the paragraph above that says why they
+ * should not. `TITLE_MAX` below is hardcoded for the same reason.
+ */
+const WHY_MIN = 50;
+const WHY_MAX = 120;
+
+/**
  * Ceiling on "zh_title", in characters.
  *
  * Hardcoded rather than sent to config.json alongside the summary bounds, which
@@ -796,7 +821,9 @@ const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：�
 
 英文里不许出现「」『』和中文标点，引话用单引号 —— 直双引号在这边同样会让整条 JSON 失效。
 
-**两边的读者不会同时看到两种语言**，英文必须自己站得住：只读英文的人，最后知道的东西要和只读中文的人一样多。产品名、公司名、人名、模型名两边都照原样。`;
+**两边的读者不会同时看到两种语言**，英文必须自己站得住：只读英文的人，最后知道的东西要和只读中文的人一样多。产品名、公司名、人名、模型名两边都照原样。
+
+**"en_why" 是 "zh_why" 的同一个判断，不是它的译文。** 同一件事、同一个角度，用英文自己的说法讲一遍 —— 1 到 2 句，简短，说的是这件事的分量，不是概要的复述。上面「重新本地化，不是翻译」那条在这里最要紧：中文那句里的比方直译过去多半不成立，换掉比方，别换掉那个点。**"zh_why" 空着的时候 "en_why" 也空着** —— 那是同一个判断说「这篇没有」，一种语言有一种语言没有就是两套编辑立场。`;
 
 /**
  * The style guide. CUT BY A FIFTH, from ~5,100 characters to ~4,000, and what
@@ -883,11 +910,13 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 - "zh_title" —— 中文标题，见下面「标题」。
 - "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。
 - "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间写 "\\n\\n"，分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
+- "zh_why" —— 这件事为什么值得关注，见下面「为什么值得关注」。**允许是空字符串**。
 - "en_title" —— 把写好的 "zh_title" 译成英文，见下面「标题」。
 - "en_thesis" 和 "en_text" —— 同一篇概要的英文版，见下面「英文」。
+- "en_why" —— "zh_why" 的英文，见下面「英文」。中文那边空着这边也空着。
 - "category" —— 见下面「分类」。
 
-**按上面的顺序填字段。** 中文先写完，英文从写好的中文来，两半就不会各说一套；"category" 放最后，因为写到那时你才真的知道这篇是什么。
+**按上面的顺序填字段。** 中文先写完，英文从写好的中文来，两半就不会各说一套；"zh_why" 放在正文之后，因为它是读完整篇之后的判断，不是开头的定调；"category" 放最后，因为写到那时你才真的知道这篇是什么。
 
 一篇文章一条。绝不允许一条盖住几篇、少写几篇，或者给没给你的文章编一条。
 
@@ -914,6 +943,29 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 - **不许写成目录**：「关于 X 的三个要点」「X 的五个启示」不是标题。
 - 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
 - 原标题本身已经够抓人的时候，直接译过来就是最好的答案 —— 重写不是义务。
+
+## 为什么值得关注 "zh_why"
+
+**分工是硬的，这是这个字段唯一会出的错。**
+
+- 概要（"zh_thesis" + "zh_text"）说的是：**这篇文章讲了什么**。
+- "zh_why" 说的是：**这件事为什么值得读者关注，它意味着什么**。
+
+拿一篇真文章说。原文的事实是「经常用生成式 AI 写作业的学生，在随后的闭卷考试里平均低 20% 左右」：
+
+- 概要写的是：研究比较了用 AI 和不用 AI 写作业的两组学生，前者在之后的闭卷考试里表现更差，研究者认为 AI 削弱了主动回忆和知识内化。
+- "zh_why" 写的是：AI 提高的是「把作业交上去」的效率，不一定是学到东西的效率 —— 这项研究把「完成任务」和「掌握知识」之间那道缝第一次量成了一个数。
+
+**下面这种话一句都不要写**：「这项研究很值得关注」「这个问题值得思考」「AI 对教育有重要影响」「引人深思」「值得每一个从业者警惕」。它们零信息量，而且它们正是这个字段最容易滑进去的形状 —— 一句正确的废话读起来像句话，所以写的人不会发现自己什么也没说。
+
+怎么写：
+
+- **1 到 2 句，${WHY_MIN} 到 ${WHY_MAX} 字。**
+- **不许重复标题、不许重复 "zh_thesis"、不许改写 "zh_text" 里已经写过的话。** 写完把标题、"zh_thesis" 和它三样并排读一遍：只要有两样是同一句话换了个说法，重写。
+- **必须站在原文已有的事实上。** 可以在事实之上往前多推一层（这意味着什么、谁会因此改变做法），但**不许凭空造事实、造数字、造机构、造结论**。推不动就说明这篇没有，见下面最后一条。
+- 优先说清下面任意一条，说清一条就够：**实际影响 / 反直觉在哪 / 这个行业会因此变什么 / 对用户意味着什么 / 长期看会怎样 / 它跟普通人或跟从业者有什么关系**。
+- **不要硬上价值。** 这不是给文章写颁奖词，也不是替作者喊口号。
+- **这篇文章本身就没有明显的「为什么重要」时，写空字符串 ""。** 空是被允许的答案，而且比一句正确的废话好得多：空值在页面上整块不渲染，读者看不到任何痕迹；废话会挂在那儿，而且署的是我们的名字。
 
 ## 英文
 
@@ -982,9 +1034,39 @@ ${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
 const EXAMPLE_ZH_TITLE = `推动历史的不是皇帝，是一家人的晚饭`;
 const EXAMPLE_ZH_THESIS = `真正塑造历史的不是帝王将相，而是无数普通家庭为了填饱肚子产生的需求。`;
 const EXAMPLE_ZH_TEXT = `教科书里总是让皇帝、将军和战争站在 C 位，但如果把镜头拉近，你会发现——真正撑起整个剧组、推动剧情发展的，其实是无数个普通家庭的日常。\\n\\n把时间拨回 4000 年前的古中东，看看当时的一个普通家庭是怎么“撬动历史”的：\\n\\n## 吃饱饭，才是最硬核的“KPI”\\n\\n在古美索不达米亚，家庭最重要的任务就是种大麦。这里有两条大河灌溉，土地肥沃，粮食多就能养活更多人口。\\n\\n在古代，人口＝劳动力＝军队＝国力。哪个地方的家庭生得多、吃得饱，哪个地方就能变成超级大国。\\n\\n## 一家人搞不定？“国家”诞生了！\\n\\n有些大事，光靠单打独斗或一个家庭根本做不成：\\n\\n修水利：想要灌溉农田、防范洪水，必须千家万户一起挖渠。这就需要有人来组织、指挥甚至强制大家干活——于是，最早的国家和政府就被“逼”出来了。\\n\\n拼团买大件：像牛和铁犁这种“重型装备”太贵了，普通家庭买不起，只能大家凑钱合买、轮流使用。\\n\\n## 买买买，买出了“文明”\\n\\n没有哪个家庭能生产所有东西。除了自给自足，他们还需要去市场上买自己做不出的东西——陶罐、木头、铜器，甚至其他蔬菜。\\n\\n当千千万万个家庭都有了“买买买”的需求，交易就出现了，城市变热闹了，贸易路线铺开了。为了抢夺这些稀缺资源，国家之间开始打仗，文明也随之兴衰交替。\\n\\n一句话总结：并不是帝王将相“创造”了历史，而是无数普通家庭为了填饱肚子、过好日子所产生的需求，一步步把人类社会推向了现代。`;
+/**
+ * The 「为什么值得关注」 half of the target, and the field the example carries the
+ * most weight for.
+ *
+ * THE RULES CAN SAY "DO NOT RESTATE THE THESIS" AND THE EXAMPLE IS WHERE THAT IS
+ * CHECKABLE. Read it against `EXAMPLE_ZH_THESIS` directly above: the thesis says
+ * WHO moved history (ordinary households, not kings). This says what follows from
+ * believing that — which page of the newspaper you turn to first. Neither
+ * sentence can be derived from the other, and that gap is the whole specification.
+ *
+ * It also demonstrates the one move the rules permit and the one they forbid: it
+ * goes ONE step past the article (if households are the engine, then grain prices
+ * are the headline) and invents no fact — every noun in it is either in the
+ * summary or is the reader's own present-day life, which is not a claim about the
+ * article.
+ *
+ * NO EXAMPLE OF THE EMPTY CASE, deliberately, and it is worth saying why since
+ * the empty string is a legal answer the prompt spends a paragraph on. In JSON
+ * mode the example IS the specification — see SUMMARY_EXAMPLE — and a `""` shown
+ * in it is an instruction to return `""`, which is the failure this field cannot
+ * afford: an optional field that the model learns to skip is a field that is
+ * never written. The rule states the exit in prose; the example shows the target.
+ */
+const EXAMPLE_ZH_WHY = `「谁推动了历史」不只是史学趣味，它决定了今天看新闻时先看哪一版：如果引擎真在饭桌上，那么粮价、育儿成本、通勤时长这些被归进「民生琐事」的东西，才是头条，峰会是花絮。`;
 const EXAMPLE_EN_TITLE = `History was moved by dinner, not by emperors`;
 const EXAMPLE_EN_THESIS = `History was not driven by kings and generals but by the everyday needs of countless ordinary families trying to put dinner on the table.`;
 const EXAMPLE_EN_TEXT = `Textbooks give emperors, generals and wars the centre stage. Zoom in, though, and you find that the ones actually holding the production together — and moving the plot along — were millions of ordinary households going about their day.\\n\\nSo rewind 4,000 years to the ancient Near East and watch how one unremarkable family levered history along:\\n\\n## Getting fed was the original hardcore KPI\\n\\nIn ancient Mesopotamia a family's most important job was growing barley. Two great rivers watered the land, the soil was rich, and more grain meant more mouths could be fed.\\n\\nIn the ancient world people were labour, labour was an army, and an army was national power. Wherever families had more children and enough to feed them, that is where a superpower grew.\\n\\n## Too big for one household? Enter the state\\n\\nSome jobs were simply beyond a single family, however hard it worked:\\n\\nIrrigation: watering the fields and holding back the floods meant thousands of households digging one canal. Somebody had to organise that, direct it, and at times force people to turn up — which is how the earliest states and governments got squeezed into existence.\\n\\nBig-ticket items: an ox and an iron plough were heavy equipment, far beyond one family's savings, so neighbours chipped in together, bought one between them, and took turns.\\n\\n## Shopping built civilisation\\n\\nNo household could make everything it needed. Beyond what they grew themselves, families went to market for what they could not produce — pots, timber, bronze, even someone else's vegetables.\\n\\nOnce millions of households all wanted to buy, trade appeared, cities filled up and trade routes spread out. States went to war over the scarce goods behind all of it, and civilisations rose and fell along with them.\\n\\nIn one line: emperors and generals did not create history. The needs of countless ordinary families trying to eat well and live a little better pushed human society, step by step, into the modern world.`;
+
+/* Not a translation of the Chinese one — the same judgement, made again in
+   English. The Chinese leans on 「哪一版」 (which page of the paper), which does not
+   survive a literal crossing; this one says the same thing with "the front page"
+   and "the sideshow". See EN_RULES. */
+const EXAMPLE_EN_WHY = `Where you place the engine of history decides what you read as news: if it is what households need, then grain prices, childcare costs and the length of a commute are the front page, and the summit is the sideshow.`;
 
 const SUMMARY_EXAMPLE = `{
   "articles": [
@@ -992,9 +1074,11 @@ const SUMMARY_EXAMPLE = `{
       "zh_title": "${EXAMPLE_ZH_TITLE}",
       "zh_thesis": "${EXAMPLE_ZH_THESIS}",
       "zh_text": "${EXAMPLE_ZH_TEXT}",
+      "zh_why": "${EXAMPLE_ZH_WHY}",
       "en_title": "${EXAMPLE_EN_TITLE}",
       "en_thesis": "${EXAMPLE_EN_THESIS}",
       "en_text": "${EXAMPLE_EN_TEXT}",
+      "en_why": "${EXAMPLE_EN_WHY}",
       "category": "culture"
     }
   ]
@@ -1048,7 +1132,12 @@ function renderArticle(
     // The only length rule the model gets is this total.
     ...(budget !== undefined
       ? [
-          `budget: 中文正文最多 ${budget} 字（英文不计入），` +
+          // `zh_why` NAMED IN THE EXCLUSION, on the same reasoning that put
+          // 「英文不计入」 there: an unqualified "最多 N 字" beside a reply that
+          // now carries four text fields does not say whose budget it is, and
+          // the field most likely to be sacrificed to a tight number is the
+          // short optional one. It has its own range — see WHY_MIN/WHY_MAX.
+          `budget: 中文正文最多 ${budget} 字（英文和 "zh_why" 都不计入），` +
             `其中每一段最多 ${PARA_MAX} 字。` +
             `分几段你自己定，跟着内容走，英文段数照中文走。` +
             `装不下就砍掉一整个点（收尾那句除外，它永远留着），` +
@@ -1252,19 +1341,45 @@ function applySummaries(
         // the English half: an absent field means "there are none", and an
         // empty array would make a model that skipped the field look like one
         // that considered the question and came back with nothing.
+        ...whyItMatters(row.zh_why),
       };
     }
 
     const enThesis = asText(row.en_thesis);
     const enText = asBody(row.en_text);
     if (enThesis && enText) {
-      verdict.en = { thesis: enThesis, text: enText };
+      verdict.en = {
+        thesis: enThesis,
+        text: enText,
+        ...whyItMatters(row.en_why),
+      };
     }
   }
 }
 
 function asText(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+/**
+ * The optional 「为什么值得读」 line, as a spread — `{}` when there is none.
+ *
+ * READ BUT NOT ASKED FOR. The prompt does not mention `zh_why` / `en_why` yet
+ * (see `SummaryText.whyItMatters` in lib/types for why the plumbing lands
+ * first), so today this returns `{}` on every reply and the field never reaches
+ * a digest. Adding the field to the prompt is then the ONLY edit needed to start
+ * storing it, with no second change here to remember.
+ *
+ * A SPREAD RATHER THAN A VALUE, so an absent line is an ABSENT KEY rather than
+ * an empty string — the same rule `titleZh` and the retired `tags` follow. The
+ * difference is not cosmetic: every reader of this field branches on
+ * truthiness, and a stored `""` would make a digest whose model skipped the
+ * question look different on disk from one written before the field existed,
+ * while rendering identically. One shape for "there is none".
+ */
+function whyItMatters(value: unknown): { whyItMatters?: string } {
+  const line = asText(value);
+  return line ? { whyItMatters: line } : {};
 }
 
 /**
@@ -2045,6 +2160,7 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
   let en = 0;
   let thin = 0;
   let over = 0;
+  let why = 0;
   const lengths: number[] = [];
 
   for (const article of survivors) {
@@ -2052,6 +2168,22 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
     if (!verdict?.zh.thesis) continue;
     zh += 1;
     if (verdict.en) en += 1;
+    /**
+     * HOW MANY TAKES GOT A 「为什么值得关注」, and this number is NOT a failure
+     * count — which is why it is reported apart from `thin` and `over` rather
+     * than beside them.
+     *
+     * The field is allowed to be empty: the prompt spends a paragraph saying
+     * that an article with no real answer should get `""` rather than a
+     * platitude. So a day reading 11/14 is the rule working. What this number
+     * is for is the two ends. A run at 14/14 for days on end means the model
+     * has stopped exercising the exit and is writing something for everything,
+     * which is how the platitudes get in; a run near 0 means the field was
+     * asked for and is not being written at all, and nothing else anywhere
+     * would say so — an optional field that silently never arrives looks
+     * exactly like a feature that was never shipped.
+     */
+    if (verdict.zh.whyItMatters) why += 1;
 
     // The CHINESE length: `budgetFor` is a Chinese-character budget and the
     // prompt tells the model the English does not count against it.
@@ -2068,6 +2200,7 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
     lengths.sort((a, b) => a - b)[Math.floor(lengths.length / 2)] ?? 0;
   console.log(
     `[daily] summaries — ${zh}/${total} written, ${en}/${total} with English, ` +
+      `${why}/${total} with 为什么值得关注, ` +
       `median ${median} chars, over their own budget: ${over}/${total}, ` +
       `under ${ZH_MIN}: ${thin}/${total}`,
   );

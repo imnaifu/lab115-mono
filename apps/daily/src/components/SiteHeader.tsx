@@ -1,8 +1,10 @@
 import { InstallApp } from "./InstallApp";
 import { SubscribeDialog } from "./SubscribeDialog";
 import { ThemeToggle } from "./ThemeToggle";
+import { MAIL_TOP_N } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, otherLang, type Lang } from "@/lib/lang";
+import { TOPIC_PATH } from "@/lib/links";
 import { archivePath } from "@/lib/paging";
 
 /**
@@ -278,7 +280,7 @@ export function SiteHeader({
             the Chinese 204):
 
               mark 28   wordmark 88   tagline 278
-              Archive 67   Subscribe 101
+              Archive 67   Explore topics 118   Subscribe 101
               lang 34   theme 34   install 114
 
             THE 72px `Sources` LINK IS OUT OF THESE SUMS, because the section is
@@ -286,20 +288,30 @@ export function SiteHeader({
             72 + 8 lighter than it was; putting the link back means adding 80 to
             each of them, and the `sm:` line is the one that then stops working.
 
-            So the lockup is 28 + 10 + 278 = 316px with the tagline and 126px
-            without, and the nav is 382px with both links (its four 8px gaps
-            included), 307px with only Subscribe, or 198px with none.
+            THE TOPIC HUB ADDED 126 TO EVERY `md:` SUM (118 + one 8px gap), and
+            it is the English label that costs it — 「探索话题」 is 4 CJK glyphs
+            at ~64px against "Explore topics" at 118, and as everywhere in this
+            budget the wider language is the one measured.
 
-            `md:` AND UP — everything shows. 382 + 12 + 316 = 710px against the
+            So the lockup is 28 + 10 + 278 = 316px with the tagline and 126px
+            without, and the nav is 508px with all three links (its five 8px
+            gaps included), 307px with only Subscribe, or 198px with none.
+
+            `md:` AND UP — everything shows. 508 + 12 + 316 = 836px against the
             944px a 1024px viewport leaves after `lg:px-10`. At the bottom of the
             range a 768px viewport leaves 712px, so the lockup gives up about
-            40px of tagline to an ellipsis — which is what it is built to do: it
-            is `truncate` inside `min-w-0`, so the sentence yields before
-            anything overflows. Gating instead on the width where the tagline
-            fits UNCUT is what hid it from every window between 768 and 1024,
-            and that was the wrong thing to protect.
+            166px of tagline to an ellipsis — more than the 40px it used to, and
+            still what it is built to do: it is `truncate` inside `min-w-0`, so
+            the sentence yields before anything overflows. THE FLOOR THAT
+            MATTERS is the lockup's own 126px minimum: 508 + 12 + 126 = 646px,
+            inside 712, so even with the tagline cut away entirely nothing
+            overflows at the narrowest `md:` viewport. Gating the tagline
+            instead on the width where it fits UNCUT is what hid it from every
+            window between 768 and 1024, and that was the wrong thing to
+            protect.
 
-            `sm:` TO `md:` — Subscribe stays; Archive and the tagline do not.
+            `sm:` TO `md:` — Subscribe stays; Archive, the topic hub and the
+            tagline do not.
             307 + 12 + 126 = 445px against the 584px a 640px viewport leaves.
             Archive could in fact join it here now that Sources is gone (382 + 12
             + 126 = 520px, inside 584px) and is deliberately left at `md:`: with
@@ -332,6 +344,33 @@ export function SiteHeader({
             </a>
           ) : null}
 
+          {/**
+           * THE TOPIC HUB — the second destination in this bar, and the only
+           * one that is not organised by date.
+           *
+           * IT IS IN THE NAV AND THE EIGHT TOPICS ARE NOT, which is the whole
+           * point of there being a hub: a bar listing 技术 商业 投资 经济 科学
+           * 设计 生活 人文 is unmaintainable the moment config.json gains a
+           * category, and it would push the lockup out of every viewport
+           * narrower than a desktop. One link that never changes.
+           *
+           * NOT GATED ON ANYTHING, unlike `archiveReady` next door. `/topic`
+           * answers with whatever has cleared the threshold and the archive has
+           * eight live topics; a bar item that blinks in and out with a content
+           * count is worse than one that is always there. (The sitemap DOES gate
+           * on it — an empty page should not be indexed even while it is
+           * linked.)
+           */}
+          <a
+            href={href(lang, TOPIC_PATH)}
+            className="hidden rounded-full px-2 py-1 text-sm font-bold text-ink-mid md:block transition duration-150 ease-out hover:text-ink active:opacity-70"
+            data-track="topic_open"
+            data-track-from="header"
+            data-track-lang={lang}
+          >
+            {t.topicHubTitle}
+          </a>
+
           {/* THE BLOG DIRECTORY WAS HERE, and it is gone with the section — see
               SOURCE_PAGES_LIVE in lib/sources. Removed rather than gated on the
               flag: a hidden section should not leave a conditional `null` in a
@@ -343,7 +382,12 @@ export function SiteHeader({
               link because pressing it now opens a sheet instead of scrolling to
               a card. Its own file carries the button's styling and the budget
               note's `hidden sm:block`, since the two have to agree. */}
-          {signupOpen ? <SubscribeDialog lang={lang} /> : null}
+          {signupOpen ? (
+            /* `picks` is MAIL_TOP_N, handed down rather than imported by the sheet:
+               that file is a client component and lib/config is server-side. See
+               the prop's note in SubscribeDialog. */
+            <SubscribeDialog lang={lang} picks={MAIL_TOP_N} />
+          ) : null}
 
           <LangSwitch lang={lang} path={path} />
           <ThemeToggle label={t.themeToggle} />

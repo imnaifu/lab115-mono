@@ -4,6 +4,7 @@ import { ArticleTitle, displayTitle } from "@/components/ArticleTitle";
 import { Meta } from "@/components/ArticleCards";
 import { Cover } from "@/components/Cover";
 import { PageShell } from "@/components/PageShell";
+import { TopicChips } from "@/components/TopicChips";
 import { Footer, PAD } from "@/components/Shell";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
@@ -294,7 +295,7 @@ export default async function Home({
                 variant="hero"
               />
               <div className="min-w-0 flex-1">
-                <Meta article={lead} lang={lang} />
+                <Meta article={lead} lang={lang} from="homepage" />
                 <h1 className="mt-2.5 text-2xl leading-tight font-bold text-ink">
                   <ArticleTitle article={lead} lang={lang} variant="hero" />
                 </h1>
@@ -351,6 +352,39 @@ export default async function Home({
             </div>
           </section>
         ) : null}
+
+        {/**
+         * THE DISCOVERY LAYER, and it is one line of the front page.
+         *
+         * WHERE IT SITS IS THE WHOLE DECISION. Below the teaser, above the list
+         * of recent pieces — so the first screen is still today's lead article
+         * and its claim, which is what this page is for. A daily whose front
+         * page opens on a taxonomy has stopped being a daily; the date spine
+         * (teaser → the day → the archive) is untouched, and this is a second,
+         * lighter way in that a reader can ignore completely.
+         *
+         * IT IS THE ONLY PLACE THE TOPICS ARE REACHABLE ON A PHONE. The bar's
+         * hub link is `md:` and up — the width budget in SiteHeader has the
+         * arithmetic — so without this row the entire topic system would be
+         * desktop-only for anyone who did not arrive on an article page.
+         *
+         * ONE LINE AT EVERY WIDTH: the row scrolls sideways rather than
+         * wrapping, see `layout` in TopicChips. Three lines of chips above the
+         * day's headlines is exactly the cost this block is not allowed to
+         * have.
+         *
+         * `divide-y` puts the rule above and below it like every other section
+         * here, so it reads as a band of the column rather than as a widget
+         * dropped into it.
+         */}
+        <section className="pt-6 pb-5">
+          <h2 className="text-sm font-bold text-ink-soft">
+            {t.topicExplore}
+          </h2>
+          <div className="mt-2.5">
+            <TopicChips lang={lang} from="homepage" more layout="scroll" />
+          </div>
+        </section>
 
         {recent.length > 0 ? (
           <section className="pt-7 pb-6">

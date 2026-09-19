@@ -12,18 +12,32 @@ import {
   PAD,
   SECTION,
 } from "@/components/Shell";
+import { RelatedArticles } from "@/components/RelatedArticles";
 import { ShareButton } from "@/components/ShareButton";
+import { SubscribeDialog } from "@/components/SubscribeDialog";
 import { Summary } from "@/components/Summary";
-import { categoryOf } from "@/lib/categories";
-import { SITE } from "@/lib/config";
+import {
+  accentColor,
+  categoryName,
+  categoryOf,
+} from "@/lib/categories";
+import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
+import { signupOpen } from "@/lib/mail/resend";
 import { posterParts, POSTER_HEIGHT, POSTER_WIDTH } from "@/lib/share";
 import { sourceOf } from "@/lib/sources";
-import { articlePath, dayPath, posterBase, posterPartUrl } from "@/lib/links";
+import {
+  articlePath,
+  dayPath,
+  posterBase,
+  posterPartUrl,
+  topicPath,
+} from "@/lib/links";
 import { summaryFor } from "@/lib/take";
 import { alternatesFor, breadcrumb, JsonLd, publisher } from "@/lib/seo";
 import { readArticleBySlug, readDigest, retiredMatch } from "@/lib/store";
+import { topicLinkFor } from "@/lib/topics";
 
 export const dynamic = "force-dynamic";
 
@@ -215,6 +229,21 @@ export default async function ArticlePage({ params }: Params) {
 
   const source = sourceOf(article.sourceId);
   const category = categoryOf(article.category);
+  /**
+   * DOES THIS ARTICLE'S TOPIC HAVE A PAGE YET?
+   *
+   * Asked rather than assumed, because `TOPIC_MIN_ARTICLES` is real and bites:
+   * `design` currently holds one published take across the whole archive, so
+   * `/topic/design` 404s and is not in the sitemap. Linking to it from here
+   * would be this page pointing at a URL the site itself refuses to serve —
+   * exactly the listed-but-404 disagreement `hasSourcePage` exists to prevent
+   * one route over. The link simply does not appear until the topic is live,
+   * and then it appears on every article in it at once.
+   *
+   * `topicLinkFor` is a read of the cached archive index, which the related
+   * block below already walks — one walk for both.
+   */
+  const topic = await topicLinkFor(article);
 
   return (
     <PageShell lang={lang} path={articlePath(date, article)}>
@@ -325,11 +354,57 @@ export default async function ArticlePage({ params }: Params) {
           />
         }
       >
-        {/* THE DATE, AND ONLY THE DATE. The category used to sit beside it in
-            its own colour; categories are not shown anywhere on the site now —
-            the tabs and the section headings went with `DigestBody`. The
-            registry stays, because the publish floor lives in it and the JSON-LD
-            below still declares `articleSection` for crawlers. */}
+        {/**
+         * THE TOPIC, THEN THE DATE — the two axes this article sits on, in one
+         * row, both of them links.
+         *
+         *     [● 技术] · 2026-09-18
+         *       ↓            ↓
+         *   /topic/tech   /2026/09/18
+         *
+         * DATE AND TOPIC DO NOT REPLACE EACH OTHER. An article belongs to an
+         * EDITION (the day it ran in, which is what this site publishes) and to
+         * a SUBJECT (what it is about, which is what anybody searches for), and
+         * both have a page holding the rest of their kind. This row is the only
+         * place a reader is offered both, and it is why the topic system did not
+         * need to take anything away from the date system to exist.
+         *
+         * THE TOPIC LEADS, and it was the other way round for one round. The
+         * date is where this piece came from; the topic is what it is — and a
+         * reader arriving from a search result has no relationship with
+         * 2026-09-18 at all, while the subject is the thing they were looking
+         * for. The breadcrumb directly above still runs 首页 › 日期 › 标题,
+         * which is the URL's own hierarchy and a different statement.
+         *
+         * THE SOURCE IS NOT IN THIS ROW, deliberately: it is forty pixels below
+         * in the article plate, in its own colour beside the author, where it
+         * has always been. Lifting it here would empty that line and change the
+         * plate's shape to save a reader one glance.
+         *
+         * ONE LINE ON A PHONE. `Masthead` wraps this row, so the worst case is
+         * two — and the breadcrumb above it truncates its last crumb rather
+         * than wrapping (see `Breadcrumb`), so the header stays at two lines of
+         * chrome above the headline rather than the four or five it could be.
+         */}
+        {topic ? (
+          <>
+            <a
+              className="flex items-center gap-1.5"
+              href={langHref(lang, topicPath(topic.id))}
+              data-track="topic_open"
+              data-track-topic={topic.id}
+              data-track-from="article"
+              data-track-lang={lang}
+            >
+              <span
+                className="size-1.5 flex-none rounded-full"
+                style={{ background: accentColor(topic) }}
+              />
+              {categoryName(topic, lang)}
+            </a>
+            <span className="size-1 rounded-full bg-orange" />
+          </>
+        ) : null}
         <a href={langHref(lang, dayPath(date))}>{date}</a>
       </Masthead>
 
@@ -365,7 +440,11 @@ export default async function ArticlePage({ params }: Params) {
             </div>
           </div>
 
-          <Summary summary={summaryFor(article, lang)} variant="hero" />
+          <Summary
+            summary={summaryFor(article, lang)}
+            variant="hero"
+            lang={lang}
+          />
 
           {/* Right-aligned, the same way a list card ends — and secondary for the
               same reason it is there: the summary is the product, not the trip
@@ -415,6 +494,37 @@ export default async function ArticlePage({ params }: Params) {
         </div>
       </section>
 
+      {/**
+       * WHAT TO READ NEXT, IN THE ORDER A READER DECIDES IT.
+       *
+       * Three blocks, and the order is the argument. First more reading, because
+       * a reader who has just finished a take is deciding whether there is
+       * another one worth their time and the answer has to be in front of them
+       * before anything is asked of them. Then the newsletter, which is the ask —
+       * and it lands at the one moment on this site where "finished" is
+       * unambiguous. Then the day, which is where this page has always ended.
+       *
+       * THE PAGE USED TO END AT THE THIRD OF THOSE AND NOTHING ELSE. One link
+       * onward, to a list the reader has probably already seen, on the page that
+       * receives almost every arrival from search and from every link anybody
+       * shares. That was the whole of this site's session depth.
+       */}
+      <div className={PAD}>
+        <RelatedArticles article={article} lang={lang} />
+      </div>
+
+      {/* Only when there is somewhere for the address to go — `signupOpen` reads
+          the Resend configuration on the server, the same gate `PageShell` asks
+          on behalf of the bar. A subscribe block with no mailing list behind it
+          is a form that fails after the reader has typed into it.
+
+          `SECTION` for the rhythm and `PAD` for the gutter, like every other
+          full-width block; the component itself draws the plate. */}
+      {signupOpen() ? (
+        <div className={`${SECTION} ${PAD}`}>
+          <SubscribeDialog lang={lang} variant="inline" picks={MAIL_TOP_N} />
+        </div>
+      ) : null}
 
       <div className={PAD}>
         <EndLink

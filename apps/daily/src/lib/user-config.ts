@@ -79,6 +79,27 @@ export interface RawCategory {
   id: string;
   name: string;
   nameEn: string;
+  /**
+   * The line a READER is shown, on `/topic` and at the top of `/topic/<id>`.
+   *
+   * NOT `hint` BELOW, and the two must never be swapped. `hint` is written for
+   * the MODEL and is a boundary — it spends its length on what goes here rather
+   * than next door ("a chip fabrication process is 'tech'"), which is exactly
+   * the wrong thing to show someone deciding whether to click. This one is
+   * written for the reader and names what the section holds.
+   *
+   * WRITTEN BY HAND, one per category, and it has to stay that way: generating
+   * these from the category name is how a topic page becomes a keyword page.
+   * Eight sentences is a small enough number to write properly once.
+   *
+   * REQUIRED, like a source's. Optional would mean a topic page that silently
+   * renders without its one line of orientation, and the failure would show up
+   * on the live site rather than at load.
+   */
+  description: string;
+  /** The same line in English — WRITTEN, not translated. See `descriptionEn`
+   *  on RawSource for the same rule one level down. */
+  descriptionEn: string;
   accent: string;
   hint: string;
 }
@@ -261,7 +282,7 @@ function validate(config: RawConfig): RawConfig {
   for (const category of config.categories) {
     requireFields(
       category as unknown as Record<string, unknown>,
-      ["id", "name", "nameEn", "accent", "hint"],
+      ["id", "name", "nameEn", "description", "descriptionEn", "accent", "hint"],
       `category "${category.id ?? "?"}"`,
     );
   }

@@ -219,6 +219,78 @@ const STRINGS = {
 
     nothingYet: "还没有任何内容。",
 
+    /**
+     * 话题页。见 lib/topics.ts —— 这个站上唯一一组**不随日期过期**的地址。
+     *
+     * 标题里带「每日精选」而品牌叫「每日严选」，两个词只差一个字，这是知道的：
+     * 「精选」说的是这一页里的东西是挑出来的，「严选」是这个站的名字。搜索结果里
+     * 两个词一前一后出现，读者看到的是「技术每日精选 · 每日严选」，前半是内容，
+     * 后半是出处 —— 这正是来源页 `${source.name} · ${t.brand}` 的同一种排法，而且
+     * 主语在前，因为读者搜的是话题，不是这个站的名字。
+     *
+     * 描述句是**照话题生成**的，不是每个话题手写一遍：手写八句必然有几句是凑的，
+     * 而凑出来的描述句正是「为 SEO 造页面」的样子。一句模板 + 话题名，说的是这一页
+     * 真正提供的三样东西：中文摘要、核心观点、原文链接。
+     */
+    /**
+     * 话题总入口 `/topic`。
+     *
+     * 「探索话题」而不是「全部话题」：这一页每一行都带一句这个栏目是什么、以及最近
+     * 两篇，它是给第一次来的人看的地图，不是一张目录。「全部」承诺的是完整性，
+     * 而这里连没过门槛的话题都不列。
+     *
+     * 文档标题里把**实际在线的话题名字念一遍**，不是写一句「浏览我们的话题分类」。
+     * 这个 URL 在搜索结果里要跟全互联网所有「话题页」抢，唯一让人愿意点的是后面到底
+     * 有哪些领域；而且它是从真实过线的话题生成的，站长大了也不会写成假话。
+     */
+    topicHubTitle: "探索话题",
+    topicHubDocTitle: (names: readonly string[]) =>
+      `探索话题：${names.join("、")}等每日精选`,
+    topicHubLead:
+      "这个站每天从全球优质信息源里挑出值得一读的文章，按领域收在下面这几个话题里。" +
+      "每个话题都是一条会一直长下去的流，点进去是我们在那个领域摘过的全部文章。",
+    /** 话题卡片里那两条最近的文章上面的小标签。 */
+    topicRecent: "最近更新",
+    /** 首页那一行 chips 的标题，以及末尾通往 `/topic` 的那一颗。 */
+    topicExplore: "探索话题",
+    topicMore: "更多",
+
+    topicHeading: (name: string) => `${name}每日精选`,
+    topicDocTitle: (name: string) => `${name}每日精选：观点、摘要与原文`,
+    topicLead: (name: string) =>
+      `每天从全球优质信息源中筛选${name}领域值得一读的文章，` +
+      `提供中文摘要、核心观点和原文链接。`,
+    /* 「收录过 N 篇」，和来源页同一个口径，理由也同一个：这不是这个话题下全世界
+       发了多少篇，是我们摘过多少篇。 */
+    topicPicked: (n: number) => `收录过 ${n} 篇`,
+    /** 话题页底部那一行兄弟话题。 */
+    topicOthers: "其它话题",
+    /** 文章页报头里那个话题链接前面的词。见文章页的 meta 行。 */
+    topicLabel: "话题",
+
+    /**
+     * 文章正文下面那一块。
+     *
+     * 「你可能还想读」而不是「相关文章」：后者是一个栏目名，前者是一句话，说的是
+     * 这几篇为什么在这儿。见 lib/related.ts —— 挑选规则是可解释的，文案也就该按
+     * 「给你的建议」来写，而不是按「系统生成的板块」。
+     */
+    related: "你可能还想读",
+
+    /**
+     * 「为什么值得关注」—— `SummaryText.whyItMatters` 的小标题。
+     *
+     * 「关注」而不是「读」，改过一次。「值得读」和这一块的位置打架：它画在概要的
+     * **末尾**，读者已经读完了，再告诉他「值得读」是马后炮。「值得关注」说的是读完
+     * 之后该把这件事记在哪儿 —— 和字段本身的定义（这件事意味着什么，不是这篇文章
+     * 讲了什么）是同一句话。
+     *
+     * 只在那个字段有内容时出现，见 components/Summary。这是整个站上唯一一处
+     * **我们自己的判断**，和概要不是一回事：概要说文章讲了什么，这一句说它为什么
+     * 进了今天这一期。
+     */
+    whyItMatters: "为什么值得关注",
+
     /** 开头那张照片的出处，署名行里夹在作者和许可之间。作者名和许可名都是数据，
         只有这个词是文案，所以只有它在这里。 */
     photoSource: "维基共享资源",
@@ -239,6 +311,30 @@ const STRINGS = {
     subscribe: "订阅邮件",
     subscribeEmail: "你的邮箱",
     subscribeGo: "订阅",
+    /**
+     * 订阅这件事的**价值主张**，换掉表单里那一句站点 tagline。
+     *
+     * 篇数是插值进来的，不是写死的 —— 上面那段注释记了一笔旧账：这里曾经有一句
+     * 「每天早上一封，五条精选」，而「五条」是写死的，改 `MAIL_TOP_N` 就得记得回来
+     * 改文案。于是整句被删掉，站上从此不承诺任何条数。现在承诺回来了，但数字由
+     * `MAIL_TOP_N` 自己给（见 `SubscribeDialog` 的调用处），所以那笔旧账不会重演。
+     *
+     * 为什么值得把 tagline 换掉：tagline 说的是这个**站**是什么，而这里要回答的是
+     * 「我为什么要把邮箱给你」。同一句话干不了两件事 —— 表单里放站点简介，等于在
+     * 转化的那一步什么都没多说。
+     */
+    subscribePitch: (n: number) => `每天 ${n} 篇真正值得读的文章`,
+    subscribePitchSub:
+      "从全球优质信息源中筛选，几分钟了解当天最值得关注的观点。",
+    /**
+     * 按钮上的字。「订阅」说的是读者要做的动作，这句说的是读者会**得到**什么 ——
+     * 一个免费邮件列表的提交按钮，说后者转化更高，而且它把「每天」这个频率又说了
+     * 一遍，正好是读者在按下去之前最后一个犹豫的点。
+     *
+     * `subscribeGo`（「订阅」）没有删：顶栏那颗药丸按钮只有 44px 的余量，放不下
+     * 这五个字，而且那里是**入口**不是**提交**——入口说动作，提交说结果。
+     */
+    subscribeCta: "每天发给我",
     subscribeSending: "正在发送",
     subscribeSent: (email: string) =>
       `确认信已经发到 ${email}，点开里面的链接就完成了。`,
@@ -425,6 +521,36 @@ const STRINGS = {
 
     nothingYet: "Nothing published yet.",
 
+    /* See the Chinese side for why the subject leads and why the lead sentence
+       is generated from the topic rather than written eight times. */
+    /* See the Chinese side. "Explore" rather than "All": the page leaves out
+       every topic below the threshold, so it does not promise completeness. */
+    topicHubTitle: "Explore topics",
+    topicHubDocTitle: (names: readonly string[]) =>
+      `Explore topics: ${names.join(", ")} and more, picked daily`,
+    topicHubLead:
+      "Every day this site picks the writing worth reading from high-quality " +
+      "sources and files it under the topics below. Each one is a stream that " +
+      "keeps growing — open it for everything we have picked in that field.",
+    topicRecent: "Latest",
+    topicExplore: "Explore topics",
+    topicMore: "More",
+
+    topicHeading: (name: string) => `${name}, picked daily`,
+    topicDocTitle: (name: string) =>
+      `${name}, picked daily: summaries, takes and sources`,
+    topicLead: (name: string) =>
+      `Every day, the ${name} writing worth reading — picked from high-quality ` +
+      `sources, with a concise summary, the claim it makes, and a link to the ` +
+      `original.`,
+    topicPicked: (n: number) => `${n} picked`,
+    topicOthers: "Other topics",
+    topicLabel: "Topic",
+
+    related: "You might also read",
+
+    whyItMatters: "Why it matters",
+
     photoSource: "Wikimedia Commons",
 
 
@@ -434,6 +560,12 @@ const STRINGS = {
     subscribe: "Subscribe by email",
     subscribeEmail: "Your email",
     subscribeGo: "Subscribe",
+    /* The count is interpolated, not written in — see the Chinese note for the
+       old bug that rule exists to prevent. */
+    subscribePitch: (n: number) => `${n} articles worth reading every day`,
+    subscribePitchSub:
+      "Curated from high-quality sources, with concise summaries and key takeaways.",
+    subscribeCta: "Send me the daily picks",
     subscribeSending: "Sending",
     subscribeSent: (email: string) =>
       `A confirmation is on its way to ${email}. Open it and follow the link.`,

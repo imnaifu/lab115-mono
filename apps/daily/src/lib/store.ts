@@ -288,25 +288,51 @@ export interface SourceArticle {
   article: PublishedArticle;
 }
 
-let sourceIndex: {
+/**
+ * The whole published archive, indexed three ways from ONE walk.
+ *
+ * IT USED TO BE `bySource` ALONE, and the note below `articlesBySource` spent a
+ * paragraph on why that one map is built by opening every digest on disk. Topic
+ * pages ask the same question keyed by `category` and the related-articles block
+ * on every article page asks it keyed by both — so the choice was a second cached
+ * walk beside the first or one walk answering all of them. A second walk is not
+ * merely the same cost twice: the two caches expire independently, so a topic
+ * page and a source page could disagree about which articles exist, and the
+ * disagreement would only show up in whichever one happened to be colder.
+ *
+ * `all` IS FLAT AND NEWEST-FIRST, which is what `related.ts` scores over. It
+ * holds the same objects the two maps do rather than copies, so this is three
+ * views of one list and not three lists.
+ */
+export interface ArchiveIndex {
+  /** Keyed by `Source.id`. */
+  bySource: Map<string, SourceArticle[]>;
+  /** Keyed by the raw `Article.category` — see `articlesByTopic` in lib/topics
+   *  for why the key is not normalised through `categoryOf` on the way in. */
+  byTopic: Map<string, SourceArticle[]>;
+  /** Every published take, newest day first, ranked within a day. */
+  all: SourceArticle[];
+}
+
+let archiveCache: {
   key: string;
   at: number;
-  value: Map<string, SourceArticle[]>;
+  value: ArchiveIndex;
 } | null = null;
 
 /** How long the index may be trusted without re-reading the archive. See the
- *  TTL paragraph on `articlesBySource` below for what the ten minutes are for. */
-const SOURCE_INDEX_TTL_MS = 10 * 60_000;
+ *  TTL paragraph on `archiveIndex` below for what the ten minutes are for. */
+const ARCHIVE_INDEX_TTL_MS = 10 * 60_000;
 
 /**
- * Every published take, grouped by the blog it was written about — newest day
- * first, and within a day in the order the digest ranked them.
+ * Every published take, indexed by source, by topic, and flat. See `ArchiveIndex`.
  *
- * ONE WALK FOR THREE CALLERS. `/s` needs a count per source, `/s/<id>` needs one
- * source's whole run, and the sitemap needs to know which sources clear
- * `SOURCE_MIN_ARTICLES`. Those are the same question asked three ways, and asking
- * it three times would be three passes over the archive that could disagree about
- * where the line falls.
+ * ONE WALK FOR EVERY CALLER. `/s` needs a count per source, `/s/<id>` needs one
+ * source's whole run, `/topic/<id>` needs one topic's, the related block on an
+ * article page needs both, and the sitemap needs to know which of each clear
+ * their threshold. Those are the same question asked several ways, and asking it
+ * several times would be several passes over the archive that could disagree
+ * about where the line falls.
  *
  * IT READS EVERY DIGEST, and there is no index to read instead — that is the
  * deliberate absence at the top of this file, and the reason a source page cannot
@@ -337,18 +363,31 @@ const SOURCE_INDEX_TTL_MS = 10 * 60_000;
  * request no reader is waiting behind, and fanning them out all at once is how a
  * growing archive turns one page render into an EMFILE.
  */
-export async function articlesBySource(): Promise<Map<string, SourceArticle[]>> {
+export async function archiveIndex(): Promise<ArchiveIndex> {
   const dates = await listDates();
   const key = `${dates.length}:${dates[0] ?? ""}`;
   if (
-    sourceIndex &&
-    sourceIndex.key === key &&
-    Date.now() - sourceIndex.at < SOURCE_INDEX_TTL_MS
+    archiveCache &&
+    archiveCache.key === key &&
+    Date.now() - archiveCache.at < ARCHIVE_INDEX_TTL_MS
   ) {
-    return sourceIndex.value;
+    return archiveCache.value;
   }
 
   const bySource = new Map<string, SourceArticle[]>();
+  const byTopic = new Map<string, SourceArticle[]>();
+  const all: SourceArticle[] = [];
+
+  /** Append to one of the maps, creating the run on first sight. */
+  const push = (
+    index: Map<string, SourceArticle[]>,
+    at: string,
+    entry: SourceArticle,
+  ) => {
+    const run = index.get(at);
+    if (run) run.push(entry);
+    else index.set(at, [entry]);
+  };
 
   for (const date of dates) {
     const digest = await readDigest(date);
@@ -356,14 +395,29 @@ export async function articlesBySource(): Promise<Map<string, SourceArticle[]>> 
     // Published only, the same filter the sitemap and every renderer use: an
     // article with no take has no page to link to and nothing to show in a row.
     for (const article of shownArticles(digest)) {
-      const run = bySource.get(article.sourceId);
-      if (run) run.push({ date, article });
-      else bySource.set(article.sourceId, [{ date, article }]);
+      // ONE OBJECT IN ALL THREE. The maps are views of `all`, so nothing here
+      // can drift between them and the memory cost is one entry per article.
+      const entry: SourceArticle = { date, article };
+      all.push(entry);
+      push(bySource, article.sourceId, entry);
+      push(byTopic, article.category, entry);
     }
   }
 
-  sourceIndex = { key, at: Date.now(), value: bySource };
-  return bySource;
+  const value: ArchiveIndex = { bySource, byTopic, all };
+  archiveCache = { key, at: Date.now(), value };
+  return value;
+}
+
+/**
+ * Every published take, grouped by the blog it was written about.
+ *
+ * A THIN VIEW OF `archiveIndex` above, kept as its own name because three
+ * callers read it and "the takes for this blog" is a question worth having a
+ * word for. It is not a second walk: the index is built once and cached.
+ */
+export async function articlesBySource(): Promise<Map<string, SourceArticle[]>> {
+  return (await archiveIndex()).bySource;
 }
 
 /**

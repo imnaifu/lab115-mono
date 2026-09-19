@@ -1,4 +1,5 @@
 import { themedAccent } from "@/lib/accent";
+import { accentColor, categoryName } from "@/lib/categories";
 import { ArticleTitle, displayTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
 import { ShareButton } from "./ShareButton";
@@ -6,8 +7,9 @@ import { sourceOf } from "@/lib/sources";
 import { posterParts } from "@/lib/share";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
-import { articlePath, posterBase } from "@/lib/links";
+import { articlePath, posterBase, topicPath } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
+import { topicLinkFor } from "@/lib/topics";
 import type { PublishedArticle } from "@/lib/types";
 
 /**
@@ -64,11 +66,81 @@ function Dot() {
  * component are two places for the separator rules and the accent colour to
  * drift apart.
  */
-export function Meta({ article, lang }: { article: PublishedArticle; lang: Lang }) {
+/**
+ * ASYNC, which is new and is the topic chip's doing: whether a topic has a page
+ * is a question about the whole archive (see `topicLinkFor`), and it has to be
+ * asked per card because a day holds articles from several topics.
+ *
+ * `ArticleBrief` below stays SYNCHRONOUS and renders `<Meta />` as an ordinary
+ * element — a server component may await an async child without becoming async
+ * itself, which is what keeps this from cascading up through `DigestView` into
+ * the day page. Nothing here reads the filesystem a second time either: the
+ * lookup is a map read over the index `archiveIndex` already caches.
+ */
+export async function Meta({
+  article,
+  lang,
+  from,
+}: {
+  article: PublishedArticle;
+  lang: Lang;
+  /**
+   * Which surface this row is on — `homepage` for the front page's teaser,
+   * `archive` for a day's cards — and it is REQUIRED rather than defaulted.
+   *
+   * The two callers are different pages, and the whole value of `from` on a
+   * topic event is telling them apart (see TRACKING.md). A default would have
+   * been `archive`, which is right for the caller that has fifteen of these and
+   * silently wrong for the one that has one — the kind of mislabelling that is
+   * invisible until somebody reads a report and believes it.
+   */
+  from: string;
+}) {
   const source = sourceOf(article.sourceId);
+  const topic = await topicLinkFor(article);
 
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-semibold text-ink-soft">
+      {/**
+       * THE TOPIC, FIRST IN THE ROW AND A LINK.
+       *
+       * The site showed a category NOWHERE for months — the tabs and the
+       * section headings went with `DigestBody`, and the note that used to be
+       * further down this file said so: "NO CATEGORY ANYWHERE… the registry
+       * stays, because the publish floor lives in it". The registry is a set of
+       * pages now, so the classification the summariser has been making all
+       * along finally leads somewhere, and every card is where a reader meets
+       * it.
+       *
+       * FIRST, AHEAD OF THE SOURCE, because the two answer different questions
+       * and the topic is the one a reader scanning a mixed day is sorting by.
+       * The source keeps its own colour and its position next to the author, so
+       * nothing about the card's existing shape moves.
+       *
+       * ABSENT RATHER THAN PLAIN TEXT when the topic has no page — see
+       * `topicLinkFor`. A chip that is grey and unclickable on some cards and
+       * live on others is a control the reader has to test; one that is simply
+       * not there on three cards out of a hundred is not noticed at all.
+       */}
+      {topic ? (
+        <>
+          <a
+            className="flex items-center gap-1.5 transition duration-150 ease-out hover:text-ink"
+            href={href(lang, topicPath(topic.id))}
+            data-track="topic_open"
+            data-track-topic={topic.id}
+            data-track-from={from}
+            data-track-lang={lang}
+          >
+            <span
+              className="size-1.5 flex-none rounded-full"
+              style={{ background: accentColor(topic) }}
+            />
+            {categoryName(topic, lang)}
+          </a>
+          <Dot />
+        </>
+      ) : null}
       <span style={{ color: themedAccent(source.accent) }}>{source.name}</span>
       {/* NO READING TIME. It was the original article's, which described a page
           the reader was not on; measured on the summary instead it read "1 分钟"
@@ -197,9 +269,12 @@ function Actions({
  * the list gets a real sentence rather than the first N characters of a
  * paragraph cut mid-word.
  *
- * NO CATEGORY ANYWHERE. The tabs and the section headings are gone with
- * `DigestBody`; the registry in lib/categories stays, because the publish floor
- * lives in it and the scorer still assigns one.
+ * THE CATEGORY IS BACK, as ONE CHIP IN THE META ROW and nothing else. This note
+ * used to read "NO CATEGORY ANYWHERE… the registry stays, because the publish
+ * floor lives in it" — true while the classification led nowhere. It leads to
+ * `/topic/<id>` now, so a card names its subject; what is NOT back is the thing
+ * that was actually removed, the tab row and the grouped sections. The list is
+ * still flat and still in the day's own ranking. See `Meta` above.
  */
 export function ArticleBrief({
   article,
@@ -226,7 +301,7 @@ export function ArticleBrief({
           variant="card"
         />
         <div className="min-w-0 flex-1">
-          <Meta article={article} lang={lang} />
+          <Meta article={article} lang={lang} from="archive" />
           <h3 className="mt-2 text-lg font-bold text-ink">
             <ArticleTitle article={article} lang={lang} variant="card" />
           </h3>

@@ -1,8 +1,9 @@
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href } from "@/lib/lang";
-import { dayPath } from "@/lib/links";
+import { dayPath, TOPIC_PATH, topicPath } from "@/lib/links";
 import { FRONT_DAYS } from "@/lib/paging";
+import { liveTopics } from "@/lib/topics";
 import { listDates, readDigest, shownArticles } from "@/lib/store";
 
 /**
@@ -34,6 +35,24 @@ export async function GET(): Promise<Response> {
   const t = strings(DEFAULT_LANG);
   const dates = await listDates();
   const recent = dates.slice(0, FRONT_DAYS);
+
+  /**
+   * The topic pages, which are the only stable entry points this site has.
+   *
+   * WORTH NAMING HERE ABOVE EVERYTHING ELSE IN THE STRUCTURE BLOCK: every other
+   * URL on this site is addressed by date, so a model that stored one is holding
+   * a link to a page that will be months old the next time anybody follows it. A
+   * topic URL never changes and its content only grows, which makes it the right
+   * thing to cite for "where does this site write about X".
+   *
+   * `liveTopics` is the same gate the routes use, so nothing listed here can be
+   * a 404.
+   */
+  const topics = (await liveTopics()).map(
+    ({ category, articles }) =>
+      `- [${category.name}](${SITE}${href(DEFAULT_LANG, topicPath(category.id))}) — ` +
+      `${articles.length} 篇`,
+  );
 
   const editions = await Promise.all(
     recent.map(async (date) => {
@@ -67,9 +86,19 @@ export async function GET(): Promise<Response> {
     "",
     `- [首页](${SITE}/) — 最新一期的头条，以及最近几天的文章`,
     `- [归档](${SITE}/archive) — 全部日期`,
+    `- [话题](${SITE}${TOPIC_PATH}) — 按领域分的入口，见下`,
     `- [RSS](${SITE}/feed.xml) — 中文；英文在 ${SITE}/en/feed.xml`,
     "",
-    "URL 形如 `/YYYY/MM/DD` 是一期，`/YYYY/MM/DD/<标题slug>-<id>` 是其中一篇。",
+    "URL 形如 `/YYYY/MM/DD` 是一期，`/YYYY/MM/DD/<标题slug>-<id>` 是其中一篇 ——",
+    "这两种地址都是按日期的，会随时间失去时效。",
+    "",
+    "## 话题",
+    "",
+    `[${TOPIC_PATH}](${SITE}${TOPIC_PATH}) 是全部话题的入口。`,
+    "`/topic/<id>` 是**不随日期过期**的地址：一个话题下我们摘过的全部文章，",
+    "按天倒序，会一直增长。引用这个站的某个领域时，用这里的链接。",
+    "",
+    ...topics,
     "",
     "## 最近的期数",
     "",
