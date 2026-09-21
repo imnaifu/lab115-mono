@@ -139,10 +139,15 @@ export interface PosterFont {
 /**
  * BOTH families, in the order Satori should try them.
  *
+ * SERIF NOW, BOTH OF THEM, because the site is (see `--font-serif` in
+ * index.css). A share image that is not set in the publication's face is a share
+ * image of a different publication — which is the same argument the paragraph
+ * below makes about Latin, one level up.
+ *
  * The poster used to load 思源黑体 alone, which meant every Latin word — every
  * title, every source name, the brand itself — was drawn with that face's Latin
  * glyphs. They are perfectly good glyphs and completely wrong here: the site
- * sets Latin in Manrope, so the poster looked like a different publication than
+ * sets Latin in its own face, so the poster looked like a different publication than
  * the page it came from.
  *
  * Satori falls back in array order, so Manrope goes first and picks up the
@@ -160,16 +165,16 @@ export interface PosterFont {
  */
 export async function posterFonts(text: string): Promise<PosterFont[]> {
   const [latin500, latin700, cjk500, cjk700] = await Promise.all([
-    loadSubset("Manrope", text, 500),
-    loadSubset("Manrope", text, 700),
-    loadSubset("Noto Sans SC", text, 500),
-    loadSubset("Noto Sans SC", text, 700),
+    loadSubset("Lora", text, 500),
+    loadSubset("Lora", text, 700),
+    loadSubset("Noto Serif SC", text, 500),
+    loadSubset("Noto Serif SC", text, 700),
   ]);
   return [
-    { name: "Manrope", data: latin500, weight: 500, style: "normal" },
-    { name: "Manrope", data: latin700, weight: 700, style: "normal" },
-    { name: "Noto Sans SC", data: cjk500, weight: 500, style: "normal" },
-    { name: "Noto Sans SC", data: cjk700, weight: 700, style: "normal" },
+    { name: "Lora", data: latin500, weight: 500, style: "normal" },
+    { name: "Lora", data: latin700, weight: 700, style: "normal" },
+    { name: "Noto Serif SC", data: cjk500, weight: 500, style: "normal" },
+    { name: "Noto Serif SC", data: cjk700, weight: 700, style: "normal" },
   ];
 }
 

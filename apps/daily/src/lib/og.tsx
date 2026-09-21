@@ -93,40 +93,90 @@ const CARD = {
 const HEADLINES = 3;
 
 /**
- * Manrope 700's advance widths, grouped, in em — MEASURED, not assumed.
+ * Lora 700's advance widths, in em — READ OUT OF THE FONT, not estimated.
  *
- * IT USED TO BE A FLAT 0.5 FOR EVERY LATIN CHARACTER, mirroring `charUnits` in
- * lib/share.ts, and that is what made a truncated headline STILL WRAP: 「A New
- * Framework for How the Brain Compresses Our Noisy World」 came back with an
- * ellipsis on it and then took two lines anyway. A flat half-em is the average of
- * lower-case body copy; a headline is Title Case, and Manrope's capitals run
- * 0.63–0.98em. Over the site's own archive the flat figure was out by anywhere
- * from −5.7% to +9.8%, and the negative half of that range is a line that
- * overruns its column.
+ * IT USED TO BE A FLAT 0.5 FOR EVERY LATIN CHARACTER, and that is what made a
+ * truncated headline STILL WRAP: 「A New Framework for How the Brain Compresses
+ * Our Noisy World」 came back with an ellipsis on it and then took two lines
+ * anyway. A flat half-em is the average of lower-case body copy; a headline is
+ * Title Case, and a serif's capitals run 0.57–1.02em.
  *
- * HOW THESE NUMBERS WERE GOT: each character was drawn ten times and forty times
- * at 34px/700 through the same Satori and the same Manrope subset this file
- * loads, and the advance is the difference in ink width over the thirty extra
- * copies — which cancels the side bearings exactly. The groups are the resulting
- * spread cut where it has natural gaps, each carrying its group's mean.
+ * THEN IT WAS MANROPE, MEASURED THE HARD WAY: each character drawn ten times and
+ * forty times at 34px/700 through Satori, the advance taken as the ink-width
+ * difference over the thirty extra copies, and the results banded where the
+ * spread had natural gaps. That table died with the face — the site is set in
+ * 宋体 now (see `--font-serif` in index.css) and the poster followed it, so every
+ * number in it described a font nothing draws.
  *
- * Against the whole archive the grouped figures over-estimate by 0.2% to 4.0% and
- * never under-estimate, which is the right side to be wrong on: over-estimating
- * costs a character of headline, under-estimating costs the layout.
+ * THE REPLACEMENT IS EXACT RATHER THAN MEASURED. Google serves this subset as
+ * TRUETYPE to a plain fetch — which is what `loadSubset` in poster-assets is
+ * already getting — so the advances are in the file's own `hmtx` table, indexed
+ * through `cmap`, scaled by `head.unitsPerEm`. No rendering, no sampling, no
+ * noise: these ARE the widths Satori will lay out with.
  *
- * THE WEIGHT IS PART OF THE MEASUREMENT. These are 700, which is what the
- * headline below is set in. `charUnits` in lib/share.ts measures the poster's
- * body copy at 500 and keeps its own flat figure, which is honest there — that is
- * lower case, and its `LINE_BUDGET` holds 1.4 units back besides.
+ * EVERY VALUE IS ROUNDED UP to two decimals, which is the one deliberate
+ * inaccuracy. It makes each band over-estimate by under 1% and never
+ * under-estimate — the right side to be wrong on, because over-estimating costs
+ * a character of headline and under-estimating costs the layout.
+ *
+ * TO REGENERATE after a face change: fetch
+ * `fonts.googleapis.com/css2?family=<F>:wght@700&text=<these characters>`, follow
+ * the `src: url(...)`, and read `hmtx` through `cmap`. It is about sixty lines
+ * and it is exact, which the old method was not.
  */
 const LATIN_EM: [string, number][] = [
-  ["ijlI’'‘,./", 0.29],
-  ["1frt-“”\";:!()[]*", 0.42],
-  ["23457acksvxyzEFJL–?+", 0.56],
-  ["0689bdeghnopquBKPRSTVXYZ&$", 0.64],
-  ["ACDGHNOQU=", 0.72],
-  ["mwMW—%#@", 0.87],
-  [" ", 0.2],
+  ["'", 0.19],
+  ["\u2019", 0.21],
+  ["\u2018", 0.23],
+  [".", 0.24],
+  [",:", 0.25],
+  ["!", 0.26],
+  ["; ", 0.27],
+  ["()", 0.3],
+  ["j", 0.31],
+  ["l", 0.32],
+  ['i"', 0.33],
+  ["f", 0.37],
+  ["I[]", 0.39],
+  ["1", 0.41],
+  ["t\u201d", 0.42],
+  ["\u201c", 0.43],
+  ["J", 0.46],
+  ["7", 0.47],
+  ["r-", 0.48],
+  ["s", 0.49],
+  ["?", 0.51],
+  ["cz", 0.52],
+  ["a+=", 0.53],
+  ["*25ve", 0.54],
+  ["4x", 0.55],
+  ["yg", 0.56],
+  ["3\u2013o", 0.57],
+  ["F689bq", 0.58],
+  ["$", 0.59],
+  ["kdS", 0.6],
+  ["LpZ", 0.61],
+  ["u", 0.62],
+  ["Eh", 0.63],
+  ["0nP", 0.64],
+  ["T", 0.65],
+  ["BY&A", 0.67],
+  ["RC", 0.69],
+  ["/X", 0.7],
+  ["V", 0.71],
+  ["K", 0.72],
+  ["DGU", 0.76],
+  ["OQ", 0.77],
+  ["N", 0.78],
+  ["@", 0.8],
+  ["H", 0.81],
+  ["w", 0.82],
+  ["\u2014", 0.85],
+  ["#", 0.88],
+  ["%", 0.91],
+  ["m", 0.92],
+  ["M", 0.98],
+  ["W", 1.02],
 ];
 
 /**
@@ -244,7 +294,7 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
           background: CREAM,
           color: INK,
           padding: `${CARD.padY}px ${CARD.padX}px`,
-          fontFamily: "Manrope, Noto Sans SC",
+          fontFamily: "Lora, Noto Serif SC",
         }}
       >
         {/* The domain chip and the meta line, in the same relationship the page's

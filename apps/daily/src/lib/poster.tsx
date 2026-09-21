@@ -219,7 +219,7 @@ export async function renderPoster({
           background: "#fbf3e9",
           color: "#3b3563",
           padding: `${POSTER.pad + 16}px ${POSTER.pad}px`,
-          fontFamily: "Manrope, Noto Sans SC",
+          fontFamily: "Lora, Noto Serif SC",
         }}
       >
         {/* The domain and the date, above the lockup — the page's masthead in the

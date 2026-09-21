@@ -371,7 +371,7 @@ function mix(a: string, b: string, ratio: number): string {
  * finish on a dangling 「「」.
  */
 /**
- * What the poster's two faces can actually draw: ASCII and Latin-1 from Manrope,
+ * What the poster's two faces can actually draw: ASCII and Latin-1 from Lora,
  * general and CJK punctuation, and the CJK blocks from 思源黑体.
  *
  * Deliberately the same ranges `charUnits` below measures with. A character this
@@ -443,7 +443,8 @@ function charUnits(ch: string): number {
  *
  * DERIVED, not tuned: a CJK character is one unit wide at the body size, so the
  * column holds `POSTER_TEXT_WIDTH / paraSize` of them. Latin fits slightly more
- * than the half-width this counts it as — Manrope averages a shade under 0.5em —
+ * than the half-width this counts it as — Lora's lower case averages 0.542em at
+ * 700, a shade over —
  * so Chinese is the tighter case and the one to size against.
  *
  * The 1.4 units held back are insurance: a line that comes out slightly too long
@@ -483,7 +484,8 @@ export function posterAuthor(author: string, source: string): string {
   const row = POSTER_BESIDE_COVER / POSTER.metaSize;
   const dot = (7 + 30) / POSTER.metaSize;
   // 1.5 units held back for the same reason LINE_BUDGET holds back 1.4: these
-  // units count Latin at half width and Manrope is a shade under that, so the
+  // units count Latin at half width and Lora's lower case is a shade over that,
+  // so the
   // estimate is close rather than exact, and being over is the failure that shows.
   const room = row - dot - widthUnits(source) - 1.5;
   if (room < 2) return "";
