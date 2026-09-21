@@ -41,12 +41,21 @@ function ContrastIcon() {
 export function ThemeToggle({ label }: { label: string }) {
   const flip = useCallback(() => {
     const root = document.documentElement;
+    /**
+     * WHAT IS SHOWING RIGHT NOW: the attribute if there is one, LIGHT otherwise.
+     *
+     * The `otherwise` used to ask `matchMedia("(prefers-color-scheme: dark)")`,
+     * which was correct while the OS decided the default. It does not any more —
+     * see the `color-scheme` note in index.css — and leaving that query here
+     * would have broken the switch in the one case it is most needed: a reader
+     * on a dark-mode machine, first visit, no attribute. The page is cream, this
+     * would compute `dark`, and the first press would "flip" to light. The
+     * control would appear to do nothing.
+     */
     const current: Theme =
       root.dataset.theme === "dark" || root.dataset.theme === "light"
         ? root.dataset.theme
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
+        : "light";
     const next: Theme = current === "dark" ? "light" : "dark";
 
     root.dataset.theme = next;

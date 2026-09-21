@@ -156,23 +156,24 @@
 }
 
 /**
- * `dark:` REDEFINED, because the stock variant only asks the OS.
+ * `dark:` REDEFINED, because the stock variant asks the OS and this site does
+ * not.
  *
- * This site has a switch in the masthead, so "dark" is a two-part question: the
- * reader's explicit choice if they made one, the OS otherwise. The three
- * selectors below mirror the three that set `color-scheme`, and keeping them in
- * step is the one invariant in this file.
+ * ONE SELECTOR NOW, and it used to be two. The OS half — a
+ * `prefers-color-scheme: dark` media query that applied unless the reader had
+ * explicitly chosen light — is gone: DARK IS NO LONGER A DEFAULT THIS SITE CAN
+ * ARRIVE IN. The page is light unless the reader pressed the switch, so the only
+ * thing that can mean "dark" is the attribute that press writes.
+ *
+ * It still mirrors, selector for selector, the `color-scheme` rules further
+ * down, and keeping those two in step is still the one invariant in this file —
+ * there is simply less of each to keep.
  *
  * Almost nothing needs it — the colours handle themselves. It exists for the two
  * places where the theme picks an ELEMENT rather than a value: the masthead's
  * mark, which is one of two files, and the toggle's own icon.
  */
 @custom-variant dark {
-  @media (prefers-color-scheme: dark) {
-    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
-      @slot;
-    }
-  }
   &:where(:root[data-theme="dark"], :root[data-theme="dark"] *) {
     @slot;
   }
@@ -245,21 +246,33 @@
    * app/layout.tsx. Without that script every navigation would flash cream at a
    * reader who chose dark — see the note there.
    */
-  :root {
+  /**
+   * LIGHT IS THE DEFAULT, FULL STOP — the OS is not consulted any more.
+   *
+   * There were three rules here and the middle one was
+   * `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }`,
+   * which made a dark-mode machine the default and the switch a way back. It is
+   * deleted. What that costs is real and is the point of the change: a reader
+   * whose OS is dark and who has never touched the switch now gets the cream
+   * page, which is the page this site is designed on — every colour pair, the
+   * poster, the OG card and both brand marks were picked against it.
+   *
+   * DARK IS NOW REACHABLE ONLY BY THE SWITCH, i.e. only through `data-theme`,
+   * which the inline script in app/layout.tsx stamps before first paint. That
+   * script does not change: it already wrote the attribute only for a reader who
+   * had chosen, and that is now the only thing the attribute is for.
+   *
+   * `:root[data-theme="light"]` STAYS, and it is not redundant with `:root`
+   * above. It is what a reader who chose light explicitly gets, and it has to
+   * keep existing for the `dark:` variant's `:not()` companions and for anything
+   * that reads the attribute rather than the scheme.
+   */
+  :root,
+  :root[data-theme="light"] {
     color-scheme: light;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-    }
   }
 
   :root[data-theme="dark"] {
     color-scheme: dark;
-  }
-
-  :root[data-theme="light"] {
-    color-scheme: light;
   }
 }

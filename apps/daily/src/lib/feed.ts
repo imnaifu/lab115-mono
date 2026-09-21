@@ -96,7 +96,13 @@ function contentHtml(
 
   const parts: string[] = [];
   if (summary.thesis) {
-    parts.push(`<p><strong>TL;DR</strong> ${escapeXml(summary.thesis)}</p>`);
+    // THE THESIS, AND NO LABEL. A reader in a feed client is scanning entries,
+    // which makes this a discovery surface — so it carries the same sentence the
+    // day cards do and not 「为什么值得关注」 (see the note on `leadOf`'s absence
+    // in lib/take). The `<strong>TL;DR</strong>` that used to open it went with
+    // every other copy of that label; a feed reader renders this as the entry's
+    // first paragraph, which is what a dek is.
+    parts.push(`<p>${escapeXml(summary.thesis)}</p>`);
   }
   for (const block of blocksOf(summary.text ?? "")) {
     const text = escapeXml(block.text);

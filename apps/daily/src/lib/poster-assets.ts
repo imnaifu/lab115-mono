@@ -191,11 +191,14 @@ export function posterText(article: Article, summary: SummaryText, extra: string
     // counter's — `2/4` — and a glyph Google was not asked for renders as nothing
     // at all, so an omission here is an invisible bug, not a fallback.
     //
-    // `TL;DR` is the lead's label, drawn by the layout and present in no
-    // article: without it here the five glyphs — the HALF-WIDTH semicolon
-    // especially, which the full-width `；` above does not cover — are simply
-    // absent from the subset, and the label renders as blank space.
-    "0123456789/·—、。，：；？！「」（）%<>=~-!TL;DR",
+    // THE LEAD'S LABEL USED TO BE IN THIS LITERAL, as `TL;DR`, with a note that
+    // the HALF-WIDTH semicolon in it is not covered by the full-width `；` above.
+    // The poster draws no label any more — see the thesis block in poster.tsx —
+    // so the five glyphs are not needed and the half-width `;` went with them.
+    // If a label ever comes back it belongs in the CALLER's `extra`, not here:
+    // this function has no language, and the label would not be the same string
+    // in both.
+    "0123456789/·—、。，：；？！「」（）%<>=~-!",
   ].join(""));
 }
 

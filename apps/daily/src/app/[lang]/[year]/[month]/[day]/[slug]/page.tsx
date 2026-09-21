@@ -88,10 +88,21 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!found) return { title: `${t.notFoundTitle} · ${t.brand}` };
 
   const { article } = found;
-  // The thesis, for og:description — in the language of the page being described,
-  // which is the whole point of a per-language `<meta>`: a link to /en unfurling
-  // with a Chinese sentence under an English title is the mismatch this fixes.
-  const summary = summaryFor(article, pageLang);
+  /**
+   * THE THESIS, for `description` / `og:description` / `twitter:description` —
+   * in the language of the page being described, which is the whole point of a
+   * per-language `<meta>`: a link to /en unfurling with a Chinese sentence under
+   * an English title is the mismatch that rule fixes.
+   *
+   * NEVER `whyItMatters`, and it was that for one round. A search result has to
+   * answer "what is at this URL"; 「为什么值得关注」 answers "why we thought it
+   * mattered", which is a sentence about our editing rather than about the
+   * subject somebody typed into the box. It is also the sentence a crawler would
+   * find nowhere near the top of the page — the thesis is the dek, and a
+   * description that matches the page's opening is the one a result shows
+   * unaltered. See the note on `leadOf`'s absence in lib/take.
+   */
+  const lead = summaryFor(article, pageLang).thesis;
   /**
    * Built from the ARTICLE, never from the `slug` that was requested.
    *
@@ -128,7 +139,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   return {
     title: `${heading} · ${t.brand}`,
-    description: summary.thesis,
+    description: lead,
     // Both languages, not just this one — see alternatesFor. `path` above is
     // already language-prefixed; this wants the bare form.
     alternates: alternatesFor(pageLang, canonicalPath),
@@ -137,7 +148,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       // The same headline the tab and the page show — an unfurl that disagrees
       // with the page it links to is the same mismatch one surface over.
       title: heading,
-      description: summary.thesis,
+      description: lead,
       url: `${SITE}${path}`,
       /**
        * The three fields an `article` og object is supposed to carry and did not.
@@ -164,7 +175,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: heading,
-      description: summary.thesis,
+      description: lead,
       images: [`${SITE}${posterUrl}`],
     },
   };

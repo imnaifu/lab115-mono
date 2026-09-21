@@ -8,34 +8,40 @@ import type { SummaryText } from "@/lib/types";
  * Nothing renders a hero card any more, but the single-article page uses the
  * larger size for the one summary it shows.
  *
- * `rule` is the orange bar beside the thesis and the indent it opens up — the
- * only thing the two variants still differ by, since every text size is 16px in
- * both. The share poster draws the same bar from POSTER.thesisRule in
- * lib/share.ts; the poster has no label line, so the two are close but not
- * identical.
+ * `rule` IS GONE, and with it the orange bar that used to stand beside the
+ * thesis. The thesis is a DEK now — a standfirst under the headline — and a dek
+ * is set, not annotated: it says what it is by being one size up from the prose
+ * and one shade lighter than the title. The bar plus the label was the other
+ * arrangement, and what it produced was a page whose first move was to point at
+ * its own machinery. The bar survives in two places that are not this one: the
+ * share poster (lib/share, POSTER.thesisRule — there is no type hierarchy to
+ * lean on inside a 1080px image) and 「为什么值得关注」 below, where a mark IS
+ * the information because that block is a different voice.
+ *
+ * `label` is gone for the same reason — nothing here is labelled any more.
  */
 const SIZE = {
   hero: {
-    thesis: "text-base",
-    rule: "border-l-3 pl-4",
-    label: "mb-1",
+    /**
+     * 18px, ONE STEP ABOVE THE PROSE, and `text-ink-mid` rather than `text-ink`.
+     *
+     * The three values are doing the whole job the label used to do. Bigger than
+     * the body says "read this first"; lighter than the 30px `text-ink` headline
+     * above it says "this is not the headline"; and `leading-[1.7]` is looser
+     * than the prose's own 1.85 by less than it looks, because a two-line dek
+     * packed at the body's rhythm reads as the first paragraph rather than as the
+     * standfirst.
+     */
+    thesis: "text-lg leading-[1.7]",
     heading: "text-base",
     para: "text-base",
   },
   card: {
     // Body copy is 16px here too. It was 14px, which reads as a caption next to
-    // the 16px headings it sits under — and the summary IS the card, so the list
-    // is where the size matters most. The thesis is 16px as well, and at NORMAL
-    // weight: it used to be the same size AND the same semibold as the numbered
-    // headings below it, so the lead and the section labels read as the same
-    // kind of thing. The TL;DR label carries "this is the lead" now, so the
-    // thesis only needs to sit a HALF step above the prose — `font-medium`, not
-    // semibold — and semibold goes back to meaning one thing: heading. 500 is a
-    // real face in both families (see the Google Fonts link in layout.tsx); ask
-    // for a weight that is not loaded and the browser fakes it.
-    thesis: "text-base",
-    rule: "border-l-3 pl-3",
-    label: "mb-1",
+    // the 16px headings it sits under. Nothing renders this variant today — the
+    // list rows draw their own dek, see ArticleCards — and it is kept so that
+    // `variant` stays a real choice rather than a parameter with one value.
+    thesis: "text-base leading-[1.65]",
     heading: "text-base",
     para: "text-base",
   },
@@ -69,12 +75,12 @@ export function Summary({
   summary: SummaryText;
   variant: "hero" | "card";
   /**
-   * Only the 「为什么值得读」 heading needs it — everything else this component
-   * draws is the take's own prose, already in one language by the time it gets
-   * here. The prop is required rather than optional so that a future caller
-   * cannot silently get a Chinese heading over an English take; this component
-   * stays language-BLIND about the body, which is the property the note above
-   * is about, and language-aware about the one label it prints.
+   * Only the LEAD'S LABEL needs it — everything else this component draws is
+   * the take's own prose, already in one language by the time it gets here. The
+   * prop is required rather than optional so that a future caller cannot
+   * silently get a Chinese label over an English take; this component stays
+   * language-BLIND about the body, which is the property the note above is
+   * about, and language-aware about the one word it prints.
    */
   lang: Lang;
 }) {
@@ -90,25 +96,37 @@ export function Summary({
    */
   const opening = blocks.findIndex((block) => block.kind !== "heading");
 
+
+
   return (
     <div className="mt-4 flex flex-col gap-3">
-      {/* The claim: the site's orange bar, a TL;DR label on it, and the
-          sentence itself. No panel — a filled block reads as a second card
-          inside the card, and every tint tried against `bg-card` either sat too
-          close to it to look deliberate or too far to look clean.
-
-          `mb-2` on top of the container's `gap-3`: the lead needs more air
-          under it than one paragraph needs under another, or the prose reads as
-          its continuation rather than as the writing starting. */}
+      {/**
+       * THE DEK — the thesis, set as a standfirst under the headline.
+       *
+       * IT IS THE THESIS AND NOT 「为什么值得关注」, and the two swapped places
+       * for one round before the archive settled it. The reasoning that moved
+       * `whyItMatters` up here was that the thesis often restates the headline —
+       * measured, 6 of 22 overlap it by more than half — and that is true and is
+       * not the point. A dek answers WHAT HAPPENED, which is the question a
+       * reader still has after the headline and before the prose; 「所以呢」 is
+       * a question they do not have yet. Three sentences of rising abstraction
+       * before the first fact — headline, then implication, then prose — reads
+       * as dense and advances nothing. Claim, then evidence, then implication.
+       * See the note on `leadOf`'s absence in lib/take.
+       *
+       * NO LABEL AND NO RULE. It had `TL;DR` on an orange bar, and both are
+       * gone: a reader does not need the field's name, and the one line under a
+       * headline is the most expensive line on the page to spend on the word
+       * "TL;DR". The typography says what this is — see SIZE above.
+       *
+       * `max-w-prose` because a dek is read in one pass and a 40-em measure is
+       * where that stops being comfortable; the prose below it is already inside
+       * the card's own column.
+       */}
       {text.thesis ? (
-        <div className={`mb-2 border-orange ${size.rule}`}>
-          <p
-            className={`text-[11px] font-bold tracking-[0.08em] text-orange ${size.label}`}
-          >
-            TL;DR
-          </p>
-          <p className={`font-medium text-ink ${size.thesis}`}>{text.thesis}</p>
-        </div>
+        <p className={`max-w-prose font-medium text-ink-mid ${size.thesis}`}>
+          {text.thesis}
+        </p>
       ) : null}
 
       {/* `data-para` indexes the blocks in the order the poster route draws
@@ -140,30 +158,33 @@ export function Summary({
       ))}
 
       {/**
-       * 「为什么值得读」 — AND NOTHING AT ALL WHEN THERE IS NO SENTENCE.
+       * 「为什么值得关注」 — THE SECOND READING LAYER, and the only labelled
+       * block left on the page.
        *
-       * No heading, no rule, no empty box: an absent field is the whole signal
-       * (see `SummaryText.whyItMatters`), so a take without one has to render
-       * byte-identically to a take written before the field existed. A section
-       * that appears empty would be the page announcing that we had nothing to
-       * say, which is worse than the page not raising the question.
+       * THE LABEL STAYS HERE while every other one went, and that asymmetry is
+       * the decision rather than an oversight. A dek needs no name because it is
+       * obviously the piece's own opening; this block is NOT the piece. It is
+       * our judgement about it, and without a word saying so it reads as a third
+       * paragraph of summary — which is exactly what it must not be mistaken for.
+       * The label is what turns it from repetition into a different voice.
        *
-       * A BOX, WHERE THE THESIS GETS A RULE. The two must not look the same:
-       * the thesis is the article's claim and this is ours, and reusing the
-       * orange bar would make one voice out of two. `bg-page` is the ground the
-       * card sits ON, so this reads as a well cut into the card rather than as a
-       * second card — the one tint that is guaranteed to sit right against
-       * `bg-card` in both themes, since the whole palette is defined as that
-       * pair.
+       * LAST, UNDER THE PROSE, so the page runs claim → evidence → implication.
+       * An implication offered before the evidence is a verdict.
        *
-       * LAST, under the prose. It is a judgement about a piece the reader has
-       * just been given, and a judgement offered before the evidence is a
-       * verdict — which is also why it is not merged into the TL;DR block at the
-       * top. `mt-2` on top of the container's `gap-3`, the same extra air the
-       * thesis takes underneath itself.
+       * A QUIET WELL, NOT A CALLOUT. `bg-page` is the ground the card sits on,
+       * so this reads as something cut into the card rather than stuck onto it —
+       * and it is the one tint guaranteed to sit right against `bg-card` in both
+       * themes, since the palette is defined as that pair. No accent fill, no
+       * yellow, no icon: this site is an editorial publication and a tip-box
+       * with a lightbulb in it is a different product.
+       *
+       * NOTHING AT ALL WHEN THE FIELD IS EMPTY — no heading, no rule, no box.
+       * An absent field is the whole signal (see `SummaryText.whyItMatters`), so
+       * a take without one renders byte-identically to a take written before the
+       * field existed. 347 of the 369 archived takes are in exactly that state.
        */}
       {summary.whyItMatters ? (
-        <div className="mt-2 rounded-xl bg-page px-4 py-3.5">
+        <div className="mt-4 rounded-xl bg-page px-4 py-3.5">
           <p className="text-[11px] font-bold tracking-[0.08em] text-ink-soft">
             {strings(lang).whyItMatters}
           </p>

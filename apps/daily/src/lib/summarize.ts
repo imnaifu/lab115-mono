@@ -225,10 +225,15 @@ const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
  * satisfies any ceiling, and it is exactly the shape the prompt is written to
  * keep out. A floor is what says "one clause of praise is not an answer".
  *
- * 50–120. The lower bound is about where a sentence stops being able to name a
- * consequence and starts being able to only gesture at one; the upper is two
- * ordinary sentences, past which this stops being a note in the margin and
- * starts being a second summary — which is the one thing it must never become.
+ * 65–110, TIGHTENED FROM 50–120 once there were 22 real ones to measure. They
+ * came in at a mean of 91 and a range of 72–113, so the old bounds were not
+ * binding in either direction — the floor was 22 characters below anything the
+ * model actually wrote, and the ceiling admitted a 113. The new pair brackets
+ * what the good ones already do: the floor is about where a sentence stops
+ * being able to name a consequence and starts being able only to gesture at
+ * one, and the ceiling is two ordinary sentences, past which this stops being a
+ * note in the margin and starts being a second summary — which is the one thing
+ * it must never become. The thesis has its own, tighter band; see below.
  *
  * NOT IN config.json, unlike the summary bounds. Those three are tuned against
  * the length of the writing and are argued about; this pair describes the SHAPE
@@ -236,8 +241,22 @@ const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
  * change 50 to 300 without reading the paragraph above that says why they
  * should not. `TITLE_MAX` below is hardcoded for the same reason.
  */
-const WHY_MIN = 50;
-const WHY_MAX = 120;
+/**
+ * The dek's band, in Chinese characters.
+ *
+ * 35–65, WHICH IS WHAT THE GOOD ONES ALREADY MEASURE: over the archive the
+ * thesis lands between 33 and 65 with a mean of 47, so this is a description of
+ * the field rather than a new constraint on it. It is stated anyway because the
+ * thesis has a job now that it did not have when it was an unlabelled `TL;DR`
+ * behind an orange bar — it is the DEK, the line under the headline, and the
+ * only sentence four discovery surfaces get. A floor keeps it from shrinking
+ * into a second headline; the ceiling keeps it to one line of thought.
+ */
+const THESIS_MIN = 35;
+const THESIS_MAX = 65;
+
+const WHY_MIN = 65;
+const WHY_MAX = 110;
 
 /**
  * Ceiling on "zh_title", in characters.
@@ -908,7 +927,7 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 
 每篇文章一条，字段如下：
 - "zh_title" —— 中文标题，见下面「标题」。
-- "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。
+- "zh_thesis" —— 一句话论点，能独立成立、能被人反驳。见下面「导语」。
 - "zh_text" —— 正文，**一整个字符串，不是数组**。段落之间写 "\\n\\n"，分几段你自己定，但**每段最多 ${PARA_MAX} 字**。
 - "zh_why" —— 这件事为什么值得关注，见下面「为什么值得关注」。**允许是空字符串**。
 - "en_title" —— 把写好的 "zh_title" 译成英文，见下面「标题」。
@@ -944,6 +963,14 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 - 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
 - 原标题本身已经够抓人的时候，直接译过来就是最好的答案 —— 重写不是义务。
 
+## 导语 "zh_thesis"
+
+它是**标题下面那一句**，页面上不带任何标签，直接当文章的导语印出来（新闻里的 dek / standfirst）。所以它要回答的是一个很具体的问题：**到底发生了什么。**
+
+- **${THESIS_MIN} 到 ${THESIS_MAX} 字**，一句话。
+- **不许复述标题。** 实测 22 篇里有 6 篇的导语和标题的字重叠超过一半 —— 标题写「耳朵会习惯噪音，身体不会」，导语写「长期噪音不会因为你习惯了就无害……」，读者等于把同一句话读了两遍，而那是这一页最贵的一行。标题负责让人停下来，导语负责给出事实：**谁、做了什么、结果是什么、数字是多少**。标题里已经说过的那个点，导语要往下走一层，不要换个说法重说。
+- 它会出现在卡片列表、搜索结果的摘要、RSS 和邮件里 —— 也就是读者**还没读正文**的每一个地方。所以它必须自己站得住，不能依赖上下文。
+
 ## 为什么值得关注 "zh_why"
 
 **分工是硬的，这是这个字段唯一会出的错。**
@@ -961,10 +988,24 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 怎么写：
 
 - **1 到 2 句，${WHY_MIN} 到 ${WHY_MAX} 字。**
+- **中文标点，和正文同一套规则**：逗号写「，」不写「,」，句号写「。」不写「.」，引话用「」。实测过一次：这一条第一版没写，因为上面「格式硬要求」那一节通篇在说「正文」，模型就没把它套到这个字段上 —— 22 条里 2 条把半角逗号混进了中文（而同一批的 738 个 thesis / text 字段一个都没有）。规则不写在字段旁边，就等于没有。
 - **不许重复标题、不许重复 "zh_thesis"、不许改写 "zh_text" 里已经写过的话。** 写完把标题、"zh_thesis" 和它三样并排读一遍：只要有两样是同一句话换了个说法，重写。
 - **必须站在原文已有的事实上。** 可以在事实之上往前多推一层（这意味着什么、谁会因此改变做法），但**不许凭空造事实、造数字、造机构、造结论**。推不动就说明这篇没有，见下面最后一条。
 - 优先说清下面任意一条，说清一条就够：**实际影响 / 反直觉在哪 / 这个行业会因此变什么 / 对用户意味着什么 / 长期看会怎样 / 它跟普通人或跟从业者有什么关系**。
 - **不要硬上价值。** 这不是给文章写颁奖词，也不是替作者喊口号。
+- **直接陈述那个意义，不要从外部指称这篇文章。** 这一条是实测出来的，而且是这个字段目前最明显的毛病：22 条里有 14 条在说「这篇文章真正提供的不是…」「这类研究把…」「这条趋势真正卖的不是…」「这份榜单真正有用的地方…」，其中 8 条带「真正」二字。**单看一条是洞察，一列看下来就是同一个模子**。下面这些开头一个都不许用：
+
+  这篇文章… / 这篇报道… / 这项研究… / 这类研究… / 这条新闻… / 这条趋势… / 这份数据… / 这份榜单… / 这件事真正的… / 真正值得关注的是… / 真正重要的是… / 关键不是…而是… / 它真正提示的是… / 这篇的价值不在…
+
+  改法是把主语从「这篇文章」换成**事情本身**。举两个例子：
+
+  ✗「这篇文章真正提供的不是德国政坛八卦，而是一个可复用的失败模板：政策的命运常在第一篇报道里就被写定。」
+  ✓「政策的命运常常在法案细节被公众看见之前，就已经被它的名字决定。一旦对手先把改革叫成「暖气锤子」，政府之后解释技术细节，本质上都在对方设定的框架里作战。」
+
+  ✗「这份榜单真正有用的地方在评论区：它被当成挑退休养老地的参考。」
+  ✓「华人聚居程度其实是一项生活基础设施指标：华人多的地方更容易找到中餐、中文医生和能说话的邻居，而这些地方的住房和生活成本往往也更高。」
+
+  意思一点没少，机器味少了一大半。
 - **这篇文章本身就没有明显的「为什么重要」时，写空字符串 ""。** 空是被允许的答案，而且比一句正确的废话好得多：空值在页面上整块不渲染，读者看不到任何痕迹；废话会挂在那儿，而且署的是我们的名字。
 
 ## 英文

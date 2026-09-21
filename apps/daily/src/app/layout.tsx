@@ -206,20 +206,21 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Two values, because the browser paints its chrome from this and the page has
- * two grounds now.
+ * ONE VALUE, because the page has one default ground.
  *
- * IT ONLY KNOWS ABOUT THE OS. A reader who used the switch in the masthead has a
- * preference these media queries cannot see, so `ThemeToggle` rewrites the
- * rendered tags on every flip, and the pre-paint script below does the same on a
- * fresh load. This declaration is the state of things for a reader who never
- * touched it — which is most of them.
+ * IT WAS TWO, keyed on `prefers-color-scheme`, back when a dark-mode machine got
+ * a dark page by default. It does not any more — see the `color-scheme` note in
+ * index.css — so a media query here would be the browser chrome answering a
+ * question the page itself has stopped asking, and on a dark-mode machine it
+ * would paint #1d1a33 around a cream page.
+ *
+ * DARK IS STILL REACHED, just not from here: a reader who presses the switch has
+ * their tags rewritten by `ThemeToggle`, and the pre-paint script below does the
+ * same on the next load. This declaration is the state of things for a reader
+ * who never touched it — which is now everybody on their first visit.
  */
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
-    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
-  ],
+  themeColor: THEME_COLOR.light,
 };
 
 /**

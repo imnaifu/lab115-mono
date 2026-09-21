@@ -302,30 +302,28 @@ export default async function Home({
               </div>
             </div>
 
+            {/**
+             * THE DEK — the lead piece's thesis, unlabelled, exactly as the day
+             * page's cards draw theirs.
+             *
+             * THE `TL;DR` LABEL IS GONE, and the note that used to be here spent
+             * three paragraphs defending it ("it says what the sentence is in
+             * words rather than in a mark the reader has to have learned"). That
+             * argument was about the ORANGE RULE, which this block had already
+             * dropped; against no rule at all the label was the only furniture
+             * left, and a dek needs none. Set it one size up from the list below
+             * and one shade off the headline and it reads as the headline's
+             * continuation, which is what a standfirst is.
+             *
+             * 「为什么值得关注」 is not here either — the front page is the
+             * shortest discovery surface on the site, and it is the last place
+             * to spend 91 characters on an implication for a piece the reader
+             * has not opened. See the note on `leadOf`'s absence in lib/take.
+             */}
             {summaryFor(lead, lang).thesis ? (
-              /**
-               * NO ORANGE RULE ON THE CLAIM HERE, and none on the day page's rows
-               * either — it is kept for the article page, where `Summary` draws it.
-               *
-               * The bar marks the thesis as the LEAD OF SOMETHING: on the article
-               * page it opens several paragraphs of prose and the rule is what
-               * separates the claim from the writing under it. In a teaser and in
-               * a list row there is no prose for it to lead, so the mark was
-               * pointing at a distinction that is not there — and on a page trying
-               * to be a column of text it is one more piece of furniture.
-               *
-               * The TL;DR label stays and now carries the job alone, which is
-               * enough: it says what the sentence is in words rather than in a
-               * mark the reader has to have learned.
-               */
-              <div className="mt-4">
-                <p className="mb-1 text-[11px] font-bold tracking-[0.08em] text-orange">
-                  TL;DR
-                </p>
-                <p className="text-base font-medium text-ink">
-                  {summaryFor(lead, lang).thesis}
-                </p>
-              </div>
+              <p className="mt-4 max-w-prose text-[15px] leading-[1.65] font-medium text-ink-mid sm:text-base">
+                {summaryFor(lead, lang).thesis}
+              </p>
             ) : null}
 
             {/* INTO THE DAY, not into the article. The reader has been shown one

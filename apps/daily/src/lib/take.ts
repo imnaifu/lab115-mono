@@ -76,6 +76,34 @@ export function summaryFor(
 }
 
 /**
+ * THERE IS NO `leadOf(summary)` HERE, AND THERE WAS FOR ONE ROUND. The note is
+ * the whole point of this block, because the helper looked obviously right.
+ *
+ * It returned `whyItMatters ?? thesis` — "the one sentence to show" — and eleven
+ * surfaces were moved onto it. The mistake it encoded is that the two fields are
+ * two VERSIONS of the same sentence, one better than the other, so a site should
+ * prefer the better one everywhere and fall back. They are not. They are two
+ * LAYERS, and which one a surface wants is decided by what the reader already
+ * knows:
+ *
+ *   thesis        什么事           — for a reader deciding whether to open it
+ *   whyItMatters  所以呢           — for a reader who already did
+ *
+ * Measured over the 22 takes that carried both (2026-09-19 to 09-21): a card
+ * showing `whyItMatters` tells a reader who has read nothing that «这类研究把
+ * 「生命为什么突然变复杂」从哲学问题变成物理问题» — true, and no use at all for
+ * deciding, because it never says an ancient mountain range was ground into the
+ * sea. The thesis says exactly that. One field cannot do both jobs, so nothing
+ * here should offer a way to ask for "the" sentence.
+ *
+ * So every surface names the field it wants. `summary.thesis` on every
+ * discovery surface — the day cards, the front page's teaser, the topic rows,
+ * the related rows, `<meta name="description">`, the feed, the poster, the mail.
+ * `summary.whyItMatters` in exactly one place, the block under the prose on the
+ * article page. See components/Summary.
+ */
+
+/**
  * The day photo's caption for a reader on `lang`, with the same single fallback
  * and for the same reason as `summaryFor` above.
  *

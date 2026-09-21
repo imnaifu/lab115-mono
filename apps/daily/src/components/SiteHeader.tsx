@@ -112,12 +112,14 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
  * content reads as a second window.
  *
  * THE 76 IS MEDIUM'S, measured rather than eyeballed — see the note on the row
- * below. Anything that has to clear this bar is sized off that number and is
- * listed there too.
+ * below. It was measured off a bar that is FIXED on medium.com, and this one is
+ * not any more, so the number is now inherited rather than argued for: it is a
+ * height that reads right, and nothing has to clear it.
  *
- * `z-30`, deliberately BELOW `PullToRefresh`'s z-40 and level with `BackToTop`.
- * The refresh indicator drops from the top of the screen and has to come over
- * this; the back-to-top button lives at the other end and never meets it.
+ * IT NO LONGER STICKS, so it has no z-index and no place in that stacking
+ * argument — see the note on the element itself. `PullToRefresh` at z-40 and
+ * `BackToTop` at z-30 are unaffected: both are fixed to the viewport and this is
+ * now in the flow.
  *
  * A SERVER COMPONENT, like the rest of the chrome — the two controls that hold
  * state are the client boundary and they were already drawing it themselves.
@@ -156,7 +158,26 @@ export function SiteHeader({
   const t = strings(lang);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-page/85 backdrop-blur">
+    /**
+     * NOT STICKY, and it was — `sticky top-0 z-30 bg-page/85 backdrop-blur`.
+     *
+     * The translucent ground and the blur went with the pinning, because that is
+     * the only thing they were for: keeping content legible as it scrolled
+     * underneath. On a bar that scrolls away with the page there is never
+     * anything behind it, so `bg-page` is the whole background and the blur was
+     * a filter applied to nothing.
+     *
+     * WHAT IT COSTS, and it is worth being plain about it: the four controls in
+     * this bar — subscribe, language, theme, install — are now only reachable at
+     * the top of the document. On an article page that is a scroll back up.
+     * `BackToTop` is fixed at the other end of the screen and shortens that trip
+     * to one press, which is the mitigation rather than a coincidence.
+     *
+     * `z-30` GOES WITH IT. The note above about sitting below `PullToRefresh`'s
+     * z-40 and level with `BackToTop` described a bar that shared a stacking
+     * context with them; an unpinned header is in the flow and meets neither.
+     */
+    <header className="border-b border-line bg-page">
       {/* THE PAGE'S GUTTER, WIDENING WITH THE SCREEN: `px-4` on a phone is the
           same 16px every block in the column uses (`PAD`), `sm:px-7` matches
           that gutter's own step, and `lg:px-10` is the one place this layout

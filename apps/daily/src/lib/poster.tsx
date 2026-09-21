@@ -170,6 +170,12 @@ export async function renderPoster({
       posterText(
         article,
         summary,
+        // NO LABEL GLYPHS IN HERE ANY MORE. `TL;DR` used to be appended — it
+        // was drawn by the layout and appears in no article, so it had to be in
+        // the subset or it rendered as blank space. The label is gone from the
+        // poster along with every other copy of it (see `whyItMatters` in
+        // lib/i18n), so there is nothing here but the article's own text and the
+        // punctuation `posterText` adds.
         `${date}${brand}${tagline}${translated}${meta}${domain}`,
       ),
     ),
@@ -502,9 +508,22 @@ export async function renderPoster({
               </div>
 
               {/* The thesis, styled the way `Summary` styles it: the orange
-                  accent bar, a TL;DR label on it, and the sentence at MEDIUM
-                  weight. All three live in both places now — see the `rule`
-                  entry in that component's SIZE table.
+                  accent bar and the sentence at MEDIUM weight.
+
+                  THE LABEL IS GONE, the bar STAYS — and that split is the one
+                  decision worth recording here. On the page the thesis is a dek
+                  and needs no mark, because 30px ink above 18px ink-mid above
+                  16px prose is a hierarchy a reader reads without being told.
+                  Inside a 1080px image there is no such hierarchy to lean on:
+                  the headline, the original and this sentence are all set close
+                  together on one cream plate, so the bar is what says where the
+                  piece stops being described and starts being summarised.
+
+                  THE SENTENCE IS THE THESIS, never `whyItMatters`, because a
+                  share image is a DISCOVERY surface — whoever sees it has read
+                  nothing. Same rule as the day cards; see the note on `leadOf`'s
+                  absence in lib/take. It is also the only sentence 94% of the
+                  archive has.
 
                   600 was what this asked for before, and it was never what got
                   drawn: `posterFonts` embeds 500 and 700 and nothing between,
@@ -520,18 +539,6 @@ export async function renderPoster({
                   borderLeft: `${POSTER.thesisRule}px solid #efa050`,
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    marginBottom: POSTER.thesisLabelGap,
-                    fontSize: POSTER.thesisLabelSize,
-                    fontWeight: 700,
-                    letterSpacing: POSTER.thesisLabelTracking,
-                    color: "#efa050",
-                  }}
-                >
-                  TL;DR
-                </div>
                 <div
                   style={{
                     display: "flex",

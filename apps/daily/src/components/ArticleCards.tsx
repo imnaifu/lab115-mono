@@ -188,7 +188,9 @@ function Actions({
 }) {
   const t = strings(lang);
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+    /* `relative z-10` for the same reason the meta row has it — these three
+       controls sit inside the card's stretched link and must stay reachable. */
+    <div className="relative z-10 mt-4 flex flex-wrap items-center justify-end gap-2">
       {/**
        * THE PRIMARY ACTION, and it is the one that stays on this site.
        *
@@ -288,7 +290,20 @@ export function ArticleBrief({
   const thesis = summaryFor(article, lang).thesis;
 
   return (
-    <div className="flex flex-col rounded-card bg-card p-4 shadow-soft">
+    /**
+     * THE WHOLE CARD IS A TARGET, and `relative` is what makes that possible —
+     * the headline's link stretches an `::after` across this box.
+     *
+     * IT GOES TO THE ARTICLE PAGE, not to the original. That is the one decision
+     * in this change worth writing down, because the other option was live: a
+     * card-wide link to the source. `read_original` is this digest's
+     * COUNTER-metric — see the note on that pill below and TRACKING.md — so
+     * making the default gesture on every card an exit would invert what the
+     * numbers mean, and would do it invisibly: `summary_open` collapses,
+     * `read_original` climbs, and the report reads as the summaries failing when
+     * all that changed was where the card points.
+     */
+    <div className="relative flex flex-col rounded-card bg-card p-4 shadow-soft transition duration-150 ease-out hover:shadow-cover">
       {/* The same header row the full card had — see the note that was here on
           why the cover is bounded to the headline rather than to the whole card.
           With the prose gone the argument is weaker, but the shape is what a
@@ -301,28 +316,87 @@ export function ArticleBrief({
           variant="card"
         />
         <div className="min-w-0 flex-1">
-          <Meta article={article} lang={lang} from="archive" />
+          {/* `relative z-10` because the stretch below is an `::after` on an
+              element that comes LATER in the DOM, so without a stacking context
+              here it would paint over the topic link inside `Meta` and swallow
+              its clicks. */}
+          <div className="relative z-10">
+            <Meta article={article} lang={lang} from="archive" />
+          </div>
           <h3 className="mt-2 text-lg font-bold text-ink">
-            <ArticleTitle article={article} lang={lang} variant="card" />
+            {/**
+             * THE STRETCHED LINK, and it is the HEADLINE rather than an
+             * invisible anchor over the card.
+             *
+             * The card WAS one big anchor once, with the share pill floated over
+             * it on `z-10`, and the note on `Actions` below records what killed
+             * it: a link cannot legally contain another interactive element, and
+             * this card now holds four of them (the topic chip, two pills and
+             * the share button). Reviving that pattern would mean an anchor with
+             * no text in it — a link a screen reader announces as the empty
+             * string — plus four exceptions layered on top.
+             *
+             * `after:absolute after:inset-0` on a REAL anchor whose text is the
+             * headline is the same hit area with none of that: one link per
+             * card, its accessible name is the thing it opens, and the elements
+             * that must stay clickable only need to sit above it.
+             *
+             * WHAT IT COSTS, stated because the note it replaces called it out:
+             * dragging across the card's text now starts a drag on a link
+             * instead of a selection, so the dek here cannot
+             * comfortably be copied. It can on the article page, which is one
+             * tap away and is where the whole take is anyway.
+             *
+             * `from=card` rather than `list`: the pill below sends `list`, and
+             * keeping them apart is how "is the card-wide target actually used"
+             * becomes answerable instead of assumed.
+             */}
+            <a
+              className="after:absolute after:inset-0 after:z-0 hover:text-orange transition duration-150 ease-out"
+              href={href(lang, articlePath(date, article))}
+              data-track="summary_open"
+              data-track-source={article.sourceId}
+              data-track-from="card"
+            >
+              <ArticleTitle article={article} lang={lang} variant="card" />
+            </a>
           </h3>
         </div>
       </div>
 
-      {/* The claim, under its label and NOT behind an orange rule — see the note
-          on the front page's teaser for why the bar is kept for the article page
-          only: it exists to separate a lead from the prose it leads, and there is
-          no prose in a row.
-
-          Rendered directly rather than through `Summary`: that component's job is
-          the whole take, and handing it a text with the prose stripped out would
-          be asking it to render an object that does not exist. */}
+      {/**
+       * THE DEK — the thesis, and on a card that is the whole of what a list
+       * owes a reader.
+       *
+       * NO LABEL. It had `TL;DR` over it in 11px orange, and the label is gone
+       * for the reason it is gone everywhere: a reader scanning twelve cards
+       * does not need the field's name twelve times, and the line it occupied is
+       * the most valuable line on the card. See `whyItMatters` in lib/i18n for
+       * the one label that survived and why.
+       *
+       * 「为什么值得关注」 IS DELIBERATELY NOT HERE, and it was the single most
+       * tempting thing to add — it is the better sentence, measured one article
+       * at a time. On a list it is the wrong sentence twice over. It assumes the
+       * reader already knows what happened, which on a card they do not; and at
+       * ~91 characters against the thesis's ~47 it doubles the height of a page
+       * whose whole job is to be scanned. Twelve of them turns 「今天有什么」
+       * into a wall of text. The layers are split on purpose — see the note on
+       * `leadOf`'s absence in lib/take.
+       *
+       * `line-clamp-3` is a ceiling, not a design: most theses run 35–65
+       * characters and land inside three lines at this size anyway. It is here so
+       * one long one cannot make its card twice the height of its neighbours.
+       * Clamping costs nothing a crawler cares about — the text was already fully
+       * in the DOM before this, so nothing was added or hidden from it.
+       *
+       * `text-ink-mid` and 15px: a step down from the headline in both size and
+       * weight, which is what makes it read as the headline's second line rather
+       * than as a second thing on the card.
+       */}
       {thesis ? (
-        <div className="mt-4">
-          <p className="mb-1 text-[11px] font-bold tracking-[0.08em] text-orange">
-            TL;DR
-          </p>
-          <p className="text-base font-medium text-ink">{thesis}</p>
-        </div>
+        <p className="mt-3 line-clamp-3 text-[15px] leading-[1.65] font-medium text-ink-mid">
+          {thesis}
+        </p>
       ) : null}
 
       <Actions article={article} date={date} lang={lang} />
