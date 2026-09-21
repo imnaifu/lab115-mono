@@ -233,11 +233,24 @@ export function ArticleBrief({
      * between rows and `last:border-0` keeps the list's bottom edge clean, the
      * same arrangement `divide-y` gives the front page.
      *
-     * `group` so the chevron can respond to a hover anywhere on the row — it is
-     * the only part of this that moves, and it moves because it is the one
-     * element whose whole meaning is "there is more this way".
+     * THE WHOLE ROW TINTS ON HOVER, and it is the only feedback left. The
+     * chevron moved and the headline changed colour; both are gone (see their
+     * notes below), which would have left a row that is entirely clickable and
+     * says so nowhere. A tint is the right weight for that: it marks the target
+     * without claiming any one element inside it is the thing being pressed,
+     * which is exactly true here — the stretched link IS the row.
+     *
+     * `-mx-4 px-4` (and the `sm:` pair) cancels the page gutter and re-applies
+     * it inside, so the tint runs to the edge of the screen rather than stopping
+     * 16px short and reading as a misaligned box. `PageShell` clips horizontal
+     * overflow, so the negative margin cannot make the document scroll sideways.
+     *
+     * `bg-page-deep` is one step off the page's own ground — the same token the
+     * cover placeholder sits on. `bg-card` was the other candidate and it is the
+     * colour these rows used to BE, back when each was a raised plate; reusing
+     * it would make a hover look like the old card coming back.
      */
-    <div className="group relative flex gap-3.5 border-b border-line py-5 last:border-0 sm:gap-4">
+    <div className="relative -mx-4 flex gap-3.5 border-b border-line px-4 py-5 transition duration-150 ease-out last:border-0 hover:bg-page-deep sm:-mx-7 sm:gap-4 sm:px-7">
       {/* The position. `w-6` is two tabular digits at this size, so every
           headline in the list starts on the same left edge whether the row is
           01 or 12. `tabular-nums` is what guarantees that. */}
@@ -261,8 +274,13 @@ export function ArticleBrief({
               page's own row. One real anchor whose text is the headline, with
               `::after` covering the row, rather than an invisible anchor over
               it: a link cannot legally contain the topic chip above. */}
+          {/* NO `hover:` COLOUR ON THE HEADLINE. It turned orange, and the row
+              is the target rather than the words — tinting the headline said
+              "this text is the link", which is true of the markup and false of
+              the interaction: the whole row responds. The row's own tint is
+              where that is said now. */}
           <a
-            className="transition duration-150 ease-out after:absolute after:inset-0 after:z-0 hover:text-orange"
+            className="after:absolute after:inset-0 after:z-0"
             href={href(lang, articlePath(date, article))}
             data-track="summary_open"
             data-track-source={article.sourceId}
@@ -298,23 +316,23 @@ export function ArticleBrief({
         ) : null}
       </div>
 
-      {/* The thumbnail, and the chevron after it. Both are `flex-none` and both
-          are outside the text column, so a long headline reflows without ever
-          moving them. `self-start` rather than centred: with a three-line dek
-          the row is taller than the image, and an image floating in the middle
-          of that reads as unaligned rather than as centred. */}
+      {/* The thumbnail. `flex-none` and outside the text column, so a long
+          headline reflows without ever moving it. `self-start` rather than
+          centred: with a three-line dek the row is taller than the image, and an
+          image floating in the middle of that reads as unaligned rather than as
+          centred.
+
+          THE CHEVRON THAT SAT AFTER IT IS GONE. It was a `›` saying "there is
+          more this way" at the end of every row — twelve of them down the page,
+          all saying the same thing about a row that is entirely clickable
+          anyway. What it was really doing was standing in for a hover state the
+          row did not have; the row has one now. */}
       <Cover
         id={article.id}
         sourceId={article.sourceId}
         image={article.image}
         variant="card"
       />
-      <span
-        aria-hidden
-        className="flex-none self-center text-xl text-ink-soft transition duration-150 ease-out group-hover:text-ink"
-      >
-        ›
-      </span>
     </div>
   );
 }
