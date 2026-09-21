@@ -66,6 +66,7 @@ export const SECTION = "mt-8";
  */
 export function Masthead({
   title,
+  kicker,
   crumb,
   children,
 }: {
@@ -79,6 +80,21 @@ export function Masthead({
    * title and this renders the trail and the meta row around the gap.
    */
   title?: string;
+  /**
+   * A SMALL GREY LINE ABOVE THE TITLE — the day page's piece count, and so far
+   * nothing else.
+   *
+   * It is the meta row's content promoted above the heading. `children` puts a
+   * row like that UNDER the title, which is right when the row is several items
+   * a reader might act on (the topic and the date on an article page are both
+   * links); it is wrong when the row is one number, because then the page opens
+   * on its heading and the reader has to come back up for the context. A kicker
+   * is read on the way in.
+   *
+   * Both slots exist because both shapes exist. A page passing neither renders
+   * neither, and nothing renders an empty row.
+   */
+  kicker?: string;
   /**
    * A trail above the title, for a page that is part of something — see
    * `Breadcrumb`, which is the only thing passed here.
@@ -122,10 +138,22 @@ export function Masthead({
           the trail carries its own `mt-6` off the bar, so a second gap between
           the two would be twice the space inside the block that is between the
           block and the page. */}
+      {kicker ? (
+        /* `mt-6` off the trail above it when there is one, so the kicker sits in
+           the trail's rhythm rather than inventing a third gap; the title's own
+           margin then collapses to nothing because this line is directly above
+           it and the pair is one block. */
+        <p
+          className={`text-sm font-semibold text-ink-soft ${crumb ? "mt-6" : ""}`}
+        >
+          {kicker}
+        </p>
+      ) : null}
+
       {title ? (
         <h1
           className={`max-w-2xl text-3xl leading-tight font-bold tracking-tight text-ink sm:text-4xl ${
-            crumb ? "mt-6" : ""
+            kicker ? "mt-1.5" : crumb ? "mt-6" : ""
           }`}
         >
           {title}

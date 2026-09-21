@@ -1,13 +1,6 @@
 import { ArticleBrief } from "./ArticleCards";
 import { PageShell } from "./PageShell";
-import {
-  Breadcrumb,
-  EndLink,
-  Footer,
-  Masthead,
-  PAD,
-  SECTION,
-} from "./Shell";
+import { EndLink, Footer, Masthead, PAD, SECTION } from "./Shell";
 import { strings } from "@/lib/i18n";
 import { PhotoCard } from "./Photo";
 import { shownArticles } from "@/lib/store";
@@ -81,37 +74,24 @@ export function DigestView({
        rather than to the masthead because the switch moved into the site bar. */
     <PageShell lang={lang} path={dayPath(digest.date)}>
       <Masthead
-        /* THE DAY IS THE HEADING. It was in the meta row, under a heading that
-           read 每日严选 like every other page's; an edition of a daily is its
-           date, so that is the `<h1>` and the row below keeps the two counts.
+        /* THE DAY IS THE HEADING. An edition of a daily is its date, so that is
+           the `<h1>`, and `formatDate` renders it the way a reader says it —
+           「2026年9月21日 · 星期一」.
 
-           `formatDate`, not the raw key: 「2026年8月27日 · 星期四」 is the day as
-           a reader says it. The crumb keeps the key — see the note on it. */
+           THE COUNT MOVED UP AND BECAME THE KICKER, which is the one change the
+           reference design makes to this block: the small grey line now sits
+           ABOVE the date rather than below it, so the page reads count → date →
+           list instead of date → count → list. A kicker is what a reader's eye
+           skips on the way to the heading; the count is exactly that kind of
+           line, and the date is the thing being announced. */
+        kicker={t.posts(digest.stats.shown)}
         title={formatDate(digest.date, lang)}
-        /* THE SAME TRAIL THE STRUCTURED DATA ALREADY DECLARED — see `breadcrumb`
-           in the day route's JSON-LD, which has said 每日严选 › 2026-08-27 to
-           crawlers for as long as it has existed while the page itself showed no
-           trail at all.
-
-           THE RAW DATE, not `formatDate`: the crumb is a compact trail, and that
-           helper returns 「2026年8月27日 · 星期四」 — a middle dot inside a crumb
-           reads as another separator. The formatted date with its weekday is in
-           the meta row below, where it is the day's own line rather than a step
-           in a path. */
-        crumb={
-          <Breadcrumb
-            label={t.breadcrumb}
-            items={[
-              { label: t.home, href: href(lang, "/") },
-              { label: digest.date },
-            ]}
-          />
-        }
-      >
-        {/* `shown`, not `fetched`: the publish floor drops the rest, so
-            fetched would promise cards that are not on the page. */}
-        <span>{t.posts(digest.stats.shown)}</span>
-      </Masthead>
+        /* THE VISIBLE TRAIL IS GONE from this page too — see the `← 返回` note
+           on the article page for the argument. Here there was only one step
+           above the date (首页), and the wordmark in the bar is that same link on
+           every page. The day route's JSON-LD still declares its
+           `BreadcrumbList`, which is the half a search result draws. */
+      />
 
       {/* Between the masthead and the list — it is the day's opening image, and
           below the first headline it would read as an entry rather than as the
@@ -142,13 +122,19 @@ export function DigestView({
        * the digest itself chose, top to bottom, with nothing to press first.
        */}
       {shown.length > 0 ? (
-        <section className={`${SECTION} flex flex-col gap-3 ${PAD}`}>
-          {shown.map((article) => (
+        /* NO `gap` ANY MORE. The rows carry their own `border-b` and sit flush
+           against each other, which is what makes the list read as one column
+           with rules across it rather than as a stack of separated objects —
+           see the note on `ArticleBrief`. A gap here would put air on both sides
+           of every rule and undo it. */
+        <section className={`${SECTION} ${PAD}`}>
+          {shown.map((article, at) => (
             <ArticleBrief
               article={article}
               date={digest.date}
               key={article.id}
               lang={lang}
+              index={at + 1}
             />
           ))}
         </section>

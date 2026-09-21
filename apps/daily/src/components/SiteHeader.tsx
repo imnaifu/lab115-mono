@@ -1,11 +1,10 @@
 import { InstallApp } from "./InstallApp";
 import { SubscribeDialog } from "./SubscribeDialog";
 import { ThemeToggle } from "./ThemeToggle";
-import { MAIL_TOP_N } from "@/lib/config";
+import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, otherLang, type Lang } from "@/lib/lang";
 import { TOPIC_PATH } from "@/lib/links";
-import { archivePath } from "@/lib/paging";
 
 /**
  * The translate mark: the glyph on the language switch.
@@ -124,25 +123,19 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
  * A SERVER COMPONENT, like the rest of the chrome — the two controls that hold
  * state are the client boundary and they were already drawing it themselves.
  */
+/** The bare host, for the `site:` operator handed to Google. Derived from SITE
+ *  rather than typed out, so a rename cannot leave a stale domain in a search
+ *  URL — the same rule robots.ts and the sitemap follow. */
+const SITE_HOST = new URL(SITE).host;
+
 export function SiteHeader({
   lang,
   path,
-  archiveReady,
   signupOpen,
 }: {
   lang: Lang;
   /** The BARE path of the page this sits on — what `LangSwitch` needs. */
   path: string;
-  /**
-   * Whether `/archive` is a page yet. It 404s until the site holds more days
-   * than the front page shows (see `hasArchive` in lib/paging), so this link has
-   * to be able to not exist — the same condition the front page's end-of-page
-   * card has always carried.
-   *
-   * A BOOLEAN RATHER THAN THE DATES, because that is the whole of what the bar
-   * needs to know; `PageShell` does the one read and answers the question.
-   */
-  archiveReady: boolean;
   /**
    * Whether this deployment can take a signup at all — `signupOpen()` in
    * lib/mail/resend, asked on the server by `PageShell` and passed down.
@@ -156,6 +149,23 @@ export function SiteHeader({
   signupOpen: boolean;
 }) {
   const t = strings(lang);
+  /**
+   * WHICH OF THE TWO NAV ITEMS IS THE PAGE WE ARE ON.
+   *
+   * `path` is the BARE path — no language prefix, see the prop — so these are
+   * compared against the unprefixed forms and are right on both sides of the
+   * site with no branch.
+   *
+   * 今天 IS THE FRONT PAGE ONLY, not "anything dated". A day page and an
+   * article page are under the dates, and marking 今天 as current on
+   * `/2026/09/21` would be claiming the reader is on the front page when they
+   * are two levels below it — the trail and the `← 返回` link are what say where
+   * they are there. 话题 covers the hub AND every topic page beneath it, because
+   * those genuinely are that section.
+   */
+  const onToday = path === "/";
+  const onTopics = path === TOPIC_PATH || path.startsWith(`${TOPIC_PATH}/`);
+
 
   return (
     /**
@@ -350,54 +360,107 @@ export function SiteHeader({
             on the front page; and the subscribe card the button scrolls to is on
             the page already. */}
         <nav className="flex items-center gap-2">
-          {archiveReady ? (
-            <a
-              href={href(lang, archivePath(1))}
-              className="hidden rounded-full px-2 py-1 text-sm font-bold text-ink-mid md:block transition duration-150 ease-out hover:text-ink active:opacity-70"
-              /* `from` separates the three ways into the archive: the front
-                 page's card, the archive's own pager, and this bar — which is
-                 the only one of them that exists on every page. See
-                 TRACKING.md. */
-              data-track="archive_open"
-              data-track-from="header"
-            >
-              {t.archiveTitle}
-            </a>
-          ) : null}
-
           {/**
-           * THE TOPIC HUB — the second destination in this bar, and the only
-           * one that is not organised by date.
+           * TWO DESTINATIONS, NAMED, AND THE CURRENT ONE IS UNDERLINED.
            *
-           * IT IS IN THE NAV AND THE EIGHT TOPICS ARE NOT, which is the whole
-           * point of there being a hub: a bar listing 技术 商业 投资 经济 科学
-           * 设计 生活 人文 is unmaintainable the moment config.json gains a
-           * category, and it would push the lockup out of every viewport
-           * narrower than a desktop. One link that never changes.
+           * 今天 (`/`) and 话题 (`/topic`) — the site's two axes, which is the
+           * whole navigation it needs: everything else is reached from one of
+           * them. The topic hub is what keeps the eight subjects out of this row
+           * (see `TOPIC_PATH` in lib/links); the front page is what keeps the
+           * dates out of it.
            *
-           * NOT GATED ON ANYTHING, unlike `archiveReady` next door. `/topic`
-           * answers with whatever has cleared the threshold and the archive has
-           * eight live topics; a bar item that blinks in and out with a content
-           * count is worse than one that is always there. (The sitemap DOES gate
-           * on it — an empty page should not be indexed even while it is
-           * linked.)
+           * THE ARCHIVE LINK WAS HERE AND IS GONE. It was the bar's only
+           * destination for a long time, gated on `archiveReady`, and what it
+           * cost was a nav item that blinks in and out with a content count. The
+           * archive is one press further on — the front page's list ends in
+           * 「更多文章……」 — and it is in the sitemap, so nothing is orphaned.
+           * `archiveReady` WAS A PROP OF THIS COMPONENT and is gone with the
+           * link: an unused boolean threaded down from `PageShell` is a question
+           * being asked on every page for nobody. Putting the link back means
+           * putting the prop back, which is three lines and a `listDates` call
+           * `PageShell` already makes.
+           *
+           * `aria-current="page"` rather than only the underline: a reader who
+           * cannot see the rule still gets told which of the two they are on.
            */}
           <a
+            href={href(lang, "/")}
+            aria-current={onToday ? "page" : undefined}
+            className={`hidden rounded-none px-2 py-1 text-sm font-bold transition duration-150 ease-out hover:text-ink active:opacity-70 sm:block ${
+              onToday
+                ? "border-b-2 border-ink text-ink"
+                : "border-b-2 border-transparent text-ink-mid"
+            }`}
+          >
+            {t.navToday}
+          </a>
+          <a
             href={href(lang, TOPIC_PATH)}
-            className="hidden rounded-full px-2 py-1 text-sm font-bold text-ink-mid md:block transition duration-150 ease-out hover:text-ink active:opacity-70"
+            aria-current={onTopics ? "page" : undefined}
+            className={`hidden rounded-none px-2 py-1 text-sm font-bold transition duration-150 ease-out hover:text-ink active:opacity-70 sm:block ${
+              onTopics
+                ? "border-b-2 border-ink text-ink"
+                : "border-b-2 border-transparent text-ink-mid"
+            }`}
             data-track="topic_open"
             data-track-from="header"
             data-track-lang={lang}
           >
-            {t.topicHubTitle}
+            {t.navTopics}
           </a>
 
-          {/* THE BLOG DIRECTORY WAS HERE, and it is gone with the section — see
-              SOURCE_PAGES_LIVE in lib/sources. Removed rather than gated on the
-              flag: a hidden section should not leave a conditional `null` in a
-              nav row, and the row's width budget below is measured on what
-              actually renders. Putting it back is this element plus its entry in
-              that budget. */}
+          {/**
+           * SEARCH — AND IT HANDS THE READER TO GOOGLE, SCOPED TO THIS SITE.
+           *
+           * There is no index here to search. 369 takes in two languages behind
+           * a `force-dynamic` server reading JSON off a git clone is not
+           * something a `LIKE` walks, and the alternatives are all a project
+           * rather than a control: build an index at publish time, ship a client
+           * bundle to query it, and own Chinese segmentation for the half of the
+           * corpus that has no spaces in it.
+           *
+           * `q=site:daily.lab115.com` LANDS ON GOOGLE'S OWN BOX, pre-scoped,
+           * with this site's indexed pages as the result. So the reader types
+           * their query into a field that already knows where to look, and this
+           * site ships no index, no bundle and no tokeniser. What it costs is
+           * honest and worth stating: results are whatever Google has crawled,
+           * which for the Chinese half of this site has been the standing
+           * problem (see the `/zh` redirect note in proxy.ts), and a reader
+           * without Google gets nothing.
+           *
+           * A LINK, NOT A FORM. A form needs a visible field, and the bar has no
+           * room for one at any width — the budget below is already spending
+           * 508px on three items. An icon that opens a search box would be a
+           * client component holding open/closed state for a control that ends
+           * up on google.com either way.
+           *
+           * NO `data-track`. `TrackEvent` in lib/track is a closed union and
+           * TRACKING.md documents every member, so counting this is a change to
+           * the analytics contract rather than to the markup — worth doing
+           * deliberately, not worth smuggling in behind a layout change.
+           */}
+          <a
+            href={`https://www.google.com/search?q=${encodeURIComponent(`site:${SITE_HOST}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t.searchLabel}
+            title={t.searchLabel}
+            className="flex size-8 items-center justify-center rounded-full text-ink-mid transition duration-150 ease-out hover:text-ink active:opacity-70"
+          >
+            <svg
+              aria-hidden
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            >
+              <circle cx="6.75" cy="6.75" r="4.75" />
+              <path d="M10.5 10.5 14 14" />
+            </svg>
+          </a>
 
           {/* THE SUBSCRIBE CONTROL, which is a whole component rather than a
               link because pressing it now opens a sheet instead of scrolling to

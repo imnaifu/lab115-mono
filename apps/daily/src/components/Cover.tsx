@@ -59,7 +59,45 @@ const SIZE = {
    * about that one piece — it can afford the picture the size it is worth.
    */
   hero: "size-28 sm:size-36",
-  card: "size-24",
+  /**
+   * THE ROW'S THUMBNAIL. 80px on a phone, 96px from `sm:` up — and the step is
+   * arithmetic rather than taste.
+   *
+   * A 393px phone leaves 361px inside the page gutter. The row spends 24 on the
+   * position, 12 on the chevron and three 14px gaps, so at a flat 96 the text
+   * column gets 175px — under ten Chinese characters a line at the headline's
+   * 18px, which turns a 14-character headline into two lines and the English
+   * original under it into three. At 80 the column gets 191px, which is where a
+   * headline starts fitting in two lines rather than three.
+   *
+   * It was a flat `size-24`, and before that 80px at every width for a
+   * different reason (see the note above: it was matching a text block rather
+   * than being a picture). 96px is right beside a two-line headline on a wide
+   * row; the phone is where it has to give the words back.
+   */
+  card: "size-20 sm:size-24",
+  /**
+   * THE ARTICLE PAGE'S HERO BAND — full column width, 16:9.
+   *
+   * `hero` above is the 112/144px square this replaced, and the square was
+   * chosen on the argument that the article page should match the list it was
+   * reached from. That argument is inverted now: the list is a row of
+   * navigation with a 96px thumbnail on the right, and the article page is the
+   * one place the picture is the piece's own rather than an identifying mark. A
+   * page devoted to one article can afford the image the size it is worth, and
+   * a 144px square beside a 30px headline was a thumbnail of a thumbnail.
+   *
+   * 16:9 RATHER THAN A HEIGHT. These are other people's article covers, at
+   * whatever ratio their CMS produced, so the box has to be the constant and
+   * `object-cover` the crop. 16:9 is what a lede image is on nearly every
+   * publication, and it is shallow enough that it does not push the prose off a
+   * phone screen: at 361px wide it is 203px tall, against the 320px a 3:2 band
+   * would take.
+   *
+   * `hero` stays defined. Nothing renders it today, and it is the shape to go
+   * back to if the band ever proves to cost more than it is worth.
+   */
+  banner: "aspect-video w-full",
 } as const;
 
 /**
@@ -74,6 +112,10 @@ const SIZE = {
 const LABEL = {
   hero: "p-2.5 text-sm",
   card: "p-2 text-xs",
+  /* The placeholder's one line of type, at the band's scale. It is only ever
+     seen on an article whose source shipped no cover image — see the note on
+     the gradient — and on a 660px band the 12px the rows use reads as debris. */
+  banner: "p-4 text-base",
 } as const;
 
 /**

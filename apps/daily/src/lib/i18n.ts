@@ -169,6 +169,27 @@ const STRINGS = {
     breadcrumb: "面包屑导航",
 
     /**
+     * 文章页左上角那个 `← 返回`。
+     *
+     * 「返回」而不是「返回 2026-09-18」或者「当天全部」：它紧贴在一行
+     * 「话题 · 来源 · 日期」的上面，而那一行里的日期本身就是同一个链接 —— 两处说
+     * 同一个目的地，说一次就够，另一处说方向。
+     *
+     * 它替掉了可见的面包屑（首页 › 日期 › 标题）。结构化的那一半没动 —— 文章页
+     * JSON-LD 里的 `BreadcrumbList` 照旧，而那是 Google 真正画在搜索结果里的那
+     * 一半。
+     */
+    backToDay: "返回",
+
+    /** 文章页底部那两个方向，只在当天之内走。见文章页的 `previous`/`next`。 */
+    prevArticle: "上一篇",
+    nextArticle: "下一篇",
+
+    /** 正文之后那张整宽卡片的标题。它下面印的是原文的**本名**（英文标题），所以
+     *  这句话只需要说清这是一个出站动作，别的交给标题自己。 */
+    readOriginal: "阅读原文",
+
+    /**
      * The front page's link to the archive, under the newest few days.
      *
      * NO LONGER COUNTS THE DAYS. It read 「共 N 天，按页浏览」, which spent the one
@@ -244,6 +265,11 @@ const STRINGS = {
      * 有哪些领域；而且它是从真实过线的话题生成的，站长大了也不会写成假话。
      */
     topicHubTitle: "探索话题",
+    /** 顶栏那两个导航项。「今天」= `/`，「话题」= `/topic`。见 SiteHeader。 */
+    navToday: "今天",
+    navTopics: "话题",
+    /** 搜索图标的可访问名。它跳 Google 的站内搜索 —— 见 SiteHeader 里的说明。 */
+    searchLabel: "在 Google 上搜索本站",
     topicHubDocTitle: (names: readonly string[]) =>
       `探索话题：${names.join("、")}等每日精选`,
     topicHubLead:
@@ -491,6 +517,13 @@ const STRINGS = {
     home: "Home",
     breadcrumb: "Breadcrumb",
 
+    /* See the Chinese side — the destination is named by the date beside it, so
+       this word only has to say which direction. */
+    backToDay: "Back",
+    prevArticle: "Previous",
+    nextArticle: "Next",
+    readOriginal: "Read the original",
+
     more: "More",
 
     archiveTitle: "Archive",
@@ -527,6 +560,9 @@ const STRINGS = {
     /* See the Chinese side. "Explore" rather than "All": the page leaves out
        every topic below the threshold, so it does not promise completeness. */
     topicHubTitle: "Explore topics",
+    navToday: "Today",
+    navTopics: "Topics",
+    searchLabel: "Search this site on Google",
     topicHubDocTitle: (names: readonly string[]) =>
       `Explore topics: ${names.join(", ")} and more, picked daily`,
     topicHubLead:

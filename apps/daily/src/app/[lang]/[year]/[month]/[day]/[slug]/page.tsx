@@ -36,7 +36,12 @@ import {
 } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
 import { alternatesFor, breadcrumb, JsonLd, publisher } from "@/lib/seo";
-import { readArticleBySlug, readDigest, retiredMatch } from "@/lib/store";
+import {
+  readArticleBySlug,
+  readDigest,
+  retiredMatch,
+  shownArticles,
+} from "@/lib/store";
 import { topicLinkFor } from "@/lib/topics";
 
 export const dynamic = "force-dynamic";
@@ -256,6 +261,26 @@ export default async function ArticlePage({ params }: Params) {
    */
   const topic = await topicLinkFor(article);
 
+  /**
+   * THE NEIGHBOURS, WITHIN THIS DAY ONLY.
+   *
+   * `shownArticles` returns the digest's own order, which is by score — so
+   * "previous" and "next" mean one place up and one place down THIS EDITION's
+   * running order, and the first and last piece of a day each have one
+   * direction rather than two.
+   *
+   * NOT ACROSS DAYS, which was the other option and is a worse one for a
+   * DAILY: a `next` that walks off the end of the 21st into the top of the
+   * 20th quietly turns fifteen editions into one infinite scroll, and the thing
+   * this site publishes is editions. Reaching yesterday is what the day link and
+   * the archive are for. It also keeps this to one file read — the digest is
+   * already in hand from `readArticleBySlug`.
+   */
+  const dayList = shownArticles(found.digest);
+  const at = dayList.findIndex((entry) => entry.id === article.id);
+  const previous = at > 0 ? dayList[at - 1] : null;
+  const next = at >= 0 && at < dayList.length - 1 ? dayList[at + 1] : null;
+
   return (
     <PageShell lang={lang} path={articlePath(date, article)}>
       {/**
@@ -341,61 +366,65 @@ export default async function ArticlePage({ params }: Params) {
           },
         }}
       />
-      {/* NO TITLE. This page's heading is the headline, set beside the cover in
-          the plate below — it was already an `<h1>` there, under a second one
-          reading 每日严选. See the `title` prop in Shell.tsx. */}
+      {/* NO TITLE. This page's heading is the headline, set in the column
+          below — it was already an `<h1>` there, under a second one reading
+          每日严选. See the `title` prop in Shell.tsx. */}
       <Masthead
-        /* THREE LEVELS, which is what this page actually is and what its JSON-LD
-           has always said: the front page, the day, and this take. The middle
-           crumb is the one that matters — a reader arriving from a share or a
-           search has no idea this article belongs to a daily edition, and the
-           trail is where that is legible without reading to the bottom.
-
-           The headline is the last crumb and is truncated there; see Breadcrumb.
-           `displayTitle` rather than `article.title`, so the crumb says what the
-           H1 below it says in this language. */
+        /**
+         * `← 返回` REPLACES THE VISIBLE TRAIL, and the trail's STRUCTURED half
+         * stays — the `BreadcrumbList` in the JSON-LD above is untouched, and it
+         * is the half Google draws in a result.
+         *
+         * What went is 首页 › 2026-09-18 › 标题 as three links above the
+         * headline. On a phone that was a line of small grey type whose last
+         * crumb had to be truncated mid-headline to fit, and its two useful
+         * destinations are both still one press away: the day is this link, and
+         * the home page is the wordmark in the bar on every page.
+         *
+         * IT POINTS AT THE DAY, not at `history.back()`. A real href is a link a
+         * crawler follows, a middle-click opens and a reader can see the
+         * destination of; `back()` would need a client component and would send
+         * a reader who arrived from a search result to Google.
+         */
         crumb={
-          <Breadcrumb
-            label={t.breadcrumb}
-            items={[
-              { label: t.home, href: langHref(lang, "/") },
-              { label: date, href: langHref(lang, dayPath(date)) },
-              { label: displayTitle(article, lang) },
-            ]}
-          />
+          <div className="mt-6">
+            <a
+              className="text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+              href={langHref(lang, dayPath(date))}
+            >
+              ← {t.backToDay}
+            </a>
+          </div>
         }
       >
         {/**
-         * THE TOPIC, THEN THE DATE — the two axes this article sits on, in one
-         * row, both of them links.
+         * THE TOPIC, THE SOURCE, THE DATE — one row, and the topic and the date
+         * are links.
          *
-         *     [● 技术] · 2026-09-18
-         *       ↓            ↓
-         *   /topic/tech   /2026/09/18
+         *     [● 技术] · The Conversation · 2026-09-18
+         *        ↓                              ↓
+         *    /topic/tech                   /2026/09/18
          *
          * DATE AND TOPIC DO NOT REPLACE EACH OTHER. An article belongs to an
          * EDITION (the day it ran in, which is what this site publishes) and to
          * a SUBJECT (what it is about, which is what anybody searches for), and
          * both have a page holding the rest of their kind. This row is the only
-         * place a reader is offered both, and it is why the topic system did not
-         * need to take anything away from the date system to exist.
+         * place a reader is offered both.
          *
-         * THE TOPIC LEADS, and it was the other way round for one round. The
-         * date is where this piece came from; the topic is what it is — and a
-         * reader arriving from a search result has no relationship with
-         * 2026-09-18 at all, while the subject is the thing they were looking
-         * for. The breadcrumb directly above still runs 首页 › 日期 › 标题,
-         * which is the URL's own hierarchy and a different statement.
+         * THE TOPIC LEADS. The date is where this piece came from; the topic is
+         * what it is — and a reader arriving from a search result has no
+         * relationship with 2026-09-18 at all.
          *
-         * THE SOURCE IS NOT IN THIS ROW, deliberately: it is forty pixels below
-         * in the article plate, in its own colour beside the author, where it
-         * has always been. Lifting it here would empty that line and change the
-         * plate's shape to save a reader one glance.
+         * THE SOURCE IS IN THIS ROW NOW, and it was in the plate below for a
+         * long time — beside the author, in its own colour. It came up here with
+         * the plate: the page is a plain column, so there is no longer a card
+         * header for it to live in, and a byline row is where a reader looks for
+         * "who published this" anyway. It keeps its own accent colour, which is
+         * the one thing in this row that is not grey.
          *
-         * ONE LINE ON A PHONE. `Masthead` wraps this row, so the worst case is
-         * two — and the breadcrumb above it truncates its last crumb rather
-         * than wrapping (see `Breadcrumb`), so the header stays at two lines of
-         * chrome above the headline rather than the four or five it could be.
+         * THE SOURCE IS NOT A LINK. `/s/<id>` exists and is switched off — see
+         * SOURCE_PAGES_LIVE in lib/sources — so linking it would be pointing at
+         * a 404. It becomes one the day that flag flips.
          */}
         {topic ? (
           <>
@@ -416,92 +445,156 @@ export default async function ArticlePage({ params }: Params) {
             <span className="size-1 rounded-full bg-orange" />
           </>
         ) : null}
+        <span style={{ color: themedAccent(source.accent) }}>{source.name}</span>
+        {article.author ? (
+          <>
+            <span className="size-1 rounded-full bg-orange" />
+            <span>{article.author}</span>
+          </>
+        ) : null}
+        <span className="size-1 rounded-full bg-orange" />
         <a href={langHref(lang, dayPath(date))}>{date}</a>
       </Masthead>
 
-      <section className={`${SECTION} ${PAD} flex flex-col gap-4`}>
-        {/* Same shape as a list card: cover on the left of the header row, the
-            summary at full width beneath it, actions last. See the note on
-            ArticleCard for why the split stops at the header — with a 450-
-            character summary a full-height cover column leaves a hole under the
-            headline and squeezes the prose. */}
-        <div className="flex flex-col rounded-card bg-card p-5 shadow-soft">
-          <div className="flex items-center gap-4 sm:gap-5">
+      {/**
+       * A PLAIN COLUMN, WHERE THIS WAS A RAISED PLATE.
+       *
+       * `rounded-card bg-card p-5 shadow-soft` wrapped the whole article — a
+       * panel containing a headline, a summary and a row of buttons. On the one
+       * page of the site devoted to a single piece, a card is a container around
+       * the only thing on screen, which is a container around nothing. The day
+       * list gave its cards up in the same round (see `ArticleBrief`), and the
+       * whole site now reads as one column with rules across it.
+       *
+       * WHAT THE PLATE WAS DOING that now has to be done by type: separating
+       * the article from the page. The headline is `text-3xl` ink, the dek is
+       * 18px ink-mid, the prose 16px — that hierarchy was always there, and it
+       * was being drawn on top of a second, redundant one made of shadow.
+       */}
+      <section className={`${SECTION} ${PAD}`}>
+        <h1 className="text-2xl leading-tight font-bold text-ink sm:text-3xl">
+          <ArticleTitle article={article} lang={lang} variant="hero" />
+        </h1>
+
+        <Summary
+          summary={summaryFor(article, lang)}
+          variant="hero"
+          lang={lang}
+          /**
+           * THE HERO BAND, between the dek and the prose — which is where a
+           * lede image goes in every publication and is why `Summary` takes a
+           * slot for it rather than the page drawing the three parts itself.
+           *
+           * IT WAS A 144px SQUARE beside the headline, the same shape a list row
+           * uses. That made the article page match the list it was reached from,
+           * which was the old argument for it; the list is a row of navigation
+           * with a thumbnail on the right now, and this is the one place the
+           * picture is the piece's own rather than an identifying mark.
+           *
+           * NO CAPTION AND NO CREDIT LINE, and that is a data limit rather than
+           * a design choice: `Article.image` is a URL off the source's feed and
+           * nothing in the digest carries a description or a rights holder for
+           * it. (The one image on this site that DOES have both is the day's
+           * Wikimedia photograph — see `DailyPhoto`, which stores `caption`,
+           * `artist` and `license` precisely because the licence requires it.)
+           * Inventing 「图片来源：The Conversation」 would be asserting a credit
+           * nobody checked, and printing the source's name under somebody's
+           * photograph is exactly the kind of claim that is wrong occasionally
+           * and silently.
+           */
+          lede={
             <Cover
               id={article.id}
               sourceId={article.sourceId}
               image={article.image}
-              variant="hero"
+              variant="banner"
             />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-semibold text-ink-soft">
-              <span style={{ color: themedAccent(source.accent) }}>{source.name}</span>
-              {/* No reading time — see the note in ArticleCards. */}
-              {article.author ? (
-                <>
-                  <span className="size-0.75 rounded-full bg-current opacity-55" />
-                  <span>{article.author}</span>
-                </>
-              ) : null}
-              </div>
+          }
+        />
 
-              <h1 className="mt-2.5 text-2xl leading-tight font-bold text-ink sm:text-3xl">
-                <ArticleTitle article={article} lang={lang} variant="hero" />
-              </h1>
-            </div>
-          </div>
+        {/**
+         * OUT TO THE ORIGINAL — a whole card now, where this was one pill in a
+         * right-aligned row.
+         *
+         * IT IS THE ONE ACTION THIS PAGE OWES and it earns the width: a reader
+         * at the foot of our summary either wants the article or does not, and a
+         * 40px pill among two others made that the same size as a decision about
+         * sharing. The card also has room for the thing the pill could not
+         * carry — THE ORIGINAL'S OWN HEADLINE, in its own language — which is
+         * what tells a reader what they are about to open before they open it,
+         * and doubles as the honest statement that this page has been a summary
+         * of somebody else's writing.
+         *
+         * STILL SECONDARY IN WEIGHT despite the size: an outline card, not a
+         * filled one. This digest exists so that most of the time a reader does
+         * not have to click here — `read_original` is the counter-metric, see
+         * TRACKING.md — so the emphasis must not push them off the page it just
+         * spent 450 characters replacing.
+         */}
+        <a
+          className={`${SECTION} flex items-center gap-4 rounded-card border border-line px-5 py-4${ACTION_OUTLINE}`}
+          href={article.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          /* `from` separates the two places this exists: a reader on a
+             single-article page arrived from a share or a search, which is a
+             different reader from one scrolling the day's list. */
+          data-track="read_original"
+          data-track-source={article.sourceId}
+          data-track-from="article"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-base font-bold text-ink">
+                {t.readOriginal}
+              </span>
+              <span className="size-1 flex-none rounded-full bg-orange" />
+              <span
+                className="text-sm font-semibold"
+                style={{ color: themedAccent(source.accent) }}
+              >
+                {source.name}
+              </span>
+            </span>
+            {/* The article's OWN name, which on this site is always
+                `article.title` — never the rewrite. See `titleZh` in lib/types:
+                the rewrite is our headline, and what is on the other end of this
+                link is the piece the source published. */}
+            <span className="mt-1 block text-sm leading-snug font-medium text-ink-soft">
+              {article.title}
+            </span>
+          </span>
+          {/* The outbound mark. `aria-hidden` because the anchor's own text
+              already says where this goes. */}
+          <span aria-hidden className="flex-none text-base text-ink-soft">
+            ↗
+          </span>
+        </a>
 
-          <Summary
-            summary={summaryFor(article, lang)}
-            variant="hero"
+        {/**
+         * SHARING, and it is at the FOOT of the article rather than in the top
+         * bar — which is where the reference design puts it.
+         *
+         * The bar stopped being sticky in this same round, so a control up there
+         * is only reachable by scrolling back to the top of a long page: exactly
+         * the cost that change was noted as having. The moment a reader wants to
+         * pass a piece on is the moment they finish it, and that moment is here.
+         *
+         * IDENTICAL PROPS TO EVERY OTHER SHARE ENTRY POINT, deliberately: the
+         * same permalink, the same poster set, the same title and thesis in the
+         * same language, so a share made here and one made anywhere else are the
+         * same object.
+         */}
+        <div className="mt-3 flex justify-end">
+          <ShareButton
+            url={path}
+            posterBase={posterBase(lang, date, article.id)}
+            parts={posterParts(summaryFor(article, lang))}
+            title={displayTitle(article, lang)}
+            thesis={summaryFor(article, lang).thesis}
+            tags={summaryFor(article, lang).tags ?? []}
             lang={lang}
           />
-
-          {/* Right-aligned, the same way a list card ends — and secondary for the
-              same reason it is there: the summary is the product, not the trip
-              off-site. */}
-          <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-            <a
-              className={`rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid${ACTION_OUTLINE}`}
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              /* `from` separates the two places this pill exists: a reader on a
-                 single-article page arrived from a share or a search, which is a
-                 different reader from one scrolling the day's list. */
-              data-track="read_original"
-              data-track-source={article.sourceId}
-              data-track-from="article"
-            >
-              {t.readFull}
-            </a>
-            {/**
-             * SHARING IS BACK ON THIS PAGE, and it belongs on both.
-             *
-             * It used to live here as a block of its own; it moved to the list
-             * rows because the pill there was a LINK down to this page, which put
-             * a navigation between deciding to share and being able to — see the
-             * note on `Actions` in ArticleCards. That argument was about the list,
-             * and it never said this page should have none. A reader who arrived
-             * from a search or somebody else's share lands here, finishes the
-             * take, and has nowhere to pass it on.
-             *
-             * IDENTICAL PROPS TO THE LIST'S, deliberately: the same permalink, the
-             * same poster set, the same title and thesis in the same language. A
-             * share made from this page and one made from the day page have to be
-             * the same object, or the poster a reader sends depends on which
-             * screen they happened to press it from.
-             */}
-            <ShareButton
-              url={path}
-              posterBase={posterBase(lang, date, article.id)}
-              parts={posterParts(summaryFor(article, lang))}
-              title={displayTitle(article, lang)}
-              thesis={summaryFor(article, lang).thesis}
-              tags={summaryFor(article, lang).tags ?? []}
-              lang={lang}
-            />
-          </div>
         </div>
       </section>
 
@@ -546,6 +639,72 @@ export default async function ArticlePage({ params }: Params) {
           trackFrom="article"
         />
       </div>
+
+      {/**
+       * PREVIOUS / NEXT, WITHIN THIS EDITION.
+       *
+       * Two links at the foot of the piece, in the day's own running order — see
+       * `previous`/`next` above for why this does not walk into yesterday.
+       *
+       * EACH ONE NAMES THE PIECE IT LEADS TO rather than saying only 「下一篇」.
+       * A bare direction asks a reader to press a control to find out what is
+       * behind it; a headline lets them decide. That is the same reason the day
+       * list shows a dek rather than a chevron alone.
+       *
+       * `min-w-0` + `line-clamp-2` on each label: these are headlines, and two
+       * of them side by side on a phone is the one place on this site where a
+       * long one would push the other off the row.
+       *
+       * The FIRST and LAST piece of a day each get one direction, and the empty
+       * side renders a bare `<span />` so the surviving link stays on its own
+       * end of the row rather than sliding to the middle — the same shape the
+       * archive's pager uses.
+       *
+       * `summary_open` with `from=neighbour`, which is a number worth having on
+       * its own: it says whether a reader who finished one take reads the next
+       * one in the same edition, and that is the closest thing this site has to
+       * a measure of an edition being read rather than a page being landed on.
+       */}
+      {previous || next ? (
+        <nav className={`${PAD} mt-8 flex items-start justify-between gap-4`}>
+          {previous ? (
+            <a
+              className="group min-w-0 flex-1 text-left"
+              href={langHref(lang, articlePath(date, previous))}
+              data-track="summary_open"
+              data-track-source={previous.sourceId}
+              data-track-from="neighbour"
+            >
+              <span className="block text-xs font-bold text-ink-soft">
+                ← {t.prevArticle}
+              </span>
+              <span className="mt-1 block line-clamp-2 text-sm leading-snug font-bold text-ink-mid transition duration-150 ease-out group-hover:text-ink">
+                {displayTitle(previous, lang)}
+              </span>
+            </a>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <a
+              className="group min-w-0 flex-1 text-right"
+              href={langHref(lang, articlePath(date, next))}
+              data-track="summary_open"
+              data-track-source={next.sourceId}
+              data-track-from="neighbour"
+            >
+              <span className="block text-xs font-bold text-ink-soft">
+                {t.nextArticle} →
+              </span>
+              <span className="mt-1 block line-clamp-2 text-sm leading-snug font-bold text-ink-mid transition duration-150 ease-out group-hover:text-ink">
+                {displayTitle(next, lang)}
+              </span>
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      ) : null}
 
       <Footer year={date.slice(0, 4)} lang={lang} />
     </PageShell>

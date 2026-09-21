@@ -1,13 +1,10 @@
 import { themedAccent } from "@/lib/accent";
 import { accentColor, categoryName } from "@/lib/categories";
-import { ArticleTitle, displayTitle } from "./ArticleTitle";
+import { ArticleTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
-import { ShareButton } from "./ShareButton";
 import { sourceOf } from "@/lib/sources";
-import { posterParts } from "@/lib/share";
-import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
-import { articlePath, posterBase, topicPath } from "@/lib/links";
+import { articlePath, topicPath } from "@/lib/links";
 import { summaryFor } from "@/lib/take";
 import { topicLinkFor } from "@/lib/topics";
 import type { PublishedArticle } from "@/lib/types";
@@ -46,10 +43,11 @@ import type { PublishedArticle } from "@/lib/types";
  * `prefers-reduced-motion` is handled once, globally, in index.css. Nothing here
  * needs to repeat it.
  */
-const ACTION_FILLED =
-  " transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid";
-const ACTION_OUTLINE =
-  " transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80";
+/* THE TWO STRINGS THAT USED TO BE HERE ARE GONE WITH THE ACTION ROW — there is
+   no button or pill in this file any more (see the note where `Actions` was).
+   The note above stays because two other files point at it: the article page and
+   the front page each keep a local copy of the shape they use, and this is where
+   the reasoning for all three lives. */
 
 /** The dot between meta items. `bg-current` so it matches whatever colour the
  *  row is drawn in. */
@@ -163,243 +161,160 @@ export async function Meta({
 
 
 /**
- * The two things you can do with an article, stated at the end of it.
+ * THE ACTION ROW IS GONE FROM THE LIST — 「看总结」, 「看原文」 and the share
+ * button were all here, and this note is what is left of them.
  *
- * The whole card used to be one big link to the original, with the share pill
- * floated over it on `z-10` — the "stretched link" pattern, needed because a
- * link cannot legally contain another interactive element. Naming both actions
- * instead removes that whole contrivance: no absolute overlay, no z-index, no
- * invisible anchor, and the summary text can be selected and copied like text.
+ * WHY: a row in a list is NAVIGATION now. The whole row is a link to the
+ * article page (see `ArticleBrief`), so the primary pill was a second control
+ * pointing where the row already points, and the other two were asking a reader
+ * to decide about a piece they have read three lines of. Both live on the
+ * article page, one tap away, where the reader has actually read the take.
  *
- * Sharing HAPPENS HERE now rather than on the article page. The pill was a link
- * down to that page's share block, which meant a navigation between deciding to
- * share and being able to; the reader has just finished the summary and the thing
- * they want is the sheet. What gets shared is still the article's permalink — see
- * ShareButton.
+ * WHAT IT COSTS, and it is not nothing:
+ *
+ *   `read_original` STOPS FIRING WITH `from=list`. That event is this digest's
+ *   counter-metric and the list was one of its two surfaces. The union member
+ *   stays (see lib/track) and the article page still sends it with
+ *   `from=article`; what is gone is the ability to compare "left from the list"
+ *   against "left after reading". If that comparison mattered, the pill has to
+ *   come back rather than the number be reconstructed.
+ *
+ *   SHARING FROM THE LIST GOES TOO. The note that used to be here argued for it:
+ *   the pill had been a link down to the article page's share block, "which
+ *   meant a navigation between deciding to share and being able to". That
+ *   argument was written when a row carried the WHOLE summary and a reader
+ *   reached the share button having finished reading. A row carries a headline
+ *   and a three-line dek now, so nobody is finishing anything here, and the
+ *   navigation the pill was avoiding is the one the reader wants anyway.
  */
-function Actions({
-  article,
-  date,
-  lang,
-}: {
-  article: PublishedArticle;
-  date: string;
-  lang: Lang;
-}) {
-  const t = strings(lang);
-  return (
-    /* `relative z-10` for the same reason the meta row has it — these three
-       controls sit inside the card's stretched link and must stay reachable. */
-    <div className="relative z-10 mt-4 flex flex-wrap items-center justify-end gap-2">
-      {/**
-       * THE PRIMARY ACTION, and it is the one that stays on this site.
-       *
-       * A row here shows the headline and the claim and stops — the take itself
-       * lives on the article's own page now. So this is the link that finishes
-       * what the card started, and it is THE ONLY FILLED BUTTON IN THE ROW —
-       * `share` gave up its own dark pill when this arrived, and `readFull`
-       * beside it leads OFF the site, which the note on it has always said the
-       * emphasis should not push a reader towards.
-       */}
-      <a
-        className={`rounded-full bg-ink px-4 py-2 text-sm font-bold text-paper${ACTION_FILLED}`}
-        href={href(lang, articlePath(date, article))}
-        data-track="summary_open"
-        data-track-source={article.sourceId}
-        data-track-from="list"
-      >
-        {t.readSummary}
-      </a>
-      {/* Secondary. Reading the original means leaving — this digest exists so
-          that most of the time you do not have to, and the emphasis should not
-          push you off the page it just spent 450 characters replacing. */}
-      <a
-        className={`rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid${ACTION_OUTLINE}`}
-        href={article.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        /**
-         * THE COUNTER-METRIC. This digest exists so that most of the time a
-         * reader does not have to click here, so this number is not a success
-         * measure — it is what the summary is being judged against, per source.
-         *
-         * `data-*` rather than an onClick: see ClickTracking.
-         */
-        data-track="read_original"
-        data-track-source={article.sourceId}
-        data-track-from="list"
-      >
-        {t.readFull}
-      </a>
-      <ShareButton
-        url={href(lang, articlePath(date, article))}
-        /* The poster BASE, not an image: the sheet asks for several parts off it.
-           It no longer hangs off the article's own path — see `posterBase` in
-           lib/links — so it is built independently rather than by appending. */
-        posterBase={posterBase(lang, date, article.id)}
-        /* Counted HERE, on the server, where the summary and the poster's layout
-           table both already are. The sheet is a client component and needs the
-           number to know how many images to fetch and preview. */
-        parts={posterParts(summaryFor(article, lang))}
-        title={displayTitle(article, lang)}
-        thesis={summaryFor(article, lang).thesis}
-        /* From the SAME take as the thesis above, not from `summary.zh`
-           directly: the tags belong to whichever half is being shared, so a
-           reader on /en with an English take shares no Chinese hashtags — and
-           one whose English never arrived is reading the Chinese take, where
-           Chinese tags are the right ones. */
-        tags={summaryFor(article, lang).tags ?? []}
-        lang={lang}
-      />
-    </div>
-  );
-}
 
 /**
- * One article, as much of it as a LIST should show: the headline and the claim.
+ * ONE ROW OF THE DAY'S LIST: a number, the topic and source, the headline, the
+ * dek, a thumbnail, and a chevron.
  *
- * IT WAS THE WHOLE SUMMARY — cover, headline, thesis and three to five
- * paragraphs of prose, the same text the article's own page carries. Two things
- * were wrong with that. A day of fifteen of them is a page nobody reaches the
- * bottom of, and every one of those summaries then existed at two URLs, which is
- * the duplicate this site has already been through once (see the note in
- * app/[lang]/page.tsx). The prose now lives at exactly one address and this row
- * is the way to it.
+ * IT WAS A CARD — `rounded-card bg-card p-4 shadow-soft`, with the cover on the
+ * LEFT and three action pills along the bottom. A day of twelve of those is
+ * twelve raised panels, each with its own shadow, padding and set of decisions,
+ * on a page whose entire job is to be scanned. A weblog index is a column of
+ * text with rules across it; the front page learned that already (see the
+ * `divide-y` note in app/[lang]/page.tsx) and the day page was the last place
+ * still stacking plates.
  *
- * THE THESIS IS THE EXCERPT, and it is the right one because it was written to
- * be: `SummaryText.thesis` is the one-sentence claim the summary opens on, so
- * the list gets a real sentence rather than the first N characters of a
- * paragraph cut mid-word.
+ * THE THUMBNAIL MOVED TO THE RIGHT, which is the change that makes the rest of
+ * it work. On the left it was a first-class element — the eye met a picture
+ * before a word, on a page where the pictures are other people's article covers
+ * and the words are ours. On the right it is what it actually is: an identifying
+ * mark at the end of a row, and every headline in the list starts on one edge.
  *
- * THE CATEGORY IS BACK, as ONE CHIP IN THE META ROW and nothing else. This note
- * used to read "NO CATEGORY ANYWHERE… the registry stays, because the publish
- * floor lives in it" — true while the classification led nowhere. It leads to
- * `/topic/<id>` now, so a card names its subject; what is NOT back is the thing
- * that was actually removed, the tab row and the grouped sections. The list is
- * still flat and still in the day's own ranking. See `Meta` above.
+ * THE NUMBER IS DELIBERATELY QUIET — `text-ink-soft` at the dek's size, not a
+ * display figure. The list IS ranked (`shownArticles` returns the digest's own
+ * order, which is by score), so a heavy `01` would read as a leaderboard and
+ * invite an argument about why one piece beat another. What it is for is
+ * orientation: how far down am I, and how much is left.
  */
 export function ArticleBrief({
   article,
   date,
   lang,
+  index,
 }: {
   article: PublishedArticle;
   date: string;
   lang: Lang;
+  /** 1-based position in the day's list, drawn as `01`. Passed in rather than
+   *  derived, because the row does not know what it is a row of. */
+  index: number;
 }) {
   const thesis = summaryFor(article, lang).thesis;
 
   return (
     /**
-     * THE WHOLE CARD IS A TARGET, and `relative` is what makes that possible —
-     * the headline's link stretches an `::after` across this box.
+     * `relative` carries the row's stretched link; `border-b` is the rule
+     * between rows and `last:border-0` keeps the list's bottom edge clean, the
+     * same arrangement `divide-y` gives the front page.
      *
-     * IT GOES TO THE ARTICLE PAGE, not to the original. That is the one decision
-     * in this change worth writing down, because the other option was live: a
-     * card-wide link to the source. `read_original` is this digest's
-     * COUNTER-metric — see the note on that pill below and TRACKING.md — so
-     * making the default gesture on every card an exit would invert what the
-     * numbers mean, and would do it invisibly: `summary_open` collapses,
-     * `read_original` climbs, and the report reads as the summaries failing when
-     * all that changed was where the card points.
+     * `group` so the chevron can respond to a hover anywhere on the row — it is
+     * the only part of this that moves, and it moves because it is the one
+     * element whose whole meaning is "there is more this way".
      */
-    <div className="relative flex flex-col rounded-card bg-card p-4 shadow-soft transition duration-150 ease-out hover:shadow-cover">
-      {/* The same header row the full card had — see the note that was here on
-          why the cover is bounded to the headline rather than to the whole card.
-          With the prose gone the argument is weaker, but the shape is what a
-          reader already knows this list to look like. */}
-      <div className="flex items-center gap-3.5 sm:gap-4">
-        <Cover
-          id={article.id}
-          sourceId={article.sourceId}
-          image={article.image}
-          variant="card"
-        />
-        <div className="min-w-0 flex-1">
-          {/* `relative z-10` because the stretch below is an `::after` on an
-              element that comes LATER in the DOM, so without a stacking context
-              here it would paint over the topic link inside `Meta` and swallow
-              its clicks. */}
-          <div className="relative z-10">
-            <Meta article={article} lang={lang} from="archive" />
-          </div>
-          <h3 className="mt-2 text-lg font-bold text-ink">
-            {/**
-             * THE STRETCHED LINK, and it is the HEADLINE rather than an
-             * invisible anchor over the card.
-             *
-             * The card WAS one big anchor once, with the share pill floated over
-             * it on `z-10`, and the note on `Actions` below records what killed
-             * it: a link cannot legally contain another interactive element, and
-             * this card now holds four of them (the topic chip, two pills and
-             * the share button). Reviving that pattern would mean an anchor with
-             * no text in it — a link a screen reader announces as the empty
-             * string — plus four exceptions layered on top.
-             *
-             * `after:absolute after:inset-0` on a REAL anchor whose text is the
-             * headline is the same hit area with none of that: one link per
-             * card, its accessible name is the thing it opens, and the elements
-             * that must stay clickable only need to sit above it.
-             *
-             * WHAT IT COSTS, stated because the note it replaces called it out:
-             * dragging across the card's text now starts a drag on a link
-             * instead of a selection, so the dek here cannot
-             * comfortably be copied. It can on the article page, which is one
-             * tap away and is where the whole take is anyway.
-             *
-             * `from=card` rather than `list`: the pill below sends `list`, and
-             * keeping them apart is how "is the card-wide target actually used"
-             * becomes answerable instead of assumed.
-             */}
-            <a
-              className="after:absolute after:inset-0 after:z-0 hover:text-orange transition duration-150 ease-out"
-              href={href(lang, articlePath(date, article))}
-              data-track="summary_open"
-              data-track-source={article.sourceId}
-              data-track-from="card"
-            >
-              <ArticleTitle article={article} lang={lang} variant="card" />
-            </a>
-          </h3>
+    <div className="group relative flex gap-3.5 border-b border-line py-5 last:border-0 sm:gap-4">
+      {/* The position. `w-6` is two tabular digits at this size, so every
+          headline in the list starts on the same left edge whether the row is
+          01 or 12. `tabular-nums` is what guarantees that. */}
+      <span
+        aria-hidden
+        className="w-6 flex-none pt-0.5 text-[13px] leading-[1.65] font-bold tabular-nums text-ink-soft"
+      >
+        {String(index).padStart(2, "0")}
+      </span>
+
+      <div className="min-w-0 flex-1">
+        {/* `relative z-10` because the stretch below is an `::after` on an
+            element that comes LATER in the DOM, so without a stacking context
+            here it would paint over the topic link inside `Meta`. */}
+        <div className="relative z-10">
+          <Meta article={article} lang={lang} from="archive" />
         </div>
+
+        <h3 className="mt-1.5 text-lg leading-snug font-bold text-ink">
+          {/* THE STRETCHED LINK — see the long note on this in the article
+              page's own row. One real anchor whose text is the headline, with
+              `::after` covering the row, rather than an invisible anchor over
+              it: a link cannot legally contain the topic chip above. */}
+          <a
+            className="transition duration-150 ease-out after:absolute after:inset-0 after:z-0 hover:text-orange"
+            href={href(lang, articlePath(date, article))}
+            data-track="summary_open"
+            data-track-source={article.sourceId}
+            data-track-from="card"
+          >
+            <ArticleTitle article={article} lang={lang} variant="card" />
+          </a>
+        </h3>
+
+        {/**
+         * THE DEK — the thesis, and on a row that is the whole of what a list
+         * owes a reader. No label: see `whyItMatters` in lib/i18n for the one
+         * label that survived and why.
+         *
+         * 「为什么值得关注」 IS DELIBERATELY NOT HERE, and it was the single most
+         * tempting thing to add — it is the better sentence, measured one
+         * article at a time. On a list it is the wrong sentence twice over: it
+         * assumes the reader already knows what happened, which on a row they
+         * do not, and at ~91 characters against the thesis's ~47 it doubles the
+         * height of a page whose whole job is to be scanned. See the note on
+         * `leadOf`'s absence in lib/take.
+         *
+         * `line-clamp-3` is a ceiling, not a design: most theses run 35–65
+         * characters and land inside three lines at this size anyway. It is here
+         * so one long one cannot make its row twice the height of its
+         * neighbours. Nothing is hidden from a crawler that was not already
+         * there — the text is in the DOM either way.
+         */}
+        {thesis ? (
+          <p className="mt-1.5 line-clamp-3 text-[15px] leading-[1.65] font-medium text-ink-mid">
+            {thesis}
+          </p>
+        ) : null}
       </div>
 
-      {/**
-       * THE DEK — the thesis, and on a card that is the whole of what a list
-       * owes a reader.
-       *
-       * NO LABEL. It had `TL;DR` over it in 11px orange, and the label is gone
-       * for the reason it is gone everywhere: a reader scanning twelve cards
-       * does not need the field's name twelve times, and the line it occupied is
-       * the most valuable line on the card. See `whyItMatters` in lib/i18n for
-       * the one label that survived and why.
-       *
-       * 「为什么值得关注」 IS DELIBERATELY NOT HERE, and it was the single most
-       * tempting thing to add — it is the better sentence, measured one article
-       * at a time. On a list it is the wrong sentence twice over. It assumes the
-       * reader already knows what happened, which on a card they do not; and at
-       * ~91 characters against the thesis's ~47 it doubles the height of a page
-       * whose whole job is to be scanned. Twelve of them turns 「今天有什么」
-       * into a wall of text. The layers are split on purpose — see the note on
-       * `leadOf`'s absence in lib/take.
-       *
-       * `line-clamp-3` is a ceiling, not a design: most theses run 35–65
-       * characters and land inside three lines at this size anyway. It is here so
-       * one long one cannot make its card twice the height of its neighbours.
-       * Clamping costs nothing a crawler cares about — the text was already fully
-       * in the DOM before this, so nothing was added or hidden from it.
-       *
-       * `text-ink-mid` and 15px: a step down from the headline in both size and
-       * weight, which is what makes it read as the headline's second line rather
-       * than as a second thing on the card.
-       */}
-      {thesis ? (
-        <p className="mt-3 line-clamp-3 text-[15px] leading-[1.65] font-medium text-ink-mid">
-          {thesis}
-        </p>
-      ) : null}
-
-      <Actions article={article} date={date} lang={lang} />
+      {/* The thumbnail, and the chevron after it. Both are `flex-none` and both
+          are outside the text column, so a long headline reflows without ever
+          moving them. `self-start` rather than centred: with a three-line dek
+          the row is taller than the image, and an image floating in the middle
+          of that reads as unaligned rather than as centred. */}
+      <Cover
+        id={article.id}
+        sourceId={article.sourceId}
+        image={article.image}
+        variant="card"
+      />
+      <span
+        aria-hidden
+        className="flex-none self-center text-xl text-ink-soft transition duration-150 ease-out group-hover:text-ink"
+      >
+        ›
+      </span>
     </div>
   );
 }

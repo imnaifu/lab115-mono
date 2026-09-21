@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { blocksOf } from "@/lib/paragraphs";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
@@ -71,6 +72,7 @@ export function Summary({
   summary,
   variant,
   lang,
+  lede,
 }: {
   summary: SummaryText;
   variant: "hero" | "card";
@@ -83,6 +85,19 @@ export function Summary({
    * about, and language-aware about the one word it prints.
    */
   lang: Lang;
+  /**
+   * SOMETHING TO DRAW BETWEEN THE DEK AND THE PROSE — the article page passes
+   * its hero band here.
+   *
+   * A SLOT RATHER THAN THE PAGE RENDERING THE THREE PARTS ITSELF, because the
+   * dek's typography belongs to this component (it is in the SIZE table beside
+   * the prose it has to sit against) and the image's does not. The page tried
+   * the other split first: draw the dek on the page, hand this component the
+   * prose alone. That works until the dek and the prose disagree about size or
+   * colour, which they would within a couple of edits, and the pair is the whole
+   * reason `SIZE` exists.
+   */
+  lede?: ReactNode;
 }) {
   const text = summary;
   const size = SIZE[variant];
@@ -129,6 +144,12 @@ export function Summary({
         </p>
       ) : null}
 
+      {/* The hero band, when a caller has one. `-mx-*` is NOT applied here: the
+          band runs to the page column's own gutter, not past it, so that the
+          image's left edge lines up with the dek above and the prose below.
+          See the `lede` prop. */}
+      {lede ? <div className="mt-2 mb-2">{lede}</div> : null}
+
       {/* `data-para` indexes the blocks in the order the poster route draws
           them, so a text selection can be mapped back to what to highlight.
 
@@ -171,12 +192,14 @@ export function Summary({
        * LAST, UNDER THE PROSE, so the page runs claim → evidence → implication.
        * An implication offered before the evidence is a verdict.
        *
-       * A QUIET WELL, NOT A CALLOUT. `bg-page` is the ground the card sits on,
-       * so this reads as something cut into the card rather than stuck onto it —
-       * and it is the one tint guaranteed to sit right against `bg-card` in both
-       * themes, since the palette is defined as that pair. No accent fill, no
-       * yellow, no icon: this site is an editorial publication and a tip-box
-       * with a lightbulb in it is a different product.
+       * A QUIET WELL WITH A 2px RULE DOWN ITS LEFT EDGE. `bg-page` is one step
+       * off the column's own ground, so the block reads as something cut into
+       * the page rather than stuck onto it, and the rule is what makes it a
+       * pull-quote rather than a panel. The orange is the site's accent and it
+       * appears exactly twice on this page now — here and nowhere else, since
+       * the dek gave its bar up. No accent FILL, no yellow, no icon: this is an
+       * editorial publication, and a tip-box with a lightbulb in it is a
+       * different product.
        *
        * NOTHING AT ALL WHEN THE FIELD IS EMPTY — no heading, no rule, no box.
        * An absent field is the whole signal (see `SummaryText.whyItMatters`), so
@@ -184,14 +207,37 @@ export function Summary({
        * field existed. 347 of the 369 archived takes are in exactly that state.
        */}
       {summary.whyItMatters ? (
-        <div className="mt-4 rounded-xl bg-page px-4 py-3.5">
-          <p className="text-[11px] font-bold tracking-[0.08em] text-ink-soft">
-            {strings(lang).whyItMatters}
-          </p>
-          <p className={`mt-1.5 font-medium text-ink ${size.para}`}>
-            {summary.whyItMatters}
-          </p>
-        </div>
+        <>
+          {/**
+           * `· · ·` — a section break, and the only ornament on the page.
+           *
+           * It is here because the block under it is a CHANGE OF VOICE, not the
+           * next paragraph, and a gap alone does not say that: the prose above
+           * is already separated by `gap-3`, so one more gap reads as one more
+           * paragraph boundary. Three dots is the oldest mark in publishing for
+           * "the piece pauses here", and it costs one line.
+           *
+           * `aria-hidden` and `select-none`: it is punctuation between sections.
+           * Read aloud it is "middle dot middle dot middle dot", and copied with
+           * the article it is debris.
+           */}
+          <div
+            aria-hidden
+            className="mt-3 mb-1 flex select-none justify-center gap-2 text-sm text-ink-soft"
+          >
+            <span>·</span>
+            <span>·</span>
+            <span>·</span>
+          </div>
+          <div className="rounded-xl border-l-2 border-orange bg-page px-4 py-3.5">
+            <p className="text-[11px] font-bold tracking-[0.08em] text-ink-soft">
+              {strings(lang).whyItMatters}
+            </p>
+            <p className={`mt-1.5 font-medium text-ink ${size.para}`}>
+              {summary.whyItMatters}
+            </p>
+          </div>
+        </>
       ) : null}
     </div>
   );
