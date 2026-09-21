@@ -150,43 +150,55 @@
    * Chinese, Manrope for Latin. Hierarchy comes from size and weight — there is
    * no second family to switch to.
    */
+  /**
+   * THE WHOLE SITE IS SET IN 思源宋体 (Noto Serif SC / Source Han Serif), with
+   * Lora for the Latin.
+   *
+   * IT WAS 黑体 EVERYWHERE, then serif headings over a sans body for one commit,
+   * and it is serif throughout now. The intermediate step is worth recording
+   * because its reasoning is what carried here: a serif says the pages are a
+   * PUBLICATION'S rather than an interface's. 黑体 is what an app's chrome is set
+   * in; what this site puts on a page is a date, a standfirst, prose and a
+   * section break. Splitting the two faces made that claim about the headlines
+   * and then withdrew it two lines down — the body is where a reader spends the
+   * time, so it is the body that decides what the site reads as.
+   *
+   * THE LATIN IS LORA, NOT MANROPE, and both sans families are gone from the
+   * page entirely. A Chinese headline here is followed by the source's own
+   * English headline on the next line (see `ArticleTitle`), so a grotesk beside
+   * 宋体 puts two unrelated skeletons in one block. Lora is the nearest serif to
+   * 思源宋体's contrast that Google Fonts ships as a variable font — which is
+   * why the Latin half costs one file across every weight.
+   *
+   * THREE CJK WEIGHTS, AND THAT NUMBER IS THE WHOLE COST OF THIS CHANGE. Every
+   * weight of a Chinese face is its own set of subsets; the site had four of
+   * 黑体 and could not afford four of 宋体 on top of a page whose point is being
+   * screenshotted quickly. Measured across `src/`: 104 uses of `font-bold`, 46
+   * of `font-medium`, 7 of `font-semibold`. So 400/500/700 are loaded and the
+   * seven 600s were folded into 700 — asking for a weight that is not loaded
+   * gets a SYNTHESISED one, which on upright CJK glyphs is an artefact, so the
+   * only safe options were to load it or to stop using it.
+   *
+   * THE FALLBACK IS A SYSTEM SERIF, not a sans. `display=swap` means the first
+   * paint is in the fallback, and a page that arrives in Georgia and settles
+   * into 思源宋体 has changed size; one that arrives in Helvetica has changed
+   * character.
+   *
+   * `--font-sans` SURVIVES AND NOTHING ON THE PAGE USES IT. The mail renderer
+   * builds its own stack from the same idea (see the note in lib/mail/render —
+   * an inbox cannot load a webfont), and the share posters are still drawn in
+   * 黑体: `lib/og.tsx` carries a table of MEASURED Manrope advance widths that a
+   * face change would invalidate, so the images keep their own typography until
+   * that table is re-measured. That is a real inconsistency between the site and
+   * its share cards, and it is deliberate rather than overlooked.
+   */
+  --font-serif:
+    "Lora", "Noto Serif SC", Georgia, "Songti SC", "Source Han Serif SC",
+    serif;
+
   --font-sans:
     "Manrope", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-
-  /**
-   * THE DISPLAY FACE — headlines, the wordmark, and nothing else.
-   *
-   * 思源宋体 (Noto Serif SC / Source Han Serif) over 思源黑体, and this is a
-   * REVERSAL: both serifs were deleted a while back with the note "that is two
-   * fewer font files on a page whose whole point is being screenshotted
-   * quickly", because at the time hierarchy was being carried by the FACE and
-   * the rewrite moved it onto weight instead.
-   *
-   * What changed is what the hierarchy now has to do. The site used to be a
-   * stack of cards where every card had its own plate to separate it; it is one
-   * column with rules across it, so the only thing telling a reader that a line
-   * is a headline rather than a sentence is how it is set. Weight alone does
-   * that at 30px and stops doing it at 18px, which is the size a list row's
-   * headline actually is.
-   *
-   * A serif also says what this site is. 黑体 reads as interface — it is what an
-   * app's chrome is set in — and the pages here are a publication's: a date, a
-   * standfirst, prose, a section break. That is the whole argument for the
-   * change, and it is an editorial one rather than a legibility one.
-   *
-   * ONLY 700 IS LOADED. A display face used for headlines needs one weight, and
-   * 思源宋体's regular would be a second ~2MB subset for text that is already
-   * set in 黑体. Anything that asks for a lighter serif gets a synthesised one,
-   * so nothing does — see the `font-serif` uses, which are all headings.
-   *
-   * THE LATIN HALF IS `Lora`, not Manrope: a Chinese headline on this site is
-   * followed by the source's own English headline on the next line (see
-   * `ArticleTitle`), and pairing 宋体 with a grotesk there puts two unrelated
-   * skeletons in one heading block. Lora is the nearest serif to 思源宋体's
-   * contrast that Google Fonts ships at a sane weight count.
-   */
-  --font-serif: "Lora", "Noto Serif SC", Georgia, "Times New Roman", serif;
 }
 
 /**

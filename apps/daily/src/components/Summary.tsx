@@ -160,7 +160,7 @@ export function Summary({
           data-para={i}
           className={
             block.kind === "heading"
-              ? `-mb-1 font-semibold text-ink ${size.heading}`
+              ? `-mb-1 font-bold text-ink ${size.heading}`
               : // The OPENING paragraph starts two characters in, and only it —
                 // `i === opening`. The paragraphs here are already separated by
                 // `gap-3`, so indenting each one marks the same break twice; what

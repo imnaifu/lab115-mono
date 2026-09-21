@@ -77,7 +77,7 @@ export async function RelatedArticles({
 
   return (
     <section className={`${SECTION}`}>
-      <h2 className="font-serif text-xl font-bold tracking-tight text-ink">
+      <h2 className="text-xl font-bold tracking-tight text-ink">
         {t.related}
       </h2>
 
@@ -103,7 +103,7 @@ export async function RelatedArticles({
               data-track-from="related"
               data-track-age={at}
             >
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink-soft">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-bold text-ink-soft">
                 {/* PLAIN TEXT, not a link to the topic — the whole row is an
                     anchor and an anchor may not contain another. It is the one
                     place on the site a category name is shown without leading

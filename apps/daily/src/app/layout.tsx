@@ -300,36 +300,36 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/**
-         * FOUR FAMILIES, AND IT WAS TWO. Manrope and 思源黑体 (Noto Sans SC) set
-         * the body; Lora and 思源宋体 (Noto Serif SC) set the headlines. See
-         * `--font-serif` in index.css for why a display face came back after
-         * both serifs were deleted — the short version is that the page stopped
-         * being a stack of cards and became a column, and a column has to say
-         * "this line is a headline" with the face rather than with a plate.
+         * TWO FAMILIES, AND THEY ARE BOTH SERIF — see `--font-serif` in
+         * index.css for the argument and for what the three CJK weights cost.
          *
-         * THE SERIF IS LOADED AT 700 ONLY. It is used for headings and the
-         * wordmark and nothing else, so a regular weight would be a second CJK
-         * subset — the expensive kind — for text that is set in 黑体 anyway.
+         * Manrope and 思源黑体 are GONE FROM THE PAGE. Nothing renders in them
+         * any more; the share posters still do, and they fetch their own subsets
+         * server-side in lib/poster-assets rather than through this tag.
          *
-         * 600 is requested for Noto Sans SC and was NOT there before, which was
-         * a latent bug: `.summary__thesis` has always asked for 600, so Chinese
-         * theses were being synthesised from 500 or 700 by the browser.
+         * LORA IS A VARIABLE FONT, so `wght@400..700` is one file for every
+         * weight the site uses. 思源宋体 is not, so its three are named one at a
+         * time — and the set is exactly what `src/` asks for. Requesting a
+         * weight nothing uses is a subset downloaded for nobody; using a weight
+         * that is not requested gets a synthesised face, which on upright CJK
+         * glyphs is an artefact at any size.
          *
-         * NO ITALIC IN ANY OF THE FOUR, and nothing asks for one. Two lines used
-         * to and both got a synthesised oblique; a slant applied to upright CJK
-         * glyphs is an artefact at any size and unmissable at 18px.
+         * NO ITALIC IN EITHER, and nothing asks for one. Lora ships one and it
+         * is not requested: the site's emphasis is carried by weight and colour,
+         * and 思源宋体 has no italic at all, so any rule that used one would look
+         * different on the two halves of a bilingual line.
          *
-         * `display=swap` on all of them: a CJK subset is large enough that
-         * blocking the first paint on it is the worse trade, and the fallback
-         * stack in index.css is a system serif rather than a sans, so the reflow
-         * does not change the page's character while it waits.
+         * `display=swap` on both: a CJK subset is large enough that blocking the
+         * first paint on it is the worse trade, and the fallback in index.css is
+         * a system serif, so the reflow changes the size of the type without
+         * changing its character.
          */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&family=Lora:wght@600;700&family=Noto+Serif+SC:wght@700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Lora:wght@400..700&family=Noto+Serif+SC:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-page font-sans text-ink antialiased">
+      <body className="bg-page font-serif text-ink antialiased">
 {children}
         {/* Touch screens only, and it attaches nothing on a desktop — see the
             note in the component. */}

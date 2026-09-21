@@ -296,7 +296,7 @@ export default async function Home({
               />
               <div className="min-w-0 flex-1">
                 <Meta article={lead} lang={lang} from="homepage" />
-                <h1 className="mt-2.5 font-serif text-2xl leading-tight font-bold text-ink">
+                <h1 className="mt-2.5 text-2xl leading-tight font-bold text-ink">
                   <ArticleTitle article={lead} lang={lang} variant="hero" />
                 </h1>
               </div>
@@ -386,7 +386,7 @@ export default async function Home({
 
         {recent.length > 0 ? (
           <section className="pt-7 pb-6">
-            <h2 className="font-serif text-xl font-bold tracking-tight text-ink">
+            <h2 className="text-xl font-bold tracking-tight text-ink">
               {t.latestPosts}
             </h2>
 

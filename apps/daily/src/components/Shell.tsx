@@ -144,7 +144,7 @@ export function Masthead({
            margin then collapses to nothing because this line is directly above
            it and the pair is one block. */
         <p
-          className={`text-sm font-semibold text-ink-soft ${crumb ? "mt-6" : ""}`}
+          className={`text-sm font-bold text-ink-soft ${crumb ? "mt-6" : ""}`}
         >
           {kicker}
         </p>
@@ -152,7 +152,7 @@ export function Masthead({
 
       {title ? (
         <h1
-          className={`max-w-2xl font-serif text-3xl leading-tight font-bold tracking-tight text-ink sm:text-4xl ${
+          className={`max-w-2xl text-3xl leading-tight font-bold tracking-tight text-ink sm:text-4xl ${
             kicker ? "mt-1.5" : crumb ? "mt-6" : ""
           }`}
         >
@@ -166,7 +166,7 @@ export function Masthead({
           the first card. */}
       {children ? (
         <div
-          className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm font-semibold text-ink-mid ${
+          className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm font-bold text-ink-mid ${
             title || crumb ? "mt-6" : ""
           }`}
         >
