@@ -300,32 +300,32 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/**
-         * Two families, not four. Manrope sets the Latin, Noto Sans SC — 思源
-         * 黑体, the same typeface Adobe ships as Source Han Sans — sets the
-         * Chinese, and nothing on the page uses anything else.
+         * FOUR FAMILIES, AND IT WAS TWO. Manrope and 思源黑体 (Noto Sans SC) set
+         * the body; Lora and 思源宋体 (Noto Serif SC) set the headlines. See
+         * `--font-serif` in index.css for why a display face came back after
+         * both serifs were deleted — the short version is that the page stopped
+         * being a stack of cards and became a column, and a column has to say
+         * "this line is a headline" with the face rather than with a plate.
          *
-         * Dropped: Bitter and Noto Serif SC (思源宋体), which carried every
-         * heading back when hierarchy came from the face rather than the weight.
-         * That is two fewer font files on a page whose whole point is being
-         * screenshotted quickly.
+         * THE SERIF IS LOADED AT 700 ONLY. It is used for headings and the
+         * wordmark and nothing else, so a regular weight would be a second CJK
+         * subset — the expensive kind — for text that is set in 黑体 anyway.
          *
          * 600 is requested for Noto Sans SC and was NOT there before, which was
          * a latent bug: `.summary__thesis` has always asked for 600, so Chinese
-         * theses were being synthesised from 500 or 700 by the browser. Now that
-         * weight is the only thing separating a thesis from the prose beneath
-         * it, the real face has to be available.
+         * theses were being synthesised from 500 or 700 by the browser.
          *
-         * Neither family ships an italic on Google Fonts, and NOTHING ASKS FOR ONE
-         * ANY MORE. Two lines used to — the masthead's second line and the English
-         * section names — and both got a synthesised oblique, which this note said
-         * was acceptable on secondary text until it looked wrong. It did, once the
-         * masthead's second line started carrying a whole Chinese sentence rather
-         * than a short title: a slant applied to upright CJK glyphs is an artefact
-         * at any size and unmissable at 18px. Both now lean on size and colour,
-         * which were already doing the separating.
+         * NO ITALIC IN ANY OF THE FOUR, and nothing asks for one. Two lines used
+         * to and both got a synthesised oblique; a slant applied to upright CJK
+         * glyphs is an artefact at any size and unmissable at 18px.
+         *
+         * `display=swap` on all of them: a CJK subset is large enough that
+         * blocking the first paint on it is the worse trade, and the fallback
+         * stack in index.css is a system serif rather than a sans, so the reflow
+         * does not change the page's character while it waits.
          */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&family=Lora:wght@600;700&family=Noto+Serif+SC:wght@700&display=swap"
           rel="stylesheet"
         />
       </head>

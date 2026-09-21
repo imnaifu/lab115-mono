@@ -77,7 +77,7 @@ export async function RelatedArticles({
 
   return (
     <section className={`${SECTION}`}>
-      <h2 className="text-xl font-bold tracking-tight text-ink">
+      <h2 className="font-serif text-xl font-bold tracking-tight text-ink">
         {t.related}
       </h2>
 

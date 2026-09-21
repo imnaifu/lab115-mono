@@ -175,7 +175,7 @@ export async function TopicView({
         {/* The page's only `<h1>`. The accent dot is the category's own colour,
             which is the one place on the site those values are still shown to a
             reader now that the section headings are gone — see `accentColor`. */}
-        <h1 className="flex items-center gap-2.5 text-3xl font-bold tracking-tight text-ink">
+        <h1 className="flex items-center gap-2.5 font-serif text-3xl font-bold tracking-tight text-ink">
           <span
             className="size-2.5 flex-none rounded-full"
             style={{ background: accentColor(category) }}

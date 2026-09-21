@@ -153,6 +153,40 @@
   --font-sans:
     "Manrope", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+
+  /**
+   * THE DISPLAY FACE — headlines, the wordmark, and nothing else.
+   *
+   * 思源宋体 (Noto Serif SC / Source Han Serif) over 思源黑体, and this is a
+   * REVERSAL: both serifs were deleted a while back with the note "that is two
+   * fewer font files on a page whose whole point is being screenshotted
+   * quickly", because at the time hierarchy was being carried by the FACE and
+   * the rewrite moved it onto weight instead.
+   *
+   * What changed is what the hierarchy now has to do. The site used to be a
+   * stack of cards where every card had its own plate to separate it; it is one
+   * column with rules across it, so the only thing telling a reader that a line
+   * is a headline rather than a sentence is how it is set. Weight alone does
+   * that at 30px and stops doing it at 18px, which is the size a list row's
+   * headline actually is.
+   *
+   * A serif also says what this site is. 黑体 reads as interface — it is what an
+   * app's chrome is set in — and the pages here are a publication's: a date, a
+   * standfirst, prose, a section break. That is the whole argument for the
+   * change, and it is an editorial one rather than a legibility one.
+   *
+   * ONLY 700 IS LOADED. A display face used for headlines needs one weight, and
+   * 思源宋体's regular would be a second ~2MB subset for text that is already
+   * set in 黑体. Anything that asks for a lighter serif gets a synthesised one,
+   * so nothing does — see the `font-serif` uses, which are all headings.
+   *
+   * THE LATIN HALF IS `Lora`, not Manrope: a Chinese headline on this site is
+   * followed by the source's own English headline on the next line (see
+   * `ArticleTitle`), and pairing 宋体 with a grotesk there puts two unrelated
+   * skeletons in one heading block. Lora is the nearest serif to 思源宋体's
+   * contrast that Google Fonts ships at a sane weight count.
+   */
+  --font-serif: "Lora", "Noto Serif SC", Georgia, "Times New Roman", serif;
 }
 
 /**

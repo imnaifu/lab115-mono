@@ -127,7 +127,7 @@ export async function TopicHub({ lang }: { lang: Lang }) {
               key={category.id}
               className="flex flex-col rounded-card border border-line bg-paper px-5 py-4"
             >
-              <h2 className="text-xl font-bold tracking-tight text-ink">
+              <h2 className="font-serif text-xl font-bold tracking-tight text-ink">
                 <a
                   className="flex items-center gap-2.5 transition duration-150 ease-out hover:text-orange"
                   href={href(lang, topicPath(category.id))}

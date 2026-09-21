@@ -472,7 +472,7 @@ export default async function ArticlePage({ params }: Params) {
        * was being drawn on top of a second, redundant one made of shadow.
        */}
       <section className={`${SECTION} ${PAD}`}>
-        <h1 className="text-2xl leading-tight font-bold text-ink sm:text-3xl">
+        <h1 className="font-serif text-2xl leading-tight font-bold text-ink sm:text-3xl">
           <ArticleTitle article={article} lang={lang} variant="hero" />
         </h1>
 

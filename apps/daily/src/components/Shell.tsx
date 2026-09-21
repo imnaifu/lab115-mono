@@ -152,7 +152,7 @@ export function Masthead({
 
       {title ? (
         <h1
-          className={`max-w-2xl text-3xl leading-tight font-bold tracking-tight text-ink sm:text-4xl ${
+          className={`max-w-2xl font-serif text-3xl leading-tight font-bold tracking-tight text-ink sm:text-4xl ${
             kicker ? "mt-1.5" : crumb ? "mt-6" : ""
           }`}
         >

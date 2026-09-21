@@ -269,7 +269,7 @@ export function ArticleBrief({
           <Meta article={article} lang={lang} from="archive" />
         </div>
 
-        <h3 className="mt-1.5 text-lg leading-snug font-bold text-ink">
+        <h3 className="mt-1.5 font-serif text-lg leading-snug font-bold text-ink">
           {/* THE STRETCHED LINK — see the long note on this in the article
               page's own row. One real anchor whose text is the headline, with
               `::after` covering the row, rather than an invisible anchor over

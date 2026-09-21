@@ -271,7 +271,7 @@ export function SiteHeader({
             className="hidden size-6 flex-none sm:size-7 dark:block"
           />
           <span className="min-w-0">
-            <span className="block truncate text-base leading-tight font-bold tracking-tight text-ink sm:text-lg">
+            <span className="block truncate font-serif text-base leading-tight font-bold tracking-tight text-ink sm:text-lg">
               {t.brand}
             </span>
             {/* THE TAGLINE, FROM `md:` UP — see the width budget on the controls
