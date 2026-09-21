@@ -63,6 +63,11 @@ const FIELD_ID = "subscribe-email";
  *             sm:block`: the width budget in SiteHeader has the arithmetic.
  *   `inline`  a block at the end of an article: the pitch, the sub-line and one
  *             button. Visible at EVERY width.
+ *   `hero`    one pill on the front page's photograph, beside the way into
+ *             today. No pitch of its own — the band's headline IS the pitch, and
+ *             repeating it under the button would say the same thing twice in
+ *             one block. It is the only trigger that has to read against a
+ *             PHOTOGRAPH, which is what `onPhoto` is for.
  *
  * THE `inline` VARIANT IS WHAT MAKES THIS SITE SUBSCRIBABLE ON A PHONE AT ALL.
  * The note at the top of this file recorded that cost plainly — "below 640px
@@ -82,12 +87,13 @@ const FIELD_ID = "subscribe-email";
  * document flow, below the summary and below the related reading, and a reader
  * who does not want it scrolls past it once.
  */
-export type SubscribeVariant = "bar" | "inline";
+export type SubscribeVariant = "bar" | "inline" | "hero";
 
 export function SubscribeDialog({
   lang,
   variant = "bar",
   picks,
+  onPhoto,
 }: {
   lang: Lang;
   variant?: SubscribeVariant;
@@ -105,6 +111,19 @@ export function SubscribeDialog({
    * a promise nobody handed us is one this component must not invent.
    */
   picks?: number;
+  /**
+   * `hero` ONLY: whether the pill is sitting on a photograph.
+   *
+   * A CONTROL ON AN IMAGE CANNOT USE THE PAGE'S INK COLOURS. `text-ink-mid` on a
+   * scrimmed photo is unreadable at one exposure and invisible at the next, so
+   * the pill goes white-on-nothing there and back to the page's own outline when
+   * the band falls through to its flat ground (no photo that day — see the note
+   * on the band in app/[lang]/page.tsx).
+   *
+   * A BOOLEAN FROM THE CALLER rather than something read here: whether there is
+   * a photograph is a fact about the digest, and this is a client component.
+   */
+  onPhoto?: boolean;
 }) {
   const t = strings(lang);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -195,7 +214,19 @@ export function SubscribeDialog({
           after it is a reader who looked at the form and left, which the old
           scroll-to-card could never distinguish — so it is worth doing
           deliberately rather than smuggling in behind a layout change. */}
-      {variant === "bar" ? (
+      {variant === "hero" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={`cursor-pointer rounded-full px-5 py-2.5 text-sm font-bold transition duration-150 ease-out ${
+            onPhoto
+              ? "border border-white/70 text-white hover:bg-white/15 active:bg-white/25"
+              : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink active:opacity-80"
+          }`}
+        >
+          {t.homeSubscribe}
+        </button>
+      ) : variant === "bar" ? (
         <button
           type="button"
           onClick={() => setOpen(true)}

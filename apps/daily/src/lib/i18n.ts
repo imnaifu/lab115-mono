@@ -38,6 +38,37 @@ const STRINGS = {
 
 
     posts: (n: number) => `${n} 篇新文章`,
+    /**
+     * 日页的标题。「今天的 12 篇」—— 名词短语，不是日期。
+     *
+     * 日期从标题降成了它上面那行 kicker。一期日报的**名字**是它的日期，这条以前
+     * 成立，而现在这一页上方还有首页、话题、归档三个入口，读者是带着「今天有什么」
+     * 来的 —— 先回答有多少，再说是哪天。日期没丢，它在 kicker 里，而且带星期。
+     *
+     * 篇数是插值的，不是写死的。见 `subscribePitch` 那笔旧账。
+     */
+    dayHeading: (n: number) => `今天的 ${n} 篇`,
+    /** 标题下面那一句。它和站点 tagline 不是一回事：tagline 说这个站是什么，这句
+     *  说这一页是怎么来的 —— 从哪儿挑的、按什么标准。 */
+    dayLead: "从全球优质媒体，精选最值得关注的内容",
+
+    /**
+     * 首页那块大图上的标语。
+     *
+     * 篇数插值的是 `MAIL_TOP_N` —— 也就是**邮件每天发几篇**，不是当天发布了几篇。
+     * 这两个数不一样（邮件 5，当天十几），而这句话是站在首页说「订阅这件事能给你
+     * 什么」，所以用前者。日页标题 `dayHeading` 用的是后者，那里回答的是另一个问题。
+     * 见 `subscribePitch` 里那笔「五条写死」的旧账 —— 这两处都不写死。
+     */
+    homeHeading: (n: number) => `每天 ${n} 篇，理解更大的世界`,
+    /** 大图上那两颗按钮。左边进当天，右边开订阅面板。 */
+    homeSeeToday: "查看今日精选",
+    homeSubscribe: "订阅更新",
+    /** 大图下面那一段的小标题和它右边的去处。 */
+    todayPicks: "今日精选",
+    seeAll: "查看全部",
+    /** 首页只放五条，这是通往当天其余篇目的那一颗。 */
+    seeAllToday: (n: number) => `查看今日全部 ${n} 篇`,
     readTime: (n: number) => `读完约 ${n} 分钟`,
     sectionCount: (n: number) => `${n} 篇`,
     days: (n: number) => `${n} 天`,
@@ -470,6 +501,19 @@ const STRINGS = {
 
 
     posts: (n: number) => `${n} new ${n === 1 ? "post" : "posts"}`,
+    /* See the Chinese side: a noun phrase rather than the date, with the date
+       demoted to the kicker above it. */
+    dayHeading: (n: number) => `Today's ${n}`,
+    dayLead: "Picked from the best of the world's press",
+
+    /* The count is MAIL_TOP_N — what the mail sends, not what the day holds.
+       See the Chinese note for why the two numbers are different questions. */
+    homeHeading: (n: number) => `${n} pieces a day, a bigger picture`,
+    homeSeeToday: "Today's picks",
+    homeSubscribe: "Subscribe",
+    todayPicks: "Today's picks",
+    seeAll: "See all",
+    seeAllToday: (n: number) => `All ${n} from today`,
     readTime: (n: number) => `about ${n} min to read`,
     sectionCount: (n: number) => `${n}`,
     days: (n: number) => `${n} ${n === 1 ? "day" : "days"}`,

@@ -1,20 +1,19 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArticleTitle, displayTitle } from "@/components/ArticleTitle";
-import { Meta } from "@/components/ArticleCards";
-import { Cover } from "@/components/Cover";
+import { displayTitle } from "@/components/ArticleTitle";
+import { summaryFor } from "@/lib/take";
+import { ArticleBrief } from "@/components/ArticleCards";
 import { PageShell } from "@/components/PageShell";
+import { SubscribeDialog } from "@/components/SubscribeDialog";
 import { TopicChips } from "@/components/TopicChips";
-import { Footer, PAD } from "@/components/Shell";
-import { SITE } from "@/lib/config";
+import { Footer, PAD, SECTION } from "@/components/Shell";
+import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
+import { signupOpen } from "@/lib/mail/resend";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { articlePath, dayPath } from "@/lib/links";
 import { JsonLd, publisher, website } from "@/lib/seo";
-import { FRONT_DAYS, hasArchive } from "@/lib/paging";
-import { summaryFor } from "@/lib/take";
 import { listDates, readDigest, shownArticles } from "@/lib/store";
-import type { PublishedArticle } from "@/lib/types";
 
 // Read from the git clone on every request — the cron rewrites those files
 // underneath a long-running server, so nothing here may be cached at build time.
@@ -33,34 +32,23 @@ const ACTION_TEXT =
  * that does not exist. This number is read in one place and changes nothing
  * anywhere else, so it lives where it is used.
  *
- * SEVEN, which is `FRONT_DAYS` — and with one piece per day below, that is not a
- * coincidence but the point: the list runs exactly as far back as the front page
- * has ever reached, one row per edition. It was fifteen briefly, which ran the
- * list past the week and made it the second-longest thing on a page whose job is
- * to be short.
+ * FIVE, AND IT IS NOW A SLICE OF ONE DAY rather than a run across seven.
+ *
+ * It was seven, matching `FRONT_DAYS`, because the list under the teaser took
+ * one piece from each of the last seven editions. The page leads with the newest
+ * edition now, so this is "how much of today the front page shows" — and the
+ * number that matters about it is that it is LESS THAN A DAY HOLDS. The front
+ * page rendered the whole digest for most of this site's life and Google
+ * clustered it with the day's permalink; five rows against twelve is a different
+ * page, and the button under them is the way to the rest.
  */
-const FRONT_POSTS = 7;
+const FRONT_POSTS = 5;
 
-/**
- * How many pieces each day contributes to that list — and it is why the list
- * SPANS the week instead of being the newest edition twice.
- *
- * A day carries fifteen-odd pieces, so without a per-day cap `FRONT_POSTS` was
- * filled entirely by the newest one: fifteen rows all stamped the same date, a
- * date column that was fifteen copies of one string, and — the part that actually
- * mattered — no way to reach days two through seven from the front page at all.
- * That was the whole reason this page used to list days, and losing it silently
- * would have been the kind of regression nothing catches.
- *
- * ONE, now that the list is seven rows. It was two, which spanned the week while
- * there were fifteen rows to spend; against a cap of seven, two per day reaches
- * back only three days and strands the other four — the very thing this constant
- * exists to prevent. One per day and seven rows cover the week exactly.
- *
- * What it costs is that the list cannot show a day holds more than one piece.
- * That is the teaser's job, and 「继续阅读全文」 above leads to the whole edition.
- */
-const POSTS_PER_DAY = 1;
+/* `POSTS_PER_DAY` LIVED HERE and is gone with the seven-day list it capped. It
+   existed because without it `FRONT_POSTS` was filled entirely by the newest
+   digest — fifteen rows all stamped one date, and no way to reach days two
+   through seven. The front page does not span days at all now, so there is
+   nothing left to ration. `/archive` is the page that spans them. */
 
 /**
  * THE FRONT PAGE IS ONE TEASER FOR THE NEWEST EDITION, then the recent pieces.
@@ -114,9 +102,6 @@ export async function generateMetadata({
   };
 }
 
-/** One piece in the list, with the day it ran on — the row needs both. */
-type Recent = { date: string; article: PublishedArticle };
-
 export default async function Home({
   params,
 }: {
@@ -132,44 +117,19 @@ export default async function Home({
   const latest = dates[0];
 
   /**
-   * The recent days, read once and flattened into a run of pieces.
+   * ONE DAY, NOT SEVEN, and that is the whole of what this page reads now.
    *
-   * BOUNDED BY `FRONT_DAYS`, not by the archive: this opens one file per day, and
-   * the slice is what stops that growing with the site. Same bound and same cost
-   * `DayList` paid when this page listed days.
+   * It used to open `FRONT_DAYS` digests to build a seven-day run of headlines
+   * under the teaser. That list is gone: the page leads with the newest edition
+   * and hands the reader to `/archive` for the rest, so six of those seven file
+   * reads were paying for a block that no longer exists.
    */
-  const digests = await Promise.all(
-    dates.slice(0, FRONT_DAYS).map(async (date) => ({
-      date,
-      digest: await readDigest(date),
-    })),
-  );
-  const digest = digests[0]?.digest ?? null;
-  const lead = digest ? shownArticles(digest)[0] : undefined;
-
-  /**
-   * The best few of each recent day, newest first, MINUS the lead.
-   *
-   * `listDates` is newest-first and `shownArticles` is already ranked, so taking
-   * the head of each day in order gives the run a reader expects with no sort of
-   * its own — see `POSTS_PER_DAY` for why it is the head of each day rather than
-   * simply the newest pieces.
-   *
-   * THE LEAD IS DROPPED BEFORE THE CAP, not after, and by IDENTITY rather than by
-   * position: it is the piece rendered above, so repeating it would open the page
-   * on the same headline twice — and dropping it after `slice` would silently
-   * make the newest day contribute one row where every other day contributes two.
-   */
-  const recent: Recent[] = digests
-    .flatMap(({ date, digest: day }) =>
-      day
-        ? shownArticles(day)
-            .filter((article) => article.id !== lead?.id)
-            .slice(0, POSTS_PER_DAY)
-            .map((article) => ({ date, article }))
-        : [],
-    )
-    .slice(0, FRONT_POSTS);
+  const digest = latest ? await readDigest(latest) : null;
+  const shown = digest ? shownArticles(digest) : [];
+  const dayCount = shown.length;
+  const todays = shown.slice(0, FRONT_POSTS);
+  const lead = shown[0];
+  const photo = digest?.photo;
 
   const home = `${SITE}${href(lang, "/")}`;
 
@@ -239,224 +199,200 @@ export default async function Home({
        * bottom edges stay clean and no two sections can disagree about which of
        * them owns the line between them.
        */}
-      <div className={`divide-y divide-line ${PAD}`}>
-        {digest && lead && latest ? (
-          <section className="pt-8 pb-8">
-            {/**
-             * NO PHOTOGRAPH HERE. The day's picture is the DAY PAGE's opener and
-             * this page links to it — it stays there, at the top of the edition it
-             * belongs to.
-             *
-             * IT WAS HERE AND KEPT SHRINKING: the plate went 520 to 480 to 300 in
-             * an attempt to stop it pushing the one thing this page exists to show
-             * below the fold. That is the tell that it did not belong. The front
-             * page carries a single teaser, so anything above the headline is the
-             * whole first screen, and a picture chosen for the EDITION cannot earn
-             * that slot ahead of the piece it does not illustrate.
-             *
-             * `PhotoCard` and its 300px ceiling stay — the day page has cards under
-             * the photo, which is what that ceiling was measured against.
-             */}
-
-            {/**
-             * THE LEAD: its cover, its headline, its claim, one way in.
-             *
-             * THE SAME HEADER BLOCK THE LIST ROWS USE — cover, then source and
-             * author, then the headline — built from the same `Cover` and `Meta`
-             * those rows call. The teaser is one article presented as an article,
-             * so it is assembled from the parts that present one everywhere else;
-             * anything hand-rolled here drifts from them by a separator or an
-             * accent within a couple of edits.
-             *
-             * NO SHARE AND NO LINK TO THE ORIGINAL, though. Those are ACTIONS, and
-             * each is a second thing to decide about on a page whose only question
-             * is "is today worth reading" — both are on the day page a tap away.
-             * A cover and a source line are not decisions; they are what makes this
-             * read as a piece rather than as a paragraph.
-             *
-             * `items-center` for the reason stated on `ArticleCard`: a one-line
-             * headline is shorter than the cover, and centring reads as air above
-             * and below rather than as a hole under the title.
-             *
-             * THE HEADLINE IS THIS PAGE'S `<h1>`. There was a masthead above it
-             * reading 每日严选 — the brand, as the heading — and the site bar
-             * already carries the wordmark and the tagline on every page, so it
-             * said the same thing twice, forty pixels apart. The right heading for
-             * a page showing one piece is that piece.
-             *
-             * `ArticleTitle` rather than the raw headline, so the Chinese side
-             * gets the translation with the original under it as the lists do.
-             */}
-            <div className="flex items-center gap-4 sm:gap-5">
-              <Cover
-                id={lead.id}
-                sourceId={lead.sourceId}
-                image={lead.image}
-                variant="hero"
+      {/**
+       * THE HERO BAND — the day's photograph with the site's standing claim on
+       * it, and it solves two problems at once.
+       *
+       * THE PHOTO WAS ALREADY ON THIS SITE AND IN THE WRONG PLACE. It opened the
+       * DAY page as a 300px plate above the list, which pushed twelve headlines
+       * off the first screen of the one page whose job is to be scanned — a cost
+       * flagged and left alone because deleting a licensed photograph is a
+       * content decision. Here it is doing a job: it is the only image this site
+       * has that belongs to the DAY rather than to somebody's article, which is
+       * exactly what a front page's masthead image should be.
+       *
+       * THE ATTRIBUTION IS NOT NEGOTIABLE and it is under the band rather than
+       * on it. Wikimedia's picture of the day is CC BY-SA far more often than
+       * not, and the credit is a licence OBLIGATION — see the note in
+       * components/Photo. Text over a photograph can be made to disappear by a
+       * scrim; a line underneath it cannot, so that is where it goes.
+       *
+       * NO PHOTO IS AN ORDINARY DAY. Wikimedia sometimes has nothing and every
+       * digest written before the field existed has none, so the band falls back
+       * to the page's own deep ground with the same words on it. The claim is
+       * the point; the picture is the setting.
+       */}
+      <section className={`pt-4 ${PAD}`}>
+        <div className="relative overflow-hidden rounded-card bg-page-deep">
+          {photo ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="absolute inset-0 size-full object-cover"
+                src={photo.src}
+                alt=""
               />
-              <div className="min-w-0 flex-1">
-                <Meta article={lead} lang={lang} from="homepage" />
-                <h1 className="mt-2.5 text-2xl leading-tight font-bold text-ink">
-                  <ArticleTitle article={lead} lang={lang} variant="hero" />
-                </h1>
-              </div>
+              {/* THE SCRIM, and it is a gradient rather than a flat wash: the
+                  words sit at the bottom left, so that is where the ink has to
+                  be and the top of a juried photograph should stay visible. */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/10" />
+            </>
+          ) : null}
+
+          {/* `relative` to sit over the scrim; the min-height is what stops a
+              missing photo collapsing the band to its text. */}
+          <div className="relative flex min-h-[260px] flex-col justify-end p-6 sm:min-h-[320px] sm:p-8">
+            <h1
+              className={`max-w-xl text-3xl leading-tight font-bold tracking-tight text-pretty sm:text-4xl ${
+                photo ? "text-white" : "text-ink"
+              }`}
+            >
+              {t.homeHeading(MAIL_TOP_N)}
+            </h1>
+            <p
+              className={`mt-3 max-w-md text-base leading-relaxed font-medium text-pretty ${
+                photo ? "text-white/85" : "text-ink-mid"
+              }`}
+            >
+              {t.dayLead}
+            </p>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              {latest ? (
+                <a
+                  className={`rounded-full px-5 py-2.5 text-sm font-bold transition duration-150 ease-out ${
+                    photo
+                      ? "bg-white text-ink hover:bg-white/85"
+                      : "bg-ink text-paper hover:bg-ink-mid"
+                  }`}
+                  href={href(lang, dayPath(latest))}
+                  data-track="day_open"
+                  data-track-from="home"
+                >
+                  {t.homeSeeToday} →
+                </a>
+              ) : null}
+              {/* The subscribe control reuses the one sheet the whole site has —
+                  see `SubscribeVariant`. `hero` is its third trigger: an outline
+                  pill that reads against a photograph. */}
+              {signupOpen() ? (
+                <SubscribeDialog
+                  lang={lang}
+                  variant="hero"
+                  picks={MAIL_TOP_N}
+                  onPhoto={Boolean(photo)}
+                />
+              ) : null}
             </div>
+          </div>
+        </div>
 
-            {/**
-             * THE DEK — the lead piece's thesis, unlabelled, exactly as the day
-             * page's cards draw theirs.
-             *
-             * THE `TL;DR` LABEL IS GONE, and the note that used to be here spent
-             * three paragraphs defending it ("it says what the sentence is in
-             * words rather than in a mark the reader has to have learned"). That
-             * argument was about the ORANGE RULE, which this block had already
-             * dropped; against no rule at all the label was the only furniture
-             * left, and a dek needs none. Set it one size up from the list below
-             * and one shade off the headline and it reads as the headline's
-             * continuation, which is what a standfirst is.
-             *
-             * 「为什么值得关注」 is not here either — the front page is the
-             * shortest discovery surface on the site, and it is the last place
-             * to spend 91 characters on an implication for a piece the reader
-             * has not opened. See the note on `leadOf`'s absence in lib/take.
-             */}
-            {summaryFor(lead, lang).thesis ? (
-              <p className="mt-4 max-w-prose text-[15px] leading-[1.65] font-medium text-ink-mid sm:text-base">
-                {summaryFor(lead, lang).thesis}
-              </p>
-            ) : null}
-
-            {/* INTO THE DAY, not into the article. The reader has been shown one
-                of fifteen pieces; what is behind this link is the edition, which
-                is the thing they came to find out about. The article's own page is
-                one more tap from there — see `readSummary` on the rows. */}
-            {/* RIGHT-ALIGNED, which is where a "read on" sits in this codebase
-                already: the actions at the foot of an `ArticleBrief` are
-                `justify-end` for the same reason. The block above is read left to
-                right and top to bottom, and the way out belongs at the end of
-                that path rather than back at its start.
-
-                `flex` on a wrapper rather than `text-right` on the anchor, so the
-                link's hit area is the words and not the whole line. */}
-            <div className="mt-5 flex justify-end">
+        {/* The credit, under the band. See the note above — this is a licence
+            obligation, not a caption. */}
+        {photo ? (
+          <p className="mt-2 text-[11px] leading-snug text-ink-soft">
+            <a
+              className="hover:text-ink-mid"
+              href={photo.filePage}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {photo.artist} · {t.photoSource}
+            </a>
+            {" · "}
+            {photo.license.url ? (
               <a
-                className={`text-base font-bold text-orange${ACTION_TEXT}`}
+                className="hover:text-ink-mid"
+                href={photo.license.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {photo.license.name}
+              </a>
+            ) : (
+              photo.license.name
+            )}
+          </p>
+        ) : null}
+      </section>
+
+      {/**
+       * TODAY'S PICKS — the top few of the newest edition, in its own order.
+       *
+       * FIVE, NOT THE WHOLE DAY. The front page rendered the entire digest for
+       * most of this site's life and that made it a byte-for-byte twin of the
+       * day's permalink: Google clustered the two and Search Console reported one
+       * as a duplicate whose canonical it had overridden. Five rows against
+       * twelve is a different page, and the button under them is the way to the
+       * rest.
+       *
+       * THE SAME ROW COMPONENT THE DAY PAGE USES, numbered from 1. A front page
+       * that draws its own version of a row is a second place for the number's
+       * width, the thumbnail's side and the dek's clamp to drift.
+       */}
+      {todays.length ? (
+        <section className={`${SECTION} ${PAD}`}>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xl font-bold tracking-tight text-ink">
+              {t.todayPicks}
+            </h2>
+            {latest ? (
+              <a
+                className={`text-sm font-bold text-orange${ACTION_TEXT}`}
                 href={href(lang, dayPath(latest))}
                 data-track="day_open"
                 data-track-from="home"
               >
-                {t.keepReading}
-              </a>
-            </div>
-          </section>
-        ) : null}
-
-        {/**
-         * THE DISCOVERY LAYER, and it is one line of the front page.
-         *
-         * WHERE IT SITS IS THE WHOLE DECISION. Below the teaser, above the list
-         * of recent pieces — so the first screen is still today's lead article
-         * and its claim, which is what this page is for. A daily whose front
-         * page opens on a taxonomy has stopped being a daily; the date spine
-         * (teaser → the day → the archive) is untouched, and this is a second,
-         * lighter way in that a reader can ignore completely.
-         *
-         * IT IS THE ONLY PLACE THE TOPICS ARE REACHABLE ON A PHONE. The bar's
-         * hub link is `md:` and up — the width budget in SiteHeader has the
-         * arithmetic — so without this row the entire topic system would be
-         * desktop-only for anyone who did not arrive on an article page.
-         *
-         * ONE LINE AT EVERY WIDTH: the row scrolls sideways rather than
-         * wrapping, see `layout` in TopicChips. Three lines of chips above the
-         * day's headlines is exactly the cost this block is not allowed to
-         * have.
-         *
-         * `divide-y` puts the rule above and below it like every other section
-         * here, so it reads as a band of the column rather than as a widget
-         * dropped into it.
-         */}
-        <section className="pt-6 pb-5">
-          <h2 className="text-sm font-bold text-ink-soft">
-            {t.topicExplore}
-          </h2>
-          <div className="mt-2.5">
-            <TopicChips lang={lang} from="homepage" more layout="scroll" />
-          </div>
-        </section>
-
-        {recent.length > 0 ? (
-          <section className="pt-7 pb-6">
-            <h2 className="text-xl font-bold tracking-tight text-ink">
-              {t.latestPosts}
-            </h2>
-
-            {/**
-             * ONE LINE PER PIECE: the day, then the headline.
-             *
-             * DENSE ON PURPOSE. The rows here were bordered, padded boxes with the
-             * date on its own line above the title — two lines and some seventy
-             * pixels of height to carry about twelve words. A list is for
-             * scanning, and a reader choosing between fifteen headlines wants them
-             * adjacent rather than separated by their own furniture.
-             *
-             * The date is a FIXED COLUMN so every headline starts on a common left
-             * edge; ragged starts are what makes a list of this shape tiring to run
-             * an eye down. `MM-DD`, because the year is the same on every row a
-             * front page can hold.
-             */}
-            <ul className="mt-3">
-              {recent.map(({ date, article }, at) => (
-                <li key={`${date}-${article.id}`}>
-                  <a
-                    /* The whole row is the target, so the whole row responds —
-                       the date dims in and the headline darkens, which is the
-                       outline treatment applied to a row instead of a pill. */
-                    className="group flex gap-3 border-b border-line py-2.5 transition duration-150 ease-out last:border-0 hover:border-ink-soft sm:gap-4"
-                    href={href(lang, articlePath(date, article))}
-                    /* `summary_open`, the same event the day page's rows send —
-                       both open one article's take. `age` is the row's depth in
-                       the list, which is what says whether anybody reads past the
-                       first few. */
-                    data-track="summary_open"
-                    data-track-source={article.sourceId}
-                    data-track-from="home"
-                    data-track-age={at}
-                  >
-                    <time
-                      className="w-11 flex-none pt-0.5 text-sm font-medium tabular-nums text-ink-soft transition duration-150 ease-out group-hover:text-ink-mid"
-                      dateTime={date}
-                    >
-                      {date.slice(5)}
-                    </time>
-                    <span className="min-w-0 flex-1 text-base leading-snug font-medium text-ink transition duration-150 ease-out group-hover:text-orange">
-                      {displayTitle(article, lang)}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            {/* Only once there is something the front page is not already showing
-                — see `hasArchive`. With a week or less on the site this would lead
-                to the same run the reader is looking at, and the sitemap holds the
-                archive back on the same condition.
-
-                A PLAIN LINK, where this was an `EndLink`: that component is a
-                full-width bordered plate with a circled arrow, which is a large
-                gesture for "there is more" at the foot of a list this quiet. */}
-            {hasArchive(dates.length) ? (
-              <a
-                className={`mt-4 inline-block text-sm font-bold text-orange${ACTION_TEXT}`}
-                href={href(lang, "/archive")}
-                data-track="archive_open"
-                data-track-from="home"
-              >
-                {t.morePosts}
+                {t.seeAll} →
               </a>
             ) : null}
-          </section>
-        ) : null}
-      </div>
+          </div>
+
+          <div className="mt-2">
+            {todays.map((article, at) => (
+              <ArticleBrief
+                article={article}
+                date={latest!}
+                key={article.id}
+                lang={lang}
+                index={at + 1}
+              />
+            ))}
+          </div>
+
+          {/* The way to the rest of the edition. Only when there IS a rest —
+              on a thin day the five rows are the whole thing and a button
+              promising twelve would be promising five. */}
+          {latest && dayCount > todays.length ? (
+            <div className="mt-6 flex justify-center">
+              <a
+                className="rounded-full border border-line px-6 py-2.5 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+                href={href(lang, dayPath(latest))}
+                data-track="day_open"
+                data-track-from="home"
+              >
+                {t.seeAllToday(dayCount)} →
+              </a>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/**
+       * THE DISCOVERY LAYER, and it stays until the mobile menu lands.
+       *
+       * The reference design has no chip row on the front page — it puts 话题 in
+       * the bar instead, and on a phone behind a hamburger. The bar's copy is
+       * `sm:` and up, so until that drawer exists this row is the ONLY way to
+       * reach a topic on a phone without first opening an article. It goes when
+       * the drawer arrives.
+       */}
+      <section className={`${SECTION} ${PAD}`}>
+        <h2 className="text-sm font-bold text-ink-soft">{t.topicExplore}</h2>
+        <div className="mt-2.5">
+          <TopicChips lang={lang} from="homepage" more layout="scroll" />
+        </div>
+      </section>
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}

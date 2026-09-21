@@ -2,7 +2,6 @@ import { ArticleBrief } from "./ArticleCards";
 import { PageShell } from "./PageShell";
 import { EndLink, Footer, Masthead, PAD, SECTION } from "./Shell";
 import { strings } from "@/lib/i18n";
-import { PhotoCard } from "./Photo";
 import { shownArticles } from "@/lib/store";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
@@ -74,40 +73,40 @@ export function DigestView({
        rather than to the masthead because the switch moved into the site bar. */
     <PageShell lang={lang} path={dayPath(digest.date)}>
       <Masthead
-        /* THE DAY IS THE HEADING. An edition of a daily is its date, so that is
-           the `<h1>`, and `formatDate` renders it the way a reader says it —
-           「2026年9月21日 · 星期一」.
-
-           THE COUNT MOVED UP AND BECAME THE KICKER, which is the one change the
-           reference design makes to this block: the small grey line now sits
-           ABOVE the date rather than below it, so the page reads count → date →
-           list instead of date → count → list. A kicker is what a reader's eye
-           skips on the way to the heading; the count is exactly that kind of
-           line, and the date is the thing being announced. */
-        kicker={t.posts(digest.stats.shown)}
-        title={formatDate(digest.date, lang)}
+        /* THE DATE IS THE KICKER, THE COUNT IS THE HEADING, and they have just
+           swapped places. An edition of a daily is its date, which was the whole
+           argument for the date being the `<h1>` — and it held while this page
+           was the only thing above the fold. There are three other destinations
+           in the bar now, so a reader arriving here arrived asking "what is
+           there today"; the count answers that, and the date says which today.
+           The date keeps its weekday, which a kicker has room for. */
+        kicker={formatDate(digest.date, lang)}
+        title={t.dayHeading(shown.length)}
         /* THE VISIBLE TRAIL IS GONE from this page too — see the `← 返回` note
            on the article page for the argument. Here there was only one step
            above the date (首页), and the wordmark in the bar is that same link on
            every page. The day route's JSON-LD still declares its
            `BreadcrumbList`, which is the half a search result draws. */
+        lead={t.dayLead}
       />
 
-      {/* Between the masthead and the list — it is the day's opening image, and
-          below the first headline it would read as an entry rather than as the
-          edition's picture. The front page shows this same photo above its
-          teaser, for the same reason.
-
-          No margin of its own — the masthead's `pb-8` is above it and the list's
-          `mt-8` is below it. Absent on every digest written before photos
-          existed, and on any day Wikimedia had nothing; both render as no card
-          at all rather than as a gap. */}
-      {digest.photo ? (
-        <div className={PAD}>
-          <PhotoCard photo={digest.photo} lang={lang} />
-        </div>
-      ) : null}
-
+      {/**
+       * THE DAY'S PHOTOGRAPH IS NOT ON THIS PAGE ANY MORE — it is the front
+       * page's hero band. See the note there.
+       *
+       * It opened this page as a 300px plate between the masthead and the list,
+       * and what that cost was the thing this page exists for: twelve headlines
+       * pushed off the first screen of the one page whose job is to be scanned.
+       * That was flagged and left alone for a while because deleting a licensed
+       * photograph is a content decision rather than a layout one — and it is not
+       * deleted, it MOVED. A picture chosen for the EDITION is a front page's
+       * masthead image; on the edition's own page it was competing with the
+       * edition.
+       *
+       * `PhotoCard` and its 300px ceiling stay in components/Photo, unused,
+       * because putting the plate back is one element and the ceiling was
+       * measured against a real distribution of Wikimedia's aspect ratios.
+       */}
 
       {/**
        * ONE FLAT LIST, IN THE DAY'S OWN RANKING.

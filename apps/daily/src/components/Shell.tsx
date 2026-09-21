@@ -67,6 +67,7 @@ export const SECTION = "mt-8";
 export function Masthead({
   title,
   kicker,
+  lead,
   crumb,
   children,
 }: {
@@ -95,6 +96,16 @@ export function Masthead({
    * neither, and nothing renders an empty row.
    */
   kicker?: string;
+  /**
+   * ONE SENTENCE UNDER THE HEADING — what this page is, in the page's own
+   * words.
+   *
+   * NOT `children`, which is the META ROW and is set 14px bold in a horizontal
+   * flex: right for two or three short items a reader might act on, wrong for a
+   * sentence, which would come out as a bold fragment on one line. A lead is
+   * body copy; it gets a paragraph.
+   */
+  lead?: string;
   /**
    * A trail above the title, for a page that is part of something — see
    * `Breadcrumb`, which is the only thing passed here.
@@ -164,10 +175,16 @@ export function Masthead({
           page's only meta was the run of days, which is its heading now. An
           empty flex row here would be `mt-6` of nothing between the title and
           the first card. */}
+      {lead ? (
+        <p className="mt-2.5 max-w-prose text-base leading-relaxed font-medium text-ink-mid">
+          {lead}
+        </p>
+      ) : null}
+
       {children ? (
         <div
           className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 text-sm font-bold text-ink-mid ${
-            title || crumb ? "mt-6" : ""
+            lead ? "mt-4" : title || crumb ? "mt-6" : ""
           }`}
         >
           {children}
