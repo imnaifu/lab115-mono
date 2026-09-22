@@ -81,8 +81,20 @@ export function TopicImage({
   priority,
 }: {
   category: Category;
-  /** The box. Aspect ratio and radius belong to the caller: a hub card and a
-   *  topic page's band are different shapes of the same picture. */
+  /**
+   * The box. Aspect ratio, size and radius belong to the caller: a hub row's
+   * thumbnail and a topic page's band are different shapes of the same picture.
+   *
+   * DO NOT PASS A POSITION CLASS. The root below is `relative` and this string
+   * is appended to it, so `absolute` here lands on the same element and LOSES —
+   * Tailwind emits `.relative{position:relative}` after
+   * `.absolute{position:absolute}` at equal specificity, so the later rule
+   * wins, `inset-0` goes inert, and the root collapses to zero height because
+   * both of its children are absolutely positioned. Nothing errors; the picture
+   * simply is not there. That was a real bug on the topic band. To place this
+   * absolutely, wrap it in a positioned `<div>` and pass `size-full` — see the
+   * band in TopicView.
+   */
   className?: string;
   /** True on the one instance that is above the fold — the topic page's band.
    *  The hub's eight cards stay lazy; loading eight photographs eagerly is the

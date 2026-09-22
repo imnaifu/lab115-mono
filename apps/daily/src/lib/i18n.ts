@@ -224,6 +224,21 @@ const STRINGS = {
     prevArticle: "上一篇",
     nextArticle: "下一篇",
 
+    /**
+     * 话题页分页器的两个方向。
+     *
+     * 「页」而不是「篇」：上面那两个走的是同一期里相邻的**文章**，这两个走的是
+     * 同一个话题里相邻的**页**，读者按下去拿到的是十五行而不是一篇。两组词长得
+     * 像，区别只在那一个字，所以两组字符串都留在这儿、挨着放 —— 复用 `prevArticle`
+     * 会让分页器说「上一篇」，那是错的。
+     *
+     * 这里一度是 `newer` / `older`（「更新」/「更旧」），中间还当过一颗居中的
+     * 「更多文章……」。方向词比「更多」准确：一个话题是按时间倒序排的，往后翻是
+     * 往旧走，而「更多」只说了有更多、没说往哪走，也没有回头路。
+     */
+    prevPage: "上一页",
+    nextPage: "下一页",
+
     /** 正文之后那张整宽卡片的标题。它下面印的是原文的**本名**（英文标题），所以
      *  这句话只需要说清这是一个出站动作，别的交给标题自己。 */
     readOriginal: "阅读原文",
@@ -254,8 +269,6 @@ const STRINGS = {
     /* "第 2 页 / 共 4 页" — stated rather than implied, because the two arrows
        below it cannot say where in the run you are. */
     pageOf: (page: number, total: number) => `第 ${page} 页 · 共 ${total} 页`,
-    newer: "更近",
-    older: "更早",
     /* 「看这一天的全部」以前是这句，「全部」后面没有名词，悬着。这里的目的地是当天
        那一页，副标题写的是「共 15 篇」—— 说成一个名词短语，两行才是同一个口径。 */
     wholeDay: "当天全部文章",
@@ -631,6 +644,12 @@ const STRINGS = {
     backToDay: "Back",
     prevArticle: "Previous",
     nextArticle: "Next",
+
+    /* See the Chinese side: these walk PAGES of a topic, the two above walk
+       articles within one edition, and reusing those would make the pager say
+       "Previous article". */
+    prevPage: "Previous page",
+    nextPage: "Next page",
     readOriginal: "Read the original",
 
     more: "More",
@@ -658,8 +677,6 @@ const STRINGS = {
     monthDay: (m: number, d: number) =>
       `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]}`,
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
-    newer: "Newer",
-    older: "Older",
     /** A noun phrase, matching the sub line under it — see the Chinese side. */
     wholeDay: "All posts from that day",
     wholeDaySub: (date: string, n: number) => `${date} · ${n} in total`,

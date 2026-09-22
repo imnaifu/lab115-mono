@@ -71,10 +71,33 @@ export function categoryName(category: Category, lang: Lang): string {
   return lang === "zh" ? category.name : category.nameEn;
 }
 
-/** The category's reader-facing line, same rule. Mirrors `descriptionFor` in
- *  lib/sources one level down. */
+/**
+ * The category's reader-facing line, same rule. Mirrors `descriptionFor` in
+ * lib/sources one level down.
+ *
+ * WITHOUT ITS FULL STOP, and the trim is HERE rather than in config.json. Both
+ * places that print this — the hub's rows and the topic page's band — set it as
+ * a standfirst under a heading, and a standfirst is a label rather than a
+ * sentence: the stop is the one character in it that does no work. There are
+ * only those two call sites, and neither is a `<meta>` or a JSON-LD field (the
+ * hub declares `topicHubLead` and a topic page `topicLead`, both separate
+ * strings), so nothing reads this expecting prose.
+ *
+ * THE DATA KEEPS ITS PERIOD ON PURPOSE. `RawCategory.description` is written by
+ * a person as a whole sentence — see the note on the field — and it should stay
+ * grammatical for whatever prints it next. Stripping the character in
+ * config.json would push the decision onto whoever writes the ninth category,
+ * and they would get it right or not; trimming at the read site cannot be
+ * forgotten.
+ *
+ * `[。.]` FOR BOTH SIDES: the Chinese line ends in 。 and the English in a full
+ * stop, and the two halves of one function should not disagree about whether
+ * they are labels. Same expression the poster and the OG card use on the
+ * tagline, for the same reason — see `posterClean` at those draw sites.
+ */
 export function topicDescription(category: Category, lang: Lang): string {
-  return lang === "zh" ? category.description : category.descriptionEn;
+  const line = lang === "zh" ? category.description : category.descriptionEn;
+  return line.replace(/[。.]$/, "");
 }
 
 /** Where an unrecognised or missing classification lands. */

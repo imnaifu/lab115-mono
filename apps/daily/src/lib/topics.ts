@@ -74,13 +74,27 @@ export function hasTopicPage(published: number): boolean {
 /**
  * Takes per topic page.
  *
- * THIRTY, which is `ARCHIVE_PAGE_SIZE`. Not because the two lists are the same —
- * one holds dates and one holds headlines — but because a reader who has seen
- * the archive's pager has learned how long a page of this site is, and a second
- * answer to that would be a second thing to learn. Thirty rows of date + headline
- * + one sentence is also about the point where a page stops being scannable.
+ * FIFTEEN. It was THIRTY, matched to `ARCHIVE_PAGE_SIZE` on the argument that a
+ * reader who has seen the archive's pager has learned how long a page of this
+ * site is, and a second answer would be a second thing to learn. THAT CONSTANT
+ * NO LONGER EXISTS: the archive is browsed by month now and its pager is gone
+ * (see lib/paging), so thirty was aligning with nothing.
+ *
+ * WHAT DECIDES IT NOW IS THE ROW'S HEIGHT. These rows grew a cover — see the
+ * list in TopicView — so one is 150–180px rather than the ~90px of date +
+ * headline + sentence the old note was measuring. Thirty of them is 4500–5400px,
+ * about five screens, which is not a page anybody reaches the bottom of. Fifteen
+ * is 2300–2700px, which is.
+ *
+ * IT WAS 20 FOR ONE ROUND, and the argument for it is worth keeping because it
+ * is the cost of this number: two of the eight topics hold exactly 20 articles,
+ * so at 15 each of them grows a second page with five rows on it, and a pager
+ * that exists to offer five more rows is a control that should not have been
+ * drawn. That is a real wart on two pages out of eight, accepted so that the
+ * other six — the ones a reader is actually paging through — are a length
+ * somebody finishes. It shrinks on its own as those two topics fill up.
  */
-export const TOPIC_PAGE_SIZE = 30;
+export const TOPIC_PAGE_SIZE = 15;
 
 /** How many pages a topic of this size runs to. At least one, so a live topic
  *  always has a page 1 even when it holds fewer than a full page. */

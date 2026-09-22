@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { displayTitle } from "./ArticleTitle";
+import { Cover } from "./Cover";
 import { PageShell } from "./PageShell";
 import { hasTopicImage, TopicImage } from "./TopicImage";
 import { TopicChips } from "./TopicChips";
@@ -193,19 +194,41 @@ export async function TopicView({
        */}
       <section className={PAD}>
         <div className="relative overflow-hidden rounded-card">
-          <TopicImage
-            category={category}
-            className="absolute inset-0 size-full"
-            priority
-          />
+          {/**
+           * A POSITIONED WRAPPER, AND IT IS NOT DECORATION — the band drew no
+           * picture at all without it.
+           *
+           * `TopicImage` puts `relative` on its own root and appends whatever
+           * `className` it is handed, so this used to pass `absolute inset-0
+           * size-full` and get BOTH classes on one element. Tailwind emits
+           * `.relative{position:relative}` AFTER `.absolute{position:absolute}`
+           * in the same layer, and the two have equal specificity, so the later
+           * one won: the root stayed `position: relative`, `inset-0` was inert,
+           * and its height collapsed to zero because both of its own children
+           * are absolutely positioned. The gradient and the photograph were in
+           * the DOM, the file served 200, and the band rendered as nothing but
+           * the scrim over the page's cream.
+           *
+           * WHICH IS WHY THE POSITION LIVES OUT HERE. This element is
+           * `absolute` with nothing to argue with, and `TopicImage` gets
+           * `size-full` — a size, not a position. See the note in that file.
+           */}
+          <div className="absolute inset-0">
+            <TopicImage category={category} className="size-full" priority />
+          </div>
           {/* The scrim, ONLY OVER A PHOTOGRAPH — see `hasTopicImage`. A
               gradient rather than a flat wash: the words sit at the bottom, so
-              that is where the ink has to be. */}
+              that is where the ink has to be.
+
+              IT GOT DARKER WHEN THE DESCRIPTION MOVED IN — `from-black/85` where
+              it was `/75`. A name in 36px bold survives a thin wash; a sentence
+              at 14–16px does not, and the bottom of this band is now three lines
+              deep instead of two. */}
           {hasTopicImage(category) ? (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/5" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/10" />
           ) : null}
 
-          <div className="relative flex min-h-[200px] flex-col justify-end p-6 sm:min-h-[240px] sm:p-8">
+          <div className="relative flex min-h-[240px] flex-col justify-end p-6 sm:min-h-[280px] sm:p-8">
             {/* THE ENGLISH NAME UNDER THE CHINESE ONE, which is the one place on
                 this site that breaks the one-language-at-a-time rule on purpose
                 besides an article's headline — and for the same reason: a
@@ -219,76 +242,134 @@ export async function TopicView({
             <p className="mt-1 text-sm font-bold tracking-wide text-white/70">
               {category.nameEn}
             </p>
+
+            {/**
+             * THE HAND-WRITTEN LINE, ON THE BAND — and it was UNDER it, on the
+             * cream, in `text-ink-mid`.
+             *
+             * The note that used to sit there argued against exactly this: "it
+             * runs to two lines and prose over a photograph is where legibility
+             * goes." That is a real risk and it is answered by the scrim above
+             * rather than by moving the words: the wash is `from-black/85` now,
+             * and this text is `text-white/85` at 14/16px over the darkest part
+             * of it.
+             *
+             * WHAT IT BUYS. The band was a picture with a name on it and the
+             * sentence that says what the topic IS was the next block down,
+             * which made the band decoration and the description a caption for
+             * it. Together they are the page's masthead: one object that answers
+             * "which topic" and "what is in it" before the list starts. It also
+             * gives back a whole block of vertical space above the fold.
+             *
+             * `max-w-xl` because a line that runs the full width of a 750px
+             * column over a photograph has no left edge to come back to. See
+             * `RawCategory.description` in user-config for why it is written by
+             * a person rather than generated.
+             */}
+            <p className="mt-3 max-w-xl text-sm leading-relaxed font-semibold text-pretty text-white/85 sm:text-base">
+              {topicDescription(category, lang)}
+            </p>
           </div>
         </div>
 
-        {/* The hand-written line, under the band rather than on it — it runs to
-            two lines and prose over a photograph is where legibility goes. See
-            `RawCategory.description` in user-config for why it is written rather
-            than generated. */}
-        <p className="mt-4 max-w-prose text-base leading-relaxed font-semibold text-ink-mid">
-          {topicDescription(category, lang)}
-        </p>
-
-        <p className="mt-2 text-sm font-bold text-ink-soft">
-          {t.topicArticles(articles.length)}
-          {total > 1 ? ` · ${t.pageOf(page, total)}` : ""}
-        </p>
-
         {/**
-         * THE TWO ORDERS. `aria-current` as well as the underline, so a reader
-         * who cannot see the rule is still told which one is on.
+         * THE TWO ORDERS, WITH THE COUNT PUSHED TO THE FAR RIGHT OF THE SAME
+         * RULE.
          *
-         * BOTH LINK TO PAGE 1. A sort and a page number are independent, and
-         * carrying the page across would land a reader on page 3 of an order
-         * they have not seen the top of.
+         * The count and the page number were their own line above this, left
+         * aligned under the description — a third left edge in a stack of four
+         * things, and a whole line spent on 「109 篇文章 · 第 1 页 · 共 4 页」.
+         * They belong on this row: it is the list's header, the tabs say WHICH
+         * order and this says HOW MUCH of it, and the rule under both is the
+         * list's top edge.
+         *
+         * `justify-between` WITH THE TABS IN THEIR OWN `flex`, rather than one
+         * flex of three children — the two tabs have to stay `gap-5` apart from
+         * each other no matter how wide the row gets, and `justify-between` on
+         * the outer box would spread them to the corners.
+         *
+         * `pb-2.5` ON THE COUNT TOO, matching the tabs, so all three sit on one
+         * baseline above the rule instead of the count floating off it.
+         *
+         * `aria-current` as well as the underline, so a reader who cannot see
+         * the rule is still told which order is on.
+         *
+         * BOTH TABS LINK TO PAGE 1. A sort and a page number are independent,
+         * and carrying the page across would land a reader on page 3 of an
+         * order they have not seen the top of.
          */}
-        <nav className="mt-5 flex gap-5 border-b border-line">
-          {[
-            { key: "latest", label: t.topicSortLatest, on: !hot },
-            { key: "hot", label: t.topicSortHot, on: hot },
-          ].map((tab) => (
-            <a
-              key={tab.key}
-              href={`${href(lang, topicPath(category.id))}${
-                tab.key === "hot" ? "?sort=hot" : ""
-              }`}
-              aria-current={tab.on ? "page" : undefined}
-              className={`-mb-px border-b-2 pb-2.5 text-sm font-bold transition duration-150 ease-out ${
-                tab.on
-                  ? "border-ink text-ink"
-                  : "border-transparent text-ink-soft hover:text-ink-mid"
-              }`}
-            >
-              {tab.label}
-            </a>
-          ))}
+        <nav className="mt-8 flex items-end justify-between gap-4 border-b border-line">
+          <span className="flex gap-5">
+            {[
+              { key: "latest", label: t.topicSortLatest, on: !hot },
+              { key: "hot", label: t.topicSortHot, on: hot },
+            ].map((tab) => (
+              <a
+                key={tab.key}
+                href={`${href(lang, topicPath(category.id))}${
+                  tab.key === "hot" ? "?sort=hot" : ""
+                }`}
+                aria-current={tab.on ? "page" : undefined}
+                className={`-mb-px border-b-2 pb-2.5 text-sm font-bold transition duration-150 ease-out ${
+                  tab.on
+                    ? "border-ink text-ink"
+                    : "border-transparent text-ink-soft hover:text-ink-mid"
+                }`}
+              >
+                {tab.label}
+              </a>
+            ))}
+          </span>
+
+          <span className="flex-none pb-2.5 text-xs font-bold whitespace-nowrap text-ink-soft">
+            {t.topicArticles(articles.length)}
+            {total > 1 ? ` · ${t.pageOf(page, total)}` : ""}
+          </span>
         </nav>
       </section>
 
       {/**
        * The run of takes.
        *
-       * A ROW CARRIES WHAT A DECISION NEEDS: the date, the source, the headline
-       * and the thesis. That is more than a source page's rows show (date +
-       * headline) and less than a day page's cards show (cover + actions), and
-       * the middle is right here for one reason — a reader arriving from a
-       * search has no idea what this site's summaries read like, so the thesis is
-       * the sample that says whether the next click is worth it. On a source page
-       * they have usually arrived knowing the blog.
+       * A ROW CARRIES WHAT A DECISION NEEDS: the date, the source, the headline,
+       * the thesis and the cover. That is more than a source page's rows show
+       * (date + headline) and the middle is right here for one reason — a reader
+       * arriving from a search has no idea what this site's summaries read like,
+       * so the thesis is the sample that says whether the next click is worth it.
+       * On a source page they have usually arrived knowing the blog.
+       *
+       * THE COVER IS NEW, and adding it is what turned these into rows. They
+       * were bordered plates in a `gap-2` column with their content stacked
+       * vertically; a thumbnail has to sit beside the words rather than above
+       * them, so the layout had to go horizontal, and once it was horizontal the
+       * plate and the gap were the only things left that differed from every
+       * other list on this site. The day page, the archive, the topic hub and
+       * 「你可能还想读」 are all one column of flush rules — see the note on
+       * `ArticleBrief`, which is the row this now matches to the class.
+       *
+       * `size-20 sm:size-24` is `Cover`'s `card` variant, the same box those
+       * lists use, so the thumbnails line up down the site rather than per page.
        *
        * ONE LINK PER ROW, covering the whole row. The day and the source are
        * printed rather than linked: a row with three destinations in it is three
        * decisions where the reader wanted one, and both of those places are one
-       * hop from the article page this leads to.
+       * hop from the article page this leads to. It is also what lets the row be
+       * a single anchor with no stretched-link trick.
        */}
-      <section className={`${SECTION} ${PAD} flex flex-col gap-2`}>
+      {/* NO `SECTION` HERE. What is directly above is the sort tabs\' own
+          `border-b`, and that rule is this list's top edge — the rows carry
+          `border-b` themselves, so `mt-8` between the tab underline and the
+          first row put 32px inside what should read as one table. The tabs have
+          `pb-2.5`, which is the gap. */}
+      <section className={PAD}>
         {shown.map(({ date, article }, at) => {
           const source = sourceOf(article.sourceId);
           const thesis = summaryFor(article, lang).thesis;
           return (
             <a
-              className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4 transition duration-150 ease-out hover:border-ink-soft"
+              /* The hover tint runs to the screen edge via the negative margin,
+                 so it does not stop 16px short and read as a misaligned box. */
+              className="relative -mx-4 flex gap-3.5 border-b border-line px-4 py-5 transition duration-150 ease-out last:border-0 hover:bg-page-deep sm:-mx-7 sm:gap-4 sm:px-7"
               key={`${date}-${article.id}`}
               href={href(lang, articlePath(date, article))}
               /* `summary_open`, the same event every other way into an article's
@@ -300,33 +381,69 @@ export async function TopicView({
               data-track-from="topic"
               data-track-age={at}
             >
-              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-bold text-ink-soft">
-                <time dateTime={date}>{date}</time>
-                <span className="size-0.75 rounded-full bg-current opacity-55" />
-                <span>{source.name}</span>
-              </div>
-              <span className="text-lg leading-snug font-bold text-ink">
-                {displayTitle(article, lang)}
-              </span>
-              {thesis ? (
-                <span className="text-sm leading-relaxed font-semibold text-ink-mid">
-                  {thesis}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-bold text-ink-soft">
+                  <time dateTime={date}>{date}</time>
+                  <span className="size-0.75 rounded-full bg-current opacity-55" />
+                  <span>{source.name}</span>
+                </div>
+
+                <span className="mt-1.5 block text-lg leading-snug font-bold text-ink">
+                  {displayTitle(article, lang)}
                 </span>
-              ) : null}
+
+                {/* `line-clamp-3`, which it did not need as a plate: with a
+                    96px thumbnail beside it a long thesis is the one thing that
+                    can make one row twice the height of the nine under it. */}
+                {thesis ? (
+                  <span className="mt-1 block line-clamp-3 text-sm leading-relaxed font-semibold text-ink-mid">
+                    {thesis}
+                  </span>
+                ) : null}
+              </div>
+
+              <Cover
+                id={article.id}
+                sourceId={article.sourceId}
+                image={article.image}
+                variant="card"
+              />
             </a>
           );
         })}
       </section>
 
       {/**
-       * The pager, identical in shape and reasoning to the archive's: plain
-       * links, both directions, only the ones that exist, no `rel=prev/next`
-       * (Google stopped reading them years ago and said so), and every page
-       * self-canonical — a canonical pointing page 2 at page 1 is the common
-       * mistake and it hides most of a long topic from the index.
+       * BOTH DIRECTIONS, NAMED AS PAGES — 「上一页」 and 「下一页」 at the two
+       * ends of the row.
+       *
+       * IT HAS BEEN THREE THINGS. 「← 更新」/「更旧 →」 first, borrowed from the
+       * archive's pager before the archive went to months; then a single centred
+       * 「更多文章……」; now this. The middle one is the instructive failure: a
+       * 「更多」 affordance says only that there IS more, not which way it goes,
+       * and it leaves no way back — which on a list sorted newest-first means a
+       * reader who pressed once has no control that returns them to the top of
+       * the topic.
+       *
+       * 「页」 RATHER THAN 「篇」, which is the one word that matters: the
+       * article page's own pager walks articles within an edition (see
+       * `prevArticle`), this walks pages of fifteen rows. Two sets of strings
+       * that differ by one character, kept apart deliberately — see the note in
+       * lib/i18n.
+       *
+       * ONLY THE DIRECTIONS THAT EXIST, with a bare `<span />` on the missing
+       * side so the surviving link stays on its own end of the row rather than
+       * sliding to the middle.
+       *
+       * EVERY PAGE STAYS SELF-CANONICAL — a canonical pointing page 2 at page 1
+       * is the common mistake and it hides most of a long topic from the index.
+       * Still no `rel=prev/next`: Google stopped reading them years ago and said
+       * so.
        */}
       {total > 1 ? (
-        <nav className={`${PAD} mt-8 flex items-center justify-between gap-3`}>
+        <nav
+          className={`${SECTION} ${PAD} flex items-center justify-between gap-3`}
+        >
           {page > 1 ? (
             <a
               className="rounded-button border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
@@ -336,7 +453,7 @@ export async function TopicView({
               data-track-from="pager"
               data-track-lang={lang}
             >
-              ← {t.newer}
+              ← {t.prevPage}
             </a>
           ) : (
             <span />
@@ -350,7 +467,7 @@ export async function TopicView({
               data-track-from="pager"
               data-track-lang={lang}
             >
-              {t.older} →
+              {t.nextPage} →
             </a>
           ) : (
             <span />
