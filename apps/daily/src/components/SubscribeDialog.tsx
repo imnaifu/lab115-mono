@@ -251,7 +251,7 @@ export function SubscribeDialog({
           <h2 className="text-xl font-bold tracking-tight text-pretty text-ink">
             {picks ? t.subscribePitch(picks) : t.tagline}
           </h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed font-semibold text-pretty text-ink-mid">
+          <p className="mx-auto mt-2 text-sm leading-relaxed font-semibold text-pretty text-ink-mid">
             {t.subscribePitchSub}
           </p>
           <button
