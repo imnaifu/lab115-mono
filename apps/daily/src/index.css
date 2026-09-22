@@ -55,12 +55,41 @@
   --color-card: light-dark(#f3e8d8, #2a2547);
   --color-paper: light-dark(#fffdf9, #302a52);
 
-  /* Ink, three steps of emphasis. The dark side is warm off-white rather than
-     pure white, for the same reason the light side is cream rather than paper:
-     nothing on this page is at full contrast. */
+  /**
+   * Ink, three steps of emphasis. The dark side is warm off-white rather than
+   * pure white, for the same reason the light side is cream rather than paper:
+   * nothing on this page is at full contrast.
+   *
+   * THE TWO QUIETER STEPS GOT DARKER WHEN THE SITE WENT SERIF, and the cause is
+   * worth naming because it is not a colour mistake. 宋体's strokes are thinner
+   * than 黑体's — that is the difference between the two faces — so the same hex
+   * value puts less ink on the page and reads a step fainter. The colours were
+   * picked against a sans and were never re-checked against the face that
+   * replaced them.
+   *
+   * MEASURED RATHER THAN NUDGED. Against `--color-page` (#fbf3e9):
+   *
+   *   ink       10.18   unchanged, it was never the problem
+   *   ink-mid    5.93 → 6.98   AA comfortably, now AAA for body text
+   *   ink-soft   3.24 → 4.64   WAS BELOW WCAG AA (4.5) AND IS NOW OVER IT
+   *
+   * `ink-soft` failing AA is the part that was actually broken rather than
+   * merely faint: it is not a decorative tint, it sets the meta row on every
+   * card (topic, source, author), the date on every archive row, the count on
+   * every list and the label over 「为什么值得关注」. That is real text at 12–13px
+   * and it was at 3.24.
+   *
+   * THE HUE AND SATURATION ARE UNCHANGED — only lightness moved, solved by
+   * bisection against the target ratio, so the palette is the same palette a
+   * step darker rather than a different purple.
+   *
+   * THE DARK SIDE IS SOLVED AGAINST `--color-card`, not `--color-page`: dark
+   * mode's worst pairing is ink on the card, where `ink-soft` was 4.23. `ink-mid`
+   * there is 6.94 on card and 8.09 on page and needed nothing.
+   */
   --color-ink: light-dark(#3b3563, #f3ede1);
-  --color-ink-mid: light-dark(#5f5885, #b7afd4);
-  --color-ink-soft: light-dark(#8a83a8, #8d86ad);
+  --color-ink-mid: light-dark(#554e76, #b7afd4);
+  --color-ink-soft: light-dark(#716895, #938db2);
 
   /* The one colour that does NOT invert. It is the brand's accent on both
      grounds and it holds against each; swapping it would be swapping identity. */

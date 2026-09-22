@@ -2,7 +2,7 @@ import { InstallApp } from "./InstallApp";
 import { MenuDrawer } from "./MenuDrawer";
 import { SubscribeDialog } from "./SubscribeDialog";
 import { ThemeToggle } from "./ThemeToggle";
-import { MAIL_TOP_N, SITE } from "@/lib/config";
+import { MAIL_TOP_N } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, otherLang, type Lang } from "@/lib/lang";
 import { ABOUT_PATH, TOPIC_PATH } from "@/lib/links";
@@ -124,11 +124,6 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
  * A SERVER COMPONENT, like the rest of the chrome — the two controls that hold
  * state are the client boundary and they were already drawing it themselves.
  */
-/** The bare host, for the `site:` operator handed to Google. Derived from SITE
- *  rather than typed out, so a rename cannot leave a stale domain in a search
- *  URL — the same rule robots.ts and the sitemap follow. */
-const SITE_HOST = new URL(SITE).host;
-
 export function SiteHeader({
   lang,
   path,
@@ -441,57 +436,27 @@ export function SiteHeader({
           ))}
 
           {/**
-           * SEARCH — AND IT HANDS THE READER TO GOOGLE, SCOPED TO THIS SITE.
+           * THE SEARCH CONTROL IS GONE, and this note is what is left of it.
            *
-           * There is no index here to search. 369 takes in two languages behind
-           * a `force-dynamic` server reading JSON off a git clone is not
-           * something a `LIKE` walks, and the alternatives are all a project
-           * rather than a control: build an index at publish time, ship a client
-           * bundle to query it, and own Chinese segmentation for the half of the
-           * corpus that has no spaces in it.
+           * It was a magnifier linking to `google.com/search?q=site:…` — Google's
+           * own box, pre-scoped to this domain — because there is no index here
+           * to search: 369 takes in two languages behind a `force-dynamic` server
+           * reading JSON off a git clone is not something a `LIKE` walks, and
+           * building one is a project (index at publish time, ship a client
+           * bundle to query it, own Chinese segmentation for the half of the
+           * corpus with no spaces in it).
            *
-           * `q=site:daily.lab115.com` LANDS ON GOOGLE'S OWN BOX, pre-scoped,
-           * with this site's indexed pages as the result. So the reader types
-           * their query into a field that already knows where to look, and this
-           * site ships no index, no bundle and no tokeniser. What it costs is
-           * honest and worth stating: results are whatever Google has crawled,
-           * which for the Chinese half of this site has been the standing
-           * problem (see the `/zh` redirect note in proxy.ts), and a reader
-           * without Google gets nothing.
+           * WHAT IT COST while it was here: a control in this site's own chrome
+           * that leaves the site. A reader pressing a magnifier in a header
+           * expects to search the thing they are looking at, and what they got
+           * was google.com — with results limited to whatever Google has
+           * crawled, which for the Chinese half of this site has been the
+           * standing problem (see the `/zh/…` redirect note in proxy.ts), and
+           * nothing at all for a reader without Google.
            *
-           * A LINK, NOT A FORM. A form needs a visible field, and the bar has no
-           * room for one at any width — the budget below is already spending
-           * 508px on three items. An icon that opens a search box would be a
-           * client component holding open/closed state for a control that ends
-           * up on google.com either way.
-           *
-           * NO `data-track`. `TrackEvent` in lib/track is a closed union and
-           * TRACKING.md documents every member, so counting this is a change to
-           * the analytics contract rather than to the markup — worth doing
-           * deliberately, not worth smuggling in behind a layout change.
+           * If real search is ever built it belongs here. A link to somebody
+           * else's is not a smaller version of it.
            */}
-          <a
-            href={`https://www.google.com/search?q=${encodeURIComponent(`site:${SITE_HOST}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={t.searchLabel}
-            title={t.searchLabel}
-            className="flex size-8 items-center justify-center rounded-full text-ink-mid transition duration-150 ease-out hover:text-ink active:opacity-70"
-          >
-            <svg
-              aria-hidden
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            >
-              <circle cx="6.75" cy="6.75" r="4.75" />
-              <path d="M10.5 10.5 14 14" />
-            </svg>
-          </a>
 
           {/* THE SUBSCRIBE CONTROL, which is a whole component rather than a
               link because pressing it now opens a sheet instead of scrolling to

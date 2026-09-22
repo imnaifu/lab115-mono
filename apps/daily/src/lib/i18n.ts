@@ -349,8 +349,6 @@ const STRINGS = {
       ["关注长期价值", "不追热点，也不做标题党"],
     ],
     aboutContact: "联系我们",
-    /** 搜索图标的可访问名。它跳 Google 的站内搜索 —— 见 SiteHeader 里的说明。 */
-    searchLabel: "在 Google 上搜索本站",
     topicHubDocTitle: (names: readonly string[]) =>
       `探索话题：${names.join("、")}等每日精选`,
     topicHubLead:
@@ -693,7 +691,6 @@ const STRINGS = {
       ["Built to keep", "No chasing the news cycle, no headlines that oversell"],
     ],
     aboutContact: "Get in touch",
-    searchLabel: "Search this site on Google",
     topicHubDocTitle: (names: readonly string[]) =>
       `Explore topics: ${names.join(", ")} and more, picked daily`,
     topicHubLead:
