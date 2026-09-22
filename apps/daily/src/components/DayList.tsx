@@ -57,37 +57,55 @@ export async function DayList({
   }
 
   return (
-    <section className={`${SECTION} flex flex-col gap-2.5 ${PAD}`}>
-      {rows.map(({ date, digest, top }, at) => (
-        <a
-          className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4 transition duration-150 ease-out hover:border-ink-soft"
-          key={date}
-          href={href(lang, dayPath(date))}
-          /* `age` is the row's position IN THIS LIST, not the day's age in the
-             archive: which day was opened is not the question — how far down
-             readers actually reach is, and that is what says whether the rows
-             below the fold are a product or a formality. */
-          data-track="day_open"
-          data-track-from={from}
-          data-track-age={at}
-        >
-          <span className="flex items-center justify-between gap-3.5">
-            <span className="text-lg font-bold text-ink">{date}</span>
-            <span className="text-sm font-bold whitespace-nowrap text-ink-soft">
+    /* NO `gap`. The rows carry their own `border-b` and sit flush, which is what
+       makes the list read as one column with rules across it rather than as a
+       stack of separated objects — the same arrangement `ArticleBrief` uses, and
+       a gap here would put air on both sides of every rule and undo it. */
+    <section className={`${SECTION} ${PAD}`}>
+      {rows.map(({ date, digest, top }, at) => {
+        const [, month, day] = date.split("-").map(Number);
+        return (
+          <a
+            /* FLAT ROWS, WHERE THESE WERE BORDERED PLATES. The whole site gave
+               its cards up (see the note on `ArticleBrief`); this list was the
+               last one still drawing them, which made the archive look like a
+               page from a different version of the site. Same hover treatment
+               too: the tint runs to the screen edge via the negative margin, so
+               it does not stop 16px short and read as a misaligned box. */
+            className="group relative -mx-4 flex items-baseline gap-4 border-b border-line px-4 py-4 transition duration-150 ease-out last:border-0 hover:bg-page-deep sm:-mx-7 sm:px-7"
+            key={date}
+            href={href(lang, dayPath(date))}
+            /* `age` is the row's position IN THIS LIST, not the day's age in the
+               archive: which day was opened is not the question — how far down
+               readers actually reach is, and that is what says whether the rows
+               below the fold are a product or a formality. */
+            data-track="day_open"
+            data-track-from={from}
+            data-track-age={at}
+          >
+            {/* THE DAY, NOT THE FULL DATE. The heading above this list already
+                says which month and year, so a column of `2026-09-21` spends its
+                width repeating it eleven times. `w-24` is the widest this label
+                gets in either language, so every headline beside it starts on a
+                common left edge. */}
+            <span className="w-24 flex-none text-base font-bold text-ink">
+              {t.monthDay(month, day)}
+            </span>
+
+            {/* The day's top PUBLISHED headline. `digest.articles[0]` would be
+                the highest-scoring article whether or not it was published, and
+                on a day where the top of the list was held back that is a
+                headline the reader cannot open. */}
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-mid">
+              {top ? displayTitle(top, lang) : null}
+            </span>
+
+            <span className="flex-none text-sm font-bold whitespace-nowrap text-ink-soft">
               {digest ? t.sectionCount(digest.stats.shown) : "—"}
             </span>
-          </span>
-          {/* The day's top PUBLISHED headline. `digest.articles[0]` would be
-              the highest-scoring article whether or not it was published, and
-              on a day where the top of the list was held back that is a
-              headline the reader cannot open. */}
-          {top ? (
-            <span className="line-clamp-1 text-sm text-ink-mid">
-              {displayTitle(top, lang)}
-            </span>
-          ) : null}
-        </a>
-      ))}
+          </a>
+        );
+      })}
     </section>
   );
 }

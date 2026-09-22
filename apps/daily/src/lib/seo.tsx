@@ -114,10 +114,16 @@ export function ogCardFor(lang: Lang, name: string) {
 export function archiveDocTitle(
   brand: string,
   name: string,
-  page: number,
+  month?: string,
 ): string {
   const title = `${brand} · ${name}`;
-  return page > 1 ? `${title} · ${page}` : title;
+  /* THE MONTH KEY, where this took a PAGE NUMBER — the archive is browsed by
+     month now, see lib/paging. The reason is unchanged and is the paragraph
+     above: several archive pages sharing one title are several search results a
+     reader cannot tell apart. `2026-08` rather than 「2026 年 8 月」 for the same
+     reason the breadcrumb keeps the raw date — a title is a compact label, and
+     the formatted form carries a separator of its own. */
+  return month ? `${title} · ${month}` : title;
 }
 
 export function alternatesFor(lang: Lang, path: string) {

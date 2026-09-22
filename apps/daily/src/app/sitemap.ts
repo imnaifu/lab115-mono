@@ -11,7 +11,7 @@ import {
 } from "@/lib/links";
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { hasSourcePage, SOURCE_PAGES_LIVE, SOURCES } from "@/lib/sources";
-import { archivePages, archivePath } from "@/lib/paging";
+import { archiveMonths, archivePath } from "@/lib/paging";
 import { hasTopicPage, topicPages } from "@/lib/topics";
 import { listDates, readDigest, shownArticles } from "@/lib/store";
 
@@ -118,21 +118,34 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   const pages: MetadataRoute.Sitemap = [entry("/", newest)];
 
   /**
-   * The archive, one entry per page — but only once it holds something the front
-   * page is not already showing.
+   * The archive, ONE ENTRY PER MONTH — and the bare `/archive` is NOT one of
+   * them.
    *
-   * `hasArchive` is the same condition the front page uses to decide whether to
-   * LINK there, stated once in lib/paging. Below the threshold `/` lists every date
-   * itself, so an archive entry here would be asking Google to index that list a
-   * second time — which is the duplicate this site was reported for, rebuilt one
-   * route over. The route 404s in that state for the same reason.
+   * IT WAS ONE ENTRY PER PAGE, `/archive`, `/archive/2` and so on, with a note
+   * about holding the whole thing back until it showed something the front page
+   * did not. Two things changed. The front page shows five pieces of one day
+   * now, so there is no overlap left to guard against; and the archive is
+   * browsed by month, so its URLs are `/archive/2026-08` — see lib/paging.
    *
-   * Every page is listed, not just the first: they are self-canonical and each
-   * holds dates the others do not, so leaving pages 2 and up out would hide most of
-   * the archive from the index.
+   * THE BARE `/archive` IS LEFT OUT ON PURPOSE. It is the NEWEST month, which
+   * means the content behind it moves on the first of every morning of every
+   * month: listing it would be asking a crawler to keep re-fetching an address
+   * whose meaning is "whatever is current", while the same editions already have
+   * a dated URL that never moves. The month pages are the durable half and they
+   * are what is listed.
+   *
+   * EXCEPT the newest month's own dated URL, which 308s to `/archive` — one page,
+   * one address — so it is skipped too. That month's DAYS are all listed below
+   * regardless, so nothing in it is unreachable from here.
+   *
+   * `lastModified` IS THE MONTH'S OWN NEWEST DAY, not the site's: a month that
+   * ended in August has not changed since August, and stamping it with today
+   * would spend a crawl on every month every time any digest lands.
    */
-  for (let page = 1; page <= archivePages(dates.length); page++) {
-    pages.push(entry(archivePath(page), newest));
+  const months = archiveMonths(dates);
+  for (const { month } of months.slice(1)) {
+    const newestInMonth = dates.find((date) => date.startsWith(month))!;
+    pages.push(entry(archivePath(month), stamp(newestInMonth)));
   }
 
   /**

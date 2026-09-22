@@ -1,66 +1,95 @@
 import { notFound } from "next/navigation";
 import { DayList } from "./DayList";
 import { PageShell } from "./PageShell";
-import { Breadcrumb, Footer, Masthead, MastheadDot, PAD } from "./Shell";
+import { Footer, Masthead, PAD, SECTION } from "./Shell";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
-import { archivePages, archivePath, archiveSlice, hasArchive } from "@/lib/paging";
+import {
+  archiveMonths,
+  archiveMonthSlice,
+  archivePath,
+  monthOf,
+} from "@/lib/paging";
 import { archiveDocTitle, breadcrumb, JsonLd, publisher } from "@/lib/seo";
 import { listDates } from "@/lib/store";
 
 /**
- * One page of the archive — the full run of dates, thirty at a time.
+ * `/archive` and `/archive/2026-08` — the run of editions, ONE MONTH AT A TIME.
  *
- * ONE COMPONENT FOR BOTH ROUTES. `/archive` is page 1 and `/archive/<n>` is the
- * rest; they differ by a number, so they are not two files. Page 1 is deliberately
- * NOT reachable as `/archive/1` — that route redirects here — because two URLs for
- * one page is the smallest version of the problem this site spent a while removing.
+ * IT WAS PAGINATED, thirty dates to a page, `/archive/2` and up. See the note in
+ * lib/paging for why a month replaced a page number: position in a list is a
+ * fact about the list's length rather than about the archive, and it changes
+ * under a reader every time a digest lands.
+ *
+ * ONE COMPONENT FOR BOTH ROUTES, which is the arrangement pagination had too:
+ * `/archive` is the newest month and `/archive/<yyyy-mm>` is any of them, and
+ * they differ by which key gets passed in. The newest month is NOT also
+ * reachable at its dated URL from inside this site — the month row links to
+ * `/archive` for it — so one page has one address, which is the rule the old
+ * `/archive/1` redirect existed for.
  */
-export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) {
+export async function ArchiveView({
+  lang,
+  month,
+}: {
+  lang: Lang;
+  /** Which month to show, or nothing for the newest. */
+  month?: string;
+}) {
   const t = strings(lang);
   const dates = await listDates();
-  const total = archivePages(dates.length);
+  const months = archiveMonths(dates);
 
   /**
-   * A page number past the end is a 404, not an empty list.
+   * AN EMPTY ARCHIVE IS A 404, not an empty page.
    *
-   * `hasArchive` is part of the same check: below the threshold the front page is
-   * already showing every date, so this page would be that list a second time.
-   * Nothing links here in that state and the sitemap leaves it out — a 404 is the
-   * honest answer for a URL that has no content of its own yet.
+   * `hasArchive` used to guard this — the archive 404'd until the site held more
+   * days than the front page showed, because below that threshold it was the
+   * front page's own list a second time. The front page shows five pieces of ONE
+   * day now, so there is no overlap left to protect against and the only state
+   * worth refusing is having nothing at all.
    */
-  if (!hasArchive(dates.length) || page < 1 || page > total) notFound();
+  if (!months.length) notFound();
 
-  const shown = archiveSlice(dates, page);
-  const url = `${SITE}${href(lang, archivePath(page))}`;
+  const shownMonth = month ?? months[0].month;
+  const inMonth = archiveMonthSlice(dates, shownMonth);
+  if (!inMonth.length) notFound();
+
+  /* The newest month lives at the bare `/archive`; every other one at its own
+     key. One page, one URL — see the note on `archivePath`. */
+  const isNewest = shownMonth === months[0].month;
+  const path = archivePath(isNewest ? undefined : shownMonth);
+  const url = `${SITE}${href(lang, path)}`;
+
+  const [year, monthNo] = shownMonth.split("-").map(Number);
+  const live = new Set(months.map((m) => m.month));
+  /* Newest year first, and only the years that have something in them. */
+  const years = [...new Set(months.map((m) => m.month.slice(0, 4)))];
 
   return (
-    <PageShell lang={lang} path={archivePath(page)}>
+    <PageShell lang={lang} path={path}>
       <JsonLd
         data={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           "@id": url,
           url,
-          name: archiveDocTitle(t.brand, t.archiveTitle, page),
+          name: archiveDocTitle(t.brand, t.archiveTitle, shownMonth),
           inLanguage: lang === "zh" ? "zh-CN" : "en-US",
           publisher: publisher(t.brand),
           isPartOf: { "@id": `${SITE}${href(lang, "/")}#site` },
           breadcrumb: breadcrumb([
             { name: t.brand, url: `${SITE}${href(lang, "/")}` },
-            { name: t.archiveTitle, url: `${SITE}${href(lang, archivePath(page))}` },
+            { name: t.archiveTitle, url },
           ]),
           mainEntity: {
             "@type": "ItemList",
-            numberOfItems: shown.length,
-            itemListElement: shown.map((date, i) => ({
+            numberOfItems: inMonth.length,
+            itemListElement: inMonth.map((date, i) => ({
               "@type": "ListItem",
-              // Continuing the run rather than restarting at 1 on every page: the
-              // position is where the day sits in the archive, which is the thing
-              // the number is for.
-              position: (page - 1) * shown.length + i + 1,
+              position: i + 1,
               url: `${SITE}${href(lang, dayPath(date))}`,
               name: date,
             })),
@@ -68,99 +97,116 @@ export async function ArchiveView({ lang, page }: { lang: Lang; page: number }) 
         }}
       />
 
-      {/* 归档 IS THE TITLE AGAIN, and the round trip is worth recording because
-          both moves were right when they were made.
-
-          It started here. Then it moved down into the meta row, because a
-          heading reading 归档 where every other page on the site read 每日严选
-          made this the one page whose lockup was not the site's — the meta row
-          being where the other pages said WHICH page this was. That reasoning
-          held for exactly as long as the heading was the brand. The lockup is in
-          the bar now (see SiteHeader), so the heading is free to name the page,
-          and this is the page whose name it is. The document title made the same
-          trip: see `archiveDocTitle`. */}
-      <Masthead
-        title={t.archiveTitle}
-        /* The trail replaces the way home that used to sit at the BOTTOM of this
-           page — see the note where that block was. It also takes 归档 back out of
-           the meta row below, where it landed one round earlier: the crumb says
-           which page this is, and says it as a place in the site rather than as a
-           label, so the word twice in one header is once too many. */
-        crumb={
-          <Breadcrumb
-            label={t.breadcrumb}
-            items={[
-              { label: t.home, href: href(lang, "/") },
-              { label: t.archiveTitle },
-            ]}
-          />
-        }
-      >
-        <span>{t.days(dates.length)}</span>
-        {total > 1 ? (
-          <>
-            <MastheadDot />
-            <span>{t.pageOf(page, total)}</span>
-          </>
-        ) : null}
-      </Masthead>
-
-      <DayList dates={shown} lang={lang} from="archive" />
+      <Masthead title={t.archiveHeading} lead={t.archiveLead} />
 
       {/**
-       * The pager. Plain links, both directions, and only the ones that exist.
+       * THE YEAR ROW, and it renders only when there is a choice to make.
        *
-       * NO `rel="prev"/"next"`: Google stopped using them for pagination years ago
-       * and says so, and they were never read by anything else here. What a crawler
-       * needs is an ordinary crawlable `<a href>` per page, which is what these are.
+       * One year of archive is one tab, which is a control that cannot be
+       * operated — it is a label wearing a button's clothes. The site has held
+       * exactly one year so far, so today this block draws nothing at all and
+       * appears on its own the January after it stops being true.
        *
-       * Each page is self-canonical. A canonical pointing every page at `/archive`
-       * is the common mistake and it hides pages 2 and up from the index entirely —
-       * which for this site is most of the archive.
+       * A year is NOT its own URL. Pressing one goes to that year's newest
+       * month, because a year page would be a list of up to twelve links and
+       * nothing else — the doorway shape `TOPIC_MIN_ARTICLES` exists to keep
+       * this site away from.
        */}
-      {total > 1 ? (
-        <nav className={`${PAD} mt-8 flex items-center justify-between gap-3`}>
-          {page > 1 ? (
-            <a
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
-              href={href(lang, archivePath(page - 1))}
-              data-track="archive_open"
-              data-track-from="pager"
-            >
-              ← {t.newer}
-            </a>
-          ) : (
-            <span />
-          )}
-          {page < total ? (
-            <a
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
-              href={href(lang, archivePath(page + 1))}
-              data-track="archive_open"
-              data-track-from="pager"
-            >
-              {t.older} →
-            </a>
-          ) : (
-            <span />
-          )}
+      {years.length > 1 ? (
+        <nav className={`${SECTION} ${PAD} flex flex-wrap gap-2`}>
+          {years.map((y) => {
+            const newestOfYear = months.find((m) => m.month.startsWith(y))!;
+            const current = y === String(year);
+            return (
+              <a
+                key={y}
+                href={href(
+                  lang,
+                  archivePath(
+                    newestOfYear.month === months[0].month
+                      ? undefined
+                      : newestOfYear.month,
+                  ),
+                )}
+                aria-current={current ? "page" : undefined}
+                className={`rounded-full px-4 py-1.5 text-sm font-bold transition duration-150 ease-out ${
+                  current
+                    ? "bg-ink text-paper"
+                    : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink"
+                }`}
+              >
+                {y}
+              </a>
+            );
+          })}
         </nav>
       ) : null}
 
+      {/**
+       * TWELVE CELLS, ALWAYS — and the empty ones are text rather than links.
+       *
+       * Drawing only the months that exist would make the grid change shape
+       * every time the site publishes into a new one, and a reader who has
+       * learned where 9月 sits would have to find it again. Twelve is what a year
+       * is; the ones this site was not publishing in say so by being flat.
+       *
+       * `aria-disabled` rather than a `<button disabled>`: these are not
+       * controls that failed, they are months with nothing in them, and the
+       * markup should read as a list of months of which some are links.
+       */}
+      <nav className={`${SECTION} ${PAD} grid grid-cols-6 gap-2`}>
+        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+          const key = `${year}-${String(m).padStart(2, "0")}`;
+          const has = live.has(key);
+          const current = key === shownMonth;
+          if (!has) {
+            return (
+              <span
+                key={m}
+                aria-disabled
+                className="rounded-xl border border-line/60 px-2 py-2 text-center text-sm font-bold text-ink-soft/45"
+              >
+                {t.monthShort(m)}
+              </span>
+            );
+          }
+          return (
+            <a
+              key={m}
+              href={href(
+                lang,
+                archivePath(key === months[0].month ? undefined : key),
+              )}
+              aria-current={current ? "page" : undefined}
+              className={`rounded-xl px-2 py-2 text-center text-sm font-bold transition duration-150 ease-out ${
+                current
+                  ? "bg-ink text-paper"
+                  : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink active:opacity-80"
+              }`}
+            >
+              {t.monthShort(m)}
+            </a>
+          );
+        })}
+      </nav>
 
-      {/* NO WAY-ONWARD CARD HERE, and the other three lists all have one. It was
-          `每日严选 / 过滤信息噪音…` pointing at `/`, which read as a brand banner
-          rather than as a way back, and it was the THIRD link home on this page —
-          the lockup is one, and the breadcrumb at the top is now the other, named
-          and in the place a reader looks for it. `track="home_open"` from
-          `trackFrom="archive"` goes with it; the crumb is not tracked, because
-          "did anyone leave the archive upwards" is not a question worth an event
-          on a page whose whole job is to be passed through. */}
+      <section className={`${SECTION} ${PAD}`}>
+        <h2 className="text-xl font-bold tracking-tight text-ink">
+          {t.monthTitle(year, monthNo)}
+        </h2>
+      </section>
 
-      <Footer
-        year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}
-        lang={lang}
-      />
+      {/* `DayList` is the same component the front page used for its run of
+          days — a date, a count and that day's lead headline per row. The lead
+          headline is what makes these rows worth reading rather than a column of
+          digits; see the note there. */}
+      <DayList dates={inMonth} lang={lang} from="archive" />
+
+      <Footer year={dates[0]?.slice(0, 4) ?? String(year)} lang={lang} />
     </PageShell>
   );
 }
+
+/** Re-exported so the routes can build a canonical without importing two
+ *  modules for one path. */
+export { monthOf };

@@ -234,6 +234,15 @@ const STRINGS = {
     more: "更多",
 
     archiveTitle: "归档",
+    /** 归档页自己的标题和那一句。`archiveTitle` 是它在导航和面包屑里的名字，短；
+     *  这两句是页面上的，说清它是什么、怎么用。 */
+    archiveHeading: "文章归档",
+    archiveLead: "按时间浏览所有文章",
+    /** 月份网格里的格子，和它下面那个月的小标题。 */
+    monthShort: (m: number) => `${m}月`,
+    monthTitle: (y: number, m: number) => `${y} 年 ${m} 月`,
+    /** 归档行里的日期。「9 月 21 日」—— 年份在上面那个小标题里说过了。 */
+    monthDay: (m: number, d: number) => `${m} 月 ${d} 日`,
     /* "第 2 页 / 共 4 页" — stated rather than implied, because the two arrows
        below it cannot say where in the run you are. */
     pageOf: (page: number, total: number) => `第 ${page} 页 · 共 ${total} 页`,
@@ -571,6 +580,14 @@ const STRINGS = {
     more: "More",
 
     archiveTitle: "Archive",
+    archiveHeading: "Archive",
+    archiveLead: "Every edition, by month",
+    monthShort: (m: number) =>
+      ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1],
+    monthTitle: (y: number, m: number) =>
+      `${["January","February","March","April","May","June","July","August","September","October","November","December"][m - 1]} ${y}`,
+    monthDay: (m: number, d: number) =>
+      `${d} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]}`,
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
     newer: "Newer",
     older: "Older",
