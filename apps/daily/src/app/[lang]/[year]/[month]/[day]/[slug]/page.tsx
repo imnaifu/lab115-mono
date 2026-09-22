@@ -558,19 +558,30 @@ export default async function ArticlePage({ params }: Params) {
            * the press: nobody shares an asset they have not seen. So the card
            * shows one — part 1, the identity card.
            *
-           * THE THUMBNAIL IS `loading="lazy"` AND THAT IS LOAD-BEARING. The
-           * poster route is `force-dynamic` with no server cache (see
-           * lib/poster-serve): every miss is a Satori render of about a second,
-           * cached by HTTP for an hour. This row is below the whole summary on
-           * every article, so a real browser fetches it only when a reader
-           * scrolls to it — precisely the engaged reader this is for — and a
-           * crawler walking 400 article pages does not fetch it at all.
+           * THE THUMBNAIL IS A STATIC SVG, AND IT WAS THE REAL POSTER — part 1
+           * of `/share/<lang>/<date>/<id>/`.
            *
-           * `aspect-[3/4]` ON THE BOX, so the space is reserved before the
-           * image arrives and the card does not jump when it does. `w-14` at
-           * half a column where it was `w-16 sm:w-20` full width: the poster is
-           * an indication that one exists, and at 355px the words and the
-           * button need the room more than the picture does.
+           * THAT COST A SATORI RENDER PER READER. The poster route is
+           * `force-dynamic` with no server cache (see lib/poster-serve), so
+           * every miss is ~0.6s of rendering. `loading="lazy"` was doing its
+           * job — measured with Chrome's network panel, a page load with no
+           * scroll fires ZERO requests for it — but the card is at the foot of
+           * the article, so the request fired for every reader who got to the
+           * end, which is exactly the population this block exists for. Paying
+           * 0.6s of CPU to draw a 56px picture, on every article anybody
+           * finishes, is the wrong side of that trade.
+           *
+           * WHAT IS LOST. The thumbnail was the real thing, and the argument
+           * for it was that nobody shares an asset they have not seen. The SVG
+           * shows the asset's SHAPE — a 3:4 card with this site's mark on it —
+           * and not its content. The real posters, all of them, are one press
+           * away and the sheet opens on them; see `public/share-card.svg`.
+           *
+           * `aspect-[3/4]` ON THE BOX, which is the poster's own canvas ratio,
+           * so the reserved space is the same either way and putting the render
+           * back needs no layout change. `w-14` at half a column where it was
+           * `w-16 sm:w-20` full width: the picture is an indication that one
+           * exists, and at 355px the words and the button need the room more.
            *
            * IDENTICAL PROPS TO EVERY OTHER SHARE ENTRY POINT, deliberately: the
            * same permalink, the same poster set, the same title and thesis in
@@ -591,12 +602,14 @@ export default async function ArticlePage({ params }: Params) {
             tags={summaryFor(article, lang).tags ?? []}
             lang={lang}
           >
+            {/* NOT `loading="lazy"`: it is 1KB off disk with a far-future
+                cache, so deferring it would only add a second layout pass.
+                `alt=""` because the line beside it says what this is. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              className="aspect-[3/4] w-14 flex-none rounded-xl border border-line object-cover shadow-cover"
-              src={posterPartUrl(posterBase(lang, date, article.id), 1)}
+              className="aspect-[3/4] w-14 flex-none rounded-xl border border-line bg-page-deep object-cover shadow-cover"
+              src="/share-card.svg"
               alt=""
-              loading="lazy"
             />
 
             {/* THE SAME TWO-LINE SHAPE AS THE CARD BESIDE IT — a bold line

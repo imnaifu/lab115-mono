@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" role="img" aria-label="">
+  <!--
+    THE SHARE CARD'S STAND-IN — what the button is about to make, drawn as a
+    shape rather than rendered.
+
+    WHY IT IS NOT THE REAL POSTER. The article page's share card used to show
+    part 1 of the actual poster. That route is force-dynamic with no server cache
+    (see lib/poster-serve), so every reader who scrolled to the foot of an
+    article paid a ~0.6s Satori render for a 56px thumbnail. Measured with
+    Chrome's network panel: a page load with no scroll fired zero requests, and
+    one scroll to the card fired it. This file is a few KB off disk.
+
+    WHAT IS LOST, stated plainly: the thumbnail was the real thing, and the
+    argument for it was that nobody shares an asset they have not seen. This
+    shows the SHAPE of the asset and not its content. The real posters are one
+    press away and the sheet opens on them.
+
+    IT IS DRAWN FOR 56px, NOT FOR 1080. The first version of this file used the
+    poster's own proportions — a 120-unit mark, 26-unit text bars, a domain chip
+    — and at the size it is actually displayed every one of those was a hairline
+    or smaller: it read as a blank box. So the mark is 44% of the width here and
+    there are three bars instead of twelve. The viewBox stays 1080x1440 because
+    that is the poster's canvas and the box reserved by aspect-[3/4] is the same
+    either way.
+
+    XML COMMENTS CANNOT CONTAIN TWO HYPHENS IN A ROW. The first version named the
+    CSS custom properties it took its colours from, and those names begin with
+    two hyphens, which ends a comment early and made this whole file unparseable
+    — Chrome drew its broken-image marker and nothing else. So the tokens are
+    named without their prefix below, and nothing here may spell them in full.
+
+    COLOURS ARE THE LIGHT THEME'S, WRITTEN OUT, because an SVG in public/ has no
+    stylesheet to read a token from: fbf3e9 is color-page, 2d294c is color-ink,
+    5f587e is color-ink-soft, efa050 is color-orange. They were darkened once
+    already; if the ink note in src/index.css moves them again, this file does
+    not follow on its own.
+
+    role="img" WITH AN EMPTY LABEL: the words beside it in the card already say
+    what this is, so announcing it would be reading the same thing twice.
+  -->
+  <rect width="1080" height="1440" fill="#fbf3e9"/>
+
+  <!-- The mark, at 44% of the width — the same shapes as public/mark.svg,
+       scaled from its 64-unit box and centred across the card. -->
+  <g transform="translate(302 300) scale(7.4)">
+    <rect width="64" height="64" rx="14" fill="#2d294c"/>
+    <g stroke="#fbf3e9" stroke-linecap="round">
+      <path stroke-width="7" d="M 13.2 21 H 56"/>
+      <path stroke-width="7" d="M 13.2 43 H 56"/>
+      <path stroke-width="5" d="M 30 25 V 39"/>
+      <path stroke-width="5" d="M 42 25 V 39"/>
+    </g>
+    <path fill="none" stroke="#efa050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
+  </g>
+
+  <!-- Three bars where the poster sets its headline, with the orange rule the
+       real thesis block draws down its left edge. Thick enough to survive being
+       56px wide. -->
+  <rect x="180" y="900" width="36" height="300" rx="18" fill="#efa050"/>
+  <g fill="#2d294c" opacity="0.78">
+    <rect x="288" y="912" width="612" height="72" rx="36"/>
+    <rect x="288" y="1026" width="612" height="72" rx="36"/>
+    <rect x="288" y="1140" width="384" height="72" rx="36"/>
+  </g>
+</svg>
