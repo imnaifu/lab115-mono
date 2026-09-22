@@ -213,6 +213,25 @@ export const TOPIC_PATH = "/topic";
 export const ABOUT_PATH = "/about";
 
 /**
+ * `/today` — AN ALIAS THAT RESOLVES TO THE NEWEST EDITION, not a page.
+ *
+ * WHY IT EXISTS. The bar's first item is 「今天列表」 and it has to lead to the
+ * day's own permalink (`/2026/09/21`), not to `/` — the front page is five picks
+ * and the day is the whole edition. But the bar renders on EVERY page, so
+ * spelling that href would mean `PageShell` knowing which day is newest, and the
+ * only way to know is `listDates`, which walks years × months × files with no
+ * cache. That read is currently paid by the pages that need it; putting it in the
+ * shell would charge it to every article page on the site.
+ *
+ * SO THE HREF IS A CONSTANT AND THE LOOKUP HAPPENS ON THE PRESS. See the route,
+ * which is a redirect and nothing else.
+ *
+ * IT IS NOT IN THE SITEMAP, for the same reason `/archive` is not: its target
+ * changes daily, and what belongs in an index is the dated URL it lands on.
+ */
+export const TODAY_PATH = "/today";
+
+/**
  * One topic's page, e.g. `/topic/tech`, and `/topic/tech/2` from page two on.
  *
  * `/topic/` RATHER THAN THE TOP LEVEL, on the same reasoning as `/s/` above: a

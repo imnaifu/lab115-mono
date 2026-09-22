@@ -5,7 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { MAIL_TOP_N } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, otherLang, type Lang } from "@/lib/lang";
-import { ABOUT_PATH, TOPIC_PATH } from "@/lib/links";
+import { ABOUT_PATH, TODAY_PATH, TOPIC_PATH } from "@/lib/links";
 
 /**
  * The translate mark: the glyph on the language switch.
@@ -176,7 +176,32 @@ export function SiteHeader({
    * other three cover their whole section, because those genuinely are sections.
    */
   const nav = [
-    { href: href(lang, "/"), label: t.navToday, current: path === "/" },
+    /**
+     * 「今天」 → `/today`, WHICH IS A REDIRECT to the newest edition's own URL.
+     * It used to point at `/`.
+     *
+     * THE LABEL DID NOT CHANGE AND THAT IS THE POINT. It was briefly 「今天列表」
+     * on the reasoning that the word should say it leads to the list rather than
+     * to the front page — which is an explanation, and a nav item that needs one
+     * is the wrong fix. 「今天」 is what the destination IS now; the front page
+     * was what did not match it.
+     *
+     * THE HREF IS A CONSTANT ON PURPOSE — see `TODAY_PATH` in lib/links for why
+     * the lookup happens on the press rather than in this component. Nothing
+     * here reads the filesystem, which is what keeps `PageShell` synchronous.
+     *
+     * `current` MATCHES A DATED DAY PATH, not `/`. The bare `\d{4}/\d{2}/\d{2}`
+     * shape is a day page and nothing else — an article is one segment longer
+     * and the archive's months are `/archive/2026-09`. So the item underlines
+     * where it actually leads, and the FRONT PAGE now underlines nothing: it is
+     * reached from the lockup beside this row, which is where a masthead's home
+     * link belongs.
+     */
+    {
+      href: href(lang, TODAY_PATH),
+      label: t.navToday,
+      current: /^\/\d{4}\/\d{2}\/\d{2}$/.test(path),
+    },
     {
       href: href(lang, TOPIC_PATH),
       label: t.navTopics,
