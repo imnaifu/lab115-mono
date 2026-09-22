@@ -98,7 +98,7 @@ function contentHtml(
   if (summary.thesis) {
     // THE THESIS, AND NO LABEL. A reader in a feed client is scanning entries,
     // which makes this a discovery surface — so it carries the same sentence the
-    // day cards do and not 「为什么值得关注」 (see the note on `leadOf`'s absence
+    // day cards do and not 「为什么值得读」 (see the note on `leadOf`'s absence
     // in lib/take). The `<strong>TL;DR</strong>` that used to open it went with
     // every other copy of that label; a feed reader renders this as the entry's
     // first paragraph, which is what a dek is.

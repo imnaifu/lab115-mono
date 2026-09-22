@@ -218,7 +218,7 @@ export function SubscribeDialog({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`cursor-pointer rounded-full px-5 py-2.5 text-sm font-bold transition duration-150 ease-out ${
+          className={`cursor-pointer rounded-button px-5 py-2.5 text-sm font-bold transition duration-150 ease-out ${
             onPhoto
               ? "border border-white/70 text-white hover:bg-white/15 active:bg-white/25"
               : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink active:opacity-80"
@@ -230,7 +230,7 @@ export function SubscribeDialog({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="hidden cursor-pointer rounded-full bg-ink px-4 py-1.5 text-sm font-bold text-paper sm:block transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+          className="hidden cursor-pointer rounded-button bg-ink px-4 py-1.5 text-sm font-bold text-paper sm:block transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
         >
           {t.subscribeGo}
         </button>
@@ -257,7 +257,7 @@ export function SubscribeDialog({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="mt-4 cursor-pointer rounded-full bg-ink px-6 py-2.5 text-base font-bold text-paper transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+            className="mt-4 cursor-pointer rounded-button bg-ink px-6 py-2.5 text-base font-bold text-paper transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
           >
             {t.subscribeCta}
           </button>
@@ -405,7 +405,7 @@ export function SubscribeDialog({
                      land on the field rather than on the close button, which is
                      the first focusable child. */
                   autoFocus
-                  className="w-full min-w-0 rounded-full border border-line bg-page px-4 py-3 text-base text-ink"
+                  className="w-full min-w-0 rounded-button border border-line bg-page px-4 py-3 text-base text-ink"
                 />
                 <button
                   type="submit"
@@ -413,7 +413,7 @@ export function SubscribeDialog({
                   /* Full width, unlike the card's side-by-side row: there is no
                      horizontal space to share in a 24rem sheet, and it is the
                      only action in here. */
-                  className="mt-1 w-full cursor-pointer rounded-full bg-ink px-6 py-3 text-base font-bold text-paper disabled:opacity-60 transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+                  className="mt-1 w-full cursor-pointer rounded-button bg-ink px-6 py-3 text-base font-bold text-paper disabled:opacity-60 transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
                 >
                   {/* `subscribeCta` (每天发给我), not `subscribeGo` (订阅).
                       This is the SUBMIT, and a submit button reads better as

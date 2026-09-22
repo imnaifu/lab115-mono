@@ -5,7 +5,6 @@ import { summaryFor } from "@/lib/take";
 import { ArticleBrief } from "@/components/ArticleCards";
 import { PageShell } from "@/components/PageShell";
 import { SubscribeDialog } from "@/components/SubscribeDialog";
-import { TopicChips } from "@/components/TopicChips";
 import { Footer, PAD, SECTION } from "@/components/Shell";
 import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
@@ -126,7 +125,6 @@ export default async function Home({
    */
   const digest = latest ? await readDigest(latest) : null;
   const shown = digest ? shownArticles(digest) : [];
-  const dayCount = shown.length;
   const todays = shown.slice(0, FRONT_POSTS);
   const lead = shown[0];
 
@@ -254,7 +252,7 @@ export default async function Home({
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               {latest ? (
                 <a
-                  className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-ink transition duration-150 ease-out hover:bg-white/85"
+                  className="rounded-button bg-white px-5 py-2.5 text-sm font-bold text-ink transition duration-150 ease-out hover:bg-white/85"
                   href={href(lang, dayPath(latest))}
                   data-track="day_open"
                   data-track-from="home"
@@ -322,39 +320,22 @@ export default async function Home({
             ))}
           </div>
 
-          {/* The way to the rest of the edition. Only when there IS a rest —
-              on a thin day the five rows are the whole thing and a button
-              promising twelve would be promising five. */}
-          {latest && dayCount > todays.length ? (
-            <div className="mt-6 flex justify-center">
-              <a
-                className="rounded-full border border-line px-6 py-2.5 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
-                href={href(lang, dayPath(latest))}
-                data-track="day_open"
-                data-track-from="home"
-              >
-                {t.seeAllToday(dayCount)} →
-              </a>
-            </div>
-          ) : null}
+          {/**
+           * THE WAY-ONWARD PILL WAS HERE. It read 「查看今日全部 12 篇 →」 and
+           * sat centred under the five rows, shown only when the day held more
+           * than five.
+           *
+           * IT WAS THE THIRD LINK TO ONE PAGE on one screen. The hero's
+           * 「查看今日精选」 and this section's own 「查看全部」 both already
+           * point at `dayPath(latest)`, so the day page keeps its inbound links
+           * and nothing is orphaned — what went is a reader being offered the
+           * same destination three times before the footer.
+           *
+           * `dayCount` WENT WITH IT. It existed only to fill this button's
+           * count and to decide whether the button drew at all.
+           */}
         </section>
       ) : null}
-
-      {/**
-       * THE DISCOVERY LAYER, and it stays until the mobile menu lands.
-       *
-       * The reference design has no chip row on the front page — it puts 话题 in
-       * the bar instead, and on a phone behind a hamburger. The bar's copy is
-       * `sm:` and up, so until that drawer exists this row is the ONLY way to
-       * reach a topic on a phone without first opening an article. It goes when
-       * the drawer arrives.
-       */}
-      <section className={`${SECTION} ${PAD}`}>
-        <h2 className="text-sm font-bold text-ink-soft">{t.topicExplore}</h2>
-        <div className="mt-2.5">
-          <TopicChips lang={lang} from="homepage" more layout="scroll" />
-        </div>
-      </section>
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}

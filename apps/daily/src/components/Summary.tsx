@@ -5,35 +5,56 @@ import type { Lang } from "@/lib/lang";
 import type { SummaryText } from "@/lib/types";
 
 /**
- * The hero-sized variant runs every block a step larger than a card does.
- * Nothing renders a hero card any more, but the single-article page uses the
- * larger size for the one summary it shows.
+ * The two variants are the same SIZES now and differ only in leading — the hero
+ * dek used to be a step larger and is not (see `thesis` below). The table stays
+ * because it is where the dek and the prose are set against each other, which is
+ * the pair that must not drift; `card` is unrendered today and kept so that
+ * `variant` is a real choice rather than a parameter with one value.
  *
- * `rule` IS GONE, and with it the orange bar that used to stand beside the
- * thesis. The thesis is a DEK now — a standfirst under the headline — and a dek
- * is set, not annotated: it says what it is by being one size up from the prose
- * and one shade lighter than the title. The bar plus the label was the other
- * arrangement, and what it produced was a page whose first move was to point at
- * its own machinery. The bar survives in two places that are not this one: the
- * share poster (lib/share, POSTER.thesisRule — there is no type hierarchy to
- * lean on inside a 1080px image) and 「为什么值得关注」 below, where a mark IS
- * the information because that block is a different voice.
+ * `rule` IS GONE AS A PROP, and what it used to draw — an ORANGE bar beside the
+ * thesis, under a `TL;DR` label — is not what is there now. The label was the
+ * part that was wrong: it made the page's first move be to point at its own
+ * machinery. The dek has a rule again (see the note at the `<p>`), in
+ * `ink-soft` rather than orange, and no name.
  *
- * `label` is gone for the same reason — nothing here is labelled any more.
+ * ORANGE RULES TWO BLOCKS on this page — the dek and 「为什么值得读」 below —
+ * and what tells them apart is the ground, the label and the `· · ·` above the
+ * second one rather than the colour. The poster has always drawn an orange
+ * thesis rule (lib/share, POSTER.thesisRule), so the page and the image now
+ * agree about that sentence.
+ *
+ * `label` is gone and stays gone — nothing here is labelled except that one
+ * block.
  */
 const SIZE = {
   hero: {
     /**
-     * 18px, ONE STEP ABOVE THE PROSE, and `text-ink-mid` rather than `text-ink`.
+     * BODY SIZE, 700 WEIGHT, AND FULL-STRENGTH `text-ink`.
      *
-     * The three values are doing the whole job the label used to do. Bigger than
-     * the body says "read this first"; lighter than the 30px `text-ink` headline
-     * above it says "this is not the headline"; and `leading-[1.7]` is looser
-     * than the prose's own 1.85 by less than it looks, because a two-line dek
-     * packed at the body's rhythm reads as the first paragraph rather than as the
-     * standfirst.
+     * IT WAS 18px. The old note argued that "bigger than the body says read this
+     * first" — true, and it was buying that at the price of a third type size in
+     * the first 200px of the page: a 30px headline, then 18px, then 16px, three
+     * steps down before the reader has read a sentence of the piece. So the size
+     * went and the distinction moved to weight and colour.
+     *
+     * COLOUR IS CARRYING MOST OF IT, and that is the correction this note exists
+     * for. 700 against the prose's 600 at the same size is a difference you have
+     * to look for. The obvious fix — 800 — is not available for free: Noto Serif
+     * SC is cut into 101 unicode-range chunks PER WEIGHT at about 30KB each, and
+     * weights share nothing, so one bolder paragraph would re-download the
+     * chunks its ~60 characters touch. Measured: 60–150KB for one line. (Lora
+     * has no 800 at all — its axis is 400..700 — so the English dek could not
+     * have changed anyway, which means the bytes would buy the Chinese side
+     * only.) Darkening to `text-ink` against the prose's `text-ink-mid` opens
+     * the same gap wider and costs nothing, and it is how a standfirst is set in
+     * most publications: darker than the body, not heavier than it.
+     *
+     * `leading-[1.7]` SURVIVES THE SIZE CHANGE and is now doing more of the work.
+     * It is looser than the prose's own 1.85 by less than it looks, and it is
+     * what stops a two-line dek packed at the body's rhythm reading as the first
+     * paragraph rather than as the standfirst.
      */
-    thesis: "text-lg leading-[1.7]",
+    thesis: "text-base leading-[1.7]",
     heading: "text-base",
     para: "text-base",
   },
@@ -111,14 +132,12 @@ export function Summary({
    */
   const opening = blocks.findIndex((block) => block.kind !== "heading");
 
-
-
   return (
     <div className="mt-4 flex flex-col gap-3">
       {/**
        * THE DEK — the thesis, set as a standfirst under the headline.
        *
-       * IT IS THE THESIS AND NOT 「为什么值得关注」, and the two swapped places
+       * IT IS THE THESIS AND NOT 「为什么值得读」, and the two swapped places
        * for one round before the archive settled it. The reasoning that moved
        * `whyItMatters` up here was that the thesis often restates the headline —
        * measured, 6 of 22 overlap it by more than half — and that is true and is
@@ -132,14 +151,43 @@ export function Summary({
        * NO LABEL AND NO RULE. It had `TL;DR` on an orange bar, and both are
        * gone: a reader does not need the field's name, and the one line under a
        * headline is the most expensive line on the page to spend on the word
-       * "TL;DR". The typography says what this is — see SIZE above.
+       * "TL;DR". The typography says what this is, and it says it with WEIGHT
+       * rather than size — see SIZE above.
        *
        * `max-w-prose` because a dek is read in one pass and a 40-em measure is
        * where that stops being comfortable; the prose below it is already inside
        * the card's own column.
+       *
+       * A 2px RULE DOWN THE LEFT EDGE, AND A BAR USED TO BE HERE. What was
+       * removed was an ORANGE bar plus a `TL;DR` label, and the label was the
+       * part that was wrong — see above. The rule on its own does the opposite
+       * job: it marks the block off without naming it, which is what a dek
+       * wants. Without something here the dek was a bold paragraph, and once
+       * its size dropped to the body's (see SIZE) it had only weight and colour
+       * left to say "this is not the first paragraph".
+       *
+       * `border-orange`, AND IT WAS `border-ink-soft` FOR ONE ROUND. The
+       * argument for the quiet grey was that orange on this page meant
+       * 「为什么值得读」 — our judgement, a different voice — and that a second
+       * orange rule would make the dek look like the same kind of block.
+       *
+       * IT IS THE SITE'S ONE ACCENT AND THE DEK IS THE PAGE'S FIRST LINE, which
+       * is the better claim: the accent belongs on the thing a reader meets
+       * first, and a grey hairline beside the opening sentence reads as a
+       * disabled version of the block below it rather than as a quieter one.
+       * WHAT NOW SEPARATES THE TWO is everything else — the well below has a
+       * `bg-page` ground, a label, and `· · ·` above it; this is a rule beside
+       * bare text. The poster has used an orange thesis rule all along
+       * (POSTER.thesisRule in lib/share), so this also stops the page and the
+       * image disagreeing about the same sentence.
+       *
+       * `border-line` was the third candidate and it is ink at 14%: invisible
+       * at 2px on cream.
        */}
       {text.thesis ? (
-        <p className={`max-w-prose font-semibold text-ink-mid ${size.thesis}`}>
+        <p
+          className={`max-w-prose border-l-2 border-orange pl-4 font-bold text-ink ${size.thesis}`}
+        >
           {text.thesis}
         </p>
       ) : null}
@@ -179,7 +227,7 @@ export function Summary({
       ))}
 
       {/**
-       * 「为什么值得关注」 — THE SECOND READING LAYER, and the only labelled
+       * 「为什么值得读」 — THE SECOND READING LAYER, and the only labelled
        * block left on the page.
        *
        * THE LABEL STAYS HERE while every other one went, and that asymmetry is
@@ -195,11 +243,12 @@ export function Summary({
        * A QUIET WELL WITH A 2px RULE DOWN ITS LEFT EDGE. `bg-page` is one step
        * off the column's own ground, so the block reads as something cut into
        * the page rather than stuck onto it, and the rule is what makes it a
-       * pull-quote rather than a panel. The orange is the site's accent and it
-       * appears exactly twice on this page now — here and nowhere else, since
-       * the dek gave its bar up. No accent FILL, no yellow, no icon: this is an
-       * editorial publication, and a tip-box with a lightbulb in it is a
-       * different product.
+       * pull-quote rather than a panel. The orange is the site's accent and this
+       * is the second of the two places it rules a block — the dek above is the
+       * other; see the note there for what keeps them from reading as the same
+       * kind of thing. No accent FILL, no yellow, no icon: this is an editorial
+       * publication, and a tip-box with a lightbulb in it is a different
+       * product.
        *
        * NOTHING AT ALL WHEN THE FIELD IS EMPTY — no heading, no rule, no box.
        * An absent field is the whole signal (see `SummaryText.whyItMatters`), so

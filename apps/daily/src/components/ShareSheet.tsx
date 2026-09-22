@@ -149,7 +149,7 @@ function intents(page: string, poster: string, title: string, weibo: string) {
  * divider above them says so.
  */
 const ACTION =
-  "flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-xs font-bold text-ink-mid";
+  "flex cursor-pointer items-center gap-1.5 rounded-button border border-line px-3.5 py-2 text-xs font-bold text-ink-mid";
 
 /**
  * A tile: the mark in a wash of its own colour, the name under it.

@@ -24,7 +24,7 @@ import type { DailyPhoto, PublishedArticle, SummaryText } from "./types";
  *
  * The field is optional BY DESIGN, not by accident: the summary prompt tells the
  * model to return an empty one rather than a platitude when an article has no
- * real answer to the question (see the 「为什么值得关注」 section there). So an
+ * real answer to the question (see the 「为什么值得读」 section there). So an
  * absent one is frequently the CORRECT output.
  *
  * Adding it here would turn every one of those correct outputs into an

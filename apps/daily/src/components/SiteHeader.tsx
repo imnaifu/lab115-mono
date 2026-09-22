@@ -303,91 +303,70 @@ export function SiteHeader({
             <span className="block truncate text-base leading-tight font-bold tracking-tight text-ink sm:text-lg">
               {t.brand}
             </span>
-            {/* THE TAGLINE, FROM `md:` UP — see the width budget on the controls
-                below. It is the first thing this site claims about itself and it
-                belongs beside the name, but it is also the longest string in the
-                bar by a factor of three, and a phone has no room for it at any
-                weight. Nothing is lost there: it is still the
-                `<meta name="description">` and the feed's subtitle on every page
-                (see `tagline` in lib/i18n.ts).
+            {/* THE TAGLINE USED TO BE HERE, on a second line under the
+                wordmark from `md:` up, and it is gone by request. The lockup is
+                the mark and the name now — nothing else.
 
-                `md:` AND NOT `lg:`, WHICH IS A CORRECTION. It was gated at
-                `lg:` on the grounds that 768px leaves the row only 2px of slack
-                — true, and the wrong thing to protect against, because
-                `truncate` plus the `min-w-0` above means the squeeze ends in an
-                ellipsis rather than in an overflow. Gating on the width where
-                the sentence fits UNCUT hid it from every window between 768 and
-                1024, which is a common size to read at and the one this was
-                tested in.
+                WHAT IT COST WHILE IT EXISTED: it was the longest string in the
+                bar by a factor of three, so it decided both breakpoints below,
+                and at 768px it was already giving ~166px of itself to an
+                ellipsis. A sentence that is cut in half at the width most
+                people read at is not making its claim; it is furniture that
+                happens to contain words.
 
-                `truncate` rather than a wrap, because a bar that grows a second
-                line of tagline at some awkward width is a bar whose height
-                depends on the translation. */}
-            <span className="hidden truncate text-xs leading-tight font-semibold text-ink-mid md:block">
-              {t.tagline}
-            </span>
+                IT IS NOT DELETED, only unhung. `t.tagline` is still the
+                `<meta name="description">` on every page and the feed's
+                `<subtitle>` — see lib/i18n. What replaced it in the places it
+                was DRAWN (the poster, the OG card, the mail masthead) is
+                `homeHeading`, which says how many pieces a day rather than what
+                the site filters out. */}
           </span>
         </a>
 
         {/* RIGHT: where the reader can go from any page, then the three controls
             in the order they had in the masthead's row.
 
-            THE WIDTH BUDGET DECIDES WHAT SHOWS AT EACH SIZE, and there are
-            three sizes because the bar holds two things that grow — a lockup
-            with a whole sentence in it and a row of up to five controls. Every
-            number below was read off the rendered bar in ENGLISH, which is the
-            wider language for every item in it (its tagline is 278px against
-            the Chinese 204):
+            THE WIDTH BUDGET DECIDES WHAT SHOWS AT EACH SIZE. It used to have
+            two things that grow in it — a lockup with a whole sentence in it
+            and a row of up to five controls — and the sentence is gone (see the
+            note in the lockup above), so the lockup is now a CONSTANT:
 
-              mark 28   wordmark 88   tagline 278
-              Archive 67   Explore topics 118   Subscribe 101
-              lang 34   theme 34   install 114
+              mark 28   wordmark 88   →   126px, at every width from `sm:` up
+                                          (112px below it: a 24px mark and the
+                                          wordmark a type step down)
+
+            THAT REMOVAL ONLY EVER ADDS SLACK, which is why no breakpoint below
+            had to be re-derived and none can newly overflow. The tagline was
+            278px in English against the Chinese 204 — the widest item in the
+            bar by a factor of three — and every sum it appeared in was the
+            binding one. The `md:` line was 508 + 12 + 316 = 836px against the
+            944px a 1024px viewport leaves after `lg:px-10`, and at the bottom of
+            the range a 768px viewport left 712px, so the lockup was handing back
+            about 166px to an ellipsis just to fit. It is 508 + 12 + 126 = 646px
+            now, inside 712 with room to spare — which is the same floor the old
+            note already called "THE FLOOR THAT MATTERS", because it was computed
+            for exactly this case: the tagline cut away entirely.
+
+            THE PER-ITEM WIDTHS FOR THE NAV WERE MEASURED IN ENGLISH, which is
+            the wider language for every item in the bar, and they were measured
+            when the row held a different set of links (Archive, Explore topics,
+            Subscribe — 67 / 118 / 101, plus lang 34, theme 34, install 114).
+            The row is four named links from `sm:` up now, built from `nav`. Do
+            NOT trust those three numbers for a new arithmetic; re-measure if
+            something is added. What they still support is the claim above, that
+            every current sum is strictly smaller than a sum that already fit.
 
             THE 72px `Sources` LINK IS OUT OF THESE SUMS, because the section is
-            hidden — see SOURCE_PAGES_LIVE in lib/sources. Every total below is
-            72 + 8 lighter than it was; putting the link back means adding 80 to
-            each of them, and the `sm:` line is the one that then stops working.
+            hidden — see SOURCE_PAGES_LIVE in lib/sources. Putting the link back
+            means adding 80 to each of them.
 
-            THE TOPIC HUB ADDED 126 TO EVERY `md:` SUM (118 + one 8px gap), and
-            it is the English label that costs it — 「探索话题」 is 4 CJK glyphs
-            at ~64px against "Explore topics" at 118, and as everywhere in this
-            budget the wider language is the one measured.
+            `sm:` IS WHERE THE NAMED LINKS APPEAR. Below it the row is the icons
+            only and the four destinations move into `MenuDrawer` — the exact
+            complement, so nothing is unreachable at any width.
 
-            So the lockup is 28 + 10 + 278 = 316px with the tagline and 126px
-            without, and the nav is 508px with all three links (its five 8px
-            gaps included), 307px with only Subscribe, or 198px with none.
-
-            `md:` AND UP — everything shows. 508 + 12 + 316 = 836px against the
-            944px a 1024px viewport leaves after `lg:px-10`. At the bottom of the
-            range a 768px viewport leaves 712px, so the lockup gives up about
-            166px of tagline to an ellipsis — more than the 40px it used to, and
-            still what it is built to do: it is `truncate` inside `min-w-0`, so
-            the sentence yields before anything overflows. THE FLOOR THAT
-            MATTERS is the lockup's own 126px minimum: 508 + 12 + 126 = 646px,
-            inside 712, so even with the tagline cut away entirely nothing
-            overflows at the narrowest `md:` viewport. Gating the tagline
-            instead on the width where it fits UNCUT is what hid it from every
-            window between 768 and 1024, and that was the wrong thing to
-            protect.
-
-            `sm:` TO `md:` — Subscribe stays; Archive, the topic hub and the
-            tagline do not.
-            307 + 12 + 126 = 445px against the 584px a 640px viewport leaves.
-            Archive could in fact join it here now that Sources is gone (382 + 12
-            + 126 = 520px, inside 584px) and is deliberately left at `md:`: with
-            the section restored the three of them want 600px against 584px, and
-            a breakpoint that has to move back and forth with a feature flag is
-            worse than one that is right in both states.
-
-            BELOW `sm:` — the icons only. 112 + 12 + 198 = 322px against the
-            361px a 393px phone leaves after `px-4` (the lockup is 112 rather
-            than 126 there: a 24px mark and the wordmark a type step down).
-
-            NOTHING IS LOST BY HIDING ANY OF THEM. The tagline is still the
-            `<meta name="description">` and the feed's subtitle on every page;
-            the archive and the directory both still have their end-of-page card
-            on the front page; and the subscribe card the button scrolls to is on
-            the page already. */}
+            NOTHING IS LOST BY HIDING ANY OF THEM. The drawer has the four
+            destinations, and the subscribe sheet is a control rather than a
+            place. */}
         <nav className="flex items-center gap-2">
           {/**
            * TWO DESTINATIONS, NAMED, AND THE CURRENT ONE IS UNDERLINED.

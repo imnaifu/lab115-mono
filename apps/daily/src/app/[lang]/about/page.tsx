@@ -103,7 +103,7 @@ export default async function AboutPage({
 
       <Masthead title={t.aboutTitle} lead={t.aboutLead} />
 
-      <section className={`${SECTION} ${PAD} flex max-w-prose flex-col gap-4`}>
+      <section className={`${PAD} flex max-w-prose flex-col gap-4`}>
         {t.aboutBody.map((paragraph, at) => (
           /* `**…**` is written into the strings and is NOT markdown — nothing
              here parses it. It is left visible on purpose: these sentences are

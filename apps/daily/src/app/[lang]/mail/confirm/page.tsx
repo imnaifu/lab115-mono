@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { PageShell } from "@/components/PageShell";
 import { EndLink, Footer, Masthead, PAD } from "@/components/Shell";
+import { MAIL_TOP_N } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { segmentFor, subscribeContact } from "@/lib/mail/resend";
@@ -84,10 +85,14 @@ export default async function ConfirmPage({
       </Masthead>
 
       <div className={PAD}>
+        {/* `homeHeading` rather than `tagline` — the same swap the poster, the
+            OG card and the mail masthead made. This card is the one thing a
+            reader sees after confirming a subscription, so the line under it
+            should say what they just signed up to GET. */}
         <EndLink
           href={href(lang, "/")}
           label={t.backHome}
-          sub={t.tagline}
+          sub={t.homeHeading(MAIL_TOP_N)}
         />
       </div>
 

@@ -67,29 +67,43 @@
    * picked against a sans and were never re-checked against the face that
    * replaced them.
    *
-   * MEASURED RATHER THAN NUDGED. Against `--color-page` (#fbf3e9):
+   * MEASURED RATHER THAN NUDGED, TWICE NOW. Against `--color-page` (#fbf3e9),
+   * where the first column is the sans-era value the serif switch invalidated:
    *
-   *   ink       10.18   unchanged, it was never the problem
-   *   ink-mid    5.93 → 6.98   AA comfortably, now AAA for body text
-   *   ink-soft   3.24 → 4.64   WAS BELOW WCAG AA (4.5) AND IS NOW OVER IT
+   *              sans    1st pass   now
+   *   ink       10.18     10.18 →  12.46
+   *   ink-mid    5.93      6.98 →   8.57
+   *   ink-soft   3.24      4.64 →   6.00
    *
-   * `ink-soft` failing AA is the part that was actually broken rather than
-   * merely faint: it is not a decorative tint, it sets the meta row on every
-   * card (topic, source, author), the date on every archive row, the count on
-   * every list and the label over 「为什么值得关注」. That is real text at 12–13px
-   * and it was at 3.24.
+   * THE FIRST PASS ONLY MOVED THE TWO QUIET STEPS, and it moved them to the
+   * WCAG floor: `ink-soft` was at 3.24, below AA (4.5), which was the part that
+   * was actually broken rather than merely faint — it is not a decorative tint,
+   * it sets the meta row on every card (topic, source, author), the date on
+   * every archive row, the count on every list and the label over
+   * 「为什么值得读」, all real text at 12–13px. Clearing 4.5 fixed the defect.
    *
-   * THE HUE AND SATURATION ARE UNCHANGED — only lightness moved, solved by
-   * bisection against the target ratio, so the palette is the same palette a
-   * step darker rather than a different purple.
+   * THIS PASS IS NOT ABOUT A FLOOR. Everything already passed; the page still
+   * read light, because a floor is the point at which text stops being a
+   * problem and not the point at which it looks set in ink. `ink` went too this
+   * time, which the first pass deliberately left alone — with the other two
+   * darkened around it, the heading was the faintest thing on the page relative
+   * to where it sits in the hierarchy. All three now clear AAA (7.0) or are
+   * within a hair of it, and `ink` is close to the 13.5 a true black would give
+   * on this cream.
    *
-   * THE DARK SIDE IS SOLVED AGAINST `--color-card`, not `--color-page`: dark
-   * mode's worst pairing is ink on the card, where `ink-soft` was 4.23. `ink-mid`
-   * there is 6.94 on card and 8.09 on page and needed nothing.
+   * THE HUE AND SATURATION ARE UNCHANGED, both times — only lightness moved,
+   * solved by bisection against the target ratio, so this is the same palette
+   * two steps darker rather than a different purple.
+   *
+   * THE DARK SIDE IS UNTOUCHED, and "darker" is meaningless there: its ink is
+   * warm off-white ON a dark ground, so taking lightness out of it removes
+   * contrast instead of adding it. It is solved against `--color-card` rather
+   * than `--color-page` — dark mode's worst pairing is ink on the card, where
+   * `ink-soft` was 4.23 — and it needs nothing here.
    */
-  --color-ink: light-dark(#3b3563, #f3ede1);
-  --color-ink-mid: light-dark(#554e76, #b7afd4);
-  --color-ink-soft: light-dark(#716895, #938db2);
+  --color-ink: light-dark(#2d294c, #f3ede1);
+  --color-ink-mid: light-dark(#474263, #b7afd4);
+  --color-ink-soft: light-dark(#5f587e, #938db2);
 
   /* The one colour that does NOT invert. It is the brand's accent on both
      grounds and it holds against each; swapping it would be swapping identity. */
@@ -146,13 +160,16 @@
   --chart-mute: light-dark(#8a83a8, #8d86ad);
 
   /* Hairline rules and card borders: the ink of the other side, at the same
-     weight. */
-  --color-line: light-dark(rgb(59 53 99 / 0.14), rgb(243 237 225 / 0.14));
+     weight. `45 41 76` IS `--color-ink` WRITTEN OUT — it has to be, because a
+     colour-mix on a token is not something a border-colour can carry into every
+     `light-dark()` branch. It was `59 53 99` and moved with the ink above; if
+     the ink moves again, these three lines move with it. */
+  --color-line: light-dark(rgb(45 41 76 / 0.14), rgb(243 237 225 / 0.14));
 
   /* An ink-tinted shadow is invisible on a dark ground, so the dark side casts
      black and casts it harder. */
-  --shadow-soft: 0 2px 10px light-dark(rgb(59 53 99 / 0.06), rgb(0 0 0 / 0.35));
-  --shadow-cover: 0 4px 14px light-dark(rgb(59 53 99 / 0.16), rgb(0 0 0 / 0.5));
+  --shadow-soft: 0 2px 10px light-dark(rgb(45 41 76 / 0.06), rgb(0 0 0 / 0.35));
+  --shadow-cover: 0 4px 14px light-dark(rgb(45 41 76 / 0.16), rgb(0 0 0 / 0.5));
 
   /**
    * `max-w-page` — THE READING COLUMN, and the number the whole page is drawn
@@ -169,6 +186,24 @@
 
   /* `rounded-card` — one radius for every panel on the page. */
   --radius-card: 18px;
+
+  /**
+   * `rounded-button` — one radius for every button, chip and input.
+   *
+   * THEY WERE ALL `rounded-full`, and a half-round pill is a shape with an
+   * opinion: it reads as an app's control. This site is set in 宋体 on paper —
+   * the buttons were the one element arguing with that.
+   *
+   * 14px RATHER THAN THE CARD'S 18px, because a button is usually INSIDE a
+   * card and an inner radius should be smaller than the one it sits in;
+   * matching them makes the inner shape look swollen at the corners.
+   *
+   * WHAT STAYS `rounded-full`: colour dots, progress bars, and the square
+   * icon-only buttons in the bar (language, theme). Those are circles rather
+   * than pills — a `p-2` box around a 16px glyph at 14px radius is a
+   * rounded square, which is a different control, not the same one softened.
+   */
+  --radius-button: 14px;
 
   /* `rounded-blob` — the masthead's organic shape. Eight values and a slash, so
      it earns a token rather than being inlined as an arbitrary utility. */

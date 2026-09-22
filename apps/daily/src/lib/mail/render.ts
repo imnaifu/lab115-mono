@@ -59,9 +59,15 @@ import type { DailyPhoto, Digest, PublishedArticle } from "@/lib/types";
 /* The palette. Names and values from `@theme` in src/index.css; the light side
    of each `light-dark()` pair, because an inbox has no `color-scheme` to ask and
    the head below pins the message to light for that reason. */
-const INK = "#3b3563";
-const INK_MID = "#5f5885";
-const INK_SOFT = "#8a83a8";
+const INK = "#2d294c";
+/* THESE TWO WERE `#5f5885` AND `#8a83a8`, WHICH WERE THE SANS-ERA VALUES. The
+   page darkened its quiet inks when the site went serif and this file did not
+   follow, so the comment above — "values from @theme in src/index.css" — was
+   describing an intention rather than a fact for a whole round: the mail was
+   shipping the palette the page had already abandoned. Corrected here to the
+   current tokens, along with the second darkening pass. */
+const INK_MID = "#474263";
+const INK_SOFT = "#5f587e";
 const ORANGE = "#efa050";
 /** `--color-page`: the ground the whole message sits on. */
 const CREAM = "#fbf3e9";
@@ -179,7 +185,7 @@ function masthead(lang: Lang): string {
     t.brand,
   )}</div>
 <div style="${type(500, 13, "19px")}color:${INK_MID};padding-top:5px;${bare}">${escapeHtml(
-    t.tagline,
+    t.homeHeading(MAIL_TOP_N),
   )}</div>
 </a>
 </td>
@@ -269,11 +275,14 @@ ${options.footerHtml}
 </html>`;
 }
 
-/** One tappable pill, as a table so Outlook draws the background. Mirrors the
- *  subscribe form's submit — `rounded-full bg-ink text-paper` on the site. */
+/** One tappable button, as a table so Outlook draws the background. Mirrors the
+ *  subscribe form's submit — `rounded-button bg-ink text-paper` on the site, so
+ *  the 14px here is `--radius-button` written out: mail cannot read a token and
+ *  a button that is a pill in the inbox and a rounded rectangle on the page is
+ *  two different brands. If that token moves, this number moves with it. */
 function button(href: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 14px;"><tr>
-<td style="background:${INK};border-radius:999px;">
+<td style="background:${INK};border-radius:14px;">
 <a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;${type(700, 15, "1")}color:${PAPER};text-decoration:none;">${escapeHtml(
     label,
   )}</a>
@@ -352,7 +361,7 @@ ${button(confirmUrl, t.confirmMailButton)}
 
   const text = [
     t.brand,
-    t.tagline,
+    t.homeHeading(MAIL_TOP_N),
     "",
     t.confirmMailLead,
     confirmUrl,
@@ -476,7 +485,9 @@ export function digestEmail(
   );
 
   const headline = (article: PublishedArticle) =>
-    ((lang === "zh" ? article.titleZh : article.titleEn) || article.title).trim();
+    (
+      (lang === "zh" ? article.titleZh : article.titleEn) || article.title
+    ).trim();
 
   const cards = picked
     .map((article) => {
@@ -541,7 +552,7 @@ ${endLink(dayUrl, t.wholeDay, t.wholeDaySub(digest.date, digest.stats.shown))}
 
   const text = [
     t.brand,
-    t.tagline,
+    t.homeHeading(MAIL_TOP_N),
     "",
     t.date(year, month, day, weekday),
     `${t.posts(digest.stats.shown)}${minutes > 0 ? ` · ${t.readTime(minutes)}` : ""}`,

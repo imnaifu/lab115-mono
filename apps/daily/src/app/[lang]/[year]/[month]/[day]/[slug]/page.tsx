@@ -4,14 +4,7 @@ import type { Metadata } from "next";
 import { ArticleTitle, displayTitle } from "@/components/ArticleTitle";
 import { Cover } from "@/components/Cover";
 import { PageShell } from "@/components/PageShell";
-import {
-  Breadcrumb,
-  EndLink,
-  Footer,
-  Masthead,
-  PAD,
-  SECTION,
-} from "@/components/Shell";
+import { Breadcrumb, Footer, Masthead, PAD, SECTION } from "@/components/Shell";
 import { RelatedArticles } from "@/components/RelatedArticles";
 import { ShareButton } from "@/components/ShareButton";
 import { SubscribeDialog } from "@/components/SubscribeDialog";
@@ -100,7 +93,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
    * an English title is the mismatch that rule fixes.
    *
    * NEVER `whyItMatters`, and it was that for one round. A search result has to
-   * answer "what is at this URL"; 「为什么值得关注」 answers "why we thought it
+   * answer "what is at this URL"; 「为什么值得读」 answers "why we thought it
    * mattered", which is a sentence about our editing rather than about the
    * subject somebody typed into the box. It is also the sentence a crawler would
    * find nowhere near the top of the page — the thesis is the dek, and a
@@ -391,7 +384,7 @@ export default async function ArticlePage({ params }: Params) {
          * a reader who arrived from a search result to Google.
          */
         crumb={
-          <div className="mt-6">
+          <div className="">
             <a
               className="text-sm font-semibold text-ink-soft transition-colors hover:text-ink"
               href={langHref(lang, dayPath(date))}
@@ -477,7 +470,12 @@ export default async function ArticlePage({ params }: Params) {
        * 18px ink-mid, the prose 16px — that hierarchy was always there, and it
        * was being drawn on top of a second, redundant one made of shadow.
        */}
-      <section className={`${SECTION} ${PAD}`}>
+      {/* NO `SECTION` ON TOP OF THE MASTHEAD'S OWN `pb-4`. The meta row above
+          is this headline's kicker — the topic, the source, the author, the
+          date — and 48px between a kicker and the line it introduces reads as
+          two blocks rather than one. Same correction as the day page, the
+          archive, the topic pages and /about; see the note in Shell.tsx. */}
+      <section className={PAD}>
         <h1 className="text-2xl leading-tight font-bold text-ink sm:text-3xl">
           <ArticleTitle article={article} lang={lang} variant="hero" />
         </h1>
@@ -519,79 +517,71 @@ export default async function ArticlePage({ params }: Params) {
         />
 
         {/**
-         * OUT TO THE ORIGINAL — a whole card now, where this was one pill in a
-         * right-aligned row.
+         * THE TWO EXITS, SIDE BY SIDE — half the column each from `sm:` up,
+         * stacked on a phone.
          *
-         * IT IS THE ONE ACTION THIS PAGE OWES and it earns the width: a reader
-         * at the foot of our summary either wants the article or does not, and a
-         * 40px pill among two others made that the same size as a decision about
-         * sharing. The card also has room for the thing the pill could not
-         * carry — THE ORIGINAL'S OWN HEADLINE, in its own language — which is
-         * what tells a reader what they are about to open before they open it,
-         * and doubles as the honest statement that this page has been a summary
-         * of somebody else's writing.
+         * THEY WERE TWO FULL-WIDTH CARDS, ONE UNDER THE OTHER. That put 200px
+         * of furniture between the end of the prose and 「下一篇」, for two
+         * controls that are the same kind of thing: this is where the reader
+         * leaves, and these are the two ways out. Beside each other they read as
+         * a choice, which is what they are; stacked they read as two
+         * announcements.
          *
-         * STILL SECONDARY IN WEIGHT despite the size: an outline card, not a
-         * filled one. This digest exists so that most of the time a reader does
-         * not have to click here — `read_original` is the counter-metric, see
-         * TRACKING.md — so the emphasis must not push them off the page it just
-         * spent 450 characters replacing.
+         * `sm:grid-cols-2` AND NOT A FLEX ROW, so the two are exactly equal
+         * regardless of what is in them — a flex row would let the source's name
+         * and the original's headline decide how much of the column sharing
+         * gets. `items-stretch` is the grid's default and is what keeps their
+         * heights matched when one wraps to three lines and the other does not.
+         *
+         * SHARING ON THE LEFT, which is reading order. The order is an argument
+         * about which way the page wants the reader to leave: `read_original` is
+         * this site\'s COUNTER-metric — the digest exists so that most of the
+         * time nobody needs it — while a share is the one exit that brings
+         * somebody else back. The action being encouraged comes first.
          */}
-        <a
-          className={`${SECTION} flex items-center gap-4 rounded-card border border-line px-5 py-4${ACTION_OUTLINE}`}
-          href={article.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          /* `from` separates the two places this exists: a reader on a
-             single-article page arrived from a share or a search, which is a
-             different reader from one scrolling the day's list. */
-          data-track="read_original"
-          data-track-source={article.sourceId}
-          data-track-from="article"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="text-base font-bold text-ink">
-                {t.readOriginal}
-              </span>
-              <span className="size-1 flex-none rounded-full bg-orange" />
-              <span
-                className="text-sm font-bold"
-                style={{ color: themedAccent(source.accent) }}
-              >
-                {source.name}
-              </span>
-            </span>
-            {/* The article's OWN name, which on this site is always
-                `article.title` — never the rewrite. See `titleZh` in lib/types:
-                the rewrite is our headline, and what is on the other end of this
-                link is the piece the source published. */}
-            <span className="mt-1 block text-sm leading-snug font-semibold text-ink-soft">
-              {article.title}
-            </span>
-          </span>
-          {/* The outbound mark. `aria-hidden` because the anchor's own text
-              already says where this goes. */}
-          <span aria-hidden className="flex-none text-base text-ink-soft">
-            ↗
-          </span>
-        </a>
-
-        {/**
-         * SHARING, and it is at the FOOT of the article rather than in the top
-         * bar — which is where the reference design puts it.
-         *
-         * The bar stopped being sticky in this same round, so a control up there
-         * is only reachable by scrolling back to the top of a long page: exactly
-         * the cost that change was noted as having. The moment a reader wants to
-         * pass a piece on is the moment they finish it, and that moment is here.
-         *
-         * IDENTICAL PROPS TO EVERY OTHER SHARE ENTRY POINT, deliberately: the
-         * same permalink, the same poster set, the same title and thesis in the
-         * same language, so a share made here and one made anywhere else are the
-         * same object.
-         */}
-        <div className="mt-3 flex justify-end">
+        <div className={`${SECTION} grid gap-3 sm:grid-cols-2`}>
+          {/**
+           * SHARING — a card, and it was a pill in the corner.
+           *
+           * IT IS AT THE FOOT of the article rather than in the top bar — which
+           * is where the reference design puts it. The bar stopped being sticky
+           * in an earlier round, so a control up there is only reachable by
+           * scrolling back to the top of a long page: exactly the cost that
+           * change was noted as having. The moment a reader wants to pass a
+           * piece on is the moment they finish it, and that moment is here.
+           *
+           * WHY IT GREW. It was one outline pill reading 「分享」 — a control
+           * that describes the gesture and not the thing. What this button
+           * actually makes is a SET of 1080x1440 cards drawn for 小红书 and
+           * WeChat, and that set is the one thing this site hands a reader that
+           * nothing else on the web does. It was entirely invisible until after
+           * the press: nobody shares an asset they have not seen. So the card
+           * shows one — part 1, the identity card.
+           *
+           * THE THUMBNAIL IS `loading="lazy"` AND THAT IS LOAD-BEARING. The
+           * poster route is `force-dynamic` with no server cache (see
+           * lib/poster-serve): every miss is a Satori render of about a second,
+           * cached by HTTP for an hour. This row is below the whole summary on
+           * every article, so a real browser fetches it only when a reader
+           * scrolls to it — precisely the engaged reader this is for — and a
+           * crawler walking 400 article pages does not fetch it at all.
+           *
+           * `aspect-[3/4]` ON THE BOX, so the space is reserved before the
+           * image arrives and the card does not jump when it does. `w-14` at
+           * half a column where it was `w-16 sm:w-20` full width: the poster is
+           * an indication that one exists, and at 355px the words and the
+           * button need the room more than the picture does.
+           *
+           * IDENTICAL PROPS TO EVERY OTHER SHARE ENTRY POINT, deliberately: the
+           * same permalink, the same poster set, the same title and thesis in
+           * the same language, so a share made here and one made anywhere else
+           * are the same object.
+           *
+           * THE CARD ITSELF IS DRAWN BY `ShareButton`, not here — the whole box
+           * is the control now rather than a box with a button in it, and that
+           * box has to be the `<button>`. What this file passes in is the two
+           * things inside it; see the `children` prop there.
+           */}
           <ShareButton
             url={path}
             posterBase={posterBase(lang, date, article.id)}
@@ -600,57 +590,117 @@ export default async function ArticlePage({ params }: Params) {
             thesis={summaryFor(article, lang).thesis}
             tags={summaryFor(article, lang).tags ?? []}
             lang={lang}
-          />
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="aspect-[3/4] w-14 flex-none rounded-xl border border-line object-cover shadow-cover"
+              src={posterPartUrl(posterBase(lang, date, article.id), 1)}
+              alt=""
+              loading="lazy"
+            />
+
+            {/* ONE LINE, NOT TWO. There was a second reading 「自动生成 4 张图，
+                可直接发小红书 / 微信」 — the machine describing its own output,
+                which is the same tic the summary prompt bans in a thesis. The
+                thumbnail beside it already shows what comes out; saying it in
+                words as well is telling a reader what they are looking at. */}
+            <span className="min-w-0 flex-1 text-base font-bold text-ink">
+              {t.shareCardTitle}
+            </span>
+          </ShareButton>
+
+          {/**
+           * OUT TO THE ORIGINAL — a card, and it was a pill too.
+           *
+           * WHAT THE CARD CARRIES THAT THE PILL COULD NOT is THE ORIGINAL'S OWN
+           * HEADLINE, in its own language, which tells a reader what they are
+           * about to open before they open it and doubles as the honest
+           * statement that this page has been a summary of somebody else's
+           * writing.
+           *
+           * `line-clamp-2` ON THAT HEADLINE, which it did not need at full
+           * width. At half a column a long one runs to four lines and makes
+           * this half taller than the share half beside it — and the grid then
+           * stretches both, so one card's headline decides how much white space
+           * the other one has.
+           *
+           * STILL SECONDARY IN WEIGHT: an outline card with no fill, and no
+           * button inside it. This digest exists so that most of the time a
+           * reader does not have to click here — `read_original` is the
+           * counter-metric, see TRACKING.md — so the emphasis must not push them
+           * off the page it just spent 450 characters replacing.
+           */}
+          <a
+            className={`flex items-center gap-3 rounded-card border border-line px-4 py-4${ACTION_OUTLINE}`}
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            /* `from` separates the two places this exists: a reader on a
+               single-article page arrived from a share or a search, which is a
+               different reader from one scrolling the day's list. */
+            data-track="read_original"
+            data-track-source={article.sourceId}
+            data-track-from="article"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-base font-bold text-ink">
+                  {t.readOriginal}
+                </span>
+                <span className="size-1 flex-none rounded-full bg-orange" />
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: themedAccent(source.accent) }}
+                >
+                  {source.name}
+                </span>
+              </span>
+              {/* The article's OWN name, which on this site is always
+                  `article.title` — never the rewrite. See `titleZh` in
+                  lib/types: the rewrite is our headline, and what is on the
+                  other end of this link is the piece the source published. */}
+              <span className="mt-1 block line-clamp-2 text-sm leading-snug font-semibold text-ink-soft">
+                {article.title}
+              </span>
+            </span>
+            {/* The outbound mark. `aria-hidden` because the anchor's own text
+                already says where this goes. */}
+            <span aria-hidden className="flex-none text-base text-ink-soft">
+              ↗
+            </span>
+          </a>
         </div>
       </section>
 
       {/**
        * WHAT TO READ NEXT, IN THE ORDER A READER DECIDES IT.
        *
-       * Three blocks, and the order is the argument. First more reading, because
-       * a reader who has just finished a take is deciding whether there is
-       * another one worth their time and the answer has to be in front of them
-       * before anything is asked of them. Then the newsletter, which is the ask —
-       * and it lands at the one moment on this site where "finished" is
-       * unambiguous. Then the day, which is where this page has always ended.
+       * Three blocks, and the order is the argument. First the NEIGHBOURS —
+       * previous and next within this edition, see the note there — because a
+       * reader who has just finished a take is deciding whether there is another
+       * one worth their time, and the cheapest possible answer is the piece that
+       * ran beside this one. Then the recommendations, which are the same
+       * question answered across the whole archive rather than within one day.
+       * Then the newsletter, which is the ask, and it lands at the one moment on
+       * this site where "finished" is unambiguous.
+       *
+       * THE NEIGHBOURS WERE LAST AND ARE FIRST. Under the recommendation block
+       * they were four rows of pictures further down than the place a reader
+       * actually looks for 「下一篇」, which is immediately after the piece ends.
        *
        * THE PAGE USED TO END AT THE THIRD OF THOSE AND NOTHING ELSE. One link
        * onward, to a list the reader has probably already seen, on the page that
        * receives almost every arrival from search and from every link anybody
        * shares. That was the whole of this site's session depth.
        */}
-      <div className={PAD}>
-        <RelatedArticles article={article} lang={lang} />
-      </div>
-
-      {/* Only when there is somewhere for the address to go — `signupOpen` reads
-          the Resend configuration on the server, the same gate `PageShell` asks
-          on behalf of the bar. A subscribe block with no mailing list behind it
-          is a form that fails after the reader has typed into it.
-
-          `SECTION` for the rhythm and `PAD` for the gutter, like every other
-          full-width block; the component itself draws the plate. */}
-      {signupOpen() ? (
-        <div className={`${SECTION} ${PAD}`}>
-          <SubscribeDialog lang={lang} variant="inline" picks={MAIL_TOP_N} />
-        </div>
-      ) : null}
-
-      <div className={PAD}>
-        <EndLink
-          href={langHref(lang, dayPath(date))}
-          label={t.wholeDay}
-          sub={t.wholeDaySub(date, found.digest.stats.shown)}
-          track="day_open"
-          trackFrom="article"
-        />
-      </div>
-
       {/**
        * PREVIOUS / NEXT, WITHIN THIS EDITION.
        *
-       * Two links at the foot of the piece, in the day's own running order — see
-       * `previous`/`next` above for why this does not walk into yesterday.
+       * Two links straight after the piece, in the day's own running order — see
+       * `previous`/`next` above for why this does not walk into yesterday. They
+       * were at the very foot of the page, under the recommendations and the
+       * newsletter; 「下一篇」 belongs where a reader reaches the end, not after
+       * two more blocks have had their turn.
        *
        * EACH ONE NAMES THE PIECE IT LEADS TO rather than saying only 「下一篇」.
        * A bare direction asks a reader to press a control to find out what is
@@ -672,7 +722,9 @@ export default async function ArticlePage({ params }: Params) {
        * a measure of an edition being read rather than a page being landed on.
        */}
       {previous || next ? (
-        <nav className={`${PAD} mt-8 flex items-start justify-between gap-4`}>
+        <nav
+          className={`${SECTION} ${PAD} flex items-start justify-between gap-4`}
+        >
           {previous ? (
             <a
               className="group min-w-0 flex-1 text-left"
@@ -711,6 +763,37 @@ export default async function ArticlePage({ params }: Params) {
           )}
         </nav>
       ) : null}
+
+      <div className={PAD}>
+        <RelatedArticles article={article} lang={lang} />
+      </div>
+
+      {/* Only when there is somewhere for the address to go — `signupOpen` reads
+          the Resend configuration on the server, the same gate `PageShell` asks
+          on behalf of the bar. A subscribe block with no mailing list behind it
+          is a form that fails after the reader has typed into it.
+
+          `SECTION` for the rhythm and `PAD` for the gutter, like every other
+          full-width block; the component itself draws the plate. */}
+      {signupOpen() ? (
+        <div className={`${SECTION} ${PAD}`}>
+          <SubscribeDialog lang={lang} variant="inline" picks={MAIL_TOP_N} />
+        </div>
+      ) : null}
+
+      {/**
+       * THE 「当天全部文章」 PANEL WAS HERE, a full-width link to `dayPath(date)`.
+       *
+       * IT WAS THE THIRD LINK ON THIS PAGE TO THAT ONE DAY. The `← 返回` crumb
+       * at the top goes there and so does the date in the meta row beside the
+       * source, so the day keeps its inbound links and nothing is orphaned —
+       * what went is a full-width panel, below a newsletter card, offering a
+       * destination the reader has already been offered twice.
+       *
+       * THE STRINGS STAY. `wholeDay` / `wholeDaySub` are still the mail's own
+       * end-of-message link (lib/mail/render), where they are the ONLY way back
+       * to the edition.
+       */}
 
       <Footer year={date.slice(0, 4)} lang={lang} />
     </PageShell>

@@ -61,7 +61,7 @@ export async function DayList({
        makes the list read as one column with rules across it rather than as a
        stack of separated objects — the same arrangement `ArticleBrief` uses, and
        a gap here would put air on both sides of every rule and undo it. */
-    <section className={`${SECTION} ${PAD}`}>
+    <section className={PAD}>
       {rows.map(({ date, digest, top }, at) => {
         const [, month, day] = date.split("-").map(Number);
         return (

@@ -623,7 +623,7 @@ function EntryCard({
           {/* The recomputed verdict, then what actually happened. Both, because
               the pair is the finding on any day older than the last rule change. */}
           <span
-            className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+            className={`rounded-button px-2.5 py-1 text-xs font-bold ${
               verdict.pass
                 ? "bg-ink text-paper"
                 : "border border-line text-ink-mid"

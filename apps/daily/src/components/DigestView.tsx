@@ -1,10 +1,10 @@
 import { ArticleBrief } from "./ArticleCards";
 import { PageShell } from "./PageShell";
-import { EndLink, Footer, Masthead, PAD, SECTION } from "./Shell";
+import { Footer, Masthead, PAD, SECTION } from "./Shell";
 import { strings } from "@/lib/i18n";
 import { PhotoCard } from "./Photo";
 import { shownArticles } from "@/lib/store";
-import { href, type Lang } from "@/lib/lang";
+import type { Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
 import type { Digest } from "@/lib/types";
 
@@ -162,20 +162,19 @@ export function DigestView({
         <EmptyState lang={lang} />
       )}
 
-      <div className={PAD}>
-        <EndLink
-          /* THE FRONT PAGE, not `/archive`. The archive 404s until there are more
-             days than the front page shows (see `hasArchive` in lib/paging), so
-             linking straight to it from here would be a dead link for the site's
-             first week and after any future change to that threshold. `/` is always
-             a page, and it carries the route onward to the archive when there is
-             one — day → front page → archive, with no condition to keep in sync. */
-          href={href(lang, "/")}
-          label={t.allDays}
-          sub={t.allDaysSub}
-          track="all_days_open"
-        />
-      </div>
+      {/**
+       * NO WAY-ONWARD CARD HERE ANY MORE. It read 「看其它日期 / 最近一周，以及
+       * 更早的归档」 and pointed at `/`, and both halves of that had gone stale:
+       * the front page is today's picks rather than a run of dates, and 归档 is
+       * its own destination in the bar with a month browser behind it. A card
+       * promising "the past week and the archive beyond it" led to neither.
+       *
+       * NOTHING REPLACES IT. The bar carries 今天 / 话题 / 归档 / 关于 on every
+       * page and the phone gets the same four in the drawer, so the end of a
+       * page no longer has to be a navigation surface — which is what let this
+       * card exist in the first place, back when the footer was fine print and
+       * the bar had one link in it.
+       */}
 
       <Footer year={digest.date.slice(0, 4)} lang={lang} />
     </PageShell>

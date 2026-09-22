@@ -236,7 +236,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
            button is the same page telling the reader to do what they did. The
            `appinstalled` listener above covers the tab it was pressed in, which
            this query cannot see. */
-        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-2 text-xs font-bold text-ink-mid [@media(display-mode:standalone)]:hidden transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+        className="flex cursor-pointer items-center gap-1.5 rounded-button border border-line bg-paper px-3 py-2 text-xs font-bold text-ink-mid [@media(display-mode:standalone)]:hidden transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
       >
         <AddIcon />
         <span>{t.saveApp}</span>
@@ -273,7 +273,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
             <button
               type="button"
               onClick={install}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-bold text-paper transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-button bg-ink px-4 py-3 text-sm font-bold text-paper transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
             >
               <AddIcon />
               {t.installNow}

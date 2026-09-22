@@ -141,6 +141,72 @@ export function Cover({
 }) {
   const source = sourceOf(sourceId);
 
+  /**
+   * THE BANNER SHOWS THE WHOLE PICTURE, and it is the one variant that does.
+   *
+   * Every other box here is a FIXED SHAPE with `object-cover`, which crops —
+   * correct for a thumbnail, whose job is to be recognisable at 80px in a
+   * column of eight. The article page's lede is not that: it is the piece's own
+   * photograph, at the top of the one page devoted to it, and cropping a third
+   * of it away to make it 16:9 is throwing away the part the photographer
+   * framed for.
+   *
+   * SO THE HEIGHT IS FIXED AND THE WIDTH FOLLOWS THE RATIO. The `<img>` is in
+   * normal flow rather than absolutely positioned, with `h-…` and `w-auto`, so
+   * the browser derives the width from the file's own aspect ratio: a panorama
+   * comes out wide, a portrait comes out narrow, and neither is cut. Fixing the
+   * HEIGHT rather than the width is what keeps a column of article pages
+   * rhythmically the same — a fixed width would let a tall photograph push the
+   * prose most of a screen down.
+   *
+   * `h-48 sm:h-80` (192/320px) AND THE PHONE NUMBER IS THE BINDING ONE. At
+   * 361px of column a 16:9 picture is 203px tall before it is wider than the
+   * page, so 192 leaves it room; 320px on a wide screen is 569px of a 750px
+   * column, which is a lede rather than a band.
+   *
+   * `max-w-full` + `object-contain` FOR THE ONE CASE THAT ESCAPES that sum: a
+   * picture wider than 16:9 still hits the column edge, and there it letterboxes
+   * inside the box instead of overflowing or being cropped. It is the fallback,
+   * not the mechanism.
+   *
+   * `mx-auto` BECAUSE THE WIDTH IS THE FILE\'S. Every other block on this page
+   * fills the column, so it has a left edge and the gutter puts it there; this
+   * one is as wide as the photograph happens to be, and a picture narrower than
+   * its column that hugs the left reads as a layout that failed rather than as a
+   * deliberate measure. Centred is what a plate in a book does.
+   *
+   * NO `shadow-cover` AND NO `bg-page-deep` HERE, because there is no box to
+   * shade: the element is the picture. A shadow around an image whose width is
+   * unknown until it loads would also move when it does.
+   */
+  if (variant === "banner") {
+    if (image) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          className="mx-auto h-48 w-auto max-w-full rounded-xl object-contain sm:h-80"
+          src={image}
+          alt=""
+          loading="lazy"
+        />
+      );
+    }
+    /* NO FILE: the designed placeholder, and it keeps the 16:9 box because
+       there is no picture to take a ratio from. */
+    return (
+      <div
+        className={`relative flex-none overflow-hidden rounded-xl bg-page-deep shadow-cover ${SIZE.banner}`}
+      >
+        <div
+          className={`absolute inset-0 flex items-end ${LABEL.banner}`}
+          style={{ background: gradientFor(id, source.accent) }}
+        >
+          <span className="font-bold text-paper/95">{source.name}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`relative flex-none overflow-hidden rounded-xl bg-page-deep shadow-cover ${SIZE[variant]}`}

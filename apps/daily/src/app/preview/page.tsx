@@ -272,7 +272,7 @@ export default async function PreviewPage({
           <a
             key={day}
             href={`/preview?date=${day}`}
-            className={`rounded-full px-3 py-1 text-xs font-bold no-underline ${
+            className={`rounded-button px-3 py-1 text-xs font-bold no-underline ${
               day === digest.date ? "bg-ink text-paper" : "bg-card text-ink-mid"
             }`}
           >

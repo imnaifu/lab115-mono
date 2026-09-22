@@ -5,7 +5,6 @@ import { hasTopicImage, TopicImage } from "./TopicImage";
 import { TopicChips } from "./TopicChips";
 import {
   Breadcrumb,
-  EndLink,
   Footer,
   Masthead,
   MastheadDot,
@@ -192,7 +191,7 @@ export async function TopicView({
        * `priority` on this one instance only: it is the page's first screen. The
        * hub's eight cards stay lazy.
        */}
-      <section className={`${SECTION} ${PAD}`}>
+      <section className={PAD}>
         <div className="relative overflow-hidden rounded-card">
           <TopicImage
             category={category}
@@ -330,7 +329,7 @@ export async function TopicView({
         <nav className={`${PAD} mt-8 flex items-center justify-between gap-3`}>
           {page > 1 ? (
             <a
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+              className="rounded-button border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
               href={href(lang, topicPath(category.id, page - 1))}
               data-track="topic_open"
               data-track-topic={category.id}
@@ -344,7 +343,7 @@ export async function TopicView({
           )}
           {page < total ? (
             <a
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+              className="rounded-button border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
               href={href(lang, topicPath(category.id, page + 1))}
               data-track="topic_open"
               data-track-topic={category.id}
@@ -382,16 +381,11 @@ export async function TopicView({
         <section className={`${SECTION} ${PAD}`}>
           <h2 className="text-sm font-bold text-ink-soft">{t.topicOthers}</h2>
           <div className="mt-3">
-            {/* WRAPPED, not scrolled — see the `layout` prop. This row is at
-                the foot of the page with nothing under it to push down, so
-                showing all seven at once costs nothing; the front page's copy
-                of this row is above the day's first headline and must not. */}
-            <TopicChips
-              lang={lang}
-              from="topic_page"
-              exclude={category.id}
-              layout="wrap"
-            />
+            {/* NO `layout` PROP ANY MORE. It existed to tell this row apart
+                from the front page's copy, which had to scroll to survive a
+                phone; that copy is gone (the bar and the drawer both name 话题)
+                and wrapping is now the only thing the component does. */}
+            <TopicChips lang={lang} from="topic_page" exclude={category.id} />
           </div>
         </section>
       ) : null}
@@ -400,15 +394,19 @@ export async function TopicView({
           never seen this site's actual shape, and the front page is the one page
           that shows it — which is also the one thing a list of more topics
           cannot do. */}
-      <div className={PAD}>
-        <EndLink
-          href={href(lang, "/")}
-          label={t.allDays}
-          sub={t.allDaysSub}
-          track="home_open"
-          trackFrom="topic"
-        />
-      </div>
+      {/**
+       * NO WAY-ONWARD CARD HERE ANY MORE. It read 「看其它日期 / 最近一周，以及
+       * 更早的归档」 and pointed at `/`, and both halves of that had gone stale:
+       * the front page is today's picks rather than a run of dates, and 归档 is
+       * its own destination in the bar with a month browser behind it. A card
+       * promising "the past week and the archive beyond it" led to neither.
+       *
+       * NOTHING REPLACES IT. The bar carries 今天 / 话题 / 归档 / 关于 on every
+       * page and the phone gets the same four in the drawer, so the end of a
+       * page no longer has to be a navigation surface — which is what let this
+       * card exist in the first place, back when the footer was fine print and
+       * the bar had one link in it.
+       */}
 
       <Footer
         year={dates[0]?.slice(0, 4) ?? String(new Date().getUTCFullYear())}

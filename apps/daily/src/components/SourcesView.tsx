@@ -122,7 +122,7 @@ export async function SourcesView({ lang }: { lang: Lang }) {
        * has, answered in a sentence nobody else could write. See `sourcesLead` in
        * lib/i18n.
        */}
-      <p className={`${SECTION} ${PAD} max-w-prose text-ink-mid`}>
+      <p className={`${PAD} max-w-prose text-ink-mid`}>
         {t.sourcesLead}
       </p>
 

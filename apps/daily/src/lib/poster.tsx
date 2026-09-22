@@ -14,8 +14,13 @@ import {
 } from "@/lib/share";
 // The half of the poster that touches the network and a native module — see the
 // note at the top of that file for why the two cannot live together.
-import { posterCover, posterFonts, POSTER_MARK, posterText } from "@/lib/poster-assets";
-import { SITE } from "@/lib/config";
+import {
+  posterCover,
+  posterFonts,
+  POSTER_MARK,
+  posterText,
+} from "@/lib/poster-assets";
+import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { sourceOf } from "@/lib/sources";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
@@ -51,7 +56,7 @@ function Dot() {
         height: 7,
         borderRadius: 4,
         margin: "0 15px",
-        background: "#8a83a8",
+        background: "#5f587e",
         opacity: 0.55,
       }}
     />
@@ -103,7 +108,24 @@ export async function renderPoster({
    * remove. Trimmed at the draw site rather than in i18n so the sentence stays a
    * sentence in the places that print it as one.
    */
-  const tagline = posterClean(strings(lang).tagline).replace(/[。.]$/, "");
+  /**
+   * `homeHeading` RATHER THAN `tagline`, and the swap is site-wide.
+   * The line under the wordmark used to read 「过滤信息噪音，严选各领域的犀利
+   * 见解」 — a claim about what the site FILTERS OUT, which is a description of
+   * a pipeline. 「每天 5 篇，理解更大的世界」 is a claim about what a reader
+   * GETS, and it is the same sentence the front page's own heading makes, so
+   * the poster, the card, the mail and the page now say one thing rather than
+   * three. `tagline` is not deleted: it is still every page's
+   * `<meta name="description">` and the feed's `<subtitle>` — see lib/i18n.
+   *
+   * THE COUNT IS INTERPOLATED FROM `MAIL_TOP_N`, never written out. That was
+   * settled the last time a number appeared in copy on this site; see the note
+   * on `subscribePitch` in lib/i18n for the bill the hard-coded 「五条」 left.
+   */
+  const tagline = posterClean(strings(lang).homeHeading(MAIL_TOP_N)).replace(
+    /[。.]$/,
+    "",
+  );
   const source = sourceOf(article.sourceId);
 
   /**
@@ -208,8 +230,7 @@ export async function renderPoster({
   }
 
   async function draw(art: string | null): Promise<Buffer> {
-  const image = new ImageResponse(
-    (
+    const image = new ImageResponse(
       <div
         style={{
           width: "100%",
@@ -217,7 +238,7 @@ export async function renderPoster({
           display: "flex",
           flexDirection: "column",
           background: "#fbf3e9",
-          color: "#3b3563",
+          color: "#2d294c",
           padding: `${POSTER.pad + 16}px ${POSTER.pad}px`,
           fontFamily: "Lora, Noto Serif SC",
         }}
@@ -247,7 +268,7 @@ export async function renderPoster({
               display: "flex",
               padding: `${POSTER.domainPadY}px ${POSTER.domainPadX}px`,
               borderRadius: 999,
-              background: "#3b3563",
+              background: "#2d294c",
               color: "#fbf3e9",
               fontSize: POSTER.domainSize,
               fontWeight: 700,
@@ -257,7 +278,11 @@ export async function renderPoster({
             {domain}
           </div>
           <div
-            style={{ display: "flex", fontSize: POSTER.dateSize, color: "#8a83a8" }}
+            style={{
+              display: "flex",
+              fontSize: POSTER.dateSize,
+              color: "#5f587e",
+            }}
           >
             {date}
           </div>
@@ -328,7 +353,7 @@ export async function renderPoster({
                   marginTop: POSTER.taglineGap,
                   fontSize: POSTER.taglineSize,
                   lineHeight: 1,
-                  color: "#8a83a8",
+                  color: "#5f587e",
                 }}
               >
                 {tagline}
@@ -463,7 +488,7 @@ export async function renderPoster({
                       alignItems: "center",
                       fontSize: POSTER.metaSize,
                       fontWeight: 600,
-                      color: "#8a83a8",
+                      color: "#5f587e",
                     }}
                   >
                     <div style={{ display: "flex", color: source.accent }}>
@@ -498,7 +523,7 @@ export async function renderPoster({
                         fontSize: POSTER.originalSize,
                         fontWeight: 500,
                         lineHeight: 1.4,
-                        color: "#8a83a8",
+                        color: "#5f587e",
                       }}
                     >
                       {original}
@@ -545,7 +570,7 @@ export async function renderPoster({
                     fontSize: POSTER.thesisSize,
                     fontWeight: 500,
                     lineHeight: 1.5,
-                    color: "#3b3563",
+                    color: "#2d294c",
                   }}
                 >
                   {thesis}
@@ -576,7 +601,7 @@ export async function renderPoster({
                 display: "flex",
                 flexDirection: "column",
                 fontSize: POSTER.paraSize,
-                color: "#3b3563",
+                color: "#2d294c",
                 // The packer counts rows at this leading; see PARA_LEADING for why
                 // the number is imported rather than typed here a second time.
                 lineHeight: PARA_LEADING,
@@ -621,38 +646,37 @@ export async function renderPoster({
             justifyContent: "flex-end",
             fontSize: POSTER.pageSize,
             fontWeight: 700,
-            color: "#8a83a8",
+            color: "#5f587e",
           }}
         >
           {total > 1 ? `${part}/${total}` : ""}
         </div>
-      </div>
-    ),
-    { width: POSTER_WIDTH, height: POSTER_HEIGHT, fonts },
-  );
+      </div>,
+      { width: POSTER_WIDTH, height: POSTER_HEIGHT, fonts },
+    );
 
-  /**
-   * Buffered and re-emitted with a LENGTH, rather than returned as it comes.
-   *
-   * `ImageResponse` is a streaming response, so it goes out chunked with no
-   * `content-length` — and an image whose end nothing declares is a broken picture
-   * the moment a mobile connection drops a chunk. The reader sees the broken-image
-   * glyph, then long-presses it, which re-requests the URL and works: intermittent,
-   * per-network, and impossible to reproduce on a desk.
-   *
-   * Buffering costs one allocation per request and buys a response whose size is
-   * stated up front, so a truncated one is detectable rather than merely wrong. It
-   * is not proof against a dropped connection — nothing at this layer is — which is
-   * why the sheet also retries; see the preview in ShareSheet.
-   */
-  /**
-   * Buffered rather than returned as a stream.
-   *
-   * The route needs the length so it can declare `content-length` — an image whose
-   * end nothing announces is a broken picture the moment a mobile connection drops
-   * a chunk — and the job needs the bytes to write a file. One allocation serves
-   * both.
-   */
-  return Buffer.from(await image.arrayBuffer());
+    /**
+     * Buffered and re-emitted with a LENGTH, rather than returned as it comes.
+     *
+     * `ImageResponse` is a streaming response, so it goes out chunked with no
+     * `content-length` — and an image whose end nothing declares is a broken picture
+     * the moment a mobile connection drops a chunk. The reader sees the broken-image
+     * glyph, then long-presses it, which re-requests the URL and works: intermittent,
+     * per-network, and impossible to reproduce on a desk.
+     *
+     * Buffering costs one allocation per request and buys a response whose size is
+     * stated up front, so a truncated one is detectable rather than merely wrong. It
+     * is not proof against a dropped connection — nothing at this layer is — which is
+     * why the sheet also retries; see the preview in ShareSheet.
+     */
+    /**
+     * Buffered rather than returned as a stream.
+     *
+     * The route needs the length so it can declare `content-length` — an image whose
+     * end nothing announces is a broken picture the moment a mobile connection drops
+     * a chunk — and the job needs the bytes to write a file. One allocation serves
+     * both.
+     */
+    return Buffer.from(await image.arrayBuffer());
   }
 }

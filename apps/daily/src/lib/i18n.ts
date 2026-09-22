@@ -36,7 +36,6 @@ const STRINGS = {
     brand: "每日严选",
     notFoundTitle: "未找到",
 
-
     posts: (n: number) => `${n} 篇新文章`,
     /**
      * 日页的标题。「今天的 12 篇」—— 名词短语，不是日期。
@@ -62,13 +61,11 @@ const STRINGS = {
      */
     homeHeading: (n: number) => `每天 ${n} 篇，理解更大的世界`,
     /** 大图上那两颗按钮。左边进当天，右边开订阅面板。 */
-    homeSeeToday: "查看今日精选",
+    homeSeeToday: "查看今日文章",
     homeSubscribe: "订阅更新",
     /** 大图下面那一段的小标题和它右边的去处。 */
     todayPicks: "今日精选",
     seeAll: "查看全部",
-    /** 首页只放五条，这是通往当天其余篇目的那一颗。 */
-    seeAllToday: (n: number) => `查看今日全部 ${n} 篇`,
     readTime: (n: number) => `读完约 ${n} 分钟`,
     sectionCount: (n: number) => `${n} 篇`,
     days: (n: number) => `${n} 天`,
@@ -111,6 +108,15 @@ const STRINGS = {
     /** The way out of that list, into the archive. */
     morePosts: "更多文章……",
     share: "分享",
+    /**
+     * 文章页底那张分享卡片上唯一一行字。
+     *
+     * 这里曾经还有一条 `shareCardSub`「自动生成 N 张图，可直接发小红书 / 微信」。
+     * 去掉了：旁边就摆着那张图的缩略图，读者看得见会拿到什么，再用一句话把它
+     * 复述一遍，是机器在描述自己的产物 —— 跟 summarize 的 prompt 里禁掉的那类
+     * 「这篇文章真正……」是同一个毛病。
+     */
+    shareCardTitle: "把这篇发出去",
     /** The share button while it waits for the posters — see ShareButton. */
     preparing: "正在生成图片",
     copyLink: "复制链接",
@@ -178,12 +184,6 @@ const STRINGS = {
      * 需要这个按钮时看不懂的那部分。
      */
     langSwitch: "切换到 English",
-
-    /* The end-of-page link on a day page, back to the front page. It names what
-       is actually there — the newest week, with the archive one step further on —
-       rather than promising every date, which is the archive's job. */
-    allDays: "看其它日期",
-    allDaysSub: "最近一周，以及更早的归档",
 
     /**
      * The breadcrumb: what the trail calls the front page, and what a screen
@@ -356,9 +356,6 @@ const STRINGS = {
       "每个话题都是一条会一直长下去的流，点进去是我们在那个领域摘过的全部文章。",
     /** 话题卡片里那两条最近的文章上面的小标签。 */
     topicRecent: "最近更新",
-    /** 首页那一行 chips 的标题，以及末尾通往 `/topic` 的那一颗。 */
-    topicExplore: "探索话题",
-    topicMore: "更多",
 
     topicHeading: (name: string) => `${name}每日精选`,
     topicDocTitle: (name: string) => `${name}每日精选：观点、摘要与原文`,
@@ -390,7 +387,12 @@ const STRINGS = {
     related: "你可能还想读",
 
     /**
-     * 「为什么值得关注」—— 概要**末尾**那一块的小标题，全站唯一一个还留着的字段标签。
+     * 「为什么值得读」—— 概要**末尾**那一块的小标题，全站唯一一个还留着的字段标签。
+     *
+     * 它曾经叫「为什么值得关注」。「关注」是新闻业的词，说的是这条**事情**值不值得
+     * 你盯着；这一块回答的不是那个，是**这篇**值不值得你花时间。后者才是读者站在
+     * 摘要末尾真正在问的问题，也是这个站唯一能替他回答的问题。少一个字，也更贴
+     * 「你可能还想读」的口气。
      *
      * 其余的都删了。`TL;DR`（中文一度定成「划重点」）从五个位置消失了：文章页的
      * 导语、日页卡片、首页 teaser、海报、feed。理由是 label 在那些位置什么也没
@@ -402,7 +404,7 @@ const STRINGS = {
      * 我们的判断。读者需要被告知这一点，否则它读起来就是第三遍摘要。label 在这里
      * 是有信息的，在导语上没有。
      */
-    whyItMatters: "为什么值得关注",
+    whyItMatters: "为什么值得读",
 
     /** 开头那张照片的出处，署名行里夹在作者和许可之间。作者名和许可名都是数据，
         只有这个词是文案，所以只有它在这里。 */
@@ -459,7 +461,8 @@ const STRINGS = {
     confirmedBody: "明天早上七点，第一封就会到。",
     /** 过期、被改过、邮件客户端截断，对读者是同一件事：这个链接现在没用了。 */
     confirmInvalidTitle: "链接失效了",
-    confirmInvalidBody: "确认链接只在 24 小时内有效。回到首页重新订阅一次就好。",
+    confirmInvalidBody:
+      "确认链接只在 24 小时内有效。回到首页重新订阅一次就好。",
     backHome: "回到首页",
 
     /** 收件箱那一行：牌子加日期。篇数不写进去 —— 邮件里是五条，当天可能有二十条，
@@ -554,7 +557,6 @@ const STRINGS = {
     brand: "Daily Picks",
     notFoundTitle: "Not found",
 
-
     posts: (n: number) => `${n} new ${n === 1 ? "post" : "posts"}`,
     /* See the Chinese side: a noun phrase rather than the date, with the date
        demoted to the kicker above it. */
@@ -568,7 +570,6 @@ const STRINGS = {
     homeSubscribe: "Subscribe",
     todayPicks: "Today's picks",
     seeAll: "See all",
-    seeAllToday: (n: number) => `All ${n} from today`,
     readTime: (n: number) => `about ${n} min to read`,
     sectionCount: (n: number) => `${n}`,
     days: (n: number) => `${n} ${n === 1 ? "day" : "days"}`,
@@ -578,6 +579,8 @@ const STRINGS = {
     latestPosts: "Latest posts",
     morePosts: "More posts…",
     share: "Share",
+    /* See the Chinese side for why the second line went. */
+    shareCardTitle: "Pass this on",
     preparing: "Preparing images",
     copyLink: "Copy link",
     copied: "Link copied",
@@ -610,9 +613,6 @@ const STRINGS = {
        side. 中文 rather than "Chinese", for the same reason. */
     langSwitch: "Switch to 中文",
 
-    allDays: "Other editions",
-    allDaysSub: "The past week, and the archive beyond it",
-
     home: "Home",
     breadcrumb: "Breadcrumb",
 
@@ -629,11 +629,24 @@ const STRINGS = {
     archiveHeading: "Archive",
     archiveLead: "Every edition, by month",
     monthShort: (m: number) =>
-      ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1],
+      [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ][m - 1],
     monthTitle: (y: number, m: number) =>
-      `${["January","February","March","April","May","June","July","August","September","October","November","December"][m - 1]} ${y}`,
+      `${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][m - 1]} ${y}`,
     monthDay: (m: number, d: number) =>
-      `${d} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]}`,
+      `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]}`,
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
     newer: "Newer",
     older: "Older",
@@ -686,9 +699,18 @@ const STRINGS = {
       "Every page here is **our summary of somebody else's article** — not the original, and not a reprint. Each one links back to the source and names its author and publisher in the page's structured data.",
     ],
     aboutPillars: [
-      ["Picked, not aggregated", "From the international press and independent writers"],
-      ["Summarised, not editorialised", "We select and restate; the opinions are the authors'"],
-      ["Built to keep", "No chasing the news cycle, no headlines that oversell"],
+      [
+        "Picked, not aggregated",
+        "From the international press and independent writers",
+      ],
+      [
+        "Summarised, not editorialised",
+        "We select and restate; the opinions are the authors'",
+      ],
+      [
+        "Built to keep",
+        "No chasing the news cycle, no headlines that oversell",
+      ],
     ],
     aboutContact: "Get in touch",
     topicHubDocTitle: (names: readonly string[]) =>
@@ -698,8 +720,6 @@ const STRINGS = {
       "sources and files it under the topics below. Each one is a stream that " +
       "keeps growing — open it for everything we have picked in that field.",
     topicRecent: "Latest",
-    topicExplore: "Explore topics",
-    topicMore: "More",
 
     topicHeading: (name: string) => `${name}, picked daily`,
     topicDocTitle: (name: string) =>
@@ -721,9 +741,9 @@ const STRINGS = {
 
     photoSource: "Wikimedia Commons",
 
-
     emptyTitle: "Nothing today",
-    emptyBody: "No new posts from any source in the last 24 hours. Try again tomorrow.",
+    emptyBody:
+      "No new posts from any source in the last 24 hours. Try again tomorrow.",
 
     subscribe: "Subscribe by email",
     subscribeEmail: "Your email",
@@ -793,13 +813,28 @@ const STRINGS = {
     date: (y: number, m: number, d: number, weekday: number) =>
       `${
         [
-          "Sunday", "Monday", "Tuesday", "Wednesday",
-          "Thursday", "Friday", "Saturday",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
         ][weekday]
       }, ${d} ${
         [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December",
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
         ][m - 1]
       } ${y}`,
   },

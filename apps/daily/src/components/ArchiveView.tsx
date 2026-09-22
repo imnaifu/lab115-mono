@@ -112,85 +112,97 @@ export async function ArchiveView({
        * nothing else — the doorway shape `TOPIC_MIN_ARTICLES` exists to keep
        * this site away from.
        */}
-      {years.length > 1 ? (
-        <nav className={`${SECTION} ${PAD} flex flex-wrap gap-2`}>
-          {years.map((y) => {
-            const newestOfYear = months.find((m) => m.month.startsWith(y))!;
-            const current = y === String(year);
+      {/* ONE GROUP, `gap-3` INSIDE IT, and no top margin on the group itself.
+          The year row and the month grid were two `SECTION` blocks, which put
+          32px between two rows of the same control and another 32px on top of
+          the masthead's own padding — three gaps of the same size where there
+          is one heading, one picker and one list. The picker is now a single
+          object under the heading. */}
+      <div className={`${PAD} flex flex-col gap-3`}>
+        {years.length > 1 ? (
+          <nav className="flex flex-wrap gap-2">
+            {years.map((y) => {
+              const newestOfYear = months.find((m) => m.month.startsWith(y))!;
+              const current = y === String(year);
+              return (
+                <a
+                  key={y}
+                  href={href(
+                    lang,
+                    archivePath(
+                      newestOfYear.month === months[0].month
+                        ? undefined
+                        : newestOfYear.month,
+                    ),
+                  )}
+                  aria-current={current ? "page" : undefined}
+                  className={`rounded-button px-4 py-1.5 text-sm font-bold transition duration-150 ease-out ${
+                    current
+                      ? "bg-ink text-paper"
+                      : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink"
+                  }`}
+                >
+                  {y}
+                </a>
+              );
+            })}
+          </nav>
+        ) : null}
+
+        {/**
+         * TWELVE CELLS, ALWAYS — and the empty ones are text rather than links.
+         *
+         * Drawing only the months that exist would make the grid change shape
+         * every time the site publishes into a new one, and a reader who has
+         * learned where 9月 sits would have to find it again. Twelve is what a year
+         * is; the ones this site was not publishing in say so by being flat.
+         *
+         * `aria-disabled` rather than a `<button disabled>`: these are not
+         * controls that failed, they are months with nothing in them, and the
+         * markup should read as a list of months of which some are links.
+         */}
+        <nav className="grid grid-cols-6 gap-2">
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+            const key = `${year}-${String(m).padStart(2, "0")}`;
+            const has = live.has(key);
+            const current = key === shownMonth;
+            if (!has) {
+              return (
+                <span
+                  key={m}
+                  aria-disabled
+                  className="rounded-xl border border-line/60 px-2 py-2 text-center text-sm font-bold text-ink-soft/45"
+                >
+                  {t.monthShort(m)}
+                </span>
+              );
+            }
             return (
               <a
-                key={y}
+                key={m}
                 href={href(
                   lang,
-                  archivePath(
-                    newestOfYear.month === months[0].month
-                      ? undefined
-                      : newestOfYear.month,
-                  ),
+                  archivePath(key === months[0].month ? undefined : key),
                 )}
                 aria-current={current ? "page" : undefined}
-                className={`rounded-full px-4 py-1.5 text-sm font-bold transition duration-150 ease-out ${
+                className={`rounded-xl px-2 py-2 text-center text-sm font-bold transition duration-150 ease-out ${
                   current
                     ? "bg-ink text-paper"
-                    : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink"
+                    : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink active:opacity-80"
                 }`}
               >
-                {y}
+                {t.monthShort(m)}
               </a>
             );
           })}
         </nav>
-      ) : null}
+      </div>
 
-      {/**
-       * TWELVE CELLS, ALWAYS — and the empty ones are text rather than links.
-       *
-       * Drawing only the months that exist would make the grid change shape
-       * every time the site publishes into a new one, and a reader who has
-       * learned where 9月 sits would have to find it again. Twelve is what a year
-       * is; the ones this site was not publishing in say so by being flat.
-       *
-       * `aria-disabled` rather than a `<button disabled>`: these are not
-       * controls that failed, they are months with nothing in them, and the
-       * markup should read as a list of months of which some are links.
-       */}
-      <nav className={`${SECTION} ${PAD} grid grid-cols-6 gap-2`}>
-        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
-          const key = `${year}-${String(m).padStart(2, "0")}`;
-          const has = live.has(key);
-          const current = key === shownMonth;
-          if (!has) {
-            return (
-              <span
-                key={m}
-                aria-disabled
-                className="rounded-xl border border-line/60 px-2 py-2 text-center text-sm font-bold text-ink-soft/45"
-              >
-                {t.monthShort(m)}
-              </span>
-            );
-          }
-          return (
-            <a
-              key={m}
-              href={href(
-                lang,
-                archivePath(key === months[0].month ? undefined : key),
-              )}
-              aria-current={current ? "page" : undefined}
-              className={`rounded-xl px-2 py-2 text-center text-sm font-bold transition duration-150 ease-out ${
-                current
-                  ? "bg-ink text-paper"
-                  : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink active:opacity-80"
-              }`}
-            >
-              {t.monthShort(m)}
-            </a>
-          );
-        })}
-      </nav>
-
-      <section className={`${SECTION} ${PAD}`}>
+      {/* `pb-2` RATHER THAN A `SECTION` BETWEEN THIS AND THE ROWS. A heading
+          and the list it heads are one block: `DayList` used to add `mt-8` of
+          its own under this, so the month's name floated equidistant between
+          the picker above and its own dates below and belonged to neither. */}
+      <section className={`${SECTION} ${PAD} pb-2`}>
         <h2 className="text-xl font-bold tracking-tight text-ink">
           {t.monthTitle(year, monthNo)}
         </h2>

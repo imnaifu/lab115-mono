@@ -65,9 +65,21 @@ const WEIGHT = {
 const RECENCY_DAYS = 30;
 const WEIGHT_RECENCY = 20;
 
-/** How many rows the block shows. Four fills two columns evenly on a wide screen
- *  and reads as a short list on a phone; five leaves a hole in the grid. */
-export const RELATED_COUNT = 4;
+/**
+ * How many rows the block shows.
+ *
+ * THREE, AND IT WAS FOUR. The old number was a GRID argument — "four fills two
+ * columns evenly on a wide screen; five leaves a hole" — and the grid is gone:
+ * the block is a single column of flush rows now, so nothing about the layout
+ * has an opinion about the count any more.
+ *
+ * WHICH LEAVES THE ONLY ARGUMENT THAT SHOULD EVER HAVE DECIDED IT: how many
+ * recommendations a reader who has just finished one piece will actually
+ * consider. Each row is a headline plus two lines of thesis plus a picture, so
+ * four of them is most of a screen of things nobody asked for. Three is a
+ * suggestion; more than that is a feed.
+ */
+export const RELATED_COUNT = 3;
 
 /** Whole days between two `yyyy-mm-dd` keys. Parsed as UTC so the server's
  *  timezone can never shift a digest by a day — same rule as `formatDate`. */

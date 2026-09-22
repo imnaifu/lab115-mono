@@ -130,11 +130,22 @@ export function Masthead({
   children?: ReactNode;
 }) {
   return (
-    /* `pt-10` where there used to be `pt-24`: that padding existed to clear the
-       blobs, and what is above this now is a 56/64px bar. The bottom padding is
-       untouched — the rhythm between this block and the first thing under it was
-       never about the header's own furniture. */
-    <header className={`pt-4 pb-4 sm:pt-4 ${PAD}`}>
+    /**
+     * `pt-6`, AND IT WAS `pt-4`. The bar above is a 76px band with its own
+     * bottom rule, so 16px under it put the page's heading almost against the
+     * chrome — a heading needs to look like it is on the page rather than
+     * attached to the bar. (`sm:pt-4` went with it: it restated the base value
+     * and did nothing.)
+     *
+     * `pb-4` IS NOW THE WHOLE GAP TO WHAT FOLLOWS, and that is a change in who
+     * owns it. Every page used to open its first block with `SECTION` (`mt-8`)
+     * on top of this, which is 48px of hole between a heading and the thing it
+     * heads. The first block after a masthead now carries no top margin at all
+     * — see the day page, the archive, the topic pages and /about — so this
+     * padding is the rhythm, and blocks further down keep `SECTION` between
+     * each other.
+     */
+    <header className={`pt-6 pb-4 ${PAD}`}>
       {crumb}
 
       {/* ONE TYPE SCALE. There were two, picked by whether there was a subtitle,

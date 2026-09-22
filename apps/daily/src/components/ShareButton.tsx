@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ShareIcon } from "./BrandIcons";
 import { ShareSheet } from "./ShareSheet";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
@@ -67,6 +68,7 @@ export function ShareButton({
   thesis,
   tags,
   lang,
+  children,
 }: {
   /**
    * This article's permalink, absolute or root-relative. Relative is resolved
@@ -90,6 +92,20 @@ export function ShareButton({
    *  every digest archived before tags existed has none. */
   tags: string[];
   lang: Lang;
+  /**
+   * THE INSIDE OF THE CARD — the poster thumbnail and the one line of text.
+   *
+   * A SLOT RATHER THAN PROPS FOR THE TWO PIECES, because both are the PAGE'S to
+   * decide: the thumbnail is an `<img>` whose URL the page already computes for
+   * `og:image`, and the line is a string out of `strings(lang)`. What this file
+   * owns is the control — the press, the preload, the wait, the sheet — and it
+   * should not also own which picture goes in it.
+   *
+   * IT IS INSIDE A `<button>`, so whatever is passed must be phrasing content
+   * with nothing interactive in it. An anchor or a second button here is invalid
+   * markup and the browser will do something arbitrary with the click.
+   */
+  children?: React.ReactNode;
 }) {
   const t = strings(lang);
   const [open, setOpen] = useState(false);
@@ -208,36 +224,57 @@ export function ShareButton({
 
   return (
     <>
-      {/* Primary, and rightmost in the card's action row: passing a piece on is
-          the action worth making obvious. */}
+      {/**
+       * THE WHOLE CARD IS THE CONTROL, AND IT WAS A FILLED PILL INSIDE ONE.
+       *
+       * The card had a 「分享」 button in its corner, which made the other 90% of
+       * it — the poster thumbnail and the line of text — decoration around a
+       * target. Both halves of that row are about pressing the same thing, so
+       * both should be pressable, and the card beside it (read-original) had
+       * already settled that argument by being one anchor end to end.
+       *
+       * STYLED AS THAT CARD'S TWIN: the same `rounded-card border border-line`
+       * box, the same `ACTION_OUTLINE` hover that brings the border up to
+       * `ink-soft`, and a mark on the right where that one has its `↗`. Two
+       * exits side by side should be the same kind of object — the choice
+       * between them is the content, not the chrome.
+       *
+       * SO THERE IS NO FILLED BUTTON LEFT ON THIS PAGE. The note that used to be
+       * here argued the opposite: that the pill should be `bg-ink` because
+       * nothing near it competed. What it competed with was the card it was
+       * sitting in.
+       *
+       * `w-full` AND `text-left`, because a `<button>` is neither by default and
+       * a grid cell that does not fill its half would leave the two halves
+       * visibly different widths.
+       */}
       <button
         type="button"
-        className={`relative cursor-pointer rounded-full border border-line px-4 py-2 text-sm font-bold text-ink-mid disabled:cursor-wait${ACTION_OUTLINE}`}
+        className={`flex w-full cursor-pointer items-center gap-3 rounded-card border border-line px-4 py-4 text-left text-ink-mid disabled:cursor-wait${ACTION_OUTLINE}`}
         onClick={openWhenReady}
         disabled={preparing}
+        /* The accessible name, because the card's own text is 「把这篇发出去」 —
+           a heading, not a verb. A screen reader gets the action. */
+        aria-label={preparing ? t.preparing : t.share}
       >
-        {/* The label KEEPS ITS BOX while the spinner is up — `invisible`, not
-            unmounted — so the pill does not change width mid-press and shove the
-            rest of the card's action row sideways. */}
-        {/* SECONDARY, and it was the filled dark pill until a third action
-            joined this row. `readSummary` is the way on into the take and is the
-            one thing in the row that should carry emphasis; two identical filled
-            pills a few pixels apart give a reader two primary actions and
-            therefore none. The spinner below follows the text colour for the
-            same reason. */}
-        <span className={preparing ? "invisible" : undefined}>{t.share}</span>
-        {preparing ? (
-          <span
-            /* The only thing said out loud: the spinner is decoration, and
-               `role="status"` is what makes the wait audible to a reader who
-               cannot see it. */
-            role="status"
-            aria-label={t.preparing}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <span className="size-4 animate-spin rounded-full border-2 border-ink-mid/30 border-t-ink-mid" />
-          </span>
-        ) : null}
+        {children}
+
+        {/* THE MARK ON THE RIGHT, where read-original has its `↗`, and the
+            spinner takes its box rather than being added beside it — so the
+            card does not change width or height mid-press. `role="status"` is
+            what makes the wait audible to a reader who cannot see it. */}
+        <span
+          className="flex size-5 flex-none items-center justify-center text-ink-soft"
+          {...(preparing
+            ? { role: "status" as const, "aria-label": t.preparing }
+            : { "aria-hidden": true })}
+        >
+          {preparing ? (
+            <span className="size-4 animate-spin rounded-full border-2 border-ink-soft/30 border-t-ink-soft" />
+          ) : (
+            <ShareIcon size={17} />
+          )}
+        </span>
       </button>
 
       <ShareSheet

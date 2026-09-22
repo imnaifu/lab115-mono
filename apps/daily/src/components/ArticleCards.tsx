@@ -295,7 +295,7 @@ export function ArticleBrief({
          * owes a reader. No label: see `whyItMatters` in lib/i18n for the one
          * label that survived and why.
          *
-         * 「为什么值得关注」 IS DELIBERATELY NOT HERE, and it was the single most
+         * 「为什么值得读」 IS DELIBERATELY NOT HERE, and it was the single most
          * tempting thing to add — it is the better sentence, measured one
          * article at a time. On a list it is the wrong sentence twice over: it
          * assumes the reader already knows what happened, which on a row they

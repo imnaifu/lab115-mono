@@ -68,7 +68,7 @@ export function AdminLink({
   current?: boolean;
 }) {
   const shape =
-    "rounded-full border border-line px-3 py-1.5 text-sm font-bold tabular-nums";
+    "rounded-button border border-line px-3 py-1.5 text-sm font-bold tabular-nums";
   return current ? (
     <span className={`${shape} bg-ink text-paper`}>{children}</span>
   ) : (

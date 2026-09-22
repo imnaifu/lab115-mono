@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SITE } from "./config";
+import { MAIL_TOP_N, SITE } from "./config";
 import { strings } from "./i18n";
 import type { Lang } from "./lang";
 import { POSTER_MARK, posterFonts } from "./poster-assets";
@@ -29,8 +29,13 @@ import { posterClean, posterDomain } from "./share";
 
 /** The palette, the same six values poster.tsx draws with. */
 const CREAM = "#fbf3e9";
-const INK = "#3b3563";
-const SOFT = "#8a83a8";
+/* `--color-ink` and `--color-ink-soft` from @theme, light side, WRITTEN OUT —
+   Satori has no cascade to read a token from. They moved when the page's inks
+   were darkened a second time; see the ink note in src/index.css. A card whose
+   ink is a step lighter than the page it advertises is the drift this pairing
+   is most likely to develop, because nothing fails when it does. */
+const INK = "#2d294c";
+const SOFT = "#5f587e";
 const ORANGE = "#efa050";
 
 /**
@@ -221,7 +226,8 @@ function oneLine(text: string, budget: number): string {
  * headlines and this covers the few percent.
  */
 const HEADLINE_BUDGET =
-  (OG_WIDTH - CARD.padX * 2 - CARD.ruleWidth - CARD.ruleGap) / CARD.headlineSize -
+  (OG_WIDTH - CARD.padX * 2 - CARD.ruleWidth - CARD.ruleGap) /
+    CARD.headlineSize -
   0.5;
 
 export interface OgCard {
@@ -240,7 +246,11 @@ export interface OgCard {
  * mobile connection shows the reader a broken-image glyph instead of a short
  * image.
  */
-export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<Buffer> {
+export async function renderOgCard({
+  lang,
+  meta,
+  headlines,
+}: OgCard): Promise<Buffer> {
   const t = strings(lang);
   const domain = posterDomain(SITE);
   const brand = posterClean(t.brand);
@@ -249,8 +259,14 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
    * the string is a sentence in every place that prints it as prose — the
    * masthead, the meta description, the feed's subtitle — and under a wordmark it
    * is a label. Trimmed at the draw site so it stays a sentence elsewhere.
+   *
+   * THE SENTENCE IS `homeHeading`, NOT `tagline` — see the note at the poster's
+   * own copy of this line for why the whole site swapped. The local name stays
+   * `tagline` because it is the LOCKUP SLOT that is being filled, and every
+   * measurement below (`taglineSize`, `taglineGap`, and share.ts's arithmetic)
+   * is named for the slot.
    */
-  const tagline = posterClean(t.tagline).replace(/[。.]$/, "");
+  const tagline = posterClean(t.homeHeading(MAIL_TOP_N)).replace(/[。.]$/, "");
 
   /**
    * CLEANED AND TRUNCATED BEFORE THE SUBSET IS ASKED FOR, not after.
@@ -280,157 +296,166 @@ export async function renderOgCard({ lang, meta, headlines }: OgCard): Promise<B
    * omission here is invisible rather than obviously broken.
    */
   const text = posterClean(
-    [domain, meta, brand, tagline, ...lines, "0123456789…·—、。，：；？！%/"].join(""),
+    [
+      domain,
+      meta,
+      brand,
+      tagline,
+      ...lines,
+      "0123456789…·—、。，：；？！%/",
+    ].join(""),
   );
 
   const image = new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          background: CREAM,
-          color: INK,
-          padding: `${CARD.padY}px ${CARD.padX}px`,
-          fontFamily: "Lora, Noto Serif SC",
-        }}
-      >
-        {/* The domain chip and the meta line, in the same relationship the page's
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        background: CREAM,
+        color: INK,
+        padding: `${CARD.padY}px ${CARD.padX}px`,
+        fontFamily: "Lora, Noto Serif SC",
+      }}
+    >
+      {/* The domain chip and the meta line, in the same relationship the page's
             masthead and the poster's put them: the chip says where the image came
             from, and the slot opposite says which day it is about. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            padding: `${CARD.chipPadY}px ${CARD.chipPadX}px`,
+            borderRadius: 999,
+            background: INK,
+            color: CREAM,
+            fontSize: CARD.chipSize,
+            fontWeight: 700,
+            letterSpacing: CARD.chipTracking,
           }}
         >
+          {domain}
+        </div>
+        <div style={{ display: "flex", fontSize: CARD.metaSize, color: SOFT }}>
+          {meta}
+        </div>
+      </div>
+
+      {/**
+       * The lockup, the same one the poster draws on part 1: the mark, and
+       * beside it the wordmark with the site's one claim about itself under it.
+       *
+       * THE TAGLINE USED TO BE THE CARD'S LAST LINE, pinned to the bottom edge
+       * under the headlines. It moved here so that the identity is one object
+       * rather than two things at opposite ends of the canvas — a link preview
+       * is read at thumbnail scale, where a 24px line alone at the bottom is a
+       * grey smudge and the same line under the wordmark is legible as its
+       * subtitle. The headline block below has `flex: 1`, so the space this
+       * vacated goes to the headlines, which are what the card is for.
+       *
+       * `alignItems: center` keeps the mark centred against the pair. They are
+       * the same height by construction — see CARD.markSize — so this only
+       * matters if one of the font sizes changes without the other.
+       */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: CARD.markGap,
+          marginTop: CARD.brandGap,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- Satori draws
+              `img` and not inline `svg`, and it has no filesystem; the mark is a
+              data URI for that reason. See POSTER_MARK. */}
+        <img
+          src={POSTER_MARK}
+          width={CARD.markSize}
+          height={CARD.markSize}
+          alt=""
+        />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {/* `lineHeight: 1` on both rows — CARD.markSize is a plain sum only
+                because of it. See lib/share.ts. */}
           <div
             style={{
               display: "flex",
-              padding: `${CARD.chipPadY}px ${CARD.chipPadX}px`,
-              borderRadius: 999,
-              background: INK,
-              color: CREAM,
-              fontSize: CARD.chipSize,
+              fontSize: CARD.brandSize,
+              lineHeight: 1,
               fontWeight: 700,
-              letterSpacing: CARD.chipTracking,
             }}
           >
-            {domain}
+            {brand}
           </div>
-          <div style={{ display: "flex", fontSize: CARD.metaSize, color: SOFT }}>
-            {meta}
-          </div>
-        </div>
-
-        {/**
-         * The lockup, the same one the poster draws on part 1: the mark, and
-         * beside it the wordmark with the site's one claim about itself under it.
-         *
-         * THE TAGLINE USED TO BE THE CARD'S LAST LINE, pinned to the bottom edge
-         * under the headlines. It moved here so that the identity is one object
-         * rather than two things at opposite ends of the canvas — a link preview
-         * is read at thumbnail scale, where a 24px line alone at the bottom is a
-         * grey smudge and the same line under the wordmark is legible as its
-         * subtitle. The headline block below has `flex: 1`, so the space this
-         * vacated goes to the headlines, which are what the card is for.
-         *
-         * `alignItems: center` keeps the mark centred against the pair. They are
-         * the same height by construction — see CARD.markSize — so this only
-         * matters if one of the font sizes changes without the other.
-         */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: CARD.markGap,
-            marginTop: CARD.brandGap,
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element -- Satori draws
-              `img` and not inline `svg`, and it has no filesystem; the mark is a
-              data URI for that reason. See POSTER_MARK. */}
-          <img src={POSTER_MARK} width={CARD.markSize} height={CARD.markSize} alt="" />
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {/* `lineHeight: 1` on both rows — CARD.markSize is a plain sum only
-                because of it. See lib/share.ts. */}
-            <div
-              style={{
-                display: "flex",
-                fontSize: CARD.brandSize,
-                lineHeight: 1,
-                fontWeight: 700,
-              }}
-            >
-              {brand}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                marginTop: CARD.taglineGap,
-                fontSize: CARD.taglineSize,
-                lineHeight: 1,
-                color: SOFT,
-              }}
-            >
-              {tagline}
-            </div>
+          <div
+            style={{
+              display: "flex",
+              marginTop: CARD.taglineGap,
+              fontSize: CARD.taglineSize,
+              lineHeight: 1,
+              color: SOFT,
+            }}
+          >
+            {tagline}
           </div>
         </div>
+      </div>
 
-        {/**
-         * The headlines, or nothing.
-         *
-         * `flex: 1` on this block, which is now the only thing between the lockup
-         * and the bottom padding: a card with one headline and a card with three
-         * both sit centred in the same box, so a set of previews from different
-         * days does not look like a set of different templates. The tagline used
-         * to close the card under this — see the lockup above for where it went.
-         */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            justifyContent: "center",
-            gap: CARD.headlineGap,
-          }}
-        >
-          {/* Keyed by POSITION, not by the text: two headlines can truncate to the
+      {/**
+       * The headlines, or nothing.
+       *
+       * `flex: 1` on this block, which is now the only thing between the lockup
+       * and the bottom padding: a card with one headline and a card with three
+       * both sit centred in the same box, so a set of previews from different
+       * days does not look like a set of different templates. The tagline used
+       * to close the card under this — see the lockup above for where it went.
+       */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          justifyContent: "center",
+          gap: CARD.headlineGap,
+        }}
+      >
+        {/* Keyed by POSITION, not by the text: two headlines can truncate to the
               same string — the same story covered twice, or a long shared prefix
               cut at the same point — and a duplicate key is a React warning for a
               list whose order is fixed anyway. */}
-          {lines.map((line, at) => (
-            <div key={at} style={{ display: "flex", alignItems: "center" }}>
-              <div
-                style={{
-                  display: "flex",
-                  width: CARD.ruleWidth,
-                  height: CARD.headlineSize,
-                  marginRight: CARD.ruleGap,
-                  borderRadius: 999,
-                  background: ORANGE,
-                }}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: CARD.headlineSize,
-                  fontWeight: 700,
-                  lineHeight: 1.25,
-                }}
-              >
-                {line}
-              </div>
+        {lines.map((line, at) => (
+          <div key={at} style={{ display: "flex", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                width: CARD.ruleWidth,
+                height: CARD.headlineSize,
+                marginRight: CARD.ruleGap,
+                borderRadius: 999,
+                background: ORANGE,
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                fontSize: CARD.headlineSize,
+                fontWeight: 700,
+                lineHeight: 1.25,
+              }}
+            >
+              {line}
             </div>
-          ))}
-        </div>
-
+          </div>
+        ))}
       </div>
-    ),
+    </div>,
     { width: OG_WIDTH, height: OG_HEIGHT, fonts: await posterFonts(text) },
   );
 
