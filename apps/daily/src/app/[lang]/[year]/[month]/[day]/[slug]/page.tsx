@@ -599,13 +599,19 @@ export default async function ArticlePage({ params }: Params) {
               loading="lazy"
             />
 
-            {/* ONE LINE, NOT TWO. There was a second reading 「自动生成 4 张图，
-                可直接发小红书 / 微信」 — the machine describing its own output,
-                which is the same tic the summary prompt bans in a thesis. The
-                thumbnail beside it already shows what comes out; saying it in
-                words as well is telling a reader what they are looking at. */}
-            <span className="min-w-0 flex-1 text-base font-bold text-ink">
-              {t.shareCardTitle}
+            {/* THE SAME TWO-LINE SHAPE AS THE CARD BESIDE IT — a bold line
+                and a soft one — because two exits side by side should be the
+                same kind of object. What differs is what the second line is
+                FOR: read-original names the piece at the other end, and this
+                one names the reason to press. See `shareCardSub` in lib/i18n
+                for the version of it that was wrong. */}
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-bold text-ink">
+                {t.shareCardTitle}
+              </span>
+              <span className="mt-1 block text-sm leading-snug font-semibold text-ink-soft">
+                {t.shareCardSub}
+              </span>
             </span>
           </ShareButton>
 

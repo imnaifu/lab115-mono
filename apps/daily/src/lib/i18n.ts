@@ -109,14 +109,22 @@ const STRINGS = {
     morePosts: "更多文章……",
     share: "分享",
     /**
-     * 文章页底那张分享卡片上唯一一行字。
+     * 文章页底那张分享卡片上的两行字。
      *
-     * 这里曾经还有一条 `shareCardSub`「自动生成 N 张图，可直接发小红书 / 微信」。
-     * 去掉了：旁边就摆着那张图的缩略图，读者看得见会拿到什么，再用一句话把它
-     * 复述一遍，是机器在描述自己的产物 —— 跟 summarize 的 prompt 里禁掉的那类
-     * 「这篇文章真正……」是同一个毛病。
+     * 副标题回来过一次又换掉一次，值得写明白它们的区别。第一版是「自动生成 N 张
+     * 图，可直接发小红书 / 微信」—— 机器在描述自己的产物，旁边就摆着那张图的
+     * 缩略图，读者看得见会拿到什么，再用一句话复述一遍，跟 summarize 的 prompt
+     * 里禁掉的「这篇文章真正……」是同一个毛病。
+     *
+     * 「转给感兴趣的人」说的不是这个按钮**做什么**，是**为什么按**。它替读者把
+     * 那个念头说出来 —— 分享从来不是一个功能，是想起了某个人。这是卡片这半唯一
+     * 能加的信息，缩略图替不了。
+     *
+     * 两行的结构和右边「阅读原文」那半一样：一行 `text-ink` 粗体，一行
+     * `text-ink-soft`。两个出口并排就该是同一种东西，选哪个是内容的事。
      */
-    shareCardTitle: "把这篇发出去",
+    shareCardTitle: "分享这篇",
+    shareCardSub: "转给感兴趣的人",
     /** The share button while it waits for the posters — see ShareButton. */
     preparing: "正在生成图片",
     copyLink: "复制链接",
@@ -579,8 +587,10 @@ const STRINGS = {
     latestPosts: "Latest posts",
     morePosts: "More posts…",
     share: "Share",
-    /* See the Chinese side for why the second line went. */
-    shareCardTitle: "Pass this on",
+    /* See the Chinese side. The second line says why you would press it, not
+       what it does — the thumbnail beside it already covers what it does. */
+    shareCardTitle: "Share this",
+    shareCardSub: "Send it to someone who would care",
     preparing: "Preparing images",
     copyLink: "Copy link",
     copied: "Link copied",
