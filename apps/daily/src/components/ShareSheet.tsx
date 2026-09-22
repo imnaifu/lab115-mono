@@ -580,19 +580,33 @@ export function ShareSheet({
       }}
       aria-label={t.shareTo}
       /**
-       * 24rem, up from 22rem, and the padding inside is a step down — both to fit
-       * five tiles in one row.
+       * 24rem ON A PHONE, 32rem FROM `sm:` UP.
        *
-       * The label is what needs the width, not the mark: "WhatsApp" set at the
-       * row's type size is 61px, and five columns of that plus gaps is what the
-       * card has to clear. Shrinking the type instead is not an option that
-       * works — Chrome enforces a minimum font size (12px by default in some
-       * locales, which is where this row's 10px lands), so a smaller number in
-       * the stylesheet buys nothing on the browsers that most need the room.
+       * THE PHONE NUMBER IS THE CONSTRAINT AND IT IS MEASURED. 24rem (up from
+       * 22) plus a step down in padding is what fits five tiles in one row: the
+       * label needs the width, not the mark — "WhatsApp" set at the row's type
+       * size is 61px, and five columns of that plus gaps is what the card has to
+       * clear. Shrinking the type instead is not an option that works, because
+       * Chrome enforces a minimum font size (12px by default in some locales,
+       * which is where this row's 10px lands), so a smaller number in the
+       * stylesheet buys nothing on the browsers that most need the room.
+       *
+       * THE DESKTOP NUMBER IS NOT A CONSTRAINT AT ALL, which is why it was wrong
+       * to share one. 384px is a phone sheet shown in the middle of a 1440px
+       * window, and everything in it was sized for the tightest case: the
+       * preview thumbnails are `(100% - 1.5rem)/4`, so at 24rem they come out
+       * about 78px wide — a picture too small to tell one poster from another,
+       * for no reason on a screen with room to spare. At 32rem they are ~112px.
+       * Nothing else needs a second value: the tiles are a wrapping row of fixed
+       * 64px items, so extra width just means fewer wraps.
+       *
+       * `sm:p-5` PUTS BACK THE PADDING the phone gave up. It was stepped down to
+       * `p-4` to buy the tile row its five columns, and that trade does not apply
+       * where the card is 128px wider.
        */
-      className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
+      className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40 sm:w-[min(92vw,32rem)]"
     >
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-4 p-4 sm:p-5">
         <div className="flex items-baseline justify-between gap-3">
           <div className="text-sm font-bold text-ink">{t.shareTo}</div>
           <button
