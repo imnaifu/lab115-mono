@@ -203,6 +203,16 @@ export function sourcePath(id: string): string {
 export const TOPIC_PATH = "/topic";
 
 /**
+ * `/about` — who writes this and how the picking works.
+ *
+ * A NAMED CONSTANT rather than a literal, on the same rule as every other path
+ * here: the bar links to it, the mobile drawer links to it, the sitemap lists it
+ * and the route is it. Four spellings of one string is three chances to typo a
+ * page into a 404.
+ */
+export const ABOUT_PATH = "/about";
+
+/**
  * One topic's page, e.g. `/topic/tech`, and `/topic/tech/2` from page two on.
  *
  * `/topic/` RATHER THAN THE TOP LEVEL, on the same reasoning as `/s/` above: a

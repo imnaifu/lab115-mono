@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/config";
 import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
 import {
+  ABOUT_PATH,
   articlePath,
   dayPath,
   SOURCES_PATH,
@@ -116,6 +117,23 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   const newest = dates.length ? stamp(dates[0]) : new Date(0);
 
   const pages: MetadataRoute.Sitemap = [entry("/", newest)];
+
+  /**
+   * `/about`, and its `lastModified` is the SITE'S newest day rather than a date
+   * of its own.
+   *
+   * Nothing on that page changes when a digest lands — it is hand-written prose
+   * — so the honest stamp would be "whenever somebody last edited it", and
+   * nothing here knows that: the copy lives in lib/i18n, which has no mtime a
+   * request can see and would report the deploy date if it did. `newest` is the
+   * one date this file can defend, and the cost of it being wrong is a crawler
+   * re-fetching one short page occasionally.
+   *
+   * LISTED UNCONDITIONALLY, unlike the archive and the topics. It does not
+   * depend on there being any content — it is the page that says what the site
+   * is, and it is the same page on the day the archive is empty.
+   */
+  pages.push(entry(ABOUT_PATH, newest));
 
   /**
    * The archive, ONE ENTRY PER MONTH — and the bare `/archive` is NOT one of

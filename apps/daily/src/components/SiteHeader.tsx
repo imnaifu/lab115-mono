@@ -1,10 +1,11 @@
 import { InstallApp } from "./InstallApp";
+import { MenuDrawer } from "./MenuDrawer";
 import { SubscribeDialog } from "./SubscribeDialog";
 import { ThemeToggle } from "./ThemeToggle";
 import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, otherLang, type Lang } from "@/lib/lang";
-import { TOPIC_PATH } from "@/lib/links";
+import { ABOUT_PATH, TOPIC_PATH } from "@/lib/links";
 
 /**
  * The translate mark: the glyph on the language switch.
@@ -163,8 +164,41 @@ export function SiteHeader({
    * they are there. 话题 covers the hub AND every topic page beneath it, because
    * those genuinely are that section.
    */
-  const onToday = path === "/";
-  const onTopics = path === TOPIC_PATH || path.startsWith(`${TOPIC_PATH}/`);
+  /**
+   * THE NAVIGATION, DEFINED ONCE AND RENDERED TWICE — as a row from `sm:` up and
+   * inside `MenuDrawer` below it.
+   *
+   * A drawer that built its own list would be a second place for "which
+   * destinations exist" to be decided, and the two would drift within a couple
+   * of edits — the phone is exactly where nobody notices.
+   *
+   * `path` is the BARE path — no language prefix, see the prop — so these
+   * comparisons are right on both sides of the site with no branch.
+   *
+   * 今天 IS THE FRONT PAGE ONLY, not "anything dated". A day page and an article
+   * page are under the dates, and marking 今天 as current on `/2026/09/21` would
+   * claim the reader is on the front page when they are two levels below it. The
+   * other three cover their whole section, because those genuinely are sections.
+   */
+  const nav = [
+    { href: href(lang, "/"), label: t.navToday, current: path === "/" },
+    {
+      href: href(lang, TOPIC_PATH),
+      label: t.navTopics,
+      current: path === TOPIC_PATH || path.startsWith(`${TOPIC_PATH}/`),
+      topic: true,
+    },
+    {
+      href: href(lang, "/archive"),
+      label: t.navArchive,
+      current: path === "/archive" || path.startsWith("/archive/"),
+    },
+    {
+      href: href(lang, ABOUT_PATH),
+      label: t.navAbout,
+      current: path === ABOUT_PATH,
+    },
+  ];
 
 
   return (
@@ -383,31 +417,28 @@ export function SiteHeader({
            * `aria-current="page"` rather than only the underline: a reader who
            * cannot see the rule still gets told which of the two they are on.
            */}
-          <a
-            href={href(lang, "/")}
-            aria-current={onToday ? "page" : undefined}
-            className={`hidden rounded-none px-2 py-1 text-sm font-bold transition duration-150 ease-out hover:text-ink active:opacity-70 sm:block ${
-              onToday
-                ? "border-b-2 border-ink text-ink"
-                : "border-b-2 border-transparent text-ink-mid"
-            }`}
-          >
-            {t.navToday}
-          </a>
-          <a
-            href={href(lang, TOPIC_PATH)}
-            aria-current={onTopics ? "page" : undefined}
-            className={`hidden rounded-none px-2 py-1 text-sm font-bold transition duration-150 ease-out hover:text-ink active:opacity-70 sm:block ${
-              onTopics
-                ? "border-b-2 border-ink text-ink"
-                : "border-b-2 border-transparent text-ink-mid"
-            }`}
-            data-track="topic_open"
-            data-track-from="header"
-            data-track-lang={lang}
-          >
-            {t.navTopics}
-          </a>
+          {nav.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              aria-current={item.current ? "page" : undefined}
+              className={`hidden rounded-none px-2 py-1 text-sm font-bold transition duration-150 ease-out hover:text-ink active:opacity-70 sm:block ${
+                item.current
+                  ? "border-b-2 border-ink text-ink"
+                  : "border-b-2 border-transparent text-ink-mid"
+              }`}
+              /* Only the topic hub carries an event. `TrackEvent` in lib/track is
+                 a closed union and TRACKING.md documents every member, so giving
+                 the other three one is a change to the analytics contract rather
+                 than to the markup — worth doing deliberately, not worth
+                 smuggling in behind a nav change. */
+              data-track={item.topic ? "topic_open" : undefined}
+              data-track-from={item.topic ? "header" : undefined}
+              data-track-lang={item.topic ? lang : undefined}
+            >
+              {item.label}
+            </a>
+          ))}
 
           {/**
            * SEARCH — AND IT HANDS THE READER TO GOOGLE, SCOPED TO THIS SITE.
@@ -472,6 +503,11 @@ export function SiteHeader({
                the prop's note in SubscribeDialog. */
             <SubscribeDialog lang={lang} picks={MAIL_TOP_N} />
           ) : null}
+
+          {/* THE PHONE'S COPY OF THE FOUR LINKS ABOVE. `sm:hidden` on the
+              trigger is the exact complement of their `hidden sm:block`, so
+              exactly one of the two is on screen at any width. */}
+          <MenuDrawer lang={lang} items={nav} />
 
           <LangSwitch lang={lang} path={path} />
           <ThemeToggle label={t.themeToggle} />

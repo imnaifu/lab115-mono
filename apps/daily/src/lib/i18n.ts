@@ -318,6 +318,37 @@ const STRINGS = {
     /** 顶栏那两个导航项。「今天」= `/`，「话题」= `/topic`。见 SiteHeader。 */
     navToday: "今天",
     navTopics: "话题",
+    navArchive: "归档",
+    navAbout: "关于",
+    /** 手机上那个抽屉的开关，和它自己的可访问名。 */
+    menuOpen: "菜单",
+    menuClose: "关闭菜单",
+
+    /**
+     * 关于页。
+     *
+     * 全站第二段「我们自己写的、不是摘别人」的文字（第一段是 `sourcesLead`，而
+     * 那一节现在是关着的）。所以它存在的理由不只是补全导航：一个每天发布二十份
+     * 他人文章摘要的站，必须有一页说清**这些摘要是谁写的、按什么标准挑的**，否则
+     * 从搜索进来的读者看到的就是一个没有主语的聚合器。
+     *
+     * 邮箱是明文写的，不做任何混淆。混淆能挡住的爬虫早就不存在了，而它挡得住的
+     * 是想联系的人 —— 那正好是这一页唯一想要的结果。
+     */
+    aboutTitle: "关于每日严选",
+    aboutLead: "更好的信息，更大的世界",
+    aboutBody: [
+      "每日严选是 Lab115 的一个内部项目。每天早上从全球几十个优质信息源里抓取过去 24 小时的文章，逐篇打分，为过线的每一篇写一份中文和英文的概要。",
+      "它想解决的不是「信息太少」，而是「信息太多而值得读的太少」。所以这个站做的第一件事是**扔掉**：绝大多数抓进来的文章不会出现在页面上。",
+      "每一页都是**我们为别人的文章写的概要**，不是原文，也不是转载。每篇文章页都链回原文，并在结构化数据里声明原文的作者与出版方。",
+    ],
+    /** 关于页那三根柱子。每根一个词加一句解释。 */
+    aboutPillars: [
+      ["精选优质内容", "来自国际主流媒体与独立作者"],
+      ["保持客观中立", "不生产观点，只做筛选和转述"],
+      ["关注长期价值", "不追热点，也不做标题党"],
+    ],
+    aboutContact: "联系我们",
     /** 搜索图标的可访问名。它跳 Google 的站内搜索 —— 见 SiteHeader 里的说明。 */
     searchLabel: "在 Google 上搜索本站",
     topicHubDocTitle: (names: readonly string[]) =>
@@ -641,6 +672,27 @@ const STRINGS = {
     topicHubSub: "The same world, from a few different angles",
     navToday: "Today",
     navTopics: "Topics",
+    navArchive: "Archive",
+    navAbout: "About",
+    menuOpen: "Menu",
+    menuClose: "Close menu",
+
+    /* See the Chinese side — this is the second piece of prose on this site that
+       is ours rather than borrowed, and a site that publishes twenty summaries of
+       other people's writing a day owes a page saying who wrote them. */
+    aboutTitle: "About Daily Picks",
+    aboutLead: "Better information, a bigger picture",
+    aboutBody: [
+      "Daily Picks is an internal project at Lab115. Every morning it fetches the last 24 hours from several dozen high-quality sources, scores each piece, and writes a Chinese and an English summary of everything that clears the bar.",
+      "The problem it is built for is not that there is too little to read. It is that there is far too much and very little of it is worth the time. So the first thing this site does is **throw work away**: most of what gets fetched never reaches a page.",
+      "Every page here is **our summary of somebody else's article** — not the original, and not a reprint. Each one links back to the source and names its author and publisher in the page's structured data.",
+    ],
+    aboutPillars: [
+      ["Picked, not aggregated", "From the international press and independent writers"],
+      ["Summarised, not editorialised", "We select and restate; the opinions are the authors'"],
+      ["Built to keep", "No chasing the news cycle, no headlines that oversell"],
+    ],
+    aboutContact: "Get in touch",
     searchLabel: "Search this site on Google",
     topicHubDocTitle: (names: readonly string[]) =>
       `Explore topics: ${names.join(", ")} and more, picked daily`,

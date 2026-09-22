@@ -2,6 +2,7 @@ import { ArticleBrief } from "./ArticleCards";
 import { PageShell } from "./PageShell";
 import { EndLink, Footer, Masthead, PAD, SECTION } from "./Shell";
 import { strings } from "@/lib/i18n";
+import { PhotoCard } from "./Photo";
 import { shownArticles } from "@/lib/store";
 import { href, type Lang } from "@/lib/lang";
 import { dayPath } from "@/lib/links";
@@ -91,24 +92,6 @@ export function DigestView({
       />
 
       {/**
-       * THE DAY'S PHOTOGRAPH IS NOT ON THIS PAGE ANY MORE — it is the front
-       * page's hero band. See the note there.
-       *
-       * It opened this page as a 300px plate between the masthead and the list,
-       * and what that cost was the thing this page exists for: twelve headlines
-       * pushed off the first screen of the one page whose job is to be scanned.
-       * That was flagged and left alone for a while because deleting a licensed
-       * photograph is a content decision rather than a layout one — and it is not
-       * deleted, it MOVED. A picture chosen for the EDITION is a front page's
-       * masthead image; on the edition's own page it was competing with the
-       * edition.
-       *
-       * `PhotoCard` and its 300px ceiling stay in components/Photo, unused,
-       * because putting the plate back is one element and the ceiling was
-       * measured against a real distribution of Wikimedia's aspect ratios.
-       */}
-
-      {/**
        * ONE FLAT LIST, IN THE DAY'S OWN RANKING.
        *
        * The category tabs and the grouped sections are gone with `DigestBody`.
@@ -140,6 +123,39 @@ export function DigestView({
       ) : (
         <EmptyState lang={lang} />
       )}
+
+      {/**
+       * THE DAY'S PHOTOGRAPH, AT THE FOOT OF THE LIST.
+       *
+       * IT HAS BEEN IN THREE PLACES AND THIS IS THE ARGUMENT FOR THE THIRD. It
+       * opened this page as a 300px plate between the masthead and the list,
+       * which pushed twelve headlines off the first screen of the one page whose
+       * job is to be scanned. It became the front page's hero band, which was
+       * right until the front page got a fixed masthead image of its own — a
+       * publication's masthead should say what the publication is, not what today
+       * is. Then it was nowhere, and "nowhere" is a feature deletion dressed up
+       * as a layout decision.
+       *
+       * AFTER THE LIST it costs the scan nothing and keeps the thing that made it
+       * worth having: it is the only image on this site that belongs to the DAY
+       * rather than to somebody's article, and an edition closing on its own
+       * picture is what a printed one does. A reader who has read the twelve
+       * headlines has finished the page; this is what is under them.
+       *
+       * THE ATTRIBUTION COMES BACK WITH IT and is not optional. Wikimedia's
+       * picture of the day is CC BY-SA more often than not and the credit is a
+       * LICENCE OBLIGATION — see the note in components/Photo, which draws the
+       * artist, the source and the licence and is why this is `PhotoCard` rather
+       * than an `<img>`.
+       *
+       * Absent on every digest written before the field existed, and on any day
+       * Wikimedia had nothing. Both render as no card at all rather than a gap.
+       */}
+      {digest.photo ? (
+        <div className={`${SECTION} ${PAD}`}>
+          <PhotoCard photo={digest.photo} lang={lang} />
+        </div>
+      ) : null}
 
       <div className={PAD}>
         <EndLink
