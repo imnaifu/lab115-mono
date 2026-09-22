@@ -129,7 +129,6 @@ export default async function Home({
   const dayCount = shown.length;
   const todays = shown.slice(0, FRONT_POSTS);
   const lead = shown[0];
-  const photo = digest?.photo;
 
   const home = `${SITE}${href(lang, "/")}`;
 
@@ -200,71 +199,62 @@ export default async function Home({
        * them owns the line between them.
        */}
       {/**
-       * THE HERO BAND — the day's photograph with the site's standing claim on
-       * it, and it solves two problems at once.
+       * THE HERO BAND — the site's standing claim over a fixed photograph.
        *
-       * THE PHOTO WAS ALREADY ON THIS SITE AND IN THE WRONG PLACE. It opened the
-       * DAY page as a 300px plate above the list, which pushed twelve headlines
-       * off the first screen of the one page whose job is to be scanned — a cost
-       * flagged and left alone because deleting a licensed photograph is a
-       * content decision. Here it is doing a job: it is the only image this site
-       * has that belongs to the DAY rather than to somebody's article, which is
-       * exactly what a front page's masthead image should be.
+       * IT WAS THE DAY'S WIKIMEDIA PICTURE for one commit, and the argument then
+       * was that it is the only image this site has that belongs to the DAY
+       * rather than to somebody's article. That is still true and it is no longer
+       * what this band is for: a front page's masthead image should say what the
+       * PUBLICATION is, and a picture that changes every morning says what today
+       * is. `public/hero.webp` is ours, it is the same every visit, and it is the
+       * thing a returning reader recognises.
        *
-       * THE ATTRIBUTION IS NOT NEGOTIABLE and it is under the band rather than
-       * on it. Wikimedia's picture of the day is CC BY-SA far more often than
-       * not, and the credit is a licence OBLIGATION — see the note in
-       * components/Photo. Text over a photograph can be made to disappear by a
-       * scrim; a line underneath it cannot, so that is where it goes.
+       * WHAT THAT COSTS, and it is a feature removal rather than a move: the
+       * Wikimedia picture of the day now appears NOWHERE. It left the day page in
+       * the previous commit (it was pushing twelve headlines off the first
+       * screen) on the understanding that this band was its new home, and this
+       * band is no longer it. The pipeline still fetches one every morning and
+       * still stores it — see `DailyPhoto` in lib/types and `dailyPhoto` in
+       * lib/photo — so nothing is lost from the archive and `PhotoCard` is intact
+       * in components/Photo. It simply is not drawn. Putting it back is one
+       * element on whichever page wants it.
        *
-       * NO PHOTO IS AN ORDINARY DAY. Wikimedia sometimes has nothing and every
-       * digest written before the field existed has none, so the band falls back
-       * to the page's own deep ground with the same words on it. The claim is
-       * the point; the picture is the setting.
+       * NO ATTRIBUTION LINE ANY MORE, and that follows from the same change
+       * rather than being an oversight: the credit under this band was a LICENCE
+       * OBLIGATION for a CC BY-SA photograph (see components/Photo). This image
+       * is the site's own, so there is nobody to credit — and the moment that
+       * stops being true, the line has to come back.
        */}
       <section className={`pt-4 ${PAD}`}>
         <div className="relative overflow-hidden rounded-card bg-page-deep">
-          {photo ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="absolute inset-0 size-full object-cover"
-                src={photo.src}
-                alt=""
-              />
-              {/* THE SCRIM, and it is a gradient rather than a flat wash: the
-                  words sit at the bottom left, so that is where the ink has to
-                  be and the top of a juried photograph should stay visible. */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/10" />
-            </>
-          ) : null}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="absolute inset-0 size-full object-cover"
+            src="/hero.webp"
+            alt=""
+            /* EAGER, and the only image on this site that is. It is the first
+               screen by construction; deferring it is how a page ends up drawing
+               itself twice. */
+            loading="eager"
+            fetchPriority="high"
+          />
+          {/* THE SCRIM, and it is a gradient rather than a flat wash: the words
+              sit at the bottom left, so that is where the ink has to be and the
+              top of the photograph should stay visible. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/10" />
 
-          {/* `relative` to sit over the scrim; the min-height is what stops a
-              missing photo collapsing the band to its text. */}
           <div className="relative flex min-h-[260px] flex-col justify-end p-6 sm:min-h-[320px] sm:p-8">
-            <h1
-              className={`max-w-xl text-3xl leading-tight font-bold tracking-tight text-pretty sm:text-4xl ${
-                photo ? "text-white" : "text-ink"
-              }`}
-            >
+            <h1 className="max-w-xl text-3xl leading-tight font-bold tracking-tight text-pretty text-white sm:text-4xl">
               {t.homeHeading(MAIL_TOP_N)}
             </h1>
-            <p
-              className={`mt-3 max-w-md text-base leading-relaxed font-medium text-pretty ${
-                photo ? "text-white/85" : "text-ink-mid"
-              }`}
-            >
+            <p className="mt-3 max-w-md text-base leading-relaxed font-medium text-pretty text-white/85">
               {t.dayLead}
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               {latest ? (
                 <a
-                  className={`rounded-full px-5 py-2.5 text-sm font-bold transition duration-150 ease-out ${
-                    photo
-                      ? "bg-white text-ink hover:bg-white/85"
-                      : "bg-ink text-paper hover:bg-ink-mid"
-                  }`}
+                  className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-ink transition duration-150 ease-out hover:bg-white/85"
                   href={href(lang, dayPath(latest))}
                   data-track="day_open"
                   data-track-from="home"
@@ -273,47 +263,19 @@ export default async function Home({
                 </a>
               ) : null}
               {/* The subscribe control reuses the one sheet the whole site has —
-                  see `SubscribeVariant`. `hero` is its third trigger: an outline
-                  pill that reads against a photograph. */}
+                  see `SubscribeVariant`. `hero` is its third trigger, and it is
+                  always on a photograph here, which is what `onPhoto` says. */}
               {signupOpen() ? (
                 <SubscribeDialog
                   lang={lang}
                   variant="hero"
                   picks={MAIL_TOP_N}
-                  onPhoto={Boolean(photo)}
+                  onPhoto
                 />
               ) : null}
             </div>
           </div>
         </div>
-
-        {/* The credit, under the band. See the note above — this is a licence
-            obligation, not a caption. */}
-        {photo ? (
-          <p className="mt-2 text-[11px] leading-snug text-ink-soft">
-            <a
-              className="hover:text-ink-mid"
-              href={photo.filePage}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {photo.artist} · {t.photoSource}
-            </a>
-            {" · "}
-            {photo.license.url ? (
-              <a
-                className="hover:text-ink-mid"
-                href={photo.license.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {photo.license.name}
-              </a>
-            ) : (
-              photo.license.name
-            )}
-          </p>
-        ) : null}
       </section>
 
       {/**

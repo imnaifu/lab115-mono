@@ -1,5 +1,5 @@
-import { displayTitle } from "./ArticleTitle";
 import { PageShell } from "./PageShell";
+import { TopicImage } from "./TopicImage";
 import {
   Breadcrumb,
   EndLink,
@@ -12,7 +12,7 @@ import { accentColor, categoryName, topicDescription } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
-import { articlePath, TOPIC_PATH, topicPath } from "@/lib/links";
+import { TOPIC_PATH, topicPath } from "@/lib/links";
 import { breadcrumb, JsonLd, publisher } from "@/lib/seo";
 import { liveTopics } from "@/lib/topics";
 import { listDates } from "@/lib/store";
@@ -43,10 +43,14 @@ import { listDates } from "@/lib/store";
  * property that makes a hub safe here and would not make a tag index safe.
  */
 
-/** How many recent pieces each card names. TWO — enough to show the topic is
- *  alive and what it sounds like, few enough that eight cards stay a page
- *  rather than a feed. The topic's own page is one tap away for the rest. */
-const RECENT_PER_TOPIC = 2;
+/* `RECENT_PER_TOPIC` LIVED HERE. Each card used to name the two newest pieces in
+   its topic, and the argument for them was that they showed a reader "what is in
+   it this week" without following a link. They are gone with the redesign: eight
+   cards times two rows is sixteen extra links on a page whose whole job is to
+   offer eight, and a picture says "this section is alive" in the space two
+   headlines took. What keeps this a hub rather than a doorway is unchanged and
+   is now carrying the argument alone — the hand-written sentence per topic, see
+   `RawCategory.description` in lib/user-config. */
 
 export async function TopicHub({ lang }: { lang: Lang }) {
   const t = strings(lang);
@@ -91,107 +95,54 @@ export async function TopicHub({ lang }: { lang: Lang }) {
         }}
       />
 
-      <Masthead
-        title={t.topicHubTitle}
-        crumb={
-          <Breadcrumb
-            label={t.breadcrumb}
-            items={[
-              { label: t.home, href: href(lang, "/") },
-              { label: t.topicHubTitle },
-            ]}
-          />
-        }
-      />
+      {/* THE VISIBLE SUB IS NOT THE `<meta name="description">`, and this is the
+          one page on the site where they differ — see `topicHubSub` in lib/i18n
+          for why two sentences for two audiences is right here and wrong
+          everywhere else. */}
+      <Masthead title={t.topicHubTitle} lead={t.topicHubSub} />
 
-      <section className={`${SECTION} ${PAD}`}>
-        <p className="max-w-prose text-ink-mid">{t.topicHubLead}</p>
-      </section>
-
-      {/**
-       * The cards. Two columns from `sm:`, one on a phone.
-       *
-       * THE WHOLE CARD IS NOT A LINK, and that is not an oversight — the two
-       * recent pieces inside it are links of their own, and an anchor cannot
-       * legally contain another. The site has been here before: `ArticleBrief`
-       * used to be one big link with the share pill floated over it on `z-10`,
-       * and the note there records naming the actions instead as the fix. Same
-       * answer, so the topic name is the link and the rows under it are theirs.
-       */}
+      {/* The cards. Two columns from `sm:`, one on a phone. */}
       <div className={`${SECTION} ${PAD} grid gap-3 sm:grid-cols-2`}>
         {topics.map(({ category, articles }) => {
           const name = categoryName(category, lang);
-          const recent = articles.slice(0, RECENT_PER_TOPIC);
           return (
-            <section
+            <a
               key={category.id}
-              className="flex flex-col rounded-card border border-line bg-paper px-5 py-4"
+              href={href(lang, topicPath(category.id))}
+              className="group flex flex-col overflow-hidden rounded-card border border-line bg-paper transition duration-150 ease-out hover:border-ink-soft"
+              data-track="topic_open"
+              data-track-topic={category.id}
+              data-track-from="topic_hub"
+              data-track-lang={lang}
             >
-              <h2 className="text-xl font-bold tracking-tight text-ink">
-                <a
-                  className="flex items-center gap-2.5 transition duration-150 ease-out hover:text-orange"
-                  href={href(lang, topicPath(category.id))}
-                  data-track="topic_open"
-                  data-track-topic={category.id}
-                  data-track-from="topic_hub"
-                  data-track-lang={lang}
-                >
+              {/* THE WHOLE CARD IS A LINK AGAIN, which it was not a moment ago:
+                  the card used to carry two article rows of its own, and an
+                  anchor cannot contain another. Those rows are gone (see the
+                  note above), so there is one destination per card and the card
+                  can simply be it — no stretched link, no overlay. */}
+              <TopicImage category={category} className="aspect-video w-full" />
+
+              <div className="flex flex-1 flex-col p-5">
+                <h2 className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-ink">
                   <span
                     className="size-2.5 flex-none rounded-full"
                     style={{ background: accentColor(category) }}
                   />
                   {name}
-                </a>
-              </h2>
+                </h2>
 
-              <p className="mt-1 text-xs font-bold text-ink-soft">
-                {t.topicPicked(articles.length)}
-              </p>
+                {/* The hand-written line — see `RawCategory.description` in
+                    user-config. It is the only original prose on this page and
+                    it is what separates a hub from a list of links. */}
+                <p className="mt-2 text-sm leading-relaxed font-medium text-pretty text-ink-mid">
+                  {topicDescription(category, lang)}
+                </p>
 
-              {/* The hand-written line. `text-pretty` because these run to two
-                  lines in a 2-up grid and a one-word last line looks broken. */}
-              <p className="mt-2.5 text-sm leading-relaxed font-medium text-pretty text-ink-mid">
-                {topicDescription(category, lang)}
-              </p>
-
-              {/* WHAT IS ACTUALLY IN THERE THIS WEEK, which is the half that
-                  stops this being a directory. A card with a description and no
-                  contents describes a section; these two rows show it is alive
-                  and what it sounds like. `mt-auto` pins them to the bottom so
-                  the eight cards' rules line up across the grid however long
-                  each description runs. */}
-              {recent.length ? (
-                <div className="mt-auto pt-4">
-                  <p className="text-[11px] font-bold tracking-[0.08em] text-ink-soft">
-                    {t.topicRecent}
-                  </p>
-                  <ul className="mt-1.5 flex flex-col gap-1.5">
-                    {recent.map(({ date, article }, at) => (
-                      <li key={article.id}>
-                        <a
-                          className="flex gap-2.5 text-sm leading-snug font-medium text-ink transition duration-150 ease-out hover:text-orange"
-                          href={href(lang, articlePath(date, article))}
-                          data-track="summary_open"
-                          data-track-source={article.sourceId}
-                          data-track-from="topic_hub"
-                          data-track-age={at}
-                        >
-                          <time
-                            className="flex-none pt-px text-xs tabular-nums text-ink-soft"
-                            dateTime={date}
-                          >
-                            {date.slice(5)}
-                          </time>
-                          <span className="min-w-0 flex-1">
-                            {displayTitle(article, lang)}
-                          </span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </section>
+                <p className="mt-auto pt-3 text-xs font-bold text-ink-soft">
+                  {t.topicPicked(articles.length)}
+                </p>
+              </div>
+            </a>
           );
         })}
       </div>

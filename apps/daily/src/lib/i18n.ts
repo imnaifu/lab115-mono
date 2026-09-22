@@ -304,7 +304,17 @@ const STRINGS = {
      * 这个 URL 在搜索结果里要跟全互联网所有「话题页」抢，唯一让人愿意点的是后面到底
      * 有哪些领域；而且它是从真实过线的话题生成的，站长大了也不会写成假话。
      */
-    topicHubTitle: "探索话题",
+    topicHubTitle: "话题分类",
+    /**
+     * 话题总览页标题下面那一句。
+     *
+     * 它和 `topicHubLead` 不是一回事，而这是全站唯一一处「页面上写的」和
+     * `<meta name="description">` 不同的地方。原因是两句话对着不同的人说：页面上
+     * 这一句是给已经在站里、正在找方向的读者，可以短、可以有腔调；description 是
+     * 给一条还没点进来的搜索结果，它必须说清这一页到底有什么。后者是前者的超集，
+     * 没有一句在骗人。
+     */
+    topicHubSub: "从不同角度，发现更大的世界",
     /** 顶栏那两个导航项。「今天」= `/`，「话题」= `/topic`。见 SiteHeader。 */
     navToday: "今天",
     navTopics: "话题",
@@ -331,6 +341,13 @@ const STRINGS = {
     topicPicked: (n: number) => `收录过 ${n} 篇`,
     /** 话题页底部那一行兄弟话题。 */
     topicOthers: "其它话题",
+    /** 话题页上那两个排序。「最热」按打分排 —— 那是这个站自己给每篇打的分，不是
+     *  阅读量，站上没有任何按篇计数的东西。 */
+    topicSortLatest: "最新",
+    topicSortHot: "最热",
+    /** 话题页报头里的篇数。和卡片上的 `topicPicked` 说的是同一个数，措辞不同：那里
+     *  要和来源页对齐口径（收录过 N 篇），这里是这一页自己的规模。 */
+    topicArticles: (n: number) => `${n} 篇文章`,
     /** 文章页报头里那个话题链接前面的词。见文章页的 meta 行。 */
     topicLabel: "话题",
 
@@ -620,7 +637,8 @@ const STRINGS = {
        is generated from the topic rather than written eight times. */
     /* See the Chinese side. "Explore" rather than "All": the page leaves out
        every topic below the threshold, so it does not promise completeness. */
-    topicHubTitle: "Explore topics",
+    topicHubTitle: "Topics",
+    topicHubSub: "The same world, from a few different angles",
     navToday: "Today",
     navTopics: "Topics",
     searchLabel: "Search this site on Google",
@@ -643,6 +661,9 @@ const STRINGS = {
       `original.`,
     topicPicked: (n: number) => `${n} picked`,
     topicOthers: "Other topics",
+    topicSortLatest: "Latest",
+    topicSortHot: "Top",
+    topicArticles: (n: number) => `${n} ${n === 1 ? "piece" : "pieces"}`,
     topicLabel: "Topic",
 
     related: "You might also read",

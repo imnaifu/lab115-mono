@@ -34,8 +34,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return topicMetadata(pageLang, topic, page);
 }
 
-export default async function TopicPagedPage({ params }: Params) {
+export default async function TopicPagedPage({
+  params,
+  searchParams,
+}: Params & { searchParams: Promise<{ sort?: string }> }) {
   const { lang, topic, page: segment } = await params;
+  const { sort } = await searchParams;
   if (!isLang(lang)) notFound();
 
   const page = pageNumber(segment);
@@ -43,5 +47,5 @@ export default async function TopicPagedPage({ params }: Params) {
   // `/topic/<id>/1` is `/topic/<id>`. One page, one URL.
   if (page === 1) permanentRedirect(href(lang, topicPath(topic)));
 
-  return <TopicView lang={lang} id={topic} page={page} />;
+  return <TopicView lang={lang} id={topic} page={page} sort={sort} />;
 }

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { displayTitle } from "./ArticleTitle";
 import { PageShell } from "./PageShell";
+import { hasTopicImage, TopicImage } from "./TopicImage";
 import { TopicChips } from "./TopicChips";
 import {
   Breadcrumb,
@@ -66,10 +67,29 @@ export async function TopicView({
   lang,
   id,
   page,
+  sort,
 }: {
   lang: Lang;
   id: string;
   page: number;
+  /**
+   * `hot` reorders by the score the summariser gave, `latest` (the default) is
+   * the archive's own order.
+   *
+   * IT ARRIVES AS A QUERY PARAMETER, `?sort=hot`, and that is deliberate rather
+   * than lazy. A sort is a VIEW of one set, not a different set, so it must not
+   * mint a second indexable URL for the same articles — the duplicate this site
+   * has already been reported for once. `topicMetadata` builds its canonical
+   * from the PATH, so `?sort=hot` self-canonicals to the plain topic URL with no
+   * extra work, and the sitemap never names it.
+   *
+   * 「最热」 IS THE SCORE, NOT TRAFFIC. Nothing here counts reads per article —
+   * there is no per-piece counter anywhere on this site — so the only ranking
+   * available is the one the scorer produced that morning, which is a judgement
+   * about the writing rather than about its audience. That is a narrower claim
+   * than 「热」 usually makes, and it is the honest one this data supports.
+   */
+  sort?: string;
 }) {
   const t = strings(lang);
 
@@ -90,9 +110,17 @@ export async function TopicView({
   const articles = byTopic.get(category.id) ?? [];
   if (!hasTopicPage(articles.length)) notFound();
 
+  const hot = sort === "hot";
+  /* A COPY BEFORE SORTING. `articles` is the cached index's own array — see
+     `archiveIndex` — and sorting it in place would reorder what every other
+     caller on this request sees, including the sibling row and the hub. */
+  const ordered = hot
+    ? [...articles].sort((a, b) => b.article.score - a.article.score)
+    : articles;
+
   const total = topicPages(articles.length);
   if (page < 1 || page > total) notFound();
-  const shown = topicSlice(articles, page);
+  const shown = topicSlice(ordered, page);
 
   const name = categoryName(category, lang);
   const path = topicPath(category.id, page);
@@ -148,58 +176,95 @@ export async function TopicView({
         }}
       />
 
-      {/* NO TITLE — the subject is the heading and it is drawn below with its
-          accent dot, the same arrangement a source page uses. */}
-      <Masthead
-        crumb={
-          <Breadcrumb
-            label={t.breadcrumb}
-            items={[
-              { label: t.home, href: href(lang, "/") },
-              { label: t.topicHubTitle, href: href(lang, TOPIC_PATH) },
-              { label: name },
-            ]}
-          />
-        }
-      >
-        <span>{t.topicPicked(articles.length)}</span>
-        {total > 1 ? (
-          <>
-            <MastheadDot />
-            <span>{t.pageOf(page, total)}</span>
-          </>
-        ) : null}
-      </Masthead>
+      {/* NO TITLE AND NO TRAIL IN THE MASTHEAD — the subject is the heading and
+          it is set over the band below. The trail went the way the article
+          page's did: `BreadcrumbList` is still in the JSON-LD above, which is
+          the half a search result draws. */}
 
+      {/**
+       * THE BAND: the topic's picture with its name over it.
+       *
+       * `TopicImage` draws the category's accent gradient underneath and layers
+       * `public/topics/<id>.jpg` on top, so a topic with no file yet renders as a
+       * deliberate flat colour rather than as a broken image. See that component
+       * — there is no config field and nothing to keep in step.
+       *
+       * `priority` on this one instance only: it is the page's first screen. The
+       * hub's eight cards stay lazy.
+       */}
       <section className={`${SECTION} ${PAD}`}>
-        {/* The page's only `<h1>`. The accent dot is the category's own colour,
-            which is the one place on the site those values are still shown to a
-            reader now that the section headings are gone — see `accentColor`. */}
-        <h1 className="flex items-center gap-2.5 text-3xl font-bold tracking-tight text-ink">
-          <span
-            className="size-2.5 flex-none rounded-full"
-            style={{ background: accentColor(category) }}
+        <div className="relative overflow-hidden rounded-card">
+          <TopicImage
+            category={category}
+            className="absolute inset-0 size-full"
+            priority
           />
-          {t.topicHeading(name)}
-        </h1>
+          {/* The scrim, ONLY OVER A PHOTOGRAPH — see `hasTopicImage`. A
+              gradient rather than a flat wash: the words sit at the bottom, so
+              that is where the ink has to be. */}
+          {hasTopicImage(category) ? (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/5" />
+          ) : null}
 
-        {/**
-         * THE HAND-WRITTEN LINE, where this used to print the generated
-         * `topicLead(name)` — the same sentence as `<meta name="description">`.
-         *
-         * The generated one still IS the meta description, and that is the
-         * right division of labour rather than an inconsistency. A description
-         * is read in a search result by somebody who has not arrived: it has to
-         * say what the page is ("每天筛选…领域值得一读的文章，提供中文摘要…"),
-         * and being templated is fine because the reader sees exactly one of
-         * them. On the page, eight templated sentences differing by one noun is
-         * a site that looks generated — and it would be the ONLY paragraph a
-         * topic page holds that we wrote, which makes it the worst possible
-         * place to save eight sentences of work. See `RawCategory.description`.
-         */}
-        <p className="mt-3 max-w-prose text-ink-mid">
+          <div className="relative flex min-h-[200px] flex-col justify-end p-6 sm:min-h-[240px] sm:p-8">
+            {/* THE ENGLISH NAME UNDER THE CHINESE ONE, which is the one place on
+                this site that breaks the one-language-at-a-time rule on purpose
+                besides an article's headline — and for the same reason: a
+                category's two names are not a translated label pair, they are
+                what the subject is called in the two places a reader might have
+                met it. `nameEn` is what the JSON-LD's `articleSection` has always
+                declared. */}
+            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              {name}
+            </h1>
+            <p className="mt-1 text-sm font-bold tracking-wide text-white/70">
+              {category.nameEn}
+            </p>
+          </div>
+        </div>
+
+        {/* The hand-written line, under the band rather than on it — it runs to
+            two lines and prose over a photograph is where legibility goes. See
+            `RawCategory.description` in user-config for why it is written rather
+            than generated. */}
+        <p className="mt-4 max-w-prose text-base leading-relaxed font-medium text-ink-mid">
           {topicDescription(category, lang)}
         </p>
+
+        <p className="mt-2 text-sm font-bold text-ink-soft">
+          {t.topicArticles(articles.length)}
+          {total > 1 ? ` · ${t.pageOf(page, total)}` : ""}
+        </p>
+
+        {/**
+         * THE TWO ORDERS. `aria-current` as well as the underline, so a reader
+         * who cannot see the rule is still told which one is on.
+         *
+         * BOTH LINK TO PAGE 1. A sort and a page number are independent, and
+         * carrying the page across would land a reader on page 3 of an order
+         * they have not seen the top of.
+         */}
+        <nav className="mt-5 flex gap-5 border-b border-line">
+          {[
+            { key: "latest", label: t.topicSortLatest, on: !hot },
+            { key: "hot", label: t.topicSortHot, on: hot },
+          ].map((tab) => (
+            <a
+              key={tab.key}
+              href={`${href(lang, topicPath(category.id))}${
+                tab.key === "hot" ? "?sort=hot" : ""
+              }`}
+              aria-current={tab.on ? "page" : undefined}
+              className={`-mb-px border-b-2 pb-2.5 text-sm font-bold transition duration-150 ease-out ${
+                tab.on
+                  ? "border-ink text-ink"
+                  : "border-transparent text-ink-soft hover:text-ink-mid"
+              }`}
+            >
+              {tab.label}
+            </a>
+          ))}
+        </nav>
       </section>
 
       {/**

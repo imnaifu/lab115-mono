@@ -27,10 +27,16 @@ export async function generateMetadata({
 
 export default async function TopicPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lang: string; topic: string }>;
+  /* `?sort=hot` — a VIEW of this page, not another page. It changes nothing
+     about the canonical, which `topicMetadata` builds from the path. See the
+     `sort` prop in TopicView. */
+  searchParams: Promise<{ sort?: string }>;
 }) {
   const { lang, topic } = await params;
+  const { sort } = await searchParams;
   if (!isLang(lang)) notFound();
-  return <TopicView lang={lang} id={topic} page={1} />;
+  return <TopicView lang={lang} id={topic} page={1} sort={sort} />;
 }
