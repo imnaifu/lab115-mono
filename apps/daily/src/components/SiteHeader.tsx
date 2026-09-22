@@ -92,8 +92,8 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
  * from anywhere at its right.
  *
  * IT IS NOT CONSTRAINED TO THE READING COLUMN, and that is the point of it. The
- * column below is 750px centred (see index.css); a bar whose contents were also
- * 750px wide would put the brand and the controls side by side in the middle of
+ * column below is 880px centred (see index.css); a bar whose contents were also
+ * 880px wide would put the brand and the controls side by side in the middle of
  * a wide screen with empty bar either side of them, which reads as a header that
  * has lost its ends. So the bar's gutter is the page's, not the column's.
  *

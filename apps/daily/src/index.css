@@ -8,11 +8,13 @@
    right, brand against controls, out at the page's own edges — and everything
    below it is the column, centred, with the ground showing either side.
 
-   That column is still 750px, which is the one number here that must not move:
-   every measurement written down in the components — the masthead's type scale,
-   the photo card, the summary's measure — was tuned against it, and the page is
-   still meant to be screenshotted whole and shared. Nothing was widened; what
-   changed is that the column stopped being the whole page.
+   That column is 880px, and it is the one number here that must not move
+   casually: every measurement written down in the components — the masthead's
+   type scale, the photo card, the summary's measure — was tuned against it, and
+   the page is still meant to be screenshotted whole and shared. It was 750px
+   when the column stopped being the whole page, and was later widened to 880px
+   to give photos and cards more room; the prose measures (`max-w-prose`,
+   `max-w-xl`) did not move with it, so line length stayed where it was.
 
    THIS FILE IS TOKENS ONLY. Every rule lives on an element in the components.
    If you are about to add a selector here, that is the signal to check whether
@@ -234,7 +236,7 @@
    * would put both of them in the middle of a wide screen and leave the bar
    * looking like it had lost its ends.
    */
-  --container-page: 750px;
+  --container-page: 880px;
 
   /* `rounded-card` — one radius for every panel on the page. */
   --radius-card: 18px;

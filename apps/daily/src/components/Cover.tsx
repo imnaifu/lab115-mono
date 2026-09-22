@@ -161,7 +161,7 @@ export function Cover({
    *
    * `h-48 sm:h-80` (192/320px) AND THE PHONE NUMBER IS THE BINDING ONE. At
    * 361px of column a 16:9 picture is 203px tall before it is wider than the
-   * page, so 192 leaves it room; 320px on a wide screen is 569px of a 750px
+   * page, so 192 leaves it room; 320px on a wide screen is 569px of an 880px
    * column, which is a lede rather than a band.
    *
    * `max-w-full` + `object-contain` FOR THE ONE CASE THAT ESCAPES that sum: a

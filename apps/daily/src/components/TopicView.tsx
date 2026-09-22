@@ -261,7 +261,7 @@ export async function TopicView({
              * "which topic" and "what is in it" before the list starts. It also
              * gives back a whole block of vertical space above the fold.
              *
-             * `max-w-xl` because a line that runs the full width of a 750px
+             * `max-w-xl` because a line that runs the full width of an 880px
              * column over a photograph has no left edge to come back to. See
              * `RawCategory.description` in user-config for why it is written by
              * a person rather than generated.
