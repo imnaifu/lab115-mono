@@ -95,15 +95,63 @@
    * solved by bisection against the target ratio, so this is the same palette
    * two steps darker rather than a different purple.
    *
-   * THE DARK SIDE IS UNTOUCHED, and "darker" is meaningless there: its ink is
-   * warm off-white ON a dark ground, so taking lightness out of it removes
-   * contrast instead of adding it. It is solved against `--color-card` rather
-   * than `--color-page` — dark mode's worst pairing is ink on the card, where
-   * `ink-soft` was 4.23 — and it needs nothing here.
+   * THE DARK SIDE MOVED THE OTHER WAY, IN TWO PASSES OF ITS OWN. Its ink is
+   * warm off-white ON a dark ground, so "darker" is meaningless there — the two
+   * quiet steps were BRIGHTENED, on the report that body copy was hard to read:
+   *
+   *              before   1st pass   now    (against `--color-paper`, #302a52)
+   *   ink-mid     6.40      8.61  →  10.42
+   *   ink-soft    4.24      5.99  →   7.62
+   *
+   * THE FIRST PASS AIMED AT THE LIGHT SIDE'S OWN NUMBERS — 8.57 and 6.00 — on
+   * the principle that the two modes should be the same contrast for the same
+   * job. It was still reported as too faint, and the principle is what was
+   * wrong: light-on-dark and dark-on-light are not symmetric to read. A violet
+   * grey on a violet ground shares its hue with what it sits on, so the eye gets
+   * less separation than the luminance ratio promises, and the effect is
+   * stronger in this direction. So this pass stopped matching the light side and
+   * went to where it reads.
+   *
+   * WHAT THAT COSTS, STATED: `ink-mid` is now 10.42 against `ink`'s 11.41 on
+   * paper, so the two are close. On the light page they are 8.57 and 12.46 —
+   * a clear step — and on the article page that step is what separates the dek
+   * from the prose under it. In dark mode that separation is now mostly the
+   * dek's 700 weight and its orange rule rather than its colour. Accepted
+   * deliberately: a hierarchy nobody can read the bottom of is not a hierarchy.
+   *
+   * SOLVED AGAINST `--color-paper`, WHICH IS A CORRECTION. The old note said the
+   * dark side was solved against `--color-card`, on the grounds that ink on a
+   * card was the worst pairing. That stopped being true when the site gave its
+   * cards up: `bg-card` survives in `/preview`, one empty state and the
+   * photograph's frame, and no body copy sits on it. `--color-paper` is the
+   * LIGHTEST dark surface — the dialogs and a few panels — so for light text it
+   * is now the worst pairing, and it is what these were bisected against.
+   *
+   * `ink` NEEDED NOTHING on this side — 14.43 on the page, 11.41 on paper.
+   *
+   * HUE AND SATURATION UNCHANGED HERE TOO, only lightness, by bisection.
    */
   --color-ink: light-dark(#2d294c, #f3ede1);
-  --color-ink-mid: light-dark(#474263, #b7afd4);
-  --color-ink-soft: light-dark(#5f587e, #938db2);
+  --color-ink-mid: light-dark(#474263, #e5e2ef);
+  --color-ink-soft: light-dark(#5f587e, #c4c2d5);
+
+  /**
+   * THE INK FOR TEXT THAT SITS ON A PHOTOGRAPH, and it does NOT invert.
+   *
+   * ONE USER: the front page's 「查看今日精选」 pill, which is `bg-white` over the
+   * hero image. It was `text-ink`, and that was a real bug in dark mode — `ink`
+   * inverts to warm off-white, so the label went near-white on a white pill and
+   * disappeared. The pill is white in both modes because its context is the
+   * photograph underneath it rather than the page, so its text has to be fixed
+   * too.
+   *
+   * SAME DOCTRINE AS `--color-blob` ABOVE: a thing whose ground does not follow
+   * the theme must not take a colour that does. It lives here rather than as a
+   * literal in the component so that the next pass over the ink note finds it —
+   * this is the light side's `--color-ink`, and if that value moves this one
+   * moves with it.
+   */
+  --color-ink-fixed: #2d294c;
 
   /* The one colour that does NOT invert. It is the brand's accent on both
      grounds and it holds against each; swapping it would be swapping identity. */

@@ -252,7 +252,11 @@ export default async function Home({
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               {latest ? (
                 <a
-                  className="rounded-button bg-white px-5 py-2.5 text-sm font-bold text-ink transition duration-150 ease-out hover:bg-white/85"
+                  /* `text-ink-fixed`, NOT `text-ink`. This pill is white in
+                     both themes because it sits on the hero photograph, and
+                     `ink` inverts — in dark mode the label went warm off-white
+                     on a white pill and vanished. See the token in index.css. */
+                  className="rounded-button bg-white px-5 py-2.5 text-sm font-bold text-ink-fixed transition duration-150 ease-out hover:bg-white/85"
                   href={href(lang, dayPath(latest))}
                   data-track="day_open"
                   data-track-from="home"
