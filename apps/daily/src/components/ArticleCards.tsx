@@ -58,11 +58,12 @@ function Dot() {
 /**
  * The source, and the author when there is one.
  *
- * EXPORTED because the front page's lead uses it too. It was local while the
- * only thing that named an article was a list row; the teaser now carries the
- * same header block — cover, meta, headline — and two copies of a one-line
- * component are two places for the separator rules and the accent colour to
- * drift apart.
+ * LOCAL AGAIN, AND IT WAS EXPORTED. The export existed for the front page's
+ * teaser — "two copies of a one-line component are two places for the separator
+ * rules and the accent colour to drift apart" — and that teaser is gone: the
+ * front page draws the same `ArticleBrief` rows the day page does, so the only
+ * caller is `ArticleBrief` below, in this file. An export nobody imports is a
+ * claim that this shape is shared when it is not.
  */
 /**
  * ASYNC, which is new and is the topic chip's doing: whether a topic has a page
@@ -75,7 +76,7 @@ function Dot() {
  * the day page. Nothing here reads the filesystem a second time either: the
  * lookup is a map read over the index `archiveIndex` already caches.
  */
-export async function Meta({
+async function Meta({
   article,
   lang,
   from,

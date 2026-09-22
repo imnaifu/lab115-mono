@@ -94,7 +94,10 @@ export function hasTopicPage(published: number): boolean {
  * other six — the ones a reader is actually paging through — are a length
  * somebody finishes. It shrinks on its own as those two topics fill up.
  */
-export const TOPIC_PAGE_SIZE = 15;
+/* NOT EXPORTED. `topicPages` and `topicSlice` below are the only readers, and
+   they are the API — a caller that imported the number would be doing the
+   arithmetic a second time. */
+const TOPIC_PAGE_SIZE = 15;
 
 /** How many pages a topic of this size runs to. At least one, so a live topic
  *  always has a page 1 even when it holds fewer than a full page. */

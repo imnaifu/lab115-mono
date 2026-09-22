@@ -138,14 +138,15 @@
   /**
    * THE INK FOR TEXT THAT SITS ON A PHOTOGRAPH, and it does NOT invert.
    *
-   * ONE USER: the front page's 「查看今日精选」 pill, which is `bg-white` over the
+   * ONE USER: the front page's 「查看今日文章」 pill, which is `bg-white` over the
    * hero image. It was `text-ink`, and that was a real bug in dark mode — `ink`
    * inverts to warm off-white, so the label went near-white on a white pill and
    * disappeared. The pill is white in both modes because its context is the
    * photograph underneath it rather than the page, so its text has to be fixed
    * too.
    *
-   * SAME DOCTRINE AS `--color-blob` ABOVE: a thing whose ground does not follow
+   * THE SAME DOCTRINE THE BLOB LEARNED (see the tombstone below): a thing whose
+   * ground does not follow
    * the theme must not take a colour that does. It lives here rather than as a
    * literal in the component so that the next pass over the ink note finds it —
    * this is the light side's `--color-ink`, and if that value moves this one
@@ -157,22 +158,25 @@
      grounds and it holds against each; swapping it would be swapping identity. */
   --color-orange: #efa050;
 
-  /**
-   * The masthead's ink-coloured blob — and the SECOND colour that does not invert,
-   * for the same reason the orange above does not.
+  /*
+   * `--color-blob` AND `--radius-blob` WERE HERE AND ARE GONE. They coloured and
+   * shaped the masthead's two decorative blobs, which went when the masthead's
+   * contents moved into the bar — see the note at the top of Shell.tsx. Nothing
+   * in `src/` has referenced either for several rounds.
    *
-   * IT USED TO BE `bg-ink`, which is how it turned into glare. `--color-ink`
-   * inverts to #f3ede1, so on the dark page the shape came out as 200×260 of warm
-   * off-white — brighter than anything else on the screen, and drawing the eye to
-   * the one thing up there with nothing to say. The mistake was treating a
-   * decorative shape as if it were text: ink inverts because text has to stay
-   * legible against its ground, and a blob has nothing to be legible about.
+   * THE COLOUR ONE HAD ALSO GONE STALE, which is why deleting beat keeping: its
+   * note said it was "fixed at the light side's ink, so the light page is
+   * unchanged to the pixel", and the light ink has been darkened twice since
+   * (#3b3563 → #2d294c). A token documented as tracking another value, which
+   * does not track it, and which nothing reads, is three kinds of wrong at once.
    *
-   * Fixed at the light side's ink, so the light page is unchanged to the pixel and
-   * the dark one gets a soft indigo lift out of its own background instead. The
-   * pair of shapes now behave the same way: neither follows the theme.
+   * WHAT THE NOTE WAS WORTH KEEPING FOR is the doctrine, and that survives one
+   * token up in `--color-ink-fixed`: a thing whose ground does not follow the
+   * theme must not take a colour that does. The blob learned it the hard way —
+   * it was `bg-ink` once, and on the dark page it came out as 200x260 of warm
+   * off-white, brighter than anything else on the screen and drawing the eye to
+   * the one thing up there with nothing to say.
    */
-  --color-blob: #3b3563;
 
   /**
    * CHART MARKS — three, and only `/admin` uses them.
@@ -253,9 +257,6 @@
    */
   --radius-button: 14px;
 
-  /* `rounded-blob` — the masthead's organic shape. Eight values and a slash, so
-     it earns a token rather than being inlined as an arbitrary utility. */
-  --radius-blob: 52% 48% 38% 62% / 58% 42% 58% 42%;
 
   /**
    * One face for the whole page: 思源黑体 (Noto Sans SC / Source Han Sans) for

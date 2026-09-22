@@ -55,12 +55,30 @@ export type TrackEvent =
   | "summary_open"
   /** The language switch, which has just come back from being hidden. */
   | "lang_switch"
-  /** The end-of-page link on a day page, to the archive's full run of dates. */
-  | "all_days_open"
-  /** The front page's "更多" link into the archive, and the archive's own pager. */
-  | "archive_open"
-  /** The archive's end-of-page link back to the front page. */
-  | "home_open"
+  /**
+   * THREE MEMBERS WERE REMOVED FROM HERE, and the removal matters more than the
+   * usual dead-code tidy-up: `all_days_open`, `archive_open` and `home_open`.
+   *
+   * Each one named a link that no longer exists — the day page's end-of-page way
+   * into the archive, the front page's 「更多」 plus the archive's old numbered
+   * pager, and the archive's end-of-page way back to the front page. All three
+   * went with the rounds that gave the archive month browsing and stripped the
+   * duplicate end-of-page cards.
+   *
+   * WHY LEAVING THEM WOULD HAVE BEEN WORSE THAN DEAD CODE. The note above says
+   * this is a union rather than `string` because a typo is invisible in GA4. A
+   * member with no emitter is the same failure wearing different clothes: it
+   * reads in the report as an event with a count of zero, which looks like
+   * "nobody presses it" rather than "nothing sends it". The compiler cannot
+   * catch that one — only deleting the member can.
+   *
+   * `today_open` WAS IN TRACKING.md AND NEVER IN THIS UNION, documented as
+   * 「归档 → 今天」. That link is gone too, and the doc row went with these. If
+   * the bar's 今天 should be measured now that it leads to `/today`, the honest
+   * event is `day_open` with a new `from=header` — see the note in SiteHeader
+   * about why adding one there is a change to the analytics contract and not a
+   * markup change.
+   */
   /**
    * A source's page was opened — from the list at `/s`, or from the front page's
    * way in to it (`from` says which).

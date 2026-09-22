@@ -31,6 +31,25 @@ import type { Lang } from "./lang";
  * `generateMetadata` calls build their titles from `brand` rather than from a
  * constant — see app/layout.tsx.
  */
+/*
+ * 二十条字符串（中英各十）在这一轮被删掉了，记一笔免得下一个人以为是漏写：
+ *
+ *   days           从来只有注释提到过
+ *   readSummary    首页 teaser 上那对「看原文 / 看总结」按钮，teaser 没了
+ *   keepReading    同上
+ *   latestPosts    首页那列最近文章的标题，那一列改成了当天五篇
+ *   morePosts      上面那列通往归档的出口；分页器短暂用过它，又换回「上一页/下一页」
+ *   more           首页通往归档那颗
+ *   topicRecent    话题卡片里「最近更新」那个小标签，卡片改成行时那两条预览去掉了
+ *   topicHeading   话题页曾经的 h1，现在报头用的是 categoryName
+ *   topicLabel     文章页 meta 行里话题链接前面的「话题」二字，那一行现在只有色点
+ *   allSources     通往订阅源整块的入口标签
+ *
+ * `allSources` 和别的九条略有不同：订阅源整块是 `SOURCE_PAGES_LIVE` 关着的、注释里
+ * 说它会回来。但那两个入口（顶栏、首页末尾卡片）当初是**删掉而不是 gate 掉**的
+ * —— 见 lib/sources.ts 里那段说明 —— 所以这个标签和别的九条一样没有归属。恢复那一块
+ * 要重新写这一个短词，这笔账那段注释已经认了。
+ */
 const STRINGS = {
   zh: {
     brand: "每日严选",
@@ -68,7 +87,6 @@ const STRINGS = {
     seeAll: "查看全部",
     readTime: (n: number) => `读完约 ${n} 分钟`,
     sectionCount: (n: number) => `${n} 篇`,
-    days: (n: number) => `${n} 天`,
 
     /**
      * 「原文」, NOT 「全文」. This link leaves the site for somebody else's article,
@@ -84,29 +102,6 @@ const STRINGS = {
      * the primary one it sits next to.
      */
     readFull: "看原文 →",
-    /**
-     * The way in to one article's full take, from a list that shows only the
-     * headline and the claim.
-     *
-     * 「总结」 AGAINST 「原文」 — see `readFull` above. Two links a few pixels apart,
-     * one leading deeper into this site and one leading off it, have to say which
-     * is which in the words themselves, and these two differ in the only place
-     * that matters: whose text is on the other end.
-     */
-    readSummary: "看总结 →",
-    /** The front page's one action: on into the day this teaser is from. */
-    keepReading: "继续阅读全文 »",
-    /**
-     * The heading over the run of recent pieces on the front page.
-     *
-     * PIECES, NOT DAYS. It listed dates until the front page became a teaser for
-     * one article — and a column of dates under a headline is a table of contents
-     * for a book the reader has not opened. Naming the pieces is what makes the
-     * list worth reading: every row is something they can decide about.
-     */
-    latestPosts: "最新文章",
-    /** The way out of that list, into the archive. */
-    morePosts: "更多文章……",
     share: "分享",
     /**
      * 文章页底那张分享卡片上的两行字。
@@ -243,18 +238,6 @@ const STRINGS = {
      *  这句话只需要说清这是一个出站动作，别的交给标题自己。 */
     readOriginal: "阅读原文",
 
-    /**
-     * The front page's link to the archive, under the newest few days.
-     *
-     * NO LONGER COUNTS THE DAYS. It read 「共 N 天，按页浏览」, which spent the one
-     * line under the label on a number and a pagination mechanic — the number is
-     * the site's inventory rather than a reason to click, and how the archive
-     * paginates is something a reader finds out by arriving. What is left says
-     * where the link goes.
-     *
-     * A plain string rather than a function now: nothing here interpolates.
-     */
-    more: "更多",
 
     archiveTitle: "归档",
     /** 归档页自己的标题和那一句。`archiveTitle` 是它在导航和面包屑里的名字，短；
@@ -296,7 +279,6 @@ const STRINGS = {
     sourceTakes: "摘过的文章",
     sourceSite: "访问原站 →",
     sourceBeat: "常写",
-    allSources: "看订阅源",
     allSourcesSub: "每天被读一遍的那些博客",
 
     nothingYet: "还没有任何内容。",
@@ -375,10 +357,6 @@ const STRINGS = {
     topicHubLead:
       "这个站每天从全球优质信息源里挑出值得一读的文章，按领域收在下面这几个话题里。" +
       "每个话题都是一条会一直长下去的流，点进去是我们在那个领域摘过的全部文章。",
-    /** 话题卡片里那两条最近的文章上面的小标签。 */
-    topicRecent: "最近更新",
-
-    topicHeading: (name: string) => `${name}每日精选`,
     topicDocTitle: (name: string) => `${name}每日精选：观点、摘要与原文`,
     topicLead: (name: string) =>
       `每天从全球优质信息源中筛选${name}领域值得一读的文章，` +
@@ -395,8 +373,6 @@ const STRINGS = {
     /** 话题页报头里的篇数。和卡片上的 `topicPicked` 说的是同一个数，措辞不同：那里
      *  要和来源页对齐口径（收录过 N 篇），这里是这一页自己的规模。 */
     topicArticles: (n: number) => `${n} 篇文章`,
-    /** 文章页报头里那个话题链接前面的词。见文章页的 meta 行。 */
-    topicLabel: "话题",
 
     /**
      * 文章正文下面那一块。
@@ -587,18 +563,17 @@ const STRINGS = {
     /* The count is MAIL_TOP_N — what the mail sends, not what the day holds.
        See the Chinese note for why the two numbers are different questions. */
     homeHeading: (n: number) => `${n} pieces a day, a bigger picture`,
-    homeSeeToday: "Today's picks",
+    /* NOT "Today's picks", which is what this said — the exact string
+       `todayPicks` uses for the heading two blocks below it, on a button that
+       goes somewhere else entirely. The Chinese side reads 查看今日文章 (see
+       today's articles) and this now says the same thing. */
+    homeSeeToday: "All of today",
     homeSubscribe: "Subscribe",
     todayPicks: "Today's picks",
     seeAll: "See all",
     readTime: (n: number) => `about ${n} min to read`,
     sectionCount: (n: number) => `${n}`,
-    days: (n: number) => `${n} ${n === 1 ? "day" : "days"}`,
     readFull: "Read the original →",
-    readSummary: "Read the summary →",
-    keepReading: "Keep reading »",
-    latestPosts: "Latest posts",
-    morePosts: "More posts…",
     share: "Share",
     /* See the Chinese side. The second line says why you would press it, not
        what it does — the thumbnail beside it already covers what it does. */
@@ -652,7 +627,6 @@ const STRINGS = {
     nextPage: "Next page",
     readOriginal: "Read the original",
 
-    more: "More",
 
     archiveTitle: "Archive",
     archiveHeading: "Archive",
@@ -697,7 +671,6 @@ const STRINGS = {
     sourceTakes: "What we picked",
     sourceSite: "Visit the site →",
     sourceBeat: "Usually",
-    allSources: "The sources",
     allSourcesSub: "The blogs that get read every morning",
 
     nothingYet: "Nothing published yet.",
@@ -746,9 +719,7 @@ const STRINGS = {
       "Every day this site picks the writing worth reading from high-quality " +
       "sources and files it under the topics below. Each one is a stream that " +
       "keeps growing — open it for everything we have picked in that field.",
-    topicRecent: "Latest",
 
-    topicHeading: (name: string) => `${name}, picked daily`,
     topicDocTitle: (name: string) =>
       `${name}, picked daily: summaries, takes and sources`,
     topicLead: (name: string) =>
@@ -760,7 +731,6 @@ const STRINGS = {
     topicSortLatest: "Latest",
     topicSortHot: "Top",
     topicArticles: (n: number) => `${n} ${n === 1 ? "piece" : "pieces"}`,
-    topicLabel: "Topic",
 
     related: "You might also read",
 
