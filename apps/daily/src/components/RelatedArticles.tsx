@@ -117,7 +117,7 @@ export async function RelatedArticles({
                 {displayTitle(other, lang)}
               </span>
               {thesis ? (
-                <span className="text-sm leading-relaxed font-medium text-ink-mid">
+                <span className="text-sm leading-relaxed font-semibold text-ink-mid">
                   {excerpt(thesis)}
                 </span>
               ) : null}

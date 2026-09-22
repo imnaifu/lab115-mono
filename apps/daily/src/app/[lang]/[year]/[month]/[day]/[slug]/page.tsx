@@ -16,11 +16,7 @@ import { RelatedArticles } from "@/components/RelatedArticles";
 import { ShareButton } from "@/components/ShareButton";
 import { SubscribeDialog } from "@/components/SubscribeDialog";
 import { Summary } from "@/components/Summary";
-import {
-  accentColor,
-  categoryName,
-  categoryOf,
-} from "@/lib/categories";
+import { accentColor, categoryName, categoryOf } from "@/lib/categories";
 import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
@@ -61,7 +57,11 @@ type Params = {
 };
 
 /** The date these three segments name — see the note on the day page next door. */
-function dateFrom(params: { year: string; month: string; day: string }): string {
+function dateFrom(params: {
+  year: string;
+  month: string;
+  day: string;
+}): string {
   return `${params.year}-${params.month}-${params.day}`;
 }
 
@@ -362,7 +362,11 @@ export default async function ArticlePage({ params }: Params) {
             ...(article.author
               ? { author: { "@type": "Person", name: article.author } }
               : {}),
-            publisher: { "@type": "Organization", name: source.name, url: source.site },
+            publisher: {
+              "@type": "Organization",
+              name: source.name,
+              url: source.site,
+            },
           },
         }}
       />
@@ -389,7 +393,7 @@ export default async function ArticlePage({ params }: Params) {
         crumb={
           <div className="mt-6">
             <a
-              className="text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+              className="text-sm font-semibold text-ink-soft transition-colors hover:text-ink"
               href={langHref(lang, dayPath(date))}
             >
               ← {t.backToDay}
@@ -445,7 +449,9 @@ export default async function ArticlePage({ params }: Params) {
             <span className="size-1 rounded-full bg-orange" />
           </>
         ) : null}
-        <span style={{ color: themedAccent(source.accent) }}>{source.name}</span>
+        <span style={{ color: themedAccent(source.accent) }}>
+          {source.name}
+        </span>
         {article.author ? (
           <>
             <span className="size-1 rounded-full bg-orange" />
@@ -560,7 +566,7 @@ export default async function ArticlePage({ params }: Params) {
                 `article.title` — never the rewrite. See `titleZh` in lib/types:
                 the rewrite is our headline, and what is on the other end of this
                 link is the piece the source published. */}
-            <span className="mt-1 block text-sm leading-snug font-medium text-ink-soft">
+            <span className="mt-1 block text-sm leading-snug font-semibold text-ink-soft">
               {article.title}
             </span>
           </span>

@@ -110,7 +110,7 @@ export default async function AboutPage({
              also the page's `<meta name="description">` and the copy a person
              edits, and a second syntax to strip would be a second thing that can
              be got wrong. If emphasis is ever wanted it belongs in the markup. */
-          <p className="text-base leading-[1.85] font-medium text-ink-mid" key={at}>
+          <p className="text-base leading-[1.85] font-semibold text-ink-mid" key={at}>
             {paragraph.replace(/\*\*/g, "")}
           </p>
         ))}
@@ -126,7 +126,7 @@ export default async function AboutPage({
             key={heading}
           >
             <h2 className="text-base font-bold text-ink">{heading}</h2>
-            <p className="mt-1.5 text-sm leading-relaxed font-medium text-ink-mid">
+            <p className="mt-1.5 text-sm leading-relaxed font-semibold text-ink-mid">
               {body}
             </p>
           </div>

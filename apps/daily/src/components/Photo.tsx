@@ -75,14 +75,14 @@ export function PhotoCard({
         alt=""
       />
       <figcaption className="px-5 py-4">
-        {/* THE SAME WEIGHT AND SIZE AS A TAKE'S THESIS — `text-base font-medium`,
+        {/* THE SAME WEIGHT AND SIZE AS A TAKE'S THESIS — `text-base font-semibold`,
             see SIZE.card.thesis in Summary.tsx. Both are the one sentence that
             opens a block and both sit a half step above the prose around them, so
-            reading as the same kind of line is correct. `font-medium` is 500,
+            reading as the same kind of line is correct. `font-semibold` is 500,
             which is a real face in both families (the Google Fonts link in
             layout.tsx loads it); asking for a weight that is not loaded gets a
             faked one. */}
-        <p className="text-base leading-relaxed font-medium text-ink">
+        <p className="text-base leading-relaxed font-semibold text-ink">
           {captionFor(photo, lang)}
         </p>
         {/*

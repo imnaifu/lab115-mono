@@ -126,7 +126,7 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
   return (
     <section className="mb-14">
       <h2 className="mb-4 text-xl font-bold text-ink">
-        {t.brand} <span className="font-medium text-ink-soft">/{lang}</span>
+        {t.brand} <span className="font-semibold text-ink-soft">/{lang}</span>
       </h2>
 
       {/* A div holding a link, NOT a link holding an iframe. The card was the
@@ -154,7 +154,7 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
           >
             {mail.label}
           </a>
-          <div className="pt-0.5 pb-3 text-xs font-medium text-ink-soft">
+          <div className="pt-0.5 pb-3 text-xs font-semibold text-ink-soft">
             {mail.file}
           </div>
           {/* The two panes are the same document the route serves, so what renders
@@ -202,7 +202,7 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
                   alt=""
                   className="block w-[210px] rounded-xl border border-line"
                 />
-                <div className="pt-1.5 text-xs font-medium text-ink-soft">
+                <div className="pt-1.5 text-xs font-semibold text-ink-soft">
                   {part} / {parts}
                 </div>
               </a>
@@ -210,7 +210,7 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
           })}
         </div>
       ) : (
-        <div className="text-sm font-medium text-ink-soft">
+        <div className="text-sm font-semibold text-ink-soft">
           没有可渲染的海报
         </div>
       )}
@@ -229,13 +229,13 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
           alt=""
           className="block w-full max-w-[520px] rounded-xl border border-line"
         />
-        <div className="pt-1.5 text-xs font-medium text-ink-soft">
+        <div className="pt-1.5 text-xs font-semibold text-ink-soft">
           {ogUrl(lang, "site")} · 1200×630
         </div>
       </a>
 
       {top ? (
-        <p className="pt-3 text-xs font-medium text-ink-soft">
+        <p className="pt-3 text-xs font-semibold text-ink-soft">
           海报画的是当天第一篇：{displayTitle(top, lang)}
         </p>
       ) : null}
@@ -263,7 +263,7 @@ export default async function PreviewPage({
        the card's padding — rather than the article measure the sheet started at. */
     <div className="mx-auto max-w-[1220px] px-6 py-10 pb-16">
       <h1 className="text-2xl font-bold text-ink">daily preview</h1>
-      <p className="pt-1.5 text-sm font-medium text-ink-mid">
+      <p className="pt-1.5 text-sm font-semibold text-ink-mid">
         {digest.date} · 邮件、分享海报、链接预览卡片，全部按线上代码渲染
       </p>
 
@@ -285,7 +285,7 @@ export default async function PreviewPage({
         <Section key={lang} digest={digest} lang={lang} />
       ))}
 
-      <p className="rounded-card bg-card px-4 py-3 text-xs leading-relaxed font-medium text-ink-soft">
+      <p className="rounded-card bg-card px-4 py-3 text-xs leading-relaxed font-semibold text-ink-soft">
         邮件里的 logo 和链接都是指向 <code>daily.lab115.com</code> 的绝对地址 ——
         收件箱里没有相对路径可言，所以这两样在预览里走的是线上站点。确认信的
         token 是假的，点进去会落在「链接失效」页。这个路径只在 dev 存在，线上

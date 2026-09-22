@@ -139,7 +139,7 @@ export function Summary({
        * the card's own column.
        */}
       {text.thesis ? (
-        <p className={`max-w-prose font-medium text-ink-mid ${size.thesis}`}>
+        <p className={`max-w-prose font-semibold text-ink-mid ${size.thesis}`}>
           {text.thesis}
         </p>
       ) : null}
@@ -170,7 +170,7 @@ export function Summary({
                 // stays two CHARACTERS at whichever size the variant sets. The
                 // poster draws the same measure from POSTER.indent — change one,
                 // change both.
-                `${i === opening ? "indent-[2em]" : ""} leading-[1.85] font-medium text-ink-mid ${size.para}`
+                `${i === opening ? "indent-[2em]" : ""} leading-[1.85] font-semibold text-ink-mid ${size.para}`
           }
           key={i}
         >
@@ -233,7 +233,7 @@ export function Summary({
             <p className="text-[11px] font-bold tracking-[0.08em] text-ink-soft">
               {strings(lang).whyItMatters}
             </p>
-            <p className={`mt-1.5 font-medium text-ink ${size.para}`}>
+            <p className={`mt-1.5 font-semibold text-ink ${size.para}`}>
               {summary.whyItMatters}
             </p>
           </div>

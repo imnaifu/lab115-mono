@@ -134,7 +134,7 @@ export async function TopicHub({ lang }: { lang: Lang }) {
                 {/* The hand-written line — see `RawCategory.description` in
                     user-config. It is the only original prose on this page and
                     it is what separates a hub from a list of links. */}
-                <p className="mt-2 text-sm leading-relaxed font-medium text-pretty text-ink-mid">
+                <p className="mt-2 text-sm leading-relaxed font-semibold text-pretty text-ink-mid">
                   {topicDescription(category, lang)}
                 </p>
 

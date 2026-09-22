@@ -135,7 +135,7 @@ export function StatTile({
         {value}
       </div>
       {note ? (
-        <div className="mt-0.5 text-xs font-medium text-ink-soft">{note}</div>
+        <div className="mt-0.5 text-xs font-semibold text-ink-soft">{note}</div>
       ) : null}
     </div>
   );

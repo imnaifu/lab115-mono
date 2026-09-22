@@ -314,6 +314,11 @@ export default async function RootLayout({
          * that is not requested gets a synthesised face, which on upright CJK
          * glyphs is an artefact at any size.
          *
+         * 600 WHERE IT USED TO SAY 500, AND STILL THREE WEIGHTS. Body copy was
+         * set in 500 and reads thin in 宋体; the swap is a straight substitution
+         * rather than an addition, so the page downloads exactly what it did
+         * before. See `--font-serif` in index.css.
+         *
          * NO ITALIC IN EITHER, and nothing asks for one. Lora ships one and it
          * is not requested: the site's emphasis is carried by weight and colour,
          * and 思源宋体 has no italic at all, so any rule that used one would look
@@ -325,7 +330,7 @@ export default async function RootLayout({
          * changing its character.
          */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Lora:wght@400..700&family=Noto+Serif+SC:wght@400;500;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Lora:wght@400..700&family=Noto+Serif+SC:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
       </head>

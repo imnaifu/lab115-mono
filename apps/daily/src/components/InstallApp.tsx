@@ -284,7 +284,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
             /* No steps at all: this browser cannot do it, and the honest answer is
                a sentence rather than a list that ends in a menu item that is not
                there. */
-            <p className="text-sm leading-relaxed font-medium text-ink-mid">
+            <p className="text-sm leading-relaxed font-semibold text-ink-mid">
               {guide.unsupported}
             </p>
           ) : (
@@ -313,7 +313,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
                 {guide.steps.map((step, i) => (
                   <li
                     key={step}
-                    className="flex items-start gap-2.5 text-sm leading-relaxed font-medium text-ink"
+                    className="flex items-start gap-2.5 text-sm leading-relaxed font-semibold text-ink"
                   >
                     <span
                       aria-hidden
@@ -327,7 +327,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
               </ol>
 
               {guide.note ? (
-                <p className="text-xs leading-relaxed font-medium text-ink-soft">
+                <p className="text-xs leading-relaxed font-semibold text-ink-soft">
                   {guide.note}
                 </p>
               ) : null}
@@ -336,7 +336,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
 
           {/* What installing actually buys, on the far side of a hairline: it is
               the reason to bother, not part of the procedure. */}
-          <p className="border-t border-line pt-3 text-xs leading-relaxed font-medium text-ink-soft">
+          <p className="border-t border-line pt-3 text-xs leading-relaxed font-semibold text-ink-soft">
             {t.installWhy}
           </p>
         </div>

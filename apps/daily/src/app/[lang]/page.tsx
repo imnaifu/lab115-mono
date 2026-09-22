@@ -247,7 +247,7 @@ export default async function Home({
             <h1 className="max-w-xl text-3xl leading-tight font-bold tracking-tight text-pretty text-white sm:text-4xl">
               {t.homeHeading(MAIL_TOP_N)}
             </h1>
-            <p className="mt-3 max-w-md text-base leading-relaxed font-medium text-pretty text-white/85">
+            <p className="mt-3 max-w-md text-base leading-relaxed font-semibold text-pretty text-white/85">
               {t.dayLead}
             </p>
 

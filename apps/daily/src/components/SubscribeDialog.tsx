@@ -251,7 +251,7 @@ export function SubscribeDialog({
           <h2 className="text-xl font-bold tracking-tight text-pretty text-ink">
             {picks ? t.subscribePitch(picks) : t.tagline}
           </h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed font-medium text-pretty text-ink-mid">
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed font-semibold text-pretty text-ink-mid">
             {t.subscribePitchSub}
           </p>
           <button
@@ -307,7 +307,7 @@ export function SubscribeDialog({
               <div className="text-xl font-bold text-ink">
                 {t.confirmedTitle}
               </div>
-              <p className="mt-2 text-sm font-medium text-ink-soft">
+              <p className="mt-2 text-sm font-semibold text-ink-soft">
                 {t.subscribeSent(state.email)}
               </p>
             </div>
@@ -357,7 +357,7 @@ export function SubscribeDialog({
                 <p className="mt-1.5 text-base font-bold text-pretty text-ink">
                   {picks ? t.subscribePitch(picks) : t.tagline}
                 </p>
-                <p className="mt-1.5 text-sm font-medium text-pretty text-ink-mid">
+                <p className="mt-1.5 text-sm font-semibold text-pretty text-ink-mid">
                   {t.subscribePitchSub}
                 </p>
               </div>
@@ -436,7 +436,7 @@ export function SubscribeDialog({
                     appears because something went wrong. */}
                 {state.kind === "error" ? (
                   <p
-                    className="mt-1 text-xs font-medium text-ink-soft"
+                    className="mt-1 text-xs font-semibold text-ink-soft"
                     role="status"
                   >
                     {state.message}

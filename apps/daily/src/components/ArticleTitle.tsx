@@ -59,12 +59,12 @@ export function ArticleTitle({
   return (
     <>
       {rewritten}
-      {/* `font-medium` against the heading's `font-bold`, and one step down in
+      {/* `font-semibold` against the heading's `font-bold`, and one step down in
           size: the original is here to be recognised, not to compete with the
           line that carries the meaning. `break-words` because a headline can
           contain a URL-like token that would otherwise widen the card. */}
       <span
-        className={`block font-medium break-words text-ink-soft ${ORIGINAL[variant]}`}
+        className={`block font-semibold break-words text-ink-soft ${ORIGINAL[variant]}`}
       >
         {article.title}
       </span>

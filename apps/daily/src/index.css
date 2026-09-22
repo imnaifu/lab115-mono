@@ -199,14 +199,20 @@
    * 思源宋体's contrast that Google Fonts ships as a variable font — which is
    * why the Latin half costs one file across every weight.
    *
-   * THREE CJK WEIGHTS, AND THAT NUMBER IS THE WHOLE COST OF THIS CHANGE. Every
-   * weight of a Chinese face is its own set of subsets; the site had four of
-   * 黑体 and could not afford four of 宋体 on top of a page whose point is being
-   * screenshotted quickly. Measured across `src/`: 104 uses of `font-bold`, 46
-   * of `font-medium`, 7 of `font-semibold`. So 400/500/700 are loaded and the
-   * seven 600s were folded into 700 — asking for a weight that is not loaded
-   * gets a SYNTHESISED one, which on upright CJK glyphs is an artefact, so the
-   * only safe options were to load it or to stop using it.
+   * THREE CJK WEIGHTS — 400/600/700 — AND THAT NUMBER IS THE WHOLE COST OF THIS
+   * CHANGE. Every weight of a Chinese face is its own set of subsets; the site
+   * had four of 黑体 and cannot afford four of 宋体 on top of a page whose point
+   * is being screenshotted quickly. Asking for a weight that is NOT loaded gets
+   * a SYNTHESISED one, which on upright CJK glyphs is an artefact at any size,
+   * so every weight the markup uses has to be in that list.
+   *
+   * BODY COPY IS 600, AND IT WAS 500. 宋体's strokes are thinner than 黑体's, so
+   * body text set at the weight that read right in a sans reads light in a
+   * serif — the same cause as the two ink steps below this note getting darker.
+   * The fix is a SUBSTITUTION, not an addition: 500 is no longer loaded and
+   * every `font-medium` in `src/` became `font-semibold`, so the page downloads
+   * exactly the three subsets it downloaded before. Going to 600 while keeping
+   * 500 would have been a fourth CJK weight for nobody.
    *
    * THE FALLBACK IS A SYSTEM SERIF, not a sans. `display=swap` means the first
    * paint is in the fallback, and a page that arrives in Georgia and settles

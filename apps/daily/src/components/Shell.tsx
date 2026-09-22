@@ -176,7 +176,7 @@ export function Masthead({
           empty flex row here would be `mt-6` of nothing between the title and
           the first card. */}
       {lead ? (
-        <p className="mt-2.5 max-w-prose text-base leading-relaxed font-medium text-ink-mid">
+        <p className="mt-2.5 max-w-prose text-base leading-relaxed font-semibold text-ink-mid">
           {lead}
         </p>
       ) : null}
@@ -223,7 +223,7 @@ export function Breadcrumb({
   label: string;
 }) {
   return (
-    <nav aria-label={label} className="mt-6 text-sm font-medium text-ink-soft">
+    <nav aria-label={label} className="mt-6 text-sm font-semibold text-ink-soft">
       <ol className="flex flex-wrap items-center gap-1.5">
         {items.map((item, at) => (
           <li key={item.label} className="flex items-center gap-1.5">
@@ -300,7 +300,7 @@ export function EndLink({
     >
       <span className="min-w-0">
         <span className="block text-xl font-bold text-ink">{label}</span>
-        <span className="mt-1 block text-sm font-medium text-ink-soft">
+        <span className="mt-1 block text-sm font-semibold text-ink-soft">
           {sub}
         </span>
       </span>
@@ -339,7 +339,7 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
       {/* Same single name as the masthead, so the switch changes both. */}
       <div className="min-w-0 text-lg font-bold text-ink">{t.brand}</div>
 
-      <div className="flex flex-col gap-1 text-xs font-medium text-ink-soft sm:items-end sm:text-right">
+      <div className="flex flex-col gap-1 text-xs font-semibold text-ink-soft sm:items-end sm:text-right">
         {/**
          * THE LINK BACK TO THE LAB, and it is the only outbound link in the
          * footer.

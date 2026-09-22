@@ -119,7 +119,12 @@ export function DigestView({
        * Wikimedia had nothing. Both render as no card at all rather than a gap.
        */}
       {digest.photo ? (
-        <div className={`${SECTION} ${PAD}`}>
+        /* NO `SECTION` MARGIN. The masthead above already ends on its own `pb-4`,
+           and `mt-8` on top of that put a hole between the day's heading and the
+           day's picture — two things that belong to each other. The list below
+           keeps its `mt-8`, so the photo sits with the masthead and the rows sit
+           apart from both. */
+        <div className={PAD}>
           <PhotoCard photo={digest.photo} lang={lang} />
         </div>
       ) : null}

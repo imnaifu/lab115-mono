@@ -677,7 +677,7 @@ export function Legend({
     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
       {items.map((item) => (
         <span
-          className="flex items-center gap-1.5 text-xs font-medium text-ink-soft"
+          className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft"
           key={item.label}
         >
           {item.tone ? (

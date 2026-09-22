@@ -96,7 +96,7 @@ export async function DayList({
                 the highest-scoring article whether or not it was published, and
                 on a day where the top of the list was held back that is a
                 headline the reader cannot open. */}
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-mid">
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-mid">
               {top ? displayTitle(top, lang) : null}
             </span>
 

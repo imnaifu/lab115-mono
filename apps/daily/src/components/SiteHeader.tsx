@@ -323,7 +323,7 @@ export function SiteHeader({
                 `truncate` rather than a wrap, because a bar that grows a second
                 line of tagline at some awkward width is a bar whose height
                 depends on the translation. */}
-            <span className="hidden truncate text-xs leading-tight font-medium text-ink-mid md:block">
+            <span className="hidden truncate text-xs leading-tight font-semibold text-ink-mid md:block">
               {t.tagline}
             </span>
           </span>

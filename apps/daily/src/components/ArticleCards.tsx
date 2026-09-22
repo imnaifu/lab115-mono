@@ -310,7 +310,7 @@ export function ArticleBrief({
          * there — the text is in the DOM either way.
          */}
         {thesis ? (
-          <p className="mt-1.5 line-clamp-3 text-[15px] leading-[1.65] font-medium text-ink-mid">
+          <p className="mt-1.5 line-clamp-3 text-[15px] leading-[1.65] font-semibold text-ink-mid">
             {thesis}
           </p>
         ) : null}

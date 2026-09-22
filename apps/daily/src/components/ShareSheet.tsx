@@ -711,7 +711,7 @@ export function ShareSheet({
                 long press is invisible: nothing about an image announces that
                 holding it will file it away. */}
             {touch ? (
-              <div className="text-center text-[11px] font-medium text-ink-soft">
+              <div className="text-center text-[11px] font-semibold text-ink-soft">
                 {t.pressToSave}
               </div>
             ) : null}

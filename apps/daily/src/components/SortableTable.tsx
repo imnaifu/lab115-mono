@@ -163,7 +163,7 @@ export function SortableTable({
                 >
                   {row.text[column.key]}
                   {at === 0 && row.note ? (
-                    <span className="ml-1.5 text-xs font-medium text-ink-soft">
+                    <span className="ml-1.5 text-xs font-semibold text-ink-soft">
                       {row.note}
                     </span>
                   ) : null}

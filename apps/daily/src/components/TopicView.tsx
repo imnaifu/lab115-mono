@@ -227,7 +227,7 @@ export async function TopicView({
             two lines and prose over a photograph is where legibility goes. See
             `RawCategory.description` in user-config for why it is written rather
             than generated. */}
-        <p className="mt-4 max-w-prose text-base leading-relaxed font-medium text-ink-mid">
+        <p className="mt-4 max-w-prose text-base leading-relaxed font-semibold text-ink-mid">
           {topicDescription(category, lang)}
         </p>
 
@@ -310,7 +310,7 @@ export async function TopicView({
                 {displayTitle(article, lang)}
               </span>
               {thesis ? (
-                <span className="text-sm leading-relaxed font-medium text-ink-mid">
+                <span className="text-sm leading-relaxed font-semibold text-ink-mid">
                   {thesis}
                 </span>
               ) : null}

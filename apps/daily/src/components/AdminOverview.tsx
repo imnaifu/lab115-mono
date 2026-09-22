@@ -411,7 +411,7 @@ export async function AdminOverview() {
                 key={`${edit.date}-${edit.url}`}
                 cells={[
                   edit.date,
-                  <span key="t" className="font-medium text-ink-mid">
+                  <span key="t" className="font-semibold text-ink-mid">
                     {edit.title}
                   </span>,
                   num(edit.modelScore, 0),
