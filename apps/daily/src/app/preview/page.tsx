@@ -120,7 +120,7 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
   const top = shown[0];
   /* `posterParts` off the take that will be DRAWN, because the two halves
      paginate differently and the English one may not exist for an archived day. */
-  const parts = top ? posterParts(summaryFor(top, lang)) : 0;
+  const parts = top ? posterParts(summaryFor(top, lang), lang) : 0;
   const query = `?date=${digest.date}`;
 
   return (

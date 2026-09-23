@@ -191,6 +191,9 @@ export function posterText(article: Article, summary: SummaryText, extra: string
     article.title,
     summary.thesis ?? "",
     ...paragraphsOf(summary.text ?? ""),
+    // Drawn on the last page of prose when present — see `posterPages`. Its
+    // label is not here: it differs by language, so it comes in via `extra`.
+    summary.whyItMatters ?? "",
     extra,
     // Punctuation and digits the layout adds on its own. The slash is the page
     // counter's — `2/4` — and a glyph Google was not asked for renders as nothing
@@ -198,11 +201,11 @@ export function posterText(article: Article, summary: SummaryText, extra: string
     //
     // THE LEAD'S LABEL USED TO BE IN THIS LITERAL, as `TL;DR`, with a note that
     // the HALF-WIDTH semicolon in it is not covered by the full-width `；` above.
-    // The poster draws no label any more — see the thesis block in poster.tsx —
+    // The thesis draws no label any more — see the thesis block in poster.tsx —
     // so the five glyphs are not needed and the half-width `;` went with them.
-    // If a label ever comes back it belongs in the CALLER's `extra`, not here:
-    // this function has no language, and the label would not be the same string
-    // in both.
+    // The one label that did come back, 「为什么值得读」, is in the CALLER's
+    // `extra`, not here: this function has no language, and the label is not
+    // the same string in both.
     "0123456789/·—、。，：；？！「」（）%<>=~-!",
   ].join(""));
 }

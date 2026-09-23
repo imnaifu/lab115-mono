@@ -1,3 +1,5 @@
+import { strings } from "./i18n";
+import type { Lang } from "./lang";
 import { blocksOf } from "./paragraphs";
 import type { SummaryText } from "./types";
 
@@ -609,8 +611,8 @@ export interface PosterRow {
  * thought. When a heading's rows fit but the first row of what follows does not,
  * the heading travels to the next page with it.
  */
-export function posterPages(summary: SummaryText): PosterRow[][] {
-  const parsed = blocksOf(posterClean(summary.text ?? ""));
+export function posterPages(summary: SummaryText, lang: Lang): PosterRow[][] {
+  const body = blocksOf(posterClean(summary.text ?? ""));
   /**
    * The one block that gets the indent: the first one that is PROSE.
    *
@@ -627,7 +629,28 @@ export function posterPages(summary: SummaryText): PosterRow[][] {
    * the decision depends only on the text, so line breaking can apply the exact
    * handicap below instead of applying it to every paragraph in case.
    */
-  const opening = parsed.findIndex((block) => block.kind !== "heading");
+  const opening = body.findIndex((block) => block.kind !== "heading");
+  /**
+   * 「为什么值得读」 / "Why it matters", AFTER THE PROSE — the same place the page
+   * puts it, under the last paragraph. Its label is a heading row, which buys the
+   * orphan rule for free: the label can never sit alone at the foot of a page.
+   *
+   * Appended AFTER `opening` is found, so a summary with no prose of its own
+   * does not hand the indent to this block — it is not where the writing starts.
+   *
+   * NEVER ON THE IDENTITY CARD. Part 1 stays the thesis alone, for the reason on
+   * the thesis block in lib/poster: whoever sees the first image has read
+   * nothing. A reader who swiped to the last page has. Absent or empty adds
+   * nothing, so a take without the field paginates exactly as it did before.
+   */
+  const why = posterClean(summary.whyItMatters ?? "").trim();
+  const parsed = why
+    ? [
+        ...body,
+        { kind: "heading" as const, text: strings(lang).whyItMatters },
+        { kind: "body" as const, text: why },
+      ]
+    : body;
   const blocks = parsed.map((block, i) => {
     const heading = block.kind === "heading";
     const indented = i === opening;
@@ -755,6 +778,6 @@ function pack(
  * sheet has to build that many URLs and previews and has no summary text to count
  * from — see the `parts` prop on ShareButton.
  */
-export function posterParts(summary: SummaryText): number {
-  return 1 + posterPages(summary).length;
+export function posterParts(summary: SummaryText, lang: Lang): number {
+  return 1 + posterPages(summary, lang).length;
 }

@@ -596,7 +596,7 @@ export default async function ArticlePage({ params }: Params) {
           <ShareButton
             url={path}
             posterBase={posterBase(lang, date, article.id)}
-            parts={posterParts(summaryFor(article, lang))}
+            parts={posterParts(summaryFor(article, lang), lang)}
             title={displayTitle(article, lang)}
             thesis={summaryFor(article, lang).thesis}
             tags={summaryFor(article, lang).tags ?? []}

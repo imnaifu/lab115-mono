@@ -133,7 +133,7 @@ export async function renderPoster({
    * identity card plus one per page. Resolved before anything is drawn, because it
    * decides whether this part exists at all.
    */
-  const pages = posterPages(summary);
+  const pages = posterPages(summary, lang);
   const total = 1 + pages.length;
   if (part < 1 || part > total) return null;
   const rows: PosterRow[] = part === 1 ? [] : pages[part - 2];
@@ -192,13 +192,15 @@ export async function renderPoster({
       posterText(
         article,
         summary,
-        // NO LABEL GLYPHS IN HERE ANY MORE. `TL;DR` used to be appended — it
-        // was drawn by the layout and appears in no article, so it had to be in
-        // the subset or it rendered as blank space. The label is gone from the
-        // poster along with every other copy of it (see `whyItMatters` in
-        // lib/i18n), so there is nothing here but the article's own text and the
-        // punctuation `posterText` adds.
-        `${date}${brand}${tagline}${translated}${meta}${domain}`,
+        // ONE LABEL GLYPH SET IN HERE: 「为什么值得读」 / "Why it matters", the
+        // heading `posterPages` puts over that block on the last page. It is
+        // drawn by the layout and appears in no article, so it has to be in the
+        // subset or it renders as blank space — the same bill `TL;DR` paid when
+        // the thesis still had a label. Only when the field is present, so a
+        // take without it asks Google for exactly the subset it did before.
+        `${date}${brand}${tagline}${translated}${meta}${domain}${
+          summary.whyItMatters ? t.whyItMatters : ""
+        }`,
       ),
     ),
     part === 1 ? posterCover(article.image) : Promise.resolve(null),
@@ -546,7 +548,9 @@ export async function renderPoster({
 
                   THE SENTENCE IS THE THESIS, never `whyItMatters`, because a
                   share image is a DISCOVERY surface — whoever sees it has read
-                  nothing. Same rule as the day cards; see the note on `leadOf`'s
+                  nothing. (`whyItMatters` is on the poster now, but on the LAST
+                  page of prose, after the reader has swiped through the piece —
+                  see `posterPages` in lib/share.) Same rule as the day cards; see the note on `leadOf`'s
                   absence in lib/take. It is also the only sentence 94% of the
                   archive has.
 
