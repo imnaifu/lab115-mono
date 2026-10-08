@@ -311,12 +311,13 @@ export const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
  * digest itself, all of which can now be looked at in one place (`/preview`).
  * What this switch is for has not changed, only its value.
  *
- * A SECOND SWITCH, and not a redundant one: `RESEND_API_KEY` answers "is the
- * mail configured", which is about the machine, and this answers "is the door
- * open", which is about us. Both have to be true before a reader is shown the
- * form or allowed through the endpoint. Emptying the key to hide the form would
- * be the wrong lever — it also stops the send to anyone already confirmed, and
- * it makes a deliberate decision look like a missing credential.
+ * A SECOND SWITCH, and not a redundant one: `RESEND_API_KEY` and `MAIL_SECRET`
+ * answer "is the mail configured", which is about the machine, and this answers
+ * "is the door open", which is about us. All of them have to be true before a
+ * reader is shown the form or allowed through the endpoint. Emptying the key to
+ * hide the form would be the wrong lever — it also stops the send to anyone
+ * already confirmed, and it makes a deliberate decision look like a missing
+ * credential.
  *
  * IT GATES THE ENDPOINT TOO, not just the form, which is what makes closing it
  * again a real close: a hidden form whose API still accepts posts is open to
@@ -331,6 +332,8 @@ export const MAIL_SIGNUP_OPEN = true;
 
 /**
  * HMAC key for confirmation links. Any long random string.
+ *
+ * Empty closes signups (see `signupOpen`) and leaves the daily send alone.
  *
  * ROTATING IT INVALIDATES EVERY UNCLICKED CONFIRMATION LINK, and nothing else —
  * confirmed readers are contacts in Resend by then and never need the token

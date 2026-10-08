@@ -1668,10 +1668,11 @@ DeepSeek **不支持 `json_schema`**（`response_format` 只有 `text` 和 `json
 
 ## 邮件订阅
 
-**入口现在是关的。** `MAIL_SIGNUP_OPEN = false`（`lib/config.ts`），改成 `true` 才开放。
+**入口现在是开的。** `MAIL_SIGNUP_OPEN = true`（`lib/config.ts`），改成 `false` 就关上。
 
-**这是第二个开关，不是冗余的**：`RESEND_API_KEY` 回答「邮件配好了没有」，那是机器的事；
-这个回答「门开不开」，那是我们的事。两者都为真，读者才看得到表单、才走得通端点。想靠清空
+**这是第二个开关，不是冗余的**：`RESEND_API_KEY` 和 `MAIL_SECRET` 回答「邮件配好了没有」，
+那是机器的事；这个回答「门开不开」，那是我们的事。三者都为真，读者才看得到表单、才走得通端点
+（`signupOpen()`，`lib/mail/resend.ts`）。想靠清空
 key 来藏表单是**错的杠杆**——它同时停掉了对已确认读者的投递，而且会让一个刻意的决定看起来
 像一个漏配的凭证。
 
@@ -1782,8 +1783,8 @@ docker-compose 注入。整张表就这么长：
 | `GIT_TOKEN` | 容器需要 | fine-grained PAT，只授目标仓库的 `contents:write`。本机有 SSH key 时不需要 |
 | `GIT_REMOTE` | 否 | 覆盖远端 URL。不设时按上面的三条规则推导。本机专用，容器里不设 |
 | `DRY_RUN` | 否 | `=1` 时跑完整流程但不 push、不发邮件 |
-| `RESEND_API_KEY` | 邮件需要 | https://resend.com/api-keys 。空着 = 整个邮件功能关闭：页面上没有订阅表单，`/api/mail/subscribe` 返回 503，跑完也不发信。它和 `MAIL_SIGNUP_OPEN` 是两道闸，见上面那节 |
-| `MAIL_SECRET` | 邮件需要 | 确认链接的 HMAC 密钥，任意长随机串。**空串也能签出签名**，也就是说只配 key 不配它，表单会正常出现而任何人都能伪造确认链接。轮换它最多让当天没点开的确认链接失效 |
+| `RESEND_API_KEY` | 邮件需要 | https://resend.com/api-keys 。空着 = 整个邮件功能关闭：页面上没有订阅表单，`/api/mail/subscribe` 返回 503，跑完也不发信。它、`MAIL_SECRET` 和 `MAIL_SIGNUP_OPEN` 一起决定表单开不开，见上面那节 |
+| `MAIL_SECRET` | 邮件需要 | 确认链接的 HMAC 密钥，任意长随机串（`openssl rand -base64 32`）。空着 = 订阅表单不出现、`/api/mail/subscribe` 返回 503；每日投递不受影响。**这个门是事后补的**：空串照样签得出签名，而 `readConfirmToken` 拒绝用空 key 验签，于是曾经出现过「表单正常、确认信正常、每个链接一点就是『链接失效了』」，而且那条路径不打日志。轮换它最多让当天没点开的确认链接失效 |
 
 **其余全部是 `src/lib/config.ts` 里的常量**，改它们要 push 并重新部署：
 

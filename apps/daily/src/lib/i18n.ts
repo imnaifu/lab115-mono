@@ -455,7 +455,9 @@ const STRINGS = {
     subscribeTooMany: "试得太频繁了，五分钟后再来。",
 
     confirmedTitle: "订阅成功",
-    confirmedBody: "明天早上七点，第一封就会到。",
+    /** 不写钟点也不写「明天」：信按太平洋时间早七点发，北京是晚上十点；七点前确认的人
+     *  当天就收到。每天一期，「24 小时内」是对任何时区、任何时刻都成立的那句。 */
+    confirmedBody: "24 小时内，第一封就会到。",
     /** 过期、被改过、邮件客户端截断，对读者是同一件事：这个链接现在没用了。 */
     confirmInvalidTitle: "链接失效了",
     confirmInvalidBody:
@@ -759,7 +761,7 @@ const STRINGS = {
     subscribeTooMany: "Too many tries. Give it five minutes.",
 
     confirmedTitle: "You are subscribed",
-    confirmedBody: "The first one arrives tomorrow morning.",
+    confirmedBody: "Your first issue arrives within 24 hours.",
     confirmInvalidTitle: "This link has expired",
     confirmInvalidBody:
       "A confirmation link is good for 24 hours. Subscribe again from the front page and a fresh one will arrive.",

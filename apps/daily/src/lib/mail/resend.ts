@@ -1,6 +1,7 @@
 import {
   MAIL_FROM,
   MAIL_REPLY_TO,
+  MAIL_SECRET,
   MAIL_SEGMENT,
   MAIL_SIGNUP_OPEN,
   RESEND_API_KEY,
@@ -38,9 +39,17 @@ export function mailEnabled(): boolean {
  * are two separate questions. Everything a reader can reach asks this one: the
  * form on the front page, the same form under a digest, and the POST endpoint
  * behind them. `mailEnabled` stays the question the SEND asks.
+ *
+ * "CONFIGURED" INCLUDES `MAIL_SECRET`, and that was learned on the live site. An
+ * empty secret still SIGNS — the HMAC runs over an empty key — so the form
+ * showed, the confirmation mail went out, and every link in it was then refused
+ * by `readConfirmToken`, which will not verify against an empty key. Nothing was
+ * logged on that path, so every signup ended at "链接失效了" while the daily
+ * send, which needs no secret, kept working and made the feature look healthy.
+ * A form that cannot complete a signup is closed rather than offered.
  */
 export function signupOpen(): boolean {
-  return mailEnabled() && MAIL_SIGNUP_OPEN;
+  return mailEnabled() && Boolean(MAIL_SECRET) && MAIL_SIGNUP_OPEN;
 }
 
 /** What Resend puts in an error body. Every field optional on purpose — this is

@@ -137,6 +137,7 @@ export function SiteHeader({
    * lib/mail/resend, asked on the server by `PageShell` and passed down.
    *
    * False on a deployment with no Resend key, where the form's POST would fail,
+   * or with no `MAIL_SECRET`, where the confirmation link it mails would fail —
    * so the control is not rendered rather than rendered and broken. It arrives
    * as a boolean because the answer is an environment question and this
    * component's one child that could ask it is a `"use client"` file — which

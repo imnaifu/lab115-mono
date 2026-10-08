@@ -62,9 +62,10 @@ interface Body {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  // Closed as well as unconfigured — see `signupOpen`. 503 for both: the form is
-  // not on the page in either case, so anything arriving here is a direct post,
-  // and "temporarily unavailable" tells it no without saying which of the two.
+  // Closed as well as unconfigured (no key, or no secret to sign the link with —
+  // see `signupOpen`). 503 for both: the form is not on the page in either case,
+  // so anything arriving here is a direct post, and "temporarily unavailable"
+  // tells it no without saying which of the two.
   if (!signupOpen()) {
     return NextResponse.json({ ok: false, reason: "error" }, { status: 503 });
   }
