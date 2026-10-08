@@ -1,4 +1,4 @@
-import { SITE } from "./config";
+import { CONTACT_EMAIL, SITE } from "./config";
 import { PRODUCTS } from "@/data/products";
 import { strings } from "./i18n";
 import { href, type Lang } from "./lang";
@@ -54,6 +54,7 @@ export function organization() {
     name: "LAB115",
     url: SITE,
     logo: `${SITE}/favicon.svg`,
+    email: CONTACT_EMAIL,
     sameAs: PRODUCTS.map((product) => product.url),
   };
 }

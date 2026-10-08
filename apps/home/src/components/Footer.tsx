@@ -1,12 +1,18 @@
 import { Logo } from "@/components/Logo";
+import { CONTACT_EMAIL } from "@/lib/config";
 import { isOwnProperty, PRODUCTS } from "@/data/products";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 
 /**
  * Deliberately almost empty: the mark, the positioning line, links to the two
- * products, and the notice. No contact details of any kind — that is a standing
- * decision about this site, not an oversight.
+ * products, one contact address, and the notice.
+ *
+ * THE ADDRESS IS NEW, and it reverses what this note used to say — "no contact
+ * details of any kind". That held while the domain had no MX and any address
+ * printed here would have bounced. `help@` now forwards through Cloudflare Email
+ * Routing, so it is printed: plain `mailto:`, unobfuscated, because Cloudflare's
+ * Email Obfuscation rewrites the HTML and React then fails to hydrate it.
  *
  * Dark in both appearances, closing the page on the same canvas the hero opened
  * it with.
@@ -40,9 +46,17 @@ export function Footer({ lang }: { lang: Lang }) {
       </div>
 
       <div className="mx-auto mt-10 max-w-page border-t border-night-line pt-6 text-[12px]">
+        <a
+          href={`mailto:${CONTACT_EMAIL}`}
+          className="mb-2 inline-block transition-colors hover:text-night-ink"
+        >
+          {CONTACT_EMAIL}
+        </a>
         {/* Taken from the server's clock at render time rather than typed in,
             so there is no literal to remember to bump each January. */}
-        © {year} {text.brand}. {text.footerRights}
+        <div>
+          © {year} {text.brand}. {text.footerRights}
+        </div>
       </div>
     </footer>
   );

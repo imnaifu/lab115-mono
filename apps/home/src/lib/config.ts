@@ -9,3 +9,10 @@
  * app/robots.ts, and the same arrangement in apps/daily.
  */
 export const SITE = "https://lab115.com";
+
+/**
+ * The lab's one public address. Cloudflare Email Routing forwards it to the
+ * maintainer, and it is the same address apps/daily uses as the reply-to of
+ * every mail it sends (`MAIL_REPLY_TO` there) — one inbox for the whole brand.
+ */
+export const CONTACT_EMAIL = "help@lab115.com";

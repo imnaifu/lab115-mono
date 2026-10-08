@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { MAIL_REPLY_TO } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { type Lang } from "@/lib/lang";
 import type { TrackEvent } from "@/lib/track";
@@ -372,6 +373,18 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
          * change to the analytics contract rather than to the markup. Worth doing
          * on its own; not worth smuggling in behind an SEO fix.
          */}
+        {/* THE CONTACT ADDRESS, on every page rather than on /about only. It is
+            the reply-to of every mail this site sends, and Cloudflare Email
+            Routing forwards it to a person — so it is the one address that is
+            known to arrive. Plain `mailto:`, unobfuscated: Cloudflare's Email
+            Obfuscation rewrites it in the HTML and Next then fails to hydrate a
+            footer that no longer matches what React rendered. */}
+        <a
+          href={`mailto:${MAIL_REPLY_TO}`}
+          className="transition-colors hover:text-ink"
+        >
+          {MAIL_REPLY_TO}
+        </a>
         <div className="flex items-center justify-center">
           © {year} daily.lab115.com
         </div>
