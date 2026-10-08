@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { clientIp } from "@/lib/client-ip";
 import { MAIL_RATE_LIMIT } from "@/lib/config";
 import { href, isLang, DEFAULT_LANG, type Lang } from "@/lib/lang";
 import { absolute, confirmEmail } from "@/lib/mail/render";
@@ -53,12 +54,6 @@ function rateLimited(ip: string, now: number): boolean {
   return recent.length > MAIL_RATE_LIMIT.max;
 }
 
-/** Traefik sets `x-forwarded-for`; the first hop is the client. */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() || "unknown";
-}
-
 interface Body {
   email?: unknown;
   lang?: unknown;
@@ -95,7 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const lang: Lang = isLang(body.lang as string) ? (body.lang as Lang) : DEFAULT_LANG;
 
-  if (rateLimited(clientIp(request), Date.now())) {
+  if (rateLimited(clientIp(request.headers), Date.now())) {
     return NextResponse.json({ ok: false, reason: "rate" }, { status: 429 });
   }
 
