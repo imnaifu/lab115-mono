@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { PageShell } from "@/components/PageShell";
 import { Footer, Masthead, PAD, SECTION } from "@/components/Shell";
-import { MAIL_FROM, SITE } from "@/lib/config";
+import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { ABOUT_PATH } from "@/lib/links";
@@ -59,32 +59,6 @@ export async function generateMetadata({
   };
 }
 
-/** The reply-to address, which is the one a person should use. `MAIL_FROM` is
- *  `daily.lab115.com <daily@lab115.com>` — a display name and an address — and
- *  only the address belongs on a page. */
-const CONTACT = MAIL_FROM.match(/<([^>]+)>/)?.[1] ?? MAIL_FROM;
-
-/**
- * Whether the address is published at all. HIDDEN FOR NOW, by request.
- *
- * SAME SHAPE AS `SOURCE_PAGES_LIVE` in lib/sources, and for the same reason: a
- * section that is coming back should be one boolean away, not a block that was
- * deleted and has to be rebuilt from a diff. Flip this to `true` and both halves
- * return together.
- *
- * IT GATES TWO THINGS, AND THAT IS THE WHOLE POINT OF THE FLAG. The visible
- * 「联系我们」 block is the obvious one; the other is `email` on the `Organization`
- * in the JSON-LD above. Hiding the block while still publishing the address as
- * structured data would not be hiding it — it would be hiding it from the reader
- * and handing it to every crawler that parses the page, which is the opposite of
- * what anybody asking for this could mean.
- *
- * `t.aboutContact` STAYS in lib/i18n rather than going with the block: it is one
- * short string in two languages, and deleting it would make bringing this back a
- * copywriting job instead of a one-character edit.
- */
-const CONTACT_LIVE = false;
-
 export default async function AboutPage({
   params,
 }: {
@@ -117,11 +91,6 @@ export default async function AboutPage({
           mainEntity: {
             ...publisher(t.brand),
             description: t.aboutBody[0],
-            /* Spread rather than a `?:` so the key is ABSENT when hidden — an
-               `email: undefined` would survive into `JSON.stringify` as nothing
-               at all here, but the pattern is the one to copy: a field that is
-               off should not exist. See `CONTACT_LIVE`. */
-            ...(CONTACT_LIVE ? { email: CONTACT } : {}),
           },
         }}
       />
@@ -157,21 +126,6 @@ export default async function AboutPage({
           </div>
         ))}
       </section>
-
-      {CONTACT_LIVE ? (
-        <section className={`${SECTION} ${PAD}`}>
-          <h2 className="text-sm font-bold text-ink-soft">{t.aboutContact}</h2>
-          {/* PLAIN, UNOBFUSCATED. The crawlers obfuscation was invented for are
-              long gone; what it reliably stops is a person trying to get in
-              touch, which is the only outcome this block wants. */}
-          <a
-            className="mt-1.5 inline-block text-base font-bold text-ink transition-colors hover:text-orange"
-            href={`mailto:${CONTACT}`}
-          >
-            {CONTACT}
-          </a>
-        </section>
-      ) : null}
 
       <Footer year={String(new Date().getUTCFullYear())} lang={lang} />
     </PageShell>

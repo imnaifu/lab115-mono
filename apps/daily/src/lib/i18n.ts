@@ -351,7 +351,6 @@ const STRINGS = {
       ["保持客观中立", "不生产观点，只做筛选和转述"],
       ["关注长期价值", "不追热点，也不做标题党"],
     ],
-    aboutContact: "联系我们",
     topicHubDocTitle: (names: readonly string[]) =>
       `探索话题：${names.join("、")}等每日精选`,
     topicHubLead:
@@ -716,7 +715,6 @@ const STRINGS = {
         "No chasing the news cycle, no headlines that oversell",
       ],
     ],
-    aboutContact: "Get in touch",
     topicHubDocTitle: (names: readonly string[]) =>
       `Explore topics: ${names.join(", ")} and more, picked daily`,
     topicHubLead:
