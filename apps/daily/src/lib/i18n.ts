@@ -453,6 +453,8 @@ const STRINGS = {
     subscribeError: "没发出去，过一会儿再试一次。",
     subscribeBadEmail: "这个邮箱看起来不太对。",
     subscribeTooMany: "试得太频繁了，五分钟后再来。",
+    /** Turnstile 没给出 token 或 token 被拒。多半是验证还没跑完就点了，或者脚本没加载出来。 */
+    subscribeCaptcha: "人机验证没通过，稍等几秒再点一次；还不行就刷新页面。",
 
     confirmedTitle: "订阅成功",
     /** 不写钟点也不写「明天」：信按太平洋时间早七点发，北京是晚上十点；七点前确认的人
@@ -759,6 +761,7 @@ const STRINGS = {
     subscribeError: "That did not send. Try again in a moment.",
     subscribeBadEmail: "That address does not look right.",
     subscribeTooMany: "Too many tries. Give it five minutes.",
+    subscribeCaptcha: "The bot check did not pass. Wait a few seconds and try again, or reload the page.",
 
     confirmedTitle: "You are subscribed",
     confirmedBody: "Your first issue arrives within 24 hours.",

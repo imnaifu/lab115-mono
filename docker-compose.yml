@@ -133,6 +133,10 @@ services:
       # Cloudflare D1 token for the signup log — see CF_D1_TOKEN in
       # apps/daily/src/lib/config.ts. Empty records nothing and breaks nothing.
       - CF_D1_TOKEN=${CF_D1_TOKEN:-}
+      # Cloudflare Turnstile secret for the subscribe form. Its site key is a
+      # constant in apps/daily/src/lib/turnstile-key.ts and must ship in the
+      # same deploy — see lib/turnstile.ts for what a mismatch does.
+      - TURNSTILE_SECRET=${TURNSTILE_SECRET:-}
       # The password for /admin, the scoring dashboard. Empty means that route
       # 404s rather than 401s — see ADMIN_PASSWORD in apps/daily/src/lib/config.ts
       # for why an unconfigured deployment should not announce it exists.

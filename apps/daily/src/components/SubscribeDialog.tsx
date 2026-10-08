@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import { track } from "@/lib/track";
+import { TURNSTILE_SITE_KEY } from "@/lib/turnstile-key";
 
 /**
  * The subscribe control and the sheet it opens: one input, one button, and
@@ -89,6 +90,57 @@ const FIELD_ID = "subscribe-email";
  */
 export type SubscribeVariant = "bar" | "inline" | "hero";
 
+/** The slice of Cloudflare's `window.turnstile` this sheet calls. */
+interface Turnstile {
+  render(
+    host: HTMLElement,
+    options: {
+      sitekey: string;
+      callback: (token: string) => void;
+      "expired-callback": () => void;
+      "error-callback": () => void;
+      appearance: "interaction-only";
+      language: string;
+      size: "flexible";
+    },
+  ): string;
+  reset(widgetId: string): void;
+  remove(widgetId: string): void;
+}
+
+/**
+ * Cloudflare's script, fetched once per page and only when a sheet first opens.
+ *
+ * NOT ON PAGE LOAD. Most readers never open the sheet, and a third-party script
+ * on every article — one that may be slow or unreachable from the mainland — is
+ * a cost paid by all of them for a check that matters to a few. A failed load
+ * clears the memo so the next open tries again.
+ */
+let turnstileScript: Promise<Turnstile> | null = null;
+
+function loadTurnstile(): Promise<Turnstile> {
+  const ready = () => (window as unknown as { turnstile?: Turnstile }).turnstile;
+  turnstileScript ??= new Promise<Turnstile>((resolve, reject) => {
+    const existing = ready();
+    if (existing) return resolve(existing);
+    const script = document.createElement("script");
+    script.src =
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.onload = () => {
+      const loaded = ready();
+      if (loaded) resolve(loaded);
+      else reject(new Error("turnstile missing after load"));
+    };
+    script.onerror = () => reject(new Error("turnstile failed to load"));
+    document.head.appendChild(script);
+  }).catch((error) => {
+    turnstileScript = null;
+    throw error;
+  });
+  return turnstileScript;
+}
+
 export function SubscribeDialog({
   lang,
   variant = "bar",
@@ -131,6 +183,14 @@ export function SubscribeDialog({
   const [email, setEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
+  /**
+   * Turnstile's box and its current token. Refs, not state: nothing on screen
+   * reads the token, and a re-render per refresh would be for nobody. The token
+   * is single-use, so it is cleared and the widget reset after every submit.
+   */
+  const widgetHost = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string | null>(null);
+  const captchaToken = useRef("");
 
   // The element's open state is imperative, so it is driven from the state
   // rather than duplicated — same as InstallApp and ShareSheet next door.
@@ -155,6 +215,53 @@ export function SubscribeDialog({
     return () => node.removeEventListener("close", sync);
   }, []);
 
+  /**
+   * THE WIDGET LIVES WHILE THE FORM IS ON SCREEN — rendered when the sheet opens,
+   * removed when it closes or swaps to the "sent" panel, whose markup no longer
+   * contains the host. `interaction-only`: most readers never see it at all, and
+   * the one who does is being asked by Cloudflare, not by us.
+   *
+   * A SCRIPT THAT NEVER ARRIVES IS NOT HANDLED HERE. The submit goes out without
+   * a token, the server answers `captcha`, and the reader is told to wait or
+   * reload — the same message as a refused token, because their move is the same.
+   */
+  const formShown = open && state.kind !== "sent";
+  useEffect(() => {
+    if (!formShown || !TURNSTILE_SITE_KEY) return;
+    let cancelled = false;
+    loadTurnstile()
+      .then((turnstile) => {
+        const host = widgetHost.current;
+        if (cancelled || !host || widgetId.current) return;
+        widgetId.current = turnstile.render(host, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => {
+            captchaToken.current = token;
+          },
+          "expired-callback": () => {
+            captchaToken.current = "";
+          },
+          "error-callback": () => {
+            captchaToken.current = "";
+          },
+          appearance: "interaction-only",
+          language: lang === "zh" ? "zh-cn" : "en",
+          size: "flexible",
+        });
+      })
+      .catch(() => {
+        // Logged by nobody on purpose: the server-side refusal is the signal.
+      });
+    return () => {
+      cancelled = true;
+      const id = widgetId.current;
+      const turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile;
+      if (id && turnstile) turnstile.remove(id);
+      widgetId.current = null;
+      captchaToken.current = "";
+    };
+  }, [formShown, lang]);
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (state.kind === "sending") return;
@@ -165,7 +272,12 @@ export function SubscribeDialog({
       const response = await fetch("/api/mail/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, lang, hp: honeypot }),
+        body: JSON.stringify({
+          email,
+          lang,
+          hp: honeypot,
+          ts: captchaToken.current,
+        }),
       });
       const body = (await response.json()) as { ok?: boolean; reason?: string };
 
@@ -181,7 +293,9 @@ export function SubscribeDialog({
               ? t.subscribeBadEmail
               : outcome === "rate"
                 ? t.subscribeTooMany
-                : t.subscribeError,
+                : outcome === "captcha"
+                  ? t.subscribeCaptcha
+                  : t.subscribeError,
         });
       }
     } catch {
@@ -189,6 +303,12 @@ export function SubscribeDialog({
       // reader's move is the same either way: try again in a minute.
       setState({ kind: "error", message: t.subscribeError });
     }
+
+    // Spent either way — Cloudflare rejects a token seen twice — so the next
+    // press needs a fresh one.
+    captchaToken.current = "";
+    const turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile;
+    if (widgetId.current && turnstile) turnstile.reset(widgetId.current);
 
     track("mail_subscribe", { outcome, lang });
   }
@@ -434,6 +554,10 @@ export function SubscribeDialog({
                     failure, which is the one thing here worth interrupting for.
                     `role="status"` stays: it is announced when it appears, and it
                     appears because something went wrong. */}
+                {/* Turnstile's box. Empty and zero-height unless Cloudflare decides
+                    this reader has to click something. */}
+                <div ref={widgetHost} />
+
                 {state.kind === "error" ? (
                   <p
                     className="mt-1 text-xs font-semibold text-ink-soft"

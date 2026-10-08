@@ -5,6 +5,7 @@ import { href, isLang, DEFAULT_LANG, type Lang } from "@/lib/lang";
 import { absolute, confirmEmail } from "@/lib/mail/render";
 import { sendEmail, signupOpen } from "@/lib/mail/resend";
 import { recordSignup } from "@/lib/mail/signups";
+import { verifyTurnstile } from "@/lib/turnstile";
 import { confirmToken, looksLikeEmail, normalizeEmail } from "@/lib/mail/token";
 
 /**
@@ -59,6 +60,8 @@ interface Body {
   lang?: unknown;
   /** Honeypot. A real form leaves it empty; a bot fills every input it finds. */
   hp?: unknown;
+  /** Turnstile token from the sheet's widget — see lib/turnstile.ts. */
+  ts?: unknown;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -90,8 +93,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const lang: Lang = isLang(body.lang as string) ? (body.lang as Lang) : DEFAULT_LANG;
 
-  if (rateLimited(clientIp(request.headers), Date.now())) {
+  const ip = clientIp(request.headers);
+  if (rateLimited(ip, Date.now())) {
     return NextResponse.json({ ok: false, reason: "rate" }, { status: 429 });
+  }
+
+  // After the cheap checks and before the send: a malformed address or a
+  // tripped limit should not cost a round trip to Cloudflare.
+  const token = typeof body.ts === "string" ? body.ts : "";
+  if ((await verifyTurnstile(token, ip)) === "fail") {
+    return NextResponse.json({ ok: false, reason: "captcha" }, { status: 403 });
   }
 
   const url = `${absolute(href(lang, "/mail/confirm"))}?t=${confirmToken(email, lang)}`;

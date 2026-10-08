@@ -53,7 +53,7 @@ GA 自己的传输层处理 unload），而为了一个指标去延迟读者的�
 | `install_prompt` | `outcome`=`accepted`\|`dismissed`\|`failed`、`platform` | 浏览器自己那个安装弹窗的结局 | `InstallApp.tsx` |
 | `pull_refresh` | — | **下拉刷新真的被用了多少** | `PullToRefresh.tsx` |
 | `back_to_top` | — | 回顶按钮被按了多少 —— 页面是不是真的长到读者想要这趟回程。**一直接近零就说明它是家具，可以去掉** | `BackToTop.tsx` |
-| `mail_subscribe` | `outcome`=`ok`\|`email`\|`rate`\|`error`、`lang` | 提交了订阅表单。**不等于订阅成功** —— 双向确认还要读者去点邮件里的链接，这个数和 Resend 里的联系人数之差，就是确认这一步的成本 | `Subscribe.tsx` |
+| `mail_subscribe` | `outcome`=`ok`\|`email`\|`rate`\|`captcha`\|`error`、`lang` | 提交了订阅表单。**不等于订阅成功** —— 双向确认还要读者去点邮件里的链接，这个数和 Resend 里的联系人数之差，就是确认这一步的成本。`captcha` 是 Turnstile 没过：token 被拒，或者脚本根本没加载出来 | `SubscribeDialog.tsx` |
 
 > **三个事件从表里删掉了，不是漏写**：`all_days_open`、`archive_open`、`home_open`，
 > 以及只在本文出现过、从未进过代码联合的 `today_open`。它们各自命名的那个链接都已经

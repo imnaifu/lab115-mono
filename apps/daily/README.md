@@ -1808,6 +1808,7 @@ docker-compose 注入。整张表就这么长：
 | `DRY_RUN` | 否 | `=1` 时跑完整流程但不 push、不发邮件 |
 | `RESEND_API_KEY` | 邮件需要 | https://resend.com/api-keys 。空着 = 整个邮件功能关闭：页面上没有订阅表单，`/api/mail/subscribe` 返回 503，跑完也不发信。它、`MAIL_SECRET` 和 `MAIL_SIGNUP_OPEN` 一起决定表单开不开，见上面那节 |
 | `MAIL_SECRET` | 邮件需要 | 确认链接的 HMAC 密钥，任意长随机串（`openssl rand -base64 32`）。空着 = 订阅表单不出现、`/api/mail/subscribe` 返回 503；每日投递不受影响。**这个门是事后补的**：空串照样签得出签名，而 `readConfirmToken` 拒绝用空 key 验签，于是曾经出现过「表单正常、确认信正常、每个链接一点就是『链接失效了』」，而且那条路径不打日志。轮换它最多让当天没点开的确认链接失效 |
+| `TURNSTILE_SECRET` | 否 | 订阅表单的 Cloudflare Turnstile secret。site key 是公开的，写死在 `lib/turnstile-key.ts`，**两者要同一次部署上线**：只有 secret 没有 site key 时，页面不出验证框而服务端要 token，所有订阅都会被拒。空着 = 不做人机验证（启动后第一次订阅打一行警告）。本地开发两边都自动用 Cloudflare 的测试 key |
 | `CF_D1_TOKEN` | 否 | Cloudflare API token，权限只给 `Account · D1 · Edit`。用来写订阅记录，见「订阅记录（Cloudflare D1）」。空着 = 不记录，订阅不受影响 |
 
 **其余全部是 `src/lib/config.ts` 里的常量**，改它们要 push 并重新部署：

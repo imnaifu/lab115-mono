@@ -1,10 +1,11 @@
 /**
  * Every tunable value in the app, as a plain constant.
  *
- * THE ENVIRONMENT IS FOR SECRETS ONLY. Eight names are read from it and no more:
+ * THE ENVIRONMENT IS FOR SECRETS ONLY. Nine names are read from it and no more:
  * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `RESEND_API_KEY`,
- * `MAIL_SECRET`, `CF_D1_TOKEN`, `ADMIN_PASSWORD`, `DRY_RUN` — six credentials,
- * one machine-specific remote, one switch for a single invocation.
+ * `MAIL_SECRET`, `CF_D1_TOKEN`, `TURNSTILE_SECRET`, `ADMIN_PASSWORD`, `DRY_RUN`
+ * — seven credentials, one machine-specific remote, one switch for a single
+ * invocation.
  * Everything else used to have one too (`GIT_REPO`, `DAILY_CRON`, `DAILY_TZ`,
  * `DAILY_MODEL`, `DAILY_BODY_CHARS`, `DAILY_CONCURRENCY` and half a dozen more)
  * and they are all literals now.
@@ -385,8 +386,13 @@ export const MAIL_TOP_N = 5;
  *  same to both halves of a bilingual list, the way the masthead chip does. */
 export const MAIL_FROM = "daily.lab115.com <daily@lab115.com>";
 
-/** Nobody reads replies, so the address says so rather than bouncing silently. */
-export const MAIL_REPLY_TO = "no-reply@lab115.com";
+/**
+ * Where a reader's reply goes. It used to be `no-reply@`, which bounced — the
+ * domain had no MX at all. It is a real inbox now: Cloudflare Email Routing
+ * forwards `help@lab115.com` to the maintainer, so a reader who answers the
+ * digest or the confirmation mail is actually heard.
+ */
+export const MAIL_REPLY_TO = "help@lab115.com";
 
 /** How long a confirmation link stays valid. Long enough for "I'll do it
  *  tonight", short enough that a leaked link is not a standing invitation. */
@@ -411,6 +417,11 @@ export const CF_D1_DATABASE_ID = "8f33ae11-bb71-41d3-92a8-1f471ac5530e";
 /** API token scoped to `Account · D1 · Edit`. Empty → nothing is recorded and
  *  signups work exactly as before; the log is a backstop, never a dependency. */
 export const CF_D1_TOKEN = process.env.CF_D1_TOKEN ?? "";
+
+/** Cloudflare Turnstile secret for the subscribe form — see lib/turnstile.ts.
+ *  Its public half, the site key, is in lib/turnstile-key.ts and must be set in
+ *  the same deploy. */
+export const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET ?? "";
 
 /**
  * Per-IP ceiling on the subscribe form.
