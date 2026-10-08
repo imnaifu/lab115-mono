@@ -138,9 +138,9 @@ services:
       # for why an unconfigured deployment should not announce it exists.
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     volumes:
-      # The git clone of the digest repo, plus the rendered share posters. It is
-      # both the job's workspace and the site's read path, so the pages never hit
-      # the network.
+      # The git clone of the digest repo. It is both the job's workspace and the
+      # site's read path, so the pages never hit the network. Share posters are
+      # rendered per request and never written here — see lib/poster-serve.ts.
       #
       # /app/data, NOT /data: the app resolves its data directory as the relative
       # `./data` against the Dockerfile's WORKDIR of /app, hardcoded rather than

@@ -1941,10 +1941,12 @@ npm run dev
 
 数据目录**写死在 `config.ts` 里**，是相对路径 `./data`，没有环境变量。本地跑就是
 `apps/daily/data/`，容器里 WORKDIR 是 `/app`，所以是 `/app/data/` —— compose 的卷
-就挂在那儿。下面两样东西都住在里面：
+就挂在那儿。里面只住一样东西：
 
 - `repo/` —— digest 仓库的 git clone，job 的工作区，也是页面的读取路径
-- `posters/<日期>/` —— 预渲染好的分享图，只保留最近 30 天，见 `lib/poster-store.ts`
+
+分享图不落盘：每次请求现场渲染，只靠 HTTP 缓存（`max-age=3600`），见 `lib/poster-serve.ts`。
+以前的 `posters/` 磁盘缓存 2026-08-25 删掉了，服务器上的残留目录 2026-10-08 清掉了。
 
 以前这里是 `DAILY_DATA_DIR`，compose 给 `/data`、npm scripts 给 `./data`，同一份代码
 按谁启动它读两个不同的路径 —— 本地忘了加前缀就会在根目录上 EACCES。
@@ -2249,8 +2251,7 @@ https://raw.githubusercontent.com/imnaifu/files/main/daily/2026/08/2026-08-10.js
 
 每条路径都带语言前缀（`/zh/…`、`/en/…`），**两种语言渲染的是各自的摘要**。取哪一份由
 `summaryFor`（`lib/take.ts`）一处决定，poster 和 og:description 也走它 —— 所以
-`/en/d/…/share.png` 是英文长图，分页数按英文正文自己算（`jobs/posters.ts` 预热时也是
-按语言分别算的，两半的图片张数可以不一样）。
+`/en/d/…/share.png` 是英文长图，分页数按英文正文自己算（两半的图片张数可以不一样）。
 
 `inLanguage` 那个 JSON-LD 字段说的是**这一页正文的语言**，不是外壳的：`/en` 拿到英文
 摘要就是 `en-US`，回落到中文就还是 `zh-CN` —— 在中文正文上宣称 `en-US` 是同一个谎的
