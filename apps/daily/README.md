@@ -1685,6 +1685,29 @@ key 来藏表单是**错的杠杆**——它同时停掉了对已确认读者的
 已经在门里的人的理由。要压住邮件本身，那是 `DRY_RUN` 或者清空 `MAIL_SEGMENT`，是另一个
 决定。
 
+### 订阅记录（Cloudflare D1）
+
+**每发出一封确认信、每完成一次确认，都往 D1 的 `signups` 表追加一行**（`lib/mail/signups.ts`）。
+库是 `daily-mail`，id 写在 `lib/config.ts`；表在第一次写入时自动建，永久保留，不清理。
+
+**为什么要有它**：「提交了但没确认」原本只存在于 Resend 的发信记录里，而那份记录只留 30 天。
+2026-10 `MAIL_SECRET` 为空、所有确认链接一点就失效的那次，最近一个月的受害者能从 Resend 捞出来
+补进 segment，再往前的就彻底没了。这张表就是不会过期的那一份。
+
+**尽力而为，不挡路**：没配 `CF_D1_TOKEN` 或 Cloudflare 出错时只打一行日志，订阅照常进行。
+
+**查「订阅了但没确认」**：Cloudflare 后台 → D1 → `daily-mail` → Console：
+
+```sql
+SELECT email, lang, MIN(at) AS first_sent, COUNT(*) AS tries
+FROM signups WHERE event = 'sent'
+  AND email NOT IN (SELECT email FROM signups WHERE event = 'confirmed')
+GROUP BY email, lang ORDER BY first_sent;
+```
+
+确认页上 token 校验不过时会打 `[mail] confirm token rejected`（不带邮箱）。这条突然变多，先查
+`MAIL_SECRET`。
+
 
 每天 digest 推完之后，把当天**分数最高的 5 条**发给订阅者：标题 + 一句 thesis +
 出处，外加一个「看这一天的全部」按钮。**邮件是入口，不是这一期本身** —— 站点发全部
@@ -1785,6 +1808,7 @@ docker-compose 注入。整张表就这么长：
 | `DRY_RUN` | 否 | `=1` 时跑完整流程但不 push、不发邮件 |
 | `RESEND_API_KEY` | 邮件需要 | https://resend.com/api-keys 。空着 = 整个邮件功能关闭：页面上没有订阅表单，`/api/mail/subscribe` 返回 503，跑完也不发信。它、`MAIL_SECRET` 和 `MAIL_SIGNUP_OPEN` 一起决定表单开不开，见上面那节 |
 | `MAIL_SECRET` | 邮件需要 | 确认链接的 HMAC 密钥，任意长随机串（`openssl rand -base64 32`）。空着 = 订阅表单不出现、`/api/mail/subscribe` 返回 503；每日投递不受影响。**这个门是事后补的**：空串照样签得出签名，而 `readConfirmToken` 拒绝用空 key 验签，于是曾经出现过「表单正常、确认信正常、每个链接一点就是『链接失效了』」，而且那条路径不打日志。轮换它最多让当天没点开的确认链接失效 |
+| `CF_D1_TOKEN` | 否 | Cloudflare API token，权限只给 `Account · D1 · Edit`。用来写订阅记录，见「订阅记录（Cloudflare D1）」。空着 = 不记录，订阅不受影响 |
 
 **其余全部是 `src/lib/config.ts` 里的常量**，改它们要 push 并重新部署：
 

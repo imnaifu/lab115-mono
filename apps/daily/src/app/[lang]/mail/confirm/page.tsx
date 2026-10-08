@@ -6,6 +6,7 @@ import { MAIL_TOP_N } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang } from "@/lib/lang";
 import { segmentFor, subscribeContact } from "@/lib/mail/resend";
+import { recordSignup } from "@/lib/mail/signups";
 import { readConfirmToken } from "@/lib/mail/token";
 
 /**
@@ -59,6 +60,12 @@ export default async function ConfirmPage({
   const t = strings(lang);
   const payload = token ? readConfirmToken(token) : null;
 
+  // A token that was there and did not verify is the one failure this page used
+  // to swallow whole: an empty MAIL_SECRET refused every link for weeks and the
+  // log said nothing. No address, and no reason — `readConfirmToken` gives none
+  // on purpose — but the count alone is what would have shown it on day one.
+  if (token && !payload) console.warn("[mail] confirm token rejected");
+
   let confirmed = false;
   if (payload) {
     const segment = segmentFor(payload.lang);
@@ -67,6 +74,7 @@ export default async function ConfirmPage({
         await subscribeContact(payload.email, segment);
         console.log(`[mail] contact confirmed into ${payload.lang}`);
         confirmed = true;
+        await recordSignup("confirmed", payload.email, payload.lang);
       } catch (error) {
         // The reader sees the same page an expired link produces: from where
         // they are standing, "this did not work, subscribe again" is the whole

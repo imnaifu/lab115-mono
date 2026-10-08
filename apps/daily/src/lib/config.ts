@@ -1,10 +1,10 @@
 /**
  * Every tunable value in the app, as a plain constant.
  *
- * THE ENVIRONMENT IS FOR SECRETS ONLY. Seven names are read from it and no more:
+ * THE ENVIRONMENT IS FOR SECRETS ONLY. Eight names are read from it and no more:
  * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `RESEND_API_KEY`,
- * `MAIL_SECRET`, `ADMIN_PASSWORD`, `DRY_RUN` — five credentials, one
- * machine-specific remote, one switch for a single invocation.
+ * `MAIL_SECRET`, `CF_D1_TOKEN`, `ADMIN_PASSWORD`, `DRY_RUN` — six credentials,
+ * one machine-specific remote, one switch for a single invocation.
  * Everything else used to have one too (`GIT_REPO`, `DAILY_CRON`, `DAILY_TZ`,
  * `DAILY_MODEL`, `DAILY_BODY_CHARS`, `DAILY_CONCURRENCY` and half a dozen more)
  * and they are all literals now.
@@ -391,6 +391,26 @@ export const MAIL_REPLY_TO = "no-reply@lab115.com";
 /** How long a confirmation link stays valid. Long enough for "I'll do it
  *  tonight", short enough that a leaked link is not a standing invitation. */
 export const MAIL_CONFIRM_TTL_HOURS = 24;
+
+/**
+ * The signup log: a Cloudflare D1 database, one row per confirmation mail sent
+ * and one per confirmation completed. See lib/mail/signups.ts.
+ *
+ * WHY IT EXISTS: "asked but never confirmed" used to live only in Resend's send
+ * log, which keeps 30 days. When every confirmation link was broken by an empty
+ * MAIL_SECRET, the readers caught by it could be found for the last month and
+ * not before — the addresses were simply gone. This is the copy that does not
+ * expire. Kept forever, deliberately: a few dozen rows a year.
+ *
+ * The two ids are not secrets — they name the database, they do not open it —
+ * so they are constants like everything else here. Only the token is an env var.
+ */
+export const CF_ACCOUNT_ID = "ea014ced2b5037f91684e50a13afbf80";
+export const CF_D1_DATABASE_ID = "8f33ae11-bb71-41d3-92a8-1f471ac5530e";
+
+/** API token scoped to `Account · D1 · Edit`. Empty → nothing is recorded and
+ *  signups work exactly as before; the log is a backstop, never a dependency. */
+export const CF_D1_TOKEN = process.env.CF_D1_TOKEN ?? "";
 
 /**
  * Per-IP ceiling on the subscribe form.

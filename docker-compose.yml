@@ -130,6 +130,9 @@ services:
       # not what any app here reads.
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - MAIL_SECRET=${MAIL_SECRET:-}
+      # Cloudflare D1 token for the signup log — see CF_D1_TOKEN in
+      # apps/daily/src/lib/config.ts. Empty records nothing and breaks nothing.
+      - CF_D1_TOKEN=${CF_D1_TOKEN:-}
       # The password for /admin, the scoring dashboard. Empty means that route
       # 404s rather than 401s — see ADMIN_PASSWORD in apps/daily/src/lib/config.ts
       # for why an unconfigured deployment should not announce it exists.

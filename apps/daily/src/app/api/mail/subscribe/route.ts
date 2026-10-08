@@ -3,15 +3,20 @@ import { MAIL_RATE_LIMIT } from "@/lib/config";
 import { href, isLang, DEFAULT_LANG, type Lang } from "@/lib/lang";
 import { absolute, confirmEmail } from "@/lib/mail/render";
 import { sendEmail, signupOpen } from "@/lib/mail/resend";
+import { recordSignup } from "@/lib/mail/signups";
 import { confirmToken, looksLikeEmail, normalizeEmail } from "@/lib/mail/token";
 
 /**
  * Step one of double opt-in: take an address and mail it a signed link.
  *
- * NOTHING IS STORED AND NOBODY IS SUBSCRIBED HERE. The address becomes a contact
- * only when the link in that mail is followed — see the confirm page — which is
- * what stops this route from being a way to put a stranger on the list, or to
- * spend the plan's contact allowance on addresses that never asked.
+ * NOBODY IS SUBSCRIBED HERE. The address becomes a contact only when the link in
+ * that mail is followed — see the confirm page — which is what stops this route
+ * from being a way to put a stranger on the list, or to spend the plan's contact
+ * allowance on addresses that never asked.
+ *
+ * ONE THING IS STORED: a `sent` row in the signup log (lib/mail/signups.ts), so
+ * that a reader whose confirmation goes wrong can still be found after Resend's
+ * 30 days are up. It is a record of a request, not a subscription.
  *
  * `node:crypto` is what forces the runtime declaration below. It would default
  * to nodejs anyway; saying so keeps a future edge default from turning this into
@@ -100,12 +105,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { subject, html, text } = confirmEmail(lang, url);
     await sendEmail({ to: email, subject, html, text });
   } catch (error) {
-    // The address never appears in the log. A subscriber list is not something
-    // this app keeps, and a log that reconstructs one is the same list with
-    // extra steps.
+    // The address never appears in the container log. The one list of addresses
+    // is the signup log in D1, and a stdout that reconstructs it is a second copy
+    // with none of its access control.
     console.error("[mail] confirmation send failed:", error);
     return NextResponse.json({ ok: false, reason: "error" }, { status: 502 });
   }
+
+  // Only after the send succeeded: a row for a mail that never left would name
+  // a reader who has nothing in their inbox to confirm.
+  await recordSignup("sent", email, lang);
 
   return NextResponse.json({ ok: true });
 }
