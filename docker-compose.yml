@@ -1,5 +1,6 @@
 # Multi-app orchestration. Each service is an INDEPENDENT app under apps/<name>/
-# with its own Dockerfile (Next.js, or a plain static site — see `english`).
+# with its own Dockerfile (Next.js, or a plain static site behind nginx — see
+# apps/english, whose code stays in the repo though it is no longer deployed).
 # Coolify builds each from its own context (strategy A), and Traefik routes
 # 每个域名 to its container.
 #
@@ -63,28 +64,6 @@ services:
       - traefik.http.routers.converter-https.middlewares=gzip
       # Next.js listens on 3000 inside the container
       - traefik.http.services.converter.loadbalancer.server.port=3000
-
-  english:
-    # Static site (Claude design-canvas export) served by nginx — no Node build.
-    build:
-      context: ./apps/english
-    restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.middlewares.gzip.compress=true
-      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
-      # HTTP → HTTPS redirect
-      - traefik.http.routers.english-http.entryPoints=http
-      - traefik.http.routers.english-http.rule=Host(`english.lab115.com`)
-      - traefik.http.routers.english-http.middlewares=redirect-to-https
-      # HTTPS router
-      - traefik.http.routers.english-https.entryPoints=https
-      - traefik.http.routers.english-https.rule=Host(`english.lab115.com`)
-      - traefik.http.routers.english-https.tls=true
-      - traefik.http.routers.english-https.tls.certresolver=letsencrypt
-      - traefik.http.routers.english-https.middlewares=gzip
-      # nginx listens on 80 inside the container
-      - traefik.http.services.english.loadbalancer.server.port=80
 
   daily:
     # Website AND worker in one container: Next.js serves daily.lab115.com,
