@@ -94,6 +94,11 @@ services:
     build:
       context: ./apps/daily
     restart: unless-stopped
+    # Docker's tini as PID 1, so orphaned children get reaped. Without it
+    # next-server IS PID 1, and the 15-minute repo sync left one zombie `git`
+    # behind per run (~100 a day, cleared only by a redeploy) — Node only reaps
+    # the children it spawned itself, never the orphans the kernel hands to PID 1.
+    init: true
     environment:
       # SECRETS ONLY. The cron, the timezone, the model, the repo slug and the
       # rest were all passed through here with the same default the code already
