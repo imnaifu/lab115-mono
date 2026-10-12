@@ -151,3 +151,59 @@ services:
       - traefik.http.routers.daily-https.middlewares=gzip
       # Next.js listens on 3000 inside the container
       - traefik.http.services.daily.loadbalancer.server.port=3000
+
+  # Self-hosted analytics at stats.lab115.com, running ALONGSIDE GA rather than
+  # instead of it. GA's script barely loads from mainland China, so a reader
+  # there was invisible; this one is served from our own domain through the same
+  # Cloudflare edge as daily itself — a reader who can open the site can load it.
+  umami:
+    # A pinned release, not `latest`: a redeploy runs Prisma migrations against
+    # the database, and that should happen on a version bump, not by surprise.
+    image: ghcr.io/umami-software/umami:3.4.0
+    restart: unless-stopped
+    init: true
+    environment:
+      - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD:-}@umami-db:5432/umami
+      - APP_SECRET=${UMAMI_APP_SECRET:-}
+      # Not `script.js` / `/api/send`: blocker lists match Umami's defaults, and
+      # a blocked tracker undercounts in exactly the way GA already does.
+      - TRACKER_SCRIPT_NAME=s.js
+      - COLLECT_API_ENDPOINT=/api/c
+      - DISABLE_TELEMETRY=1
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.umami-http.entryPoints=http
+      - traefik.http.routers.umami-http.rule=Host(`stats.lab115.com`)
+      - traefik.http.routers.umami-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.umami-https.entryPoints=https
+      - traefik.http.routers.umami-https.rule=Host(`stats.lab115.com`)
+      - traefik.http.routers.umami-https.tls=true
+      - traefik.http.routers.umami-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.umami-https.middlewares=gzip
+      - traefik.http.services.umami.loadbalancer.server.port=3000
+
+  umami-db:
+    # No ports and no Traefik labels: only umami talks to it, over the compose
+    # network. An empty UMAMI_DB_PASSWORD makes the postgres image refuse to
+    # initialise, which is the loud failure wanted here rather than a database
+    # with no password.
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=umami
+      - POSTGRES_USER=umami
+      - POSTGRES_PASSWORD=${UMAMI_DB_PASSWORD:-}
+    volumes:
+      - ./data/umami-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
