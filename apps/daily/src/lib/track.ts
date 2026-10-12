@@ -11,10 +11,17 @@
  *
  * NO SDK. It calls the `gtag` that `Analytics` already loads, and adds nothing
  * to the bundle but this function.
+ *
+ * AND UMAMI, WITH THE SAME NAME AND PARAMS. GA is blind to mainland readers, so
+ * every event goes to both; Umami also breaks a param out with no registration
+ * step, which GA does not (see `outcome` on `mail_subscribe`).
  */
 
 /** GA's global, as much of it as this file uses. */
 type Gtag = (command: "event", name: string, params?: EventParams) => void;
+
+/** Umami's global, as much of it as this file uses. */
+type Umami = { track: (name: string, data?: EventParams) => void };
 
 export type EventParams = Record<string, string | number | boolean>;
 
@@ -157,6 +164,11 @@ export type TrackEvent =
  */
 export function track(event: TrackEvent, params?: EventParams): void {
   if (typeof window === "undefined") return;
+
+  // Before the gtag check, not after it: a reader whose GA is blocked is exactly
+  // the one Umami is here to count.
+  const umami = (window as unknown as { umami?: Umami }).umami;
+  umami?.track(event, params);
 
   const gtag = (window as unknown as { gtag?: Gtag }).gtag;
   if (!gtag) {

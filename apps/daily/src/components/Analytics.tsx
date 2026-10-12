@@ -30,6 +30,20 @@ import Script from "next/script";
  */
 const GA_ID = "G-Q7MJEE3PM5";
 
+/**
+ * Umami, self-hosted at stats.lab115.com, ALONGSIDE GA rather than instead of it.
+ *
+ * GA's script barely loads from mainland China, so those readers were missing
+ * from every report; this one comes from our own domain through the same
+ * Cloudflare edge as the site. `s.js` and its `/api/c` endpoint are renamed on the
+ * server (TRACKER_SCRIPT_NAME / COLLECT_API_ENDPOINT in docker-compose.yml) so
+ * blocker lists aimed at Umami's defaults miss them.
+ *
+ * The website id is public for the same reason GA_ID is.
+ */
+const UMAMI_SRC = "https://stats.lab115.com/s.js";
+const UMAMI_ID = "d1933970-a541-4a7d-9755-de3923dc0b84";
+
 export function Analytics() {
   /**
    * NOT IN DEVELOPMENT.
@@ -54,6 +68,13 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', '${GA_ID}');`}
       </Script>
+      {/* Page views, client-side route changes included, need nothing more than
+          this tag; events reach it through `track()` in lib/track.ts. */}
+      <Script
+        src={UMAMI_SRC}
+        data-website-id={UMAMI_ID}
+        strategy="afterInteractive"
+      />
     </>
   );
 }
