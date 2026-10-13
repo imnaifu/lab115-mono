@@ -91,6 +91,9 @@ services:
       - TZ=America/Los_Angeles
       # DeepSeek key from https://platform.deepseek.com/api_keys
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      # Claude Haiku writes the summaries when this is set; empty falls back to
+      # DeepSeek for those too. See SUMMARY_MODEL in apps/daily/src/lib/config.ts.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       # Fine-grained PAT with contents:write on the digest repo. The container
       # has no SSH key, so HTTPS + token is the only route here (locally you can
       # set GIT_REMOTE to an SSH URL instead — see apps/daily/README.md).

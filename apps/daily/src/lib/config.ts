@@ -1,11 +1,11 @@
 /**
  * Every tunable value in the app, as a plain constant.
  *
- * THE ENVIRONMENT IS FOR SECRETS ONLY. Nine names are read from it and no more:
- * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `RESEND_API_KEY`,
- * `MAIL_SECRET`, `CF_D1_TOKEN`, `TURNSTILE_SECRET`, `ADMIN_PASSWORD`, `DRY_RUN`
- * — seven credentials, one machine-specific remote, one switch for a single
- * invocation.
+ * THE ENVIRONMENT IS FOR SECRETS ONLY. Ten names are read from it and no more:
+ * `GIT_TOKEN`, `GIT_REMOTE`, `DEEPSEEK_API_KEY`, `ANTHROPIC_API_KEY`,
+ * `RESEND_API_KEY`, `MAIL_SECRET`, `CF_D1_TOKEN`, `TURNSTILE_SECRET`,
+ * `ADMIN_PASSWORD`, `DRY_RUN` — eight credentials, one machine-specific remote,
+ * one switch for a single invocation.
  * Everything else used to have one too (`GIT_REPO`, `DAILY_CRON`, `DAILY_TZ`,
  * `DAILY_MODEL`, `DAILY_BODY_CHARS`, `DAILY_CONCURRENCY` and half a dozen more)
  * and they are all literals now.
@@ -170,6 +170,69 @@ export const MODELS = {
  * deployment story as config.json.
  */
 export const MODEL: string = MODELS.flash;
+
+/**
+ * THE SUMMARY PASS IS NOT `MODEL`. Scoring stays on flash; the take a reader
+ * actually sees is written by Claude Haiku, and the repair pass follows it.
+ *
+ * WHY THE SPLIT, from a side-by-side on 2026-10-12 (five published articles,
+ * the same prompt and bodies, every claim checked against the article):
+ *
+ *                              flash    haiku medium
+ *   Chinese total in budget      2/5         5/5
+ *   factual errors                 2           0
+ *   take left half-written         0           0
+ *   cost per take, measured        —      $0.0043
+ *
+ * flash's two errors were the kind nobody catches on an unreviewed site: two
+ * separate events in the Pluralistic piece fused into one, and "十亿多年前" in
+ * the opening of a piece whose own figure was 10.6 billion years. Scoring stays
+ * where it is because the floor (PUBLISH_MIN_SCORE) is calibrated to flash's
+ * score distribution — moving the scorer would mean re-deriving the floor.
+ *
+ * EMPTY KEY MEANS FLASH WRITES THE SUMMARIES TOO, exactly as before this split,
+ * and so does an Anthropic outage on any single request — see SummaryWriter in
+ * summarize.ts. Either provider can be down and the day still publishes.
+ */
+export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
+export const SUMMARY_MODEL = "claude-haiku-5-5";
+
+/**
+ * `medium` is the model's own default, stated so the choice is visible. The
+ * same run at the other two settings:
+ *
+ *   off      $0.0016 a take, but every one of the five broke the 90-character
+ *            paragraph limit, and one title repeated the source's own error
+ *   low      $0.0026, and the Pluralistic take stopped after three paragraphs —
+ *            no Ultima, the article's whole news hook, and an empty `zh_why`
+ *   medium   $0.0043, complete, all five inside the Chinese budget
+ *
+ * At ~15 takes a day that is roughly $2 a month for medium.
+ */
+export const SUMMARY_EFFORT = "medium" as const;
+
+/** Haiku's per-million-token prices for prompts up to 100K tokens, used only to
+ *  put a dollar figure on the log line. Above 100K every rate is 5× — which
+ *  SUMMARY_BODY_CHAR_LIMIT exists to keep a request from ever reaching. */
+export const SUMMARY_PRICE = {
+  input: 0.1,
+  cacheWrite: 0.125,
+  cacheRead: 0.01,
+  output: 0.5,
+} as const;
+
+/**
+ * The longest body the CLAUDE summary pass is handed, in characters — below
+ * BODY_CHAR_LIMIT on purpose.
+ *
+ * Measured with Haiku's token counter: Chinese runs about 1.15 tokens per
+ * character, English about one token per 3 characters. A Chinese article at the
+ * full 80,000 would be ~92K tokens before the ~7.5K system prompt, over the
+ * 100K line where Haiku's price jumps fivefold. At 60,000 the Chinese worst case
+ * is ~69K + 7.5K, comfortably under; an English article only meets this cap past
+ * ~20K tokens of body, which almost none are.
+ */
+export const SUMMARY_BODY_CHAR_LIMIT = 60_000;
 
 /**
  * Per-article body budget handed to the model, in characters.

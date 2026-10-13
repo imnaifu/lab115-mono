@@ -1,3 +1,4 @@
+import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { CATEGORIES, PUBLISH_MIN_SCORE, resolveCategory } from "./categories";
 import {
@@ -8,7 +9,17 @@ import {
   SCORE_MIN,
   SCORE_WEIGHTS,
 } from "./score";
-import { DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL } from "./config";
+import {
+  ANTHROPIC_API_KEY,
+  BODY_CHAR_LIMIT,
+  DEEPSEEK_API_KEY,
+  DEEPSEEK_BASE_URL,
+  MODEL,
+  SUMMARY_BODY_CHAR_LIMIT,
+  SUMMARY_EFFORT,
+  SUMMARY_MODEL,
+  SUMMARY_PRICE,
+} from "./config";
 import { USER_CONFIG } from "./user-config";
 import { bodyFor, type RawArticle } from "./fetcher";
 import { PUBLISH_PER_SOURCE, sourceOf } from "./sources";
@@ -1483,11 +1494,12 @@ function logParseFailure(pass: string, raw: string, error: Error): void {
   );
 }
 
+/** Takes the reply's TEXT rather than a provider's message object, so the
+ *  DeepSeek and Claude paths share one parser — and one set of framing fixes. */
 function extractRows(
   pass: string,
-  message: OpenAI.Chat.Completions.ChatCompletionMessage,
+  raw: string | null | undefined,
 ): Array<Record<string, unknown>> {
-  const raw = message.content;
   // DeepSeek documents that JSON mode "may occasionally return empty content".
   if (!raw?.trim()) throw new Error("model returned empty content");
 
@@ -1624,9 +1636,208 @@ async function callModel(
   }
 
   const chars = choice.message.content?.length ?? 0;
-  console.log(`[daily] ${pass} pass replied with ${chars} chars`);
+  // Real token counts, which the cost notes in config.ts used to have to
+  // estimate from characters. `prompt_cache_hit_tokens` is DeepSeek's own field,
+  // absent from the OpenAI types.
+  const usage = response.usage as
+    | (OpenAI.CompletionUsage & { prompt_cache_hit_tokens?: number })
+    | undefined;
+  console.log(
+    `[daily] ${pass} pass replied with ${chars} chars` +
+      (usage
+        ? ` (in=${usage.prompt_tokens} cacheHit=${usage.prompt_cache_hit_tokens ?? 0} ` +
+          `out=${usage.completion_tokens})`
+        : ""),
+  );
 
-  return extractRows(pass, choice.message);
+  return extractRows(pass, choice.message.content);
+}
+
+/**
+ * The summary pass's view of a model: ask once, get rows back.
+ *
+ * WHY AN INTERFACE AND NOT A SECOND `callModel`: summarizeGroup, the summary
+ * pass and the repair pass all have to stay ignorant of WHICH model wrote the
+ * take, or the fallback below turns into an if/else in three places. They hand
+ * the same system prompt, the same rendered article and the same example to
+ * whatever writer they were given.
+ */
+interface SummaryWriter {
+  /** For log lines: which model a run's takes actually came from. */
+  label: string;
+  /** Longest body this writer is handed — see SUMMARY_BODY_CHAR_LIMIT. */
+  bodyCharLimit: number;
+  ask(
+    pass: string,
+    system: string,
+    user: string,
+    example: string,
+  ): Promise<Array<Record<string, unknown>>>;
+}
+
+function deepseekWriter(client: OpenAI): SummaryWriter {
+  return {
+    label: MODEL,
+    bodyCharLimit: BODY_CHAR_LIMIT,
+    ask: (pass, system, user, example) =>
+      callModel(client, pass, system, user, example),
+  };
+}
+
+/**
+ * Raised for the failures where asking flash instead is the right answer: the
+ * API errored, timed out, or Haiku declined. NOT raised for a reply that came
+ * back and failed to parse — that is the same fault on either model, and the
+ * repair pass already owns it.
+ */
+class ClaudeUnavailable extends Error {}
+
+/**
+ * Claude Haiku as the summary writer, with flash behind it.
+ *
+ * ONE REQUEST, ONE FALLBACK. A Claude failure on a single article is answered by
+ * asking flash for that article right there — not by retrying Claude, which is
+ * the retry loop the top of this file describes deleting. Without a DeepSeek key
+ * there is nothing to fall back to and the failure propagates, which costs that
+ * article its take exactly as a flash failure always has.
+ *
+ * NO `temperature`: Haiku 5.5 rejects any non-default sampling parameter with a
+ * 400. The summary pass never sent one anyway — only scoring does.
+ *
+ * THE SYSTEM PROMPT CARRIES `cache_control`. It is ~7.5K tokens and identical on
+ * every take, so after the first request it bills at $0.01/M instead of $0.10/M.
+ * The first request has to finish before the cache exists, which is why the
+ * summary and repair passes send one article alone before fanning out — see
+ * `warmThenParallel`.
+ */
+function claudeWriter(
+  client: Anthropic,
+  fallback: SummaryWriter | null,
+): SummaryWriter {
+  return {
+    label: SUMMARY_MODEL,
+    bodyCharLimit: SUMMARY_BODY_CHAR_LIMIT,
+    async ask(pass, system, user, example) {
+      try {
+        return await callClaude(client, pass, system, user, example);
+      } catch (error) {
+        if (!(error instanceof ClaudeUnavailable) || !fallback) throw error;
+        console.warn(
+          `[daily] ${pass}: ${SUMMARY_MODEL} unavailable (${error.message}) — ` +
+            `asking ${fallback.label} instead`,
+        );
+        return fallback.ask(pass, system, user, example);
+      }
+    },
+  };
+}
+
+async function callClaude(
+  client: Anthropic,
+  pass: string,
+  system: string,
+  user: string,
+  example: string,
+): Promise<Array<Record<string, unknown>>> {
+  let response: Anthropic.Message;
+  try {
+    response = await client.messages.create({
+      model: SUMMARY_MODEL,
+      // Thinking counts against this too. The measured medium-effort takes used
+      // 5.4K–8.6K output tokens including thinking, so 16K leaves room without
+      // pushing a non-streaming request toward the SDK's timeout guard.
+      max_tokens: 16_000,
+      output_config: { effort: SUMMARY_EFFORT },
+      system: [
+        { type: "text", text: system, cache_control: { type: "ephemeral" } },
+      ],
+      messages: [
+        {
+          role: "user",
+          // The same closing instruction callModel sends, so both writers are
+          // asked for exactly the same thing.
+          content:
+            `${user}\n\nReply with json only — no prose, no code fence — ` +
+            `shaped exactly like this example:\n${example}`,
+        },
+      ],
+    });
+  } catch (error) {
+    if (error instanceof Anthropic.APIError) {
+      throw new ClaudeUnavailable(error.message);
+    }
+    throw error;
+  }
+
+  if (response.stop_reason === "refusal") {
+    throw new ClaudeUnavailable(
+      `declined (${response.stop_details?.category ?? "no category"})`,
+    );
+  }
+  if (response.stop_reason === "max_tokens") {
+    console.warn(`[daily] ${pass} pass hit max_tokens and is truncated`);
+  }
+
+  const text = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("");
+
+  const usage = response.usage;
+  const cacheWrite = usage.cache_creation_input_tokens ?? 0;
+  const cacheRead = usage.cache_read_input_tokens ?? 0;
+  const dollars =
+    (usage.input_tokens * SUMMARY_PRICE.input +
+      cacheWrite * SUMMARY_PRICE.cacheWrite +
+      cacheRead * SUMMARY_PRICE.cacheRead +
+      usage.output_tokens * SUMMARY_PRICE.output) /
+    1e6;
+  console.log(
+    `[daily] ${pass} pass replied with ${text.length} chars ` +
+      `(${SUMMARY_MODEL} in=${usage.input_tokens} cacheW=${cacheWrite} ` +
+      `cacheR=${cacheRead} out=${usage.output_tokens} ~$${dollars.toFixed(4)})`,
+  );
+
+  return extractRows(pass, text);
+}
+
+/**
+ * The writer for this run: Claude when its key is set, flash otherwise, and
+ * null when neither is — the caller's "publishing without summaries" case.
+ */
+function summaryWriter(): SummaryWriter | null {
+  const flash = DEEPSEEK_API_KEY ? deepseekWriter(makeClient()) : null;
+  if (!ANTHROPIC_API_KEY) return flash;
+  return claudeWriter(
+    new Anthropic({
+      apiKey: ANTHROPIC_API_KEY,
+      // Measured medium-effort takes ran 25–40s. Same one-retry rule as
+      // makeClient: a connection that never opened is worth one more try, and
+      // anything slower falls through to flash rather than waiting again.
+      maxRetries: 1,
+      timeout: 120_000,
+    }),
+    flash,
+  );
+}
+
+/**
+ * The first item alone, then the rest `REQUEST_CONCURRENCY` at a time.
+ *
+ * FOR THE PROMPT CACHE. Eight requests sent together all miss it, because the
+ * entry is only written once the first of them finishes; one request ahead of
+ * the fan-out turns those eight cache writes into one write and seven reads. It
+ * costs one article's latency, ~30s, on a job nobody is waiting on.
+ */
+async function warmThenParallel<In>(
+  items: In[],
+  mapper: (item: In, index: number) => Promise<void>,
+): Promise<void> {
+  if (!items.length) return;
+  await mapper(items[0], 0);
+  await mapLimited(items.slice(1), REQUEST_CONCURRENCY, (item, i) =>
+    mapper(item, i + 1),
+  );
 }
 
 /**
@@ -1724,21 +1935,26 @@ export async function repairTakes(
 ): Promise<void> {
   if (!incomplete.length) return;
 
-  if (!DEEPSEEK_API_KEY) {
-    console.warn("[daily] DEEPSEEK_API_KEY unset — nothing to repair with");
+  // The same writer the summary pass used, so a repaired half matches the half
+  // that came back — not one model's Chinese beside another's English.
+  const writer = summaryWriter();
+  if (!writer) {
+    console.warn(
+      "[daily] DEEPSEEK_API_KEY and ANTHROPIC_API_KEY unset — nothing to repair with",
+    );
     return;
   }
 
   console.log(
     `[daily] repair — ${incomplete.length}/${total} incomplete, ` +
-      `asking once more: ${incomplete.map((a) => a.title).join(" · ")}`,
+      `asking ${writer.label} once more: ` +
+      incomplete.map((a) => a.title).join(" · "),
   );
 
-  const client = makeClient();
   const batches = chunk(incomplete, BATCH_SIZE);
-  await mapLimited(batches, REQUEST_CONCURRENCY, (group, i) =>
+  await warmThenParallel(batches, (group, i) =>
     summarizeGroup(
-      client,
+      writer,
       `${REPAIR_PASS} ${i + 1}/${batches.length}`,
       group,
       out,
@@ -1912,7 +2128,7 @@ export async function scoreAll(
  * the note on `bodyFor`.
  */
 async function summarizeGroup(
-  client: OpenAI,
+  writer: SummaryWriter,
   label: string,
   group: RawArticle[],
   out: Map<string, Verdict>,
@@ -1936,14 +2152,21 @@ async function summarizeGroup(
     verdict.en = empty.en;
   }
 
+  // Capped for the request only — `sending` keeps the full body, since that is
+  // what the article was scored on and what applySummaries is matched against.
+  const rendered = sending.map((a) =>
+    a.body && a.body.length > writer.bodyCharLimit
+      ? { ...a, body: a.body.slice(0, writer.bodyCharLimit) }
+      : a,
+  );
+
   try {
-    const rows = await callModel(
-      client,
+    const rows = await writer.ask(
       label,
       SUMMARY_SYSTEM,
       `Here ${sending.length === 1 ? "is 1 article" : `are ${sending.length} articles`}. ` +
         `Summarize every one of them, in Chinese and then in English.\n\n` +
-        sending
+        rendered
           .map((a, j) => renderArticle(a, j, budgetFor(a.readingMinutes)))
           .join("\n\n---\n\n"),
       SUMMARY_EXAMPLE,
@@ -2092,14 +2315,15 @@ export async function summarizeSurvivors(
 ): Promise<Map<string, Verdict>> {
   if (articles.length === 0) return out;
 
-  if (!DEEPSEEK_API_KEY) {
+  const writer = summaryWriter();
+  if (!writer) {
     console.warn(
-      "[daily] DEEPSEEK_API_KEY unset — publishing without summaries",
+      "[daily] DEEPSEEK_API_KEY and ANTHROPIC_API_KEY unset — publishing without summaries",
     );
     return out;
   }
+  console.log(`[daily] summaries by ${writer.label}`);
 
-  const client = makeClient();
   // MAX_ARTICLES_PER_CALL now bites the publishable set rather than everything
   // fetched, which is the right place for it: it used to slice the day's whole
   // list before the floor was applied, so on a heavy day it could drop an
@@ -2135,9 +2359,9 @@ export async function summarizeSurvivors(
    * gives it exactly one more chance, and no more.
    */
   const summaryBatches = chunk(survivors, BATCH_SIZE);
-  await mapLimited(summaryBatches, REQUEST_CONCURRENCY, (group, i) =>
+  await warmThenParallel(summaryBatches, (group, i) =>
     summarizeGroup(
-      client,
+      writer,
       `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`,
       group,
       out,

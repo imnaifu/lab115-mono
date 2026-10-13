@@ -24,6 +24,7 @@
     "backfill-summary": "tsx --env-file-if-exists=.env src/jobs/backfill-summary-cli.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@nivo/bar": "^0.99.0",
     "@nivo/core": "^0.99.0",
     "@nivo/line": "^0.99.0",
