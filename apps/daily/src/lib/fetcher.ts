@@ -321,20 +321,55 @@ function normalize(
 }
 
 /**
- * Pull the article body off its own page. Only used for caolan.uk, whose feed
- * carries no content at all. Best-effort: if no <article>/<main> is present we
- * fall back to the whole document, which still beats an empty body.
+ * Pull the article body off its own page — for `fetchBody` sources, feeds whose
+ * body is under SHORT_BODY_CHARS, and covers the feed did not ship. How the body
+ * is found is `pageBody`.
  */
 async function fetchPage(
   url: string,
 ): Promise<{ body: string; image: string | null }> {
   const html = await get(url, "text/html");
-  const scoped =
-    html.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1] ??
-    html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ??
-    html;
   // One request serves both needs — the page is already in hand.
-  return { body: stripHtml(scoped), image: socialImage(html, url) };
+  return { body: pageBody(html), image: socialImage(html, url) };
+}
+
+/**
+ * The body text of an article page: the first <article>, else <main>, else the
+ * whole document — EXCEPT when that first <article> is too short to be the post.
+ *
+ * PSYCHE.CO WRAPS NOTHING OF ITS OWN IN <article>. Every <article> on its pages
+ * is a related-post card (80–300 chars) and the essay sits bare in <main>, so
+ * the first card was taken as the body. Over 2026-09-13..10-12 that was 29 of 29
+ * psyche articles: a card under MIN_USEFUL_BODY became "" and was scored on its
+ * title alone (18 of them, every review saying "the body is unavailable" — and 3
+ * shipped a take invented from the headline), a card of 200–299 chars was
+ * dropped as a paywall teaser (the other 11).
+ *
+ * SO A SHORT FIRST <article> IS SUSPECT, not trusted. <main> with every <article>
+ * cut out of it is tried instead — but only when what is left holds PROSE: the
+ * <p> text in it has to clear SHORT_BODY_CHARS on its own. Measuring the
+ * leftover's total length is not enough, and the first version of this did:
+ * a members-only 404 Media post IS its first <article> (a 319-char teaser), and
+ * the rest of its <main> is "More like this" cards and ad slots — 1,365 chars,
+ * zero of them in a <p>, every one of them about a different article. Psyche's
+ * leftover is 12,683 chars of <p>. A genuinely short post inside an <article>
+ * keeps its clean body the same way. No <main>, no fallback: the whole document
+ * minus its <article>s is mostly chrome, and that is worse than a short body.
+ */
+function pageBody(html: string): string {
+  const firstArticle = html.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1];
+  const main = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1];
+  if (firstArticle === undefined) return stripHtml(main ?? html);
+
+  const articleBody = stripHtml(firstArticle);
+  if (articleBody.length >= SHORT_BODY_CHARS || main === undefined) {
+    return articleBody;
+  }
+  const outsideArticles = main.replace(/<article\b[^>]*>[\s\S]*?<\/article>/gi, " ");
+  const prose = [...outsideArticles.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
+    .map((paragraph) => stripHtml(paragraph[1]))
+    .join(" ");
+  return prose.length >= SHORT_BODY_CHARS ? stripHtml(outsideArticles) : articleBody;
 }
 
 /** Shape shared by the feed and scrape paths, before bodies are resolved. */
