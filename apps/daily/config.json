@@ -233,7 +233,7 @@
       "description": "产品管理与增长，访谈和播客转录占多数，夹带自家招聘与产品公告。",
       "descriptionEn": "Product management and growth. Mostly interviews and podcast transcripts, with the newsletter's own hiring and product notices mixed in.",
       "accent": "#3E7A5E",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -258,6 +258,7 @@
       "descriptionEn": "A weekly roundup of links and tools for developers. In Chinese.",
       "accent": "#4A7C8C",
       "enabled": true,
+      "alwaysPublish": true,
       "fetchBody": false
     },
     {
@@ -485,7 +486,7 @@
       "description": "Bret Devereaux，古代军事与社会史的长篇连载，学术但可读性强。",
       "descriptionEn": "Bret Devereaux — long serialised histories of ancient warfare and society. Scholarly, and very readable with it.",
       "accent": "#7E4A6E",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -569,7 +570,7 @@
       "description": "影评站，含影展报道与讣告；产出中影展片单、游戏评测这类小众条目占比高。",
       "descriptionEn": "Film criticism, with festival coverage and obituaries; a high share of the output is festival listings and game reviews.",
       "accent": "#B4536D",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
