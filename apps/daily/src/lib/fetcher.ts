@@ -42,8 +42,8 @@ const SHORT_BODY_CHARS = 1200;
 /**
  * Below this, whatever we hold is not an article and is worse than nothing —
  * HN's feed body is ~150 characters of "Article URL … Points: 257", and
- * summarizing *that* invents an article. An empty body makes the prompt say
- * "judge from the title alone", which is at least honest.
+ * summarizing *that* invents an article. An empty body is not scored at all —
+ * see the filter in `scoreAll` (lib/summarize).
  */
 const MIN_USEFUL_BODY = 200;
 

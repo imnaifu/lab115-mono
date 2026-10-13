@@ -617,10 +617,13 @@ const SCORE_PASS = "score";
  * that it might be a stub, so the model reads a teaser as a short article. The
  * cheapest honest answer is not to ask.
  *
- * AN EMPTY BODY IS NOT THIS CASE and is deliberately excluded below. A fetch that
- * returned nothing is a different failure — the source may be fine and the network
- * was not — and `renderArticle` already tells the model to judge from the title
- * alone there, which is a decision this file has already made.
+ * AN EMPTY BODY IS A DIFFERENT FAILURE with the same answer. A fetch that
+ * returned nothing says nothing against the source, but it leaves the model
+ * nothing to judge either, so it is not scored — see the filter in `scoreAll`
+ * for the archive that changed this. `renderArticle` still says "judge from the
+ * title alone" for it, and the scoring pass no longer reaches that line; what
+ * still can is a bodiless article the summary pass is handed anyway — an
+ * `alwaysPublish` one, a score typed in by hand, a rewrite whose re-fetch failed.
  */
 const BODY_MIN_CHARS = USER_CONFIG.bodyMinChars;
 
@@ -2024,20 +2027,34 @@ export async function scoreAll(
    * and dropping it silently is the thing `Digest.articles` keeps rejections to
    * avoid. It simply arrives unscored, a state every reader of the file handles.
    *
-   * AN EMPTY `body` IS LEFT ALONE — a fetch failure, not a paywall, and
-   * `renderArticle` has its own answer for it.
+   * AN EMPTY `body` IS NOT SCORED EITHER. It used to be, from the title alone,
+   * on the argument that a fetch failure is not the source's fault — and over
+   * 2026-09-13..10-12 that was 18 psyche articles (an extraction bug, see
+   * `pageBody` in lib/fetcher) plus stray paywalls elsewhere, every review
+   * saying "the body is unavailable" and three of them clearing the floor on a
+   * headline. A score with nothing under it is a guess at the title, and a
+   * guess that can publish. Logged apart from the teasers, because a pile of
+   * these is a fetch problem to go and look at, not a paywall.
    */
   const scorable = articles.filter(
-    (article) => !article.body || article.body.length >= BODY_MIN_CHARS,
+    (article) => article.body.length >= BODY_MIN_CHARS,
   );
   const stubs = articles.filter(
     (article) => article.body && article.body.length < BODY_MIN_CHARS,
   );
+  const bodiless = articles.filter((article) => !article.body);
   if (stubs.length > 0) {
     console.log(
       `[daily] ${stubs.length} under ${BODY_MIN_CHARS} chars, not scored ` +
         `(paywall teasers): ` +
         stubs.map((a) => `${a.title} (${a.body.length})`).join(" · "),
+    );
+  }
+  if (bodiless.length > 0) {
+    console.log(
+      `[daily] ${bodiless.length} with no body, not scored ` +
+        `(fetch failed or extracted nothing): ` +
+        bodiless.map((a) => `${a.title} <${a.url}>`).join(" · "),
     );
   }
 

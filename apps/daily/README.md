@@ -113,7 +113,7 @@ config.json: photoCaptionMaxChars must be a number between 10 and 200
 
 - **Hacker News 走 hnrss.org 而不是官方 `/rss`**，因为只有第三方服务能按分数过滤，
   而没过滤的首页在这堆博客旁边基本是噪声。它的条目指向任意第三方站点，正文靠抓那些
-  页面 —— 付费墙、纯 JS 页、PDF 都可能抓不到，这时正文为空，模型只看标题。
+  页面 —— 付费墙、纯 JS 页、PDF 都可能抓不到，这时正文为空，不打分。
 - **HN 的门槛从 200 分提到 300、`maxPerRun` 从 10 降到 5**，因为它一个源就占了整天的
   40%（8-12 是 24 篇里的 10 篇），而占的位置几乎全是两类东西：单库/单芯片的工程内幕
   （`Spaghettifying DRAM`、`Why tiny JPEGs look different in Chrome`）和版本发布公告
@@ -219,8 +219,11 @@ config.json: photoCaptionMaxChars must be a number between 10 and 200
   占住 socket 直到 30 秒超时，窗口一宽就是几百个并发连接。加上限后最坏耗时被约束在
   `ceil(文章数 / 6) × 超时`。
 - **正文短于 `MIN_USEFUL_BODY`（200 字符）视为没有正文。** HN 的 feed body 是
-  ~150 字符的「Article URL … Points: 257」样板文字，拿它去摘要等于凭空编一篇文章；
-  留空反而会让 prompt 说「只看标题判断」，那是诚实的。
+  ~150 字符的「Article URL … Points: 257」样板文字，拿它去摘要等于凭空编一篇文章。
+- **正文为空的文章不打分**（`scoreAll` 里和付费墙预览一起过滤，日志分开报）。以前是让
+  模型「只看标题判断」，2026-09-13 ~ 10-12 psyche 因为抓取 bug 有 18 篇这样打了分，
+  3 篇凭标题过线发布、摘要是编的。抓取失败不怪源，但没有正文就没有可判断的东西。
+  例外：`alwaysPublish` 源的空正文文章不经打分照样进摘要那一轮，仍是凭标题写。
 - **长文源要留够正文预算。** `BODY_CHAR_LIMIT` 默认 **80000** 字符。它最初是 6000，
   那是按 XDA 短文校准的；neciudan.dev 这类 28k~74k 字符的长文在 6000 下只会喂进
   前 8%，摘出来的是引言而不是论点。输入侧便宜（$0.14/M，上下文以十万计），值得给足。
