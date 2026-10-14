@@ -146,12 +146,18 @@ export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
  * to 16, a Qwen release announcement from 33 to 18. That is the same failure the
  * README's HN notes describe, fixed at the scorer rather than at the source list.
  *
- * PRO COSTS EXACTLY 3× FLASH — every line of DeepSeek's price table, so the
- * multiple holds whatever the usage. Estimated on the run above: flash ~$0.07 a
- * day, pro ~$0.21, i.e. $2.15 vs $6.44 a month at off-peak rates (the 07:00
- * Los Angeles cron lands off-peak; peak is UTC 01-04 and 06-10 on weekdays).
- * Nothing records real token counts yet — `response.usage` is available and
- * unread — so those are estimates from character counts.
+ * PRO COSTS 3.3–7.3× FLASH, line by line, as of 2026-10-14 (per million,
+ * off-peak — the 07:00 Los Angeles cron lands off-peak; peak is UTC 01-04 and
+ * 06-10 on weekdays, at double these):
+ *
+ *                     flash      pro
+ *   input, cache hit  $0.003    $0.022
+ *   input, miss       $0.15     $0.66
+ *   output            $0.60     $1.98
+ *
+ * It was a flat 3× in August, which is what this note used to say. On real
+ * usage (logged by callModel) that is ~3.9× for the summary pass and ~4.2× for
+ * scoring: 10 takes measured at $0.013 a day on flash, $0.049 on pro.
  */
 export const MODELS = {
   flash: "deepseek-v4-flash",
@@ -170,6 +176,19 @@ export const MODELS = {
  * deployment story as config.json.
  */
 export const MODEL: string = MODELS.flash;
+
+/**
+ * The model that writes the takes — pro since 2026-10-14, while scoring (and
+ * the photo caption) stay on `MODEL`.
+ *
+ * WHY THE SPLIT IS SAFE ONE WAY ONLY: the publish floor is calibrated to
+ * flash's score distribution, so moving the scorer means re-deriving
+ * PUBLISH_MIN_SCORE; the take has no threshold downstream of it, so the writer
+ * can change on its own. Haiku wrote them for two days and read worse (see
+ * SUMMARY_BY_CLAUDE); flash came back for a day; pro is the next try, at about
+ * $1.5 a month for ten takes a day against flash's $0.4.
+ */
+export const SUMMARY_DEEPSEEK_MODEL: string = MODELS.pro;
 
 /**
  * THE SUMMARY PASS IS NOT `MODEL`. Scoring stays on flash; the take a reader

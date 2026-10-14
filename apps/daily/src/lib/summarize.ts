@@ -18,6 +18,7 @@ import {
   MODEL,
   SUMMARY_BODY_CHAR_LIMIT,
   SUMMARY_BY_CLAUDE,
+  SUMMARY_DEEPSEEK_MODEL,
   SUMMARY_EFFORT,
   SUMMARY_MODEL,
   SUMMARY_PRICE,
@@ -1601,6 +1602,7 @@ function parseArticles(raw: string): Array<Record<string, unknown>> {
  */
 async function callModel(
   client: OpenAI,
+  model: string,
   pass: string,
   system: string,
   user: string,
@@ -1608,7 +1610,7 @@ async function callModel(
   temperature?: number,
 ): Promise<Array<Record<string, unknown>>> {
   const params: DeepSeekParams = {
-    model: MODEL,
+    model,
     max_tokens: MAX_OUTPUT_TOKENS,
     response_format: { type: "json_object" },
     messages: [
@@ -1682,10 +1684,10 @@ interface SummaryWriter {
 
 function deepseekWriter(client: OpenAI): SummaryWriter {
   return {
-    label: MODEL,
+    label: SUMMARY_DEEPSEEK_MODEL,
     bodyCharLimit: BODY_CHAR_LIMIT,
     ask: (pass, system, user, example) =>
-      callModel(client, pass, system, user, example),
+      callModel(client, SUMMARY_DEEPSEEK_MODEL, pass, system, user, example),
   };
 }
 
@@ -2096,6 +2098,7 @@ export async function scoreAll(
     try {
       const rows = await callModel(
         client,
+        MODEL,
         label,
         SCORE_SYSTEM,
         `Here ${group.length === 1 ? "is 1 article" : `are ${group.length} articles`}. ` +
@@ -2651,6 +2654,7 @@ export async function captionZh(
   try {
     const rows = await callModel(
       client,
+      MODEL,
       label,
       CAPTION_SYSTEM,
       `Here is 1 English caption. Write its Chinese.\n\nen: ${source}` +
