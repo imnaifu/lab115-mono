@@ -1877,7 +1877,7 @@ docker-compose 注入。整张表就这么长：
 | 变量 | 必需 | 说明 |
 |---|---|---|
 | `DEEPSEEK_API_KEY` | 是 | 不填则跳过摘要，页面只剩标题列表 |
-| `ANTHROPIC_API_KEY` | 否 | 填了由 Claude Haiku 写摘要（打分仍是 DeepSeek），不填就和以前一样全由 DeepSeek 写。单篇请求失败也会自动改问 DeepSeek。见 `config.ts` 的 `SUMMARY_MODEL` |
+| `ANTHROPIC_API_KEY` | 否 | 只有 `config.ts` 的 `SUMMARY_BY_CLAUDE` 为 true 时才会读取：填了由 Claude Haiku 写摘要，单篇失败自动改问 DeepSeek。**2026-10-14 起这个开关是关的**，摘要和打分都由 DeepSeek 完成，填了这个变量也不会用 |
 | `GIT_TOKEN` | 容器需要 | fine-grained PAT，只授目标仓库的 `contents:write`。本机有 SSH key 时不需要 |
 | `GIT_REMOTE` | 否 | 覆盖远端 URL。不设时按上面的三条规则推导。本机专用，容器里不设 |
 | `DRY_RUN` | 否 | `=1` 时跑完整流程但不 push、不发邮件 |

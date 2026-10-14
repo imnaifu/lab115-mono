@@ -198,6 +198,17 @@ export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 export const SUMMARY_MODEL = "claude-haiku-5-5";
 
 /**
+ * OFF SINCE 2026-10-14: the summaries are back on flash. After two days of
+ * Haiku takes on the live site the editor's verdict was that they read worse,
+ * whatever the five-article comparison above said — that comparison counted
+ * budget and errors, not how a take reads. A switch rather than a deletion,
+ * because the Claude path, its cache warming and its flash fallback all still
+ * work, and turning it back on should be one line, not a revert. With it off
+ * the ANTHROPIC_API_KEY in the environment is simply not read.
+ */
+export const SUMMARY_BY_CLAUDE = false;
+
+/**
  * `medium` is the model's own default, stated so the choice is visible. The
  * same run at the other two settings:
  *

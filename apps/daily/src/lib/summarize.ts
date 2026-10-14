@@ -17,6 +17,7 @@ import {
   DEEPSEEK_BASE_URL,
   MODEL,
   SUMMARY_BODY_CHAR_LIMIT,
+  SUMMARY_BY_CLAUDE,
   SUMMARY_EFFORT,
   SUMMARY_MODEL,
   SUMMARY_PRICE,
@@ -1811,7 +1812,7 @@ async function callClaude(
  */
 function summaryWriter(): SummaryWriter | null {
   const flash = DEEPSEEK_API_KEY ? deepseekWriter(makeClient()) : null;
-  if (!ANTHROPIC_API_KEY) return flash;
+  if (!SUMMARY_BY_CLAUDE || !ANTHROPIC_API_KEY) return flash;
   return claudeWriter(
     new Anthropic({
       apiKey: ANTHROPIC_API_KEY,
