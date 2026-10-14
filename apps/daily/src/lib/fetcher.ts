@@ -273,10 +273,39 @@ function idOf(url: string): string {
 }
 
 /** Normalize one RSS <item> or Atom <entry> into a common shape. */
+/**
+ * When an item counts as having appeared, for the daily window only.
+ *
+ * A DATE WITH NO TIME OF DAY IS PUSHED TO THE END OF THAT DAY'S NEXT DAY.
+ * Static blogs (danluu, dynomight, baoyu, marcbrooker, craigmod, OWID,
+ * Asterisk) stamp a post with its date at 00:00 — but the post goes up some
+ * time later that day, usually in American daylight, after the 07:00 LA run
+ * whose window holds that midnight. The next run's window starts at 07:00 the
+ * same day and so begins AFTER the midnight: the post was in no window at all.
+ * Over 2026-08-20..10-13 that lost every post from those sources — four from
+ * danluu alone — while the run logged a clean count of 0.
+ *
+ * +24h puts it in exactly one window, the one after its date, by which time it
+ * is up; windows do not overlap, so it cannot run twice. The cost is a day's
+ * delay for the few that were already up in time. `publishedAt` keeps the
+ * feed's own date: this moves only which run sees the item.
+ *
+ * "Midnight" is read off the raw string — 00:00 in whatever offset the feed
+ * wrote (geohot uses +08:00) — because once parsed to UTC the offset is gone.
+ */
+function windowTime(dateRaw: string, published: Date): string {
+  const dateOnly =
+    /^\s*\d{4}-\d{2}-\d{2}\s*$/.test(dateRaw) ||
+    /[T\s]00:00(?::00(?:\.0+)?)?(?=$|\s|Z|[+-])/.test(dateRaw);
+  return new Date(
+    published.getTime() + (dateOnly ? 24 * 60 * 60 * 1000 : 0),
+  ).toISOString();
+}
+
 function normalize(
   node: Record<string, unknown>,
   source: Source,
-): Omit<RawArticle, "readingMinutes" | "body"> & { bodyHtml: string } | null {
+): Candidate | null {
   const title = stripHtml(text(node.title));
   const url = canonical(
     typeof node.link === "string" ? node.link : atomLink(node),
@@ -315,6 +344,7 @@ function normalize(
     url,
     author: stripHtml(text(node["dc:creator"]) || text(node.author)) || null,
     publishedAt: published.toISOString(),
+    windowAt: windowTime(dateRaw, published),
     image: enclosureUrl || mediaUrl || firstImage(bodyHtml),
     bodyHtml,
   };
@@ -375,6 +405,8 @@ function pageBody(html: string): string {
 /** Shape shared by the feed and scrape paths, before bodies are resolved. */
 type Candidate = Omit<RawArticle, "readingMinutes" | "body"> & {
   bodyHtml: string;
+  /** What the window filter reads instead of publishedAt — see windowTime. */
+  windowAt: string;
 };
 
 async function parseFeed(source: Source): Promise<Candidate[]> {
@@ -417,6 +449,7 @@ async function parseListing(source: Source): Promise<Candidate[]> {
       url,
       author: null,
       publishedAt: published.toISOString(),
+      windowAt: windowTime(groups.date, published),
       image: null,
       bodyHtml: "",
     });
@@ -437,7 +470,7 @@ async function fetchSource(
   let parsed = candidates.filter((a) => {
     // No cross-day dedup state by design — the publication window *is* the
     // filter, so a run only ever sees the last WINDOW_HOURS of each source.
-    const at = new Date(a.publishedAt).getTime();
+    const at = new Date(a.windowAt).getTime();
     return at >= from.getTime() && at < to.getTime();
   });
 
@@ -458,7 +491,8 @@ async function fetchSource(
   return mapLimited(
     parsed,
     BODY_FETCH_CONCURRENCY,
-    async ({ bodyHtml, ...rest }) => {
+    // windowAt has done its job and is not part of the article.
+    async ({ bodyHtml, windowAt: _windowAt, ...rest }) => {
       let plain = stripHtml(bodyHtml);
       let image = rest.image;
       // Fetch the page when the body is thin OR when we still have no cover —

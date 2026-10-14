@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { CATEGORIES, PUBLISH_MIN_SCORE, resolveCategory } from "./categories";
 import {
+  boostedScore,
   clearsEveryDimension,
   MIN_PER_DIMENSION,
   SCORE_DIMENSIONS,
@@ -22,7 +23,7 @@ import {
 } from "./config";
 import { USER_CONFIG } from "./user-config";
 import { bodyFor, type RawArticle } from "./fetcher";
-import { PUBLISH_PER_SOURCE, sourceOf } from "./sources";
+import { PUBLISH_PER_DAY, PUBLISH_PER_SOURCE, sourceOf } from "./sources";
 import { isCompleteTake } from "./take";
 import type { ScoreReview, SummaryText } from "./types";
 
@@ -2268,6 +2269,11 @@ export function bestPerSource(
  * Order matters for cost, not for the answer: the quota first, because it is
  * free to check and rejects the most.
  *
+ * THEN THE DAY'S CEILING, which is not a fifth question about an article but a
+ * limit on the answer: of everything that cleared the four, at most
+ * PUBLISH_PER_DAY are kept — whitelisted ones first, the rest by score. It sits
+ * here, before the summary pass, so an article it cuts is never paid for.
+ *
  * THE SCORE IT READS IS THE SCORE IN THE FILE, which a human may have typed —
  * `publishFrom` builds the verdicts from the working digest before any of this
  * runs, so a hand-edited number decides the quota and the floor alike. What a
@@ -2275,38 +2281,74 @@ export function bestPerSource(
  * review, so promoting an article with a weak dimension means editing that
  * dimension too, in the same file.
  */
+/**
+ * The score an article competes with: its own, times its source's
+ * `scoreBoost`. What `publishable` and the page's order read; the file keeps
+ * the unboosted number.
+ */
+export function effectiveScore(
+  article: RawArticle,
+  verdicts: Map<string, Verdict>,
+): number {
+  return boostedScore(
+    verdicts.get(article.id)?.score ?? 0,
+    sourceOf(article.sourceId).scoreBoost,
+  );
+}
+
 export function publishable(
   articles: RawArticle[],
   verdicts: Map<string, Verdict>,
 ): RawArticle[] {
   const winners = bestPerSource(articles, verdicts);
-  const kept = articles.filter((article) => {
+  const cleared = articles.filter((article) => {
     if (!winners.has(article.id)) return false;
     // A whitelisted article goes on the page either way, and the one thing
     // worse than a weak article is a weak article with no take under it.
-    if (sourceOf(article.sourceId).alwaysPublish) return true;
+    const source = sourceOf(article.sourceId);
+    if (source.alwaysPublish) return true;
     const verdict = verdicts.get(article.id)!;
     // THE SCORE ALONE, not `judged && score`. An unjudged article carries 0 and
     // 0 is below any floor, and once a human can write the score the extra
     // clause is actively wrong: a number typed in for an article the model
     // never answered for is still a decision to publish it.
-    if (verdict.score < PUBLISH_MIN_SCORE) return false;
-    return clearsEveryDimension(verdict.review);
+    // Boosted here and in the dimension check: see scoreBoost in user-config.
+    if (boostedScore(verdict.score, source.scoreBoost) < PUBLISH_MIN_SCORE) {
+      return false;
+    }
+    return clearsEveryDimension(verdict.review, source.scoreBoost);
   });
 
-  // Reported as three reasons rather than one count, because "did not publish"
-  // hides which of the four questions did it — and they are fixed differently:
-  // the floor by editing config, a dimension by arguing with the rubric, the
-  // quota not at all.
+  // Whitelisted first, so the ceiling can never cut what `alwaysPublish`
+  // promises; the rest by score, ties by recency so the cut is deterministic.
+  const kept = [...cleared]
+    .sort((a, b) => {
+      const byWhitelist =
+        Number(sourceOf(b.sourceId).alwaysPublish) -
+        Number(sourceOf(a.sourceId).alwaysPublish);
+      if (byWhitelist !== 0) return byWhitelist;
+      const byScore = effectiveScore(b, verdicts) - effectiveScore(a, verdicts);
+      return byScore !== 0
+        ? byScore
+        : b.publishedAt.localeCompare(a.publishedAt);
+    })
+    .slice(0, PUBLISH_PER_DAY);
+  const overCeiling = cleared.length - kept.length;
+
+  // Reported as separate reasons rather than one count, because "did not
+  // publish" hides which gate did it — and they are fixed differently: the
+  // floor by editing config, a dimension by arguing with the rubric, the quota
+  // not at all, the day's ceiling by `publishPerDay`.
   const rejected = articles.filter((a) => !kept.some((k) => k.id === a.id));
   const unscored = rejected.filter((a) => !verdicts.get(a.id)!.judged).length;
   const underDimension = rejected.filter((a) => {
     const verdict = verdicts.get(a.id)!;
+    const source = sourceOf(a.sourceId);
     return (
       verdict.judged &&
-      verdict.score >= PUBLISH_MIN_SCORE &&
-      !sourceOf(a.sourceId).alwaysPublish &&
-      !clearsEveryDimension(verdict.review)
+      boostedScore(verdict.score, source.scoreBoost) >= PUBLISH_MIN_SCORE &&
+      !source.alwaysPublish &&
+      !clearsEveryDimension(verdict.review, source.scoreBoost)
     );
   }).length;
   console.log(
@@ -2316,6 +2358,10 @@ export function publishable(
       (underDimension
         ? `, ${underDimension} cleared the floor (${PUBLISH_MIN_SCORE}) but ` +
           `had a dimension under ${MIN_PER_DIMENSION}`
+        : "") +
+      (overCeiling
+        ? `, ${overCeiling} cleared every gate but fell outside the day's ` +
+          `top ${PUBLISH_PER_DAY}`
         : ""),
   );
   return kept;

@@ -66,6 +66,28 @@ export interface RawSource {
    * source that posts a link roundup publishes that link roundup.
    */
   alwaysPublish?: boolean;
+  /**
+   * A multiplier on this source's score where it is USED, never where it is
+   * stored — the softer cousin of `alwaysPublish`. Absent is 1.
+   *
+   * It multiplies the sum AND each dimension, each rounded, before the floor,
+   * MIN_PER_DIMENSION and the day's ranking read them. Both, because for the
+   * source it was added for the sum was not the blocker: 硅谷居士 writes
+   * investing posts for Chinese readers in the US, and the rubric scores
+   * `stakes` 3-4 by design for anything that needs the reader to already hold
+   * a position — so a boost on the sum alone could not publish a single
+   * article more past the dimension floor.
+   *
+   * ROUNDING MAKES SMALL BOOSTS COARSE, and it is worth knowing before picking
+   * one: 3 × 1.1 = 3.3 rounds back to 3, so 1.1 lifts the sum but no dimension
+   * out of the bottom bands; it takes 1.2 for a 3 to become a 4.
+   *
+   * The file keeps the model's number — `score` against `modelScore` is how a
+   * human edit is told apart (see jobs/daily.ts), and a boosted number written
+   * there would read as one. Changing the boost re-decides history in the
+   * /admin replay, the same way changing the floor does.
+   */
+  scoreBoost?: number;
   /** False parks a source without deleting it: it is not fetched, but it stays
    *  in SOURCES so archived digests carrying its articles still render with its
    *  name, link and accent instead of falling back to a bare id. Absent counts
@@ -152,6 +174,18 @@ interface RawConfig {
    */
   collectPerSource: number;
   publishPerSource: number;
+  /**
+   * The most articles one day can publish, after every other gate has spoken.
+   *
+   * The other gates only ever say "good enough or not", so the day's size was
+   * whatever cleared them — about 10 a day over 2026-09-14..10-13, but rising
+   * with every source added, and each one is a summary paid for and a card the
+   * reader has to get through. This bounds that: of what clears the gates, the
+   * best `publishPerDay` by score are kept. `alwaysPublish` sources still count
+   * against it and are kept first, since being kept regardless is what that
+   * flag means. See `publishable` in summarize.ts.
+   */
+  publishPerDay: number;
   /** Bounds for one article's Chinese summary, in characters. */
   summaryMinChars: number;
   summaryMaxChars: number;
@@ -222,7 +256,11 @@ function validate(config: RawConfig): RawConfig {
         "bodyMinChars a whole number of characters",
     );
   }
-  for (const key of ["collectPerSource", "publishPerSource"] as const) {
+  for (const key of [
+    "collectPerSource",
+    "publishPerSource",
+    "publishPerDay",
+  ] as const) {
     if (!Number.isInteger(config[key]) || config[key] < 1) {
       fail(`${key} must be a whole number of at least 1`);
     }
@@ -318,6 +356,17 @@ function validate(config: RawConfig): RawConfig {
       typeof source.alwaysPublish !== "boolean"
     ) {
       fail(`source "${source.id}" alwaysPublish must be true or false`);
+    }
+    // Bounded on both sides: 0 or a negative would silently retire a source,
+    // and anything past 2 is a whitelist spelled as a number — use
+    // alwaysPublish and say so.
+    if (
+      source.scoreBoost !== undefined &&
+      (!Number.isFinite(source.scoreBoost) ||
+        source.scoreBoost <= 0 ||
+        source.scoreBoost > 2)
+    ) {
+      fail(`source "${source.id}" scoreBoost must be a number above 0 and at most 2`);
     }
     // The cap moved to the top level, and a per-source one left behind here
     // would be read by nobody. Throw rather than ignore it: a cap that is

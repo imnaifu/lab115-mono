@@ -25,7 +25,7 @@ import { PUBLISH_MIN_SCORE } from "@/lib/categories";
 import { MODEL } from "@/lib/config";
 import { adminDayPath } from "@/lib/links";
 import { MIN_PER_DIMENSION, SCORE_MAX } from "@/lib/score";
-import { PUBLISH_PER_SOURCE } from "@/lib/sources";
+import { PUBLISH_PER_DAY, PUBLISH_PER_SOURCE } from "@/lib/sources";
 import {
   blockingDimensions,
   byDay,
@@ -92,7 +92,8 @@ export async function AdminOverview() {
       title="打分数据"
       meta={
         `模型 ${MODEL} · 总分门槛 ${PUBLISH_MIN_SCORE}/${SCORE_MAX} · ` +
-        `单维下限 ${MIN_PER_DIMENSION} · 每源每天 ${PUBLISH_PER_SOURCE} 篇`
+        `单维下限 ${MIN_PER_DIMENSION} · 每源每天 ${PUBLISH_PER_SOURCE} 篇 · ` +
+        `每天最多 ${PUBLISH_PER_DAY} 篇`
       }
       nav={
         <>
@@ -236,12 +237,13 @@ export async function AdminOverview() {
       </Panel>
 
       <Panel
-        title="四道门的去处"
+        title="五道门的去处"
         note={
           <>
             按<strong className="font-bold text-ink-mid">当前</strong>
-            配置把整个归档重放一遍。四道门修的地方不一样 —— 门槛改 config.json，
-            单维弱要去和 rubric 吵，配额是 PUBLISH_PER_SOURCE，而「没打分」根本不是
+            配置把整个归档重放一遍。五道门修的地方不一样 —— 门槛改 config.json，
+            单维弱要去和 rubric 吵，配额是 PUBLISH_PER_SOURCE，每天上限是
+            PUBLISH_PER_DAY，而「没打分」根本不是
             判断，是模型调用失败。重放得 {gate.published} 篇，归档里实际发布{" "}
             {actuallyPublished} 篇：差额是历史，那些天是按当时的门槛和 rubric 发的。
           </>
@@ -251,7 +253,7 @@ export async function AdminOverview() {
           labelWidth={140}
           integer
           maxValue={gate.total}
-          height={5 * 26 + 44}
+          height={6 * 26 + 44}
           rows={(
             [
               ["发布", gate.published, "accent"],
@@ -259,6 +261,7 @@ export async function AdminOverview() {
               ["被每源配额挡下", gate.quota, "mute"],
               [`有一维低于 ${MIN_PER_DIMENSION}`, gate.underDimension, "mute"],
               ["从未打分", gate.unscored, "mute"],
+              [`超出每天 ${PUBLISH_PER_DAY} 篇`, gate.overCeiling, "mute"],
             ] as [string, number, MarkTone][]
           )
             .sort((a, b) => b[1] - a[1])
@@ -385,7 +388,11 @@ export async function AdminOverview() {
                 mean: num(row.meanScore, 1),
                 best: String(row.bestScore),
               },
-              ...(row.alwaysPublish ? { note: "白名单" } : {}),
+              ...(row.alwaysPublish
+                ? { note: "白名单" }
+                : row.scoreBoost !== 1
+                  ? { note: `boost ×${row.scoreBoost}` }
+                  : {}),
             }))}
           />
           <p className="mt-2 max-w-prose text-xs text-ink-soft">

@@ -1,11 +1,12 @@
 import { PUBLISH_MIN_SCORE } from "./categories";
 import {
+  boostedScore,
   clearsEveryDimension,
   MIN_PER_DIMENSION,
   SCORE_DIMENSIONS,
   type ScoreDimension,
 } from "./score";
-import { PUBLISH_PER_SOURCE, sourceOf } from "./sources";
+import { PUBLISH_PER_DAY, PUBLISH_PER_SOURCE, sourceOf } from "./sources";
 import type { ScoreReview } from "./types";
 
 /**
@@ -294,13 +295,18 @@ export function correlations(entries: ScoredEntry[]): Correlation[] {
  * scope the real rule has: `bestPerSource` runs once per run, over that run's
  * articles. Anything computed across the whole archive at once would be a
  * different rule wearing the same name.
+ *
+ * "over-ceiling" is the day's PUBLISH_PER_DAY, applied in `outcomesAt` after
+ * the four, because it is not a question about one entry: whether an entry fits
+ * depends on how many others on its day got through.
  */
 export type GateOutcome =
   | "published"
   | "quota"
   | "unscored"
   | "under-floor"
-  | "under-dimension";
+  | "under-dimension"
+  | "over-ceiling";
 
 function outcomeFor(
   entry: ScoredEntry,
@@ -308,13 +314,16 @@ function outcomeFor(
   floor: number,
 ): GateOutcome {
   if (!winners.has(entryKey(entry))) return "quota";
-  if (sourceOf(entry.sourceId).alwaysPublish) return "published";
+  const source = sourceOf(entry.sourceId);
+  if (source.alwaysPublish) return "published";
   // An unscored article carries 0 and loses to every floor — reported as its own
   // outcome rather than as "under-floor", because a pile of these is a model
   // outage and not a rubric that is working.
   if (!entry.review) return "unscored";
-  if (entry.score < floor) return "under-floor";
-  return clearsEveryDimension(entry.review) ? "published" : "under-dimension";
+  if (boostedScore(entry.score, source.scoreBoost) < floor) return "under-floor";
+  return clearsEveryDimension(entry.review, source.scoreBoost)
+    ? "published"
+    : "under-dimension";
 }
 
 /**
@@ -370,6 +379,20 @@ export function outcomesAt(
     for (const entry of dayEntries) {
       outcomes.set(entryKey(entry), outcomeFor(entry, winners, floor));
     }
+    // The day's ceiling, in `publishable`'s order: whitelisted first, then by
+    // score, ties by recency.
+    [...dayEntries]
+      .filter((entry) => outcomes.get(entryKey(entry)) === "published")
+      .sort(
+        (a, b) =>
+          Number(sourceOf(b.sourceId).alwaysPublish) -
+            Number(sourceOf(a.sourceId).alwaysPublish) ||
+          boostedScore(b.score, sourceOf(b.sourceId).scoreBoost) -
+            boostedScore(a.score, sourceOf(a.sourceId).scoreBoost) ||
+          (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""),
+      )
+      .slice(PUBLISH_PER_DAY)
+      .forEach((entry) => outcomes.set(entryKey(entry), "over-ceiling"));
   }
   return outcomes;
 }
@@ -435,6 +458,7 @@ export interface GateBreakdown {
   unscored: number;
   underFloor: number;
   underDimension: number;
+  overCeiling: number;
 }
 
 /**
@@ -444,6 +468,7 @@ export interface GateBreakdown {
  * in four different places and a single rejection count hides which one to go
  * and argue with: the floor is a line in config.json, a weak dimension is an
  * argument with the rubric in summarize.ts, the quota is `PUBLISH_PER_SOURCE`,
+ * the day's ceiling is `PUBLISH_PER_DAY`,
  * and `unscored` is not a judgement at all — it is a model call that failed.
  * `publishable` already logs this split per run; this is the same split standing.
  */
@@ -458,6 +483,7 @@ export function gateBreakdown(entries: ScoredEntry[]): GateBreakdown {
     unscored: count("unscored"),
     underFloor: count("under-floor"),
     underDimension: count("under-dimension"),
+    overCeiling: count("over-ceiling"),
   };
 }
 
@@ -504,6 +530,8 @@ export interface SourceRow {
   /** published ÷ considered. */
   rate: number;
   alwaysPublish: boolean;
+  /** 1 for most; meanScore and bestScore stay unboosted. */
+  scoreBoost: number;
 }
 
 /**
@@ -542,6 +570,7 @@ export function sourceRows(entries: ScoredEntry[]): SourceRow[] {
         bestScore: scores.length ? Math.max(...scores) : 0,
         rate: group.length ? published / group.length : 0,
         alwaysPublish: source.alwaysPublish,
+        scoreBoost: source.scoreBoost,
       };
     })
     .sort((a, b) => b.considered - a.considered);

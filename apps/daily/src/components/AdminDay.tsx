@@ -19,7 +19,7 @@ import {
 import { PUBLISH_MIN_SCORE } from "@/lib/categories";
 import { ADMIN_PATH, adminDayPath } from "@/lib/links";
 import { MIN_PER_DIMENSION, SCORE_DIMENSIONS, SCORE_MAX } from "@/lib/score";
-import { sourceOf } from "@/lib/sources";
+import { PUBLISH_PER_DAY, sourceOf } from "@/lib/sources";
 import {
   blockingDimensions,
   dimensionStats,
@@ -262,14 +262,14 @@ export async function AdminDay({ date }: { date: string }) {
           </Panel>
 
           <Panel
-            title="这一天的四道门"
+            title="这一天的五道门"
             note={
               <>
                 当天每篇的去处，按
                 <strong className="font-bold text-ink-mid">当前</strong>
-                规则重算。四道门要修的地方不一样：门槛在 config.json，单维弱是去和
-                rubric 吵，配额是 PUBLISH_PER_SOURCE，而「从未打分」根本不是判断，
-                是模型调用失败。
+                规则重算。五道门要修的地方不一样：门槛在 config.json，单维弱是去和
+                rubric 吵，配额是 PUBLISH_PER_SOURCE，每天上限是 PUBLISH_PER_DAY，
+                而「从未打分」根本不是判断，是模型调用失败。
               </>
             }
           >
@@ -277,7 +277,7 @@ export async function AdminDay({ date }: { date: string }) {
               labelWidth={140}
               integer
               maxValue={sorted.length}
-              height={5 * 26 + 44}
+              height={6 * 26 + 44}
               rows={(
                 [
                   ["发布", "published", "accent"],
@@ -285,6 +285,7 @@ export async function AdminDay({ date }: { date: string }) {
                   ["被每源配额挡下", "quota", "mute"],
                   [`有一维低于 ${MIN_PER_DIMENSION}`, "under-dimension", "mute"],
                   ["从未打分", "unscored", "mute"],
+                  [`超出每天 ${PUBLISH_PER_DAY} 篇`, "over-ceiling", "mute"],
                 ] as [string, GateOutcome, MarkTone][]
               )
                 .map(([label, outcome, tone]) => ({
@@ -541,6 +542,7 @@ const OUTCOME: Record<GateOutcome, { label: string; pass: boolean }> = {
   "under-dimension": { label: `单维 < ${MIN_PER_DIMENSION}`, pass: false },
   quota: { label: "每源配额", pass: false },
   unscored: { label: "未打分", pass: false },
+  "over-ceiling": { label: `超出每天 ${PUBLISH_PER_DAY} 篇`, pass: false },
 };
 
 /**

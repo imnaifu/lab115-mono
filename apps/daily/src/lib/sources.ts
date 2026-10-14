@@ -61,6 +61,9 @@ export interface Source {
   descriptionEn: string;
   /** Exempt from the publish floor — see alwaysPublish in user-config.ts. */
   alwaysPublish: boolean;
+  /** Multiplier on the score where it is used — see scoreBoost in
+   *  user-config.ts. 1 when the config leaves it out. */
+  scoreBoost: number;
   /** False means "do not fetch". Such a source is still carried here, and on
    *  purpose: sourceOf() is what renders archived digests, and dropping the
    *  entry would turn every past article of a parked source into a bare id with
@@ -106,6 +109,10 @@ export const COLLECT_PER_SOURCE = USER_CONFIG.collectPerSource;
  * number from COLLECT_PER_SOURCE rather than one cap applied earlier.
  */
 export const PUBLISH_PER_SOURCE = USER_CONFIG.publishPerSource;
+
+/** The day's ceiling, applied after every per-article gate — see
+ *  RawConfig.publishPerDay in user-config.ts. */
+export const PUBLISH_PER_DAY = USER_CONFIG.publishPerDay;
 
 /**
  * How many published takes a source needs before it gets a page of its own.
@@ -189,6 +196,7 @@ export const SOURCES: Source[] = USER_CONFIG.sources.map((source) => ({
   descriptionEn: source.descriptionEn,
   enabled: source.enabled ?? true,
   alwaysPublish: source.alwaysPublish ?? false,
+  scoreBoost: source.scoreBoost ?? 1,
   fetchBody: source.fetchBody,
   ...(source.scrape
     ? {
@@ -240,6 +248,7 @@ export function sourceOf(id: string): Source {
       descriptionEn: "",
       enabled: false,
       alwaysPublish: false,
+      scoreBoost: 1,
       fetchBody: false,
     }
   );

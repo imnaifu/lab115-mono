@@ -229,11 +229,24 @@ export const MIN_PER_DIMENSION = USER_CONFIG.minPerDimension;
  * elements is true, and "we have no dimensions to check" must not read as "it
  * cleared every dimension".
  */
-export function clearsEveryDimension(review: ScoreReview): boolean {
+export function clearsEveryDimension(review: ScoreReview, boost = 1): boolean {
   // `Object.values` on an open record is typed as possibly-undefined per entry;
   // a key present with no value is not a dimension that cleared anything, so it
   // is filtered out rather than defaulted.
   const findings = Object.values(review).filter((finding) => finding !== undefined);
   if (findings.length === 0) return false;
-  return findings.every((finding) => finding.score >= MIN_PER_DIMENSION);
+  return findings.every(
+    (finding) => boostedScore(finding.score, boost) >= MIN_PER_DIMENSION,
+  );
+}
+
+/**
+ * A score, sum or single dimension, with a source's `scoreBoost` applied —
+ * see that field in user-config.ts. Rounded because every threshold it is
+ * compared against is a whole number, and an unrounded 29.7 against a floor
+ * of 30 would make the boost's effect depend on how a comparison happens to
+ * be written.
+ */
+export function boostedScore(score: number, boost: number): number {
+  return Math.round(score * boost);
 }

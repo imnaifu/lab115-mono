@@ -3,6 +3,7 @@
   "minPerDimension": 4,
   "collectPerSource": 3,
   "publishPerSource": 1,
+  "publishPerDay": 10,
   "bodyMinChars": 300,
   "summaryMinChars": 150,
   "summaryMaxChars": 650,
@@ -101,7 +102,7 @@
       "description": "开发者工具公司的工程与增长访谈，近期几乎全是 AI agent 基础设施话题。",
       "descriptionEn": "Engineering and growth interviews from a developer-tools VC; lately almost entirely about AI agent infrastructure.",
       "accent": "#3B3563",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -173,7 +174,7 @@
       "description": "个人向科技随笔，兼有工具发布公告。",
       "descriptionEn": "Personal tech essays, mixed with tool release announcements.",
       "accent": "#6E7B3F",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": true
     },
     {
@@ -258,7 +259,7 @@
       "descriptionEn": "A weekly roundup of links and tools for developers. In Chinese.",
       "accent": "#4A7C8C",
       "enabled": true,
-      "alwaysPublish": true,
+      "scoreBoost": 1.2,
       "fetchBody": false
     },
     {
@@ -606,7 +607,7 @@
       "description": "设计评论，谈职业、协作与设计伦理，不是前端技术。",
       "descriptionEn": "Design criticism about practice, collaboration and ethics — not front-end technique.",
       "accent": "#B96A48",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -643,7 +644,7 @@
       "descriptionEn": "Index investing and FIRE, in Chinese, from a Silicon Valley engineer writing about his own accounts.",
       "accent": "#C08F5A",
       "enabled": true,
-      "alwaysPublish": true,
+      "scoreBoost": 1.2,
       "fetchBody": true,
       "scrape": {
         "index": "https://blog.wenxuecity.com/myoverview/80634/",
@@ -720,7 +721,7 @@
       "description": "《巴黎评论》的日更博客，文学随笔与作家访谈，全文 ~12.7k；纯文学向，和现有源零重叠。",
       "descriptionEn": "The Paris Review's daily blog — literary essays and writer interviews. Purely literary, and overlaps with nothing else here.",
       "accent": "#B04E72",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -816,7 +817,7 @@
       "description": "教练团队写的训练与营养实操（肌酸、体脂秤准不准、增肌减脂怎么排），0.12 篇/天，Atom 带全文 5k~12k；约四分之一条目是自家 app 的更新软文，靠分数门槛滤。",
       "descriptionEn": "Coaches writing practically about training and nutrition — creatine, whether body-fat scales work, how to structure a bulk or a cut. Around a quarter of the entries are soft promotion for their own app.",
       "accent": "#C97B33",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -854,6 +855,90 @@
       "accent": "#6E4B3A",
       "enabled": true,
       "fetchBody": false
+    },
+    {
+      "id": "atlantictech",
+      "name": "The Atlantic · Technology",
+      "site": "https://www.theatlantic.com/technology/",
+      "feed": "https://www.theatlantic.com/feed/channel/technology/",
+      "category": "tech",
+      "description": "The Atlantic 科技栏目，写技术和 AI 怎么改变日常生活，0.7 篇/天；feed 给整篇正文（~10k），而文章页对抓取返回空，所以 fetchBody 必须保持 false。2026-10-13 试打 6 篇，5 篇过线，均分 35.8。",
+      "descriptionEn": "The Atlantic's technology desk: how technology and AI change everyday life, written for a general reader.",
+      "accent": "#3F5E8C",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "atlanticfamily",
+      "name": "The Atlantic · Family",
+      "site": "https://www.theatlantic.com/family/",
+      "feed": "https://www.theatlantic.com/feed/channel/family/",
+      "category": "living",
+      "description": "The Atlantic 家庭栏目，亲密关系、育儿、友谊和社交生活，0.5 篇/天；feed 给整篇正文（7k~13k），文章页对抓取返回空，fetchBody 保持 false。2026-10-13 试打 6 篇全部过线，均分 35.5。",
+      "descriptionEn": "The Atlantic's family desk: relationships, parenting, friendship and social life.",
+      "accent": "#A5634A",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "owid",
+      "name": "Our World in Data",
+      "site": "https://ourworldindata.org/",
+      "feed": "https://ourworldindata.org/atom.xml",
+      "category": "science",
+      "description": "牛津的数据研究站，用长期数据讲人口、健康、气候、贫困，约 0.1 篇/天；feed 只有一两句摘要，正文要抓文章页（9k~22k）。2026-10-13 试打 6 篇，5 篇过线，均分 36.2。",
+      "descriptionEn": "Long-run data on population, health, climate and poverty, explained chart by chart.",
+      "accent": "#2F5F7A",
+      "enabled": true,
+      "fetchBody": true
+    },
+    {
+      "id": "asterisk",
+      "name": "Asterisk Magazine",
+      "site": "https://asteriskmag.com/",
+      "feed": "https://asteriskmag.com/feed",
+      "category": "culture",
+      "description": "季刊杂志，按期集中发稿，经济、科学、制度与社会的长篇报道，约 0.1 篇/天；feed 只有标题级摘要，正文要抓文章页（17k~35k）。2026-10-13 试打 6 篇全部过线，均分 35.7。",
+      "descriptionEn": "A quarterly of long reported essays on economics, science, institutions and society.",
+      "accent": "#7A4E8C",
+      "enabled": true,
+      "fetchBody": true
+    },
+    {
+      "id": "derekthompson",
+      "name": "Derek Thompson",
+      "site": "https://www.derekthompson.org/",
+      "feed": "https://www.derekthompson.org/feed",
+      "category": "economy",
+      "description": "前 The Atlantic 作者的 Substack，经济、科技与美国社会变化，0.2 篇/天；feed 带全文（2.7k~24k）。2026-10-13 试打 6 篇，5 篇过线，均分 35.7。",
+      "descriptionEn": "Derek Thompson on economics, technology and how American life is changing.",
+      "accent": "#4D7A3A",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "krebs",
+      "name": "Krebs on Security",
+      "site": "https://krebsonsecurity.com/",
+      "feed": "https://krebsonsecurity.com/feed/",
+      "category": "tech",
+      "description": "Brian Krebs 的网络安全调查报道，勒索、诈骗、数据泄露背后的具体人和公司，0.2 篇/天；feed 带全文（3k~13k）。2026-10-13 试打 6 篇，5 篇过线，均分 33.7。",
+      "descriptionEn": "Brian Krebs's investigative reporting on cybercrime — the people and companies behind ransomware, fraud and data breaches.",
+      "accent": "#8C3A3A",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "arsfeatures",
+      "name": "Ars Technica · Features",
+      "site": "https://arstechnica.com/features/",
+      "feed": "https://feeds.arstechnica.com/arstechnica/features",
+      "category": "tech",
+      "description": "Ars Technica 的深度稿频道（不是新闻流），科技、太空、科技政策，0.5 篇/天；feed 只给 0.6k~1.5k 的开头，有的超过 SHORT_BODY_CHARS 不会自动补抓，所以 fetchBody 要开（页面 15k~50k）。2026-10-13 试打 6 篇，5 篇过线，均分 33.2。",
+      "descriptionEn": "Ars Technica's long-form features — technology, space and tech policy, rather than the news stream.",
+      "accent": "#C2552E",
+      "enabled": true,
+      "fetchBody": true
     }
   ]
 }

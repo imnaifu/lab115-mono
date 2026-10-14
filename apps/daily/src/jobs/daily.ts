@@ -21,6 +21,7 @@ import {
   type WorkingDigest,
 } from "@/lib/store";
 import {
+  effectiveScore,
   publishable,
   scoreAll,
   summarizeSurvivors,
@@ -230,14 +231,16 @@ async function publishFrom(
 
   /**
    * The page's own order: by score, ties by recency so it is deterministic.
+   * The BOOSTED score (see scoreBoost in user-config), so the page agrees with
+   * the ranking `publishable` cut the day's ceiling on; the card still shows
+   * the article's own number.
    *
    * Unjudged and rejected articles are not here at all — they are in `sorted`
    * below, which is what the FILE is written from, because the file carries
    * every article the day held whether it published or not.
    */
   const ranked = [...eligible].sort((a, b) => {
-    const diff =
-      (verdicts.get(b.id)?.score ?? 0) - (verdicts.get(a.id)?.score ?? 0);
+    const diff = effectiveScore(b, verdicts) - effectiveScore(a, verdicts);
     return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
   });
 
