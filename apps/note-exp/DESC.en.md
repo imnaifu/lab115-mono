@@ -20,7 +20,7 @@ Download a post's images and video
 
 1. Open any RedNote post
 
-2. Click the extension icon and open the "Download Post Assets" tab
+2. Click the extension icon and open the "Download Single Post" tab
 
 3. Select the images and video you want, then download them into one folder
 

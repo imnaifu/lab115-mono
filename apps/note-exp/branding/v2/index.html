@@ -1,0 +1,586 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>RedNote Exporter · Store assets</title>
+    <!--
+      Chrome Web Store assets, rendered by render.sh with headless Chrome.
+      One template for every asset: ?lang=zh|en&id=s1..s5|small|marquee.
+      The popup mock mirrors src/popup (dark header + tabs, same strings and
+      icons) so the screenshots match what users actually see. All covers,
+      names and numbers are made up — no real RedNote users or photos.
+    -->
+    <style>
+      :root {
+        --brand: #ff2442;
+        --tint: #ffe9ed;
+        --ink: #1d1d1f;
+        --ink2: #8a8a90;
+        --ink3: #b6b6bc;
+        --line: #efeff1;
+        --header: #18181d;
+        --bg: #fbf8f6;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { overflow: hidden; background: var(--bg); }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      svg { display: block; flex-shrink: 0; }
+      .canvas { position: relative; overflow: hidden; background: var(--bg); }
+      .glow {
+        position: absolute; inset: 0; pointer-events: none;
+        background:
+          radial-gradient(900px 600px at 92% 4%, rgba(255, 36, 66, 0.13), transparent 60%),
+          radial-gradient(700px 500px at 0% 100%, rgba(255, 36, 66, 0.06), transparent 60%);
+      }
+      .abs { position: absolute; }
+
+      /* ---------- left copy column ---------- */
+      .copy { position: absolute; left: 88px; top: 0; bottom: 0; width: 470px; display: flex; flex-direction: column; justify-content: center; }
+      .brandrow { display: flex; align-items: center; gap: 14px; margin-bottom: 30px; }
+      .brandrow .name { font-size: 21px; font-weight: 700; letter-spacing: -0.2px; }
+      .pill { font-size: 13px; font-weight: 700; color: #fff; background: var(--brand); border-radius: 99px; padding: 4px 11px; }
+      .tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; color: var(--brand); background: var(--tint); border-radius: 99px; padding: 7px 15px; margin-bottom: 20px; }
+      h1 { font-size: 54px; line-height: 1.16; font-weight: 800; letter-spacing: -1.2px; }
+      h1 .red { color: var(--brand); display: block; }
+      .en h1 { font-size: 48px; letter-spacing: -1.4px; }
+      .sub { font-size: 19px; line-height: 1.7; color: #6b6b72; margin-top: 22px; }
+      .en .sub { font-size: 18px; line-height: 1.6; }
+      .bullets { margin-top: 30px; display: flex; flex-direction: column; gap: 16px; }
+      .bullet { display: flex; align-items: center; gap: 14px; font-size: 18px; font-weight: 600; color: #3a3a40; }
+      .bullet .bi { width: 38px; height: 38px; border-radius: 10px; background: var(--tint); color: var(--brand); display: flex; align-items: center; justify-content: center; }
+
+      /* ---------- generic window chrome ---------- */
+      .win { position: absolute; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -20px rgba(40, 20, 25, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05); }
+      .winbar { height: 40px; background: #f3f2f1; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid #e8e6e4; }
+      .dot { width: 11px; height: 11px; border-radius: 50%; }
+      .url { margin-left: 14px; flex: 1; min-width: 0; height: 24px; border-radius: 6px; background: #fff; font-size: 12px; color: #9a9aa0; display: flex; align-items: center; padding: 0 10px; white-space: nowrap; overflow: hidden; }
+      .wintitle { margin-left: 12px; font-size: 13px; font-weight: 600; color: #55555c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+      /* ---------- popup mock (mirrors src/popup) ---------- */
+      .popup { width: 400px; height: 600px; background: #fff; display: flex; flex-direction: column; font-size: 12px; position: absolute; overflow: hidden; border-radius: 12px; box-shadow: 0 40px 80px -24px rgba(40, 10, 20, 0.38), 0 0 0 1px rgba(0, 0, 0, 0.06); transform-origin: top left; }
+      .ph { display: flex; align-items: center; justify-content: space-between; background: var(--header); padding: 9px 14px; }
+      .ph .b { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 700; font-size: 13px; }
+      .lang { display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 99px; padding: 2px; gap: 1px; }
+      .lang span { padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; color: #9a9aa2; }
+      .lang span.on { background: rgba(255, 255, 255, 0.16); color: #fff; }
+      .tabs { display: flex; background: var(--header); padding: 0 14px; }
+      .tabs div { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 12px; padding: 4px 0 9px; color: #8b8b92; }
+      .tabs div.on { color: #fff; }
+      .tabs div.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.5px; background: var(--brand); }
+      .pbody { flex: 1; overflow: hidden; position: relative; }
+      .pfoot { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid var(--line); }
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 13px; height: 32px; padding: 0 16px; border-radius: 6px; }
+      .btn.p { background: var(--brand); color: #fff; }
+      .btn.s { background: #f1f1f3; color: var(--ink); }
+      .muted { color: var(--ink2); }
+      .row { display: flex; gap: 9px; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+      .row .t { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row .a { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink2); margin-top: 4px; }
+      .row .st { display: flex; align-items: center; gap: 9px; font-size: 10.5px; color: var(--ink2); margin-top: 6px; }
+      .row .st span { display: inline-flex; align-items: center; gap: 3px; }
+      .photo { position: relative; overflow: hidden; }
+      .sel { outline: 2.5px solid var(--brand); outline-offset: -2.5px; }
+      .check { position: absolute; top: 6px; right: 6px; width: 19px; height: 19px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
+      .num { position: absolute; left: 4px; top: 4px; font-size: 9px; font-weight: 700; color: rgba(255, 255, 255, 0.92); background: rgba(0, 0, 0, 0.3); border-radius: 3px; padding: 0 4px; line-height: 1.35; }
+
+      /* floating result card (export / download done sheet) */
+      .card { position: absolute; background: #fff; border-radius: 18px; padding: 26px 26px 22px; text-align: center; box-shadow: 0 40px 80px -24px rgba(40, 10, 20, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05); }
+      .okc { width: 54px; height: 54px; border-radius: 50%; background: var(--tint); color: var(--brand); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+      .card .h { font-weight: 700; font-size: 17px; margin-bottom: 14px; }
+      .chip { display: flex; align-items: center; gap: 8px; background: #f6f6f8; border-radius: 7px; padding: 10px 12px; font-size: 13px; text-align: left; }
+      .chip span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .chip .ci { flex: none; display: flex; color: var(--ink2); }
+
+      /* spreadsheet */
+      table { border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+      th, td { border-right: 1px solid #e7e7ea; border-bottom: 1px solid #e7e7ea; padding: 0 9px; height: 33px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+      th { background: #f6f6f7; color: #8a8a90; font-weight: 600; font-size: 11.5px; height: 26px; text-align: center; }
+      td.rn { background: #f6f6f7; color: #8a8a90; text-align: center; font-size: 11.5px; }
+      tr.hdr td { font-weight: 700; background: #fff4f5; color: #b0102a; }
+      td.n { text-align: right; font-variant-numeric: tabular-nums; }
+      td.l { color: #2f6fd6; }
+
+      /* step cards (s5) */
+      .steps { position: absolute; left: 88px; right: 88px; top: 248px; display: flex; gap: 28px; }
+      .step { flex: 1; background: #fff; border-radius: 20px; padding: 26px 26px 28px; box-shadow: 0 20px 50px -24px rgba(40, 10, 20, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.04); }
+      .step .ill { height: 172px; border-radius: 14px; background: #f7f4f2; position: relative; overflow: hidden; margin-bottom: 22px; }
+      .step .k { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; font-size: 15px; margin-bottom: 12px; }
+      .step .tt { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+      .step .ss { font-size: 15px; color: #6b6b72; margin-top: 8px; line-height: 1.55; }
+      .trust { position: absolute; left: 0; right: 0; bottom: 64px; display: flex; justify-content: center; gap: 14px; }
+      .trust div { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #3a3a40; background: #fff; border-radius: 99px; padding: 11px 20px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06); }
+      .trust svg { color: var(--brand); }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // ---------------------------------------------------------------- params
+      const params = new URLSearchParams(location.search);
+      const LANG = params.get("lang") === "en" ? "en" : "zh";
+      const ID = params.get("id") || "s1";
+      const SIZES = { small: [440, 280], marquee: [1400, 560] };
+      const [W, H] = SIZES[ID] || [1280, 800];
+
+      // ----------------------------------------------------------------- icons
+      // Same stroke paths as src/popup/components/Icon.jsx.
+      const PATHS = {
+        search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+        list: '<path d="M9 6h12"/><path d="M9 12h12"/><path d="M9 18h12"/><circle cx="4.5" cy="6" r="0.5" fill="currentColor"/><circle cx="4.5" cy="12" r="0.5" fill="currentColor"/><circle cx="4.5" cy="18" r="0.5" fill="currentColor"/>',
+        download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+        heart: '<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z"/>',
+        comment: '<path d="M21 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-5.4A8 8 0 1 1 21 11.5z"/>',
+        star: '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.9 6.8 19.2l1-5.9L3.5 9.2l5.9-.9z"/>',
+        image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9.5" r="1.6"/><path d="M21 16l-5-5L5 20"/>',
+        file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+        check: '<path d="M5 12.5l4.5 4.5L19 6.5"/>',
+        x: '<path d="M6 6l12 12M18 6L6 18"/>',
+        arrowdown: '<path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>',
+        folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+        video: '<rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="M15.5 10l6-3v10l-6-3z"/>',
+        play: '<path d="M8 5v14l11-7z"/>',
+        link: '<path d="M9 14a4 4 0 0 0 6 .5l2.5-2.5a4 4 0 0 0-5.7-5.7L10.5 7.7"/><path d="M15 10a4 4 0 0 0-6-.5L6.5 12a4 4 0 0 0 5.7 5.7L13.5 16.3"/>',
+        lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+        shield: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/>',
+        cloudoff: '<path d="M3 3l18 18"/><path d="M8.5 6.3A6 6 0 0 1 17.6 10 4 4 0 0 1 20 17"/><path d="M16.5 18H7a4.5 4.5 0 0 1-1.6-8.7"/>',
+        globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/>',
+        puzzle: '<path d="M9 4.5a2 2 0 1 1 4 0V6h3.5a1.5 1.5 0 0 1 1.5 1.5V11h-1.5a2 2 0 1 0 0 4H18v3.5a1.5 1.5 0 0 1-1.5 1.5H13v-1.5a2 2 0 1 0-4 0V20H5.5A1.5 1.5 0 0 1 4 18.5V15h1.5a2 2 0 1 0 0-4H4V7.5A1.5 1.5 0 0 1 5.5 6H9z"/>',
+        cursor: '<path d="M5 3l6.5 17 2.2-7.3L21 10.5z" fill="currentColor"/>',
+      };
+      // `extra` may override fill/stroke: when it sets fill=, skip the default
+      // fill="none" (a duplicate attribute would be ignored, hiding solid icons).
+      const ic = (name, size = 16, stroke = 2, extra = "") =>
+        `<svg width="${size}" height="${size}" viewBox="0 0 24 24" ${/fill=/.test(extra) ? "" : 'fill="none"'} ${/stroke=/.test(extra) ? "" : 'stroke="currentColor"'} stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" ${extra}>${PATHS[name]}</svg>`;
+
+      // The extension icon (icons/icon.svg), inlined so it scales crisply.
+      const logo = (size, shadow = true) => `
+        <svg width="${size}" height="${size}" viewBox="6 6 116 116" style="${shadow ? "filter: drop-shadow(0 8px 18px rgba(255,36,66,.35));" : ""}">
+          <rect x="6" y="6" width="116" height="116" rx="30" fill="#FF2442"/>
+          <g transform="rotate(-30 64 64)">
+            <ellipse cx="64" cy="64" rx="36" ry="21" fill="#fff"/>
+            <circle cx="52" cy="60" r="2.1" fill="#FF2442" fill-opacity=".5"/>
+            <circle cx="66" cy="68" r="2.1" fill="#FF2442" fill-opacity=".5"/>
+            <circle cx="78" cy="59" r="2.1" fill="#FF2442" fill-opacity=".5"/>
+          </g>
+          <path d="M92 36 C 98 28 90 22 84 27 C 88 31 88 36 92 36 Z" fill="#36C06A"/>
+          <path d="M92 36 C 96 42 102 40 102 33 C 98 32 95 33 92 36 Z" fill="#36C06A"/>
+        </svg>`;
+
+      // Abstract "photo" fills: soft layered gradients that read as blurred
+      // lifestyle shots without using anyone's real image.
+      const TONES = [
+        ["#e9d8cc", "#c9a58e", "#f6efe6", "#8d6b57"],
+        ["#d7e2dc", "#9fb7aa", "#f3f6f1", "#5f7d6f"],
+        ["#eadbe2", "#c7a2b5", "#fbf1f4", "#8b5f74"],
+        ["#dbe1ec", "#9fb0cc", "#f3f5fa", "#5b6f93"],
+        ["#efe3cf", "#d2b07a", "#fbf5ea", "#9b7a43"],
+        ["#d9e7e8", "#93bcc0", "#f1f8f8", "#4f8489"],
+        ["#f0dcd6", "#d59a8b", "#fcf1ee", "#9c5b4d"],
+        ["#e2e4d8", "#b4b98f", "#f5f6ee", "#757a4f"],
+        ["#e6dcef", "#ad97c9", "#f6f2fb", "#6d5a8c"],
+      ];
+      const fill = (seed) => {
+        const t = TONES[((seed % TONES.length) + TONES.length) % TONES.length];
+        const x1 = 20 + ((seed * 37) % 60), y1 = 15 + ((seed * 53) % 50);
+        const x2 = 30 + ((seed * 71) % 60), y2 = 55 + ((seed * 29) % 40);
+        return `background:
+          radial-gradient(circle at ${x1}% ${y1}%, ${t[2]} 0, transparent 42%),
+          radial-gradient(ellipse at ${x2}% ${y2}%, ${t[3]}aa 0, transparent 55%),
+          linear-gradient(160deg, ${t[0]}, ${t[1]});`;
+      };
+      const photo = (seed, style = "", inner = "", cls = "") =>
+        `<div class="photo ${cls}" style="${fill(seed)}${style}">${inner}</div>`;
+
+      // ------------------------------------------------------------------ copy
+      const T = {
+        zh: {
+          brand: "小红书导出工具",
+          ext: "Chrome 扩展",
+          tabList: "导出笔记列表",
+          tabPost: "下载单帖资源",
+          notes: [
+            ["秋天第一件风衣的 5 套通勤穿搭", "盐系小柯", "4.4w", "1.3w", "883", "2026-09-28"],
+            ["小个子梨形身材的秋冬穿搭法则", "今天也很会穿", "4.8w", "1.7w", "1.4k", "2026-10-02"],
+            ["周末去哪儿｜杭州 8 家小众咖啡馆", "阿梨在路上", "2.1w", "9.6k", "512", "2026-10-06"],
+            ["一人食晚餐｜15 分钟搞定三菜一汤", "厨房小林", "3.2w", "2.4w", "1.1k", "2026-10-09"],
+            ["新手入门胶片相机，这些坑别踩", "慢门日记", "1.6w", "8.8k", "640", "2026-10-11"],
+            ["租房改造｜500 元让出租屋变温馨", "住进光里", "6.7w", "5.1w", "2.3k", "2026-10-12"],
+            ["秋冬护肤顺序，一张图讲清楚", "成分党小周", "2.9w", "3.6w", "970", "2026-10-13"],
+          ],
+          s1: {
+            tag: ["download", "下载单帖资源"],
+            h1: ["图片和视频", "一键全部保存"],
+            sub: "打开任意一篇笔记，勾选想要的图片和视频，点一下就下载到同一个文件夹。",
+            bullets: [["video", "视频优先下载无水印原片"], ["image", "图文笔记、视频笔记都支持"], ["check", "只勾选你需要的那几张"]],
+          },
+          s2: {
+            tag: ["folder", "自动整理"],
+            h1: ["一篇笔记", "一个文件夹"],
+            sub: "文件夹按下载时间和笔记标题命名，视频和图片按顺序编号，不用再一张张重命名。",
+            bullets: [["folder", "下载时间 + 标题，自动建文件夹"], ["list", "image-1、image-2… 按原顺序编号"], ["check", "重名自动加序号，不覆盖旧文件"]],
+          },
+          s3: {
+            tag: ["list", "导出笔记列表"],
+            h1: ["边刷边采集", "随时导出 CSV"],
+            sub: "在首页推荐、搜索结果或用户主页正常往下滑，看过的笔记会被自动收集并去重。",
+            bullets: [["search", "首页推荐 · 搜索结果 · 用户主页"], ["check", "自动去重，实时显示采集数量"], ["heart", "标题、作者、互动数据一起带上"]],
+          },
+          s4: {
+            tag: ["file", "CSV 表格"],
+            h1: ["导出就是", "一张整齐的表"],
+            sub: "Excel、Numbers、Google 表格直接打开，中文不乱码，做选题分析、竞品整理都顺手。",
+            bullets: [["file", "标题、作者、发布时间"], ["heart", "点赞 · 收藏 · 评论 · 分享"], ["link", "封面、作者主页、全部图片链接"]],
+          },
+          s5: {
+            title: "三步上手，全程在本地完成",
+            steps: [
+              ["打开小红书", "首页推荐、搜索结果、用户主页，或任意一篇笔记"],
+              ["点击扩展图标", "切换到「导出笔记列表」或「下载单帖资源」"],
+              ["导出或下载", "CSV 表格和图片视频直接保存到你的电脑"],
+            ],
+            trust: [["lock", "插件无需注册登录"], ["shield", "不收集任何数据"], ["cloudoff", "不连接外部服务器"], ["globe", "中英双语界面"]],
+          },
+          marquee: {
+            h1: ["小红书图片视频，一键保存", "笔记列表，一键导出 CSV"],
+            chips: [["video", "视频优先无水印原片"], ["list", "首页 · 搜索 · 主页"], ["shield", "本地处理，不上传"]],
+          },
+          small: ["小红书导出", "图片视频下载 · 笔记导出 CSV"],
+          post: { title: "秋天第一件风衣的 5 套通勤穿搭", author: "盐系小柯", time: "2026-09-28" },
+          videoUnit: "个视频", imageUnit: "张图片", videoWord: "视频", imagesWord: "图片",
+          deselAll: "取消全选", dlSel: (n) => `下载选中 · ${n}`,
+          connected: "已连接", captured: "已采集", unit: "条", capturing: "采集中…",
+          dedup: "已接收 140 · 跳过 12 条重复",
+          pageHint: "在网页上继续向下滚动，新加载的笔记会自动采集",
+          clear: "清空", exportCsv: "导出 CSV",
+          exportDone: "导出完成", rows: "128 行", savedTo: "已保存到 下载文件夹",
+          savedN: "已保存 10 个文件", downloads: "下载",
+          folder: "2026-10-15 14-32-08 秋天第一件风衣的 5 套通勤穿搭",
+          searchQ: "秋季穿搭",
+        },
+        en: {
+          brand: "RedNote Exporter",
+          ext: "Chrome Extension",
+          tabList: "Export Note List",
+          tabPost: "Download Single Post",
+          notes: [
+            ["5 easy fall trench coat looks", "saltyko", "44k", "13k", "883", "2026-09-28"],
+            ["Petite & pear-shaped: fall styling rules", "dressed.today", "48k", "17k", "1.4k", "2026-10-02"],
+            ["8 hidden cafés in Hangzhou", "pear.on.the.road", "21k", "9.6k", "512", "2026-10-06"],
+            ["Dinner for one in 15 minutes", "kitchen.lin", "32k", "24k", "1.1k", "2026-10-09"],
+            ["Film camera basics for beginners", "slowshutter", "16k", "8.8k", "640", "2026-10-11"],
+            ["Cozy rental makeover under $70", "into.the.light", "67k", "51k", "2.3k", "2026-10-12"],
+            ["Fall skincare order, in one chart", "skin.notes", "29k", "36k", "970", "2026-10-13"],
+          ],
+          s1: {
+            tag: ["download", "Download Single Post"],
+            h1: ["Every image & video,", "saved in one click"],
+            sub: "Open any RedNote post, tick what you want, and download it all into a single folder.",
+            bullets: [["video", "Watermark-free original video when available"], ["image", "Works on image posts and video posts"], ["check", "Pick only the files you need"]],
+          },
+          s2: {
+            tag: ["folder", "Auto-organized"],
+            h1: ["One post,", "one tidy folder"],
+            sub: "Each download goes into a folder named after the time and the post title, with files numbered in order.",
+            bullets: [["folder", "Folder named by time + post title"], ["list", "Files numbered image-1, image-2…"], ["check", "Never overwrites existing files"]],
+          },
+          s3: {
+            tag: ["list", "Export Note List"],
+            h1: ["Scroll as usual,", "export CSV anytime"],
+            sub: "Browse the home feed, search results or a profile — every note you scroll past is captured and de-duplicated.",
+            bullets: [["search", "Home feed · Search · Profiles"], ["check", "Auto de-dup with a live count"], ["heart", "Titles, authors and engagement data"]],
+          },
+          s4: {
+            tag: ["file", "CSV spreadsheet"],
+            h1: ["A clean spreadsheet,", "ready to analyze"],
+            sub: "Opens straight in Excel, Numbers or Google Sheets — handy for content research and competitor tracking.",
+            bullets: [["file", "Title, author, publish date"], ["heart", "Likes · collects · comments · shares"], ["link", "Cover, profile and all image links"]],
+          },
+          s5: {
+            title: "Three steps. Nothing leaves your browser.",
+            steps: [
+              ["Open RedNote", "The home feed, search results, a profile, or any post"],
+              ["Click the icon", "Choose Export Note List or Download Single Post"],
+              ["Export or download", "The CSV, images and video are saved to your computer"],
+            ],
+            trust: [["lock", "No sign-up"], ["shield", "No data collected"], ["cloudoff", "No external servers"], ["globe", "English & Chinese UI"]],
+          },
+          marquee: {
+            h1: ["Save RedNote images & videos.", "Export note lists to CSV."],
+            chips: [["folder", "One folder per post"], ["list", "Feed · Search · Profiles"], ["shield", "100% local"]],
+          },
+          small: ["RedNote Exporter", "Image & video download · CSV export"],
+          post: { title: "5 easy fall trench coat looks", author: "saltyko", time: "2026-09-28" },
+          videoUnit: "video", imageUnit: "images", videoWord: "Video", imagesWord: "Images",
+          deselAll: "Deselect", dlSel: (n) => `Download · ${n}`,
+          connected: "Connected", captured: "Captured", unit: "items", capturing: "Capturing…",
+          dedup: "140 received · 12 duplicate(s) skipped",
+          pageHint: "Scroll down on the page — newly loaded notes are captured automatically",
+          clear: "Clear", exportCsv: "Export CSV",
+          exportDone: "Export complete", rows: "128 rows", savedTo: "Saved to your Downloads folder",
+          savedN: "Saved 10 files", downloads: "Downloads",
+          folder: "2026-10-15 14-32-08 5 easy fall trench coat looks",
+          searchQ: "fall outfits",
+        },
+      }[LANG];
+
+      // ---------------------------------------------------------- components
+      const copyCol = (c, top = 0) => `
+        <div class="copy" style="top:${top}px">
+          <div class="brandrow">${logo(54)}<span class="name">${T.brand}</span><span class="pill">${T.ext}</span></div>
+          <div class="tag">${ic(c.tag[0], 17, 2.2)}${c.tag[1]}</div>
+          <h1>${c.h1[0]}<span class="red">${c.h1[1]}</span></h1>
+          <p class="sub">${c.sub}</p>
+          <div class="bullets">${c.bullets.map(([i, t]) => `<div class="bullet"><span class="bi">${ic(i, 19, 2)}</span>${t}</div>`).join("")}</div>
+        </div>`;
+
+      const popupShell = (tab, body, foot) => `
+        <div class="ph">
+          <div class="b">${logo(22, false)}${T.brand}</div>
+          <div class="lang"><span class="${LANG === "zh" ? "on" : ""}">中</span><span class="${LANG === "en" ? "on" : ""}">EN</span></div>
+        </div>
+        <div class="tabs">
+          <div class="${tab === "list" ? "on" : ""}">${ic("list", 15)}${T.tabList}</div>
+          <div class="${tab === "post" ? "on" : ""}">${ic("download", 15)}${T.tabPost}</div>
+        </div>
+        <div class="pbody">${body}</div>
+        ${foot ? `<div class="pfoot">${foot}</div>` : ""}`;
+
+      const popup = (inner, x, y, scale = 1, extra = "") =>
+        `<div class="popup abs" style="left:${x}px;top:${y}px;transform:scale(${scale});${extra}">${inner}</div>`;
+
+      // Post tab, everything selected (1 video + 9 images).
+      const postTab = () => {
+        const p = T.post;
+        const imgs = Array.from({ length: 9 }, (_, i) =>
+          photo(i + 2, "aspect-ratio:1;border-radius:4px;", `<span class="num">${i + 1}</span><span class="check">${ic("check", 12, 3)}</span>`, "sel"),
+        ).join("");
+        const body = `
+          <div style="padding:14px">
+            <div style="display:flex;align-items:center;gap:10px">
+              ${photo(6, "width:34px;height:34px;border-radius:50%")}
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13px">${p.author}</div>
+                <div style="font-size:11px;color:var(--ink3)">${p.time}</div>
+              </div>
+              <span style="color:var(--ink2)">${ic("link", 15)}</span>
+            </div>
+            <div style="font-weight:600;font-size:13.5px;line-height:1.35;margin:10px 0 14px">${p.title}</div>
+            <div style="font-size:12px;color:var(--ink2);margin-bottom:10px"><b style="color:var(--brand)">1</b> ${T.videoUnit} · <b style="color:var(--brand)">9</b> ${T.imageUnit}</div>
+            ${photo(0, "height:132px;border-radius:4px;", `
+              <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;display:flex;align-items:center;justify-content:center;padding-left:2px">${ic("play", 20, 0, 'fill="currentColor"')}</span>
+              <span style="position:absolute;right:6px;bottom:6px;font-size:10px;font-weight:600;color:#fff;background:rgba(0,0,0,.5);border-radius:3px;padding:2px 6px">01:24</span>
+              <span style="position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:2px;font-size:10px;font-weight:700;color:#fff;background:var(--brand);border-radius:3px;padding:2px 6px">${ic("video", 12)}${T.videoWord}</span>
+              <span class="check">${ic("check", 12, 3)}</span>`, "sel")}
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink2);margin-top:6px"><span>1080×1920</span><span>38.2 MB</span></div>
+            <div style="font-size:11px;font-weight:600;color:var(--ink2);margin:16px 0 10px">${T.imagesWord}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">${imgs}</div>
+          </div>`;
+        const foot = `
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink2)">${ic("check", 13)}${T.deselAll}</span>
+          <span class="btn p" style="margin-left:auto">${ic("download", 15)}${T.dlSel(10)}</span>`;
+        return popupShell("post", body, foot);
+      };
+
+      // List tab, mid-capture.
+      const listTab = () => {
+        const rows = T.notes.map((n, i) => `
+          <div class="row">
+            ${photo(i + 3, "width:46px;height:60px;border-radius:4px;flex-shrink:0")}
+            <div style="flex:1;min-width:0">
+              <div class="t">${n[0]}</div>
+              <div class="a">${photo(i + 5, "width:14px;height:14px;border-radius:50%")}<span>${n[1]}</span></div>
+              <div class="st">
+                <span>${ic("heart", 12)}${n[2]}</span><span>${ic("star", 12)}${n[3]}</span><span>${ic("comment", 12)}${n[4]}</span>
+                <span style="margin-left:auto;color:var(--ink3)">${n[5]}</span>
+              </div>
+            </div>
+          </div>`).join("");
+        const body = `
+          <div style="display:flex;align-items:center;gap:7px;padding:11px 14px 3px;font-size:11.5px;color:var(--ink2);background:#f7f7f8">
+            <span style="width:7px;height:7px;border-radius:50%;background:#1bc46a;box-shadow:0 0 0 3px rgba(27,196,106,.18)"></span><b style="font-weight:600">${T.connected}</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:11px 14px;border-bottom:1px solid var(--line);background:#f7f7f8">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--ink2)">${T.captured}</div>
+              <div style="display:flex;align-items:baseline;gap:5px;margin-top:2px"><b style="font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1">128</b><span style="font-size:13px;font-weight:600;color:var(--ink2)">${T.unit}</span></div>
+              <div style="font-size:11.5px;color:var(--ink3);margin-top:2px">${T.dedup}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--brand);background:var(--tint);padding:5px 10px;border-radius:99px">
+              <span style="width:7px;height:7px;border-radius:50%;background:var(--brand)"></span>${T.capturing}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;padding:10px 16px 4px;font-size:11.5px;color:var(--ink2)"><span style="color:var(--ink3)">${ic("arrowdown", 13)}</span>${T.pageHint}</div>
+          ${rows}`;
+        const foot = `
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink2)">${ic("file", 13)}128 ${T.unit}</span>
+          <span class="btn s" style="margin-left:auto">${ic("x", 15)}${T.clear}</span>
+          <span class="btn p">${ic("arrowdown", 15)}${T.exportCsv}</span>`;
+        return popupShell("list", body, foot);
+      };
+
+      // Faded browser window behind the popup: a feed grid or a post page.
+      const browser = (kind, x, y, w, h) => {
+        const urlText = kind === "post" ? "www.xiaohongshu.com/explore/…" : kind === "search" ? `www.xiaohongshu.com/search_result?keyword=${T.searchQ}` : "www.xiaohongshu.com/explore";
+        let content;
+        if (kind === "post") {
+          content = `<div style="display:flex;height:100%">
+            ${photo(0, "width:58%;height:100%")}
+            <div style="flex:1;padding:22px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">${photo(6, "width:36px;height:36px;border-radius:50%")}<div style="height:10px;width:90px;border-radius:5px;background:#e9e7e6"></div><div style="margin-left:auto;height:28px;width:64px;border-radius:99px;background:var(--brand);opacity:.85"></div></div>
+              ${[92, 80, 96, 70, 88, 60].map((wd) => `<div style="height:9px;width:${wd}%;border-radius:5px;background:#eeecea;margin-bottom:12px"></div>`).join("")}
+            </div></div>`;
+        } else {
+          const cols = Array.from({ length: 4 }, (_, c) => `<div style="flex:1;display:flex;flex-direction:column;gap:14px">${[0, 1, 2].map((r) => `
+            <div>${photo(c * 3 + r, `height:${[150, 190, 130, 170][(c + r) % 4]}px;border-radius:10px`)}
+              <div style="height:8px;width:85%;border-radius:4px;background:#eceae8;margin:9px 0 6px"></div>
+              <div style="height:8px;width:50%;border-radius:4px;background:#f0eeec"></div></div>`).join("")}</div>`).join("");
+          content = `<div style="display:flex;gap:14px;padding:18px">${cols}</div>`;
+        }
+        return `<div class="win" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;opacity:.95">
+          <div class="winbar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">${urlText}</span></div>
+          <div style="height:calc(100% - 40px);overflow:hidden">${content}</div>
+          <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(251,248,246,.55),rgba(251,248,246,0) 45%)"></div>
+        </div>`;
+      };
+
+      // ---------------------------------------------------------------- scenes
+      const scenes = {
+        s1: () => `${copyCol(T.s1)}${browser("post", 590, 96, 640, 600)}${popup(postTab(), 780, 52, 1.16)}`,
+
+        s2: () => {
+          const files = [["video-1.mp4", 0, true], ...Array.from({ length: 9 }, (_, i) => [`image-${i + 1}.jpg`, i + 2, false])];
+          const tiles = files.map(([name, seed, isVideo]) => `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+              ${photo(seed, "width:92px;height:92px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.12)", isVideo ? `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff">${ic("play", 28, 0, 'fill="currentColor" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))"')}</span>` : "")}
+              <span style="font-size:12.5px;color:#3a3a40">${name}</span>
+            </div>`).join("");
+          return `${copyCol(T.s2)}
+            <div class="win" style="left:600px;top:110px;width:620px;height:520px">
+              <div class="winbar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
+                <span class="wintitle" style="display:flex;align-items:center;gap:7px;color:#3a3a40"><span style="color:#5b9bf3">${ic("folder", 16, 2, 'fill="#cfe2fd"')}</span>${T.folder}</span></div>
+              <div style="display:flex;height:calc(100% - 40px)">
+                <div style="width:132px;background:#f6f5f4;border-right:1px solid #ebe9e7;padding:16px 12px;font-size:12.5px;color:#6b6b72;display:flex;flex-direction:column;gap:12px">
+                  <div style="font-size:11px;color:#a5a5ab;font-weight:600">${LANG === "zh" ? "个人收藏" : "Favorites"}</div>
+                  <div style="display:flex;align-items:center;gap:6px;background:#e7e5e3;border-radius:6px;padding:5px 7px;color:#2b2b30;font-weight:600">${ic("download", 14)}${T.downloads}</div>
+                  <div style="display:flex;align-items:center;gap:6px;padding:0 7px">${ic("folder", 14)}${LANG === "zh" ? "文稿" : "Documents"}</div>
+                  <div style="display:flex;align-items:center;gap:6px;padding:0 7px">${ic("image", 14)}${LANG === "zh" ? "图片" : "Pictures"}</div>
+                </div>
+                <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:22px 8px;padding:24px 18px;align-content:start">${tiles}</div>
+              </div>
+            </div>
+            <div class="card" style="left:548px;top:578px;width:360px">
+              <div class="okc">${ic("check", 26, 2.6)}</div>
+              <div class="h">${T.savedN}</div>
+              <div class="chip"><span class="ci">${ic("folder", 16)}</span><span>${T.downloads}/${T.folder}</span></div>
+            </div>`;
+        },
+
+        s3: () => `${copyCol(T.s3)}${browser("search", 590, 96, 640, 600)}${popup(listTab(), 780, 52, 1.16)}`,
+
+        s4: () => {
+          const headers = ["Title", "Author Name", "Publish Time", "Like Count", "Collect Count", "Comment Count", "Shared Count", "Cover URL"];
+          const widths = [36, 214, 110, 98, 80, 92, 104, 96, 140];
+          const toNum = (s) => {
+            if (LANG === "zh") return s.endsWith("w") ? String(Math.round(parseFloat(s) * 10000)) : s.endsWith("k") ? String(Math.round(parseFloat(s) * 1000)) : s;
+            return s.endsWith("k") ? String(Math.round(parseFloat(s) * 1000)) : s;
+          };
+          const shares = ["1204", "2310", "865", "3011", "742", "6120", "4475"];
+          const body = T.notes.map((n, i) => `<tr><td class="rn">${i + 2}</td><td>${n[0]}</td><td>${n[1]}</td><td>${n[5]}</td><td class="n">${toNum(n[2])}</td><td class="n">${toNum(n[3])}</td><td class="n">${toNum(n[4])}</td><td class="n">${shares[i]}</td><td class="l">https://sns-webpic-qc.xhscdn.com/…</td></tr>`).join("");
+          const letters = "ABCDEFGH".split("").map((l) => `<th>${l}</th>`).join("");
+          return `${copyCol(T.s4)}
+            <div class="win" style="left:600px;top:96px;width:640px;height:560px">
+              <div class="winbar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
+                <span class="wintitle" style="display:flex;align-items:center;gap:7px"><span style="color:#1f9d55">${ic("file", 15)}</span>2026-10-15 14-35-21 rednote-notes.csv</span></div>
+              <div style="height:34px;border-bottom:1px solid #e7e7ea;display:flex;align-items:center;gap:10px;padding:0 12px;font-size:12px;color:#8a8a90"><b style="color:#55555c;font-style:italic;font-family:Georgia,serif">fx</b><span style="color:#2b2b30">Title</span></div>
+              <table>
+                <colgroup>${widths.map((w) => `<col style="width:${w}px">`).join("")}</colgroup>
+                <tr><th></th>${letters}</tr>
+                <tr class="hdr"><td class="rn" style="background:#f6f6f7;color:#8a8a90;font-weight:400">1</td>${headers.map((h) => `<td>${h}</td>`).join("")}</tr>
+                ${body}
+                ${[9, 10, 11, 12, 13, 14].map((r) => `<tr><td class="rn">${r}</td>${"<td></td>".repeat(8)}</tr>`).join("")}
+              </table>
+              <div style="position:absolute;right:0;top:74px;bottom:0;width:120px;background:linear-gradient(90deg,rgba(255,255,255,0),#fff)"></div>
+            </div>
+            <div class="card" style="left:580px;top:560px;width:360px">
+              <div class="okc">${ic("check", 26, 2.6)}</div>
+              <div class="h">${T.exportDone}</div>
+              <div class="chip"><span class="ci">${ic("file", 16)}</span><span>2026-10-15 14-35-21 rednote-notes.csv</span><b style="color:var(--ink2);font-weight:600">${T.rows}</b></div>
+              <div style="font-size:12.5px;color:var(--ink2);margin-top:9px">${T.savedTo}</div>
+            </div>`;
+        },
+
+        s5: () => {
+          const ill = [
+            // 1: a RedNote page
+            `<div style="position:absolute;left:22px;right:22px;top:20px;bottom:-10px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:12px;display:flex;gap:8px">
+               ${[0, 1, 2].map((c) => `<div style="flex:1;display:flex;flex-direction:column;gap:8px">${photo(c * 2 + 1, `height:${[70, 92, 60][c]}px;border-radius:6px`)}${photo(c * 2 + 2, `height:${[80, 54, 96][c]}px;border-radius:6px`)}</div>`).join("")}
+             </div>`,
+            // 2: toolbar with the extension icon being clicked
+            `<div style="position:absolute;left:22px;right:22px;top:26px;height:46px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;align-items:center;gap:12px;padding:0 14px">
+               <div style="flex:1;height:22px;border-radius:6px;background:#f1efed"></div>
+               <span style="color:#a5a5ab">${ic("puzzle", 20, 1.8)}</span>
+               <span style="position:relative;display:flex;border-radius:9px;box-shadow:0 0 0 4px rgba(255,36,66,.18)">${logo(30, false)}</span>
+             </div>
+             <span style="position:absolute;right:30px;top:62px;color:#1d1d1f;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))">${ic("cursor", 28, 1.2, 'stroke="#fff"')}</span>
+             <div style="position:absolute;left:22px;right:22px;top:96px;height:60px;background:var(--header);border-radius:10px 10px 0 0;display:flex;align-items:flex-end;padding:0 10px;white-space:nowrap;font-size:11px">
+               <div style="flex:1;color:#fff;font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:600;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:10px;border-bottom:2.5px solid var(--brand)">${ic("list", 13)}${T.tabList}</div>
+               <div style="flex:1;color:#8b8b92;font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:600;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:12px">${ic("download", 13)}${T.tabPost}</div>
+             </div>`,
+            // 3: saved files
+            `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px">
+               <div style="width:84px;height:104px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#1f9d55">${ic("file", 34, 1.6)}<b style="font-size:13px;color:#1f9d55">CSV</b></div>
+               <div style="position:relative;width:104px;height:104px">
+                 ${photo(4, "position:absolute;left:0;top:10px;width:76px;height:88px;border-radius:8px;transform:rotate(-8deg);box-shadow:0 6px 16px rgba(0,0,0,.12)")}
+                 ${photo(1, "position:absolute;left:26px;top:4px;width:76px;height:88px;border-radius:8px;transform:rotate(6deg);box-shadow:0 6px 16px rgba(0,0,0,.14)", `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff">${ic("play", 26, 0, 'fill="currentColor"')}</span>`)}
+               </div>
+               <span style="position:absolute;right:20px;bottom:18px;width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(255,36,66,.35)">${ic("download", 20, 2.4)}</span>
+             </div>`,
+          ];
+          return `
+            <div class="abs" style="left:0;right:0;top:70px;display:flex;flex-direction:column;align-items:center;gap:18px">
+              <div class="brandrow" style="margin:0">${logo(46)}<span class="name">${T.brand}</span><span class="pill">${T.ext}</span></div>
+              <div style="font-size:${LANG === "zh" ? 46 : 42}px;font-weight:800;letter-spacing:-1.2px">${T.s5.title}</div>
+            </div>
+            <div class="steps">${T.s5.steps.map(([tt, ss], i) => `<div class="step"><div class="ill">${ill[i]}</div><div class="k">${i + 1}</div><div class="tt">${tt}</div><div class="ss">${ss}</div></div>`).join("")}</div>
+            <div class="trust">${T.s5.trust.map(([i, t]) => `<div>${ic(i, 19, 2)}${t}</div>`).join("")}</div>`;
+        },
+
+        small: () => `
+          <div class="abs" style="left:0;top:0;right:0;bottom:0;background:
+              radial-gradient(260px 200px at 100% 0%, rgba(255,36,66,.16), transparent 70%),
+              radial-gradient(240px 180px at 0% 100%, rgba(255,36,66,.08), transparent 70%)"></div>
+          <div class="abs" style="left:36px;top:0;bottom:0;right:28px;display:flex;flex-direction:column;justify-content:center">
+            ${logo(78)}
+            <div style="font-size:${LANG === "zh" ? 40 : 36}px;font-weight:800;letter-spacing:-1px;margin-top:22px;line-height:1.1">${T.small[0]}</div>
+            <div style="font-size:${LANG === "zh" ? 19 : 17}px;font-weight:600;color:var(--brand);margin-top:12px">${T.small[1]}</div>
+          </div>`,
+
+        marquee: () => {
+          const m = T.marquee;
+          return `
+            <div class="abs" style="left:88px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center">
+              <div class="brandrow" style="margin-bottom:28px">${logo(58)}<span class="name" style="font-size:23px">${T.brand}</span><span class="pill">${T.ext}</span></div>
+              <div style="font-size:${LANG === "zh" ? 48 : 44}px;font-weight:800;letter-spacing:-1.3px;line-height:1.22">${m.h1[0]}<br><span style="color:var(--brand)">${m.h1[1]}</span></div>
+              <div style="display:flex;gap:10px;margin-top:32px;flex-wrap:wrap">${m.chips.map(([i, t]) => `<span style="display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:#3a3a40;background:#fff;border-radius:99px;padding:9px 16px;box-shadow:0 0 0 1px rgba(0,0,0,.06)"><span style="color:var(--brand)">${ic(i, 17, 2.2)}</span>${t}</span>`).join("")}</div>
+            </div>
+            ${popup(listTab(), 790, 72, 0.92)}
+            ${popup(postTab(), 1000, 36, 0.92)}`;
+        },
+      };
+
+      // ----------------------------------------------------------------- mount
+      document.documentElement.style.width = W + "px";
+      document.documentElement.style.height = H + "px";
+      document.body.className = LANG;
+      const root = document.getElementById("root");
+      root.className = "canvas " + LANG;
+      root.style.width = W + "px";
+      root.style.height = H + "px";
+      root.innerHTML = `<div class="glow"></div>${(scenes[ID] || scenes.s1)()}`;
+    </script>
+  </body>
+</html>
