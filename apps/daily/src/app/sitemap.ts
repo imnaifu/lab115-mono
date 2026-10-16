@@ -3,7 +3,6 @@ import { SITE } from "@/lib/config";
 import { DEFAULT_LANG, href, LANGS } from "@/lib/lang";
 import {
   ABOUT_PATH,
-  articlePath,
   dayPath,
   SOURCES_PATH,
   sourcePath,
@@ -13,7 +12,7 @@ import {
 import { CATEGORIES, categoryOf } from "@/lib/categories";
 import { hasSourcePage, SOURCE_PAGES_LIVE, SOURCES } from "@/lib/sources";
 import { archiveMonths, archivePath } from "@/lib/paging";
-import { hasTopicPage, topicPages } from "@/lib/topics";
+import { hasTopicPage } from "@/lib/topics";
 import { listDates, readDigest, shownArticles } from "@/lib/store";
 
 /**
@@ -178,15 +177,16 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
    * one day that page is not one of them. It appears tomorrow, when the next digest
    * lands and it becomes self-canonical.
    *
-   * ITS ARTICLES ARE STILL LISTED. They are not duplicates of anything: the front
-   * page holds summaries, an article page holds one summary plus its cover, source
-   * and poster, and no other URL carries that. Holding those back too would delay
-   * the deepest and most numerous pages on the site for no reason at all.
+   * ARTICLES ARE NOT LISTED AT ALL ANY MORE. They were — on the reasoning that
+   * no other URL carries one summary with its cover and poster — and the result
+   * was ~600 of them in front of Google, none indexed, and the home page dragged
+   * down with them. Article pages are `noindex` now (see the note on `robots`
+   * in the article route), and a sitemap that lists a noindex page is asking a
+   * crawler to spend a fetch on being told no.
    *
-   * The digests are read rather than inferred from the date list, because the
-   * article ids only exist inside them. That is one file open per archived day on
-   * a request a crawler makes rarely — the same thing the home page's list of
-   * days already does, and it is not on the reader's path.
+   * The digests are still read, because the source and topic counts below
+   * decide which topic pages exist — and those counts only live inside them.
+   * That is one file open per archived day on a request a crawler makes rarely.
    */
   /**
    * Counted inside the loop below rather than by calling `articlesBySource`.
@@ -226,7 +226,6 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     // Published only: an article with no take has no page, and asking a crawler
     // to index one is asking it to index a 404.
     for (const article of digest ? shownArticles(digest) : []) {
-      pages.push(entry(articlePath(date, article), stamp(date)));
       sourceCount.set(
         article.sourceId,
         (sourceCount.get(article.sourceId) ?? 0) + 1,
@@ -243,7 +242,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   /**
-   * Every topic that has a page, and every page of it.
+   * Every topic that has a page — its FIRST page only.
    *
    * `hasTopicPage` IS THE SAME GATE THE ROUTE USES, read from the same module —
    * the reason it is a function in lib/topics rather than a comparison written
@@ -259,9 +258,11 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
    * that last had a piece in June has not changed since June, and claiming
    * otherwise spends a crawl on all eight of them every time any digest lands.
    *
-   * EVERY PAGE IS LISTED, not just the first: each is self-canonical and holds
-   * takes the others do not, so leaving pages 2 and up out would hide most of a
-   * long topic from the index — the same argument as the archive's pages above.
+   * ONLY PAGE 1. Every page used to be listed, on the grounds that page 2 and
+   * up hold takes the others do not — but what they hold is article cards, and
+   * the articles themselves are out of the index now. Those pages are `noindex`
+   * (see the paged topic route), so listing them would be the same
+   * listed-but-refused disagreement the article note above removes.
    */
   let anyTopic = false;
   for (const category of CATEGORIES) {
@@ -269,9 +270,7 @@ async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     if (!hasTopicPage(count)) continue;
     anyTopic = true;
     const stamped = stamp(topicLatest.get(category.id) ?? dates[0]);
-    for (let page = 1; page <= topicPages(count); page++) {
-      pages.push(entry(topicPath(category.id, page), stamped));
-    }
+    pages.push(entry(topicPath(category.id), stamped));
   }
 
   /**

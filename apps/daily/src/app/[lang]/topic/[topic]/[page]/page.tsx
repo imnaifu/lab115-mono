@@ -31,7 +31,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const t = strings(pageLang);
     return { title: `${t.notFoundTitle} · ${t.brand}` };
   }
-  return topicMetadata(pageLang, topic, page);
+  /* Page 2 and up stay out of the index: they are deeper slices of the same
+     list, made of article cards whose own pages are noindex — see the note on
+     `robots` in the article route. Page 1 (the other route) stays indexed. */
+  return {
+    ...(await topicMetadata(pageLang, topic, page)),
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function TopicPagedPage({

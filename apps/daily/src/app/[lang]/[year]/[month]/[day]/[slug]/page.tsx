@@ -138,6 +138,25 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${heading} · ${t.brand}`,
     description: lead,
+    /**
+     * NOT INDEXED, ON PURPOSE — and `follow` stays on.
+     *
+     * 2026-10-15 Search Console: 0 of 716 Chinese URLs indexed, the English
+     * side falling 74 → 61 → 46, and the home page itself "crawled — not
+     * indexed". No manual action. That is a site-level judgement, and these
+     * ~600 pages are what it is judging: each is a few hundred words rewriting
+     * someone else's article. Tags were never the problem — they were all
+     * correct while the index emptied.
+     *
+     * So the index is narrowed to the pages that are this site's own work —
+     * the day, the topics, the home page — and these drop out. Declaring
+     * `robots` replaces the root layout's object whole (see layout.tsx), so
+     * the `googleBot` extras there do not leak through to contradict this.
+     *
+     * `follow` because the links out of here — to the day, the topic, the
+     * neighbours — are still worth a crawler's walk.
+     */
+    robots: { index: false, follow: true },
     // Both languages, not just this one — see alternatesFor. `path` above is
     // already language-prefixed; this wants the bare form.
     alternates: alternatesFor(pageLang, canonicalPath),

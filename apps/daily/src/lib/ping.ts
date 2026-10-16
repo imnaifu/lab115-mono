@@ -6,8 +6,7 @@ import {
   WEBSUB_HUB,
 } from "./config";
 import { href, LANGS } from "./lang";
-import { articlePath, dayPath } from "./links";
-import { shownArticles } from "./store";
+import { dayPath } from "./links";
 import type { Digest } from "./types";
 
 /**
@@ -40,40 +39,34 @@ const PING_TIMEOUT_MS = 10_000;
 /**
  * Every URL this digest made new or changed, in both languages.
  *
- * THE DAY PAGE AND ITS ARTICLES, and deliberately not `/` or the archive. Those
+ * THE DAY PAGE ONLY. Its articles were submitted too until they became
+ * `noindex` (see the note on `robots` in the article route) — submitting a page
+ * that refuses indexing spends a crawl to be told no.
+ *
+ * And deliberately not `/` or the archive. Those
  * two change today as well — but they are LISTS, and their content is the day
  * page's content seen from further away. Submitting them would spend a crawl on
  * a page whose novelty is entirely in the pages already named here, and the
  * sitemap's `lastModified` covers them for the crawler that wants the overview.
  *
- * Built through `href`/`dayPath`/`articlePath` rather than assembled from
+ * Built through `href`/`dayPath` rather than assembled from
  * strings, because a submitted URL that does not match the page's own
  * `<link rel="canonical">` is worse than no submission: it asks an index to
  * store an address this site does not claim. Those helpers are what every
  * canonical on the site is already built from, so the two cannot drift.
  *
- * Only published articles. `shownArticles` is the same filter the sitemap uses —
- * an article with no take has no page, and submitting one is submitting a 404.
  */
 function publishedUrls(digest: Digest): string[] {
-  const urls: string[] = [];
-  for (const lang of LANGS) {
-    urls.push(`${SITE}${href(lang, dayPath(digest.date))}`);
-    for (const article of shownArticles(digest)) {
-      urls.push(`${SITE}${href(lang, articlePath(digest.date, article))}`);
-    }
-  }
-  return urls;
+  return LANGS.map((lang) => `${SITE}${href(lang, dayPath(digest.date))}`);
 }
 
 /**
  * Submit a batch of URLs to IndexNow.
  *
  * ONE POST FOR THE WHOLE DAY, which is what the protocol's batch form is for:
- * the limit is 10,000 URLs per request and a busy day here produces around
- * forty-two (twenty-odd articles plus a day page, twice for the two languages).
- * The single-URL GET form exists too and would be forty-two requests to say one
- * thing.
+ * the limit is 10,000 URLs per request and a day here produces two (the day
+ * page, once per language). The single-URL GET form exists too and would be a
+ * request per URL to say one thing.
  *
  * `host` is the BARE HOSTNAME — no scheme, no trailing slash — and it must be
  * the host every URL in the list belongs to, or the whole batch is rejected as
