@@ -178,17 +178,20 @@ export const MODELS = {
 export const MODEL: string = MODELS.flash;
 
 /**
- * The model that writes the takes — pro since 2026-10-14, while scoring (and
- * the photo caption) stay on `MODEL`.
+ * The model that writes the takes — flash again since 2026-10-19, so for now
+ * all three passes (scoring, photo caption, take) run on flash. Kept as its
+ * own constant because the writer is expected to move between flash and pro
+ * as either one gets a new release; this is the line to flip.
  *
  * WHY THE SPLIT IS SAFE ONE WAY ONLY: the publish floor is calibrated to
  * flash's score distribution, so moving the scorer means re-deriving
  * PUBLISH_MIN_SCORE; the take has no threshold downstream of it, so the writer
  * can change on its own. Haiku wrote them for two days and read worse (see
- * SUMMARY_BY_CLAUDE); flash came back for a day; pro is the next try, at about
- * $1.5 a month for ten takes a day against flash's $0.4.
+ * SUMMARY_BY_CLAUDE); flash came back for a day; pro wrote them from 10-14, at
+ * about $1.5 a month for ten takes a day against flash's $0.4; on 10-19 flash
+ * had a new release and took the takes back.
  */
-export const SUMMARY_DEEPSEEK_MODEL: string = MODELS.pro;
+export const SUMMARY_DEEPSEEK_MODEL: string = MODELS.flash;
 
 /**
  * THE SUMMARY PASS IS NOT `MODEL`. Scoring stays on flash; the take a reader

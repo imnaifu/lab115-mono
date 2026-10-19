@@ -1623,12 +1623,15 @@ date         生成时刻(UTC)   窗口
 
 ## 摘要模型：DeepSeek
 
-**打分和图片说明用 `deepseek-v4-flash`（`MODEL`），摘要用 `deepseek-v4-pro`（`SUMMARY_DEEPSEEK_MODEL`）。**
+**打分、图片说明、摘要目前都用 `deepseek-v4-flash`。** 打分和图片说明读 `MODEL`，摘要读
+`SUMMARY_DEEPSEEK_MODEL`。两个常量分开放，是因为摘要模型会随 flash / pro 的新版本来回换，
+换的时候只改 `SUMMARY_DEEPSEEK_MODEL` 那一行。
 
 摘要模型的更换经过：
 
 - 2026-10-12：换成 Claude Haiku。
 - 2026-10-14：效果不好，换回 flash；同一天又改成 pro 试用。
+- 2026-10-19：flash 出了新版本，换回 flash。
 
 打分不能跟着随便换，因为发布门槛 30 分是按 flash 的分数分布定的，换打分模型就得重新校准门槛。
 摘要后面没有任何门槛，所以可以单独换。
@@ -1909,7 +1912,7 @@ docker-compose 注入。整张表就这么长：
 | `TZ` | `America/Los_Angeles` | 出版时区。与容器时钟的 `TZ` 环境变量同名但不同物 |
 | `WINDOW_DAYS` / `WINDOW_ANCHOR_HOUR` | `1` / `7` | 每日窗口的长度与分界小时，后者应与 `CRON` 的小时一致 |
 | `MODEL` / `DEEPSEEK_BASE_URL` | `deepseek-v4-flash` / `https://api.deepseek.com` | 换 OpenAI 兼容服务商改这两个 |
-| `SUMMARY_DEEPSEEK_MODEL` | `deepseek-v4-pro` | 写摘要的模型；打分和图片说明仍用 `MODEL` |
+| `SUMMARY_DEEPSEEK_MODEL` | `deepseek-v4-flash` | 写摘要的模型；打分和图片说明用 `MODEL` |
 | `BODY_CHAR_LIMIT` | `80000` | 单篇正文喂给模型的上限 |
 | `REQUEST_CONCURRENCY` | `8` | 同时在飞的模型请求数（在 `src/lib/summarize.ts`，和 `BATCH_SIZE` 放一起） |
 
