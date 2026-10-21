@@ -155,6 +155,32 @@ services:
       # Next.js listens on 3000 inside the container
       - traefik.http.services.daily.loadbalancer.server.port=3000
 
+  # No env beyond the defaults and no volume: the game is stateless, and the
+  # story templates are compiled into the server bundle (apps/madlibs/README.md).
+  madlibs:
+    build:
+      context: ./apps/madlibs
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.madlibs-http.entryPoints=http
+      - traefik.http.routers.madlibs-http.rule=Host(`madlibs.lab115.com`)
+      - traefik.http.routers.madlibs-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.madlibs-https.entryPoints=https
+      - traefik.http.routers.madlibs-https.rule=Host(`madlibs.lab115.com`)
+      - traefik.http.routers.madlibs-https.tls=true
+      - traefik.http.routers.madlibs-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.madlibs-https.middlewares=gzip
+      # Next.js listens on 3000 inside the container
+      - traefik.http.services.madlibs.loadbalancer.server.port=3000
+
   # Self-hosted analytics at stats.lab115.com, running ALONGSIDE GA rather than
   # instead of it. GA's script barely loads from mainland China, so a reader
   # there was invisible; this one is served from our own domain through the same

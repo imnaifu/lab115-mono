@@ -1,0 +1,74 @@
+/* ==========================================================================
+   madlibs.lab115.com — tokens only; every rule lives on an element.
+
+   Same arrangement as apps/home: the semantic tokens are declared light and
+   re-declared under `prefers-color-scheme: dark`, so utilities like `bg-surface`
+   flip with the OS and no `dark:` prefix appears in the JSX.
+   ========================================================================== */
+
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #fffaf3;
+  --color-card: #ffffff;
+  /* All ≥ 4.5:1 on `--color-surface`. */
+  --color-ink: #2b2118;
+  --color-ink-soft: #6b5d50;
+
+  /* The button colour. White text on it is 4.6:1. */
+  --color-accent: #c2410c;
+  --color-accent-ink: #ffffff;
+  /* The highlight behind a filled word in the revealed story. */
+  --color-mark: #fde68a;
+  --color-mark-ink: #2b2118;
+
+  --color-line: rgb(43 33 24 / 0.12);
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC",
+    "Microsoft YaHei", system-ui, sans-serif;
+
+  --radius-card: 20px;
+
+  /* The reveal: the story rises in rather than snapping into place. */
+  --animate-rise: rise 0.45s ease-out both;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #17120d;
+    --color-card: #231b14;
+    --color-ink: #f5ede4;
+    --color-ink-soft: #bfae9c;
+    --color-accent: #fb923c;
+    --color-accent-ink: #1c120a;
+    --color-mark: #854d0e;
+    --color-mark-ink: #fff7e6;
+    --color-line: rgb(255 255 255 / 0.14);
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -14,6 +14,7 @@ repo/
 │   │   ├── public/
 │   │   └── src/{app,components,data,hooks,utils,i18n.ts,icons.ts,index.css}
 │   ├── daily/                # daily.lab115.com — site *and* cron in one container
+│   ├── madlibs/              # madlibs.lab115.com — 疯狂填词 fill-in-the-blank stories
 │   ├── xhs-watcher/          # local worker — not deployed either
 │   └── xhs-watch-ext/        # Chrome extension — not deployed at all
 ├── docker-compose.yml        # one service per app + Traefik host routing
@@ -133,6 +134,18 @@ Categories: Length · Weight · Temperature · Volume · Area · Speed.
 [`apps/daily/README.md`](apps/daily/README.md)。
 
 Compose env：`DEEPSEEK_API_KEY`、`DAILY_GIT_TOKEN`。
+
+---
+
+## apps/madlibs
+
+`madlibs.lab115.com` —— 疯狂填词：先回答几个不带上下文的填词问题，再揭晓用这些词
+拼出的搞笑故事。第一阶段只验证玩法：固定模板、只有中文、无数据库。故事正文
+`server-only`，揭晓走一次 server action，所以揭晓前在前端看不到故事。
+产品想法和后续的视频方案在 [`apps/madlibs/doc/IDEA.md`](apps/madlibs/doc/IDEA.md)，
+代码说明在 [`apps/madlibs/README.md`](apps/madlibs/README.md)。
+
+Compose env：无。
 
 ---
 
