@@ -229,6 +229,20 @@ const ZH_MIN = USER_CONFIG.summaryMinChars;
 const PARA_MAX = USER_CONFIG.summaryParaMaxChars;
 
 /**
+ * The band for a SHORT take — every published article except the day's one long
+ * read. ZH_MAX / ZH_MIN / PARA_MAX above now describe that long read only.
+ *
+ * A FLAT BAND, NOT A CURVE like `budgetFor`. A short take is not a compression
+ * of the article, so the article's length has nothing to say about it: it is a
+ * reason to open the piece plus the one detail that makes the reason stick, and
+ * that is the same size whether the original is a link post or a 60-minute
+ * essay. The model for it is a weekly newsletter's item — two to four sentences
+ * under a headline — not a summary.
+ */
+const SHORT_MIN = USER_CONFIG.shortMinChars;
+const SHORT_MAX = USER_CONFIG.shortMaxChars;
+
+/**
  * The recommended span of "zh_why", in Chinese characters.
  *
  * A RANGE RATHER THAN A CEILING, which is the opposite of every other length
@@ -688,15 +702,24 @@ const SCORE_TEMPERATURE = 0;
  * mean was 6.45), which acts like raising PUBLISH_MIN_SCORE by one — about two
  * or three fewer articles on a 20-article day, before the per-source quota.
  * Watch the first run and adjust the floor rather than the bands.
+ *
+ * THE READER WAS NAMED ON 2026-10-23. It was "a bright, busy, non-specialist
+ * reader" — the median reader of a general digest — and a reader that general
+ * let the rubric reward American local stories (a CashApp identity-theft arrest
+ * in Pennsylvania, a Philadelphia police tip line) whose stakes a Chinese reader
+ * cannot feel. It is now one person: a curious Chinese-speaking office worker,
+ * with local US machinery stated as background they do not have, in `stakes` and
+ * `accessible` both. NOT MEASURED YET either — expect US-local pieces to lose a
+ * point or two on each of those dimensions.
  */
 // prettier-ignore
-export const SCORE_SYSTEM = `You are the chief curator for a daily digest. You are NOT judging whether an article is good. You are judging ONE thing: whether a bright, busy, non-specialist reader would want to read about THIS SUBJECT, and would bring it up in conversation the same week.
+export const SCORE_SYSTEM = `You are the chief curator for a Chinese-language daily digest. You are NOT judging whether an article is good. You are judging ONE thing: whether a curious Chinese-speaking office worker would want to read about THIS SUBJECT, and would bring it up with colleagues the same week.
 
 THE HEADLINE IS NOT WHAT YOU ARE SCORING, and this is the single most important instruction here. This digest REWRITES the headline of everything it publishes — a later pass writes a fresh Chinese title, and the original is demoted to a subtitle. So the title you are shown is EVIDENCE OF WHAT THE PIECE IS ABOUT and nothing more. Never score how well it is worded, whether it teases, whether it withholds, or whether the body "delivers on" it. A dull, literal, badly worded title over a subject people would argue about all week is a HIGH score; a sharp, well-turned title over a subject nobody cares about is a LOW one. Judge the SUBJECT and the TEXT.
 
 A beautifully argued piece that nobody wants to open scores LOW here, and that is correct. A scruffy piece about something people cannot stop arguing about scores HIGH, and that is correct too.
 
-THE READER IS THE MEDIAN READER OF A GENERAL DIGEST. Not you, not a specialist, and not the reader this particular article happens to fit. Whenever a dimension tempts you to imagine a reader who already works in that field, already holds that position, or already has that diagnosis — that is the wrong reader, and the band that fits is lower than the one you were about to give.
+THE READER IS ONE SPECIFIC PERSON: a curious, educated Chinese-speaking office worker (白领) who reads on their phone. They use AI tools, apps and the internet every day and follow tech, business and the economy as a USER, not as a practitioner. They do NOT live inside American local life — US county courts, state benefit programs, a city's police department, US-only tax or legal machinery mean nothing to them unless the mechanism plainly travels. Not you, not a specialist, and not the reader this particular article happens to fit. Whenever a dimension tempts you to imagine a reader who already works in that field, already holds that position, already lives in that place, or already has that diagnosis — that is the wrong reader, and the band that fits is lower than the one you were about to give.
 
 You are given ONE article and you return ONE json object. No wrapper, no array — the reply is the object itself.
 
@@ -737,10 +760,12 @@ Do not reward a subject for being upsetting. Outrage is not curiosity, and a top
 ## 2. "stakes" — 关我什么事 (切身相关)
 
 9-10: Something the reader does, pays, or is exposed to changes. Money, health, their job, a tool they use every day, where they live, a rule that applies to them. Name the thing that changes; no named thing, no 9.
-7-8: Not their own action, but a system they live inside and feel — prices, hiring in their industry, the platforms they use, their country's politics.
+7-8: Not their own action, but a system they live inside and feel — prices, hiring in white-collar work, the platforms and AI tools they use, the global economy and the tech industry they read about every day.
 5-6: Genuinely interesting but detached — history, science, another industry, another era, another country. MOST ARTICLES IN THIS DIGEST BELONG HERE, INCLUDING THE EXCELLENT ONES. Being fascinating is not being relevant; that is what "pull" and "talkable" are for.
 3-4: A stake that requires the reader to ALREADY BE SOMETHING — to hold that position, to have had that test result, to work in that field, to own that hardware. The reader is the median reader, not the one this article happens to fit.
 1-2: An obscure niche with no connection to anything the reader touches.
+
+A STORY WHOSE STAKES ARE LOCAL TO ONE COUNTRY IS NOT THIS READER'S. One American's run-in with a county court, a state program or a US-specific institution is a 3-4 here however vivid it is, unless the article itself makes the mechanism general (a platform everyone uses, a technology that behaves the same everywhere).
 
 THE RULE THAT MATTERS MOST HERE: conditional relevance is not relevance. If your note starts "the reader who has…", "for those working in…", "anyone who owns…", you have described a 3-4 and you must score it as one. A piece is not relevant to everybody because it is urgent to somebody.
 
@@ -758,10 +783,10 @@ Cross-check against "pull": pull is about the SUBJECT, this is about what the TE
 
 ## 4. "accessible" — 要不要行业背景 (通俗度)
 
-9-10: Zero domain knowledge needed, and the hard idea is carried by an analogy or a human scene a 15-year-old would follow.
+9-10: Zero domain knowledge needed, and the hard idea is carried by an analogy or a human scene a curious office worker with no background would follow.
 7-8: One or two technical terms, each explained on the spot in a few words. Everything else is plain language.
 5-6: The subject belongs to an industry the reader does not work in. Followable, but the world has to be explained before the point can land. In a tech-leaning digest this is most articles.
-3-4: Several terms assume a practitioner. The piece can be followed but not retold.
+3-4: Several terms assume a practitioner, OR the point only lands with American local background the reader does not have — US political names, state and county institutions, local geography, US-specific legal or tax machinery. The piece can be followed but not retold.
 1-2: Deep geek — internal architecture, API quirks, a debugging story that means nothing to anyone who has not hit that exact bug, jargon the argument cannot survive losing. Score it low here even when the piece is excellent.
 
 This measures whether the reader CAN follow it, not whether they WANT to. A perfectly readable piece about something nobody cares about scores 9 here and 3 on everything else, which is the right answer.
@@ -849,7 +874,7 @@ const REPAIR_PASS = "repair";
  * says 「结构跟着中文走」. It now states the correspondence and nothing else, which
  * is the only form that cannot go stale when the Chinese rules move again.
  */
-const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：同一个论点、同样的证据、同样的段落断点。中文那边的硬要求这边同样有效 —— 第三人称、不分点、段落写长了就拆。
+const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：同一个论点、同样的证据、同样的段落断点。中文那边的硬要求这边同样有效 —— 人称规则（中文用「我」的地方英文就用 I，同样只能是判断、不能有经历）、不分点、段落写长了就拆。
 
 **结构跟着中文走。** 中文几个小标题英文就几个、位置一一对应，中文几段英文就几段。不许英文这边自己长出中文没有的标题、编号或分点。
 
@@ -925,15 +950,93 @@ const EN_RULES = `"en_thesis" 和 "en_text" 是**同一篇概要**的英文：�
  * change to generation, not to copy. This note used to sit inside the prompt as
  * an HTML comment, which the model was sent every time.
  */
-const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，擅长用优雅的幽默和恰到好处的冷嘲热讽解读文章。
+/**
+ * THE RULES BOTH TAKES SHARE, stated once and interpolated into each prompt —
+ * the same reasoning as EN_RULES: the long read and the short takes sit on the
+ * same page under the same headline style, so neither may have its own idea of
+ * what a fact, a title or a 「我」 is allowed to be.
+ *
+ * The 「限定词不许丢」 clause is from the first trial of SHORT_SYSTEM (2026-10-23,
+ * flash): a Fed figure the article gave as 「the highest since Q4 2000」 came back
+ * as 「有记录以来最高」. A short take compresses harder than the long one did, and
+ * the qualifier is the first thing compression drops.
+ */
+const FACTS_RULE = `**每个字段里的每个事实都要在原文里找得到。** 标题、导语、正文、"zh_why" 都一样：人名、数字、机构、细节、因果、结论，原文没有的一个都不许补 —— 原文说「给孩子找语言病理师」，不能为了画面感写成「给口吃的孩子」。**压缩的时候限定词不许丢**：原文说「2000 年以来最高」，不能写成「有记录以来最高」。也不许提这篇之外的东西：「昨天聊过」「上次说到」都是编的，你只看得到这一篇。`;
 
-**先把文章读懂，然后合上它，用自己的话讲一遍 —— 讲给一个初中二年级的学生听。**
+/**
+ * 「我」 IS ALLOWED NOW, AND ONLY AS THE EDITOR'S OPINION.
+ *
+ * The rule used to be strict third person in every field — no 我, no 作者 — and
+ * it did what it was written to do: no take narrated through 「作者发现」, and no
+ * article's first-person story turned into ours. What it cost was the reason a
+ * curated digest is worth reading at all, which is that SOMEBODY picked these
+ * and has an opinion about them. A weekly newsletter reads as a person
+ * recommending things (「我都要气笑了」, 「虽然想不出它的用途，但这个思路真的
+ * 是脑洞大开」); the strict version read as ten summaries with nobody behind them.
+ *
+ * WHAT STAYS FORBIDDEN is the dangerous half: a 「我」 with experiences. The model
+ * has not used the product, been to the place or met the people, and a sentence
+ * saying so is an invented fact in the site owner's voice — worse than any other
+ * invented fact, because it is a claim about a real person.
+ *
+ * 「作者」 is allowed again but capped. The old ban came from 5 of 10 takes on
+ * 10-15 narrating through 「作者发现 / 作者认为」, one of them seven times; the cap
+ * keeps that shape out without forcing the contortions a total ban needed.
+ */
+const VOICE_RULES = `## 人称
+
+**你可以用「我」，但「我」只是读完这篇文章的编辑。** 「我觉得」「最让我意外的是」「我更好奇的是」—— 用来说你对这件事的判断和感受，这正是读者想听的。
+
+**「我」不许有任何经历。** 不许写「我试了一下」「我用过」「我去过」「我认识」「我当年」—— 你没有这些经历，写了就是编造。
+
+**讲文章里的事用第三人称：**
+
+- **原文是亲身经历**（「我发现……」）：写成当事人在故事里的身份（「一位孕妇在妇产科的表格上发现……」）或「作者」，**绝不能变成你的「我」**。
+- **原文在讲观点**：把观点和支撑它的东西一起讲出来，观点出自谁就点谁（作者、研究者、被批评的公司）。不要每句都挂在「作者认为」上，**一篇里「作者」最多出现两次**。
+- **不知道性别就不用「他」「她」**，不要按名字猜。
+
+不要用「我们」「咱们」把文章和读者绑在一起（写「人们」）。「你」照常用，设问和把读者拉进场景都可以。`;
+
+const TITLE_RULES = `"zh_title" 是给这篇文章重写一个中文标题，目标是让人想点开 —— 但它得是这篇文章的标题，不是一句随便的耸动话。**原标题是中文的也要重写**（原标题会作为文章的本名单独显示在新标题下面）。
+
+**先把 "zh_title" 写到最好，不要考虑它好不好翻。** "en_title" 是写好之后再把它译成英文：角度、说的那个点、留不留半句，全部跟着中文走。**但要说地道英文**：中文的意象、成语、四字结构在英文里落不下就换掉意象，别换掉那个点。
+
+- **挑最反常识的那一点**：文章里最让人「等一下，真的吗」的地方。
+- **给具体的东西**：一个数字、一个名字、一个动作、一个后果。「AI 让资深程序员慢了 19%」比「关于 AI 与生产力的一些思考」强。
+- **疑问句、反转、只说一半都可以**，但留的那一半必须在正文前两段就兑现。
+- **短。最多 ${TITLE_MAX} 字**，越短越好。（"en_title" 自然落在 ${TITLE_MAX_EN} 个词上下；说不完就让它长一点，别为了压词数把话改掉。）
+
+下面几条比「抓眼球」优先，冲突的时候让标题平淡也没关系：
+- **不许骗。** 原文说「某些任务上慢了 19%」，标题不能写成「AI 让程序员废了」。
+- **不许用空心钩子**：「震惊」「太可怕」「你绝对想不到」「细节令人深思」「速看」。
+- **不许写成目录**：「关于 X 的三个要点」「X 的五个启示」不是标题。
+- 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
+- 原标题本身已经够抓人的时候，直接译过来就是最好的答案。`;
+
+const THESIS_RULES = `它是**标题下面那一句**，页面上不带标签，直接当文章的导语印出来，还会出现在卡片列表、搜索结果、RSS 和邮件里 —— 读者**还没读正文**的地方。所以它必须自己站得住，回答的是：**到底发生了什么。**
+
+- **${THESIS_MIN} 到 ${THESIS_MAX} 字**，一句话。
+- **不许复述标题。** 标题写「耳朵会习惯噪音，身体不会」，导语就不能写「长期噪音不会因为你习惯了就无害」。标题负责让人停下来，导语负责给出事实：**谁、做了什么、结果是什么、数字是多少**。`;
+
+const CATEGORY_RULES = `只能从下面这个列表里选一个，选最贴切的那个，绝不要自己造。
+${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
+
+/**
+ * THE LONG READ — one article a day, the top of the ranking. This is the prompt
+ * every article used to get; what changed with the split is the reader (a curious
+ * office worker rather than a 14-year-old — see SCORE_SYSTEM for the same move on
+ * the scoring side) and the 「我」 rule, now shared with SHORT_SYSTEM as
+ * VOICE_RULES.
+ */
+const SUMMARY_SYSTEM = `你是这份中文科技日报的编辑，今天这篇是你挑出来的头条长文。你懂行，说话有态度，擅长用幽默和恰到好处的冷嘲热讽把一件事讲透。
+
+**先把文章读懂，然后合上它，用自己的话讲一遍 —— 讲给一个好奇、但不在这一行的中文白领听。**
 
 总结是对着原文提取要点，讲述是理解之后从头组织。前者必然是原文的缩小版：顺序跟着原文、每句都是某段的压缩。写完自问：**这读起来像一个懂行的人在讲，还是像一份摘要。**
 
 **讲清一件事，不是覆盖全文。** 一篇文章通常只有一件事真正值得让人知道 —— 找到它，讲透，其余不提，写不到原文十分之一完全正常。给你的文章都已经判定值得收录，直接写，不要再评价它够不够格。
 
-**每个字段里的每个事实都要在原文里找得到。** 标题、导语、正文、"zh_why" 都一样：人名、数字、机构、细节、因果、结论，原文没有的一个都不许补 —— 原文说「给孩子找语言病理师」，不能为了画面感写成「给口吃的孩子」。也不许提这篇之外的东西：「昨天聊过」「上次说到」都是编的，你只看得到这一篇。
+${FACTS_RULE}
 
 ## 怎么写
 
@@ -941,11 +1044,11 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 - **点出文章在骂谁、在反抗什么。把有立场的文章写成中立综述，是这里最常见的失手**
 - 巧用现代类比（KPI、拼团、C位、打卡、外包）帮读者迅速建立画面
 - **尽量用小标题，1 到 3 个**：它是换气点不是目录条目，标的是「讲到哪儿了」而不是「第几个要点」。短文用一个也行，但**不要一个都不用** —— 那样段落容易越写越长
-- **结尾落在一个具体的判断上**，用最接地气的话直接说出来。**不要用套话起头**：「说到底」「说白了」「一句话总结」「大实话是」
+- **结尾落在一个具体的判断上**，用最接地气的话直接说出来，可以带上你自己的态度。**不要用套话起头**：「说到底」「说白了」「一句话总结」「大实话是」
 
-## 让初中生读得懂
+## 让外行读得懂
 
-标准：一个初二学生读完能把这件事讲给同学听 —— 讲不出来就是有台阶没铺。
+标准：一个不在这一行的上班族读完，能把这件事讲给同事听 —— 讲不出来就是有台阶没铺。
 
 **一、专有名词第一次出现就当场解释。** 「以色列的 Nimbus 项目」——Nimbus 是什么？**但删掉的是名字，不是事实**：名字换成一句人话（「以色列花 12 亿请谷歌和亚马逊替政府建云、后来被曝用于监视巴勒斯坦人」），不是把整件事删掉。**读得懂每个字却什么也没学到，是最坏的结果。**
 
@@ -967,6 +1070,8 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 
 **字数预算跟文章一起给你**，那是上限不是目标，写不满完全没关系，凑字数比短更糟。**但下限是 ${ZH_MIN} 字**：低于它说明写空了。装不下就少讲一层，不要把两层压成一句。
 
+${VOICE_RULES}
+
 ## 格式硬要求
 
 **不许用 emoji**，正文会被画进分享海报，海报字体里没有 emoji，写了就是一个空方框。
@@ -974,14 +1079,6 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 **不许在字段值里用直双引号**，中文用「」；**不许在字符串里塞真的换行**，段落之间写 "\\n\\n" 这两个转义。一个游离的引号、一个未转义的换行，都会让 JSON 失效。
 
 **正文里唯一允许的 markdown 是小标题**，写成「## 标题」，单独占一块。没有星号加粗、没有减号列表、没有链接、没有引用块，写了就在读者屏幕上显示成字面符号。**小标题里不许有编号**：「## 1. 版权法的护身符」写成「## 版权法成了护身符」。
-
-**第三人称。所有字段里都不许出现「我」「我们」「咱们」「笔者」，也不许出现「作者」**（引号内引用原话除外）。概要讲的是文章里的事，不是「有人写了一篇文章」：
-
-- **原文是亲身经历**（「我发现……」）：主语换成那件事本身，或者当事人在故事里的身份。✗「作者怀第一个孩子时，发现表格上……」 ✓「一位孕妇在妇产科的表格上发现……」
-- **原文在讲观点**：把观点和支撑它的东西一起直接讲出来，读着仍然是一个论点，不要说成定论。✗「作者认为 AI 不会选股」 ✓「AI 选股的成绩单好看，剔掉运气和风格之后几乎什么也不剩」。观点出自文章里的某个人（研究者、受访者、被批评的公司），就点那个人的名字或身份。
-- **必须交代是谁做的**：用原文给的名字或身份（一位记者、这位研究者）。**不知道性别就不用「他」「她」**，不要按名字猜。
-
-不要用「我们」把概要和读者绑在一起（写「人们」）。**「你」不受影响**，设问和把读者拉进场景都照常用。
 
 ## 返回什么（json 格式）
 
@@ -1001,28 +1098,11 @@ const SUMMARY_SYSTEM = `你是一位极具洞察力的科技人文评论员，�
 
 ## 标题
 
-"zh_title" 是给这篇文章重写一个中文标题，目标是让人想点开 —— 但它得是这篇文章的标题，不是一句随便的耸动话。**原标题是中文的也要重写**（原标题会作为文章的本名单独显示在新标题下面）。
-
-**先把 "zh_title" 写到最好，不要考虑它好不好翻。** "en_title" 是写好之后再把它译成英文：角度、说的那个点、留不留半句，全部跟着中文走。**但要说地道英文**：中文的意象、成语、四字结构在英文里落不下就换掉意象，别换掉那个点。
-
-- **挑最反常识的那一点**：文章里最让人「等一下，真的吗」的地方。
-- **给具体的东西**：一个数字、一个名字、一个动作、一个后果。「AI 让资深程序员慢了 19%」比「关于 AI 与生产力的一些思考」强。
-- **疑问句、反转、只说一半都可以**，但留的那一半必须在正文前两段就兑现。
-- **短。最多 ${TITLE_MAX} 字**，越短越好。（"en_title" 自然落在 ${TITLE_MAX_EN} 个词上下；说不完就让它长一点，别为了压词数把话改掉。）
-
-下面几条比「抓眼球」优先，冲突的时候让标题平淡也没关系：
-- **不许骗。** 原文说「某些任务上慢了 19%」，标题不能写成「AI 让程序员废了」。
-- **不许用空心钩子**：「震惊」「太可怕」「你绝对想不到」「细节令人深思」「速看」。
-- **不许写成目录**：「关于 X 的三个要点」「X 的五个启示」不是标题。
-- 产品名、公司名、人名、模型名照原样保留，不要音译、不要缩写。
-- 原标题本身已经够抓人的时候，直接译过来就是最好的答案。
+${TITLE_RULES}
 
 ## 导语 "zh_thesis"
 
-它是**标题下面那一句**，页面上不带标签，直接当文章的导语印出来，还会出现在卡片列表、搜索结果、RSS 和邮件里 —— 读者**还没读正文**的地方。所以它必须自己站得住，回答的是：**到底发生了什么。**
-
-- **${THESIS_MIN} 到 ${THESIS_MAX} 字**，一句话。
-- **不许复述标题。** 标题写「耳朵会习惯噪音，身体不会」，导语就不能写「长期噪音不会因为你习惯了就无害」。标题负责让人停下来，导语负责给出事实：**谁、做了什么、结果是什么、数字是多少**。
+${THESIS_RULES}
 
 ## 为什么值得关注 "zh_why"
 
@@ -1051,8 +1131,91 @@ ${EN_RULES}
 
 ## 分类 "category"
 
-只能从下面这个列表里选一个，选最贴切的那个，绝不要自己造。
-${CATEGORIES.map((c) => `- "${c.id}" — ${c.hint}`).join("\n")}`;
+${CATEGORY_RULES}`;
+
+/**
+ * EVERY OTHER PUBLISHED ARTICLE: a recommendation, not a summary.
+ *
+ * WHY THERE ARE TWO PROMPTS. Every article used to get SUMMARY_SYSTEM above — a
+ * 450–740 character retelling with two or three headings and a 「为什么值得读」 —
+ * and a day of ten of those is ten identically-shaped mini-articles, which is
+ * the thing nobody reads to the end. The model for this one is a weekly tech
+ * newsletter's item: what happened, the ONE detail that makes it stick (「它的
+ * 一把私钥就是 4」), and the editor's own reaction, in two to four short
+ * paragraphs, shown whole in the day's list so most of the page is read without
+ * a click.
+ *
+ * WHAT IT GIVES UP ON PURPOSE: faithfulness-as-coverage. The long prompt's 「删掉的
+ * 是名字，不是事实」 pushed every take towards carrying all the facts, which is
+ * what turned them into substitutes for the article. A short take keeps the
+ * no-invention rule (FACTS_RULE) and drops the coverage — everything else is the
+ * original's job, one click away.
+ *
+ * NO "zh_why". The whole take is the reason to read; a second block saying why
+ * would be the same sentence twice. `applySummaries` already stores a missing
+ * why as an absent key, so nothing downstream changes.
+ */
+const SHORT_SYSTEM = `你是这份中文科技日报的编辑。今天的头条长文另外有人写，你写的是其余文章的**推荐语**：像一份科技周刊里的一条，读者在列表里直接读完，想看细节再点原文。
+
+**推荐语不是摘要。** 摘要回答「这篇讲了什么」，推荐语回答「我为什么想让你看这篇」。读完它，读者应该记住这篇里最有意思的那一点，并且想点开 —— 而不是觉得已经不用点了。给你的文章都已经判定值得收录，直接写，不要再评价它够不够格。
+
+读者是一个好奇、但不在这一行的中文白领，在手机上读。
+
+${FACTS_RULE}
+
+## 怎么写
+
+**${SHORT_MIN} 到 ${SHORT_MAX} 字，2 到 4 段，每段 1 到 2 句。** 这是硬上限，写不满没关系，凑字数比短更糟。
+
+- **第一句就说事**：谁、做了什么、发现了什么。不要铺垫，不要从「在 AI 时代」「随着……的发展」这种背景开口。
+- **只留一个细节**：全文最反常、最好笑或最具体的那一个 —— 一个数字、一句原话、一个荒诞的转折。一家证书机构被破解，「它的一把私钥就是 4」这一个数字比三段解释都管用。**其余的细节一个都不要**，交给原文。
+- **结尾一句你自己的判断或感受**，用大白话说，可以吐槽、可以偏激、可以承认「虽然想不出它有什么用，但这个思路真是脑洞大开」。**不要四平八稳的总结**，不要用「说到底」「说白了」「一句话总结」「大实话是」起头。
+- 专有名词第一次出现，用半句话交代它是什么。
+- 一句话最多两个逗号，超过就拆。
+
+**不要：** 小标题、分点、按原文的顺序复述、一段里塞几个并列例子、「这篇文章探讨了」「值得一读」「引人深思」这种空话。
+
+${VOICE_RULES}
+
+## 格式硬要求
+
+**不许用 emoji**，正文会被画进分享海报，海报字体里没有 emoji，写了就是一个空方框。
+
+**不许在字段值里用直双引号**，中文用「」；**不许在字符串里塞真的换行**，段落之间写 "\\n\\n" 这两个转义。一个游离的引号、一个未转义的换行，都会让 JSON 失效。
+
+**正文是纯文本，一点 markdown 都没有**：没有「##」小标题、没有星号加粗、没有减号列表、没有链接，写了就在读者屏幕上显示成字面符号。
+
+## 返回什么（json 格式）
+
+每篇文章一条，字段如下：
+- "zh_title" —— 中文标题，见下面「标题」。
+- "zh_thesis" —— 一句话导语，见下面「导语」。
+- "zh_text" —— 推荐语，**一整个字符串，不是数组**。段落之间写 "\\n\\n"。
+- "en_title" —— 把写好的 "zh_title" 译成英文，见下面「标题」。
+- "en_thesis" 和 "en_text" —— 同一条推荐语的英文版，见下面「英文」。
+- "category" —— 见下面「分类」。
+
+**不要写 "zh_why" 和 "en_why"** —— 推荐语本身就是理由。
+
+**按上面的顺序填字段。** 中文先写完，英文从写好的中文来；"category" 放最后。
+
+一篇文章一条。绝不允许一条盖住几篇、少写几篇，或者给没给你的文章编一条。
+
+## 标题
+
+${TITLE_RULES}
+
+## 导语 "zh_thesis"
+
+${THESIS_RULES}
+
+## 英文
+
+${EN_RULES}
+
+## 分类 "category"
+
+${CATEGORY_RULES}`;
 
 /**
  * ONE entry, because BATCH_SIZE is 1. THIS AND SUMMARY_SYSTEM MUST CHANGE
@@ -1162,7 +1325,63 @@ const SUMMARY_EXAMPLE = `{
   ]
 }`;
 
+/**
+ * The short take's hand-written target — THE SAME ARTICLE as the long example,
+ * so the two can be read against each other: the title and the dek are shared,
+ * and the body shows what changes when a retelling becomes a recommendation.
+ * One detail kept (the state being 「逼」 into existence), the other two sections
+ * dropped, and a last line that is the editor's own reaction rather than a
+ * conclusion. It carries a 「我」 on purpose — the example is what the model
+ * imitates, and an example in strict third person would quietly undo
+ * VOICE_RULES.
+ *
+ * No "zh_why" / "en_why" keys, which is how SHORT_SYSTEM's 「不要写」 is made
+ * checkable: in JSON mode the example's shape is the contract.
+ */
+const EXAMPLE_ZH_SHORT_TEXT = `教科书总让皇帝和将军站 C 位。这篇把镜头拉到 4000 年前的美索不达米亚，发现撑起整台戏的，是普通人家的晚饭。\\n\\n最妙的是国家的来历：挖渠防洪要千家万户一起干，总得有人组织，必要时逼着大家出工。最早的政府，就是这样被「逼」出来的。\\n\\n我以后看历史书，大概会先翻粮价那一页。`;
+const EXAMPLE_EN_SHORT_TEXT = `Textbooks give emperors and generals the centre stage. This piece zooms in on Mesopotamia 4,000 years ago and finds that what held the whole production together was ordinary households and their dinners.\\n\\nThe best part is where the state comes from: digging canals and holding back floods took thousands of households at once, somebody had to organise it and at times force people to turn up, and that is how the first governments got squeezed into existence.\\n\\nNext time I open a history book, I suspect I will look for the grain prices first.`;
+
+const SHORT_EXAMPLE = `{
+  "articles": [
+    {
+      "zh_title": "${EXAMPLE_ZH_TITLE}",
+      "zh_thesis": "${EXAMPLE_ZH_THESIS}",
+      "zh_text": "${EXAMPLE_ZH_SHORT_TEXT}",
+      "en_title": "${EXAMPLE_EN_TITLE}",
+      "en_thesis": "${EXAMPLE_EN_THESIS}",
+      "en_text": "${EXAMPLE_EN_SHORT_TEXT}",
+      "category": "culture"
+    }
+  ]
+}`;
+
 // --- shared plumbing --------------------------------------------------------
+
+/**
+ * The long read's length line — the text that used to be inlined in
+ * `renderArticle`, unchanged.
+ *
+ * `zh_why` NAMED IN THE EXCLUSION, on the same reasoning that put 「英文不计入」
+ * there: an unqualified "最多 N 字" beside a reply that now carries four text
+ * fields does not say whose budget it is, and the field most likely to be
+ * sacrificed to a tight number is the short optional one. It has its own range
+ * — see WHY_MIN/WHY_MAX.
+ */
+function longBudgetLine(budget: number): string {
+  return (
+    `budget: 中文正文最多 ${budget} 字（英文和 "zh_why" 都不计入），` +
+    `其中每一段最多 ${PARA_MAX} 字。` +
+    `分几段你自己定，跟着内容走，英文段数照中文走。` +
+    `装不下就砍掉一整个点（收尾那句除外，它永远留着），` +
+    `不要把两个点压成一句。`
+  );
+}
+
+/** A short take's length line. The same band for every article — see
+ *  SHORT_MIN — so it is a constant rather than a function of the article. */
+const SHORT_BUDGET_LINE =
+  `budget: 中文推荐语 ${SHORT_MIN} 到 ${SHORT_MAX} 字（英文不计入），` +
+  `2 到 4 段，不分小标题。英文段数照中文走。`;
 
 /**
  * One article as the model sees it.
@@ -1182,7 +1401,11 @@ function renderArticle(
    *  array matched back by index. The score pass sends one article and gets one
    *  bare object, so there is nothing to number. */
   index: number | undefined,
-  budget?: number,
+  /** The length instruction, already worded — see `longBudgetLine` and
+   *  `SHORT_BUDGET_LINE`. A string rather than a number because the two takes
+   *  are measured differently: the long read against a per-article curve with a
+   *  paragraph ceiling, a short take against one flat band. */
+  budgetLine?: string,
 ): string {
   const source = sourceOf(article.sourceId);
   return [
@@ -1208,20 +1431,7 @@ function renderArticle(
     //
     // No paragraph count and no per-paragraph ceiling any more — see budgetFor.
     // The only length rule the model gets is this total.
-    ...(budget !== undefined
-      ? [
-          // `zh_why` NAMED IN THE EXCLUSION, on the same reasoning that put
-          // 「英文不计入」 there: an unqualified "最多 N 字" beside a reply that
-          // now carries four text fields does not say whose budget it is, and
-          // the field most likely to be sacrificed to a tight number is the
-          // short optional one. It has its own range — see WHY_MIN/WHY_MAX.
-          `budget: 中文正文最多 ${budget} 字（英文和 "zh_why" 都不计入），` +
-            `其中每一段最多 ${PARA_MAX} 字。` +
-            `分几段你自己定，跟着内容走，英文段数照中文走。` +
-            `装不下就砍掉一整个点（收尾那句除外，它永远留着），` +
-            `不要把两个点压成一句。`,
-        ]
-      : []),
+    ...(budgetLine !== undefined ? [budgetLine] : []),
     `body: ${article.body || "(body unavailable — judge from the title alone)"}`,
   ].join("\n");
 }
@@ -1263,6 +1473,30 @@ function chunk<T>(items: T[], size: number): T[][] {
   for (let i = 0; i < items.length; i += size)
     out.push(items.slice(i, i + size));
   return out;
+}
+
+/**
+ * The summary passes' request groups, each tagged with which take it gets.
+ *
+ * Long and short are chunked SEPARATELY because a request carries one system
+ * prompt — at BATCH_SIZE 1 that is automatic, and this keeps it true if the
+ * batch size ever goes up.
+ *
+ * SHORTS FIRST, for the prompt cache: `warmThenParallel` sends the first group
+ * alone so the fan-out after it reads a cached prefix, and the short prompt is
+ * the one nine requests out of ten share. The long read is one request a day
+ * and pays its own cache write either way.
+ */
+function batchesOf(
+  articles: RawArticle[],
+  longIds: ReadonlySet<string>,
+): Array<{ group: RawArticle[]; long: boolean }> {
+  const shorts = articles.filter((article) => !longIds.has(article.id));
+  const longs = articles.filter((article) => longIds.has(article.id));
+  return [
+    ...chunk(shorts, BATCH_SIZE).map((group) => ({ group, long: false })),
+    ...chunk(longs, BATCH_SIZE).map((group) => ({ group, long: true })),
+  ];
 }
 
 /**
@@ -1953,6 +2187,9 @@ export async function repairTakes(
   incomplete: RawArticle[],
   out: Map<string, Verdict>,
   total: number,
+  /** Which of `incomplete` are the long read — the repair asks with the same
+   *  prompt the summary pass used, or a repaired half would be the other shape. */
+  longIds: ReadonlySet<string>,
 ): Promise<void> {
   if (!incomplete.length) return;
 
@@ -1972,14 +2209,15 @@ export async function repairTakes(
       incomplete.map((a) => a.title).join(" · "),
   );
 
-  const batches = chunk(incomplete, BATCH_SIZE);
-  await warmThenParallel(batches, (group, i) =>
+  const batches = batchesOf(incomplete, longIds);
+  await warmThenParallel(batches, ({ group, long }, i) =>
     summarizeGroup(
       writer,
       `${REPAIR_PASS} ${i + 1}/${batches.length}`,
       group,
       out,
       false,
+      long,
     ),
   );
 
@@ -2169,6 +2407,10 @@ async function summarizeGroup(
   group: RawArticle[],
   out: Map<string, Verdict>,
   clear: boolean,
+  /** The day's long read (SUMMARY_SYSTEM) or a short take (SHORT_SYSTEM). One
+   *  value per group — `batchesOf` never mixes the two in one request, since a
+   *  request carries one system prompt. */
+  long: boolean,
 ): Promise<void> {
   const sending: RawArticle[] = [];
   for (const article of group) {
@@ -2199,13 +2441,21 @@ async function summarizeGroup(
   try {
     const rows = await writer.ask(
       label,
-      SUMMARY_SYSTEM,
+      long ? SUMMARY_SYSTEM : SHORT_SYSTEM,
       `Here ${sending.length === 1 ? "is 1 article" : `are ${sending.length} articles`}. ` +
         `Summarize every one of them, in Chinese and then in English.\n\n` +
         rendered
-          .map((a, j) => renderArticle(a, j, budgetFor(a.readingMinutes)))
+          .map((a, j) =>
+            renderArticle(
+              a,
+              j,
+              long
+                ? longBudgetLine(budgetFor(a.readingMinutes))
+                : SHORT_BUDGET_LINE,
+            ),
+          )
           .join("\n\n---\n\n"),
-      SUMMARY_EXAMPLE,
+      long ? SUMMARY_EXAMPLE : SHORT_EXAMPLE,
     );
     // Each half is written only if it arrived whole — see `applySummaries`. That
     // is what lets the repair call this with `clear: false` and be unable to
@@ -2393,6 +2643,9 @@ export function publishable(
 export async function summarizeSurvivors(
   articles: RawArticle[],
   out: Map<string, Verdict>,
+  /** The day's long read — normally one id, the top of the ranking; see
+   *  `publishFrom`. Everything else gets a short take. */
+  longIds: ReadonlySet<string>,
 ): Promise<Map<string, Verdict>> {
   if (articles.length === 0) return out;
 
@@ -2439,14 +2692,15 @@ export async function summarizeSurvivors(
    * TAKE FOR THE DAY — for the length of this pass. The repair below is what
    * gives it exactly one more chance, and no more.
    */
-  const summaryBatches = chunk(survivors, BATCH_SIZE);
-  await warmThenParallel(summaryBatches, (group, i) =>
+  const summaryBatches = batchesOf(survivors, longIds);
+  await warmThenParallel(summaryBatches, ({ group, long }, i) =>
     summarizeGroup(
       writer,
       `${SUMMARY_PASS} ${i + 1}/${summaryBatches.length}`,
       group,
       out,
       true,
+      long,
     ),
   );
 
@@ -2484,11 +2738,11 @@ export async function summarizeSurvivors(
   const incomplete = survivors.filter(
     (article) => !isCompleteTake(out.get(article.id)!),
   );
-  await repairTakes(incomplete, out, survivors.length);
+  await repairTakes(incomplete, out, survivors.length, longIds);
 
   // AFTER the repair, so the run's one summary line describes what actually
   // reached the digest rather than what pass 2 happened to return.
-  report(survivors, out);
+  report(survivors, out, longIds);
   return out;
 }
 
@@ -2507,7 +2761,11 @@ export async function summarizeSurvivors(
  *  reads 3/14 is a day most of the English site had no English take, and a day
  *  where the first number is short is a day some articles kept bare titles —
  *  nothing else anywhere says so. */
-function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
+function report(
+  survivors: RawArticle[],
+  out: Map<string, Verdict>,
+  longIds: ReadonlySet<string>,
+): void {
   let zh = 0;
   let en = 0;
   let thin = 0;
@@ -2539,12 +2797,19 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
 
     // The CHINESE length: `budgetFor` is a Chinese-character budget and the
     // prompt tells the model the English does not count against it.
-    const chars = verdict.zh.thesis.length + verdict.zh.text.length;
+    //
+    // Each form against ITS OWN bounds, and for a short take that means the
+    // body alone: its band is stated for the 推荐语, and the thesis rides
+    // separately. The long read keeps the thesis-plus-body sum it always had.
+    const long = longIds.has(article.id);
+    const chars = long
+      ? verdict.zh.thesis.length + verdict.zh.text.length
+      : verdict.zh.text.length;
     lengths.push(chars);
-    if (chars < ZH_MIN) thin += 1;
+    if (chars < (long ? ZH_MIN : SHORT_MIN)) thin += 1;
     // Against ITS OWN budget, not a shared number — that is the only ceiling
     // this article was ever given.
-    if (chars > budgetFor(article.readingMinutes)) over += 1;
+    if (chars > (long ? budgetFor(article.readingMinutes) : SHORT_MAX)) over += 1;
   }
 
   const total = survivors.length;
@@ -2554,7 +2819,7 @@ function report(survivors: RawArticle[], out: Map<string, Verdict>): void {
     `[daily] summaries — ${zh}/${total} written, ${en}/${total} with English, ` +
       `${why}/${total} with 为什么值得关注, ` +
       `median ${median} chars, over their own budget: ${over}/${total}, ` +
-      `under ${ZH_MIN}: ${thin}/${total}`,
+      `under their own floor: ${thin}/${total}`,
   );
 }
 

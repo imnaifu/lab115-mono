@@ -193,6 +193,13 @@ interface RawConfig {
    *  see PARA_MAX in summarize.ts for why the two move independently. */
   summaryParaMaxChars: number;
   /**
+   * Bounds for a SHORT take, in characters — every published article except the
+   * day's one long read. The three `summary*` keys above now apply to that long
+   * read only. See SHORT_SYSTEM in summarize.ts.
+   */
+  shortMinChars: number;
+  shortMaxChars: number;
+  /**
    * Whether the day page opens on a photograph — Wikimedia's picture of the day.
    *
    * FALSE STOPS THE FETCH, NOT THE RENDERING, which is the same distinction
@@ -305,6 +312,21 @@ function validate(config: RawConfig): RawConfig {
       `summaryParaMaxChars must be a number of at least 20 and below ` +
         `summaryMaxChars (${config.summaryMaxChars}) — at or above it the ` +
         `per-paragraph budget stops constraining anything`,
+    );
+  }
+  // A short take above the long read's floor would make the "short" form the
+  // longer of the two on some days, which is the one thing the split is for.
+  if (
+    !Number.isFinite(config.shortMinChars) ||
+    !Number.isFinite(config.shortMaxChars) ||
+    config.shortMinChars < 20 ||
+    config.shortMaxChars <= config.shortMinChars ||
+    config.shortMaxChars > config.summaryMaxChars
+  ) {
+    fail(
+      "shortMinChars/shortMaxChars must be numbers with min >= 20, max " +
+        `greater than min, and max no higher than summaryMaxChars ` +
+        `(${config.summaryMaxChars})`,
     );
   }
   if (typeof config.photoEnabled !== "boolean") {

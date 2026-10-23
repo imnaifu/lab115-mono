@@ -216,18 +216,6 @@ async function publishFrom(
    * included.
    */
   const eligible = publishable(raw, verdicts);
-  await summarizeSurvivors(eligible, verdicts);
-
-  /**
-   * EVERY article the day held, in score order — what the FILE is written from.
-   * One list, published and rejected together: see the note on `articles` below
-   * for why the two-list version was worse.
-   */
-  const sorted = [...raw].sort((a, b) => {
-    const diff =
-      (verdicts.get(b.id)?.score ?? 0) - (verdicts.get(a.id)?.score ?? 0);
-    return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
-  });
 
   /**
    * The page's own order: by score, ties by recency so it is deterministic.
@@ -238,8 +226,42 @@ async function publishFrom(
    * Unjudged and rejected articles are not here at all — they are in `sorted`
    * below, which is what the FILE is written from, because the file carries
    * every article the day held whether it published or not.
+   *
+   * COMPUTED BEFORE THE TAKES NOW, because its first entry decides which take
+   * an article gets — see `longId`. Nothing in it reads a take, only scores.
    */
   const ranked = [...eligible].sort((a, b) => {
+    const diff = effectiveScore(b, verdicts) - effectiveScore(a, verdicts);
+    return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
+  });
+
+  /**
+   * THE DAY'S ONE LONG READ: the top of the ranking gets the full retelling
+   * (SUMMARY_SYSTEM), everything else a short recommendation (SHORT_SYSTEM).
+   * See `Article.form` and SHORT_SYSTEM for why the day is split.
+   *
+   * If its take does not come back, the day simply has no long read — the
+   * article is held back like any other incomplete take, and nothing is
+   * promoted into its place, because the second article was written short.
+   */
+  const longId = ranked[0]?.id;
+  const longIds: ReadonlySet<string> = new Set(longId ? [longId] : []);
+  await summarizeSurvivors(eligible, verdicts, longIds);
+
+  /**
+   * EVERY article the day held — what the FILE is written from, and so the
+   * order the page shows (`shownArticles` reads file order). One list,
+   * published and rejected together: see the note on `articles` below for why
+   * the two-list version was worse.
+   *
+   * THE LONG READ FIRST, then the BOOSTED score — the same order as `ranked`.
+   * This used to sort by the raw score, which put the page out of step with the
+   * ranking that chose what to publish whenever a boosted source was involved.
+   */
+  const sorted = [...raw].sort((a, b) => {
+    if (a.id !== b.id && (a.id === longId || b.id === longId)) {
+      return a.id === longId ? -1 : 1;
+    }
     const diff = effectiveScore(b, verdicts) - effectiveScore(a, verdicts);
     return diff !== 0 ? diff : b.publishedAt.localeCompare(a.publishedAt);
   });
@@ -416,6 +438,9 @@ async function publishFrom(
       // Position among the PUBLISHED articles. 0 on the rest: they have no
       // place on a page, and numbering them would make one field two measures.
       rank: shown ? (position += 1) : 0,
+      // Published articles only, like `rank`: an article that did not publish
+      // has no take, so it has no form either.
+      ...(shown ? { form: item.id === longId ? ("long" as const) : ("short" as const) } : {}),
       ...reviewOf(item.id),
       ...take,
     };

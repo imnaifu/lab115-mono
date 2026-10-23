@@ -222,7 +222,13 @@ export async function backfillSummaries(
     const verdicts = verdictsFrom(
       take.map((article) => ({ ...article, judged: true })),
     );
-    await repairTakes(sending, verdicts, eligible.length);
+    // Each article re-asked in the form it was published in. No `form` means a
+    // digest from before the split, whose takes are all the long shape — so
+    // only an explicit "short" gets the short prompt.
+    const longIds = new Set(
+      take.filter((article) => article.form !== "short").map((a) => a.id),
+    );
+    await repairTakes(sending, verdicts, eligible.length, longIds);
 
     const repaired = new Map<string, Article["summary"]>();
     const meta = new Map<string, { category: string; titleZh: string; titleEn: string }>();

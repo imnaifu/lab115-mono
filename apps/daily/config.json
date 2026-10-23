@@ -8,6 +8,8 @@
   "summaryMinChars": 150,
   "summaryMaxChars": 650,
   "summaryParaMaxChars": 90,
+  "shortMinChars": 80,
+  "shortMaxChars": 160,
   "photoEnabled": true,
   "categories": [
     {

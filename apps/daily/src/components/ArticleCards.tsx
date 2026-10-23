@@ -4,7 +4,9 @@ import { ArticleTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
 import { sourceOf } from "@/lib/sources";
 import { href, type Lang } from "@/lib/lang";
+import { strings } from "@/lib/i18n";
 import { articlePath, topicPath } from "@/lib/links";
+import { paragraphsOf } from "@/lib/paragraphs";
 import { summaryFor } from "@/lib/take";
 import { topicLinkFor } from "@/lib/topics";
 import type { PublishedArticle } from "@/lib/types";
@@ -226,7 +228,19 @@ export function ArticleBrief({
    *  derived, because the row does not know what it is a row of. */
   index: number;
 }) {
-  const thesis = summaryFor(article, lang).thesis;
+  const take = summaryFor(article, lang);
+  const thesis = take.thesis;
+  /**
+   * A SHORT TAKE IS SHOWN WHOLE, in place of the dek — see `Article.form`.
+   * It is 80–200 characters written to be read right here, the way an item in a
+   * weekly newsletter is, so making the reader click through for it would put
+   * the whole day behind ten taps. The dek is still on the article page above
+   * the same text.
+   *
+   * Absent `form` is an archived day, whose takes are the long shape and stay
+   * behind their dek exactly as before.
+   */
+  const brief = article.form === "short" ? paragraphsOf(take.text) : [];
 
   return (
     /**
@@ -270,6 +284,15 @@ export function ArticleBrief({
           <Meta article={article} lang={lang} from="archive" />
         </div>
 
+        {/* The one row that still needs a click to be read, so the one row
+            that says so. Orange is the dek rule's colour on the article page —
+            the same mark for "this is ours" on both surfaces. */}
+        {article.form === "long" ? (
+          <p className="mt-1.5 text-xs font-bold text-orange">
+            {strings(lang).longRead}
+          </p>
+        ) : null}
+
         <h3 className="mt-1.5 text-lg leading-snug font-bold text-ink">
           {/* THE STRETCHED LINK — see the long note on this in the article
               page's own row. One real anchor whose text is the headline, with
@@ -310,7 +333,15 @@ export function ArticleBrief({
          * neighbours. Nothing is hidden from a crawler that was not already
          * there — the text is in the DOM either way.
          */}
-        {thesis ? (
+        {brief.length ? (
+          /* No `line-clamp`: the band in config.json is the ceiling here, and a
+             clamped recommendation would cut off the reaction it ends on. */
+          <div className="mt-1.5 space-y-2 text-[15px] leading-[1.65] font-semibold text-ink-mid">
+            {brief.map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
+            ))}
+          </div>
+        ) : thesis ? (
           <p className="mt-1.5 line-clamp-3 text-[15px] leading-[1.65] font-semibold text-ink-mid">
             {thesis}
           </p>

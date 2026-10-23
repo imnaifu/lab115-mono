@@ -402,6 +402,10 @@ const STRINGS = {
      */
     whyItMatters: "为什么值得读",
 
+    /** 当天唯一一篇长文在列表里的标记。其余几条在列表里就是全文，只有这一条要点进去读，
+        所以只有它需要说一声。 */
+    longRead: "今日长文",
+
     /** 开头那张照片的出处，署名行里夹在作者和许可之间。作者名和许可名都是数据，
         只有这个词是文案，所以只有它在这里。 */
     photoSource: "维基共享资源",
@@ -737,6 +741,7 @@ const STRINGS = {
     related: "You might also read",
 
     whyItMatters: "Why it matters",
+    longRead: "Long read",
 
     photoSource: "Wikimedia Commons",
 

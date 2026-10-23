@@ -242,6 +242,16 @@ export interface Article {
    * them one would make `rank` two different measures in one field.
    */
   rank: number;
+  /**
+   * Which of the two takes this article got: `"long"` for the day's one long
+   * read (headings, 「为什么值得读」, read on its own page), `"short"` for the
+   * rest (a recommendation of a paragraph or two, shown whole in the day's list).
+   *
+   * Absent on every digest written before the split, and on articles that did
+   * not publish. Renderers treat absent as the old shape — a long take behind a
+   * one-line dek — which is what those archived articles are.
+   */
+  form?: "long" | "short";
   /** How the score was arrived at. See ScoreReview. */
   review?: ScoreReview;
   /**
