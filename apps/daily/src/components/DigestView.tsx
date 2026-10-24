@@ -5,7 +5,10 @@ import { strings } from "@/lib/i18n";
 import { PhotoCard } from "./Photo";
 import { shownArticles } from "@/lib/store";
 import type { Lang } from "@/lib/lang";
-import { dayPath } from "@/lib/links";
+import { articlePath, dayPath } from "@/lib/links";
+import { href } from "@/lib/lang";
+import { sourceOf } from "@/lib/sources";
+import { summaryFor } from "@/lib/take";
 import type { Digest } from "@/lib/types";
 
 /** Rendered from the date key, not from a Date, so the server's timezone can
@@ -54,6 +57,13 @@ export function DigestView({
   // `shownArticles` is what applies "no take means not published" — one read,
   // used by the count in the masthead and by the list below it.
   const shown = shownArticles(digest);
+  // The day's quotes, in the day's order. Only takes that carry one — the field
+  // is optional, checked against the article before it is stored, and absent on
+  // every archived day, which then renders no block at all.
+  const quotes = shown.flatMap((article) => {
+    const quote = summaryFor(article, lang).quote;
+    return quote ? [{ article, quote }] : [];
+  });
 
   /**
    * NO READING TIME IN THE MASTHEAD ANY MORE.
@@ -161,6 +171,51 @@ export function DigestView({
       ) : (
         <EmptyState lang={lang} />
       )}
+
+      {/**
+       * 「言论」 — ONE SENTENCE FROM EACH OF THE DAY'S ARTICLES, in their own
+       * words, under the list.
+       *
+       * A CHANGE OF RHYTHM, which is the whole job. The list above is ten rows of
+       * the same shape; a weekly newsletter reads to the end because it breaks
+       * into sections of different weights, and a run of short quotations is the
+       * lightest one there is. It costs nothing to scan past and gives a reader
+       * who stopped halfway a reason to scroll.
+       *
+       * The attribution links to OUR page for that article, not to the original:
+       * the quote is a way back into the day, and the article page is where the
+       * original link already lives.
+       */}
+      {quotes.length > 0 ? (
+        <section className={`${SECTION} ${PAD}`}>
+          <h2 className="text-xl font-bold text-ink">{t.quotesHeading}</h2>
+          {quotes.map(({ article, quote }) => (
+            <figure
+              key={article.id}
+              className="border-b border-line py-5 last:border-0"
+            >
+              <blockquote className="text-[15px] leading-[1.75] font-semibold text-ink">
+                {lang === "zh" ? `「${quote}」` : `\u201c${quote}\u201d`}
+              </blockquote>
+              <figcaption className="mt-2 text-xs font-bold text-ink-soft">
+                {"— "}
+                <a
+                  className="transition duration-150 ease-out hover:text-ink"
+                  href={href(lang, articlePath(digest.date, article))}
+                  data-track="summary_open"
+                  data-track-source={article.sourceId}
+                  data-track-from="quotes"
+                >
+                  {sourceOf(article.sourceId).name}
+                  {" · "}
+                  {(lang === "zh" ? article.titleZh : article.titleEn) ||
+                    article.title}
+                </a>
+              </figcaption>
+            </figure>
+          ))}
+        </section>
+      ) : null}
 
       {/**
        * NO WAY-ONWARD CARD HERE ANY MORE. It read 「看其它日期 / 最近一周，以及

@@ -47,11 +47,11 @@ import type { ScoreReview, SummaryText } from "./types";
  *
  * TWO calls: score everything, then summarize only what cleared the floor.
  *
- * The digest is CHINESE ONLY. There was an English half — `en_thesis` and
- * `en_text` alongside the Chinese in the same reply — and it is gone, along
- * with the whole question of how to split the passes by language. The reply is
- * now roughly half the size it was, which is the one thing every malformation
- * in this file has scaled with.
+ * BOTH LANGUAGES IN ONE REPLY, one article per request. The English half was
+ * removed once (when a request carried a batch and the reply size was what every
+ * malformation scaled with) and came back once BATCH_SIZE went to 1 — see
+ * SUMMARY_PASS and EN_RULES. The reply for one article is small enough that the
+ * old failure does not reach it.
  *
  * Scoring goes first so the floor can be applied before any summary is
  * written: on the sample that is 8 of 18 articles never summarized at all.
@@ -342,7 +342,8 @@ const TITLE_MAX_EN = 10;
  * A CHARACTER TOTAL AND NOTHING ELSE. The paragraph COUNT used to be computed
  * here too and stated in the request as a `分 N~M 段` range; that is gone, and
  * how many paragraphs the budget becomes is entirely the model's call. The
- * There is no per-paragraph ceiling at all any more — see below.
+ * The per-paragraph ceiling is back (PARA_MAX, stated in `longBudgetLine`); the
+ * history below is why it left twice and why it returned.
  *
  * WHAT THAT ARITHMETIC COST, kept because it is the reason not to reintroduce
  * it casually. There were three rules — total, count range, per-paragraph
@@ -358,11 +359,12 @@ const TITLE_MAX_EN = 10;
  * turns beats one landing where the character count runs out.
  *
  * The 90-character per-paragraph ceiling went with it, came back when one run
- * measured 45% of paragraphs over it and the longest at 251, and then went for
- * good — the style guide in SUMMARY_SYSTEM asks for 排版极简 in prose and that
- * is now the only thing asking. If the 251-character wall returns, this is the
- * number that used to prevent it, and `summaryParaMaxChars` is the config key
- * it came from.
+ * measured 45% of paragraphs over it and the longest at 251, went again, and is
+ * now back for the third time — see PARA_MAX for the measurements that keep
+ * returning it. `summaryParaMaxChars` is its config key.
+ *
+ * This curve is the LONG READ's budget only. A short take gets one flat band
+ * (SHORT_MIN..SHORT_MAX) whatever the article's length — see SHORT_BUDGET_LINE.
  *
  * Driven by `readingMinutes` rather than a raw character count because
  * `reading.ts` already normalises the two alphabets the feeds mix — CJK
@@ -1193,6 +1195,7 @@ ${VOICE_RULES}
 - "zh_text" —— 推荐语，**一整个字符串，不是数组**。段落之间写 "\\n\\n"。
 - "en_title" —— 把写好的 "zh_title" 译成英文，见下面「标题」。
 - "en_thesis" 和 "en_text" —— 同一条推荐语的英文版，见下面「英文」。
+- "zh_quote" 和 "en_quote" —— 原文里的一句原话，见下面「言论」。**允许是空字符串**。
 - "category" —— 见下面「分类」。
 
 **不要写 "zh_why" 和 "en_why"** —— 推荐语本身就是理由。
@@ -1208,6 +1211,15 @@ ${TITLE_RULES}
 ## 导语 "zh_thesis"
 
 ${THESIS_RULES}
+
+## 言论 "zh_quote" / "en_quote"
+
+从原文里挑**一句**最值得单独拎出来的话，放进当天页面底部的「言论」栏。可以是作者说的，也可以是文中受访者、研究者说的。读者没读过这篇也能看懂、看完会想一想的那种。
+
+- **必须是原文里真有的一句，一个字都不许改。** 原文是英文："en_quote" **一字不差照抄原句**，"zh_quote" 是它的忠实翻译。原文是中文："zh_quote" **一字不差照抄原句**，"en_quote" 是它的忠实翻译。不许改写、不许把两句拼成一句、不许自己总结一句当引语。照抄的那一半会被程序拿去和原文逐字比对，对不上整条作废。
+- **只要一两句，中文 20 到 80 字。** 太长就换一句短的，不要截断。
+- **不要和推荐语里已经引用过的话重复。**
+- 原文没有能单独站住的一句（数据报告、清单、通篇转述），**两个都写空字符串 ""**。宁缺毋滥。
 
 ## 英文
 
@@ -1341,6 +1353,13 @@ const SUMMARY_EXAMPLE = `{
 const EXAMPLE_ZH_SHORT_TEXT = `教科书总让皇帝和将军站 C 位。这篇把镜头拉到 4000 年前的美索不达米亚，发现撑起整台戏的，是普通人家的晚饭。\\n\\n最妙的是国家的来历：挖渠防洪要千家万户一起干，总得有人组织，必要时逼着大家出工。最早的政府，就是这样被「逼」出来的。\\n\\n我以后看历史书，大概会先翻粮价那一页。`;
 const EXAMPLE_EN_SHORT_TEXT = `Textbooks give emperors and generals the centre stage. This piece zooms in on Mesopotamia 4,000 years ago and finds that what held the whole production together was ordinary households and their dinners.\\n\\nThe best part is where the state comes from: digging canals and holding back floods took thousands of households at once, somebody had to organise it and at times force people to turn up, and that is how the first governments got squeezed into existence.\\n\\nNext time I open a history book, I suspect I will look for the grain prices first.`;
 
+/* The quote pair for the example. The example article is a hand-written stand-in,
+   so this sentence is "from" it the same way the rest of the example is; the
+   point it demonstrates is the shape — one sentence, standing on its own, with
+   the translation beside it. */
+const EXAMPLE_ZH_QUOTE = `帝王将相站在台前，台下推着剧情往前走的，是一张张要吃饭的嘴。`;
+const EXAMPLE_EN_QUOTE = `The emperors stood at the front of the stage; what moved the plot along from below was a great many people who needed to eat.`;
+
 const SHORT_EXAMPLE = `{
   "articles": [
     {
@@ -1350,6 +1369,8 @@ const SHORT_EXAMPLE = `{
       "en_title": "${EXAMPLE_EN_TITLE}",
       "en_thesis": "${EXAMPLE_EN_THESIS}",
       "en_text": "${EXAMPLE_EN_SHORT_TEXT}",
+      "zh_quote": "${EXAMPLE_ZH_QUOTE}",
+      "en_quote": "${EXAMPLE_EN_QUOTE}",
       "category": "culture"
     }
   ]
@@ -1640,6 +1661,7 @@ function applySummaries(
     const article = pick(group, row.index);
     if (!article) continue;
     const verdict = out.get(article.id)!;
+    const quote = quoteFrom(row, article);
 
     const zhThesis = asText(row.zh_thesis);
     if (zhThesis) {
@@ -1654,6 +1676,7 @@ function applySummaries(
         // empty array would make a model that skipped the field look like one
         // that considered the question and came back with nothing.
         ...whyItMatters(row.zh_why),
+        ...(quote ? { quote: quote.zh } : {}),
       };
     }
 
@@ -1664,9 +1687,52 @@ function applySummaries(
         thesis: enThesis,
         text: enText,
         ...whyItMatters(row.en_why),
+        ...(quote ? { quote: quote.en } : {}),
       };
     }
   }
+}
+
+/**
+ * The 「言论」 pair, or null — and null whenever the quote cannot be shown to be
+ * in the article.
+ *
+ * A QUOTE IS THE ONE FIELD PRINTED AS SOMEBODY ELSE'S WORDS, so it is the one
+ * field checked mechanically rather than trusted to the prompt. The half in the
+ * article's own language has to appear in the body; the other half is a
+ * translation and rides on that check. Both halves or neither — a quote in one
+ * language only would put different sources' words on the two sites.
+ *
+ * Comparison ignores punctuation, symbols, whitespace and case on both sides:
+ * curly versus straight quotes, an em dash for a hyphen and a line break inside
+ * the sentence are how a faithful copy differs from the page, and none of them
+ * changes a word. Every letter and every character still has to match in order.
+ *
+ * Which language is "the article's own" is read off the body — mostly CJK means
+ * the Chinese half is the copy. No body (the fetch failed) means nothing to check
+ * against, and an unchecked quote is not printed.
+ */
+function quoteFrom(
+  row: Record<string, unknown>,
+  article: RawArticle,
+): { zh: string; en: string } | null {
+  const zh = asText(row.zh_quote);
+  const en = asText(row.en_quote);
+  if (!zh || !en) return null;
+
+  const body = article.body ?? "";
+  const letters = body.replace(/\s/g, "");
+  const cjk = (letters.match(/\p{Script=Han}/gu) ?? []).length;
+  const original = cjk > letters.length * 0.2 ? zh : en;
+
+  const bare = (text: string) =>
+    text.normalize("NFKC").toLowerCase().replace(/[\p{P}\p{S}\s]/gu, "");
+  if (body && bare(body).includes(bare(original))) return { zh, en };
+
+  console.warn(
+    `[daily] quote dropped — not found verbatim in the article: ${article.title}`,
+  );
+  return null;
 }
 
 function asText(value: unknown): string {
@@ -1676,11 +1742,9 @@ function asText(value: unknown): string {
 /**
  * The optional 「为什么值得读」 line, as a spread — `{}` when there is none.
  *
- * READ BUT NOT ASKED FOR. The prompt does not mention `zh_why` / `en_why` yet
- * (see `SummaryText.whyItMatters` in lib/types for why the plumbing lands
- * first), so today this returns `{}` on every reply and the field never reaches
- * a digest. Adding the field to the prompt is then the ONLY edit needed to start
- * storing it, with no second change here to remember.
+ * ASKED FOR BY THE LONG READ ONLY. SUMMARY_SYSTEM requests `zh_why` / `en_why`;
+ * SHORT_SYSTEM tells the model not to write them, so a short take's reply has no
+ * such key and this returns `{}` — the same absent key an archived take has.
  *
  * A SPREAD RATHER THAN A VALUE, so an absent line is an ABSENT KEY rather than
  * an empty string — the same rule `titleZh` and the retired `tags` follow. The

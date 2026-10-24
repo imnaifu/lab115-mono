@@ -681,10 +681,10 @@
     {
       "id": "theconversation",
       "name": "The Conversation",
-      "site": "https://theconversation.com/us",
-      "feed": "https://theconversation.com/us/articles.atom",
+      "site": "https://theconversation.com/global",
+      "feed": "https://theconversation.com/global/articles.atom",
       "category": "science",
-      "description": "学者本人写的解释性长文，Atom 带全文 ~7.8k；6.8 篇/天且选题从疫苗到中世纪史横跨极大。",
+      "description": "学者本人写的解释性长文，Atom 带全文；选题从疫苗到中世纪史横跨极大。用 Global 版而不是 US 版：同一家，美国本地话题少得多（按标题抽样 4/49 对 16/50）。",
       "descriptionEn": "Explanatory pieces written by the academics themselves. Prolific, and the range is enormous — vaccines one day, medieval history the next.",
       "accent": "#2D6E7E",
       "enabled": true,

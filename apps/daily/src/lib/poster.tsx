@@ -4,11 +4,13 @@ import {
   PARA_LEADING,
   POSTER,
   posterAuthor,
+  posterCardTake,
   posterClean,
   POSTER_BESIDE_COVER,
   POSTER_HEIGHT,
   POSTER_WIDTH,
   posterDomain,
+  posterHeadline,
   posterPages,
   type PosterRow,
 } from "@/lib/share";
@@ -72,7 +74,8 @@ export { posterParts } from "@/lib/share";
  *
  * `?part=1` is the identity card: cover, meta, headline, thesis. Part 2 and up
  * are pages of prose, as many as the summary needs; `posterPages` decides where
- * they break.
+ * they break. A SHORT take is the exception: it is drawn on the identity card in
+ * the thesis's place and the share is that one image — see `posterCardTake`.
  *
  * EVERY PART IS THE SAME 1080x1440. A carousel has to be one shape — see
  * POSTER_WIDTH — and the fixed canvas is also why nothing here computes a height.
@@ -133,7 +136,14 @@ export async function renderPoster({
    * identity card plus one per page. Resolved before anything is drawn, because it
    * decides whether this part exists at all.
    */
-  const pages = posterPages(summary, lang);
+  /**
+   * A short take that fits on the identity card, or null. When it is there it IS
+   * the prose, so there are no pages after the card — the same decision
+   * `posterParts` makes for the share sheet, from the same function, so the
+   * sheet never asks for a part this does not draw.
+   */
+  const cardTake = posterCardTake(article, lang);
+  const pages = cardTake ? [] : posterPages(summary, lang);
   const total = 1 + pages.length;
   if (part < 1 || part > total) return null;
   const rows: PosterRow[] = part === 1 ? [] : pages[part - 2];
@@ -147,13 +157,12 @@ export async function renderPoster({
    * character — but the headline, the claim and the author never pass through it,
    * and a `≠` in a title sends Satori off to the network exactly as one in a
    * paragraph does.
+   *
+   * The choice and the cleaning now live in `posterHeadline`, because a short
+   * take's card is planned around this header's height and the planner has to be
+   * measuring the very strings drawn here.
    */
-  // Our rewrite in the poster's own language, same rule as the page.
-  const translated = posterClean(
-    (lang === "zh" ? article.titleZh : article.titleEn) ?? "",
-  );
-  const headline = translated || posterClean(article.title);
-  const original = translated ? posterClean(article.title) : "";
+  const { headline, original, translated } = posterHeadline(article, lang);
   const thesis = posterClean(summary.thesis ?? "");
   const t = strings(lang);
   /**
@@ -511,7 +520,9 @@ export async function renderPoster({
                       marginTop: POSTER.titleGap,
                       fontSize: POSTER.titleSize,
                       fontWeight: 700,
-                      lineHeight: 1.25,
+                      // From POSTER, not a literal: `posterHeaderHeight` plans
+                      // a short take's card around this block's height.
+                      lineHeight: POSTER.titleLeading,
                     }}
                   >
                     {headline}
@@ -524,7 +535,7 @@ export async function renderPoster({
                         marginTop: POSTER.originalGap,
                         fontSize: POSTER.originalSize,
                         fontWeight: 500,
-                        lineHeight: 1.4,
+                        lineHeight: POSTER.originalLeading,
                         color: "#5f587e",
                       }}
                     >
@@ -568,17 +579,49 @@ export async function renderPoster({
                   borderLeft: `${POSTER.thesisRule}px solid #efa050`,
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    fontSize: POSTER.thesisSize,
-                    fontWeight: 500,
-                    lineHeight: 1.5,
-                    color: "#2d294c",
-                  }}
-                >
-                  {thesis}
-                </div>
+                {/* A SHORT TAKE takes the thesis's place, behind the same bar —
+                    see `posterCardTake` for why it replaces the thesis rather
+                    than following it. Drawn exactly as a page of prose draws
+                    its rows (one row per line, broken by the layout, weight
+                    500 and 700 for a heading), only at the size the planner
+                    picked, which is 32 unless the take is at the long end of
+                    its band. No indent: the bar already marks the start. */}
+                {cardTake ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      fontSize: cardTake.size,
+                      color: "#2d294c",
+                      lineHeight: PARA_LEADING,
+                    }}
+                  >
+                    {cardTake.rows.map((row, at) => (
+                      <div
+                        key={at}
+                        style={{
+                          display: "flex",
+                          marginTop: row.gap,
+                          fontWeight: row.heading ? 700 : 500,
+                        }}
+                      >
+                        {row.text}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      fontSize: POSTER.thesisSize,
+                      fontWeight: 500,
+                      lineHeight: 1.5,
+                      color: "#2d294c",
+                    }}
+                  >
+                    {thesis}
+                  </div>
+                )}
               </div>
             </div>
           ) : (

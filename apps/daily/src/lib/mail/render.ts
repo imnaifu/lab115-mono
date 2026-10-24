@@ -2,6 +2,7 @@ import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
 import { articlePath, dayPath } from "@/lib/links";
+import { paragraphsOf } from "@/lib/paragraphs";
 import { summaryText, totalReadingMinutes } from "@/lib/reading";
 import { sourceOf } from "@/lib/sources";
 import { shownArticles } from "@/lib/store";
@@ -442,7 +443,9 @@ function tagged(path: string): string {
 }
 
 /**
- * One issue: five headlines, each with the sentence that says what it argues.
+ * One issue: on a day written long/short, every article — the long read's
+ * thesis and each short take whole; on an archived day, five headlines, each with
+ * the sentence that says what it argues.
  *
  * THE MAIL IS A DOORWAY, NOT THE EDITION. The site publishes everything that
  * clears the floor and the writing is meant to be read there; what belongs in an
@@ -458,9 +461,10 @@ function tagged(path: string): string {
  *
  * NO CATEGORY ON A CARD, and there used to be one — a coloured dot and 「技术」
  * above every headline. It named a grouping THE MAIL DOES NOT HAVE: the day's
- * page sorts its cards into sections and prints the category once as a heading,
- * while five picks off the top of the ranking arrive in rank order, so the label
- * was a section marker with no section under it. What replaces it is the line the
+ * page sorted its cards into sections back then and printed the category once as
+ * a heading, while the mail's picks arrive in rank order, so the label was a
+ * section marker with no section under it. (The page is one ranked list now too,
+ * with the category as a chip on each row.) What replaces it is the line the
  * site's own card leads with — the source, in the source's colour.
  */
 export function digestEmail(
@@ -472,7 +476,26 @@ export function digestEmail(
   // back is not renderable, and it is the same filter the day's page applies —
   // so the mail can never lead with something the page does not show.
   const shown = shownArticles(digest);
-  const picked = shown.slice(0, MAIL_TOP_N);
+  /**
+   * THE WHOLE DAY ONCE IT IS WRITTEN SHORT. MAIL_TOP_N existed because a take was
+   * 450–740 characters behind its thesis, and a mail of all of them was the
+   * edition again and close to Gmail's clipping line. A day split into one long
+   * read and short recommendations (`Article.form`) is the other way round:
+   * nine of the ten takes are 80–160 characters written to be read where they
+   * stand, which is the shape of a newsletter, and ten of them are ~15KB. The
+   * inbox gets the edition; the long read stays one tap away.
+   *
+   * A day with no `form` on any article is an archived one, and its mail keeps
+   * the five-headline doorway it was designed with.
+   */
+  const split = shown.some((article) => article.form !== undefined);
+  const picked = split ? shown : shown.slice(0, MAIL_TOP_N);
+  /** What a card says under its headline: a short take's whole text, or the
+   *  thesis for the long read and for archived days. */
+  const bodyOf = (article: PublishedArticle): string[] =>
+    article.form === "short"
+      ? paragraphsOf(summaryFor(article, lang).text)
+      : [summaryFor(article, lang).thesis];
   const [year, month, day] = digest.date.split("-").map(Number);
   // Built from the date key rather than from a Date, so the server's timezone
   // can never shift the weekday by one. Same arithmetic as `formatDate` in
@@ -501,15 +524,24 @@ export function digestEmail(
 <tr><td style="padding:18px 20px;">
 <div style="${type(700, 12, "1.4")}color:${escapeHtml(source.accent)};">${escapeHtml(
         source.name,
-      )}</div>
+      )}${
+        /* The one card that is a door rather than the thing itself says so —
+           the same 「今日长文」 the day's list prints on that row. */
+        article.form === "long"
+          ? `<span style="color:${ORANGE};">&nbsp;·&nbsp;${escapeHtml(t.longRead)}</span>`
+          : ""
+      }</div>
 <a href="${escapeHtml(
         url,
       )}" style="display:block;padding-top:6px;${type(700, 18, "1.4")}color:${INK};text-decoration:none;">${escapeHtml(
         headline(article),
       )}</a>
-<div style="padding-top:9px;${type(400, 15, "1.65")}color:${INK_MID};">${escapeHtml(
-        summaryFor(article, lang).thesis,
-      )}</div>
+${bodyOf(article)
+  .map(
+    (paragraph) =>
+      `<div style="padding-top:9px;${type(400, 15, "1.65")}color:${INK_MID};">${escapeHtml(paragraph)}</div>`,
+  )
+  .join("")}
 </td></tr></table>`;
     })
     .join("");
@@ -570,8 +602,8 @@ ${endLink(dayUrl, t.wholeDay, t.wholeDaySub(digest.date, digest.stats.shown))}
         ]
       : []),
     ...picked.flatMap((article) => [
-      `— ${headline(article)}`,
-      summaryFor(article, lang).thesis,
+      `— ${headline(article)}${article.form === "long" ? ` (${t.longRead})` : ""}`,
+      ...bodyOf(article),
       `${sourceOf(article.sourceId).name} · ${tagged(
         href(lang, articlePath(digest.date, article)),
       )}`,

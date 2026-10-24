@@ -7,7 +7,6 @@ import { ogUrl, posterBase, posterPartUrl } from "@/lib/links";
 import { confirmEmail, digestEmail } from "@/lib/mail/render";
 import { posterParts } from "@/lib/share";
 import { listDates, readDigest, readLatest, shownArticles } from "@/lib/store";
-import { summaryFor } from "@/lib/take";
 import type { Digest } from "@/lib/types";
 
 /**
@@ -119,8 +118,10 @@ function Section({ digest, lang }: { digest: Digest; lang: Lang }) {
   const shown = shownArticles(digest);
   const top = shown[0];
   /* `posterParts` off the take that will be DRAWN, because the two halves
-     paginate differently and the English one may not exist for an archived day. */
-  const parts = top ? posterParts(summaryFor(top, lang), lang) : 0;
+     paginate differently and the English one may not exist for an archived day.
+     It takes the article and picks that take itself (`summaryFor`), since a
+     short take's one-image share depends on the article's `form` as well. */
+  const parts = top ? posterParts(top, lang) : 0;
   const query = `?date=${digest.date}`;
 
   return (

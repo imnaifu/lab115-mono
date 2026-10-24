@@ -1,7 +1,9 @@
 import { strings } from "./i18n";
 import type { Lang } from "./lang";
 import { blocksOf } from "./paragraphs";
-import type { SummaryText } from "./types";
+// Pure: it imports nothing but types, so the rule below still holds with it here.
+import { summaryFor } from "./take";
+import type { Article, PublishedArticle, SummaryText } from "./types";
 
 /**
  * The poster's LAYOUT: its canvas, its type scale, its line breaking and its
@@ -202,8 +204,16 @@ export const POSTER = {
   metaSize: 25,
   titleSize: 61,
   titleGap: 15,
+  /**
+   * The headline's and the original title's leading. They were literals in the
+   * renderer, and moved here the day something had to PREDICT the height of the
+   * block they set: `posterHeaderHeight` plans a short take's card around it, and
+   * a second copy of either number is a card planned for a header it does not get.
+   */
+  titleLeading: 1.25,
   originalSize: 33,
   originalGap: 12,
+  originalLeading: 1.4,
   /** The accent bar beside the thesis. */
   thesisRule: 6,
   thesisPad: 32,
@@ -535,8 +545,17 @@ const INDENT_UNITS = POSTER.indent / POSTER.paraSize;
  * two characters past the column, and Satori would wrap them into a second visual
  * line inside a row sized for one — which also puts the page height the caller
  * counted out of step with the page it drew.
+ *
+ * `lineBudget` is the column in those units, and it defaults to the prose page's.
+ * The one caller that passes its own is a short take drawn on the identity card,
+ * which sits in a narrower column (beside the accent bar) and possibly at a
+ * smaller size — see `posterCardTake`.
  */
-export function layoutParagraph(text: string, indent = 0): string[] {
+export function layoutParagraph(
+  text: string,
+  indent = 0,
+  lineBudget = LINE_BUDGET,
+): string[] {
   const lines: string[] = [];
   let start = 0;
 
@@ -544,7 +563,7 @@ export function layoutParagraph(text: string, indent = 0): string[] {
     let units = 0;
     let at = start;
     // Only the line that is actually drawn indented pays for it.
-    const budget = lines.length === 0 ? LINE_BUDGET - indent : LINE_BUDGET;
+    const budget = lines.length === 0 ? lineBudget - indent : lineBudget;
     // The last index a line could end at, so a long word is not cut mid-way.
     let candidate = -1;
 
@@ -612,48 +631,10 @@ export interface PosterRow {
  * the heading travels to the next page with it.
  */
 export function posterPages(summary: SummaryText, lang: Lang): PosterRow[][] {
-  const body = blocksOf(posterClean(summary.text ?? ""));
-  /**
-   * The one block that gets the indent: the first one that is PROSE.
-   *
-   * ONCE PER ARTICLE. Once per IMAGE was tried — every page of a share opening
-   * with the mark, on the argument that each image is seen alone — and it is not
-   * what this wants: the indent says "the writing starts here", and it starts
-   * once. A page that happens to be second is not a second beginning.
-   *
-   * Not simply block 0 either. A summary can open on a `## heading`, and a heading
-   * is a label rather than the start of the writing, so indenting it would put the
-   * mark on something that is not the opening sentence.
-   *
-   * Being per-article rather than per-page is also what keeps this out of `pack`:
-   * the decision depends only on the text, so line breaking can apply the exact
-   * handicap below instead of applying it to every paragraph in case.
-   */
-  const opening = body.findIndex((block) => block.kind !== "heading");
-  /**
-   * 「为什么值得读」 / "Why it matters", AFTER THE PROSE — the same place the page
-   * puts it, under the last paragraph. Its label is a heading row, which buys the
-   * orphan rule for free: the label can never sit alone at the foot of a page.
-   *
-   * Appended AFTER `opening` is found, so a summary with no prose of its own
-   * does not hand the indent to this block — it is not where the writing starts.
-   *
-   * NEVER ON THE IDENTITY CARD. Part 1 stays the thesis alone, for the reason on
-   * the thesis block in lib/poster: whoever sees the first image has read
-   * nothing. A reader who swiped to the last page has. Absent or empty adds
-   * nothing, so a take without the field paginates exactly as it did before.
-   */
-  const why = posterClean(summary.whyItMatters ?? "").trim();
-  const parsed = why
-    ? [
-        ...body,
-        { kind: "heading" as const, text: strings(lang).whyItMatters },
-        { kind: "body" as const, text: why },
-      ]
-    : body;
-  const blocks = parsed.map((block, i) => {
+  const take = takeBlocks(summary, lang);
+  const blocks = take.blocks.map((block, i) => {
     const heading = block.kind === "heading";
-    const indented = i === opening;
+    const indented = i === take.opening;
     return {
       heading,
       indented,
@@ -698,6 +679,66 @@ export function posterPages(summary: SummaryText, lang: Lang): PosterRow[][] {
     if (balanced.length <= greedy.length) return balanced;
   }
   return greedy;
+}
+
+/**
+ * The take's blocks in drawing order, and which one opens the prose.
+ *
+ * SPLIT OUT OF `posterPages` so the short take on the identity card is drawn from
+ * exactly the same blocks a page of prose would be — cleaned the same way, with
+ * 「为什么值得读」 appended the same way if a take carries one. The notes below are
+ * the ones that lived inline there; nothing about them changed.
+ */
+function takeBlocks(
+  summary: SummaryText,
+  lang: Lang,
+): { blocks: Array<{ kind: "heading" | "body"; text: string }>; opening: number } {
+  const body = blocksOf(posterClean(summary.text ?? ""));
+  /**
+   * The one block that gets the indent: the first one that is PROSE.
+   *
+   * ONCE PER ARTICLE. Once per IMAGE was tried — every page of a share opening
+   * with the mark, on the argument that each image is seen alone — and it is not
+   * what this wants: the indent says "the writing starts here", and it starts
+   * once. A page that happens to be second is not a second beginning.
+   *
+   * Not simply block 0 either. A summary can open on a `## heading`, and a heading
+   * is a label rather than the start of the writing, so indenting it would put the
+   * mark on something that is not the opening sentence.
+   *
+   * Being per-article rather than per-page is also what keeps this out of `pack`:
+   * the decision depends only on the text, so line breaking can apply the exact
+   * handicap below instead of applying it to every paragraph in case.
+   */
+  const opening = body.findIndex((block) => block.kind !== "heading");
+  /**
+   * 「为什么值得读」 / "Why it matters", AFTER THE PROSE — the same place the page
+   * puts it, under the last paragraph. Its label is a heading row, which buys the
+   * orphan rule for free: the label can never sit alone at the foot of a page.
+   *
+   * Appended AFTER `opening` is found, so a summary with no prose of its own
+   * does not hand the indent to this block — it is not where the writing starts.
+   *
+   * NEVER ON THE IDENTITY CARD. Part 1 stays the thesis alone, for the reason on
+   * the thesis block in lib/poster: whoever sees the first image has read
+   * nothing. A reader who swiped to the last page has. Absent or empty adds
+   * nothing, so a take without the field paginates exactly as it did before.
+   *
+   * The one way it CAN reach part 1 is a short take that carries one anyway — the
+   * short prompt says not to write it — because a short take's whole body is
+   * drawn there (see `posterCardTake`), and the label then sits under the take
+   * just as it would sit under the prose on a last page. It also counts against
+   * the card's room, so a short take with a why mostly falls back to two images.
+   */
+  const why = posterClean(summary.whyItMatters ?? "").trim();
+  const parsed = why
+    ? [
+        ...body,
+        { kind: "heading" as const, text: strings(lang).whyItMatters },
+        { kind: "body" as const, text: why },
+      ]
+    : body;
+  return { blocks: parsed, opening };
 }
 
 /** The drawn height of one page's rows: every row is a line, plus its own gap. */
@@ -771,13 +812,332 @@ function pack(
 }
 
 /**
+ * The headline the identity card prints, and the original title under it.
+ *
+ * Same rule as the page: the Chinese poster leads with the Chinese headline and
+ * keeps the original underneath, the English one leads with OUR English rewrite
+ * and keeps the original underneath too; with no rewrite, the original alone.
+ *
+ * CLEANED, like everything else drawn there — the headline never passes through
+ * `posterPages`, and a `≠` in a title sends Satori off to the network exactly as
+ * one in a paragraph does.
+ *
+ * HERE RATHER THAN IN THE RENDERER since a short take's card has to be planned
+ * around the header's height (see `posterHeaderHeight`), and the planner and the
+ * renderer have to be measuring the same two strings. `translated` is returned
+ * as well because the renderer hands it to the font subset.
+ */
+export function posterHeadline(
+  article: Article,
+  lang: Lang,
+): { headline: string; original: string; translated: string } {
+  // Our rewrite in the poster's own language, same rule as the page.
+  const translated = posterClean(
+    (lang === "zh" ? article.titleZh : article.titleEn) ?? "",
+  );
+  return {
+    headline: translated || posterClean(article.title),
+    original: translated ? posterClean(article.title) : "",
+    translated,
+  };
+}
+
+/**
+ * The height of the meta row over the headline (source · author), as Satori lays
+ * it out: the row sets no line height, so it gets the faces' own line box.
+ *
+ * MEASURED, the way `POSTER.domainRow` was, off rendered identity cards — see the
+ * calibration note on `posterHeaderHeight` — and it is the TALLEST row measured,
+ * not the usual one: most come out ~5px shorter, and the planner wants the bound.
+ * Not set on the row in the renderer, as `domainRow` is, because that would move
+ * the headline on every long poster too, and those must not move.
+ */
+const META_ROW = 37;
+
+/**
+ * Lora's advance widths for printable ASCII (U+0020–U+007E, in order), in
+ * thousandths of an em — at 500 for the original title and at 700 for the
+ * headline, the two weights Satori wraps on the identity card.
+ *
+ * READ OUT OF THE FONT FILES, not guessed: the `hmtx` table of the Lora TTFs
+ * Google serves `posterFonts`, via the same legacy-UA request. Two flat guesses
+ * came first and both were wrong where it mattered. A flat 0.6em per character
+ * put a headline a line taller than drawn on a third of the English posters in
+ * two weeks of archive, which plans a short take one size smaller than it needs;
+ * class averages (capitals 0.7, the rest 0.56) still did that, AND under-counted
+ * one headline by a line, which is the direction that overflows the card.
+ * Headlines here sit close to a line boundary often enough that the average is
+ * not the number — the letters are.
+ *
+ * If the poster ever changes its Latin face, these tables change with it.
+ */
+const LORA_500 = [
+  263, 263, 339, 844, 549, 881, 687, 201, 302, 302, 524, 530, 252, 483, 242,
+  693, 626, 378, 536, 558, 544, 543, 577, 464, 565, 577, 250, 264, 530, 530,
+  530, 484, 795, 640, 635, 695, 750, 623, 556, 759, 789, 352, 399, 693, 587,
+  936, 766, 786, 617, 787, 647, 577, 643, 755, 671, 1002, 666, 645, 608, 368,
+  693, 368, 823, 763, 343, 519, 579, 527, 597, 541, 348, 554, 606, 296, 275,
+  556, 285, 903, 617, 579, 598, 575, 449, 470, 396, 604, 516, 804, 536, 536,
+  512, 345, 240, 345, 530,
+];
+const LORA_700 = [
+  263, 258, 326, 871, 588, 904, 670, 188, 296, 296, 533, 530, 250, 471, 233,
+  699, 636, 406, 533, 560, 547, 540, 575, 469, 572, 576, 250, 267, 530, 530,
+  530, 503, 793, 668, 661, 688, 759, 624, 571, 754, 807, 387, 451, 712, 604,
+  972, 773, 769, 639, 770, 686, 598, 650, 760, 708, 1016, 699, 667, 604, 386,
+  699, 386, 823, 832, 524, 524, 573, 518, 596, 538, 369, 557, 621, 327, 302,
+  594, 312, 920, 638, 566, 601, 573, 480, 485, 413, 618, 538, 811, 548, 551,
+  514, 368, 259, 368, 530,
+];
+
+/**
+ * One non-CJK character's advance in ems, at the weight it is drawn in.
+ *
+ * Outside ASCII — an accented letter, a curly quote, an em dash — a whole em,
+ * which is wider than anything Lora draws there. Those are a handful of
+ * characters a year in a headline, and over-counting is the safe direction.
+ */
+function latinEm(ch: string, table: number[]): number {
+  const at = ch.charCodeAt(0) - 0x20;
+  return at >= 0 && at < table.length ? table[at] / 1000 : 1;
+}
+
+/**
+ * How many lines Satori will wrap `text` into, at `size`px in a `width`px column.
+ *
+ * AN ESTIMATE, unlike `layoutParagraph`, because these blocks are not broken by
+ * us — the headline is one `<div>` and Satori wraps it. So this imitates the
+ * wrapper rather than replacing it: a Latin word never splits, a CJK character is
+ * its own break opportunity, and a closing mark (NO_LINE_START) stays glued to
+ * whatever precedes it — as an opening one (NO_LINE_END) does to whatever
+ * follows — which are the rules Satori's breaker applies to Chinese that a plain
+ * character count would miss.
+ */
+function wrappedLines(
+  text: string,
+  size: number,
+  width: number,
+  table: number[],
+): number {
+  if (!text) return 0;
+  // Unbreakable runs: the ink, and the space after it. The space is kept apart
+  // because a line may END on it without the space having to fit — Satori does
+  // not count a trailing space against the column.
+  const runs: Array<{ ink: number; space: number }> = [];
+  let ink = 0;
+  let previousWide = false;
+  let previousOpening = false;
+  for (const ch of text) {
+    const wide = charUnits(ch) === 1;
+    const advance = size * (wide ? 1 : latinEm(ch, table));
+    if (/\s/.test(ch)) {
+      runs.push({ ink, space: advance });
+      ink = 0;
+    } else if (NO_LINE_START.includes(ch) || previousOpening) {
+      // A closing mark never starts a line and an opening one never ends it, so
+      // either way this character joins the run it follows.
+      ink += advance;
+    } else if (wide || previousWide) {
+      // A break opportunity on both sides of a CJK character.
+      if (ink) runs.push({ ink, space: 0 });
+      ink = advance;
+    } else {
+      ink += advance;
+    }
+    previousWide = wide;
+    previousOpening = NO_LINE_END.includes(ch);
+  }
+  if (ink) runs.push({ ink, space: 0 });
+
+  let lines = 1;
+  let used = 0;
+  for (const run of runs) {
+    if (used && used + run.ink > width) {
+      lines += 1;
+      used = 0;
+    }
+    // A run wider than the column on its own is split by Satori; count it whole
+    // lines rather than one.
+    if (run.ink > width) {
+      lines += Math.ceil(run.ink / width) - 1;
+      used = run.ink % width;
+    } else {
+      used += run.ink;
+    }
+    used += run.space;
+  }
+  return lines;
+}
+
+/**
+ * The identity card's header — the cover and, beside it, the meta row, the
+ * headline and the original title — as tall as it will be drawn.
+ *
+ * The cover is a fixed square and the column beside it is centred against it, so
+ * the header is whichever of the two is taller.
+ *
+ * CALIBRATED AGAINST RENDERED POSTERS, not just argued from the constants: the
+ * long take's identity card is centred in its card, so the accent bar's top and
+ * bottom edges give away exactly how tall the header above it was. Every
+ * published article from 2026-10-08 to 10-21 was checked that way in both
+ * languages — 266 posters — and this estimate came out at or above the drawn
+ * header on every one, which is the only direction it is allowed to be wrong in:
+ * by 1–6px on 260 of them and by one line on the other 6.
+ */
+export function posterHeaderHeight(article: Article, lang: Lang): number {
+  const { headline, original } = posterHeadline(article, lang);
+  const title =
+    wrappedLines(headline, POSTER.titleSize, POSTER_BESIDE_COVER, LORA_700) *
+    POSTER.titleSize *
+    POSTER.titleLeading;
+  const under = original
+    ? POSTER.originalGap +
+      wrappedLines(original, POSTER.originalSize, POSTER_BESIDE_COVER, LORA_500) *
+        POSTER.originalSize *
+        POSTER.originalLeading
+    : 0;
+  return Math.ceil(
+    Math.max(POSTER.cover, META_ROW + POSTER.titleGap + title + under),
+  );
+}
+
+/**
+ * The identity card's own inside height: the canvas less everything part 1 draws
+ * around the card — the margins, the domain row, the lockup, the gap down to the
+ * card, the card's padding and the page counter's row.
+ *
+ * POSTER_FRAME's sibling for part 1, and it differs from it by exactly the
+ * lockup (`domainGap + markSize`), which is drawn on part 1 only. 930px today.
+ */
+const CARD_INNER =
+  POSTER_HEIGHT -
+  (POSTER.pad + 16) * 2 -
+  POSTER.domainRow -
+  POSTER.domainGap -
+  POSTER.markSize -
+  POSTER.cardTop -
+  POSTER.cardPad * 2 -
+  POSTER.pageRow;
+
+/**
+ * The column a short take is drawn in on the identity card: the card's text width
+ * less the accent bar and its padding, which is the box the thesis sits in.
+ */
+const TAKE_WIDTH = POSTER_TEXT_WIDTH - POSTER.thesisRule - POSTER.thesisPad;
+
+/**
+ * The sizes a short take may be set at on the identity card, largest first.
+ *
+ * 32 is the prose page's own size, and most short takes get it. The steps under
+ * it exist for the long end of the band — 160 Chinese characters under a
+ * three-line headline, or the English take, which runs about three times the
+ * characters at half the width each — and they stop at 26, which is the poster's
+ * smallest step anywhere (the domain chip, the tagline): under that, nothing on
+ * this canvas is meant to be read at arm's length. See POSTER.taglineSize.
+ */
+const TAKE_SIZES = [32, 30, 28, 26];
+
+/** A short take, laid out for the identity card: its size and its rows. */
+export interface PosterCardTake {
+  size: number;
+  rows: PosterRow[];
+}
+
+/**
+ * A SHORT take, drawn on the identity card IN PLACE OF THE THESIS — or null, and
+ * the share keeps the card + pages of prose it always had.
+ *
+ * WHY A SHORT TAKE GETS ONE IMAGE. It is 80–160 characters in two to four short
+ * paragraphs, and as a page of prose that is six lines at the top of a card built
+ * to hold fifteen: a second image that is mostly empty plate, which is the widow
+ * `posterPages` already refuses to draw, at the scale of a whole page.
+ *
+ * WHY IN PLACE OF THE THESIS AND NOT UNDER IT, which was the first thing tried and
+ * was decided by measuring rather than by taste. The card has 930px inside it. A
+ * real header (two- or three-line headline plus the original) is 300–380 of those,
+ * the thesis with its gap another ~200, and the sample take — 4 paragraphs, ~170
+ * characters — 591 at the prose size. That is ~1,200px into 930: the thesis and the
+ * take do not fit together at a size anyone can read, and keeping both would mean
+ * setting the take at about 22px, under the canvas's own floor. Without the thesis
+ * the same take fits at 32px with room to spare.
+ *
+ * And the thesis is the line a short take can best spare. The short prompt opens
+ * the take with the event itself — 「第一句就说事」 — so the take's first sentence
+ * already does the thesis's job on this card: it says what happened, to a reader
+ * who has read nothing. The accent bar STAYS, now beside the take, because its job
+ * is unchanged — it marks where the piece stops being described and starts being
+ * ours.
+ *
+ * NO OPENING INDENT, unlike a page of prose. The indent says "the writing starts
+ * here", and on this card the bar already says it; marking one beginning twice is
+ * the same argument that keeps the indent off every paragraph but the first.
+ *
+ * NULL in three cases, and all three are the old layout, unchanged: an article
+ * that is not `form: "short"` (the long read, and every archived article, which
+ * has no `form` at all), a short take with no body to draw, and a short take too
+ * long to fit at even the smallest size — a guard, not a routine, since the
+ * prompt's band is well inside what fits. Overflowing a fixed canvas is the one
+ * outcome worse than a second image.
+ */
+export function posterCardTake(
+  article: PublishedArticle,
+  lang: Lang,
+): PosterCardTake | null {
+  if (article.form !== "short") return null;
+  const take = takeBlocks(summaryFor(article, lang), lang);
+  if (!take.blocks.length) return null;
+
+  // BODY_SLACK for the same reason a page of prose holds it back: an integer
+  // layout can still be a few pixels off at paint time, and over-filling clips.
+  const room =
+    CARD_INNER - posterHeaderHeight(article, lang) - POSTER.thesisGap - BODY_SLACK;
+
+  for (const size of TAKE_SIZES) {
+    // Rounded UP here where PARA_LINE rounds to nearest: that one was checked
+    // against the pixels at 32px only, and over-planning a row by a fraction is
+    // the safe direction at the sizes nobody has measured.
+    const line = Math.ceil(size * PARA_LEADING);
+    // The same 1.4 units of insurance LINE_BUDGET holds back, at this size.
+    const budget = TAKE_WIDTH / size - 1.4;
+    const rows: PosterRow[] = [];
+    take.blocks.forEach((block, at) => {
+      const heading = block.kind === "heading";
+      layoutParagraph(block.text, 0, budget).forEach((text, row) => {
+        rows.push({
+          text,
+          heading,
+          gap:
+            row === 0 && at > 0
+              ? heading
+                ? POSTER.headingGap
+                : POSTER.paraGap
+              : 0,
+          indent: false,
+        });
+      });
+    });
+    const height = rows.reduce((sum, row) => sum + row.gap + line, 0);
+    if (height <= room) return { size, rows };
+  }
+  return null;
+}
+
+/**
  * How many images this article's share carries: the identity card, plus one per
- * page of prose.
+ * page of prose — or the card alone, when a short take fits on it (see
+ * `posterCardTake`).
  *
  * Computed on the SERVER and handed to the share sheet as a number, because the
  * sheet has to build that many URLs and previews and has no summary text to count
  * from — see the `parts` prop on ShareButton.
+ *
+ * TAKES THE ARTICLE, where it used to take one language's `SummaryText`. Whether
+ * the take is short lives on the article (`form`), and so does the headline the
+ * fit is measured against; a caller handing over the summary alone could not be
+ * told, and would count two images for a share the renderer draws as one — the
+ * sheet would then ask for a part 2 that 404s.
  */
-export function posterParts(summary: SummaryText, lang: Lang): number {
-  return 1 + posterPages(summary, lang).length;
+export function posterParts(article: PublishedArticle, lang: Lang): number {
+  if (posterCardTake(article, lang)) return 1;
+  return 1 + posterPages(summaryFor(article, lang), lang).length;
 }

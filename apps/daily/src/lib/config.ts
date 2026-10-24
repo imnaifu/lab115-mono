@@ -475,6 +475,11 @@ export const MAIL_SEGMENT: Record<"zh" | "en", string> = {
  * No per-category quota: these are `digest.articles` in the order the site ranks
  * them, so the first mail item is the first item on the page. A diversity rule
  * would be a second ordering that exists nowhere else on the site.
+ *
+ * NOW ONLY FOR DAYS WRITTEN BEFORE THE LONG/SHORT SPLIT. A day whose articles
+ * carry `form` mails all of them — nine short takes are a newsletter, not the
+ * 20-summary edition the paragraphs above were arguing against. See
+ * `digestEmail` in lib/mail/render.ts.
  */
 export const MAIL_TOP_N = 5;
 

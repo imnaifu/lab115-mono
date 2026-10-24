@@ -190,6 +190,11 @@ export function posterText(article: Article, summary: SummaryText, extra: string
   return posterClean([
     article.title,
     summary.thesis ?? "",
+    // The body, wherever it is drawn: on pages of prose for a long take, and on
+    // the identity card itself for a short one (see `posterCardTake`). Listed
+    // whole either way, so moving a take onto part 1 needs nothing new here — and
+    // a short take's thesis, which part 1 then does not draw, stays in the subset
+    // because one string per article is one cache entry for every part.
     ...paragraphsOf(summary.text ?? ""),
     // Drawn on the last page of prose when present — see `posterPages`. Its
     // label is not here: it differs by language, so it comes in via `extra`.

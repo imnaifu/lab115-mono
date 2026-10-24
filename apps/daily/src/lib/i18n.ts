@@ -68,7 +68,10 @@ const STRINGS = {
     dayHeading: (n: number) => `今天的 ${n} 篇`,
     /** 标题下面那一句。它和站点 tagline 不是一回事：tagline 说这个站是什么，这句
      *  说这一页是怎么来的 —— 从哪儿挑的、按什么标准。 */
-    dayLead: "从全球优质媒体，精选最值得关注的内容",
+    // 原来是「从全球优质媒体，精选最值得关注的内容」——放在任何一个资讯站上都成立，
+    // 也就什么都没说。这一句说的是这一页实际怎么来的：几十个源、每天读一遍、
+    // 只挑能拿去聊的。「替你读」不说是谁读的，因为读的是模型，不能写成一个人。
+    dayLead: "几十个博客和杂志，每天替你读一遍，挑出值得聊的几篇",
 
     /**
      * 首页那块大图上的标语。
@@ -406,6 +409,9 @@ const STRINGS = {
         所以只有它需要说一声。 */
     longRead: "今日长文",
 
+    /** 当天页面底部那一栏：从当天文章里各摘一句原话。 */
+    quotesHeading: "言论",
+
     /** 开头那张照片的出处，署名行里夹在作者和许可之间。作者名和许可名都是数据，
         只有这个词是文案，所以只有它在这里。 */
     photoSource: "维基共享资源",
@@ -565,7 +571,7 @@ const STRINGS = {
     /* See the Chinese side: a noun phrase rather than the date, with the date
        demoted to the kicker above it. */
     dayHeading: (n: number) => `Today's ${n}`,
-    dayLead: "Picked from the best of the world's press",
+    dayLead: "Dozens of blogs and magazines, read for you every morning — the few worth talking about",
 
     /* The count is MAIL_TOP_N — what the mail sends, not what the day holds.
        See the Chinese note for why the two numbers are different questions. */
@@ -742,6 +748,7 @@ const STRINGS = {
 
     whyItMatters: "Why it matters",
     longRead: "Long read",
+    quotesHeading: "Quotes",
 
     photoSource: "Wikimedia Commons",
 

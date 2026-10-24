@@ -15,8 +15,10 @@ export interface SummaryText {
   /** One sentence: what the article argues. Rendered as the lead. */
   thesis: string;
   /**
-   * The body, as ONE string. A blank line in it is a paragraph break; nothing
-   * else in the string means anything, and there is no markdown.
+   * The body, as ONE string. A blank line in it is a paragraph break, and the
+   * one piece of markdown is a `## ` heading line, which only the long read
+   * writes (see `blocksOf` in lib/paragraphs). Nothing else in the string means
+   * anything.
    *
    * THE SHAPE OF THE FIELD DECIDES THE SHAPE OF THE WRITING, which is the
    * whole reason this is not an array. Two earlier shapes proved it. `points:
@@ -44,13 +46,11 @@ export interface SummaryText {
    * paraphrases the thesis is worse than none: it is the same sentence charging
    * the reader twice.
    *
-   * THE FIELD IS SUPPORTED EVERYWHERE AND WRITTEN NOWHERE YET. The type, the
-   * reply parser (`applySummaries` in lib/summarize) and the renderer
-   * (components/Summary) all handle it; the summary PROMPT does not ask for it,
-   * so no digest currently carries one and no page currently shows the section.
-   * That order is deliberate — the plumbing can land, be reviewed and be running
-   * in production before a prompt change starts spending tokens on it, and a
-   * half-written field cannot reach the page in the meantime.
+   * WRITTEN FOR THE LONG READ ONLY. The plumbing landed before the prompt asked
+   * for it; the prompt then asked for it on every take; since the long/short
+   * split (`Article.form`) only the day's long read gets one — a short take is
+   * itself the reason to read, and a second block saying why would be the same
+   * sentence twice. Archived takes from the in-between period carry it.
    *
    * NOTHING GENERATES A FALLBACK. Absent means absent: the renderer draws no
    * heading, no rule and no empty block, so an archived take and a take whose
@@ -84,6 +84,20 @@ export interface SummaryText {
    * TAGS_PER_ARTICLE in lib/summarize.ts.
    */
   tags?: string[];
+  /**
+   * ONE SENTENCE FROM THE ARTICLE ITSELF, for the day page's 「言论」 block —
+   * the author's or someone quoted in the piece, never ours.
+   *
+   * CHECKED AGAINST THE BODY BEFORE IT IS STORED, which is what makes it safe to
+   * print in quotation marks: the half written in the article's own language must
+   * appear in the article text, or both halves are dropped (`quoteFrom` in
+   * lib/summarize). The other half is a translation and cannot be checked that
+   * way, so it rides on the checked one.
+   *
+   * Short takes only, and optional: the model may decline when nothing in the
+   * piece stands on its own, and archived takes have none.
+   */
+  quote?: string;
 }
 
 /**

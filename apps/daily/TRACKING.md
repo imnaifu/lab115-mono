@@ -44,7 +44,7 @@ GA 自己的传输层处理 unload），而为了一个指标去延迟读者的�
 | `copy_link` | — | 复制链接（写入成功之后才发） | `ShareButton.tsx` |
 | `save_image` | `parts` `shape`=`set`\|`single` | 存图 | `ShareSheet.tsx` |
 | `poster_failed` | `part` `parts` | 一张预览重试后仍然失败 | `ShareSheet.tsx` |
-| `summary_open` | `source`、`from`=`list`\|`home`\|`topic`\|`topic_hub`\|`related`、`age` | 打开某一篇的概要 —— 站内「留下来」的那一侧，和同一行上的 `read_original` 对读。`from` 分开几个入口：当天的卡片列表、首页那条最新文章、话题页的行、话题总入口卡片里那两条最近更新、文章页底下的「你可能还想读」。`age` 是这一行在列表里的深度 | `ArticleCards.tsx`、首页、`TopicView.tsx`、`TopicHub.tsx`、`RelatedArticles.tsx` |
+| `summary_open` | `source`、`from`=`list`\|`home`\|`topic`\|`topic_hub`\|`related`\|`quotes`、`age` | 打开某一篇的概要 —— 站内「留下来」的那一侧，和同一行上的 `read_original` 对读。`from` 分开几个入口：当天的卡片列表、首页那条最新文章、话题页的行、话题总入口卡片里那两条最近更新、文章页底下的「你可能还想读」、当天页面底部「言论」栏里的出处链接。`age` 是这一行在列表里的深度 | `ArticleCards.tsx`、首页、`TopicView.tsx`、`TopicHub.tsx`、`RelatedArticles.tsx`、`DigestView.tsx` |
 | `lang_switch` | `to` | 语言切换 | `Shell.tsx` |
 | `day_open` | `from`=`archive`\|`article`、`age` | 打开某一天 | archive 页、文章页 |
 | `topic_open` | `topic`、`from`=`homepage`\|`article`\|`archive`\|`topic_hub`\|`topic_page`\|`pager`\|`header`、`lang` | 打开某个话题。**反向指标，和 `source_open` 一个读法**：话题页是给搜索做的落地页，站内点击少而 `/topic*` 的自然流量在涨，就是它按设计工作。三个参数各回答一件事 —— `topic` 说哪个领域真的有人要（GA4 里可以直接按它拆），`from` 说哪个入口在起作用（首页那行 chips？还是读完一篇之后？），`lang` 说中英两侧的读者是不是同一种行为。**`from=article` 额外回答一件事**：读完一篇之后，读者想不想要同一话题的下一篇 —— 这和「你可能还想读」是同一个问题的两个方向。`data-track-topic` 在通往 `/topic` 本身的那两个入口上**故意缺席**（顶栏的「探索话题」、chips 行末尾的「更多」）：它们背后没有某一个话题，硬填 `all` 会造出一个别的 chip 从不发送的值 | 文章页、`ArticleCards.tsx`、`TopicChips.tsx`、`TopicHub.tsx`、`TopicView.tsx`、`SiteHeader.tsx` |
