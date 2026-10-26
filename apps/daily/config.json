@@ -209,10 +209,10 @@
       "site": "https://geohot.github.io/blog/",
       "feed": "https://geohot.github.io/blog/feed.xml",
       "category": "tech",
-      "description": "George Hotz，对 AI 泡沫与行业炒作的尖锐短评。",
+      "description": "George Hotz，对 AI 泡沫与行业炒作的尖锐短评。2026-10-26 停用：帖子太短，63 天抓到 3 篇无一过线。",
       "descriptionEn": "George Hotz, sharp and brief, on the AI bubble and the hype around it.",
       "accent": "#B4523D",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -330,10 +330,10 @@
       "site": "https://conversableeconomist.com/",
       "feed": "https://conversableeconomist.com/feed/",
       "category": "economy",
-      "description": "Timothy Taylor，经济学论文与史料的通俗解读，学术味重。",
+      "description": "Timothy Taylor，经济学论文与史料的通俗解读，学术味重。2026-10-26 停用：美国联邦预算、学校经费、房产税为主，不适合中文白领读者。",
       "descriptionEn": "Timothy Taylor turning economics papers and archives into plain prose. Academic in flavour.",
       "accent": "#46688F",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -414,10 +414,10 @@
       "site": "https://www.citationneeded.news/",
       "feed": "https://www.citationneeded.news/rss/",
       "category": "business",
-      "description": "Molly White，加密货币与科技行业问责；「Issue NNN」是周期性链接汇总。",
+      "description": "Molly White，加密货币与科技行业问责；「Issue NNN」是周期性链接汇总。2026-10-26 停用：美国参议院加密法案等美国政策为主，不适合中文白领读者。",
       "descriptionEn": "Molly White holding crypto and the tech industry to account; the numbered Issues are periodic link roundups.",
       "accent": "#4C6E8A",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -474,10 +474,10 @@
       "site": "https://baoyu.io/",
       "feed": "https://baoyu.io/feed.xml",
       "category": "tech",
-      "description": "宝玉，AI 工程实践与行业观察，中文，也发翻译。",
+      "description": "宝玉，AI 工程实践与行业观察，中文，也发翻译。2026-10-26 停用：约每月 1 篇、偏工程师视角，翻译稿与已抓的英文源重复，63 天里无一过线。",
       "descriptionEn": "AI engineering practice and industry watching, in Chinese; also publishes translations.",
       "accent": "#4E7FA8",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": true
     },
     {
@@ -510,10 +510,10 @@
       "site": "https://www.bitsaboutmoney.com/",
       "feed": "https://www.bitsaboutmoney.com/archive/rss/",
       "category": "business",
-      "description": "Patrick McKenzie，支付与银行系统内幕，更新慢但每篇都是长文。",
+      "description": "Patrick McKenzie，支付与银行系统内幕，更新慢但每篇都是长文。2026-10-26 停用：05-01 后停更，内容是美国支付与银行。",
       "descriptionEn": "Patrick McKenzie on how payments and banking actually work from the inside. Slow, and always long.",
       "accent": "#D08A55",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -672,10 +672,10 @@
       "site": "https://jlcollinsnh.com/",
       "feed": "https://jlcollinsnh.com/feed/",
       "category": "investing",
-      "description": "《The Simple Path to Wealth》作者，指数投资入门，更新很少。",
+      "description": "《The Simple Path to Wealth》作者，指数投资入门，更新很少。2026-10-26 停用：近 90 天 1 篇，内容是美国指数投资。",
       "descriptionEn": "The author of The Simple Path to Wealth on index investing for beginners. Rarely updates.",
       "accent": "#7E6B33",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": true
     },
     {
@@ -792,10 +792,10 @@
       "site": "https://yourlocalepidemiologist.substack.com/",
       "feed": "https://yourlocalepidemiologist.substack.com/feed",
       "category": "science",
-      "description": "Katelyn Jetelina，流行病学家写的公共卫生实操（山火烟怎么防、疫苗打不打、季节性疫情），0.36 篇/天，全文 ~8.4k 且全部免费；每周有一条是疫情数字流水账，属于 substance 3-4 的选摘体。",
+      "description": "Katelyn Jetelina，流行病学家写的公共卫生实操（山火烟怎么防、疫苗打不打、季节性疫情），0.36 篇/天，全文 ~8.4k 且全部免费；每周有一条是疫情数字流水账，属于 substance 3-4 的选摘体。2026-10-26 停用：美国公共卫生实操（疫苗指南、HHS）为主，不适合中文白领读者。",
       "descriptionEn": "Katelyn Jetelina, an epidemiologist, on practical public health — wildfire smoke, which vaccines to get, what is going around. One post a week is a numbers update rather than an argument.",
       "accent": "#35789B",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -804,10 +804,10 @@
       "site": "https://www.theatlantic.com/health/",
       "feed": "https://www.theatlantic.com/feed/channel/health/",
       "category": "science",
-      "description": "The Atlantic 健康栏目，0.5 篇/天，feed 给整篇正文（~8.2k，实测结尾自然，不是预览）；栏目边界很宽，会混进与身体健康无关的生活报道。",
+      "description": "The Atlantic 健康栏目，0.5 篇/天，feed 给整篇正文（~8.2k，实测结尾自然，不是预览）；栏目边界很宽，会混进与身体健康无关的生活报道。2026-10-26 停用：美国本地健康政策为主（RFK Jr.、MAHA、宾州麻疹），不适合中文白领读者。",
       "descriptionEn": "The Atlantic's health desk. The section's boundaries are loose, so lifestyle reporting with little to do with health gets in.",
       "accent": "#9E4A3C",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -852,10 +852,10 @@
       "site": "https://newsletter.powderworks.dev/",
       "feed": "https://newsletter.powderworks.dev/feed",
       "category": "tech",
-      "description": "匿名作者的 Substack，写用 coding agent 做大型项目踩出来的教训和为此自制的工具，兼谈软件生产到底是手艺还是工业过程；feed 带全文，实测 2.2k 与 72.9k，都免费。全站只有 2 篇（2026-08-08 / 08-12），频率无法实测，最新一篇距今 14 天 —— 一个还没证明会持续更新的新号。",
+      "description": "匿名作者的 Substack，写用 coding agent 做大型项目踩出来的教训和为此自制的工具，兼谈软件生产到底是手艺还是工业过程；feed 带全文，实测 2.2k 与 72.9k，都免费。全站只有 2 篇（2026-08-08 / 08-12），频率无法实测，最新一篇距今 14 天 —— 一个还没证明会持续更新的新号。2026-10-26 停用：基本停更，全站 2 篇。",
       "descriptionEn": "An anonymous Substack on lessons from building large projects with coding agents, the tools built along the way, and whether software is a craft or an industrial process. Two posts so far — it has not yet shown it will keep going.",
       "accent": "#6E4B3A",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -876,10 +876,10 @@
       "site": "https://www.theatlantic.com/family/",
       "feed": "https://www.theatlantic.com/feed/channel/family/",
       "category": "living",
-      "description": "The Atlantic 家庭栏目，亲密关系、育儿、友谊和社交生活，0.5 篇/天；feed 给整篇正文（7k~13k），文章页对抓取返回空，fetchBody 保持 false。2026-10-13 试打 6 篇全部过线，均分 35.5。",
+      "description": "The Atlantic 家庭栏目，亲密关系、育儿、友谊和社交生活，0.5 篇/天；feed 给整篇正文（7k~13k），文章页对抓取返回空，fetchBody 保持 false。2026-10-13 试打 6 篇全部过线，均分 35.5。2026-10-26 停用：美国约会与托育政策为主，不适合中文白领读者。",
       "descriptionEn": "The Atlantic's family desk: relationships, parenting, friendship and social life.",
       "accent": "#A5634A",
-      "enabled": true,
+      "enabled": false,
       "fetchBody": false
     },
     {
@@ -941,6 +941,54 @@
       "accent": "#C2552E",
       "enabled": true,
       "fetchBody": true
+    },
+    {
+      "id": "chinai",
+      "name": "ChinAI",
+      "site": "https://chinai.substack.com/",
+      "feed": "https://chinai.substack.com/feed",
+      "category": "tech",
+      "description": "Jeffrey Ding 翻译并点评中文 AI 圈的文章和讨论（公司、政策、研究者在说什么），约每周 1 篇；feed 全文 6k~13k，全部免费。",
+      "descriptionEn": "Jeffrey Ding translates and annotates what China's AI world is writing and arguing about — companies, policy, researchers. About weekly.",
+      "accent": "#B4473A",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "interconnected",
+      "name": "Interconnected",
+      "site": "https://interconnected.blog/",
+      "feed": "https://interconnected.blog/rss/",
+      "category": "business",
+      "description": "Kevin Xu，中美科技与 AI 公司的商业分析，约每月 2 篇；feed 全文 6k~13k。",
+      "descriptionEn": "Kevin Xu's business analysis of US and Chinese tech and AI companies. About twice a month.",
+      "accent": "#3F6E9E",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "eastisread",
+      "name": "East is Read",
+      "site": "https://www.eastisread.com/",
+      "feed": "https://www.eastisread.com/feed",
+      "category": "economy",
+      "description": "中国经济学者（黄益平等）文章和演讲的英译，约每周 2 篇；feed 全文 4k~27k，全部免费。偏政策，比较干。",
+      "descriptionEn": "English translations of Chinese economists' essays and talks. About twice a week; policy-heavy.",
+      "accent": "#9E5A2E",
+      "enabled": true,
+      "fetchBody": false
+    },
+    {
+      "id": "normaltech",
+      "name": "AI as Normal Technology",
+      "site": "https://www.normaltech.ai/",
+      "feed": "https://www.normaltech.ai/feed",
+      "category": "tech",
+      "description": "Arvind Narayanan 与 Sayash Kapoor，冷静讲 AI 实际能做什么、不能做什么，约每周 1 篇；feed 全文 8k~88k，偏长偏学术。",
+      "descriptionEn": "Arvind Narayanan and Sayash Kapoor on what AI can and cannot actually do — sober, long, somewhat academic. About weekly.",
+      "accent": "#4A6E5A",
+      "enabled": true,
+      "fetchBody": false
     }
   ]
 }
