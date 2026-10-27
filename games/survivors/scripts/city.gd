@@ -9,8 +9,9 @@ extends Node2D
 ## everything. Buildings, trees, props and signs stand up, so they are spawned per block into
 ## Game's y-sorted entity layer, where the player walks behind or in front of them.
 ##
-## Buildings, tree trunks and the water are solid: resolve() pushes a body out of them. They
-## are filed in a coarse grid so each body checks only the few rects near it.
+## The base of each building, tree trunks and the water are solid: resolve() pushes a body out
+## of them. Only a building's base blocks, so you can walk behind the rest of it (it fades
+## while you do). Solids are filed in a coarse grid so each body checks only the few near it.
 
 ## soco-st drawings are 1080px canvases; one scale for all keeps their relative sizes.
 const BUILDING_SCALE := 0.22
@@ -34,6 +35,9 @@ const BEHIND_ALPHA := 0.4
 const BLOCK_MARGIN := 220.0
 ## Our drawings have a little air around the shape; trim it off their solid rect.
 const ART_INSET := 0.08
+## How deep a building's solid base is, whatever its height: the strip along its front wall.
+## Everything above it is scenery you can walk behind.
+const FOOTPRINT_DEPTH := 24.0
 ## Solid rects are filed in cells of this size, padded by the biggest body radius, so a lookup
 ## needs only the cell the body's centre is in.
 const SOLID_CELL := 64.0
@@ -386,8 +390,9 @@ func _structure_size(spec: String, texture: Texture2D) -> Vector2:
 	return natural * (BayArea.HEIGHTS[spec.get_slice(":", 1)] / natural.y)
 
 
-## Puts a building or landmark down with its base centre at `feet`, makes it solid (all of it,
-## or only the `solid_spans` fractions of its width), and tops it with a brand sign if given.
+## Puts a building or landmark down with its base centre at `feet`, makes its base solid (the
+## whole width, or only the `solid_spans` fractions of it), and tops it with a brand sign if
+## given.
 func _place_structure(content: Dictionary, spec: String, texture: Texture2D, size: Vector2, feet: Vector2, brand: String, solid_spans: Array) -> void:
 	var holder := Node2D.new()
 	holder.position = feet
@@ -410,7 +415,8 @@ func _place_structure(content: Dictionary, spec: String, texture: Texture2D, siz
 	for span: Array in spans:
 		var from: float = drawn.position.x + size.x * maxf(span[0], inset)
 		var to: float = drawn.position.x + size.x * minf(span[1], 1.0 - inset)
-		var solid := Rect2(from, drawn.position.y, to - from, size.y)
+		var depth := minf(FOOTPRINT_DEPTH, size.y)
+		var solid := Rect2(from, drawn.end.y - depth, to - from, depth)
 		content["solids"].append(solid)
 		_file_solid(solid, true)
 	var entry := [holder, drawn]

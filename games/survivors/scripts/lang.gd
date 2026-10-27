@@ -15,7 +15,6 @@ const EN := {
 	"开始搬砖": "Clock In",
 	"设置": "Settings",
 	"电脑：WASD / 方向键移动　手机：按住屏幕拖动": "PC: WASD / arrow keys · Phone: touch and drag",
-	"插画：soco-st.com 与自绘　字体：站酷快乐体": "Art: soco-st.com & hand-drawn · Font: ZCOOL KuaiLe",
 	"升级啦！ Lv %d": "Level up! Lv %d",
 	"按 1 / 2 / 3 或点卡片选择": "Press 1 / 2 / 3 or tap a card",
 	"新！": "NEW!",

@@ -12,4 +12,8 @@ godot --headless --path . --import
 rm -rf "$out"
 mkdir -p "$out"
 godot --headless --path . --export-release Web "$out/index.html"
+# The font's OFL licence must travel with the font; ship it as a plain file beside the game
+# rather than as a credits line in the UI.
+mkdir -p "$out/licenses"
+cp assets/fonts/OFL.txt "$out/licenses/ZCOOLKuaiLe-OFL.txt"
 ls -la "$out"

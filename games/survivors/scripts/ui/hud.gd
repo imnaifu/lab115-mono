@@ -473,14 +473,6 @@ func _build_title() -> Control:
 	controls.custom_minimum_size = Vector2(TITLE_TEXT_WIDTH, 0)
 	column.add_child(controls)
 
-	var credits := _label("插画：soco-st.com 与自绘　字体：站酷快乐体", 8)
-	credits.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	credits.anchor_top = 1.0
-	credits.anchor_bottom = 1.0
-	credits.anchor_right = 1.0
-	credits.offset_top = -16
-	credits.offset_bottom = -4
-	overlay.add_child(credits)
 	return overlay
 
 
