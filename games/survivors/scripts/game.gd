@@ -445,7 +445,7 @@ func start_run() -> void:
 func _on_run_started() -> void:
 	Tilt.calibrate()
 	if Tilt.enabled():
-		announce("当前角度算作不动，倾斜手机就能移动")
+		announce("倾斜手机就能移动，前后以现在的角度为准")
 
 
 func set_paused(value: bool) -> void:

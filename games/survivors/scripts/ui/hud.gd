@@ -37,6 +37,7 @@ var _level_label: Label
 var _time_label: Label
 var _kills_label: Label
 var _pause_button: Button
+var _recalibrate_button: Button
 var _top_bar: Control
 var _weapon_slots: Array[Panel] = []
 var _passive_slots: Array[Panel] = []
@@ -120,6 +121,7 @@ func _process(delta: float) -> void:
 	_title_overlay.visible = state == Game.State.TITLE
 	_top_bar.visible = state != Game.State.TITLE
 	_pause_button.visible = state == Game.State.PLAYING
+	_recalibrate_button.visible = state == Game.State.PLAYING and Tilt.enabled()
 	_level_up_overlay.visible = state == Game.State.LEVEL_UP
 	_pause_overlay.visible = state == Game.State.PAUSED
 	_end_overlay.visible = state == Game.State.ENDED
@@ -132,7 +134,7 @@ func _process(delta: float) -> void:
 		_title_tilt_hint.text = title_hint
 		_title_tilt_hint.visible = title_hint != ""
 	if _settings_open and _tilt_hint != null:
-		_tilt_hint.text = TILT_HINTS.get(Tilt.state(), "倾斜手机来移动，开局时拿手机的角度算作不动")
+		_tilt_hint.text = TILT_HINTS.get(Tilt.state(), "左右以水平为准，前后以开局时拿手机的角度为准；玩的时候点右上角的手机按钮可以重新校准")
 	if state != _shown_state:
 		_shown_state = state
 		if state != Game.State.PLAYING:
@@ -318,6 +320,15 @@ func _build_top_bar() -> void:
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(4, 0)
 	right.add_child(spacer)
+	# Re-zeroes tilt steering mid-run, without pausing (resuming re-zeroes it anyway).
+	_recalibrate_button = Button.new()
+	_recalibrate_button.icon = Art.texture("phone_tilt")
+	_recalibrate_button.expand_icon = true
+	_recalibrate_button.custom_minimum_size = Vector2(24, 24)
+	_recalibrate_button.focus_mode = Control.FOCUS_NONE
+	_recalibrate_button.theme_type_variation = "IconButton"
+	_recalibrate_button.pressed.connect(_recalibrate_tilt)
+	right.add_child(_recalibrate_button)
 	_pause_button = Button.new()
 	_pause_button.icon = Art.texture("pause")
 	_pause_button.expand_icon = true
@@ -326,6 +337,11 @@ func _build_top_bar() -> void:
 	_pause_button.theme_type_variation = "IconButton"
 	_pause_button.pressed.connect(game.set_paused.bind(true))
 	right.add_child(_pause_button)
+
+
+func _recalibrate_tilt() -> void:
+	Tilt.calibrate()
+	_show_toast("已按现在的角度重新校准")
 
 
 func _slot() -> Panel:
