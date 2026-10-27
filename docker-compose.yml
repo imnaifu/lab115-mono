@@ -181,8 +181,8 @@ services:
       # Next.js listens on 3000 inside the container
       - traefik.http.services.madlibs.loadbalancer.server.port=3000
 
-  # 硅谷幸存者, a Godot game. Its source is games/survivors/; the web export committed under
-  # apps/survivors/public/ is what ships, served by nginx (apps/survivors/README.md).
+  # 硅谷幸存者, a Godot game (apps/survivors/game/). The image exports it to a web build and
+  # serves that with nginx, so building it downloads Godot (apps/survivors/README.md).
   survivors:
     build:
       context: ./apps/survivors

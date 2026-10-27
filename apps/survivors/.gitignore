@@ -1,0 +1,2 @@
+# Local web export (game/tools/export_web.sh); production builds it inside the image.
+public/

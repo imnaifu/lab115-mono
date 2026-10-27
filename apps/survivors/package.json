@@ -1,8 +1,8 @@
 {
   "name": "survivors",
   "private": true,
-  "description": "硅谷幸存者 — the Godot web export of games/survivors, served as static files",
+  "description": "硅谷幸存者 — a Godot game (game/), exported to the web inside the Docker build and served by nginx",
   "scripts": {
-    "build": "node check-export.mjs"
+    "build": "node check-project.mjs"
   }
 }

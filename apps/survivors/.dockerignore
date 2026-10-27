@@ -1,0 +1,4 @@
+# Build context is this directory; keep local outputs and caches out of it.
+public/
+node_modules/
+game/.godot/
