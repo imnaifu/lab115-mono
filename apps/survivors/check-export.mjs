@@ -3,7 +3,11 @@
 // files the browser loads, and a missing one means a blank page rather than a game.
 import { statSync } from "node:fs";
 
-const required = ["index.html", "index.js", "index.wasm", "index.pck", "index.audio.worklet.js"];
+const required = [
+  "index.html", "index.js", "index.wasm", "index.pck", "index.audio.worklet.js",
+  // PWA: without these the page still runs but can't be installed or work offline.
+  "index.manifest.json", "index.service.worker.js", "index.offline.html",
+];
 const missing = required.filter((name) => {
   try {
     return statSync(new URL(`./public/${name}`, import.meta.url)).size === 0;
