@@ -1,0 +1,8 @@
+{
+  "name": "survivors",
+  "private": true,
+  "description": "硅谷幸存者 — the Godot web export of games/survivors, served as static files",
+  "scripts": {
+    "build": "node check-export.mjs"
+  }
+}

@@ -181,6 +181,29 @@ services:
       # Next.js listens on 3000 inside the container
       - traefik.http.services.madlibs.loadbalancer.server.port=3000
 
+  # 硅谷幸存者, a Godot game. Its source is games/survivors/; the web export committed under
+  # apps/survivors/public/ is what ships, served by nginx (apps/survivors/README.md).
+  survivors:
+    build:
+      context: ./apps/survivors
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.survivors-http.entryPoints=http
+      - traefik.http.routers.survivors-http.rule=Host(`survivors.lab115.com`)
+      - traefik.http.routers.survivors-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.survivors-https.entryPoints=https
+      - traefik.http.routers.survivors-https.rule=Host(`survivors.lab115.com`)
+      - traefik.http.routers.survivors-https.tls=true
+      - traefik.http.routers.survivors-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.survivors-https.middlewares=gzip
+      # nginx listens on 80 inside the container
+      - traefik.http.services.survivors.loadbalancer.server.port=80
+
   # Self-hosted analytics at stats.lab115.com, running ALONGSIDE GA rather than
   # instead of it. GA's script barely loads from mainland China, so a reader
   # there was invisible; this one is served from our own domain through the same
