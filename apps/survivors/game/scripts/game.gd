@@ -11,8 +11,9 @@ signal announced(text: String)
 enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, ENDED }
 
 const RUN_SECONDS := 600.0
-## The logical view; project.godot's viewport size, swapped while the screen is turned.
-const VIEW := Vector2i(640, 360)
+## Logical view sizes; project.godot's viewport size is the landscape one.
+const LANDSCAPE_VIEW := Vector2i(640, 360)
+const PORTRAIT_VIEW := Vector2i(360, 640)
 ## Enemies appear this far outside the screen edge, enough to hide the biggest boss.
 const SPAWN_MARGIN := 40.0
 const GRID_CELL := 32.0
@@ -98,8 +99,8 @@ func _ready() -> void:
 	hud.game = self
 	add_child(hud)
 	inventory_changed.emit()
-	_apply_orientation()
-	get_tree().root.size_changed.connect(_apply_orientation)
+	apply_orientation()
+	get_tree().root.size_changed.connect(apply_orientation)
 
 	if skip_title:
 		skip_title = false
@@ -137,16 +138,21 @@ func view_half() -> Vector2:
 	return size / 2.0
 
 
-## The game is landscape only. On a phone held upright it draws itself turned a quarter turn
-## and fills the screen, so the player just turns the phone, rotation lock or not. A window
-## taller than wide anywhere else gets the landscape view letterboxed; a wider one sees more of
-## the world (aspect "expand").
-func _apply_orientation() -> void:
+## Phones play in portrait by default, like the genre's mobile hits (Vampire Survivors and
+## Survivor.io both default to it: one thumb steers, the phone stays upright), and the layout
+## simply follows how the phone is held. A phone whose player picked landscape in Settings
+## draws the game turned a quarter turn while upright, so it plays sideways even with rotation
+## lock on. Computers are always landscape; a window taller than wide gets that letterboxed.
+## Otherwise a longer screen sees more of the world (aspect "expand").
+func apply_orientation() -> void:
 	var window := get_window()
 	var upright := window.size.y > window.size.x
-	var turned := upright and Device.is_handheld()
-	var scale_size := Vector2i(VIEW.y, VIEW.x) if turned else VIEW
-	var aspect := Window.CONTENT_SCALE_ASPECT_KEEP if upright and not turned else Window.CONTENT_SCALE_ASPECT_EXPAND
+	var handheld := Device.is_handheld()
+	var turned := handheld and upright and Device.prefers_landscape()
+	# An upright phone uses the tall base size whether it shows the portrait layout or the turned
+	# landscape one (whose layout swaps it back).
+	var scale_size := PORTRAIT_VIEW if handheld and upright else LANDSCAPE_VIEW
+	var aspect := Window.CONTENT_SCALE_ASPECT_KEEP if upright and not handheld else Window.CONTENT_SCALE_ASPECT_EXPAND
 	if window.content_scale_size != scale_size:
 		window.content_scale_size = scale_size
 	if window.content_scale_aspect != aspect:

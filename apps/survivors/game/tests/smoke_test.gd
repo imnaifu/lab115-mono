@@ -12,7 +12,8 @@ extends SceneTree
 ## seconds and screenshot it), --window=WxH (window size, e.g. 405x720 to see a phone held upright),
 ## --lang=zh|en (UI language for this run, instead of the saved or system one),
 ## --teleport=X,Y (start the run at that world position, to look at a district),
-## --handheld (behave as on a phone, e.g. with --window=405x720 to see the turned screen).
+## --handheld (behave as on a phone, e.g. with --window=405x720 to see it held upright),
+## --orientation=portrait|landscape (a phone's Settings choice for this run, not saved).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -62,6 +63,8 @@ func _initialize() -> void:
 			_lang = value
 		elif arg == "--handheld":
 			Device.force_handheld = true
+		elif arg.begins_with("--orientation="):
+			Settings.overrides["orientation"] = value
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):

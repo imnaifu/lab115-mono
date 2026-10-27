@@ -5,8 +5,9 @@ extends CanvasLayer
 ## the overlays can take input.
 ## Overlay visibility follows game.state every frame instead of being toggled by events, so a
 ## pick made from code (the smoke-test bot) closes the level-up panel too.
-## Layout is anchored rather than placed, because the view is 640x360 or wider; on an upright
-## phone the whole layer is turned a quarter turn (fit_screen, Game._apply_orientation).
+## Layout is anchored rather than placed, because the view is 640x360 or wider in landscape
+## and 360x640 or taller on an upright phone in portrait; a phone set to landscape turns the
+## whole layer a quarter turn instead (fit_screen, Game.apply_orientation).
 
 ## Ignore picks for a moment after the panel opens, so keys held down while playing don't
 ## choose a card by accident.
@@ -58,8 +59,6 @@ var _settings_overlay: Control
 var _settings_holder: CenterContainer
 var _settings_open := false
 var _tilt_hint: Label
-var _title_tilt_buttons: Array[Button] = []
-var _title_tilt_hint: Label
 var _shown_state := -1
 ## Brightens the XP bar for a moment whenever XP comes in, so picking up a star registers.
 var _xp_flash := 0.0
@@ -128,11 +127,6 @@ func _process(delta: float) -> void:
 	if state != Game.State.TITLE and state != Game.State.PAUSED:
 		_settings_open = false
 	_settings_overlay.visible = _settings_open
-	if _title_tilt_hint != null and _title_overlay.visible:
-		# Only while it's on: a refusal from an earlier attempt is moot once switched off.
-		var title_hint: String = TILT_HINTS.get(Tilt.state(), "") if Tilt.enabled() else ""
-		_title_tilt_hint.text = title_hint
-		_title_tilt_hint.visible = title_hint != ""
 	if _settings_open and _tilt_hint != null:
 		_tilt_hint.text = TILT_HINTS.get(Tilt.state(), "左右以水平为准，前后以开局时拿手机的角度为准；玩的时候点右上角的手机按钮可以重新校准")
 	if state != _shown_state:
@@ -480,8 +474,6 @@ func _build_title() -> Control:
 	buttons.add_child(start)
 	buttons.add_child(_settings_button())
 	start.call_deferred("grab_focus")
-	if Tilt.available():
-		column.add_child(_build_tilt_card())
 
 	var controls := _label("电脑：WASD / 方向键移动　手机：按住屏幕拖动", 10)
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -492,48 +484,11 @@ func _build_title() -> Control:
 	return overlay
 
 
-## Phones only. Tilt steering is the most fun way to play on a phone, but nobody finds it in
-## Settings, so the title offers it directly; the buttons mirror the Settings switch.
-func _build_tilt_card() -> Control:
-	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.INK, 2, 12, Vector4(10, 6, 10, 6), true))
-	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 2)
-	card.add_child(column)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	column.add_child(row)
-	row.add_child(_icon("phone_tilt", 26))
-	var caption := _label("倾斜手机来玩", 13, true)
-	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(caption)
-	row.add_child(_tag("推荐", Art.GREEN))
-	var tilt_on := Tilt.enabled()
-	_title_tilt_buttons = _choice_buttons([["开", tilt_on], ["关", not tilt_on]], _on_tilt_picked, Vector2(52, 28))
-	for button in _title_tilt_buttons:
-		row.add_child(button)
-	_title_tilt_hint = _label("", 10, true)
-	_title_tilt_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_title_tilt_hint.custom_minimum_size = Vector2(280, 0)
-	_title_tilt_hint.modulate = Color(1, 1, 1, 0.7)
-	_title_tilt_hint.visible = false
-	column.add_child(_title_tilt_hint)
-	return card
-
-
-func _sync_title_tilt() -> void:
-	if _title_tilt_buttons.is_empty():
-		return
-	var tilt_on := Tilt.enabled()
-	_title_tilt_buttons[0].set_pressed_no_signal(tilt_on)
-	_title_tilt_buttons[1].set_pressed_no_signal(not tilt_on)
-
-
 # --- Level-up ------------------------------------------------------------------------------
 
 func _show_level_up(choices: Array) -> void:
 	_clear(_cards_holder)
+	var portrait := _is_portrait()
 	var column := VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 10)
@@ -545,12 +500,12 @@ func _show_level_up(choices: Array) -> void:
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(heading)
 
-	var cards := HBoxContainer.new()
+	var cards := _stack(portrait)
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
-	cards.add_theme_constant_override("separation", 10)
+	cards.add_theme_constant_override("separation", 8 if portrait else 10)
 	column.add_child(cards)
 	for i in choices.size():
-		var card := _make_card(choices[i], i)
+		var card := _make_card(choices[i], i, portrait)
 		cards.add_child(card)
 		_pop_in(card, i * 0.06)
 
@@ -563,11 +518,13 @@ func _show_level_up(choices: Array) -> void:
 	(cards.get_child(0) as Button).grab_focus()
 
 
-func _make_card(choice: Dictionary, index: int) -> Button:
+## A level-up choice: a tall card side by side in landscape, a wide row (`compact`) stacked in
+## portrait.
+func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	var kind: String = choice["kind"]
 	var accent: Color = KIND_COLORS[kind]
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(150, 180)
+	card.custom_minimum_size = Vector2(300, 74) if compact else Vector2(150, 180)
 	card.add_theme_stylebox_override("normal", _box(Art.PAPER, accent, 3, 12, Vector4.ZERO, true))
 	card.add_theme_stylebox_override("hover", _box(Color.WHITE, Art.INK, 3, 12, Vector4.ZERO, true))
 	card.add_theme_stylebox_override("pressed", _box(Color("fff3cf"), Art.INK, 3, 12, Vector4.ZERO, true))
@@ -585,11 +542,35 @@ func _make_card(choice: Dictionary, index: int) -> Button:
 	card.add_child(margin)
 
 	var tag := _tag("新！", Art.RED) if choice["level"] == 1 else null
-	var bubble := _icon_bubble(choice["art"], 52.0, accent)
+	var bubble := _icon_bubble(choice["art"], 40.0 if compact else 52.0, accent)
 	var name_label := _label(choice["name"], 15, true)
 	var description := _label(choice["text"], 11, true)
 	description.modulate = Color(1, 1, 1, 0.85)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	if compact:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		margin.add_child(row)
+		row.add_child(_key_badge(index))
+		row.add_child(bubble)
+		var text_column := VBoxContainer.new()
+		text_column.alignment = BoxContainer.ALIGNMENT_CENTER
+		text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(text_column)
+		var name_row := HBoxContainer.new()
+		name_row.add_theme_constant_override("separation", 6)
+		name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text_column.add_child(name_row)
+		name_row.add_child(name_label)
+		if kind != "heal":
+			name_row.add_child(_level_dots(choice["level"], accent))
+		if tag != null:
+			name_row.add_child(tag)
+		text_column.add_child(description)
+		return card
 
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 5)
@@ -688,6 +669,7 @@ func _level_dots(filled: int, accent: Color) -> Control:
 
 func _show_pause() -> void:
 	_clear(_pause_holder)
+	var portrait := _is_portrait()
 	var panel := _panel()
 	_pause_holder.add_child(panel)
 	var column := VBoxContainer.new()
@@ -698,8 +680,8 @@ func _show_pause() -> void:
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(heading)
 
-	var build := HBoxContainer.new()
-	build.add_theme_constant_override("separation", 18)
+	var build := _stack(portrait)
+	build.add_theme_constant_override("separation", 10 if portrait else 18)
 	column.add_child(build)
 	var weapon_rows: Array = []
 	for weapon in game.player.weapons:
@@ -714,7 +696,7 @@ func _show_pause() -> void:
 
 	var player := game.player
 	var stats := GridContainer.new()
-	stats.columns = 3
+	stats.columns = 2 if portrait else 3
 	stats.add_theme_constant_override("h_separation", 16)
 	stats.add_theme_constant_override("v_separation", 2)
 	column.add_child(stats)
@@ -734,14 +716,19 @@ func _show_pause() -> void:
 		recalibrate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(recalibrate)
 
-	var buttons := HBoxContainer.new()
+	# Three buttons side by side don't fit the 360-wide portrait view; stack them there.
+	var buttons := _stack(portrait)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 10)
+	buttons.add_theme_constant_override("separation", 8 if portrait else 10)
 	column.add_child(buttons)
 	var resume := _button("继续（Esc）", game.set_paused.bind(false))
 	buttons.add_child(resume)
 	buttons.add_child(_button("重新开始（R）", game.restart))
 	buttons.add_child(_settings_button())
+	if portrait:
+		for button: Button in buttons.get_children():
+			button.custom_minimum_size.x = 200
+			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	resume.grab_focus()
 	_pop_in(panel, 0.0)
 
@@ -887,6 +874,10 @@ func _open_settings() -> void:
 	var language_choice := _choice_row("语言", [["中文", current == "zh"], ["English", current == "en"]], _on_language_picked)
 	column.add_child(language_choice)
 
+	if Device.is_handheld():
+		var landscape := Device.prefers_landscape()
+		column.add_child(_choice_row("屏幕方向", [["竖屏", not landscape], ["横屏", landscape]], _on_orientation_picked))
+
 	_tilt_hint = null
 	if Tilt.available():
 		var tilt_on := Tilt.enabled()
@@ -906,7 +897,6 @@ func _open_settings() -> void:
 
 func _close_settings() -> void:
 	_settings_open = false
-	_sync_title_tilt()
 	if game.state == Game.State.PAUSED:
 		_show_pause()
 
@@ -949,7 +939,33 @@ func _on_tilt_picked(index: int) -> void:
 	Tilt.set_enabled(index == 0)
 
 
+func _on_orientation_picked(index: int) -> void:
+	Settings.set_value("orientation", "portrait" if index == 0 else "landscape")
+	game.apply_orientation()
+	# The panels were laid out for the old shape; build them again once the HUD has refitted.
+	_reopen_settings.call_deferred()
+
+
+func _reopen_settings() -> void:
+	if game.state == Game.State.PAUSED:
+		_show_pause()
+	_open_settings()
+
+
 # --- Helpers -------------------------------------------------------------------------------
+
+## Whether the HUD is laid out tall: an upright phone in portrait. Measured on the layout root
+## rather than the viewport, which is also tall while a landscape game is drawn turned.
+func _is_portrait() -> bool:
+	return _root.size.y > _root.size.x
+
+
+## Stacks top to bottom in portrait, side by side in landscape.
+func _stack(vertical: bool) -> BoxContainer:
+	if vertical:
+		return VBoxContainer.new()
+	return HBoxContainer.new()
+
 
 func _overlay(color: Color) -> Control:
 	var overlay := ColorRect.new()

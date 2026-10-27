@@ -95,7 +95,7 @@ func _draw() -> void:
 
 
 ## Turns the camera a quarter turn while the game is drawn sideways on an upright phone
-## (Game._apply_orientation), matching the HUD.
+## (Game.apply_orientation), matching the HUD.
 func set_screen_turned(turned: bool) -> void:
 	_camera.ignore_rotation = not turned
 	_camera.rotation = -PI / 2.0 if turned else 0.0

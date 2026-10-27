@@ -6,10 +6,15 @@ extends RefCounted
 const PATH := "user://settings.cfg"
 const SECTION := "general"
 
+## Values that win over the saved ones without being saved (the smoke test uses it).
+static var overrides := {}
+
 static var _config: ConfigFile
 
 
 static func get_value(key: String, default: Variant) -> Variant:
+	if overrides.has(key):
+		return overrides[key]
 	return _load().get_value(SECTION, key, default)
 
 

@@ -89,7 +89,7 @@ static func available() -> bool:
 	return _available
 
 
-## Whether the game is drawn turned sideways on an upright phone (Game._apply_orientation),
+## Whether the game is drawn turned sideways on an upright phone (Game.apply_orientation),
 ## so tilt is read as if the phone were held in landscape.
 static func set_screen_turned(turned: bool) -> void:
 	_turned = turned
