@@ -16,4 +16,7 @@ godot --headless --path . --export-release Web "$out/index.html"
 # rather than as a credits line in the UI.
 mkdir -p "$out/licenses"
 cp assets/fonts/OFL.txt "$out/licenses/ZCOOLKuaiLe-OFL.txt"
+# PWA is off, but browsers from the PWA days still run its caching worker; this replacement
+# clears it out (see the file). Keep it until nobody can still have the old one.
+cp tools/service_worker_removal.js "$out/index.service.worker.js"
 ls -la "$out"

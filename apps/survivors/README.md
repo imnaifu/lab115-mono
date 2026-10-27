@@ -11,7 +11,7 @@ check-export.mjs   # CI 的 "build"：只检查 public/ 里的导出文件齐全
 
 **更新线上版本**：在 `games/survivors/` 跑 `./tools/export_web.sh`，提交 `apps/survivors/public/` 的变化，push 到 main。CI 跑不了 Godot，所以导出是在本地做完再提交的；`npm run build` 只防止漏提交文件导致白屏。
 
-开了 PWA：`index.manifest.json`（全屏、锁横屏、图标）和 `index.service.worker.js`（缓存优先，离线也能玩）。所以发新版后老玩家要刷新一次 / 下次打开才是新版，自己验证线上版本时多刷新一次；`nginx.conf` 的 no-cache 保证浏览器每次都能发现新的 service worker。
+`index.service.worker.js` 不是 PWA 的缓存脚本（PWA 已关），而是清理用的替身：之前开过 PWA，那时访问过的浏览器靠它清掉旧缓存、注销旧 worker，别删（见 `games/survivors/README.md` 的「发布」）。`nginx.conf` 的 no-cache 保证浏览器每次都能拿到它。
 
 导出用的是单线程（nothreads）模板，不需要 `SharedArrayBuffer`，所以服务器不用设 COOP / COEP 头，普通静态托管就行。陀螺仪要 HTTPS 才能用，线上走 Traefik 的 HTTPS 正好满足。
 

@@ -5,8 +5,9 @@ import { statSync } from "node:fs";
 
 const required = [
   "index.html", "index.js", "index.wasm", "index.pck", "index.audio.worklet.js",
-  // PWA: without these the page still runs but can't be installed or work offline.
-  "index.manifest.json", "index.service.worker.js", "index.offline.html",
+  // Not the PWA worker: the stand-in that clears out the old one for browsers that visited
+  // while the game was a PWA. Without it they would stay on a cached old version.
+  "index.service.worker.js",
 ];
 const missing = required.filter((name) => {
   try {

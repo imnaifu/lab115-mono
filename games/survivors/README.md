@@ -20,7 +20,6 @@ godot -e --path games/survivors               # 用编辑器打开
 - **地图**：按真实湾区排布的无限街区 —— 起点在帕洛阿尔托 / 山景城（科技园区、Caltrain、斯坦福钟楼，楼顶挂着 Pear、Goggle、Beta、Envy、NUTFLIX、LinkedOut 这些恶搞招牌），往北是旧金山（维多利亚排屋、泛美金字塔、Sailsforce 塔、金门大桥、叮当车和无人车），往南是圣何塞（西班牙红瓦房），往西是 Sand Hill Road 的金色山丘和红杉，往东是盐田和海湾。路口的街名牌用真实街名（El Camino Real、University Ave、Sand Hill Rd、US-101……）。楼只有底座（沿正面墙一条 24 像素深）挡路，楼身可以绕到后面去，人在楼后时楼会变半透明；树干和海水也挡路。玩家和怪物都过不去（404 幽灵除外，它们穿墙）；武器的投射物从楼上飞过。
 - **敌人节奏**：消息红点、Bug 开局 → 未读邮件、会议邀请、404 幽灵（会穿过怪群）→ 技术债、宕机服务器。1:30 起有包围圈事件，2:30 / 5:00 / 7:30 / 9:00 出 Deadline 和 AI 大模型。
 - **设置**：开始画面和暂停页的「设置」里切换中文 / English、开关陀螺仪；选择存在 `user://settings.cfg`（网页版在浏览器的 IndexedDB 里）。没选过语言的一律先显示中文。
-- **添加到主屏幕（PWA）**：手机浏览器里「添加到主屏幕」/「安装应用」后，从图标打开是全屏、锁横屏、没有地址栏；玩过一次之后断网也能打开。
 - **只有横屏**：手机要横过来玩。竖着拿时画面是居中的横屏画面加上下黑边（不做竖屏布局，也不强制全屏）；横着拿时铺满，宽屏手机会多看到一点视野。
 
 ## 结构
@@ -46,7 +45,7 @@ scripts/
 └── ui/hud.gd          # 顶栏、触屏摇杆、开始 / 升级 / 暂停 / 结算 / 设置面板
 tests/smoke_test.gd    # 机器人自动玩一局的冒烟测试
 tools/                 # 下载 soco-st 素材、渲染启动图和 PWA 图标、导出 Web 版
-assets/icons/          # PWA 图标（tools/render_icons.gd 从主角 SVG 生成）
+assets/icons/          # PWA 图标（tools/render_icons.gd 从主角 SVG 生成；PWA 目前关着，留着以后用）
 assets/art/            # 自绘 SVG（主角、敌人、武器、道具、场景、图标）
 assets/fonts/          # 站酷快乐体（OFL，许可证同目录）
 assets/soco-st/        # soco-st 的楼，tools/fetch_soco_st.sh 下载，不入库
@@ -92,7 +91,7 @@ godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --lang=z
 
 导出到 `apps/survivors/public/`，提交并 push 到 main 后 Coolify 自动部署。
 
-开了 PWA，所以玩家浏览器里有 service worker 缓存：发新版后，老玩家这次打开还是旧版（同时在后台装好新版），**刷新一次或下次打开才是新版**。自己验证线上版本时记得多刷新一次。网页外壳里加了一段脚本让新版装好就立刻接管，否则要等这个游戏的所有标签页都关掉才会换（见 `export_presets.cfg` 的 `html/head_include`）。需要 Godot 4.7.2 的 Web 导出模板（`web_nothreads_release.zip`），放在 `~/Library/Application Support/Godot/export_templates/4.7.2.stable/`；编辑器里「编辑器 → 管理导出模板」可以下载，但会下完整的 1.3 GB，只要 Web 的话从发布页的 `.tpz` 里单独取出那个 zip 即可。
+**PWA 目前关着**（`export_presets.cfg` 的 `progressive_web_app/enabled=false`，图标和其余配置都还在）。之前开过一阵，那时访问过的浏览器里还留着缓存优先的 service worker，所以导出脚本会把 `tools/service_worker_removal.js` 放在原来的 `index.service.worker.js` 位置：老浏览器检查更新时会换上它，它清空缓存并注销自己；网页外壳里也有一段兜底脚本做同样的事。这些老访客发版后第一次打开还是旧版，再打开就恢复正常。以后要重新开 PWA，把开关打开，并把导出脚本里复制这个文件的那行去掉。需要 Godot 4.7.2 的 Web 导出模板（`web_nothreads_release.zip`），放在 `~/Library/Application Support/Godot/export_templates/4.7.2.stable/`；编辑器里「编辑器 → 管理导出模板」可以下载，但会下完整的 1.3 GB，只要 Web 的话从发布页的 `.tpz` 里单独取出那个 zip 即可。
 
 ## 已知限制
 
