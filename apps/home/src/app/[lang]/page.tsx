@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Blocks } from "@/components/Blocks";
+import { Doodles } from "@/components/Doodles";
 import { LogoMark, WORDMARK } from "@/components/Logo";
 import { strings } from "@/lib/i18n";
 import { href, isLang, LANGS } from "@/lib/lang";
@@ -13,8 +14,8 @@ import { JsonLd, organization, website } from "@/lib/seo";
  * dynamic. That is the price of one `<html lang>` for a bilingual site, and
  * apps/daily pays it the same way.
  *
- * The two pages look identical now — the screen carries no copy — but they keep
- * their own title, description and `<html lang>`, and keeping both URLs alive
+ * The two pages differ only in the line of copy under the wordmark, and each
+ * keeps its own title, description and `<html lang>`; keeping both URLs alive
  * means nothing already indexed or linked starts returning 404.
  */
 export function generateStaticParams() {
@@ -66,18 +67,29 @@ export default async function HomePage({
         }}
       />
 
-      {/* One screen, nothing to scroll to: the mark and the wordmark over the
-          blocks. Sizes are in viewport units so the lockup fills the screen at
-          any size, and `portrait:` re-lays it for a phone held upright. */}
+      {/* One screen, nothing to scroll to: the mark, the wordmark and one line
+          about the lab, among the blocks and doodles. Those fill the screen; the
+          text is set at ordinary sizes and only its position follows the
+          viewport, with `portrait:` moving it for a phone held upright. In
+          landscape it stops at the middle, short of the blocks on the right. */}
       <main className="relative h-dvh overflow-hidden bg-paper">
         <Blocks />
+        <Doodles />
 
-        <h1 className="absolute bottom-[13%] left-[7%] flex flex-col items-start gap-[2.5vmin] portrait:bottom-[9%] portrait:left-[8%] portrait:gap-[4vw]">
-          <LogoMark className="size-[15vmin] portrait:size-[22vw]" />
-          <span className="font-display text-[10.5vw] leading-[0.9] font-extrabold tracking-[-0.01em] text-ink portrait:text-[21vw]">
-            {WORDMARK}
-          </span>
-        </h1>
+        <div className="absolute right-[50%] bottom-[13%] left-[7%] max-w-md portrait:right-[8%] portrait:bottom-[9%] portrait:left-[8%]">
+          <h1 className="flex flex-col items-start gap-3">
+            <LogoMark className="size-12" />
+            <span className="font-display text-[32px] leading-[0.9] font-extrabold tracking-[-0.01em] text-ink">
+              {WORDMARK}
+            </span>
+          </h1>
+          <p className="mt-4 text-[17px] leading-[26px] font-bold text-ink">
+            {text.tagline}
+          </p>
+          <p className="mt-1 text-[15px] leading-[26px] text-ink-muted">
+            {text.intro}
+          </p>
+        </div>
       </main>
     </>
   );

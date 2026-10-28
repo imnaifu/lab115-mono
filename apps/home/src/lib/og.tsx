@@ -11,6 +11,10 @@ import { OG_HEIGHT, OG_WIDTH } from "./seo";
  * product shelf; both left the page, so they left the card too, and it is the
  * same image in both languages.
  *
+ * ONE DELIBERATE DIFFERENCE: the lockup's size. The page sets it at ordinary
+ * text size, which on a card shrunk to a chat thumbnail would be unreadable, so
+ * here it stays scaled to the canvas. Its position still matches the page.
+ *
  * SERVER ONLY: `next/og` and the font fetcher below have no business in a browser
  * bundle. Only the route imports this.
  */
@@ -199,17 +203,17 @@ export async function renderOgCard(): Promise<Buffer> {
             bottom: 13 * VH,
             flexDirection: "column",
             alignItems: "flex-start",
-            gap: 2.5 * VMIN,
+            gap: 1.8 * VMIN,
           })}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- Satori draws
               `img` and not inline `svg`; see MARK_URI above. */}
-          <img src={MARK_URI} width={15 * VMIN} height={15 * VMIN} alt="" />
+          <img src={MARK_URI} width={10 * VMIN} height={10 * VMIN} alt="" />
           <div
             style={{
               display: "flex",
               fontFamily: "Nunito",
-              fontSize: 10.5 * VW,
+              fontSize: 7 * VW,
               fontWeight: 800,
               lineHeight: 0.9,
               letterSpacing: "-0.01em",

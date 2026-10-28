@@ -1,8 +1,8 @@
 /* ==========================================================================
    lab115.com — the lab's front door.
 
-   The page is one screen: the mark, the wordmark, and a few flat colour blocks
-   behind them. Visual language is the Sokosoko design system — white ground,
+   The page is one screen: the mark, the wordmark and one line about the lab,
+   with a few flat colour blocks and drawn discs around them. Visual language is the Sokosoko design system — white ground,
    round shapes, one ink line colour, pastel fills and a single warm yellow
    (https://claude.ai/artifact/KPRSTffJfVbQawMQ8681A7). Values here are copied
    from its tokens.json; change them there first.
@@ -21,13 +21,18 @@
   --color-paper: #ffffff;
   /* Text and the mark's line. 12.3:1 on paper, 7.8:1 on brand. */
   --color-ink: #2f3542;
+  /* Secondary text: the line under the tagline. 4.9:1 on paper. */
+  --color-ink-muted: #666b7a;
   /* The one accent: the mark's tile and the big slab. Never a text colour. */
   --color-brand: #f7c948;
 
-  /* Decorative fills for the blocks only; nothing is read off them. */
+  /* Decorative fills for the blocks and the doodle discs; nothing is read off
+     them. */
   --color-fill-sky: #bcdcf2;
   --color-fill-mint: #bfe3cf;
   --color-fill-pink: #f6c6cf;
+  --color-fill-lilac: #d9d1f2;
+  --color-fill-yellow: #fdf1cc;
 
   /* ── Type ─────────────────────────────────────────────────────────────── */
 

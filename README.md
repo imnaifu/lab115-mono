@@ -63,8 +63,9 @@ npm run build    # production build (output: standalone)
 
 ## apps/home
 
-`lab115.com` —— 实验室的门面。只有一屏：标志、字标 `lab115` 和几块平涂色块，没有
-导航、文案、按钮和页脚，也不滚动。没有后端、没有表单。
+`lab115.com` —— 实验室的门面。只有一屏：标志、字标 `lab115`、一句标语和一句简介，
+周围是几块平涂色块和几个画了小图的彩色圆盘。没有导航、按钮和页脚，也不滚动。没有后端、
+没有表单。
 
 视觉用 **Sokosoko** 设计系统（[设计系统](https://claude.ai/artifact/KPRSTffJfVbQawMQ8681A7)）：
 白底、圆角、单一 ink 线色、粉彩平涂、只有一个暖黄。**只有浅色**，不跟随系统深色模式。
@@ -73,13 +74,18 @@ npm run build    # production build (output: standalone)
 
 色块的排法在 `src/components/Blocks.tsx`：位置都是屏幕百分比，横屏和竖屏（`portrait:`）
 各排一次。链接预览图 `src/lib/og.tsx` 用同一组数字画同一个画面，**改一个要改两个**。
+预览图只画色块和标志字标：圆盘小图和文字不上图，标志字标也比页面上大，缩成聊天缩略图时才看得清。
+
+圆盘小图在 `src/components/Doodles.tsx`：纯装饰、不可点，照设计系统 CategoryTile 的画法
+（粉彩圆底、ink 线描）手画。横屏散在左上空白处，竖屏排成一行；屏幕高度不到 560px 时隐藏，
+免得压到文字。
 
 标志是手写 SVG，`src/components/Logo.tsx`：黄底圆角方块加 ink 描边，里面三笔等宽等高、
 两直一弧，读作 1·1·5。og 卡片直接引用其中的 `MARK` 常量；`public/favicon.svg` 和
 `public/apple-touch-icon.png`（180×180，满版无描边）是静态文件，**改坐标要同步这两个**。
 
-页面上已经没有文字：`src/lib/i18n.ts` 只剩 title、description 这类 meta 文案，
-`src/data/products.ts` 只给结构化数据里 `Organization` 的 `sameAs` 用。
+页面上的文字只有标语（`tagline`）和简介（`intro`），和 title、description 一起放在
+`src/lib/i18n.ts`；`src/data/products.ts` 只给结构化数据里 `Organization` 的 `sameAs` 用。
 
 语言路由和 `apps/daily` 一致：中文是不带前缀的 `/`，英文是 `/en`，旧的 `/zh` 308 到 `/`。
 `<html lang>` 通过 `src/proxy.ts` 设置的 `x-lang` 请求头传给 root layout（App Router 里
