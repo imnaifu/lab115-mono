@@ -18,38 +18,43 @@ const HILLS_COLUMN := -3
 ## past it. (560 is City.BLOCK.x, spelled out to keep the two classes' constants acyclic.)
 const WATER_X := SHORE_COLUMN * 560.0 + 200.0
 
-## Per district: ground colour; `structures` to line the streets with ("soco:<file>" for a
-## soco-st building, "art:<svg>" for one of ours); the gap between them; which parody
+## Per district: the `name` the minimap shows; ground colour; `structures` to line the streets with ("soco:<file>" for a
+## soco-st building, "art:<svg>" for one of ours); the gap between them (at least 36, so the
+## biggest boss, 32 across, still squeezes through a row instead of walking round it); which parody
 ## `brands` get rooftop signs and how often; the street `tree`; sidewalk `props`; how many
 ## bushes and trees dot the lawn; how often a block is a park; and the flat `decor`.
 const DISTRICTS := {
 	"peninsula": {
+		"name": "硅谷",
 		"ground": Color("dcefc6"),
 		"structures": ["soco:office", "soco:midrise_bands", "soco:midrise_grid", "soco:commercial",
 			"soco:small_1", "soco:small_2", "soco:small_3", "soco:small_4", "soco:office_block"],
-		"gap": [10.0, 40.0], "brands": ["pear", "goggle", "beta", "envy", "linkedout", "nutflix"],
+		"gap": [36.0, 70.0], "brands": ["pear", "goggle", "beta", "envy", "linkedout", "nutflix"],
 		"brand_chance": 0.5, "tree": "palm", "props": ["bike", "bike_campus", "cone"],
 		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.2,
 		"decor": [["flower", 11.0], ["poppy", 11.0], ["tuft", 12.0], ["tuft", 12.0]],
 	},
 	"sf": {
+		"name": "旧金山",
 		"ground": Color("e3e8da"),
 		"structures": ["art:victorian_blue", "art:victorian_pink", "art:victorian_yellow",
 			"art:victorian_mint", "art:victorian_blue", "art:victorian_pink", "soco:midrise_grid", "soco:small_3"],
-		"gap": [0.0, 4.0], "brands": [], "brand_chance": 0.0, "tree": "",
+		"gap": [36.0, 48.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": ["robotaxi", "cable_car", "robotaxi"],
 		"bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"sj": {
+		"name": "圣何塞",
 		"ground": Color("e6eec6"),
 		"structures": ["art:mission_house", "art:mission_house", "art:mission_house", "soco:supermarket",
 			"soco:convenience_store", "soco:shop_1", "soco:shop_2"],
-		"gap": [8.0, 30.0], "brands": ["envy", "nutflix"], "brand_chance": 0.25, "tree": "palm",
+		"gap": [36.0, 64.0], "brands": ["envy", "nutflix"], "brand_chance": 0.25, "tree": "palm",
 		"props": ["cone", "bike"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.15,
 		"decor": [["poppy", 11.0], ["tuft", 12.0], ["flower", 11.0]],
 	},
 	"hills": {
+		"name": "山区",
 		"ground": Color("f0dc9a"),
 		"structures": ["soco:small_1", "soco:small_2", "soco:small_4"],
 		"gap": [120.0, 220.0], "brands": ["sandhill"], "brand_chance": 1.0, "tree": "redwood",
@@ -57,6 +62,7 @@ const DISTRICTS := {
 		"decor": [["poppy", 11.0], ["poppy", 11.0], ["tuft", 12.0]],
 	},
 	"bay": {
+		"name": "海湾",
 		"ground": Color("e9e4c6"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,

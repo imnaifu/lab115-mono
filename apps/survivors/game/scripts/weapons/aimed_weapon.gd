@@ -4,7 +4,7 @@ extends Weapon
 ## (Silicon Valley: 回车键.)
 
 const COUNT := [1, 2, 2, 3, 3]
-const DAMAGE := [10.0, 10.0, 15.0, 15.0, 20.0]
+const DAMAGE := [12.0, 12.0, 18.0, 18.0, 24.0]
 const PIERCE := [1, 1, 1, 1, 3]
 const SPEED := 230.0
 ## Kept short so most kills, and their stars, land within walking distance.

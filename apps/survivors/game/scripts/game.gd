@@ -22,11 +22,18 @@ const GRID_CELL := 32.0
 const MAX_ENEMY_RADIUS := 16.0
 ## Enemies left this far behind are moved back in front of the player so pressure never drops.
 const RELOCATE_DISTANCE := 560.0
+## An enemy that starts going round a building keeps to the flow field this long. "Straight is
+## fine" only means some grid path runs straight there, not that the direct line is clear;
+## without this, one rounding a corner flipped between the two every frame and stood still.
+const DETOUR_HOLD_SECONDS := 0.6
 const MAX_PICKUPS := 400
 const HEAL_DROP_CHANCE := 0.012
 ## XP for the first level-ups, cheaper than the curve in xp_to_next() (5, 11, 17, 23) so a new run
 ## gets its first upgrades quickly; from level 5 on the curve applies.
 const EARLY_LEVEL_XP := [3, 7, 13, 20]
+## The curve's cost from level 5 on. Below 1 since the crowd was thinned out in favour of
+## bosses: fewer enemies drop fewer stars, and without this the mid-game levelled half as fast.
+const LEVEL_XP_SCALE := 0.75
 const MAGNET_DROP_CHANCE := 0.004
 
 ## Set by restart() so "play again" skips the title screen; static so it survives the reload.
@@ -52,6 +59,8 @@ var pickups: Array[Pickup] = []
 var spawner: Spawner
 var upgrades: Upgrades
 var city: City
+var flow_field: FlowField
+var telemetry: Telemetry
 var hud: Hud
 
 var pickup_layer: Node2D
@@ -85,6 +94,7 @@ func _ready() -> void:
 	city.z_index = -10
 	# Keeps streaming blocks while paused, so the title screen shows the town behind it.
 	city.process_mode = Node.PROCESS_MODE_ALWAYS
+	flow_field = FlowField.new(city)
 
 	pickup_layer = _add_layer(-5)
 	entity_layer = _add_layer(0)
@@ -96,6 +106,7 @@ func _ready() -> void:
 
 	upgrades = Upgrades.new(self)
 	spawner = Spawner.new(self)
+	telemetry = Telemetry.new(self)
 	player.add_weapon(Upgrades.create_weapon(Upgrades.STARTING_WEAPON))
 
 	hud = Hud.new()
@@ -122,6 +133,8 @@ func _process(delta: float) -> void:
 		_end_run(true)
 		return
 	spawner.tick(delta)
+	telemetry.tick(delta)
+	flow_field.update(delta, player.position)
 	_rebuild_grid()
 	_tick_enemies(delta)
 	_tick_pickups(delta)
@@ -173,10 +186,20 @@ func apply_orientation() -> void:
 func spawn_enemy(type_name: String, at: Vector2) -> Enemy:
 	var enemy := Enemy.new()
 	enemy.setup(type_name, Spawner.ENEMY_TYPES[type_name], spawner.hp_scale())
+	enemy.game = self
 	enemy.position = at if enemy.ghostly else city.resolve(at, enemy.radius)
 	entity_layer.add_child(enemy)
 	enemies.append(enemy)
+	telemetry.on_enemy_spawned(enemy)
 	return enemy
+
+
+## A boss calling minions: `count` of `type_name` in a ring around it, as far as the crowd cap
+## allows.
+func summon_around(boss: Enemy, type_name: String, count: int, radius: float) -> void:
+	for i in mini(count, spawner.max_alive - enemies.size()):
+		spawn_enemy(type_name, boss.position + Vector2.from_angle(TAU * i / count) * radius)
+	Effects.poof(self, boss.position, boss.color)
 
 
 ## All living enemies whose body overlaps the circle.
@@ -265,6 +288,7 @@ func _kill(enemy: Enemy) -> void:
 	enemy.dead = true
 	kills += 1
 	enemies.erase(enemy)
+	telemetry.on_enemy_killed(enemy)
 	Sound.play("kill")
 	Effects.poof(self, enemy.position, enemy.color)
 	_drop_xp(enemy.position, enemy.xp_value)
@@ -307,20 +331,31 @@ func _tick_enemies(delta: float) -> void:
 	var relocate_sq := RELOCATE_DISTANCE * RELOCATE_DISTANCE
 	for enemy in enemies:
 		var separation := Vector2.ZERO if enemy.ghostly else _separation(enemy)
-		enemy.tick(delta, target, separation)
+		# Ghosts drift through walls; everyone else takes the way round when one is in the way.
+		var around := Vector2.ZERO
 		if not enemy.ghostly:
-			_keep_out_of_walls(enemy, target, delta)
+			around = flow_field.heading(enemy.position)
+			if around != Vector2.ZERO:
+				enemy.detour_left = DETOUR_HOLD_SECONDS
+			elif enemy.detour_left > 0.0:
+				enemy.detour_left -= delta
+				around = flow_field.heading(enemy.position, true)
+		var heading := around if around != Vector2.ZERO else (target - enemy.position).normalized()
+		enemy.tick(delta, heading, separation)
+		if not enemy.ghostly:
+			_keep_out_of_walls(enemy, target, delta, around == Vector2.ZERO)
 		if enemy.position.distance_squared_to(target) > relocate_sq:
 			var fresh_spot := offscreen_point(random_direction())
 			enemy.position = fresh_spot if enemy.ghostly else city.resolve(fresh_spot, enemy.radius)
 
 
-## Pushes an enemy out of buildings and the water. One pressed against a wall also slides along
-## it toward the player's side, so crowds flow around buildings instead of piling up flat.
-func _keep_out_of_walls(enemy: Enemy, target: Vector2, delta: float) -> void:
+## Pushes an enemy out of buildings and the water. One walking straight that presses against a
+## wall (a trunk, a building's corner) also slides along it toward the player's side; one
+## already taking the flow field's way round needs no slide, which would only fight it.
+func _keep_out_of_walls(enemy: Enemy, target: Vector2, delta: float, slide: bool) -> void:
 	var resolved := city.resolve(enemy.position, enemy.radius)
 	var push := resolved - enemy.position
-	if push.length_squared() > 0.0001:
+	if slide and push.length_squared() > 0.0001:
 		var along := push.orthogonal().normalized()
 		if along.dot(target - resolved) < 0.0:
 			along = -along
@@ -351,11 +386,13 @@ func _separation(enemy: Enemy) -> Vector2:
 
 
 func _check_player_contact() -> void:
-	var strongest := 0.0
+	var strongest: Enemy = null
 	for enemy in query_enemies(player.position, Player.HURT_RADIUS):
-		strongest = maxf(strongest, enemy.damage)
-	if strongest > 0.0:
-		player.take_damage(strongest)
+		if strongest == null or enemy.damage > strongest.damage:
+			strongest = enemy
+	if strongest != null:
+		telemetry.last_hurt_by = strongest.type_name
+		player.take_damage(strongest.damage)
 
 
 func _cell_of(point: Vector2) -> Vector2i:
@@ -417,7 +454,7 @@ func _collect(pickup: Pickup) -> void:
 func xp_to_next() -> int:
 	if level <= EARLY_LEVEL_XP.size():
 		return EARLY_LEVEL_XP[level - 1]
-	return 5 + (level - 1) * 6 + maxi(0, level - 20) * 4
+	return roundi((5 + (level - 1) * 6 + maxi(0, level - 20) * 4) * LEVEL_XP_SCALE)
 
 
 func add_xp(amount: int) -> void:
@@ -443,6 +480,7 @@ func choose_upgrade(index: int) -> void:
 	if state != State.LEVEL_UP or index < 0 or index >= current_choices.size():
 		return
 	upgrades.apply(current_choices[index])
+	telemetry.on_pick(current_choices[index])
 	queued_level_ups -= 1
 	Sound.play("pick")
 	state = State.PLAYING
@@ -466,6 +504,7 @@ func start_run() -> void:
 ## Zeroes the tilt to how the phone is held right now, and says so: without the hint, the first
 ## tilt player wonders why holding the phone at an angle doesn't send them running.
 func _on_run_started() -> void:
+	telemetry.start()
 	Sound.music("battle")
 	Tilt.calibrate()
 	if Tilt.enabled():
@@ -484,6 +523,8 @@ func set_paused(value: bool) -> void:
 
 
 func restart() -> void:
+	# A run given up from the pause screen; after a death or a win it was already sent.
+	telemetry.finish("restart")
 	skip_title = true
 	get_tree().paused = false
 	get_tree().reload_current_scene()
@@ -498,6 +539,7 @@ func _end_run(victory: bool) -> void:
 		return
 	state = State.ENDED
 	get_tree().paused = true
+	telemetry.finish("win" if victory else "died")
 	Sound.stop_music()
 	Sound.play("win" if victory else "lose")
 	run_ended.emit(victory)

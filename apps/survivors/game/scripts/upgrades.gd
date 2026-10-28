@@ -8,13 +8,13 @@ const MAX_LEVEL := 5
 
 const WEAPONS := {
 	"enter": {"name": "回车键", "art": "enter_key", "behavior": "aimed",
-		"levels": ["自动敲向最近的敌人", "每轮多敲一下", "伤害 +5", "每轮多敲一下", "穿透 +2，伤害 +5"]},
+		"levels": ["自动敲向最近的敌人", "每轮多敲一下", "伤害 +6", "每轮多敲一下", "穿透 +2，伤害 +6"]},
 	"copy": {"name": "复制粘贴", "art": "paper", "behavior": "facing",
-		"levels": ["朝面向的方向连发文件", "伤害 +3", "多粘贴一份", "伤害 +3", "多粘贴一份，出手更快"]},
-	"drone": {"name": "无人机", "art": "drone", "behavior": "orbit",
-		"levels": ["绕身巡航，撞开路过的敌人", "多一架无人机", "伤害 +4，巡航圈变大", "多一架无人机", "多一架，飞得更快"]},
+		"levels": ["朝面向的方向连发文件，能穿过敌人", "伤害 +3", "多粘贴一份", "伤害 +3", "多粘贴一份，出手更快，穿透 +1"]},
+	"drone": {"name": "无人机", "art": "drone", "behavior": "seek",
+		"levels": ["飞出去追着附近的敌人撞", "多一架无人机", "伤害 +4，飞得更快", "多一架无人机", "多一架，伤害 +4，飞得更快"]},
 	"cloud": {"name": "云端部署", "art": "cloud", "behavior": "strike",
-		"levels": ["从云上劈中屏幕里的敌人", "多劈一道", "伤害 +8", "多劈一道，范围变大", "多劈两道，冷却更短"]},
+		"levels": ["从云上劈中屏幕里的敌人", "多劈一道", "伤害 +6，冷却更短", "多劈一道，范围变大", "多劈一道，伤害 +6，冷却更短"]},
 	"keyboard": {"name": "机械键盘", "art": "keyboard", "behavior": "toss",
 		"levels": ["往上一抛，落下砸穿一切", "多抛一把", "伤害 +10", "多抛一把", "伤害 +10，键盘变大"]},
 	"wifi": {"name": "Wi-Fi 信号", "art": "wifi", "behavior": "aura",
@@ -52,8 +52,8 @@ static func create_weapon(weapon_id: String) -> Weapon:
 			weapon = AimedWeapon.new()
 		"facing":
 			weapon = FacingWeapon.new()
-		"orbit":
-			weapon = OrbitWeapon.new()
+		"seek":
+			weapon = SeekerWeapon.new()
 		"strike":
 			weapon = StrikeWeapon.new()
 		"toss":

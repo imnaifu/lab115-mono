@@ -72,8 +72,8 @@ func _process(delta: float) -> void:
 # --- Collision -----------------------------------------------------------------------------
 
 ## Where a round body of `radius` centred at `point` ends up once pushed out of buildings,
-## trunks and the water. A push out of one rect can land in a neighbour (row houses touch),
-## so it repeats until nothing moves.
+## trunks and the water. A push out of one rect can land in a neighbour (a trunk beside a
+## building), so it repeats until nothing moves.
 func resolve(point: Vector2, radius: float) -> Vector2:
 	var resolved := point
 	for attempt in 3:
@@ -108,9 +108,20 @@ func is_water(point: Vector2) -> bool:
 	return point.x > BayArea.WATER_X
 
 
+## Every solid rect (building bases, tree trunks) of the loaded blocks that touches `area`,
+## for FlowField to mark as walls. The water isn't a rect; see BayArea.WATER_X.
+func solids_in(area: Rect2) -> Array[Rect2]:
+	var found: Array[Rect2] = []
+	for content: Dictionary in _blocks.values():
+		for rect: Rect2 in content["solids"]:
+			if rect.intersects(area):
+				found.append(rect)
+	return found
+
+
 ## A centre already inside a rect (spawned there, or shoved in by the crowd) leaves through the
-## nearer of its top and bottom. Never sideways: buildings in a row stand shoulder to shoulder,
-## so a sideways exit could land inside the next one.
+## nearer of its top and bottom. Never sideways: buildings in a row stand side by side, so a
+## sideways exit is the likeliest to land inside the next one.
 func _leave_vertically(rect: Rect2, point: Vector2, radius: float) -> Vector2:
 	if point.y - rect.position.y < rect.end.y - point.y:
 		return Vector2(point.x, rect.position.y - radius)
@@ -353,7 +364,9 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 		tallest = maxf(tallest, size.y)
 		var gap: float = rng.randf_range(district["gap"][0], district["gap"][1])
 		if district["tree"] != "" and gap > 24.0 and rng.randf() < 0.7:
-			_place_tree(content, district["tree"], Vector2(cursor + size.x + gap / 2.0, street_y + 1.0))
+			# Not solid: a trunk in the middle of a gap split it into two slits nobody fit
+			# through, walling off the whole row. You pass in front of or behind it instead.
+			_place_tree(content, district["tree"], Vector2(cursor + size.x + gap / 2.0, street_y + 1.0), false)
 		cursor += size.x + gap
 	var props: Array = district["props"]
 	if not props.is_empty() and rng.randf() < 0.5:
@@ -424,9 +437,12 @@ func _place_structure(content: Dictionary, spec: String, texture: Texture2D, siz
 	_fading.append(entry)
 
 
-## Trees are solid only at the trunk, so you can walk behind the crown.
-func _place_tree(content: Dictionary, tree: String, feet: Vector2) -> void:
+## Trees are solid only at the trunk, so you can walk behind the crown; street trees between
+## buildings aren't solid at all (see _place_row).
+func _place_tree(content: Dictionary, tree: String, feet: Vector2, solid := true) -> void:
 	content["nodes"].append(_place_art(tree, BayArea.HEIGHTS[tree], feet))
+	if not solid:
+		return
 	var trunk := Rect2(feet.x - TRUNK.x / 2.0, feet.y - TRUNK.y, TRUNK.x, TRUNK.y)
 	content["solids"].append(trunk)
 	_file_solid(trunk, true)

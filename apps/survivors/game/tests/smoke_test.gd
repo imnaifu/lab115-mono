@@ -15,10 +15,14 @@ extends SceneTree
 ## --handheld (behave as on a phone, e.g. with --window=405x720 to see it held upright),
 ## --orientation=portrait|landscape (a phone's Settings choice for this run, not saved),
 ## --sound (play the sound effects and music; off by default, since nobody listens to a test run
-## and streams still playing when it quits are reported as leaked).
+## and streams still playing when it quits are reported as leaked),
+## --all-weapons=N (start with every weapon at level N and take only perks at level-ups, to
+## compare the weapons' damage share in the report).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
+## Run times (seconds) at which the report notes the player's level.
+const REPORT_TIMES := [60, 180, 300, 450, 600]
 
 var _game: Game
 var _frames := 0
@@ -42,6 +46,11 @@ var _pause_frames := 0
 var _pause_shot_taken := false
 var _lang := ""
 var _teleport: Variant = null
+var _all_weapons_level := 0
+## Player level when each REPORT_TIMES second was reached, for comparing pacing between builds.
+var _levels_at := {}
+var _worst_frame_ms := 0.0
+var _last_frame_usec := 0
 
 
 func _initialize() -> void:
@@ -72,6 +81,8 @@ func _initialize() -> void:
 		elif arg == "--sound":
 			Settings.overrides.erase("sound")
 			Settings.overrides.erase("music")
+		elif arg.begins_with("--all-weapons="):
+			_all_weapons_level = clampi(int(value), 1, Upgrades.MAX_LEVEL)
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):
@@ -106,6 +117,8 @@ func _process(_delta: float) -> bool:
 			_game.start_run()
 			if _teleport != null:
 				_game.player.position = _teleport
+			if _all_weapons_level > 0:
+				_grant_all_weapons()
 		Game.State.PAUSED:
 			if _pause_at >= 0.0 and not _pause_shot_taken and _shot_dir != "":
 				_pause_frames += 1
@@ -122,7 +135,7 @@ func _process(_delta: float) -> bool:
 					return false
 				_save_shot("level_up")
 				_level_up_shot_taken = true
-			_game.choose_upgrade(_game.rng.randi() % _game.current_choices.size())
+			_game.choose_upgrade(_pick_choice())
 			_upgrades_taken += 1
 		Game.State.PLAYING:
 			_game.player.input_override = _steer()
@@ -135,6 +148,14 @@ func _process(_delta: float) -> bool:
 				# Without a window there is nothing to capture; just exercise the pause screen once.
 				_pause_shot_taken = _shot_dir == ""
 	_peak_enemies = maxi(_peak_enemies, _game.enemies.size())
+	for at: int in REPORT_TIMES:
+		if _game.elapsed >= at and not _levels_at.has(at):
+			_levels_at[at] = _game.level
+	# Without a window frames run back to back, so the gap between them is the frame's cost.
+	var now_usec := Time.get_ticks_usec()
+	if _last_frame_usec > 0 and _game.state == Game.State.PLAYING and _game.elapsed > 1.0:
+		_worst_frame_ms = maxf(_worst_frame_ms, (now_usec - _last_frame_usec) / 1000.0)
+	_last_frame_usec = now_usec
 
 	if _shot_dir != "" and _shot_every_frames > 0 and _frames % _shot_every_frames == 0:
 		_save_shot("%03ds" % floori(_game.elapsed))
@@ -173,6 +194,27 @@ func _steer() -> Vector2:
 	return steer.normalized()
 
 
+func _grant_all_weapons() -> void:
+	for weapon_id: String in Upgrades.WEAPONS:
+		var weapon := _game.player.get_weapon(weapon_id)
+		if weapon == null:
+			weapon = Upgrades.create_weapon(weapon_id)
+			_game.player.add_weapon(weapon)
+		while weapon.level < _all_weapons_level:
+			weapon.level_up()
+	_game.inventory_changed.emit()
+
+
+## A random card; with --all-weapons, a perk whenever one is offered so the weapons stay level.
+func _pick_choice() -> int:
+	var choices := _game.current_choices
+	if _all_weapons_level > 0:
+		for i in choices.size():
+			if choices[i]["kind"] != "weapon":
+				return i
+	return _game.rng.randi() % choices.size()
+
+
 func _save_shot(label: String) -> void:
 	if DisplayServer.get_name() == "headless":
 		return
@@ -194,12 +236,27 @@ func _report() -> int:
 		_outcome(), _game.elapsed, _game.level, _game.kills, _upgrades_taken, _peak_enemies,
 		_game.player.hp, _game.player.max_hp])
 	print("[smoke] weapons=%s passives=%s" % [", ".join(weapon_levels), ", ".join(passive_levels)])
+	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
 	var uncollected_xp := 0
 	for pickup in _game.pickups:
 		if pickup.kind == Pickup.Kind.XP:
 			uncollected_xp += pickup.value
 	print("[smoke] xp left on the floor=%d (in %d pickups)" % [uncollected_xp, _game.pickups.size()])
-	print("[smoke] %d frames in %.0f ms (%.2f ms/frame)" % [_frames, wall_ms, wall_ms / _frames])
+	print("[smoke] %d frames in %.0f ms (%.2f ms/frame, worst %.1f ms)" % [_frames, wall_ms, wall_ms / _frames, _worst_frame_ms])
+	var levels := PackedStringArray()
+	for at: int in REPORT_TIMES:
+		if _levels_at.has(at):
+			levels.append("%ds:Lv%d" % [at, _levels_at[at]])
+	print("[smoke] levels %s" % " ".join(levels))
+	var total_damage := 0.0
+	for source: String in _game.damage_by_source:
+		total_damage += _game.damage_by_source[source]
+	var shares := PackedStringArray()
+	var sources: Array = _game.damage_by_source.keys()
+	sources.sort_custom(func(a, b): return _game.damage_by_source[a] > _game.damage_by_source[b])
+	for source: String in sources:
+		shares.append("%s %.0f%%" % [source, 100.0 * _game.damage_by_source[source] / maxf(total_damage, 1.0)])
+	print("[smoke] damage %s" % ", ".join(shares))
 
 	var problems := PackedStringArray()
 	if _peak_enemies == 0:

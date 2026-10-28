@@ -3,8 +3,10 @@ extends Weapon
 ## A field around the player that keeps damaging and nudging back everything inside it.
 ## (Silicon Valley: Wi-Fi 信号 — drawn as signal rings rippling outward.)
 
-const RADIUS := [26.0, 32.0, 32.0, 38.0, 44.0]
-const DAMAGE := [4.0, 4.0, 6.0, 6.0, 9.0]
+## Starts a little wider than the player's own sprite; any smaller and only what is already
+## biting them is in range.
+const RADIUS := [36.0, 42.0, 42.0, 50.0, 58.0]
+const DAMAGE := [5.0, 5.0, 7.0, 7.0, 10.0]
 const TICK_SECONDS := [0.6, 0.6, 0.5, 0.5, 0.4]
 const RIPPLES := 3
 

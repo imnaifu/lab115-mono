@@ -16,6 +16,9 @@ const SQUASH := 0.06
 ## Starting values, kept so the pause screen can show what passives have added.
 const BASE_MOVE_SPEED := 62.0
 const BASE_PICKUP_RADIUS := 40.0
+## The health bar under the player, tall enough to hold the HP number inside it.
+const HP_BAR_SIZE := Vector2(32.0, 10.0)
+const HP_FONT_SIZE := 7
 
 var game: Game
 var max_hp := 100.0
@@ -40,6 +43,8 @@ var _walk_phase := 0.0
 var _base_scale := 1.0
 var _sprite: Sprite2D
 var _camera: Camera2D
+var _bar_track: StyleBoxFlat
+var _bar_fill: StyleBoxFlat
 
 
 func _ready() -> void:
@@ -88,10 +93,32 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var bar := Rect2(-12, SIZE / 2.0 + 1.0, 24, 4)
-	draw_rect(bar.grow(1.0), Art.INK)
-	draw_rect(bar, Color.WHITE)
-	draw_rect(Rect2(bar.position, Vector2(bar.size.x * hp / max_hp, bar.size.y)), Art.RED)
+	# A pill like the HUD's readouts: white track, red fill, the exact HP in ink inside it.
+	# Ink reads on both the red and the white, so the digits need no outline.
+	var bar := Rect2(-HP_BAR_SIZE.x / 2.0, SIZE / 2.0 + 2.0, HP_BAR_SIZE.x, HP_BAR_SIZE.y)
+	if _bar_track == null:
+		_bar_track = _pill_style(Art.PAPER, 1)
+		_bar_fill = _pill_style(Art.RED, 0)
+	draw_style_box(_bar_track, bar)
+	var fill_width := bar.size.x * clampf(hp / max_hp, 0.0, 1.0)
+	if fill_width > 0.0:
+		# Never thinner than it is tall, so the rounded ends stay round as it runs out.
+		draw_style_box(_bar_fill, Rect2(bar.position, Vector2(maxf(fill_width, bar.size.y), bar.size.y)).grow(-1.0))
+	var text := "%d/%d" % [ceili(hp), roundi(max_hp)]
+	var font := Art.display_font(800)
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE).x
+	var baseline := Vector2(-width / 2.0, bar.get_center().y + (font.get_ascent(HP_FONT_SIZE) - font.get_descent(HP_FONT_SIZE)) / 2.0)
+	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE, Art.INK)
+
+
+static func _pill_style(color: Color, border: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.border_color = Art.INK
+	style.set_border_width_all(border)
+	style.set_corner_radius_all(99)
+	style.anti_aliasing = true
+	return style
 
 
 ## Turns the camera a quarter turn while the game is drawn sideways on an upright phone

@@ -29,6 +29,12 @@ const PARADE := ["ping", "bug", "mail", "meeting", "ghost404", "techdebt", "serv
 const TITLE_TEXT_WIDTH := 340.0
 const TITLE_SIZE := 40
 const LOW_HP_RATIO := 0.35
+## The boss bar's top edge, and the screen width it needs to sit there, level with the upgrade
+## slots (the slots plus the bar's half width, twice over); narrower screens get it lower.
+const BOSS_BAR_TOP := 48
+const BOSS_BAR_TOP_NARROW := 70
+const BOSS_BAR_MIN_WIDTH := 450.0
+const TOAST_BELOW_BOSS_BAR := 42
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
 	"asking": "请在弹窗里允许访问动作与方向",
@@ -44,6 +50,14 @@ var _xp_bar: ProgressBar
 var _level_label: Label
 var _time_label: Label
 var _kills_label: Label
+var _boss_bar: Control
+var _boss_name: Label
+var _boss_more: Label
+var _boss_progress: ProgressBar
+var _boss_hp_label: Label
+var _minimap: Minimap
+var _district_label: Label
+var _district := ""
 var _pause_button: Button
 var _recalibrate_button: Button
 var _top_bar: Control
@@ -125,6 +139,11 @@ func _process(delta: float) -> void:
 	_level_label.text = "Lv %d" % game.level
 	_time_label.text = _clock_text(game.elapsed)
 	_kills_label.text = str(game.kills)
+	_update_boss_bar()
+	var district := BayArea.district_of(Vector2i((game.player.position / City.BLOCK).floor()))
+	if district != _district:
+		_district = district
+		_district_label.text = BayArea.DISTRICTS[district]["name"]
 
 	var hp_ratio := game.player.hp / game.player.max_hp
 	var danger := clampf((LOW_HP_RATIO - hp_ratio) / LOW_HP_RATIO, 0.0, 1.0)
@@ -314,6 +333,27 @@ func _build_top_bar() -> void:
 	_time_label = _label("00:00", 15, "DisplayLabel")
 	time_pill.add_child(_time_label)
 
+	_build_boss_bar()
+
+	# The minimap under the buttons, with the district's name beneath it.
+	var map_column := VBoxContainer.new()
+	map_column.add_theme_constant_override("separation", 1)
+	map_column.anchor_left = 1.0
+	map_column.anchor_right = 1.0
+	map_column.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	map_column.offset_right = -6
+	map_column.offset_top = 52
+	map_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_top_bar.add_child(map_column)
+	_minimap = Minimap.new()
+	_minimap.game = game
+	map_column.add_child(_minimap)
+	var district_pill := _pill()
+	district_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	map_column.add_child(district_pill)
+	_district_label = _label("", 9, "StrongLabel")
+	district_pill.add_child(_district_label)
+
 	var right := HBoxContainer.new()
 	right.alignment = BoxContainer.ALIGNMENT_END
 	right.add_theme_constant_override("separation", 4)
@@ -357,6 +397,76 @@ func _build_top_bar() -> void:
 	_pause_button.pressed.connect(game.set_paused.bind(true))
 	_click_on_press(_pause_button)
 	right.add_child(_pause_button)
+
+
+## The boss with the longest time on the field: its name, health bar and numbers, plus how many
+## more bosses are out, on a white panel centred under the timer (lower on narrow screens, see
+## _place_boss_bar).
+func _build_boss_bar() -> void:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, RADIUS_MD, Vector4(8, 1, 8, 5)))
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.offset_top = BOSS_BAR_TOP
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.visible = false
+	_top_bar.add_child(panel)
+	_boss_bar = panel
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 1)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(column)
+	var name_row := HBoxContainer.new()
+	name_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	name_row.add_theme_constant_override("separation", 4)
+	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(name_row)
+	_boss_name = _label("", 10, "StrongLabel")
+	name_row.add_child(_boss_name)
+	_boss_more = _label("", 10, "MutedLabel")
+	name_row.add_child(_boss_more)
+	_boss_progress = ProgressBar.new()
+	_boss_progress.max_value = 1.0
+	_boss_progress.show_percentage = false
+	_boss_progress.custom_minimum_size = Vector2(150, 11)
+	_boss_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_progress.add_theme_stylebox_override("fill", _box(Art.RED, Art.INK, 1, PILL))
+	column.add_child(_boss_progress)
+	_boss_hp_label = _label("", 8, "DisplayLabel")
+	_boss_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_boss_hp_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_boss_progress.add_child(_boss_hp_label)
+
+
+func _update_boss_bar() -> void:
+	var boss: Enemy = null
+	var others := 0
+	# game.enemies is in spawn order, so the first boss found is the one out the longest.
+	for enemy in game.enemies:
+		if enemy.is_elite and not enemy.dead:
+			if boss == null:
+				boss = enemy
+			else:
+				others += 1
+	_boss_bar.visible = boss != null
+	if boss == null:
+		return
+	_place_boss_bar()
+	_boss_name.text = Spawner.ENEMY_TYPES[boss.type_name]["name"]
+	_boss_more.text = "+%d" % others if others > 0 else ""
+	_boss_progress.value = maxf(boss.hp, 0.0) / boss.max_hp
+	_boss_hp_label.text = "%d / %d" % [ceili(maxf(boss.hp, 0.0)), roundi(boss.max_hp)]
+
+
+## Under the timer when the screen is wide enough to fit it between the upgrade slots and the
+## buttons; below the slots on narrow (upright) screens. The toast moves down with it.
+func _place_boss_bar() -> void:
+	var top := BOSS_BAR_TOP if _root.size.x >= BOSS_BAR_MIN_WIDTH else BOSS_BAR_TOP_NARROW
+	if _boss_bar.offset_top != top:
+		_boss_bar.offset_top = top
+		_toast.offset_top = top + TOAST_BELOW_BOSS_BAR
 
 
 func _recalibrate_tilt() -> void:
@@ -407,7 +517,8 @@ func _build_toast() -> void:
 	_toast.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, Vector4(14, 4, 14, 5)))
 	_toast.anchor_left = 0.5
 	_toast.anchor_right = 0.5
-	_toast.offset_top = 70
+	# Below the boss bar, which sits under the timer.
+	_toast.offset_top = BOSS_BAR_TOP + TOAST_BELOW_BOSS_BAR
 	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast.modulate.a = 0.0
