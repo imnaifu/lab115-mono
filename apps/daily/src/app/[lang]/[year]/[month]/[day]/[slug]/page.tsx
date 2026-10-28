@@ -9,7 +9,8 @@ import { RelatedArticles } from "@/components/RelatedArticles";
 import { ShareButton } from "@/components/ShareButton";
 import { SubscribeDialog } from "@/components/SubscribeDialog";
 import { Summary } from "@/components/Summary";
-import { accentColor, categoryName, categoryOf } from "@/lib/categories";
+import { TopicIcon } from "@/components/TopicIcon";
+import { categoryName, categoryOf } from "@/lib/categories";
 import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href as langHref, isLang } from "@/lib/lang";
@@ -37,7 +38,7 @@ export const dynamic = "force-dynamic";
 
 /** The hover system — see the note on these in components/ArticleCards. */
 const ACTION_OUTLINE =
-  " transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80";
+  " transition duration-150 ease-out hover:shadow-cover active:opacity-80";
 
 type Params = {
   params: Promise<{
@@ -405,7 +406,7 @@ export default async function ArticlePage({ params }: Params) {
         crumb={
           <div className="">
             <a
-              className="text-sm font-semibold text-ink-soft transition-colors hover:text-ink"
+              className="text-sm font-normal text-ink-soft transition-colors hover:text-ink"
               href={langHref(lang, dayPath(date))}
             >
               ← {t.backToDay}
@@ -444,21 +445,19 @@ export default async function ArticlePage({ params }: Params) {
          */}
         {topic ? (
           <>
+            {/* The topic as the design system's tag — a pill with the
+                topic's icon, the same chip the list cards carry. */}
             <a
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-1 rounded-button bg-card px-2.5 py-0.5 font-medium text-ink transition duration-150 ease-out hover:bg-brand-soft active:bg-brand-soft"
               href={langHref(lang, topicPath(topic.id))}
               data-track="topic_open"
               data-track-topic={topic.id}
               data-track-from="article"
               data-track-lang={lang}
             >
-              <span
-                className="size-1.5 flex-none rounded-full"
-                style={{ background: accentColor(topic) }}
-              />
+              <TopicIcon id={topic.id} className="size-3.5" />
               {categoryName(topic, lang)}
             </a>
-            <span className="size-1 rounded-full bg-orange" />
           </>
         ) : null}
         <span style={{ color: themedAccent(source.accent) }}>
@@ -466,11 +465,11 @@ export default async function ArticlePage({ params }: Params) {
         </span>
         {article.author ? (
           <>
-            <span className="size-1 rounded-full bg-orange" />
+            <span className="size-1 rounded-full bg-brand" />
             <span>{article.author}</span>
           </>
         ) : null}
-        <span className="size-1 rounded-full bg-orange" />
+        <span className="size-1 rounded-full bg-brand" />
         <a href={langHref(lang, dayPath(date))}>{date}</a>
       </Masthead>
 
@@ -495,7 +494,7 @@ export default async function ArticlePage({ params }: Params) {
           two blocks rather than one. Same correction as the day page, the
           archive, the topic pages and /about; see the note in Shell.tsx. */}
       <section className={PAD}>
-        <h1 className="text-2xl leading-tight font-bold text-ink sm:text-3xl">
+        <h1 className="font-display text-2xl leading-tight font-extrabold text-ink sm:text-3xl">
           <ArticleTitle article={article} lang={lang} variant="hero" />
         </h1>
 
@@ -527,8 +526,8 @@ export default async function ArticlePage({ params }: Params) {
            */
           lede={
             <Cover
-              id={article.id}
               sourceId={article.sourceId}
+              category={article.category}
               image={article.image}
               variant="banner"
             />
@@ -641,7 +640,7 @@ export default async function ArticlePage({ params }: Params) {
               <span className="block text-base font-bold text-ink">
                 {t.shareCardTitle}
               </span>
-              <span className="mt-1 block text-sm leading-snug font-semibold text-ink-soft">
+              <span className="mt-1 block text-sm leading-snug font-normal text-ink-soft">
                 {t.shareCardSub}
               </span>
             </span>
@@ -685,7 +684,7 @@ export default async function ArticlePage({ params }: Params) {
                 <span className="text-base font-bold text-ink">
                   {t.readOriginal}
                 </span>
-                <span className="size-1 flex-none rounded-full bg-orange" />
+                <span className="size-1 flex-none rounded-full bg-brand" />
                 <span
                   className="text-sm font-bold"
                   style={{ color: themedAccent(source.accent) }}
@@ -697,7 +696,7 @@ export default async function ArticlePage({ params }: Params) {
                   `article.title` — never the rewrite. See `titleZh` in
                   lib/types: the rewrite is our headline, and what is on the
                   other end of this link is the piece the source published. */}
-              <span className="mt-1 block line-clamp-2 text-sm leading-snug font-semibold text-ink-soft">
+              <span className="mt-1 block line-clamp-2 text-sm leading-snug font-normal text-ink-soft">
                 {article.title}
               </span>
             </span>

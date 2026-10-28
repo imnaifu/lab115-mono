@@ -39,56 +39,44 @@
     too: change the radius and this moves.
 
     THE PREVIOUS ICON WAS A PAIR OF QUOTATION MARKS, and it was right for as long
-    as the brand said Takes — a "take" is an argued opinion, which is what the
+    as the brand said Takes; a "take" is an argued opinion, which is what the
     scorer selects for. The brand says 严选 / Picks now, and the marks pointed at
     a word that is no longer anywhere on the site.
 
-    THE ORANGE IS THE LEG, and it is the only orange in the mark: one stroke
-    pulled out of the character is the 选 half of the name said in colour.
+    THE COLOURS ARE SOKOSOKO'S, the same as the lab115.com mark: a yellow tile
+    with an ink outline and every stroke in ink. It used to be an ink tile with
+    cream rules and an orange leg; the leg was the 选 half of the name said in
+    colour, and in a system with one ink and one yellow there is no second colour
+    to say it in, so the leg is ink like the rest.
 
-    THIS FILE FOLLOWS THE OS AND THE OTHERS DO NOT. The browser tab is the one
-    place whose ground changes underneath the icon, so this is where the swap is
-    worth having: ink tile on a light strip, cream tile on a dark one. Chrome and
-    Firefox honour `prefers-color-scheme` inside an SVG favicon; Safari has been
-    unreliable about it, and its fallback is the ink tile, which is what shipped
-    before — not worse.
+    THE OUTLINE IS WHAT LETS ONE COLOURWAY SERVE BOTH TAB STRIPS. Yellow holds on
+    a dark strip by itself and the ink edge holds it on a light one, so this file
+    no longer swaps on the OS's colour scheme. It did, ink tile on light and
+    cream on dark, with a style block and a media query; neither is needed now.
 
-    THE MASTHEAD USES mark.svg AND mark-cream.svg, NOT THIS FILE. An `<img>`
-    resolves this media query against the READER'S OS, while the page follows the
-    switch in its own masthead — so a reader on a light Mac who chose dark would
-    get the ink tile on the dark page. Shell.tsx renders both files and lets the
-    `dark:` variant pick; see the note there.
+    THE STROKES ARE DRAWN AT 0.88 ABOUT THE CENTRE. At full size the leg's round
+    caps sit 1.5px from the tile's edge, which an outline would run into at the
+    rounded corners; 0.88 clears the inner edge of the outline everywhere and
+    keeps every derived number above as it is, since the scale is uniform.
 
-    Classes with a `<style>` block rather than a custom property in the `fill`
-    presentation attribute: `var()` there is not resolved everywhere, and a
-    favicon has no console to tell you it failed.
+    mark.svg and mark-cream.svg carry the same artwork; see the note in mark.svg
+    for the four things that do not follow a change here on their own.
 
-    THE CUSTOM PROPERTY IS DESCRIBED RATHER THAN NAMED, and that is not fussiness.
-    An SVG is XML, XML forbids a double hyphen inside a comment, and a custom
-    property's name begins with one — so the earlier version of this sentence,
-    which quoted `fill="var(` and the property name in full, made THIS FILE
-    unparseable. Not the comment: the document. Every strict parser rejects the
-    whole thing, so the tab fell back to whatever icon the browser already had and
-    the redrawn mark below was never once displayed. There is no console on a
-    favicon and no build step over `public/`, so nothing said a word for two days.
-    If a note here ever needs to name one, write it without the hyphens.
+    A NOTE ON WRITING THESE COMMENTS: an SVG is XML, and XML forbids a double
+    hyphen inside a comment. An earlier version quoted a custom property's name
+    in full here and made THIS FILE unparseable, so the tab fell back to whatever
+    icon the browser had and the mark was never once displayed. There is no
+    console on a favicon and no build step over public/. Never write two hyphens
+    in a row in one of these notes.
 
-    Palette from src/index.css: cream #FBF3E9, ink #3B3563, orange #EFA050.
+    Palette from src/index.css: brand #F7C948, ink #2F3542.
   -->
-  <style>
-    .tile { fill: #3B3563; }
-    .mark { stroke: #FBF3E9; }
-    @media (prefers-color-scheme: dark) {
-      .tile { fill: #FBF3E9; }
-      .mark { stroke: #3B3563; }
-    }
-  </style>
-  <rect class="tile" width="64" height="64" rx="14"/>
-  <g class="mark" fill="none" stroke-linecap="round">
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#F7C948" stroke="#2F3542" stroke-width="3"/>
+  <g transform="translate(32 32) scale(0.88) translate(-32 -32)" fill="none" stroke="#2F3542" stroke-linecap="round">
     <path stroke-width="7" d="M 13.2 21 H 56"/>
     <path stroke-width="7" d="M 13.2 43 H 56"/>
     <path stroke-width="5" d="M 30 25 V 39"/>
     <path stroke-width="5" d="M 42 25 V 39"/>
+    <path stroke-width="7" d="M 8 11 A 35 35 0 0 1 8 53"/>
   </g>
-  <path fill="none" stroke="#EFA050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
 </svg>

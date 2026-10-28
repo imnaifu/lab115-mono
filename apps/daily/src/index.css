@@ -1,7 +1,9 @@
 /* ==========================================================================
-   daily.lab115.com — visual language borrowed from the "Readium" book-app
-   template: cream paper, deep indigo ink, warm orange accents and organic blob
-   shapes, all set in 思源黑体 / Manrope.
+   daily.lab115.com — visual language is the Sokosoko design system
+   (https://claude.ai/artifact/KPRSTffJfVbQawMQ8681A7), the same one lab115.com
+   uses: white paper, one ink colour, a single warm yellow, pastel fills, round
+   pills for everything you press, set in Nunito / 思源黑体. The values below
+   are copied from its tokens.json — change them there first.
 
    The page is a FULL-WIDTH ground with ONE CENTRED COLUMN on it. The sticky bar
    at the top is the only thing that spans the viewport — it is split left and
@@ -27,171 +29,136 @@
   /**
    * EVERY COLOUR IS `light-dark()`, and that is the whole dark mode.
    *
-   * The switch is `color-scheme` on the root, set three times in `@layer base`
-   * below; each colour then resolves itself and the ~200 `bg-page` / `text-ink`
-   * utilities scattered through the components never had to change. Writing the
-   * dark values as a second `:root` block under a media query would have meant
-   * maintaining the same twelve names twice, which is the kind of duplication
-   * that goes stale on the first hurried edit.
+   * The switch is `color-scheme` on the root, set in `@layer base` below; each
+   * colour then resolves itself and the hundreds of `bg-page` / `text-ink`
+   * utilities scattered through the components never have to change. Writing
+   * the dark values as a second `:root` block would mean maintaining the same
+   * names twice, which is the kind of duplication that goes stale on the first
+   * hurried edit.
    *
    * IT COSTS NO BROWSER SUPPORT, which was the worry and is worth recording:
    * Lightning CSS — the transformer Tailwind v4 runs — compiles `light-dark()`
    * away rather than shipping it. Each colour becomes a pair of
-   * `var(--lightningcss-light, x) var(--lightningcss-dark, y)` and the three
+   * `var(--lightningcss-light, x) var(--lightningcss-dark, y)` and the
    * `color-scheme` rules below become the switch that blanks one side of every
    * pair. So the floor is custom properties, not a 2024 colour function. Check
    * the built CSS before assuming otherwise; the source here says `light-dark()`
    * and the output does not contain it.
    *
-   * THE POSTER AND THE OG CARD DO NOT PARTICIPATE and must not be wired to these
-   * tokens. They are drawn by Satori in lib/poster.tsx and lib/og.tsx from
-   * hardcoded hex, they end up in someone else's Twitter feed rather than in a
-   * browser with a preference, and cream is what they are. That independence is
-   * deliberate, not an oversight waiting to be tidied up.
+   * THE DARK SIDE IS SOKOSOKO'S OWN DARK THEME, not an inversion worked out
+   * here: surfaces and text swap, the yellow and the pastel fills stay as they
+   * are, because art in this system is always ink lines on a light ground.
+   *
+   * THE POSTER, THE OG CARD AND THE MAIL DO NOT PARTICIPATE and must not be
+   * wired to these tokens. They are drawn by Satori in lib/poster.tsx and
+   * lib/og.tsx, and by lib/mail/render, from hardcoded hex — they end up in
+   * someone else's feed or inbox rather than in a browser with a preference.
+   * They are drawn in this palette's LIGHT side, written out; if a value moves
+   * here, it has to be moved there by hand.
    */
 
-  /* Paper stack, lightest to warmest — inverted in the dark, where the same
-     names mean "one step further from the ground". */
-  --color-page: light-dark(#fbf3e9, #1d1a33);
-  --color-page-deep: light-dark(#f5ebdc, #252140);
-  --color-card: light-dark(#f3e8d8, #2a2547);
-  --color-paper: light-dark(#fffdf9, #302a52);
+  /* Surfaces, ground first. In the dark the same names mean "one step further
+     from the ground", so a dialog (`paper`) still lifts off the page. */
+  --color-page: light-dark(#ffffff, #1c1f26);
+  /* Sokosoko's paper-soft: the warm cream band behind the hero, the footer
+     and quiet panels. */
+  --color-page-deep: light-dark(#faf7f0, #22262e);
+  /* paper-sunk: chip fills, the sunk hover of a secondary pill. */
+  --color-card: light-dark(#f3efe6, #2a2f39);
+  /* The light ground behind ink-line art — the empty state's disc. It stays
+     light in the dark (9.2:1 for the ink on it), because art never inverts. */
+  --color-well: light-dark(#f3efe6, #e4ded1);
+  /* Dialogs and floating panels. White on the light side, like the page — a
+     dialog is told apart by the scrim behind it and its shadow, not a tint. */
+  --color-paper: light-dark(#ffffff, #22262e);
 
   /**
-   * Ink, three steps of emphasis. The dark side is warm off-white rather than
-   * pure white, for the same reason the light side is cream rather than paper:
-   * nothing on this page is at full contrast.
+   * Ink, three steps of emphasis. `ink` and `ink-soft` are the design system's
+   * ink and ink-muted; `ink-mid` is this site's own step between them, because
+   * the article page needs a dek that is quieter than the headline and louder
+   * than a caption, and Sokosoko only names the two ends.
    *
-   * THE TWO QUIETER STEPS GOT DARKER WHEN THE SITE WENT SERIF, and the cause is
-   * worth naming because it is not a colour mistake. 宋体's strokes are thinner
-   * than 黑体's — that is the difference between the two faces — so the same hex
-   * value puts less ink on the page and reads a step fainter. The colours were
-   * picked against a sans and were never re-checked against the face that
-   * replaced them.
+   * Contrast, light on `page` (#fff) / dark on `paper` (#22262e), the worst
+   * surface each side sets body copy on:
    *
-   * MEASURED RATHER THAN NUDGED, TWICE NOW. Against `--color-page` (#fbf3e9),
-   * where the first column is the sans-era value the serif switch invalidated:
+   *   ink       12.3 / 14.3
+   *   ink-mid    8.3 / 11.0
+   *   ink-soft   5.3 /  7.0
    *
-   *              sans    1st pass   now
-   *   ink       10.18     10.18 →  12.46
-   *   ink-mid    5.93      6.98 →   8.57
-   *   ink-soft   3.24      4.64 →   6.00
-   *
-   * THE FIRST PASS ONLY MOVED THE TWO QUIET STEPS, and it moved them to the
-   * WCAG floor: `ink-soft` was at 3.24, below AA (4.5), which was the part that
-   * was actually broken rather than merely faint — it is not a decorative tint,
-   * it sets the meta row on every card (topic, source, author), the date on
-   * every archive row, the count on every list and the label over
-   * 「为什么值得读」, all real text at 12–13px. Clearing 4.5 fixed the defect.
-   *
-   * THIS PASS IS NOT ABOUT A FLOOR. Everything already passed; the page still
-   * read light, because a floor is the point at which text stops being a
-   * problem and not the point at which it looks set in ink. `ink` went too this
-   * time, which the first pass deliberately left alone — with the other two
-   * darkened around it, the heading was the faintest thing on the page relative
-   * to where it sits in the hierarchy. All three now clear AAA (7.0) or are
-   * within a hair of it, and `ink` is close to the 13.5 a true black would give
-   * on this cream.
-   *
-   * THE HUE AND SATURATION ARE UNCHANGED, both times — only lightness moved,
-   * solved by bisection against the target ratio, so this is the same palette
-   * two steps darker rather than a different purple.
-   *
-   * THE DARK SIDE MOVED THE OTHER WAY, IN TWO PASSES OF ITS OWN. Its ink is
-   * warm off-white ON a dark ground, so "darker" is meaningless there — the two
-   * quiet steps were BRIGHTENED, on the report that body copy was hard to read:
-   *
-   *              before   1st pass   now    (against `--color-paper`, #302a52)
-   *   ink-mid     6.40      8.61  →  10.42
-   *   ink-soft    4.24      5.99  →   7.62
-   *
-   * THE FIRST PASS AIMED AT THE LIGHT SIDE'S OWN NUMBERS — 8.57 and 6.00 — on
-   * the principle that the two modes should be the same contrast for the same
-   * job. It was still reported as too faint, and the principle is what was
-   * wrong: light-on-dark and dark-on-light are not symmetric to read. A violet
-   * grey on a violet ground shares its hue with what it sits on, so the eye gets
-   * less separation than the luminance ratio promises, and the effect is
-   * stronger in this direction. So this pass stopped matching the light side and
-   * went to where it reads.
-   *
-   * WHAT THAT COSTS, STATED: `ink-mid` is now 10.42 against `ink`'s 11.41 on
-   * paper, so the two are close. On the light page they are 8.57 and 12.46 —
-   * a clear step — and on the article page that step is what separates the dek
-   * from the prose under it. In dark mode that separation is now mostly the
-   * dek's 700 weight and its orange rule rather than its colour. Accepted
-   * deliberately: a hierarchy nobody can read the bottom of is not a hierarchy.
-   *
-   * SOLVED AGAINST `--color-paper`, WHICH IS A CORRECTION. The old note said the
-   * dark side was solved against `--color-card`, on the grounds that ink on a
-   * card was the worst pairing. That stopped being true when the site gave its
-   * cards up: `bg-card` survives in `/preview`, one empty state and the
-   * photograph's frame, and no body copy sits on it. `--color-paper` is the
-   * LIGHTEST dark surface — the dialogs and a few panels — so for light text it
-   * is now the worst pairing, and it is what these were bisected against.
-   *
-   * `ink` NEEDED NOTHING on this side — 14.43 on the page, 11.41 on paper.
-   *
-   * HUE AND SATURATION UNCHANGED HERE TOO, only lightness, by bisection.
+   * `ink-soft` is the floor that matters: it sets the meta row on every card,
+   * the date on every archive row and the label over 「为什么值得读」, all real
+   * text at 12–13px, so it has to clear AA (4.5) on every surface it lands on —
+   * it is 4.6 on `card`, the darkest light surface.
    */
-  --color-ink: light-dark(#2d294c, #f3ede1);
-  --color-ink-mid: light-dark(#474263, #e5e2ef);
-  --color-ink-soft: light-dark(#5f587e, #c4c2d5);
+  --color-ink: light-dark(#2f3542, #eef0f4);
+  --color-ink-mid: light-dark(#4a4f5c, #d3d7df);
+  --color-ink-soft: light-dark(#666b7a, #a9afbc);
 
   /**
-   * THE INK FOR TEXT THAT SITS ON A PHOTOGRAPH, and it does NOT invert.
+   * THE INK FOR TEXT ON A GROUND THAT DOES NOT FOLLOW THE THEME, and it does
+   * NOT invert.
    *
-   * ONE USER: the front page's 「查看今日文章」 pill, which is `bg-white` over the
-   * hero image. It was `text-ink`, and that was a real bug in dark mode — `ink`
-   * inverts to warm off-white, so the label went near-white on a white pill and
-   * disappeared. The pill is white in both modes because its context is the
-   * photograph underneath it rather than the page, so its text has to be fixed
-   * too.
+   * Text on the yellow (`bg-brand`) is the main user: the yellow is the same in
+   * both modes, so the ink on it has to be too — `text-ink` would turn near-
+   * white on a dark page and vanish off a yellow button. Sokosoko calls this
+   * `on-brand`; it is 7.8:1 on the yellow.
    *
-   * THE SAME DOCTRINE THE BLOB LEARNED (see the tombstone below): a thing whose
-   * ground does not follow
-   * the theme must not take a colour that does. It lives here rather than as a
-   * literal in the component so that the next pass over the ink note finds it —
-   * this is the light side's `--color-ink`, and if that value moves this one
-   * moves with it.
+   * THE DOCTRINE: a thing whose ground does not follow the theme must not take
+   * a colour that does. It lives here rather than as a literal in the
+   * components so that the next pass over the ink finds it — it is the light
+   * side's `--color-ink`, and if that value moves this one moves with it.
    */
-  --color-ink-fixed: #2d294c;
+  --color-ink-fixed: #2f3542;
 
-  /* The one colour that does NOT invert. It is the brand's accent on both
-     grounds and it holds against each; swapping it would be swapping identity. */
-  --color-orange: #efa050;
-
-  /*
-   * `--color-blob` AND `--radius-blob` WERE HERE AND ARE GONE. They coloured and
-   * shaped the masthead's two decorative blobs, which went when the masthead's
-   * contents moved into the bar — see the note at the top of Shell.tsx. Nothing
-   * in `src/` has referenced either for several rounds.
+  /**
+   * THE ONE ACCENT: Sokosoko's warm yellow, the same in both modes.
    *
-   * THE COLOUR ONE HAD ALSO GONE STALE, which is why deleting beat keeping: its
-   * note said it was "fixed at the light side's ink, so the light page is
-   * unchanged to the pixel", and the light ink has been darkened twice since
-   * (#3b3563 → #2d294c). A token documented as tracking another value, which
-   * does not track it, and which nothing reads, is three kinds of wrong at once.
-   *
-   * WHAT THE NOTE WAS WORTH KEEPING FOR is the doctrine, and that survives one
-   * token up in `--color-ink-fixed`: a thing whose ground does not follow the
-   * theme must not take a colour that does. The blob learned it the hard way —
-   * it was `bg-ink` once, and on the dark page it came out as 200x260 of warm
-   * off-white, brighter than anything else on the screen and drawing the eye to
-   * the one thing up there with nothing to say.
+   * A FILL, NEVER A TEXT COLOUR. Yellow on white is 1.6:1; it carries primary
+   * buttons, the selected state, badges and the highlighter stroke under a
+   * heading, always with `text-ink-fixed` on top. Anything that used to be set
+   * in the old orange as text is ink or `link` now.
    */
+  --color-brand: #f7c948;
+  /* Hover/pressed for a yellow button. The dark side goes lighter, as the
+     design system has it; the text on it stays `ink-fixed` either way. */
+  --color-brand-deep: light-dark(#e0a91b, #ffd966);
+  /* Soft yellow wash: a selected chip, a notice, the summary's callout. */
+  --color-brand-soft: light-dark(#fdf1cc, #3a3220);
+  /* The highlighter stroke under a heading (`HEADING` in components/Shell).
+     The yellow itself on the light side; a deep mustard in the dark, because
+     light ink over full yellow would drop to 1.5:1. */
+  --color-highlight: light-dark(#f7c948, #6b5413);
+
+  /* Inline text links and the focus ring. 5.2:1 on paper; 7.6:1 dark. */
+  --color-link: light-dark(#2f6fb0, #7fb4ec);
+
+  /**
+   * Illustration fills — the pastel discs behind the topic icons and the
+   * placeholder for an article with no picture. They keep their LIGHT values in
+   * dark mode on purpose: the icons on them are drawn in `ink-fixed`, and art in
+   * this system is always ink on a light ground. Decorative only; nothing is
+   * read off them without an ink line.
+   */
+  --color-fill-sky: #bcdcf2;
+  --color-fill-mint: #bfe3cf;
+  --color-fill-pink: #f6c6cf;
+  --color-fill-lilac: #d9d1f2;
+  --color-fill-yellow: #fdf1cc;
 
   /**
    * CHART MARKS — three, and only `/admin` uses them.
    *
-   * WHY NOT THE INK TOKENS ABOVE. Those are text and surface colours: `--color-ink`
-   * light is L 0.358, which is below the 0.43 floor a chart mark needs, and every
-   * ink step sits at chroma 0.055-0.078, under the 0.10 floor where a hue stops
-   * doing identity work. A bar painted in body-text colour is a bar that cannot be
-   * told from the bar beside it. So these are the site's own two hue families —
-   * the orange's h64 and the ink's h292 — re-stepped into the band a MARK needs.
+   * THEY PREDATE THE SOKOSOKO PALETTE and were left alone on purpose: `/admin`
+   * is a tool for one reader, not part of the restyle, and these values were
+   * measured for separation rather than picked for looks.
+   *
+   * WHY NOT THE INK TOKENS ABOVE. Those are text and surface colours, too dark
+   * and too grey for a mark: a bar painted in body-text colour is a bar that
+   * cannot be told from the bar beside it. So these are two hue families — an
+   * orange and a violet — stepped into the band a MARK needs.
    *
    * MEASURED, NOT PICKED. Each pair was snapped to the nearest passing step and
-   * then validated per mode against `--color-paper` (charts sit on paper cards):
+   * then validated per mode against the paper the charts sit on:
    *
    *   accent + cool, both modes ......... every check passes
    *   CVD separation .................... ΔE 23.2 light / 24.1 dark (target 8)
@@ -199,10 +166,9 @@
    *   accent ↔ mute (the pair that TOUCHES, in the stacked columns)
    *                                       ΔE 17.6 / 18.4, contrast both ≥ 3:1
    *
-   * `--chart-mute` IS DELIBERATELY UNDER THE CHROMA FLOOR (0.055). It is the
+   * `--chart-mute` IS DELIBERATELY UNDER THE CHROMA FLOOR. It is the
    * de-emphasis grey of the emphasis form — one series in the accent, the rest
-   * receding — so it is *supposed* not to do identity work; the accent does. It is
-   * the ink-soft step exactly, so the recessive marks match the recessive text.
+   * receding — so it is *supposed* not to do identity work; the accent does.
    *
    * THE JOBS ARE FIXED and must not be swapped around per chart:
    *   accent — 发布 / 通过. The outcome the page is about.
@@ -213,17 +179,25 @@
   --chart-cool: light-dark(#6b5aa8, #8e7ecf);
   --chart-mute: light-dark(#8a83a8, #8d86ad);
 
-  /* Hairline rules and card borders: the ink of the other side, at the same
-     weight. `45 41 76` IS `--color-ink` WRITTEN OUT — it has to be, because a
-     colour-mix on a token is not something a border-colour can carry into every
-     `light-dark()` branch. It was `59 53 99` and moved with the ink above; if
-     the ink moves again, these three lines move with it. */
-  --color-line: light-dark(rgb(45 41 76 / 0.14), rgb(243 237 225 / 0.14));
+  /* Hairline rules and card borders — decorative, never the only edge of a
+     control. */
+  --color-line: light-dark(#e6e0d4, #363c48);
+  /* Control borders: a secondary button, an input. 3.2:1 on paper, which is
+     what a control's edge needs and a hairline does not. */
+  --color-line-strong: light-dark(#8a909c, #7d8494);
 
-  /* An ink-tinted shadow is invisible on a dark ground, so the dark side casts
-     black and casts it harder. */
-  --shadow-soft: 0 2px 10px light-dark(rgb(45 41 76 / 0.06), rgb(0 0 0 / 0.35));
-  --shadow-cover: 0 4px 14px light-dark(rgb(45 41 76 / 0.16), rgb(0 0 0 / 0.5));
+  /**
+   * Shadows. The system is flat — cards sit on a hairline, not a shadow — so
+   * these are for things that genuinely float. An ink-tinted shadow is
+   * invisible on a dark ground, so the dark side casts black and harder.
+   *
+   *   soft  — a small resting lift: the back-to-top button, a thumbnail.
+   *   cover — a picture standing off the page.
+   *   pop   — dialogs and sheets over a scrim.
+   */
+  --shadow-soft: 0 1px 3px light-dark(rgb(47 53 66 / 0.1), rgb(0 0 0 / 0.4));
+  --shadow-cover: 0 4px 12px light-dark(rgb(47 53 66 / 0.12), rgb(0 0 0 / 0.45));
+  --shadow-pop: 0 12px 32px light-dark(rgb(47 53 66 / 0.16), rgb(0 0 0 / 0.55));
 
   /**
    * `max-w-page` — THE READING COLUMN, and the number the whole page is drawn
@@ -238,87 +212,45 @@
    */
   --container-page: 880px;
 
-  /* `rounded-card` — one radius for every panel on the page. */
-  --radius-card: 18px;
+  /* `rounded-card` — cards, thumbnails, wells: Sokosoko's radius-md. */
+  --radius-card: 12px;
+  /* `rounded-panel` — dialogs, sheets, banners: radius-lg. Larger than a card
+     because a card often sits inside one, and an inner radius should be the
+     smaller of the two. */
+  --radius-panel: 20px;
+  /**
+   * `rounded-button` — every button, chip and input, and it is a full pill.
+   * "Everything you press is round" is the design system's rule, and it is
+   * what tells a control from a card at a glance on a page made of rounded
+   * rectangles.
+   */
+  --radius-button: 999px;
 
   /**
-   * `rounded-button` — one radius for every button, chip and input.
+   * TWO FAMILIES. 思源黑体 (Noto Sans SC) carries all running text, Chinese and
+   * Latin alike; Nunito carries display — headings, numbers, the brand — and
+   * falls back to 思源黑体 for the Chinese in a heading, since it has no CJK.
+   * Hierarchy comes from size and weight.
    *
-   * THEY WERE ALL `rounded-full`, and a half-round pill is a shape with an
-   * opinion: it reads as an app's control. This site is set in 宋体 on paper —
-   * the buttons were the one element arguing with that.
+   * THE SITE WAS 思源宋体 + LORA, and the serif's argument — that these pages
+   * are a publication's rather than an interface's — lost to the family look:
+   * daily now sits beside lab115.com, which is set in Nunito, and the design
+   * system it shares is a rounded sans through and through.
    *
-   * 14px RATHER THAN THE CARD'S 18px, because a button is usually INSIDE a
-   * card and an inner radius should be smaller than the one it sits in;
-   * matching them makes the inner shape look swollen at the corners.
+   * WEIGHTS ARE THE COST, as they were before: every weight of a CJK face is
+   * its own set of subsets, and a weight the markup uses but the font link in
+   * app/layout.tsx does not load is synthesised — an artefact on upright CJK
+   * glyphs at any size. The link loads 400/500/700 of 思源黑体 and 600–800 of
+   * Nunito; keep the markup inside those.
    *
-   * WHAT STAYS `rounded-full`: colour dots, progress bars, and the square
-   * icon-only buttons in the bar (language, theme). Those are circles rather
-   * than pills — a `p-2` box around a 16px glyph at 14px radius is a
-   * rounded square, which is a different control, not the same one softened.
+   * The mail renderer and the share posters build their own stacks; see the
+   * note on the poster above.
    */
-  --radius-button: 14px;
-
-
-  /**
-   * One face for the whole page: 思源黑体 (Noto Sans SC / Source Han Sans) for
-   * Chinese, Manrope for Latin. Hierarchy comes from size and weight — there is
-   * no second family to switch to.
-   */
-  /**
-   * THE WHOLE SITE IS SET IN 思源宋体 (Noto Serif SC / Source Han Serif), with
-   * Lora for the Latin.
-   *
-   * IT WAS 黑体 EVERYWHERE, then serif headings over a sans body for one commit,
-   * and it is serif throughout now. The intermediate step is worth recording
-   * because its reasoning is what carried here: a serif says the pages are a
-   * PUBLICATION'S rather than an interface's. 黑体 is what an app's chrome is set
-   * in; what this site puts on a page is a date, a standfirst, prose and a
-   * section break. Splitting the two faces made that claim about the headlines
-   * and then withdrew it two lines down — the body is where a reader spends the
-   * time, so it is the body that decides what the site reads as.
-   *
-   * THE LATIN IS LORA, NOT MANROPE, and both sans families are gone from the
-   * page entirely. A Chinese headline here is followed by the source's own
-   * English headline on the next line (see `ArticleTitle`), so a grotesk beside
-   * 宋体 puts two unrelated skeletons in one block. Lora is the nearest serif to
-   * 思源宋体's contrast that Google Fonts ships as a variable font — which is
-   * why the Latin half costs one file across every weight.
-   *
-   * THREE CJK WEIGHTS — 400/600/700 — AND THAT NUMBER IS THE WHOLE COST OF THIS
-   * CHANGE. Every weight of a Chinese face is its own set of subsets; the site
-   * had four of 黑体 and cannot afford four of 宋体 on top of a page whose point
-   * is being screenshotted quickly. Asking for a weight that is NOT loaded gets
-   * a SYNTHESISED one, which on upright CJK glyphs is an artefact at any size,
-   * so every weight the markup uses has to be in that list.
-   *
-   * BODY COPY IS 600, AND IT WAS 500. 宋体's strokes are thinner than 黑体's, so
-   * body text set at the weight that read right in a sans reads light in a
-   * serif — the same cause as the two ink steps below this note getting darker.
-   * The fix is a SUBSTITUTION, not an addition: 500 is no longer loaded and
-   * every `font-medium` in `src/` became `font-semibold`, so the page downloads
-   * exactly the three subsets it downloaded before. Going to 600 while keeping
-   * 500 would have been a fourth CJK weight for nobody.
-   *
-   * THE FALLBACK IS A SYSTEM SERIF, not a sans. `display=swap` means the first
-   * paint is in the fallback, and a page that arrives in Georgia and settles
-   * into 思源宋体 has changed size; one that arrives in Helvetica has changed
-   * character.
-   *
-   * `--font-sans` SURVIVES AND NOTHING ON THE PAGE USES IT. The mail renderer
-   * builds its own stack from the same idea (see the note in lib/mail/render —
-   * an inbox cannot load a webfont), and the share posters are still drawn in
-   * 黑体: `lib/og.tsx` carries a table of MEASURED Manrope advance widths that a
-   * face change would invalidate, so the images keep their own typography until
-   * that table is re-measured. That is a real inconsistency between the site and
-   * its share cards, and it is deliberate rather than overlooked.
-   */
-  --font-serif:
-    "Lora", "Noto Serif SC", Georgia, "Songti SC", "Source Han Serif SC",
-    serif;
-
   --font-sans:
-    "Manrope", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display:
+    "Nunito", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui,
     sans-serif;
 }
 
@@ -365,10 +297,9 @@
   /**
    * ONE FOCUS RING, FOR EVERYTHING THAT TAKES FOCUS.
    *
-   * The site had none of its own, so a keyboard reader got the browser default —
-   * which on this cream ground is a thin near-invisible outline, and in dark mode
-   * lands on a dark page. That is not "no styling", it is a control the reader
-   * cannot find.
+   * Without one a keyboard reader gets the browser default, which on some
+   * grounds is a thin near-invisible outline. That is not "no styling", it is a
+   * control the reader cannot find.
    *
    * `:focus-visible`, NEVER `:focus`. The plain pseudo-class fires on a MOUSE
    * click too, which is why so many sites remove focus styling altogether and
@@ -376,16 +307,17 @@
    * bug, so it gets deleted, and the people who needed it lose it. `focus-visible`
    * is the browser's own answer to which of the two happened.
    *
-   * `--color-orange` because the ring has to be findable against `--color-ink`
-   * text and the accent is the one hue that is neither the text nor the ground.
-   * `outline-offset` keeps it clear of a pill's own border, so the two read as a
-   * button with a ring rather than a thicker button.
+   * `--color-link`, as the design system specifies: the yellow cannot be the
+   * ring, because a primary button is yellow and a ring the colour of the
+   * button it surrounds is no ring. `outline-offset` keeps it clear of a pill's
+   * own border, so the two read as a button with a ring rather than a thicker
+   * button.
    *
    * DECLARED ON THE BARE ELEMENTS rather than a utility class, so anything added
    * later gets it without remembering to.
    */
   :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
-    outline: 2px solid var(--color-orange);
+    outline: 2px solid var(--color-link);
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -404,35 +336,21 @@
   /**
    * THE SWITCH. No utility for this one, and it is document-level.
    *
-   * Three rules, in this order and for this reason: the OS decides when the
-   * reader has not, an explicit choice beats the OS in BOTH directions, and the
-   * `:not([data-theme="light"])` guard is what makes a reader on a dark Mac who
-   * asked for light actually get light.
+   * LIGHT IS THE DEFAULT, FULL STOP — the OS is not consulted. There used to be
+   * a middle rule, `@media (prefers-color-scheme: dark)
+   * { :root:not([data-theme="light"]) }`, which made a dark-mode machine the
+   * default and the switch a way back; it is deleted. A reader whose OS is dark
+   * and who has never touched the switch gets the light page, which is the page
+   * this site is designed on.
    *
-   * `data-theme` is stamped before first paint by the inline script in
-   * app/layout.tsx. Without that script every navigation would flash cream at a
-   * reader who chose dark — see the note there.
-   */
-  /**
-   * LIGHT IS THE DEFAULT, FULL STOP — the OS is not consulted any more.
-   *
-   * There were three rules here and the middle one was
-   * `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }`,
-   * which made a dark-mode machine the default and the switch a way back. It is
-   * deleted. What that costs is real and is the point of the change: a reader
-   * whose OS is dark and who has never touched the switch now gets the cream
-   * page, which is the page this site is designed on — every colour pair, the
-   * poster, the OG card and both brand marks were picked against it.
-   *
-   * DARK IS NOW REACHABLE ONLY BY THE SWITCH, i.e. only through `data-theme`,
-   * which the inline script in app/layout.tsx stamps before first paint. That
-   * script does not change: it already wrote the attribute only for a reader who
-   * had chosen, and that is now the only thing the attribute is for.
+   * DARK IS REACHABLE ONLY BY THE SWITCH, i.e. only through `data-theme`, which
+   * the inline script in app/layout.tsx stamps before first paint. Without that
+   * script every navigation would flash light at a reader who chose dark — see
+   * the note there.
    *
    * `:root[data-theme="light"]` STAYS, and it is not redundant with `:root`
    * above. It is what a reader who chose light explicitly gets, and it has to
-   * keep existing for the `dark:` variant's `:not()` companions and for anything
-   * that reads the attribute rather than the scheme.
+   * keep existing for anything that reads the attribute rather than the scheme.
    */
   :root,
   :root[data-theme="light"] {

@@ -1,7 +1,8 @@
 import { PageShell } from "./PageShell";
+import { TopicIcon, topicFill } from "./TopicIcon";
 import { TopicImage } from "./TopicImage";
 import { Breadcrumb, Footer, Masthead, PAD } from "./Shell";
-import { accentColor, categoryName, topicDescription } from "@/lib/categories";
+import { categoryName, topicDescription } from "@/lib/categories";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
@@ -136,15 +137,18 @@ export async function TopicHub({ lang }: { lang: Lang }) {
           >
             <TopicImage
               category={category}
-              className="size-20 flex-none rounded-xl shadow-cover sm:size-24"
+              className="size-20 flex-none rounded-card sm:size-24"
             />
 
             <div className="min-w-0 flex-1">
-              <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink">
+              <h2 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
+                {/* The topic's icon on its pastel, where a coloured dot was —
+                    the design system's category disc at heading size. */}
                 <span
-                  className="size-2 flex-none rounded-full"
-                  style={{ background: accentColor(category) }}
-                />
+                  className={`flex size-7 flex-none items-center justify-center rounded-full text-ink-fixed ${topicFill(category.id)}`}
+                >
+                  <TopicIcon id={category.id} className="size-4" />
+                </span>
                 {categoryName(category, lang)}
               </h2>
 
@@ -153,7 +157,7 @@ export async function TopicHub({ lang }: { lang: Lang }) {
                   it is what separates a hub from a list of links.
                   `line-clamp-2` so one long description cannot make its row
                   twice the height of the seven beside it. */}
-              <p className="mt-1 line-clamp-2 text-sm leading-relaxed font-semibold text-pretty text-ink-mid">
+              <p className="mt-1 line-clamp-2 text-sm leading-relaxed font-normal text-pretty text-ink-mid">
                 {topicDescription(category, lang)}
               </p>
 

@@ -104,7 +104,7 @@ export default async function AboutPage({
              also the page's `<meta name="description">` and the copy a person
              edits, and a second syntax to strip would be a second thing that can
              be got wrong. If emphasis is ever wanted it belongs in the markup. */
-          <p className="text-base leading-[1.85] font-semibold text-ink-mid" key={at}>
+          <p className="text-base leading-[1.85] font-normal text-ink-mid" key={at}>
             {paragraph.replace(/\*\*/g, "")}
           </p>
         ))}
@@ -116,11 +116,11 @@ export default async function AboutPage({
       <section className={`${SECTION} ${PAD} grid gap-4 sm:grid-cols-3`}>
         {t.aboutPillars.map(([heading, body]) => (
           <div
-            className="rounded-card border border-line px-5 py-4"
+            className="rounded-card bg-page-deep px-5 py-4"
             key={heading}
           >
-            <h2 className="text-base font-bold text-ink">{heading}</h2>
-            <p className="mt-1.5 text-sm leading-relaxed font-semibold text-ink-mid">
+            <h2 className="font-display text-base font-extrabold text-ink">{heading}</h2>
+            <p className="mt-1.5 text-sm leading-relaxed font-normal text-ink-mid">
               {body}
             </p>
           </div>

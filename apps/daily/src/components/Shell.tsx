@@ -41,6 +41,19 @@ export const PAD = "px-4 sm:px-7";
 export const SECTION = "mt-8";
 
 /**
+ * A section heading, with the design system's highlighter: a yellow pill
+ * stroke behind the lower half of the words (Sokosoko's `sk-h2`). Size is left
+ * to the caller — the same mark sits under a 20px list heading and a 24px
+ * section one. So is `display`: give it `inline-block` or `inline-flex`,
+ * so the stroke is as wide as the words rather than the row.
+ *
+ * `z-0` so the `-z-10` stroke goes behind the text without going behind
+ * whatever the heading sits on.
+ */
+export const HEADING =
+  "relative z-0 px-1.5 font-display font-extrabold tracking-wide text-ink before:absolute before:inset-x-0 before:bottom-0.5 before:-z-10 before:h-2.5 before:rounded-full before:bg-highlight before:content-['']";
+
+/**
  * The masthead: WHAT THIS PAGE IS, and whatever meta it passes as children.
  *
  * IT IS NO LONGER THE SITE'S LOCKUP, AND NO LONGER THE SITE'S NAME EITHER. Two
@@ -175,7 +188,7 @@ export function Masthead({
 
       {title ? (
         <h1
-          className={`max-w-2xl text-3xl leading-tight font-bold tracking-tight text-ink sm:text-4xl ${
+          className={`max-w-2xl font-display text-3xl leading-tight font-extrabold text-ink sm:text-4xl ${
             kicker ? "mt-1.5" : crumb ? "mt-6" : ""
           }`}
         >
@@ -188,7 +201,7 @@ export function Masthead({
           empty flex row here would be `mt-6` of nothing between the title and
           the first card. */}
       {lead ? (
-        <p className="mt-2.5 max-w-prose text-base leading-relaxed font-semibold text-ink-mid">
+        <p className="mt-2.5 max-w-prose text-base leading-relaxed font-normal text-ink-mid">
           {lead}
         </p>
       ) : null}
@@ -235,7 +248,7 @@ export function Breadcrumb({
   label: string;
 }) {
   return (
-    <nav aria-label={label} className="mt-6 text-sm font-semibold text-ink-soft">
+    <nav aria-label={label} className="mt-6 text-sm font-normal text-ink-soft">
       <ol className="flex flex-wrap items-center gap-1.5">
         {items.map((item, at) => (
           <li key={item.label} className="flex items-center gap-1.5">
@@ -270,9 +283,9 @@ export function Breadcrumb({
   );
 }
 
-/** The orange separator between masthead meta items. */
+/** The yellow separator between masthead meta items. */
 export function MastheadDot() {
-  return <span className="size-1 rounded-full bg-orange" />;
+  return <span className="size-1 rounded-full bg-brand" />;
 }
 
 /**
@@ -306,20 +319,20 @@ export function EndLink({
   return (
     <a
       href={to}
-      className={`${SECTION} flex items-center justify-between gap-4 rounded-card border border-line bg-paper px-6 py-5`}
+      className={`${SECTION} flex items-center justify-between gap-4 rounded-card border border-line bg-paper px-6 py-5 transition duration-150 ease-out hover:shadow-soft`}
       data-track={event}
       data-track-from={trackFrom}
     >
       <span className="min-w-0">
-        <span className="block text-xl font-bold text-ink">{label}</span>
-        <span className="mt-1 block text-sm font-semibold text-ink-soft">
+        <span className="block font-display text-xl font-extrabold text-ink">{label}</span>
+        <span className="mt-1 block text-sm font-normal text-ink-soft">
           {sub}
         </span>
       </span>
       {/* aria-hidden: the anchor's own text already names the destination. */}
       <span
         aria-hidden
-        className="flex size-10 flex-none items-center justify-center rounded-full bg-ink text-lg text-paper"
+        className="flex size-10 flex-none items-center justify-center rounded-full bg-brand text-lg text-ink-fixed"
       >
         →
       </span>
@@ -349,9 +362,9 @@ export function Footer({ year, lang }: { year: string; lang: Lang }) {
       className={`mt-10 border-t border-line pt-6 ${PAD} flex flex-wrap items-center justify-between gap-x-8 gap-y-4`}
     >
       {/* Same single name as the masthead, so the switch changes both. */}
-      <div className="min-w-0 text-lg font-bold text-ink">{t.brand}</div>
+      <div className="min-w-0 font-display text-lg font-extrabold text-ink">{t.brand}</div>
 
-      <div className="flex flex-col gap-1 text-xs font-semibold text-ink-soft sm:items-end sm:text-right">
+      <div className="flex flex-col gap-1 text-xs font-normal text-ink-soft sm:items-end sm:text-right">
         {/**
          * THE LINK BACK TO THE LAB, and it is the only outbound link in the
          * footer.
@@ -415,7 +428,7 @@ export function SectionHead({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <h2 className="flex items-baseline gap-2 text-2xl font-bold tracking-tight text-ink">
+      <h2 className={`${HEADING} inline-flex items-baseline gap-2 text-2xl`}>
         {/* Carries the category's colour, so sections stay distinguishable at a
             glance in a long screenshot without tinting the headings. The nudge
             up is optical: a baseline-aligned circle sits too low. */}

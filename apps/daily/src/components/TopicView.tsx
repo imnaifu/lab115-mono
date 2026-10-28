@@ -236,7 +236,7 @@ export async function TopicView({
                 what the subject is called in the two places a reader might have
                 met it. `nameEn` is what the JSON-LD's `articleSection` has always
                 declared. */}
-            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
               {name}
             </h1>
             <p className="mt-1 text-sm font-bold tracking-wide text-white/70">
@@ -266,7 +266,7 @@ export async function TopicView({
              * `RawCategory.description` in user-config for why it is written by
              * a person rather than generated.
              */}
-            <p className="mt-3 max-w-xl text-sm leading-relaxed font-semibold text-pretty text-white/85 sm:text-base">
+            <p className="mt-3 max-w-xl text-sm leading-relaxed font-normal text-pretty text-white/85 sm:text-base">
               {topicDescription(category, lang)}
             </p>
           </div>
@@ -310,10 +310,10 @@ export async function TopicView({
                   tab.key === "hot" ? "?sort=hot" : ""
                 }`}
                 aria-current={tab.on ? "page" : undefined}
-                className={`-mb-px border-b-2 pb-2.5 text-sm font-bold transition duration-150 ease-out ${
+                className={`-mb-px border-b-[3px] pb-2.5 text-sm font-bold transition duration-150 ease-out ${
                   tab.on
-                    ? "border-ink text-ink"
-                    : "border-transparent text-ink-soft hover:text-ink-mid"
+                    ? "border-brand text-ink"
+                    : "border-transparent text-ink-soft hover:border-brand hover:text-ink"
                 }`}
               >
                 {tab.label}
@@ -382,13 +382,13 @@ export async function TopicView({
               data-track-age={at}
             >
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-bold text-ink-soft">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-medium text-ink-soft">
                   <time dateTime={date}>{date}</time>
                   <span className="size-0.75 rounded-full bg-current opacity-55" />
                   <span>{source.name}</span>
                 </div>
 
-                <span className="mt-1.5 block text-lg leading-snug font-bold text-ink">
+                <span className="mt-1.5 block font-display text-lg leading-snug font-bold text-ink">
                   {displayTitle(article, lang)}
                 </span>
 
@@ -396,15 +396,15 @@ export async function TopicView({
                     96px thumbnail beside it a long thesis is the one thing that
                     can make one row twice the height of the nine under it. */}
                 {thesis ? (
-                  <span className="mt-1 block line-clamp-3 text-sm leading-relaxed font-semibold text-ink-mid">
+                  <span className="mt-1 block line-clamp-3 text-sm leading-relaxed font-normal text-ink-mid">
                     {thesis}
                   </span>
                 ) : null}
               </div>
 
               <Cover
-                id={article.id}
                 sourceId={article.sourceId}
+                category={article.category}
                 image={article.image}
                 variant="card"
               />
@@ -446,7 +446,7 @@ export async function TopicView({
         >
           {page > 1 ? (
             <a
-              className="rounded-button border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+              className="rounded-button border-[1.5px] border-line-strong bg-paper px-4 py-2 text-sm font-bold text-ink transition duration-150 ease-out hover:bg-card active:opacity-80"
               href={href(lang, topicPath(category.id, page - 1))}
               data-track="topic_open"
               data-track-topic={category.id}
@@ -460,7 +460,7 @@ export async function TopicView({
           )}
           {page < total ? (
             <a
-              className="rounded-button border border-line bg-paper px-4 py-2 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+              className="rounded-button border-[1.5px] border-line-strong bg-paper px-4 py-2 text-sm font-bold text-ink transition duration-150 ease-out hover:bg-card active:opacity-80"
               href={href(lang, topicPath(category.id, page + 1))}
               data-track="topic_open"
               data-track-topic={category.id}

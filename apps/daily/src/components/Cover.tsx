@@ -1,21 +1,5 @@
 import { sourceOf } from "@/lib/sources";
-
-/** A deterministic gradient angle from the article id, so a given article's
- *  cover looks the same on every render. */
-function gradientFor(id: string, accent: string): string {
-  const seed = parseInt(id.slice(0, 4), 16) || 0;
-  const tilt = 120 + (seed % 90);
-  // The far end of the ramp used to be a flat `#1d1a33`. That value is now the
-  // dark theme's PAGE colour, so on a dark page the cover faded into the ground
-  // it was supposed to sit on. It leans toward the ink of whichever side is
-  // showing instead: still darker than the accent on cream, now lighter than it
-  // on the dark page, and in both cases a step AWAY from the background.
-  const far = "light-dark(#1d1a33, #f3ede1)";
-  return (
-    `linear-gradient(${tilt}deg, ${accent} 0%, ${accent} 42%, ` +
-    `color-mix(in srgb, ${accent} 55%, ${far}) 100%)`
-  );
-}
+import { TopicIcon, topicFill } from "./TopicIcon";
 
 /**
  * Cover size is a prop, not a descendant selector.
@@ -101,43 +85,43 @@ const SIZE = {
 } as const;
 
 /**
- * The placeholder's source name, sized for the box that has to hold it.
- *
- * `text-xs` ON THE ROW STILL, though the box grew to 96px. The binding case is
- * the longest source name — "the singularity is nearer" wraps to four lines,
- * which is 64px of text plus padding, and one step up would put it at 80px and
- * overflow a box that has 96 minus 16 of padding to give. The extra width buys
- * fewer wrapped lines rather than a bigger face.
+ * The placeholder's icon, sized for the box that holds it — about two fifths
+ * of the box, the share the design system gives the drawing in a well.
  */
-const LABEL = {
-  hero: "p-2.5 text-sm",
-  card: "p-2 text-xs",
-  /* The placeholder's one line of type, at the band's scale. It is only ever
-     seen on an article whose source shipped no cover image — see the note on
-     the gradient — and on a 660px band the 12px the rows use reads as debris. */
-  banner: "p-4 text-base",
+const ICON = {
+  hero: "size-12 sm:size-14",
+  card: "size-8 sm:size-10",
+  banner: "size-16 sm:size-24",
 } as const;
 
 /**
- * The gradient + source name are ALWAYS rendered, with the photo layered on
- * top when there is one. That way a cover that 404s or times out — XDA's CDN
- * does both intermittently — degrades to a designed placeholder instead of an
- * empty box, with no client-side JS involved.
+ * The placeholder is ALWAYS rendered, with the photo layered on top when there
+ * is one. That way a cover that 404s or times out — XDA's CDN does both
+ * intermittently — degrades to a designed placeholder instead of an empty box,
+ * with no client-side JS involved.
+ *
+ * THE PLACEHOLDER IS THE TOPIC'S WELL: its pastel, with its line icon in the
+ * middle (see TopicIcon). It was a gradient in the source's accent with the
+ * source's name set on it; the Sokosoko restyle draws an article without a
+ * picture the way the design system draws one — an icon on a light fill. The
+ * source is still named in the meta row beside every cover. `category` is
+ * optional only so a caller that has no article to hand still gets a box; it
+ * falls back to a plain well and the bookmark.
  *
  * The <img> is `alt=""` on purpose: it is decorative (the headline sits right
- * beside it, and the layer underneath already names the source), and an empty
- * alt is also what stops browsers drawing a broken-image glyph on failure.
+ * beside it), and an empty alt is also what stops browsers drawing a
+ * broken-image glyph on failure.
  */
 export function Cover({
-  id,
   sourceId,
   image,
   variant,
+  category,
 }: {
-  id: string;
   sourceId: string;
   image: string | null;
   variant: keyof typeof SIZE;
+  category?: string;
 }) {
   const source = sourceOf(sourceId);
 
@@ -175,50 +159,42 @@ export function Cover({
    * its column that hugs the left reads as a layout that failed rather than as a
    * deliberate measure. Centred is what a plate in a book does.
    *
-   * NO `shadow-cover` AND NO `bg-page-deep` HERE, because there is no box to
-   * shade: the element is the picture. A shadow around an image whose width is
-   * unknown until it loads would also move when it does.
+   * NO `shadow-cover` AND NO WELL HERE, because there is no box to shade: the
+   * element is the picture. A shadow around an image whose width is unknown
+   * until it loads would also move when it does.
    */
   if (variant === "banner") {
     if (image) {
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          className="mx-auto h-48 w-auto max-w-full rounded-xl object-contain sm:h-80"
+          className="mx-auto h-48 w-auto max-w-full rounded-card object-contain sm:h-80"
           src={image}
           alt=""
           loading="lazy"
         />
       );
     }
-    /* NO FILE: the designed placeholder, and it keeps the 16:9 box because
-       there is no picture to take a ratio from. */
+    /* NO FILE: the topic's well, and it keeps the 16:9 box because there is no
+       picture to take a ratio from. The band is wide enough to name the source
+       too, which the small wells leave to the meta row. */
     return (
       <div
-        className={`relative flex-none overflow-hidden rounded-xl bg-page-deep shadow-cover ${SIZE.banner}`}
+        className={`relative flex flex-none items-center justify-center overflow-hidden rounded-card text-ink-fixed ${topicFill(category)} ${SIZE.banner}`}
       >
-        <div
-          className={`absolute inset-0 flex items-end ${LABEL.banner}`}
-          style={{ background: gradientFor(id, source.accent) }}
-        >
-          <span className="font-bold text-paper/95">{source.name}</span>
-        </div>
+        <TopicIcon id={category} className={ICON.banner} />
+        <span className="absolute bottom-4 left-4 text-base font-bold">
+          {source.name}
+        </span>
       </div>
     );
   }
 
   return (
     <div
-      className={`relative flex-none overflow-hidden rounded-xl bg-page-deep shadow-cover ${SIZE[variant]}`}
+      className={`relative flex flex-none items-center justify-center overflow-hidden rounded-card text-ink-fixed ${topicFill(category)} ${SIZE[variant]}`}
     >
-      {/* The text size lives on the wrapper beside its padding — the two are one
-          decision per variant — and the span inherits it. */}
-      <div
-        className={`absolute inset-0 flex items-end ${LABEL[variant]}`}
-        style={{ background: gradientFor(id, source.accent) }}
-      >
-        <span className="font-bold text-paper/95">{source.name}</span>
-      </div>
+      <TopicIcon id={category} className={ICON[variant]} />
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

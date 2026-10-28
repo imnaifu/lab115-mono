@@ -30,34 +30,34 @@
     named without their prefix below, and nothing here may spell them in full.
 
     COLOURS ARE THE LIGHT THEME'S, WRITTEN OUT, because an SVG in public/ has no
-    stylesheet to read a token from: fbf3e9 is color-page, 2d294c is color-ink,
-    5f587e is color-ink-soft, efa050 is color-orange. They were darkened once
-    already; if the ink note in src/index.css moves them again, this file does
-    not follow on its own.
+    stylesheet to read a token from: FFFFFF is color-page, 2F3542 is color-ink,
+    F7C948 is color-brand, the Sokosoko palette the poster is drawn in. If
+    src/index.css moves them, this file does not follow on its own.
 
     role="img" WITH AN EMPTY LABEL: the words beside it in the card already say
     what this is, so announcing it would be reading the same thing twice.
   -->
-  <rect width="1080" height="1440" fill="#fbf3e9"/>
+  <rect width="1080" height="1440" fill="#FFFFFF"/>
 
-  <!-- The mark, at 44% of the width — the same shapes as public/mark.svg,
-       scaled from its 64-unit box and centred across the card. -->
+  <!-- The mark, at 44% of the width: the same shapes and colours as
+       public/mark.svg (yellow tile, ink outline, ink strokes), scaled from its
+       64-unit box and centred across the card. -->
   <g transform="translate(302 300) scale(7.4)">
-    <rect width="64" height="64" rx="14" fill="#2d294c"/>
-    <g stroke="#fbf3e9" stroke-linecap="round">
+    <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#F7C948" stroke="#2F3542" stroke-width="3"/>
+    <g transform="translate(32 32) scale(0.88) translate(-32 -32)" fill="none" stroke="#2F3542" stroke-linecap="round">
       <path stroke-width="7" d="M 13.2 21 H 56"/>
       <path stroke-width="7" d="M 13.2 43 H 56"/>
       <path stroke-width="5" d="M 30 25 V 39"/>
       <path stroke-width="5" d="M 42 25 V 39"/>
+      <path stroke-width="7" d="M 8 11 A 35 35 0 0 1 8 53"/>
     </g>
-    <path fill="none" stroke="#efa050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
   </g>
 
-  <!-- Three bars where the poster sets its headline, with the orange rule the
+  <!-- Three bars where the poster sets its headline, with the yellow rule the
        real thesis block draws down its left edge. Thick enough to survive being
        56px wide. -->
-  <rect x="180" y="900" width="36" height="300" rx="18" fill="#efa050"/>
-  <g fill="#2d294c" opacity="0.78">
+  <rect x="180" y="900" width="36" height="300" rx="18" fill="#F7C948"/>
+  <g fill="#2F3542" opacity="0.78">
     <rect x="288" y="912" width="612" height="72" rx="36"/>
     <rect x="288" y="1026" width="612" height="72" rx="36"/>
     <rect x="288" y="1140" width="384" height="72" rx="36"/>

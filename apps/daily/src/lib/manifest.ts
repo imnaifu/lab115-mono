@@ -48,8 +48,8 @@ export function manifest(lang: Lang) {
     display: "standalone",
     // The page's own background, so the splash screen and the first paint are the
     // same colour and there is no white flash between them.
-    background_color: "#fbf3e9",
-    theme_color: "#fbf3e9",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
     // No `orientation`: a manifest applies to an installed DESKTOP window too,
     // and locking a reading page to portrait there would be nonsense.
     icons: [

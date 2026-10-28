@@ -44,8 +44,13 @@
  * wrong. The new worker stops writing them, but a v3 cache does not clear itself
  * just because the new worker would have written it differently, so the pages
  * already sitting in one need this bump to be released.
+ *
+ * v5: THE MARK WAS RECOLOURED AGAIN, for the Sokosoko restyle — yellow tile, ink
+ * strokes — with the icon filenames unchanged, the case v3 was for. The icons
+ * are network-first since then, so this bump only releases what older caches
+ * already hold.
  */
-const VERSION = "v4";
+const VERSION = "v5";
 const STATIC_CACHE = `daily-static-${VERSION}`;
 const PAGE_CACHE = `daily-pages-${VERSION}`;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];

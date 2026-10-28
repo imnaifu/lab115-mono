@@ -304,7 +304,7 @@ export function PullToRefresh() {
              something is happening. */
           <svg
             viewBox="0 0 16 16"
-            className="size-4 animate-spin text-orange"
+            className="size-4 animate-spin text-ink-soft"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"

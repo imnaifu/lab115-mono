@@ -5,6 +5,7 @@ import {
   Breadcrumb,
   EndLink,
   Footer,
+  HEADING,
   Masthead,
   MastheadDot,
   PAD,
@@ -149,7 +150,7 @@ export async function SourceView({
        * which had the same pair.
        */}
       <section className={`${SECTION} ${PAD}`}>
-        <h1 className="flex items-center gap-2.5 text-3xl font-bold tracking-tight text-ink">
+        <h1 className="flex items-center gap-2.5 font-display text-3xl font-extrabold text-ink">
           <span
             className="size-2.5 flex-none rounded-full"
             style={{ background: themedAccent(source.accent) }}
@@ -195,13 +196,13 @@ export async function SourceView({
        * bottom of, and each one is a click away.
        */}
       <section className={`${SECTION} ${PAD}`}>
-        <h2 className="text-2xl font-bold tracking-tight text-ink">
+        <h2 className={`${HEADING} inline-block text-2xl`}>
           {t.sourceTakes}
         </h2>
         <div className="mt-3 flex flex-col gap-2">
           {picked.map(({ date, article }, at) => (
             <a
-              className="flex flex-col gap-1.5 rounded-xl border border-line bg-paper px-5 py-4 transition duration-150 ease-out hover:border-ink-soft"
+              className="flex flex-col gap-1.5 rounded-card border border-line bg-paper px-5 py-4 transition duration-150 ease-out hover:shadow-cover"
               key={`${date}-${article.id}`}
               href={href(lang, articlePath(date, article))}
               /* `day_open` is for a DAY page; this opens an article. `age` is the

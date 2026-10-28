@@ -10,7 +10,7 @@ import { track } from "@/lib/track";
 
 /** The hover system — see the note on these in components/ArticleCards. */
 const ACTION_OUTLINE =
-  " transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80";
+  " transition duration-150 ease-out hover:shadow-cover active:opacity-80";
 
 /**
  * How long the button will wait for the posters before opening the sheet anyway.
@@ -250,7 +250,7 @@ export function ShareButton({
        */}
       <button
         type="button"
-        className={`flex w-full cursor-pointer items-center gap-3 rounded-card border border-line px-4 py-4 text-left text-ink-mid disabled:cursor-wait${ACTION_OUTLINE}`}
+        className={`flex w-full cursor-pointer items-center gap-3 rounded-card border border-line bg-paper px-4 py-4 text-left text-ink-mid disabled:cursor-wait${ACTION_OUTLINE}`}
         onClick={openWhenReady}
         disabled={preparing}
         /* The accessible name, because the card's own text is 「把这篇发出去」 —

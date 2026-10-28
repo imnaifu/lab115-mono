@@ -21,7 +21,7 @@ import { ABOUT_PATH, TODAY_PATH, TOPIC_PATH } from "@/lib/links";
  */
 function TranslateIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="size-4 flex-none" aria-hidden>
+    <svg viewBox="0 0 24 24" className="size-5 flex-none" aria-hidden>
       <path
         fill="currentColor"
         d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
@@ -79,7 +79,7 @@ export function LangSwitch({ lang, path }: { lang: Lang; path: string }) {
       /* ThemeToggle's shell, to the class. The two are the same size of control
          doing the same kind of job, and drifting apart would show — they sit
          side by side. */
-      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+      className="flex size-9 cursor-pointer items-center justify-center rounded-full text-ink transition duration-150 ease-out hover:bg-card active:opacity-80 lg:size-10"
     >
       <TranslateIcon />
     </a>
@@ -326,7 +326,7 @@ export function SiteHeader({
             className="hidden size-6 flex-none sm:size-7 dark:block"
           />
           <span className="min-w-0">
-            <span className="block truncate text-base leading-tight font-bold tracking-tight text-ink sm:text-lg">
+            <span className="block truncate font-display text-lg leading-tight font-extrabold text-ink lg:text-xl">
               {t.brand}
             </span>
             {/* THE TAGLINE USED TO BE HERE, on a second line under the
@@ -382,6 +382,13 @@ export function SiteHeader({
             something is added. What they still support is the claim above, that
             every current sum is strictly smaller than a sum that already fit.
 
+            THE SOKOSOKO SIZES WAIT FOR `lg:`. The restyle's 40px round icon
+            buttons, the envelope on 订阅, the roomier install pill and the
+            20px wordmark all add width, and at 640–1023 that was enough to
+            wrap the nav links and cut the English wordmark to its first
+            letter. Below 1024 the controls keep sizes close to the ones these
+            sums were measured with, so the claim above still holds there.
+
             THE 72px `Sources` LINK IS OUT OF THESE SUMS, because the section is
             hidden — see SOURCE_PAGES_LIVE in lib/sources. Putting the link back
             means adding 80 to each of them.
@@ -422,10 +429,10 @@ export function SiteHeader({
               key={item.href}
               href={item.href}
               aria-current={item.current ? "page" : undefined}
-              className={`hidden rounded-none px-2 py-1 text-sm font-bold transition duration-150 ease-out hover:text-ink active:opacity-70 sm:block ${
+              className={`hidden rounded-none px-2 py-1 text-sm font-bold whitespace-nowrap text-ink transition duration-150 ease-out active:opacity-70 sm:block ${
                 item.current
-                  ? "border-b-2 border-ink text-ink"
-                  : "border-b-2 border-transparent text-ink-mid"
+                  ? "border-b-[3px] border-brand"
+                  : "border-b-[3px] border-transparent hover:border-brand"
               }`}
               /* Only the topic hub carries an event. `TrackEvent` in lib/track is
                  a closed union and TRACKING.md documents every member, so giving

@@ -15,7 +15,7 @@ import { THEME_COLOR, THEME_KEY, type Theme } from "@/lib/theme";
  */
 function ContrastIcon() {
   return (
-    <svg viewBox="0 0 16 16" className="size-4 flex-none" aria-hidden>
+    <svg viewBox="0 0 16 16" className="size-5 flex-none" aria-hidden>
       <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
       <path d="M8 2a6 6 0 0 1 0 12Z" fill="currentColor" />
     </svg>
@@ -80,10 +80,10 @@ export function ThemeToggle({ label }: { label: string }) {
       onClick={flip}
       aria-label={label}
       title={label}
-      /* The install control's shape, minus the words: two labelled pills side by
-         side would make the masthead's top row a toolbar, and only one of the two
-         is worth a sentence. */
-      className="flex cursor-pointer items-center rounded-full border border-line bg-paper p-2 text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+      /* A round icon button, the design system's `sk-iconbtn`: two labelled
+         pills side by side would make the masthead's top row a toolbar, and
+         only one of the two is worth a sentence. */
+      className="flex size-9 cursor-pointer items-center justify-center rounded-full text-ink transition duration-150 ease-out hover:bg-card active:opacity-80 lg:size-10"
     >
       <ContrastIcon />
     </button>

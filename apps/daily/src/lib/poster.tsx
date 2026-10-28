@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 import {
-  coverGradient,
   PARA_LEADING,
   POSTER,
   posterAuthor,
@@ -23,6 +22,7 @@ import {
   posterText,
 } from "@/lib/poster-assets";
 import { MAIL_TOP_N, SITE } from "@/lib/config";
+import { topicFillHex, topicIconUri } from "@/lib/topic-art";
 import { sourceOf } from "@/lib/sources";
 import { strings } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
@@ -58,7 +58,7 @@ function Dot() {
         height: 7,
         borderRadius: 4,
         margin: "0 15px",
-        background: "#5f587e",
+        background: "#666b7a",
         opacity: 0.55,
       }}
     />
@@ -248,10 +248,10 @@ export async function renderPoster({
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          background: "#fbf3e9",
-          color: "#2d294c",
+          background: "#ffffff",
+          color: "#2f3542",
           padding: `${POSTER.pad + 16}px ${POSTER.pad}px`,
-          fontFamily: "Lora, Noto Serif SC",
+          fontFamily: "Nunito, Noto Sans SC",
         }}
       >
         {/* The domain and the date, above the lockup — the page's masthead in the
@@ -279,8 +279,8 @@ export async function renderPoster({
               display: "flex",
               padding: `${POSTER.domainPadY}px ${POSTER.domainPadX}px`,
               borderRadius: 999,
-              background: "#2d294c",
-              color: "#fbf3e9",
+              background: "#f7c948",
+              color: "#2f3542",
               fontSize: POSTER.domainSize,
               fontWeight: 700,
               letterSpacing: POSTER.domainTracking,
@@ -292,7 +292,7 @@ export async function renderPoster({
             style={{
               display: "flex",
               fontSize: POSTER.dateSize,
-              color: "#5f587e",
+              color: "#666b7a",
             }}
           >
             {date}
@@ -364,7 +364,7 @@ export async function renderPoster({
                   marginTop: POSTER.taglineGap,
                   fontSize: POSTER.taglineSize,
                   lineHeight: 1,
-                  color: "#5f587e",
+                  color: "#666b7a",
                 }}
               >
                 {tagline}
@@ -420,9 +420,9 @@ export async function renderPoster({
             marginTop: POSTER.cardTop,
             padding: POSTER.cardPad,
             borderRadius: POSTER.radius,
-            background: "#f3e8d8",
+            background: "#faf7f0",
             // The page's `shadow-soft` and, below, its `shadow-cover`.
-            boxShadow: "0 3px 14px rgba(59, 53, 99, 0.06)",
+            boxShadow: "0 3px 14px rgba(47, 53, 66, 0.06)",
           }}
         >
           {part === 1 ? (
@@ -436,15 +436,17 @@ export async function renderPoster({
                     height: POSTER.cover,
                     marginRight: POSTER.coverGap,
                     borderRadius: 23,
-                    boxShadow: "0 6px 20px rgba(59, 53, 99, 0.16)",
-                    // The gradient is drawn whether or not there is a photo,
-                    // exactly as `Cover` does it, so a cover that failed to fetch
-                    // degrades to a designed placeholder instead of a hole.
-                    backgroundImage: coverGradient(article.id, source.accent),
-                    // For the PLACEHOLDER only — the source name sits at the
-                    // bottom of the box, as `Cover`'s `items-end` puts it. The
-                    // photo needs no alignment: it is the size of the box.
-                    alignItems: "flex-end",
+                    boxShadow: "0 6px 20px rgba(47, 53, 66, 0.16)",
+                    // The topic's pastel is drawn whether or not there is a
+                    // photo, exactly as `Cover` does it, so a cover that failed
+                    // to fetch degrades to a designed placeholder instead of a
+                    // hole.
+                    backgroundColor: topicFillHex(article.category),
+                    // For the PLACEHOLDER only — the topic's icon sits in the
+                    // middle of the box, as `Cover` centres it. The photo needs
+                    // no alignment: it is the size of the box.
+                    alignItems: "center",
+                    justifyContent: "center",
                     overflow: "hidden",
                   }}
                 >
@@ -459,29 +461,23 @@ export async function renderPoster({
                     />
                   ) : (
                     /**
-                     * The padding and the type live HERE, not on the box.
+                     * The topic's line icon in ink, two fifths of the box — the
+                     * page's `Cover` well. It used to be the source's name in
+                     * light type on an accent gradient; the meta row beside the
+                     * box names the source either way.
                      *
-                     * They were on the box, where the photo inherited them: the
-                     * img is POSTER.cover wide, which is the box's OUTER width,
-                     * so a pad left it wider than the content area — pushed right
-                     * and, with `flex-end`, up, then clipped by `overflow:
-                     * hidden`. The result was a photo missing its right and top
-                     * edges with a strip of bare gradient down the left and along
-                     * the bottom. The page's `Cover` draws the photo full-bleed
-                     * and pads only the label layer; this is that, in Satori's
-                     * terms.
+                     * NO PADDING ON THE BOX, and that is from the old label's
+                     * lesson: a pad there is inherited by the photo, which is
+                     * POSTER.cover wide — the box's OUTER width — so the photo
+                     * came out pushed off its own right and top edges.
                      */
-                    <div
-                      style={{
-                        display: "flex",
-                        padding: 15,
-                        fontSize: 22,
-                        fontWeight: 700,
-                        color: "rgba(255, 253, 249, 0.95)",
-                      }}
-                    >
-                      {source.name}
-                    </div>
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={topicIconUri(article.category, "#2f3542")}
+                      width={Math.round(POSTER.cover * 0.4)}
+                      height={Math.round(POSTER.cover * 0.4)}
+                      alt=""
+                    />
                   )}
                 </div>
 
@@ -499,7 +495,7 @@ export async function renderPoster({
                       alignItems: "center",
                       fontSize: POSTER.metaSize,
                       fontWeight: 600,
-                      color: "#5f587e",
+                      color: "#666b7a",
                     }}
                   >
                     <div style={{ display: "flex", color: source.accent }}>
@@ -536,7 +532,7 @@ export async function renderPoster({
                         fontSize: POSTER.originalSize,
                         fontWeight: 500,
                         lineHeight: POSTER.originalLeading,
-                        color: "#5f587e",
+                        color: "#666b7a",
                       }}
                     >
                       {original}
@@ -545,7 +541,7 @@ export async function renderPoster({
                 </div>
               </div>
 
-              {/* The thesis, styled the way `Summary` styles it: the orange
+              {/* The thesis, styled the way `Summary` styles it: the yellow
                   accent bar and the sentence at MEDIUM weight.
 
                   THE LABEL IS GONE, the bar STAYS — and that split is the one
@@ -554,7 +550,7 @@ export async function renderPoster({
                   16px prose is a hierarchy a reader reads without being told.
                   Inside a 1080px image there is no such hierarchy to lean on:
                   the headline, the original and this sentence are all set close
-                  together on one cream plate, so the bar is what says where the
+                  together on one plate, so the bar is what says where the
                   piece stops being described and starts being summarised.
 
                   THE SENTENCE IS THE THESIS, never `whyItMatters`, because a
@@ -576,7 +572,7 @@ export async function renderPoster({
                   flexDirection: "column",
                   marginTop: POSTER.thesisGap,
                   paddingLeft: POSTER.thesisPad,
-                  borderLeft: `${POSTER.thesisRule}px solid #efa050`,
+                  borderLeft: `${POSTER.thesisRule}px solid #f7c948`,
                 }}
               >
                 {/* A SHORT TAKE takes the thesis's place, behind the same bar —
@@ -592,7 +588,7 @@ export async function renderPoster({
                       display: "flex",
                       flexDirection: "column",
                       fontSize: cardTake.size,
-                      color: "#2d294c",
+                      color: "#2f3542",
                       lineHeight: PARA_LEADING,
                     }}
                   >
@@ -616,7 +612,7 @@ export async function renderPoster({
                       fontSize: POSTER.thesisSize,
                       fontWeight: 500,
                       lineHeight: 1.5,
-                      color: "#2d294c",
+                      color: "#2f3542",
                     }}
                   >
                     {thesis}
@@ -648,7 +644,7 @@ export async function renderPoster({
                 display: "flex",
                 flexDirection: "column",
                 fontSize: POSTER.paraSize,
-                color: "#2d294c",
+                color: "#2f3542",
                 // The packer counts rows at this leading; see PARA_LEADING for why
                 // the number is imported rather than typed here a second time.
                 lineHeight: PARA_LEADING,
@@ -693,7 +689,7 @@ export async function renderPoster({
             justifyContent: "flex-end",
             fontSize: POSTER.pageSize,
             fontWeight: 700,
-            color: "#5f587e",
+            color: "#666b7a",
           }}
         >
           {total > 1 ? `${part}/${total}` : ""}

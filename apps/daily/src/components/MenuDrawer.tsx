@@ -69,7 +69,7 @@ export function MenuDrawer({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t.menuOpen}
-        className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-mid transition duration-150 ease-out hover:text-ink active:opacity-70 sm:hidden"
+        className="flex size-9 cursor-pointer items-center justify-center rounded-full text-ink transition duration-150 ease-out hover:bg-card active:opacity-70 sm:hidden"
       >
         <svg
           aria-hidden
@@ -95,7 +95,7 @@ export function MenuDrawer({
         aria-label={t.menuOpen}
         /* THE SAME BOX AS THE OTHER SHEETS, to the class — modals of different
            widths on one site read as an accident. */
-        className="m-auto max-h-[90vh] w-[min(92vw,20rem)] overflow-y-auto rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
+        className="m-auto max-h-[90vh] w-[min(92vw,20rem)] overflow-y-auto rounded-panel border border-line bg-paper p-0 shadow-pop backdrop:bg-black/40"
       >
         <div className="flex flex-col p-5">
           <button

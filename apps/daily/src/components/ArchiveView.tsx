@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { DayList } from "./DayList";
 import { PageShell } from "./PageShell";
-import { Footer, Masthead, PAD, SECTION } from "./Shell";
+import { Footer, HEADING, Masthead, PAD, SECTION } from "./Shell";
 import { SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
@@ -138,8 +138,8 @@ export async function ArchiveView({
                   aria-current={current ? "page" : undefined}
                   className={`rounded-button px-4 py-1.5 text-sm font-bold transition duration-150 ease-out ${
                     current
-                      ? "bg-ink text-paper"
-                      : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink"
+                      ? "bg-brand text-ink-fixed"
+                      : "border-[1.5px] border-line-strong text-ink hover:bg-card"
                   }`}
                 >
                   {y}
@@ -171,7 +171,7 @@ export async function ArchiveView({
                 <span
                   key={m}
                   aria-disabled
-                  className="rounded-xl border border-line/60 px-2 py-2 text-center text-sm font-bold text-ink-soft/45"
+                  className="rounded-button border-[1.5px] border-line px-2 py-2 text-center text-sm font-bold text-ink-soft/45"
                 >
                   {t.monthShort(m)}
                 </span>
@@ -185,10 +185,10 @@ export async function ArchiveView({
                   archivePath(key === months[0].month ? undefined : key),
                 )}
                 aria-current={current ? "page" : undefined}
-                className={`rounded-xl px-2 py-2 text-center text-sm font-bold transition duration-150 ease-out ${
+                className={`rounded-button px-2 py-2 text-center text-sm font-bold transition duration-150 ease-out ${
                   current
-                    ? "bg-ink text-paper"
-                    : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink active:opacity-80"
+                    ? "bg-brand text-ink-fixed"
+                    : "border-[1.5px] border-line-strong text-ink hover:bg-card active:opacity-80"
                 }`}
               >
                 {t.monthShort(m)}
@@ -203,7 +203,7 @@ export async function ArchiveView({
           its own under this, so the month's name floated equidistant between
           the picker above and its own dates below and belonged to neither. */}
       <section className={`${SECTION} ${PAD} pb-2`}>
-        <h2 className="text-xl font-bold tracking-tight text-ink">
+        <h2 className={`${HEADING} inline-block text-xl`}>
           {t.monthTitle(year, monthNo)}
         </h2>
       </section>

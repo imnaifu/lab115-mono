@@ -27,16 +27,17 @@ import { posterClean, posterDomain } from "./share";
  * a browser bundle. Nothing client-side imports this.
  */
 
-/** The palette, the same six values poster.tsx draws with. */
-const CREAM = "#fbf3e9";
+/** The palette, the same values poster.tsx draws with — Sokosoko's. */
+const PAPER = "#ffffff";
 /* `--color-ink` and `--color-ink-soft` from @theme, light side, WRITTEN OUT —
-   Satori has no cascade to read a token from. They moved when the page's inks
-   were darkened a second time; see the ink note in src/index.css. A card whose
-   ink is a step lighter than the page it advertises is the drift this pairing
-   is most likely to develop, because nothing fails when it does. */
-const INK = "#2d294c";
-const SOFT = "#5f587e";
-const ORANGE = "#efa050";
+   Satori has no cascade to read a token from. A card whose ink is a step
+   lighter than the page it advertises is the drift this pairing is most likely
+   to develop, because nothing fails when it does. */
+const INK = "#2f3542";
+const SOFT = "#666b7a";
+/* The yellow: the domain chip's fill and the bar beside each headline. A fill,
+   never a text colour, as on the page. */
+const BRAND = "#f7c948";
 
 /**
  * The card's geometry. Sized off the HEADLINE, the same way the poster is sized
@@ -79,7 +80,7 @@ const CARD = {
   brandSize: BRAND_SIZE,
   brandGap: 38,
   headlineSize: 34,
-  /** The orange rule in front of each headline, and its gap. */
+  /** The yellow bar in front of each headline, and its gap. */
   ruleWidth: 5,
   ruleGap: 18,
   headlineGap: 22,
@@ -98,20 +99,20 @@ const CARD = {
 const HEADLINES = 3;
 
 /**
- * Lora 700's advance widths, in em — READ OUT OF THE FONT, not estimated.
+ * Nunito 700's advance widths, in em — READ OUT OF THE FONT, not estimated.
  *
  * IT USED TO BE A FLAT 0.5 FOR EVERY LATIN CHARACTER, and that is what made a
  * truncated headline STILL WRAP: 「A New Framework for How the Brain Compresses
  * Our Noisy World」 came back with an ellipsis on it and then took two lines
  * anyway. A flat half-em is the average of lower-case body copy; a headline is
- * Title Case, and a serif's capitals run 0.57–1.02em.
+ * Title Case, and Nunito's capitals run 0.29–1.12em.
  *
  * THEN IT WAS MANROPE, MEASURED THE HARD WAY: each character drawn ten times and
  * forty times at 34px/700 through Satori, the advance taken as the ink-width
  * difference over the thirty extra copies, and the results banded where the
- * spread had natural gaps. That table died with the face — the site is set in
- * 宋体 now (see `--font-serif` in index.css) and the poster followed it, so every
- * number in it described a font nothing draws.
+ * spread had natural gaps. That table died with the face when the site went to
+ * 宋体 and Lora, and the Lora table that replaced it died the same way when the
+ * Sokosoko restyle moved everything to Nunito and 思源黑体.
  *
  * THE REPLACEMENT IS EXACT RATHER THAN MEASURED. Google serves this subset as
  * TRUETYPE to a plain fetch — which is what `loadSubset` in poster-assets is
@@ -130,58 +131,49 @@ const HEADLINES = 3;
  * and it is exact, which the old method was not.
  */
 const LATIN_EM: [string, number][] = [
-  ["'", 0.19],
-  ["\u2019", 0.21],
-  ["\u2018", 0.23],
-  [".", 0.24],
-  [",:", 0.25],
-  ["!", 0.26],
-  ["; ", 0.27],
-  ["()", 0.3],
-  ["j", 0.31],
-  ["l", 0.32],
-  ['i"', 0.33],
+  ["!',.:;\u2018\u2019", 0.25],
+  ["ij", 0.26],
+  [" ", 0.28],
+  ["I", 0.29],
+  ["/l", 0.32],
+  ["()J[]", 0.36],
   ["f", 0.37],
-  ["I[]", 0.39],
-  ["1", 0.41],
-  ["t\u201d", 0.42],
-  ["\u201c", 0.43],
-  ["J", 0.46],
-  ["7", 0.47],
-  ["r-", 0.48],
+  ["t", 0.39],
+  ["r", 0.4],
+  ["-", 0.44],
+  ['"\u201c\u201d', 0.45],
+  ["*?", 0.46],
+  ["cz", 0.48],
   ["s", 0.49],
-  ["?", 0.51],
-  ["cz", 0.52],
-  ["a+=", 0.53],
-  ["*25ve", 0.54],
-  ["4x", 0.55],
-  ["yg", 0.56],
-  ["3\u2013o", 0.57],
-  ["F689bq", 0.58],
-  ["$", 0.59],
-  ["kdS", 0.6],
-  ["LpZ", 0.61],
-  ["u", 0.62],
-  ["Eh", 0.63],
-  ["0nP", 0.64],
-  ["T", 0.65],
-  ["BY&A", 0.67],
-  ["RC", 0.69],
-  ["/X", 0.7],
-  ["V", 0.71],
-  ["K", 0.72],
-  ["DGU", 0.76],
-  ["OQ", 0.77],
-  ["N", 0.78],
-  ["@", 0.8],
-  ["H", 0.81],
-  ["w", 0.82],
-  ["\u2014", 0.85],
-  ["#", 0.88],
-  ["%", 0.91],
-  ["m", 0.92],
-  ["M", 0.98],
-  ["W", 1.02],
+  ["\u2013", 0.5],
+  ["vy", 0.53],
+  ["k", 0.54],
+  ["aex", 0.55],
+  ["FL", 0.57],
+  ["ou", 0.58],
+  ["hn", 0.59],
+  ["#$+0123456789=Ebdpq", 0.6],
+  ["Zg", 0.61],
+  ["Y", 0.62],
+  ["T", 0.63],
+  ["S", 0.64],
+  ["P", 0.66],
+  ["K", 0.67],
+  ["CX", 0.68],
+  ["BR", 0.69],
+  ["V", 0.72],
+  ["&", 0.73],
+  ["GU", 0.74],
+  ["AN", 0.75],
+  ["D", 0.77],
+  ["H", 0.78],
+  ["OQ", 0.79],
+  ["w", 0.86],
+  ["M", 0.87],
+  ["m", 0.88],
+  ["%@", 0.95],
+  ["\u2014", 1],
+  ["W", 1.12],
 ];
 
 /**
@@ -313,10 +305,10 @@ export async function renderOgCard({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: CREAM,
+        background: PAPER,
         color: INK,
         padding: `${CARD.padY}px ${CARD.padX}px`,
-        fontFamily: "Lora, Noto Serif SC",
+        fontFamily: "Nunito, Noto Sans SC",
       }}
     >
       {/* The domain chip and the meta line, in the same relationship the page's
@@ -334,8 +326,8 @@ export async function renderOgCard({
             display: "flex",
             padding: `${CARD.chipPadY}px ${CARD.chipPadX}px`,
             borderRadius: 999,
-            background: INK,
-            color: CREAM,
+            background: BRAND,
+            color: INK,
             fontSize: CARD.chipSize,
             fontWeight: 700,
             letterSpacing: CARD.chipTracking,
@@ -439,7 +431,7 @@ export async function renderOgCard({
                 height: CARD.headlineSize,
                 marginRight: CARD.ruleGap,
                 borderRadius: 999,
-                background: ORANGE,
+                background: BRAND,
               }}
             />
             <div

@@ -56,6 +56,27 @@ type State =
  *  nothing — the same failure the `#subscribe` anchor this replaces had. */
 const FIELD_ID = "subscribe-email";
 
+/** The bar trigger's envelope — the design system's line icon: 24 grid, 2px
+ *  stroke, round caps, in the text's colour. From `lg:` up only: below 1024 the
+ *  bar has no room for it in English (see the width budget in SiteHeader). */
+function EnvelopeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="hidden size-4 flex-none lg:block"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <path d="m4 7 8 6 8-6" />
+    </svg>
+  );
+}
+
 /**
  * WHERE THE TRIGGER IS, which is the only thing that varies — one sheet, two
  * ways in.
@@ -315,14 +336,15 @@ export function SubscribeDialog({
 
   return (
     <>
-      {/* THE TRIGGER, and the one filled control on the page's chrome — `bg-ink`
-          because it is the only thing in that row which is not navigation.
+      {/* THE TRIGGER, and the one filled control on the page's chrome — `bg-brand`,
+          the design system's primary, because it is the only thing in that row
+          which is not navigation. The envelope says what it subscribes you to.
 
           `subscribeGo` (订阅 / Subscribe), not `subscribe` (订阅邮件 / Subscribe
           by email): the long one is 44px more bar in English than the row can
           spare, and it is the sheet's accessible name below instead.
 
-          `hidden sm:block` — the width budget in SiteHeader has the arithmetic.
+          `hidden sm:flex` — the width budget in SiteHeader has the arithmetic.
           A phone gets no subscribe control at all now that the page carries no
           card either, which is the one real cost of this change and is recorded
           here rather than buried: below 640px this site cannot be subscribed to.
@@ -341,7 +363,7 @@ export function SubscribeDialog({
           className={`cursor-pointer rounded-button px-5 py-2.5 text-sm font-bold transition duration-150 ease-out ${
             onPhoto
               ? "border border-white/70 text-white hover:bg-white/15 active:bg-white/25"
-              : "border border-line text-ink-mid hover:border-ink-soft hover:text-ink active:opacity-80"
+              : "border-[1.5px] border-line-strong bg-paper text-ink hover:bg-card active:opacity-80"
           }`}
         >
           {t.homeSubscribe}
@@ -350,8 +372,9 @@ export function SubscribeDialog({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="hidden cursor-pointer rounded-button bg-ink px-4 py-1.5 text-sm font-bold text-paper sm:block transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+          className="hidden cursor-pointer items-center gap-1.5 rounded-button bg-brand px-4 py-1.5 text-sm font-bold whitespace-nowrap text-ink-fixed sm:flex transition duration-150 ease-out hover:bg-brand-deep active:bg-brand-deep"
         >
+          <EnvelopeIcon />
           {t.subscribeGo}
         </button>
       ) : (
@@ -367,17 +390,17 @@ export function SubscribeDialog({
          * than a sentence in the argument above it. `<h2>`: it is a section of
          * this document and a screen reader ought to be able to jump to it.
          */
-        <div className="rounded-card border border-dashed border-line px-5 py-6 text-center">
-          <h2 className="text-xl font-bold tracking-tight text-pretty text-ink">
+        <div className="rounded-panel bg-brand-soft px-5 py-6 text-center">
+          <h2 className="font-display text-xl font-extrabold text-pretty text-ink">
             {picks ? t.subscribePitch(picks) : t.tagline}
           </h2>
-          <p className="mx-auto mt-2 text-sm leading-relaxed font-semibold text-pretty text-ink-mid">
+          <p className="mx-auto mt-2 text-sm leading-relaxed font-normal text-pretty text-ink-mid">
             {t.subscribePitchSub}
           </p>
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="mt-4 cursor-pointer rounded-button bg-ink px-6 py-2.5 text-base font-bold text-paper transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+            className="mt-4 cursor-pointer rounded-button bg-brand px-6 py-2.5 text-base font-bold text-ink-fixed transition duration-150 ease-out hover:bg-brand-deep active:bg-brand-deep"
           >
             {t.subscribeCta}
           </button>
@@ -399,7 +422,7 @@ export function SubscribeDialog({
         /* THE SAME BOX AS THE OTHER TWO MODALS, to the class. The note on
            InstallApp's dialog says why — modals of different widths on one site
            read as an accident — and this is the third. */
-        className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
+        className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-panel border border-line bg-paper p-0 shadow-pop backdrop:bg-black/40"
       >
         <div className="flex flex-col p-5">
           {/* THE CLOSE, AS A GLYPH, which is the one place this diverges from the
@@ -413,7 +436,7 @@ export function SubscribeDialog({
             type="button"
             onClick={() => setOpen(false)}
             aria-label={t.close}
-            className="-mt-1 -mr-1 cursor-pointer self-end text-lg leading-none text-ink-soft transition duration-150 ease-out hover:text-ink active:opacity-70"
+            className="-mt-2 -mr-2 flex size-9 cursor-pointer items-center justify-center self-end rounded-full text-lg leading-none text-ink-soft transition duration-150 ease-out hover:bg-card hover:text-ink active:opacity-70"
           >
             ✕
           </button>
@@ -424,10 +447,10 @@ export function SubscribeDialog({
                left on a control that no longer exists with no idea whether it
                worked. */
             <div className="pt-2 pb-2 text-center" role="status">
-              <div className="text-xl font-bold text-ink">
+              <div className="font-display text-xl font-extrabold text-ink">
                 {t.confirmedTitle}
               </div>
-              <p className="mt-2 text-sm font-semibold text-ink-soft">
+              <p className="mt-2 text-sm font-normal text-ink-soft">
                 {t.subscribeSent(state.email)}
               </p>
             </div>
@@ -456,7 +479,7 @@ export function SubscribeDialog({
                   height={40}
                   className="hidden size-10 dark:block"
                 />
-                <div className="mt-3 text-xl font-bold tracking-tight text-ink">
+                <div className="mt-3 font-display text-xl font-extrabold text-ink">
                   {t.brand}
                 </div>
                 {/* THE OFFER, WHERE THE TAGLINE USED TO BE.
@@ -477,7 +500,7 @@ export function SubscribeDialog({
                 <p className="mt-1.5 text-base font-bold text-pretty text-ink">
                   {picks ? t.subscribePitch(picks) : t.tagline}
                 </p>
-                <p className="mt-1.5 text-sm font-semibold text-pretty text-ink-mid">
+                <p className="mt-1.5 text-sm font-normal text-pretty text-ink-mid">
                   {t.subscribePitchSub}
                 </p>
               </div>
@@ -525,7 +548,7 @@ export function SubscribeDialog({
                      land on the field rather than on the close button, which is
                      the first focusable child. */
                   autoFocus
-                  className="w-full min-w-0 rounded-button border border-line bg-page px-4 py-3 text-base text-ink"
+                  className="w-full min-w-0 rounded-button border-[1.5px] border-line-strong bg-paper px-5 py-3 text-base text-ink placeholder:text-ink-soft"
                 />
                 <button
                   type="submit"
@@ -533,7 +556,7 @@ export function SubscribeDialog({
                   /* Full width, unlike the card's side-by-side row: there is no
                      horizontal space to share in a 24rem sheet, and it is the
                      only action in here. */
-                  className="mt-1 w-full cursor-pointer rounded-button bg-ink px-6 py-3 text-base font-bold text-paper disabled:opacity-60 transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+                  className="mt-1 w-full cursor-pointer rounded-button bg-brand px-6 py-3 text-base font-bold text-ink-fixed disabled:opacity-60 transition duration-150 ease-out hover:bg-brand-deep active:bg-brand-deep"
                 >
                   {/* `subscribeCta` (每天发给我), not `subscribeGo` (订阅).
                       This is the SUBMIT, and a submit button reads better as
@@ -560,7 +583,7 @@ export function SubscribeDialog({
 
                 {state.kind === "error" ? (
                   <p
-                    className="mt-1 text-xs font-semibold text-ink-soft"
+                    className="mt-1 text-xs font-normal text-ink-soft"
                     role="status"
                   >
                     {state.message}

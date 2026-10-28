@@ -5,7 +5,7 @@ import { summaryFor } from "@/lib/take";
 import { ArticleBrief } from "@/components/ArticleCards";
 import { PageShell } from "@/components/PageShell";
 import { SubscribeDialog } from "@/components/SubscribeDialog";
-import { Footer, PAD, SECTION } from "@/components/Shell";
+import { Footer, HEADING, PAD, SECTION } from "@/components/Shell";
 import { MAIL_TOP_N, SITE } from "@/lib/config";
 import { strings } from "@/lib/i18n";
 import { signupOpen } from "@/lib/mail/resend";
@@ -21,6 +21,49 @@ export const dynamic = "force-dynamic";
 /** The hover system — see the note on these in components/ArticleCards. */
 const ACTION_TEXT =
   " transition duration-150 ease-out hover:opacity-70 active:opacity-55";
+
+/**
+ * The hero heading with its second half under the highlighter — the design
+ * system's cover marks the phrase after the comma (「理解更大的世界」).
+ *
+ * SPLIT AT THE LAST COMMA rather than marked up in lib/i18n, so the strings
+ * stay plain text for the places that read them as text (the page title, the
+ * JSON-LD). A heading with no comma is drawn whole and unmarked.
+ *
+ * `box-decoration-clone` so a phrase that wraps gets the stroke on each line
+ * rather than one stroke broken across the wrap.
+ */
+function HighlightTail({ text }: { text: string }) {
+  const comma = Math.max(text.lastIndexOf("，"), text.lastIndexOf(", "));
+  if (comma < 0) return <>{text}</>;
+  const cut = text[comma] === "，" ? comma + 1 : comma + 2;
+  return (
+    <>
+      {text.slice(0, cut)}
+      <mark className="box-decoration-clone bg-transparent bg-[linear-gradient(transparent_62%,var(--color-highlight)_62%)] px-0.5 text-inherit">
+        {text.slice(cut)}
+      </mark>
+    </>
+  );
+}
+
+/** The arrow on the hero's primary pill — the design system's line icon. */
+function ArrowIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-4 flex-none"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
 
 /**
  * How many pieces the list under the teaser runs to.
@@ -197,83 +240,72 @@ export default async function Home({
        * them owns the line between them.
        */}
       {/**
-       * THE HERO BAND — the site's standing claim over a fixed photograph.
+       * THE HERO BAND — the site's standing claim, on the design system's cover:
+       * a cream band with a few pastel discs and the yellow, the second half of
+       * the heading under the highlighter.
        *
-       * IT WAS THE DAY'S WIKIMEDIA PICTURE for one commit, and the argument then
-       * was that it is the only image this site has that belongs to the DAY
-       * rather than to somebody's article. That is still true and it is no longer
-       * what this band is for: a front page's masthead image should say what the
-       * PUBLICATION is, and a picture that changes every morning says what today
-       * is. `public/hero.webp` is ours, it is the same every visit, and it is the
-       * thing a returning reader recognises.
+       * IT WAS A FIXED PHOTOGRAPH (`public/hero.webp`) under a dark scrim, and
+       * before that, for one commit, the day's Wikimedia picture. The argument
+       * that retired the Wikimedia picture still holds — a front page's
+       * masthead should say what the PUBLICATION is, the same every visit — and
+       * this band says it the way lab115.com does, in flat colour rather than a
+       * picture. The photograph went with the Sokosoko restyle.
        *
-       * WHAT THAT COSTS, and it is a feature removal rather than a move: the
-       * Wikimedia picture of the day now appears NOWHERE. It left the day page in
-       * the previous commit (it was pushing twelve headlines off the first
-       * screen) on the understanding that this band was its new home, and this
-       * band is no longer it. The pipeline still fetches one every morning and
-       * still stores it — see `DailyPhoto` in lib/types and `dailyPhoto` in
-       * lib/photo — so nothing is lost from the archive and `PhotoCard` is intact
-       * in components/Photo. It simply is not drawn. Putting it back is one
-       * element on whichever page wants it.
+       * THE WIKIMEDIA PICTURE OF THE DAY APPEARS NOWHERE, as it has not since
+       * that commit. The pipeline still fetches one every morning and still
+       * stores it — see `DailyPhoto` in lib/types and `dailyPhoto` in lib/photo
+       * — so nothing is lost from the archive and `PhotoCard` is intact in
+       * components/Photo. Putting it back is one element on whichever page
+       * wants it, and its CC BY-SA credit line has to come back with it.
        *
-       * NO ATTRIBUTION LINE ANY MORE, and that follows from the same change
-       * rather than being an oversight: the credit under this band was a LICENCE
-       * OBLIGATION for a CC BY-SA photograph (see components/Photo). This image
-       * is the site's own, so there is nobody to credit — and the moment that
-       * stops being true, the line has to come back.
+       * THE DISCS ARE DECORATION — `aria-hidden`, and they keep their light
+       * pastel in the dark, as every illustration fill does; they are toned
+       * down there so they do not outshine the heading.
        */}
       <section className={`pt-4 ${PAD}`}>
-        <div className="relative overflow-hidden rounded-card bg-page-deep">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="absolute inset-0 size-full object-cover"
-            src="/hero.webp"
-            alt=""
-            /* EAGER, and the only image on this site that is. It is the first
-               screen by construction; deferring it is how a page ends up drawing
-               itself twice. */
-            loading="eager"
-            fetchPriority="high"
+        <div className="relative overflow-hidden rounded-panel bg-page-deep">
+          <span
+            aria-hidden
+            className="absolute -top-16 -left-20 size-64 rounded-full bg-fill-mint opacity-60 dark:opacity-20"
           />
-          {/* THE SCRIM, and it is a gradient rather than a flat wash: the words
-              sit at the bottom left, so that is where the ink has to be and the
-              top of the photograph should stay visible. */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/10" />
+          <span
+            aria-hidden
+            className="absolute -right-10 -bottom-20 size-52 rounded-full bg-fill-sky opacity-60 dark:opacity-20"
+          />
+          <span
+            aria-hidden
+            className="absolute top-5 right-5 size-8 rounded-full bg-brand sm:top-8 sm:right-[10%] sm:size-12"
+          />
 
-          <div className="relative flex min-h-[260px] flex-col justify-end p-6 sm:min-h-[320px] sm:p-8">
-            <h1 className="max-w-xl text-3xl leading-tight font-bold tracking-tight text-pretty text-white sm:text-4xl">
-              {t.homeHeading(MAIL_TOP_N)}
+          <div className="relative flex min-h-[260px] flex-col items-center justify-center px-6 py-12 text-center sm:min-h-[320px] sm:px-8 sm:py-16">
+            <h1 className="max-w-xl font-display text-3xl leading-tight font-extrabold text-pretty text-ink sm:text-4xl">
+              <HighlightTail text={t.homeHeading(MAIL_TOP_N)} />
             </h1>
-            <p className="mt-3 max-w-md text-base leading-relaxed font-semibold text-pretty text-white/85">
+            <p className="mt-3 max-w-md text-base leading-relaxed font-normal text-pretty text-ink-soft">
               {t.dayLead}
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               {latest ? (
                 <a
-                  /* `text-ink-fixed`, NOT `text-ink`. This pill is white in
-                     both themes because it sits on the hero photograph, and
-                     `ink` inverts — in dark mode the label went warm off-white
-                     on a white pill and vanished. See the token in index.css. */
-                  className="rounded-button bg-white px-5 py-2.5 text-sm font-bold text-ink-fixed transition duration-150 ease-out hover:bg-white/85"
+                  /* `text-ink-fixed`, NOT `text-ink`: the yellow is the same in
+                     both themes and `ink` inverts — in dark mode the label would
+                     go near-white on the yellow and vanish. See the token in
+                     index.css. */
+                  className="flex items-center gap-1.5 rounded-button bg-brand px-5 py-2.5 text-sm font-bold text-ink-fixed transition duration-150 ease-out hover:bg-brand-deep active:bg-brand-deep"
                   href={href(lang, dayPath(latest))}
                   data-track="day_open"
                   data-track-from="home"
                 >
-                  {t.homeSeeToday} →
+                  {t.homeSeeToday}
+                  <ArrowIcon />
                 </a>
               ) : null}
               {/* The subscribe control reuses the one sheet the whole site has —
-                  see `SubscribeVariant`. `hero` is its third trigger, and it is
-                  always on a photograph here, which is what `onPhoto` says. */}
+                  see `SubscribeVariant`. `hero` is its third trigger; without
+                  `onPhoto` it draws as the outlined secondary pill. */}
               {signupOpen() ? (
-                <SubscribeDialog
-                  lang={lang}
-                  variant="hero"
-                  picks={MAIL_TOP_N}
-                  onPhoto
-                />
+                <SubscribeDialog lang={lang} variant="hero" picks={MAIL_TOP_N} />
               ) : null}
             </div>
           </div>
@@ -297,12 +329,12 @@ export default async function Home({
       {todays.length ? (
         <section className={`${SECTION} ${PAD}`}>
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-xl font-bold tracking-tight text-ink">
+            <h2 className={`${HEADING} inline-block text-xl`}>
               {t.todayPicks}
             </h2>
             {latest ? (
               <a
-                className={`text-sm font-bold text-orange${ACTION_TEXT}`}
+                className={`text-sm font-bold text-link${ACTION_TEXT}`}
                 href={href(lang, dayPath(latest))}
                 data-track="day_open"
                 data-track-from="home"
@@ -312,7 +344,7 @@ export default async function Home({
             ) : null}
           </div>
 
-          <div className="mt-2">
+          <div className="mt-4 flex flex-col gap-3">
             {todays.map((article, at) => (
               <ArticleBrief
                 article={article}

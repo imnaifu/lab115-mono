@@ -1,27 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="每日严选 Daily Picks">
   <!--
-    THE CREAM COLOURWAY, fixed — the tile and the strokes swapped. The orange leg
-    does not swap: it is the accent on both grounds and holds against each.
+    THE DARK THEME'S MARK, and since the Sokosoko restyle it is the same artwork
+    as mark.svg. The yellow tile holds on a dark page by itself; the ink outline
+    goes quiet there, which is fine, because the outline only exists to hold the
+    tile's edge on a light ground.
 
-    THE MASTHEAD SHOWS IT ON THE DARK THEME, chosen by the `dark:` variant in
-    Shell.tsx rather than by anything in this file.
+    IT IS KEPT AS ITS OWN FILE, under its old name, because SiteHeader and the
+    subscribe sheet render the pair and let the `dark:` variant choose. When the
+    mark had two colourways (ink tile on the light page, cream tile on the dark
+    one) this was the cream one; if it ever needs one of its own again, this is
+    where it goes, and nothing that renders it has to change.
 
-    A WARNING THAT COST THE PREVIOUS ICON ITS DESIGN: a cream tile on a light
-    browser tab strip loses its edges, and the strokes go with them. Do not point
-    the favicon at this. It belongs on a dark ground, or on none.
+    See favicon.svg for the mark and its geometry, and mark.svg for what does
+    not follow a change here on its own.
 
-    See favicon.svg for what the mark is and for the three constraints that fix
-    the leg's arc; this file is the same geometry with the colours nailed down
-    instead of following the OS.
-
-    Palette from src/index.css: cream #FBF3E9, ink #3B3563, orange #EFA050.
+    Palette from src/index.css: brand #F7C948, ink #2F3542.
   -->
-  <rect width="64" height="64" rx="14" fill="#FBF3E9"/>
-  <g fill="none" stroke="#3B3563" stroke-linecap="round">
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#F7C948" stroke="#2F3542" stroke-width="3"/>
+  <g transform="translate(32 32) scale(0.88) translate(-32 -32)" fill="none" stroke="#2F3542" stroke-linecap="round">
     <path stroke-width="7" d="M 13.2 21 H 56"/>
     <path stroke-width="7" d="M 13.2 43 H 56"/>
     <path stroke-width="5" d="M 30 25 V 39"/>
     <path stroke-width="5" d="M 42 25 V 39"/>
+    <path stroke-width="7" d="M 8 11 A 35 35 0 0 1 8 53"/>
   </g>
-  <path fill="none" stroke="#EFA050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
 </svg>

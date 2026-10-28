@@ -88,7 +88,7 @@ export async function DayList({
                 width repeating it eleven times. `w-24` is the widest this label
                 gets in either language, so every headline beside it starts on a
                 common left edge. */}
-            <span className="w-24 flex-none text-base font-bold text-ink">
+            <span className="w-24 flex-none font-display text-base font-extrabold text-ink">
               {t.monthDay(month, day)}
             </span>
 
@@ -96,7 +96,7 @@ export async function DayList({
                 the highest-scoring article whether or not it was published, and
                 on a day where the top of the list was held back that is a
                 headline the reader cannot open. */}
-            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-mid">
+            <span className="min-w-0 flex-1 truncate text-sm font-normal text-ink-mid">
               {top ? displayTitle(top, lang) : null}
             </span>
 

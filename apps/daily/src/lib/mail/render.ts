@@ -60,24 +60,24 @@ import type { DailyPhoto, Digest, PublishedArticle } from "@/lib/types";
 /* The palette. Names and values from `@theme` in src/index.css; the light side
    of each `light-dark()` pair, because an inbox has no `color-scheme` to ask and
    the head below pins the message to light for that reason. */
-const INK = "#2d294c";
-/* THESE TWO WERE `#5f5885` AND `#8a83a8`, WHICH WERE THE SANS-ERA VALUES. The
-   page darkened its quiet inks when the site went serif and this file did not
-   follow, so the comment above — "values from @theme in src/index.css" — was
-   describing an intention rather than a fact for a whole round: the mail was
-   shipping the palette the page had already abandoned. Corrected here to the
-   current tokens, along with the second darkening pass. */
-const INK_MID = "#474263";
-const INK_SOFT = "#5f587e";
-const ORANGE = "#efa050";
+const INK = "#2f3542";
+/* KEEP THESE IN STEP WITH THE PAGE. They lagged once — the mail shipped the
+   sans-era quiet inks for a whole round after the page had darkened them — and
+   nothing fails when they drift, so the comment above becomes an intention
+   rather than a fact. Moved together with the page for the Sokosoko restyle. */
+const INK_MID = "#4a4f5c";
+const INK_SOFT = "#666b7a";
+/** `--color-brand`: the yellow. A FILL, never a text colour (1.6:1 on white) —
+ *  the button, the round arrow and the 「今日长文」 badge, always with ink on it. */
+const BRAND = "#f7c948";
 /** `--color-page`: the ground the whole message sits on. */
-const CREAM = "#fbf3e9";
-/** `--color-card`: an article card. */
-const CARD = "#f3e8d8";
+const PAGE = "#ffffff";
+/** `--color-page-deep`: an article card, one step off the white ground. */
+const CARD = "#faf7f0";
 /** `--color-paper`: a panel — the confirmation's body, the way onward. */
-const PAPER = "#fffdf9";
-/** `--color-line`, flattened: `rgb()` with an alpha is not safe in Outlook. */
-const LINE = "#e2ddd4";
+const PAPER = "#ffffff";
+/** `--color-line`: hairlines and panel borders. */
+const LINE = "#e6e0d4";
 
 /** `--font-sans`, minus the two webfonts an inbox cannot load. */
 const FONT = "-apple-system,'PingFang SC','Segoe UI',Roboto,sans-serif";
@@ -101,8 +101,8 @@ function type(weight: number, size: number, leading: string): string {
   return `font-family:${FONT};font-size:${size}px;font-weight:${weight};line-height:${leading};`;
 }
 
-/** `--radius-card`, the one radius every panel on the site uses. */
-const RADIUS = "18px";
+/** `--radius-card`, the one radius every card on the site uses. */
+const RADIUS = "12px";
 
 /**
  * The content column, in px and as a NUMBER because `photoBlock` does arithmetic
@@ -248,11 +248,11 @@ function shell(options: {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
 </head>
-<body style="margin:0;padding:0;background:${CREAM};">
-<div style="display:none;font-size:1px;color:${CREAM};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(
+<body style="margin:0;padding:0;background:${PAGE};">
+<div style="display:none;font-size:1px;color:${PAGE};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(
     options.preheader,
   )}${"&#847;&zwnj;&nbsp;".repeat(60)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${CREAM};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAGE};">
 <tr><td align="center" style="padding:32px 16px 40px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:${COLUMN}px;">
 <tr><td>
@@ -277,14 +277,15 @@ ${options.footerHtml}
 }
 
 /** One tappable button, as a table so Outlook draws the background. Mirrors the
- *  subscribe form's submit — `rounded-button bg-ink text-paper` on the site, so
- *  the 14px here is `--radius-button` written out: mail cannot read a token and
- *  a button that is a pill in the inbox and a rounded rectangle on the page is
- *  two different brands. If that token moves, this number moves with it. */
+ *  subscribe form's submit — `rounded-button bg-brand text-ink-fixed` on the
+ *  site, so the 999px here is `--radius-button` written out: mail cannot read a
+ *  token and a button that is a pill on the page and a rounded rectangle in the
+ *  inbox is two different brands. If that token moves, this number moves with
+ *  it. */
 function button(href: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 14px;"><tr>
-<td style="background:${INK};border-radius:14px;">
-<a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;${type(700, 15, "1")}color:${PAPER};text-decoration:none;">${escapeHtml(
+<td style="background:${BRAND};border-radius:999px;">
+<a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;${type(700, 15, "1")}color:${INK};text-decoration:none;">${escapeHtml(
     label,
   )}</a>
 </td></tr></table>`;
@@ -311,10 +312,10 @@ function endLink(url: string, label: string, sub: string): string {
 </td>
 <td width="40" valign="middle" align="right">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td width="40" height="40" align="center" valign="middle" style="width:40px;height:40px;background:${INK};border-radius:999px;">
+<td width="40" height="40" align="center" valign="middle" style="width:40px;height:40px;background:${BRAND};border-radius:999px;">
 <a href="${escapeHtml(
     url,
-  )}" style="display:block;${type(400, 17, "40px")}color:${PAPER};text-decoration:none;">&rarr;</a>
+  )}" style="display:block;${type(400, 17, "40px")}color:${INK};text-decoration:none;">&rarr;</a>
 </td>
 </tr></table>
 </td>
@@ -528,7 +529,7 @@ export function digestEmail(
         /* The one card that is a door rather than the thing itself says so —
            the same 「今日长文」 the day's list prints on that row. */
         article.form === "long"
-          ? `<span style="color:${ORANGE};">&nbsp;·&nbsp;${escapeHtml(t.longRead)}</span>`
+          ? `&nbsp;&nbsp;<span style="background:${BRAND};color:${INK};border-radius:999px;padding:1px 8px;">${escapeHtml(t.longRead)}</span>`
           : ""
       }</div>
 <a href="${escapeHtml(
@@ -547,11 +548,11 @@ ${bodyOf(article)
     .join("");
 
   const dayUrl = tagged(href(lang, dayPath(digest.date)));
-  /* The masthead's meta row, as one line with orange separators — the same
+  /* The masthead's meta row, as one line with quiet separators — the same
      `date · N 篇新文章 · 读完约 M 分钟` the day's page prints, and `MastheadDot` is
-     what the coloured `·` stands in for. The reading time is dropped at zero for
+     what the `·` stands in for. The reading time is dropped at zero for
      the same reason DigestView drops it. */
-  const dot = `<span style="color:${ORANGE};">&nbsp;·&nbsp;</span>`;
+  const dot = `<span style="color:${INK_SOFT};">&nbsp;·&nbsp;</span>`;
   const meta = [
     escapeHtml(t.date(year, month, day, weekday)),
     escapeHtml(t.posts(digest.stats.shown)),
@@ -633,8 +634,8 @@ export {
   INK,
   INK_MID,
   INK_SOFT,
-  ORANGE,
-  CREAM,
+  BRAND,
+  PAGE,
   CARD,
   PAPER,
   LINE,

@@ -2,7 +2,10 @@
   <!--
     THE MASKED COLOURWAY: same mark, drawn for a launcher that cuts its own shape.
 
-    TWO THINGS DIFFER FROM mark.svg, both forced by the spec:
+    THREE THINGS DIFFER FROM mark.svg, all forced by the spec:
+
+    NO INK OUTLINE. The launcher's own cut is the edge here, and an outline
+    drawn on the square would be cut through at every corner it rounds off.
 
     NO ROUNDED CORNERS AND NO TRANSPARENCY. A maskable icon supplies the ink and
     the launcher supplies the silhouette — Android will cut a circle, a squircle
@@ -24,18 +27,15 @@
     screen than it strictly needs to. One source beat a fifth file; if that gap
     ever looks wrong, it is one number here.
 
-    Regenerate the PNGs with:
-      qlmanage -t -s 512 -o . mark-maskable.svg   → icon-maskable-512.png
-      qlmanage -t -s 180 -o . mark-maskable.svg   → apple-touch-icon.png
+    Regenerate the PNGs from this file with sharp (a dependency of this app):
+      512 → icon-maskable-512.png, 180 → apple-touch-icon.png
   -->
-  <rect width="64" height="64" fill="#3B3563"/>
-  <g transform="translate(32 32) scale(0.69) translate(-32 -32)">
-    <g fill="none" stroke="#FBF3E9" stroke-linecap="round">
+  <rect width="64" height="64" fill="#F7C948"/>
+  <g transform="translate(32 32) scale(0.69) translate(-32 -32)" fill="none" stroke="#2F3542" stroke-linecap="round">
     <path stroke-width="7" d="M 13.2 21 H 56"/>
     <path stroke-width="7" d="M 13.2 43 H 56"/>
     <path stroke-width="5" d="M 30 25 V 39"/>
     <path stroke-width="5" d="M 42 25 V 39"/>
-    </g>
-    <path fill="none" stroke="#EFA050" stroke-width="7" stroke-linecap="round" d="M 8 11 A 35 35 0 0 1 8 53"/>
+    <path stroke-width="7" d="M 8 11 A 35 35 0 0 1 8 53"/>
   </g>
 </svg>

@@ -1,7 +1,8 @@
 import { themedAccent } from "@/lib/accent";
-import { accentColor, categoryName } from "@/lib/categories";
+import { categoryName } from "@/lib/categories";
 import { ArticleTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
+import { TopicIcon } from "./TopicIcon";
 import { sourceOf } from "@/lib/sources";
 import { href, type Lang } from "@/lib/lang";
 import { strings } from "@/lib/i18n";
@@ -26,14 +27,14 @@ import type { PublishedArticle } from "@/lib/types";
  *
  * THE CHANGE FITS THE SURFACE, which is why the three are not identical:
  *
- *   OUTLINE  the border and the text darken. These sit on the page's own ground
- *            and have somewhere to go — `border-line` to `border-ink-soft`,
- *            `text-ink-mid` to `text-ink`.
- *   FILLED   `bg-ink` cannot darken, so it goes the other way: `bg-ink-mid`, one
- *            step lighter. It stays plainly the primary action either way.
- *   TEXT     an orange link cannot darken without leaving the palette, so it
- *            dims. `opacity`, not a second colour token, because the accent has
- *            exactly one value in each theme by design.
+ *   OUTLINE  the secondary pill — a `border-line-strong` edge on paper — takes
+ *            the sunk fill underneath it, `hover:bg-card`, the design system's
+ *            secondary hover.
+ *   FILLED   the yellow primary goes one step deeper, `bg-brand` to
+ *            `bg-brand-deep`. It stays plainly the primary action either way.
+ *   TEXT     a `text-link` link dims rather than changing colour. `opacity`,
+ *            not a second colour token, because the link has exactly one value
+ *            in each theme by design.
  *
  * EVERY ONE HAS AN `active:` STATE, and that is the half that matters on a phone,
  * where there is no hover at all: a press is the only feedback a touch reader
@@ -101,7 +102,7 @@ async function Meta({
   const topic = await topicLinkFor(article);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-bold text-ink-soft">
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs font-medium text-ink-soft">
       {/**
        * THE TOPIC, FIRST IN THE ROW AND A LINK.
        *
@@ -123,24 +124,22 @@ async function Meta({
        * live on others is a control the reader has to test; one that is simply
        * not there on three cards out of a hundred is not noticed at all.
        */}
+      {/* A PILL WITH THE TOPIC'S ICON, the design system's tag, where it was
+          a coloured dot and a word. It is a control — it goes to the topic's
+          page — and in this system everything you press is round. No separator
+          after it: the pill's own edge does that job. */}
       {topic ? (
-        <>
-          <a
-            className="flex items-center gap-1.5 transition duration-150 ease-out hover:text-ink"
-            href={href(lang, topicPath(topic.id))}
-            data-track="topic_open"
-            data-track-topic={topic.id}
-            data-track-from={from}
-            data-track-lang={lang}
-          >
-            <span
-              className="size-1.5 flex-none rounded-full"
-              style={{ background: accentColor(topic) }}
-            />
-            {categoryName(topic, lang)}
-          </a>
-          <Dot />
-        </>
+        <a
+          className="flex items-center gap-1 rounded-button bg-card px-2.5 py-0.5 font-medium text-ink transition duration-150 ease-out hover:bg-brand-soft active:bg-brand-soft"
+          href={href(lang, topicPath(topic.id))}
+          data-track="topic_open"
+          data-track-topic={topic.id}
+          data-track-from={from}
+          data-track-lang={lang}
+        >
+          <TopicIcon id={topic.id} className="size-3.5" />
+          {categoryName(topic, lang)}
+        </a>
       ) : null}
       <span style={{ color: themedAccent(source.accent) }}>{source.name}</span>
       {/* NO READING TIME. It was the original article's, which described a page
@@ -195,13 +194,14 @@ async function Meta({
  * ONE ROW OF THE DAY'S LIST: a number, the topic and source, the headline, the
  * dek, a thumbnail, and a chevron.
  *
- * IT WAS A CARD — `rounded-card bg-card p-4 shadow-soft`, with the cover on the
- * LEFT and three action pills along the bottom. A day of twelve of those is
- * twelve raised panels, each with its own shadow, padding and set of decisions,
- * on a page whose entire job is to be scanned. A weblog index is a column of
- * text with rules across it; the front page learned that already (see the
- * `divide-y` note in app/[lang]/page.tsx) and the day page was the last place
- * still stacking plates.
+ * A CARD AGAIN, and a different one from the card it once was. That was
+ * `rounded-card bg-card p-4 shadow-soft` — a raised plate on a cream page, with
+ * the cover on the left and three action pills along the bottom, twelve
+ * shadows and twelve sets of decisions on a page whose job is to be scanned;
+ * the hairline rows that replaced it were right about that. The Sokosoko
+ * restyle draws a list item as a FLAT white card on a hairline: no shadow at
+ * rest, no actions inside, the same contents the rows had. On a white page the
+ * hairline box is what separates one piece from the next, as the rule did.
  *
  * THE THUMBNAIL MOVED TO THE RIGHT, which is the change that makes the rest of
  * it work. On the left it was a first-class element — the eye met a picture
@@ -209,11 +209,12 @@ async function Meta({
  * and the words are ours. On the right it is what it actually is: an identifying
  * mark at the end of a row, and every headline in the list starts on one edge.
  *
- * THE NUMBER IS DELIBERATELY QUIET — `text-ink-soft` at the dek's size, not a
- * display figure. The list IS ranked (`shownArticles` returns the digest's own
- * order, which is by score), so a heavy `01` would read as a leaderboard and
- * invite an argument about why one piece beat another. What it is for is
- * orientation: how far down am I, and how much is left.
+ * THE NUMBER IS A DISPLAY FIGURE NOW, Nunito at full weight, as the design
+ * system draws a numbered list. It was deliberately quiet — `text-ink-soft` at
+ * the dek's size — on the worry that a heavy `01` reads as a leaderboard, since
+ * the list IS ranked (`shownArticles` returns the digest's own order, which is
+ * by score). The worry is real and was traded for the look; what the number is
+ * for is unchanged: how far down am I, and how much is left.
  */
 export function ArticleBrief({
   article,
@@ -244,34 +245,25 @@ export function ArticleBrief({
 
   return (
     /**
-     * `relative` carries the row's stretched link; `border-b` is the rule
-     * between rows and `last:border-0` keeps the list's bottom edge clean, the
-     * same arrangement `divide-y` gives the front page.
+     * `relative` carries the card's stretched link. The gap between cards is
+     * the list's (`gap-3` on the caller), so a card owns none of the space
+     * around it.
      *
-     * THE WHOLE ROW TINTS ON HOVER, and it is the only feedback left. The
+     * THE WHOLE CARD LIFTS ON HOVER, and it is the only feedback there is. The
      * chevron moved and the headline changed colour; both are gone (see their
-     * notes below), which would have left a row that is entirely clickable and
-     * says so nowhere. A tint is the right weight for that: it marks the target
-     * without claiming any one element inside it is the thing being pressed,
-     * which is exactly true here — the stretched link IS the row.
-     *
-     * `-mx-4 px-4` (and the `sm:` pair) cancels the page gutter and re-applies
-     * it inside, so the tint runs to the edge of the screen rather than stopping
-     * 16px short and reading as a misaligned box. `PageShell` clips horizontal
-     * overflow, so the negative margin cannot make the document scroll sideways.
-     *
-     * `bg-page-deep` is one step off the page's own ground — the same token the
-     * cover placeholder sits on. `bg-card` was the other candidate and it is the
-     * colour these rows used to BE, back when each was a raised plate; reusing
-     * it would make a hover look like the old card coming back.
+     * notes below), which would have left a card that is entirely clickable and
+     * says so nowhere. A shadow arriving is the design system's hover for a
+     * card: it marks the target without claiming any one element inside it is
+     * the thing being pressed, which is exactly true here — the stretched link
+     * IS the card.
      */
-    <div className="relative -mx-4 flex gap-3.5 border-b border-line px-4 py-5 transition duration-150 ease-out last:border-0 hover:bg-page-deep sm:-mx-7 sm:gap-4 sm:px-7">
-      {/* The position. `w-6` is two tabular digits at this size, so every
-          headline in the list starts on the same left edge whether the row is
-          01 or 12. `tabular-nums` is what guarantees that. */}
+    <div className="relative flex gap-2.5 rounded-card border border-line bg-paper p-3.5 transition duration-150 ease-out hover:shadow-cover sm:gap-4 sm:p-5">
+      {/* The position. `w-7` / `sm:w-10` is two tabular digits at each size,
+          so every headline in the list starts on the same left edge whether
+          the card is 01 or 12. `tabular-nums` is what guarantees that. */}
       <span
         aria-hidden
-        className="w-6 flex-none pt-0.5 text-[13px] leading-[1.65] font-bold tabular-nums text-ink-soft"
+        className="w-7 flex-none font-display text-xl leading-none font-extrabold tabular-nums text-ink sm:w-10 sm:text-[32px]"
       >
         {String(index).padStart(2, "0")}
       </span>
@@ -284,25 +276,27 @@ export function ArticleBrief({
           <Meta article={article} lang={lang} from="archive" />
         </div>
 
-        {/* The one row that still needs a click to be read, so the one row
-            that says so. Orange is the dek rule's colour on the article page —
-            the same mark for "this is ours" on both surfaces. */}
+        {/* The one card that still needs a click to be read, so the one card
+            that says so — as a yellow badge, the design system's mark for
+            "this one is different". */}
         {article.form === "long" ? (
-          <p className="mt-1.5 text-xs font-bold text-orange">
-            {strings(lang).longRead}
+          <p className="mt-2">
+            <span className="inline-flex rounded-button bg-brand px-2 py-0.5 text-[11px] leading-4 font-bold tracking-wider text-ink-fixed">
+              {strings(lang).longRead}
+            </span>
           </p>
         ) : null}
 
-        <h3 className="mt-1.5 text-lg leading-snug font-bold text-ink">
+        <h3 className="mt-2 font-display text-lg leading-snug font-bold text-ink">
           {/* THE STRETCHED LINK — see the long note on this in the article
               page's own row. One real anchor whose text is the headline, with
               `::after` covering the row, rather than an invisible anchor over
               it: a link cannot legally contain the topic chip above. */}
-          {/* NO `hover:` COLOUR ON THE HEADLINE. It turned orange, and the row
-              is the target rather than the words — tinting the headline said
-              "this text is the link", which is true of the markup and false of
-              the interaction: the whole row responds. The row's own tint is
-              where that is said now. */}
+          {/* NO `hover:` COLOUR ON THE HEADLINE. It turned orange once, and the
+              card is the target rather than the words — tinting the headline
+              said "this text is the link", which is true of the markup and
+              false of the interaction: the whole card responds. The card's own
+              lift is where that is said now. */}
           <a
             className="after:absolute after:inset-0 after:z-0"
             href={href(lang, articlePath(date, article))}
@@ -336,13 +330,13 @@ export function ArticleBrief({
         {brief.length ? (
           /* No `line-clamp`: the band in config.json is the ceiling here, and a
              clamped recommendation would cut off the reaction it ends on. */
-          <div className="mt-1.5 space-y-2 text-[15px] leading-[1.65] font-semibold text-ink-mid">
+          <div className="mt-1.5 space-y-2 text-[15px] leading-[1.65] font-normal text-ink-mid">
             {brief.map((paragraph, i) => (
               <p key={i}>{paragraph}</p>
             ))}
           </div>
         ) : thesis ? (
-          <p className="mt-1.5 line-clamp-3 text-[15px] leading-[1.65] font-semibold text-ink-mid">
+          <p className="mt-1.5 line-clamp-3 text-[15px] leading-[1.65] font-normal text-ink-mid">
             {thesis}
           </p>
         ) : null}
@@ -358,10 +352,10 @@ export function ArticleBrief({
           more this way" at the end of every row — twelve of them down the page,
           all saying the same thing about a row that is entirely clickable
           anyway. What it was really doing was standing in for a hover state the
-          row did not have; the row has one now. */}
+          row did not have; the card has one now. */}
       <Cover
-        id={article.id}
         sourceId={article.sourceId}
+        category={article.category}
         image={article.image}
         variant="card"
       />

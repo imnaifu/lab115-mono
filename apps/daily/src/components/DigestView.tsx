@@ -1,6 +1,6 @@
 import { ArticleBrief } from "./ArticleCards";
 import { PageShell } from "./PageShell";
-import { Footer, Masthead, PAD, SECTION } from "./Shell";
+import { Footer, HEADING, Masthead, PAD, SECTION } from "./Shell";
 import { strings } from "@/lib/i18n";
 import { PhotoCard } from "./Photo";
 import { shownArticles } from "@/lib/store";
@@ -23,21 +23,32 @@ export function EmptyState({ lang }: { lang: Lang }) {
   const t = strings(lang);
   return (
     <section className={`${SECTION} ${PAD}`}>
-      <div className="rounded-card bg-card px-7 py-14 text-center">
-        <div className="mx-auto mb-5 flex size-22 items-center justify-center rounded-full bg-page">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <div className="rounded-panel border border-dashed border-line-strong px-7 py-14 text-center">
+        {/* The design system's empty-state art: ink lines over a white and a
+            yellow fill, in a well that stays light in dark mode so the ink
+            still reads. */}
+        <div className="mx-auto mb-5 flex size-22 items-center justify-center rounded-full bg-well">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 40 40"
+            fill="none"
+            stroke="#2f3542"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            aria-hidden
+          >
             <path
               d="M7 9.5A2.5 2.5 0 0 1 9.5 7H18v26H9.5A2.5 2.5 0 0 1 7 30.5v-21Z"
-              fill="#3B3563"
-              opacity="0.9"
+              fill="#ffffff"
             />
             <path
               d="M33 9.5A2.5 2.5 0 0 0 30.5 7H22v26h8.5a2.5 2.5 0 0 0 2.5-2.5v-21Z"
-              fill="#EFA050"
+              fill="#f7c948"
             />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-ink">{t.emptyTitle}</h2>
+        <h2 className="font-display text-2xl font-extrabold text-ink">{t.emptyTitle}</h2>
         <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-ink-mid">
           {t.emptyBody}
         </p>
@@ -152,12 +163,11 @@ export function DigestView({
        * the digest itself chose, top to bottom, with nothing to press first.
        */}
       {shown.length > 0 ? (
-        /* NO `gap` ANY MORE. The rows carry their own `border-b` and sit flush
-           against each other, which is what makes the list read as one column
-           with rules across it rather than as a stack of separated objects —
-           see the note on `ArticleBrief`. A gap here would put air on both sides
-           of every rule and undo it. */
-        <section className={`${SECTION} ${PAD}`}>
+        /* THE GAP IS BACK. The rows were flush, each with its own `border-b`,
+           so the list read as one column with rules across it; they are flat
+           cards now (see the note on `ArticleBrief`), and a card needs the air
+           around it that a rule did not. */
+        <section className={`${SECTION} ${PAD} flex flex-col gap-3`}>
           {shown.map((article, at) => (
             <ArticleBrief
               article={article}
@@ -188,13 +198,13 @@ export function DigestView({
        */}
       {quotes.length > 0 ? (
         <section className={`${SECTION} ${PAD}`}>
-          <h2 className="text-xl font-bold text-ink">{t.quotesHeading}</h2>
+          <h2 className={`${HEADING} inline-block text-xl`}>{t.quotesHeading}</h2>
           {quotes.map(({ article, quote }) => (
             <figure
               key={article.id}
               className="border-b border-line py-5 last:border-0"
             >
-              <blockquote className="text-[15px] leading-[1.75] font-semibold text-ink">
+              <blockquote className="text-[15px] leading-[1.75] font-normal text-ink">
                 {lang === "zh" ? `「${quote}」` : `\u201c${quote}\u201d`}
               </blockquote>
               <figcaption className="mt-2 text-xs font-bold text-ink-soft">

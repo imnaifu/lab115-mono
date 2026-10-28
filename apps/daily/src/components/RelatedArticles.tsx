@@ -1,6 +1,6 @@
 import { displayTitle } from "./ArticleTitle";
 import { Cover } from "./Cover";
-import { SECTION } from "./Shell";
+import { HEADING, SECTION } from "./Shell";
 import { categoryName, categoryOf } from "@/lib/categories";
 import { strings } from "@/lib/i18n";
 import { href, type Lang } from "@/lib/lang";
@@ -114,7 +114,7 @@ export async function RelatedArticles({
        */}
       <hr className="-mx-4 mb-7 border-line sm:-mx-7" />
 
-      <h2 className="text-xl font-bold tracking-tight text-ink">{t.related}</h2>
+      <h2 className={`${HEADING} inline-block text-xl`}>{t.related}</h2>
 
       {/**
        * FLUSH ROWS, WHERE THIS WAS A 2x2 GRID OF BORDERED PLATES.
@@ -160,7 +160,7 @@ export async function RelatedArticles({
               data-track-age={at}
             >
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-bold text-ink-soft">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-ink-soft">
                   {/* PLAIN TEXT, not a link to the topic — the whole row is an
                       anchor and an anchor may not contain another. It is the one
                       place on the site a category name is shown without leading
@@ -171,20 +171,20 @@ export async function RelatedArticles({
                   <time dateTime={date}>{date}</time>
                 </div>
 
-                <span className="mt-1.5 block text-base leading-snug font-bold text-ink">
+                <span className="mt-1.5 block font-display text-base leading-snug font-bold text-ink">
                   {displayTitle(other, lang)}
                 </span>
 
                 {thesis ? (
-                  <span className="mt-1 block text-sm leading-relaxed font-semibold text-ink-mid">
+                  <span className="mt-1 block text-sm leading-relaxed font-normal text-ink-mid">
                     {excerpt(thesis)}
                   </span>
                 ) : null}
               </div>
 
               <Cover
-                id={other.id}
                 sourceId={other.sourceId}
+                category={other.category}
                 image={other.image}
                 variant="card"
               />

@@ -139,10 +139,11 @@ export interface PosterFont {
 /**
  * BOTH families, in the order Satori should try them.
  *
- * SERIF NOW, BOTH OF THEM, because the site is (see `--font-serif` in
- * index.css). A share image that is not set in the publication's face is a share
- * image of a different publication — which is the same argument the paragraph
- * below makes about Latin, one level up.
+ * NUNITO AND 思源黑体, because the site is (see `--font-sans` and
+ * `--font-display` in index.css). A share image that is not set in the
+ * publication's face is a share image of a different publication — which is the
+ * same argument the paragraph below makes about Latin, one level up. It was
+ * Lora and 思源宋体 until the Sokosoko restyle.
  *
  * The poster used to load 思源黑体 alone, which meant every Latin word — every
  * title, every source name, the brand itself — was drawn with that face's Latin
@@ -150,10 +151,14 @@ export interface PosterFont {
  * sets Latin in its own face, so the poster looked like a different publication than
  * the page it came from.
  *
- * Satori falls back in array order, so Manrope goes first and picks up the
- * Latin, and 思源黑体 catches everything Manrope has no glyph for. Manrope is
- * Latin-only, so its subset is tiny (~8.6 KB) — this costs two more requests
- * and no meaningful bytes.
+ * Satori falls back in array order, so Nunito goes first and picks up the
+ * Latin, and 思源黑体 catches everything Nunito has no glyph for. Nunito has no
+ * CJK, so its subset is tiny — this costs two more requests and no meaningful
+ * bytes.
+ *
+ * CHANGING EITHER FACE CHANGES TWO TABLES: `NUNITO_500` / `NUNITO_700` in
+ * lib/share.ts and `LATIN_EM` in lib/og.tsx are this face's advance widths, read
+ * out of the files Google serves here.
  *
  * THE BODY WEIGHT IS 500, NOT 400. A poster is read at whatever size the app
  * that received it decides to show it — a chat thread scales a 1000px image down
@@ -165,16 +170,16 @@ export interface PosterFont {
  */
 export async function posterFonts(text: string): Promise<PosterFont[]> {
   const [latin500, latin700, cjk500, cjk700] = await Promise.all([
-    loadSubset("Lora", text, 500),
-    loadSubset("Lora", text, 700),
-    loadSubset("Noto Serif SC", text, 500),
-    loadSubset("Noto Serif SC", text, 700),
+    loadSubset("Nunito", text, 500),
+    loadSubset("Nunito", text, 700),
+    loadSubset("Noto Sans SC", text, 500),
+    loadSubset("Noto Sans SC", text, 700),
   ]);
   return [
-    { name: "Lora", data: latin500, weight: 500, style: "normal" },
-    { name: "Lora", data: latin700, weight: 700, style: "normal" },
-    { name: "Noto Serif SC", data: cjk500, weight: 500, style: "normal" },
-    { name: "Noto Serif SC", data: cjk700, weight: 700, style: "normal" },
+    { name: "Nunito", data: latin500, weight: 500, style: "normal" },
+    { name: "Nunito", data: latin700, weight: 700, style: "normal" },
+    { name: "Noto Sans SC", data: cjk500, weight: 500, style: "normal" },
+    { name: "Noto Sans SC", data: cjk700, weight: 700, style: "normal" },
   ];
 }
 
@@ -225,11 +230,12 @@ export function posterText(article: Article, summary: SummaryText, extra: string
  * ONCE: it sat here still saying 每日干货 / Daily Takes through two renamings,
  * because a copy nothing checks is a copy nobody remembers.
  *
- * `mark.svg` AND NOT `favicon.svg`: the favicon swaps its colours on
- * `prefers-color-scheme`, Satori does not evaluate media queries, and the poster
- * it would be drawn on is cream. The ink colourway is the only correct one here.
+ * `mark.svg` AND NOT `favicon.svg` by habit more than need now: the favicon
+ * used to swap its colours on `prefers-color-scheme`, which Satori does not
+ * evaluate. Since the Sokosoko restyle there is one colourway — the yellow tile
+ * with the ink outline — and all three files draw it.
  */
-export const POSTER_MARK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSLmr4/ml6XkuKXpgIkgRGFpbHkgUGlja3MiPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSIjM0IzNTYzIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkJGM0U5IiBzdHJva2UtbGluZWNhcD0icm91bmQiPjxwYXRoIHN0cm9rZS13aWR0aD0iNyIgZD0iTSAxMy4yIDIxIEggNTYiLz48cGF0aCBzdHJva2Utd2lkdGg9IjciIGQ9Ik0gMTMuMiA0MyBIIDU2Ii8+PHBhdGggc3Ryb2tlLXdpZHRoPSI1IiBkPSJNIDMwIDI1IFYgMzkiLz48cGF0aCBzdHJva2Utd2lkdGg9IjUiIGQ9Ik0gNDIgMjUgViAzOSIvPjwvZz48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNFRkEwNTAiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBkPSJNIDggMTEgQSAzNSAzNSAwIDAgMSA4IDUzIi8+PC9zdmc+";
+export const POSTER_MARK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSLmr4/ml6XkuKXpgIkgRGFpbHkgUGlja3MiPjxyZWN0IHg9IjEuNSIgeT0iMS41IiB3aWR0aD0iNjEiIGhlaWdodD0iNjEiIHJ4PSIxNCIgZmlsbD0iI0Y3Qzk0OCIgc3Ryb2tlPSIjMkYzNTQyIiBzdHJva2Utd2lkdGg9IjMiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgzMiAzMikgc2NhbGUoMC44OCkgdHJhbnNsYXRlKC0zMiAtMzIpIiBmaWxsPSJub25lIiBzdHJva2U9IiMyRjM1NDIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PHBhdGggc3Ryb2tlLXdpZHRoPSI3IiBkPSJNIDEzLjIgMjEgSCA1NiIvPjxwYXRoIHN0cm9rZS13aWR0aD0iNyIgZD0iTSAxMy4yIDQzIEggNTYiLz48cGF0aCBzdHJva2Utd2lkdGg9IjUiIGQ9Ik0gMzAgMjUgViAzOSIvPjxwYXRoIHN0cm9rZS13aWR0aD0iNSIgZD0iTSA0MiAyNSBWIDM5Ii8+PHBhdGggc3Ryb2tlLXdpZHRoPSI3IiBkPSJNIDggMTEgQSAzNSAzNSAwIDAgMSA4IDUzIi8+PC9nPjwvc3ZnPg==";
 
 /** A cover fetch that cannot hold up or blow up a poster. */
 const COVER_TIMEOUT_MS = 4000;

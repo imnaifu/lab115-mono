@@ -593,11 +593,11 @@ function EntryCard({
           >
             {zh || entry.title}
             {zh ? (
-              /* `font-semibold` against the heading's bold and one step down in
+              /* `font-normal` against the heading's bold and one step down in
                  size: the original is here to be recognised, not to compete with
                  the line that carries the meaning. `break-words` because a
                  headline can hold a URL-like token that would widen the card. */
-              <span className="mt-1 block text-sm font-semibold break-words text-ink-soft">
+              <span className="mt-1 block text-sm font-normal break-words text-ink-soft">
                 {entry.title}
               </span>
             ) : null}
@@ -618,7 +618,7 @@ function EntryCard({
           ) : null}
           <span className="text-lg font-bold tabular-nums text-ink">
             {entry.score}
-            <span className="text-xs font-semibold text-ink-soft">
+            <span className="text-xs font-normal text-ink-soft">
               /{SCORE_MAX}
             </span>
           </span>

@@ -21,7 +21,7 @@ export const THEME_KEY = "theme";
  * browser read the CSS token, so this is the one duplication the design leaves
  * behind; if the page colour changes, it changes in both places.
  */
-export const THEME_COLOR = { light: "#fbf3e9", dark: "#1d1a33" } as const;
+export const THEME_COLOR = { light: "#ffffff", dark: "#1c1f26" } as const;
 
 export type Theme = keyof typeof THEME_COLOR;
 

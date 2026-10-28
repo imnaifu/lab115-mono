@@ -21,26 +21,28 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 /**
- * The mark on the button: a rounded square with a plus in it.
+ * The mark on the button: a phone, as the design system draws it.
  *
- * DELIBERATELY iOS's OWN "Add to Home Screen" GLYPH rather than a download
- * arrow, which is what this wanted to be at first. A tray-and-arrow says "a file
- * is about to land in your downloads folder", which is the wrong promise; the
- * square with the plus is the icon the reader is about to create.
+ * NOT A DOWNLOAD ARROW, which is what this wanted to be at first. A
+ * tray-and-arrow says "a file is about to land in your downloads folder", which
+ * is the wrong promise; a phone says "this goes on your home screen". It was
+ * iOS's own "Add to Home Screen" square-with-a-plus until the Sokosoko
+ * restyle, whose header draws this control with a phone.
  */
-function AddIcon() {
+function PhoneIcon() {
   return (
     <svg
-      viewBox="0 0 16 16"
-      className="size-3.5 flex-none"
+      viewBox="0 0 24 24"
+      className="size-4 flex-none"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="2"
       strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden
     >
-      <rect x="2" y="2" width="12" height="12" rx="3.5" />
-      <path d="M8 5.2v5.6M5.2 8h5.6" />
+      <rect x="6" y="2" width="12" height="20" rx="3" />
+      <path d="M11 18h2" />
     </svg>
   );
 }
@@ -236,9 +238,9 @@ export function InstallApp({ lang }: { lang: Lang }) {
            button is the same page telling the reader to do what they did. The
            `appinstalled` listener above covers the tab it was pressed in, which
            this query cannot see. */
-        className="flex cursor-pointer items-center gap-1.5 rounded-button border border-line bg-paper px-3 py-2 text-xs font-bold text-ink-mid [@media(display-mode:standalone)]:hidden transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+        className="flex cursor-pointer items-center gap-1 rounded-button border-[1.5px] border-line-strong bg-paper px-3 py-1.5 text-xs font-bold whitespace-nowrap text-ink lg:gap-1.5 lg:px-3.5 lg:text-[13px] [@media(display-mode:standalone)]:hidden transition duration-150 ease-out hover:bg-card active:opacity-80"
       >
-        <AddIcon />
+        <PhoneIcon />
         <span>{t.saveApp}</span>
       </button>
 
@@ -252,7 +254,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
         aria-label={t.saveAppTitle}
         /* The same box as the share sheet: this is the site's second modal and
            two modals of different widths on one page read as an accident. */
-        className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40"
+        className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-panel border border-line bg-paper p-0 shadow-pop backdrop:bg-black/40"
       >
         <div className="flex flex-col gap-4 p-4">
           <div className="flex items-baseline justify-between gap-3">
@@ -273,9 +275,9 @@ export function InstallApp({ lang }: { lang: Lang }) {
             <button
               type="button"
               onClick={install}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-button bg-ink px-4 py-3 text-sm font-bold text-paper transition duration-150 ease-out hover:bg-ink-mid active:bg-ink-mid"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-button bg-brand px-4 py-3 text-sm font-bold text-ink-fixed transition duration-150 ease-out hover:bg-brand-deep active:bg-brand-deep"
             >
-              <AddIcon />
+              <PhoneIcon />
               {t.installNow}
             </button>
           ) : null}
@@ -284,7 +286,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
             /* No steps at all: this browser cannot do it, and the honest answer is
                a sentence rather than a list that ends in a menu item that is not
                there. */
-            <p className="text-sm leading-relaxed font-semibold text-ink-mid">
+            <p className="text-sm leading-relaxed font-normal text-ink-mid">
               {guide.unsupported}
             </p>
           ) : (
@@ -313,11 +315,11 @@ export function InstallApp({ lang }: { lang: Lang }) {
                 {guide.steps.map((step, i) => (
                   <li
                     key={step}
-                    className="flex items-start gap-2.5 text-sm leading-relaxed font-semibold text-ink"
+                    className="flex items-start gap-2.5 text-sm leading-relaxed font-normal text-ink"
                   >
                     <span
                       aria-hidden
-                      className="mt-0.5 flex size-5 flex-none items-center justify-center rounded-full bg-page-deep text-[11px] font-bold text-ink-mid"
+                      className="mt-0.5 flex size-5 flex-none items-center justify-center rounded-full bg-brand font-display text-[11px] font-extrabold text-ink-fixed"
                     >
                       {i + 1}
                     </span>
@@ -327,7 +329,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
               </ol>
 
               {guide.note ? (
-                <p className="text-xs leading-relaxed font-semibold text-ink-soft">
+                <p className="text-xs leading-relaxed font-normal text-ink-soft">
                   {guide.note}
                 </p>
               ) : null}
@@ -336,7 +338,7 @@ export function InstallApp({ lang }: { lang: Lang }) {
 
           {/* What installing actually buys, on the far side of a hairline: it is
               the reason to bother, not part of the procedure. */}
-          <p className="border-t border-line pt-3 text-xs leading-relaxed font-semibold text-ink-soft">
+          <p className="border-t border-line pt-3 text-xs leading-relaxed font-normal text-ink-soft">
             {t.installWhy}
           </p>
         </div>

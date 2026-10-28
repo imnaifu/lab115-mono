@@ -14,14 +14,14 @@ import type { SummaryText } from "@/lib/types";
  * `rule` IS GONE AS A PROP, and what it used to draw — an ORANGE bar beside the
  * thesis, under a `TL;DR` label — is not what is there now. The label was the
  * part that was wrong: it made the page's first move be to point at its own
- * machinery. The dek has a rule again (see the note at the `<p>`), in
- * `ink-soft` rather than orange, and no name.
+ * machinery. The dek has a rule again (see the note at the `<p>`), in the
+ * accent, and no name.
  *
- * ORANGE RULES TWO BLOCKS on this page — the dek and 「为什么值得读」 below —
- * and what tells them apart is the ground, the label and the `· · ·` above the
- * second one rather than the colour. The poster has always drawn an orange
- * thesis rule (lib/share, POSTER.thesisRule), so the page and the image now
- * agree about that sentence.
+ * THE ACCENT RULES TWO BLOCKS on this page — the dek and 「为什么值得读」
+ * below — and what tells them apart is the ground, the label and the `· · ·`
+ * above the second one rather than the colour. The accent is Sokosoko's
+ * yellow, and the poster draws its thesis rule (lib/share, POSTER.thesisRule)
+ * in the same yellow.
  *
  * `label` is gone and stays gone — nothing here is labelled except that one
  * block.
@@ -158,7 +158,7 @@ export function Summary({
        * where that stops being comfortable; the prose below it is already inside
        * the card's own column.
        *
-       * A 2px RULE DOWN THE LEFT EDGE, AND A BAR USED TO BE HERE. What was
+       * A RULE DOWN THE LEFT EDGE, AND A BAR USED TO BE HERE. What was
        * removed was an ORANGE bar plus a `TL;DR` label, and the label was the
        * part that was wrong — see above. The rule on its own does the opposite
        * job: it marks the block off without naming it, which is what a dek
@@ -166,27 +166,30 @@ export function Summary({
        * its size dropped to the body's (see SIZE) it had only weight and colour
        * left to say "this is not the first paragraph".
        *
-       * `border-orange`, AND IT WAS `border-ink-soft` FOR ONE ROUND. The
-       * argument for the quiet grey was that orange on this page meant
+       * `border-brand`, THE ACCENT — Sokosoko's yellow since the restyle, the
+       * old orange before it, and `border-ink-soft` for one round in between.
+       * 3px where the orange was 2: yellow on white is a fill rather than a
+       * line colour, and a 2px stroke of it barely registers. The argument for
+       * the quiet grey was that the accent on this page meant
        * 「为什么值得读」 — our judgement, a different voice — and that a second
-       * orange rule would make the dek look like the same kind of block.
+       * accent rule would make the dek look like the same kind of block.
        *
        * IT IS THE SITE'S ONE ACCENT AND THE DEK IS THE PAGE'S FIRST LINE, which
        * is the better claim: the accent belongs on the thing a reader meets
        * first, and a grey hairline beside the opening sentence reads as a
        * disabled version of the block below it rather than as a quieter one.
        * WHAT NOW SEPARATES THE TWO is everything else — the well below has a
-       * `bg-page` ground, a label, and `· · ·` above it; this is a rule beside
-       * bare text. The poster has used an orange thesis rule all along
-       * (POSTER.thesisRule in lib/share), so this also stops the page and the
-       * image disagreeing about the same sentence.
+       * `bg-page-deep` ground, a label, and `· · ·` above it; this is a rule
+       * beside bare text. The poster draws the same thesis rule
+       * (POSTER.thesisRule in lib/share) in the same yellow, so the page and
+       * the image agree about that sentence.
        *
-       * `border-line` was the third candidate and it is ink at 14%: invisible
-       * at 2px on cream.
+       * `border-line` was the third candidate and it is a hairline: too faint
+       * to mark anything at this width.
        */}
       {text.thesis ? (
         <p
-          className={`max-w-prose border-l-2 border-orange pl-4 font-bold text-ink ${size.thesis}`}
+          className={`max-w-prose border-l-[3px] border-brand pl-4 font-bold text-ink ${size.thesis}`}
         >
           {text.thesis}
         </p>
@@ -218,7 +221,7 @@ export function Summary({
                 // stays two CHARACTERS at whichever size the variant sets. The
                 // poster draws the same measure from POSTER.indent — change one,
                 // change both.
-                `${i === opening ? "indent-[2em]" : ""} leading-[1.85] font-semibold text-ink-mid ${size.para}`
+                `${i === opening ? "indent-[2em]" : ""} leading-[1.85] font-normal text-ink-mid ${size.para}`
           }
           key={i}
         >
@@ -240,10 +243,10 @@ export function Summary({
        * LAST, UNDER THE PROSE, so the page runs claim → evidence → implication.
        * An implication offered before the evidence is a verdict.
        *
-       * A QUIET WELL WITH A 2px RULE DOWN ITS LEFT EDGE. `bg-page` is one step
+       * A QUIET WELL WITH A RULE DOWN ITS LEFT EDGE. `bg-page-deep` is one step
        * off the column's own ground, so the block reads as something cut into
        * the page rather than stuck onto it, and the rule is what makes it a
-       * pull-quote rather than a panel. The orange is the site's accent and this
+       * pull-quote rather than a panel. The yellow is the site's accent and this
        * is the second of the two places it rules a block — the dek above is the
        * other; see the note there for what keeps them from reading as the same
        * kind of thing. No accent FILL, no yellow, no icon: this is an editorial
@@ -278,11 +281,11 @@ export function Summary({
             <span>·</span>
             <span>·</span>
           </div>
-          <div className="rounded-xl border-l-2 border-orange bg-page px-4 py-3.5">
+          <div className="rounded-card border-l-[3px] border-brand bg-page-deep px-4 py-3.5">
             <p className="text-[11px] font-bold tracking-[0.08em] text-ink-soft">
               {strings(lang).whyItMatters}
             </p>
-            <p className={`mt-1.5 font-semibold text-ink ${size.para}`}>
+            <p className={`mt-1.5 font-normal text-ink ${size.para}`}>
               {summary.whyItMatters}
             </p>
           </div>

@@ -345,35 +345,7 @@ const BODY_SLACK = 8;
 /** How much of a body page is left for lines. */
 const BODY_BUDGET = POSTER_HEIGHT - POSTER_FRAME - BODY_SLACK;
 
-/**
- * The cover gradient, as a plain `linear-gradient` string.
- *
- * The same artwork `Cover.tsx` draws, recomputed rather than shared, because that
- * one leans on `color-mix(in srgb, …)` and Satori has no colour functions. The mix
- * is done here in numbers instead, so the poster's placeholder and the page's are
- * the same two stops at the same angle.
- */
-export function coverGradient(id: string, accent: string): string {
-  const seed = parseInt(id.slice(0, 4), 16) || 0;
-  const tilt = 120 + (seed % 90);
-  return (
-    `linear-gradient(${tilt}deg, ${accent} 0%, ${accent} 42%, ` +
-    `${mix(accent, "#1d1a33", 0.55)} 100%)`
-  );
-}
 
-/** `ratio` of `a` plus the rest of `b`, per sRGB channel — `color-mix` by hand. */
-function mix(a: string, b: string, ratio: number): string {
-  const channels = (hex: string) =>
-    [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
-  const [ar, ag, ab] = channels(a);
-  const [br, bg, bb] = channels(b);
-  const blend = (x: number, y: number) =>
-    Math.round(x * ratio + y * (1 - ratio))
-      .toString(16)
-      .padStart(2, "0");
-  return `#${blend(ar, br)}${blend(ag, bg)}${blend(ab, bb)}`;
-}
 
 /**
  * Characters that may not begin a line, and ones that may not end it.
@@ -383,7 +355,7 @@ function mix(a: string, b: string, ratio: number): string {
  * finish on a dangling 「「」.
  */
 /**
- * What the poster's two faces can actually draw: ASCII and Latin-1 from Lora,
+ * What the poster's two faces can actually draw: ASCII and Latin-1 from Nunito,
  * general and CJK punctuation, and the CJK blocks from 思源黑体.
  *
  * Deliberately the same ranges `charUnits` below measures with. A character this
@@ -455,8 +427,8 @@ function charUnits(ch: string): number {
  *
  * DERIVED, not tuned: a CJK character is one unit wide at the body size, so the
  * column holds `POSTER_TEXT_WIDTH / paraSize` of them. Latin fits slightly more
- * than the half-width this counts it as — Lora's lower case averages 0.542em at
- * 700, a shade over —
+ * than the half-width this counts it as — Nunito's lower case averages 0.527em
+ * at 700, a shade over (Lora's, before the restyle, was 0.542) —
  * so Chinese is the tighter case and the one to size against.
  *
  * The 1.4 units held back are insurance: a line that comes out slightly too long
@@ -496,7 +468,7 @@ export function posterAuthor(author: string, source: string): string {
   const row = POSTER_BESIDE_COVER / POSTER.metaSize;
   const dot = (7 + 30) / POSTER.metaSize;
   // 1.5 units held back for the same reason LINE_BUDGET holds back 1.4: these
-  // units count Latin at half width and Lora's lower case is a shade over that,
+  // units count Latin at half width and Nunito's lower case is a shade over that,
   // so the
   // estimate is close rather than exact, and being over is the failure that shows.
   const room = row - dot - widthUnits(source) - 1.5;
@@ -851,16 +823,25 @@ export function posterHeadline(
  * not the usual one: most come out ~5px shorter, and the planner wants the bound.
  * Not set on the row in the renderer, as `domainRow` is, because that would move
  * the headline on every long poster too, and those must not move.
+ *
+ * 38 SINCE THE SOKOSOKO RESTYLE, and computed rather than re-measured. The row's
+ * line box is set by its CJK face: 思源宋体's was 1.437em, which is where 37
+ * came from, and 思源黑体's is 1.448em (both from the fonts' `hhea`), about a
+ * third of a pixel more at this size. Nunito's own box, 1.364em, is shorter than
+ * either, so it does not decide the row. Rounded UP, the safe side — the planner
+ * wants the bound.
  */
-const META_ROW = 37;
+const META_ROW = 38;
 
 /**
- * Lora's advance widths for printable ASCII (U+0020–U+007E, in order), in
+ * Nunito's advance widths for printable ASCII (U+0020–U+007E, in order), in
  * thousandths of an em — at 500 for the original title and at 700 for the
  * headline, the two weights Satori wraps on the identity card.
  *
- * READ OUT OF THE FONT FILES, not guessed: the `hmtx` table of the Lora TTFs
- * Google serves `posterFonts`, via the same legacy-UA request. Two flat guesses
+ * READ OUT OF THE FONT FILES, not guessed: the `hmtx` table of the Nunito TTFs
+ * Google serves `posterFonts`, via the same legacy-UA request, indexed through
+ * `cmap`. The reader that produced them was checked first against the Lora
+ * files these tables used to hold, and matched every value. Two flat guesses
  * came first and both were wrong where it mattered. A flat 0.6em per character
  * put a headline a line taller than drawn on a third of the English posters in
  * two weeks of archive, which plans a short take one size smaller than it needs;
@@ -871,30 +852,30 @@ const META_ROW = 37;
  *
  * If the poster ever changes its Latin face, these tables change with it.
  */
-const LORA_500 = [
-  263, 263, 339, 844, 549, 881, 687, 201, 302, 302, 524, 530, 252, 483, 242,
-  693, 626, 378, 536, 558, 544, 543, 577, 464, 565, 577, 250, 264, 530, 530,
-  530, 484, 795, 640, 635, 695, 750, 623, 556, 759, 789, 352, 399, 693, 587,
-  936, 766, 786, 617, 787, 647, 577, 643, 755, 671, 1002, 666, 645, 608, 368,
-  693, 368, 823, 763, 343, 519, 579, 527, 597, 541, 348, 554, 606, 296, 275,
-  556, 285, 903, 617, 579, 598, 575, 449, 470, 396, 604, 516, 804, 536, 536,
-  512, 345, 240, 345, 530,
+const NUNITO_500 = [
+  261, 233, 405, 600, 600, 933, 701, 226, 326, 326, 451, 600, 233, 427, 233,
+  290, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 233, 233, 600, 600,
+  600, 447, 947, 733, 679, 675, 747, 586, 551, 729, 764, 262, 331, 634, 548,
+  858, 741, 771, 637, 771, 673, 618, 607, 731, 694, 1104, 655, 601, 593, 324,
+  290, 324, 600, 500, 361, 533, 587, 465, 587, 534, 340, 590, 572, 237, 241,
+  508, 301, 861, 572, 560, 587, 587, 365, 483, 358, 565, 518, 844, 530, 517,
+  466, 361, 270, 361, 600,
 ];
-const LORA_700 = [
-  263, 258, 326, 871, 588, 904, 670, 188, 296, 296, 533, 530, 250, 471, 233,
-  699, 636, 406, 533, 560, 547, 540, 575, 469, 572, 576, 250, 267, 530, 530,
-  530, 503, 793, 668, 661, 688, 759, 624, 571, 754, 807, 387, 451, 712, 604,
-  972, 773, 769, 639, 770, 686, 598, 650, 760, 708, 1016, 699, 667, 604, 386,
-  699, 386, 823, 832, 524, 524, 573, 518, 596, 538, 369, 557, 621, 327, 302,
-  594, 312, 920, 638, 566, 601, 573, 480, 485, 413, 618, 538, 811, 548, 551,
-  514, 368, 259, 368, 530,
+const NUNITO_700 = [
+  271, 248, 448, 600, 600, 945, 726, 243, 358, 358, 453, 600, 248, 434, 248,
+  313, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 248, 248, 600, 600,
+  600, 459, 950, 744, 688, 680, 762, 597, 562, 736, 773, 282, 354, 665, 562,
+  868, 748, 785, 652, 785, 686, 631, 621, 738, 713, 1113, 672, 618, 605, 354,
+  313, 354, 600, 500, 377, 547, 600, 472, 600, 542, 364, 604, 585, 255, 259,
+  536, 319, 877, 585, 576, 600, 600, 392, 488, 384, 579, 527, 853, 546, 526,
+  474, 391, 288, 391, 600,
 ];
 
 /**
  * One non-CJK character's advance in ems, at the weight it is drawn in.
  *
  * Outside ASCII — an accented letter, a curly quote, an em dash — a whole em,
- * which is wider than anything Lora draws there. Those are a handful of
+ * which is as wide as anything Nunito draws there. Those are a handful of
  * characters a year in a headline, and over-counting is the safe direction.
  */
 function latinEm(ch: string, table: number[]): number {
@@ -987,12 +968,12 @@ function wrappedLines(
 export function posterHeaderHeight(article: Article, lang: Lang): number {
   const { headline, original } = posterHeadline(article, lang);
   const title =
-    wrappedLines(headline, POSTER.titleSize, POSTER_BESIDE_COVER, LORA_700) *
+    wrappedLines(headline, POSTER.titleSize, POSTER_BESIDE_COVER, NUNITO_700) *
     POSTER.titleSize *
     POSTER.titleLeading;
   const under = original
     ? POSTER.originalGap +
-      wrappedLines(original, POSTER.originalSize, POSTER_BESIDE_COVER, LORA_500) *
+      wrappedLines(original, POSTER.originalSize, POSTER_BESIDE_COVER, NUNITO_500) *
         POSTER.originalSize *
         POSTER.originalLeading
     : 0;

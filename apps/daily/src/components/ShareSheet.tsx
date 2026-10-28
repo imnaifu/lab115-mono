@@ -149,7 +149,7 @@ function intents(page: string, poster: string, title: string, weibo: string) {
  * divider above them says so.
  */
 const ACTION =
-  "flex cursor-pointer items-center gap-1.5 rounded-button border border-line px-3.5 py-2 text-xs font-bold text-ink-mid";
+  "flex cursor-pointer items-center gap-1.5 rounded-button border-[1.5px] border-line-strong px-3.5 py-2 text-xs font-bold text-ink transition duration-150 ease-out hover:bg-card active:opacity-80";
 
 /**
  * A tile: the mark in a wash of its own colour, the name under it.
@@ -604,7 +604,7 @@ export function ShareSheet({
        * `p-4` to buy the tile row its five columns, and that trade does not apply
        * where the card is 128px wider.
        */
-      className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-card border border-line bg-paper p-0 shadow-soft backdrop:bg-black/40 sm:w-[min(92vw,32rem)]"
+      className="m-auto max-h-[90vh] w-[min(92vw,24rem)] overflow-y-auto rounded-panel border border-line bg-paper p-0 shadow-pop backdrop:bg-black/40 sm:w-[min(92vw,32rem)]"
     >
       <div className="flex flex-col gap-4 p-4 sm:p-5">
         <div className="flex items-baseline justify-between gap-3">
@@ -725,7 +725,7 @@ export function ShareSheet({
                 long press is invisible: nothing about an image announces that
                 holding it will file it away. */}
             {touch ? (
-              <div className="text-center text-[11px] font-semibold text-ink-soft">
+              <div className="text-center text-[11px] font-normal text-ink-soft">
                 {t.pressToSave}
               </div>
             ) : null}

@@ -166,7 +166,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     icons: {
       /**
-       * `?v=2`, and the query is the whole point of it.
+       * `?v=3`, and the query is the whole point of it.
        *
        * A browser's favicon store is keyed by URL and is not the HTTP cache: it
        * survives a reload, a hard reload, and `max-age=0` on the response. So an
@@ -180,7 +180,7 @@ export async function generateMetadata(): Promise<Metadata> {
        * the list in mark.svg of what does not follow the artwork on its own. The
        * pathname is untouched, which is what keeps `ASSETS` in sw.js matching.
        */
-      icon: "/favicon.svg?v=2",
+      icon: "/favicon.svg?v=3",
       // iOS does not read the manifest for home-screen icons, and it ignores
       // transparency — so this is a separate, full-bleed PNG.
       apple: "/apple-touch-icon.png",
@@ -197,8 +197,8 @@ export async function generateMetadata(): Promise<Metadata> {
      * app's name on the home screen come from these two meta tags instead.
      *
      * `default` STILL, now that there are two themes. It means "let the status
-     * bar take the page's own colour", which is exactly right twice over: cream
-     * on the light side, #1d1a33 on the dark one, with no third value to keep in
+     * bar take the page's own colour", which is exactly right twice over: white
+     * on the light side, #1c1f26 on the dark one, with no third value to keep in
      * step. `black-translucent` would have hardcoded one of them.
      */
     appleWebApp: { capable: true, title: t.brand, statusBarStyle: "default" },
@@ -212,7 +212,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * a dark page by default. It does not any more — see the `color-scheme` note in
  * index.css — so a media query here would be the browser chrome answering a
  * question the page itself has stopped asking, and on a dark-mode machine it
- * would paint #1d1a33 around a cream page.
+ * would paint #1c1f26 around a white page.
  *
  * DARK IS STILL REACHED, just not from here: a reader who presses the switch has
  * their tags rewritten by `ThemeToggle`, and the pre-paint script below does the
@@ -278,7 +278,7 @@ export default async function RootLayout({
          * Everything else about dark mode is CSS — `light-dark()` against
          * `color-scheme`, see index.css — and CSS alone gets a reader who chose
          * dark on a light machine no further than the second paint. Without this
-         * script every navigation would flash cream and then correct itself,
+         * script every navigation would flash light and then correct itself,
          * which is worse than not offering the switch.
          *
          * It has to be INLINE and it has to be here: an external file is a
@@ -300,41 +300,36 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/**
-         * TWO FAMILIES, AND THEY ARE BOTH SERIF — see `--font-serif` in
-         * index.css for the argument and for what the three CJK weights cost.
+         * TWO FAMILIES — 思源黑体 for running text and Nunito for display; see
+         * `--font-sans` and `--font-display` in index.css for the argument.
          *
-         * Manrope and 思源黑体 are GONE FROM THE PAGE. Nothing renders in them
-         * any more; the share posters still do, and they fetch their own subsets
-         * server-side in lib/poster-assets rather than through this tag.
+         * BOTH ARE SERVED AS VARIABLE FONTS, so each range below is one set of
+         * files for every weight in it rather than a set per weight. That
+         * matters for 思源黑体 most: a CJK face is split into ~100 unicode-range
+         * subsets, and three static weights would be three times that. The
+         * ranges are exactly what `src/` asks for — 400–700 of the CJK face and
+         * 600–800 of Nunito; a weight outside them is synthesised, which on
+         * upright CJK glyphs is an artefact at any size.
          *
-         * LORA IS A VARIABLE FONT, so `wght@400..700` is one file for every
-         * weight the site uses. 思源宋体 is not, so its three are named one at a
-         * time — and the set is exactly what `src/` asks for. Requesting a
-         * weight nothing uses is a subset downloaded for nobody; using a weight
-         * that is not requested gets a synthesised face, which on upright CJK
-         * glyphs is an artefact at any size.
+         * NO ITALIC IN EITHER, and nothing asks for one: the site's emphasis is
+         * carried by weight and colour, and 思源黑体 has no italic at all, so any
+         * rule that used one would look different on the two halves of a
+         * bilingual line.
          *
-         * 600 WHERE IT USED TO SAY 500, AND STILL THREE WEIGHTS. Body copy was
-         * set in 500 and reads thin in 宋体; the swap is a straight substitution
-         * rather than an addition, so the page downloads exactly what it did
-         * before. See `--font-serif` in index.css.
-         *
-         * NO ITALIC IN EITHER, and nothing asks for one. Lora ships one and it
-         * is not requested: the site's emphasis is carried by weight and colour,
-         * and 思源宋体 has no italic at all, so any rule that used one would look
-         * different on the two halves of a bilingual line.
+         * The share posters fetch their own subsets server-side in
+         * lib/poster-assets rather than through this tag.
          *
          * `display=swap` on both: a CJK subset is large enough that blocking the
          * first paint on it is the worse trade, and the fallback in index.css is
-         * a system serif, so the reflow changes the size of the type without
-         * changing its character.
+         * the system's own 黑体, so the reflow changes the size of the type
+         * without changing its character.
          */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Lora:wght@400..700&family=Noto+Serif+SC:wght@400;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Nunito:wght@600..800&family=Noto+Sans+SC:wght@400..700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-page font-serif text-ink antialiased">
+      <body className="bg-page font-sans text-ink antialiased">
 {children}
         {/* Touch screens only, and it attaches nothing on a desktop — see the
             note in the component. */}

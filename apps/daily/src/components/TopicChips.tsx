@@ -1,4 +1,5 @@
-import { accentColor, categoryName } from "@/lib/categories";
+import { categoryName } from "@/lib/categories";
+import { TopicIcon } from "./TopicIcon";
 import { href, type Lang } from "@/lib/lang";
 import { topicPath } from "@/lib/links";
 import { liveTopics } from "@/lib/topics";
@@ -46,7 +47,7 @@ export async function TopicChips({
         <a
           key={category.id}
           href={href(lang, topicPath(category.id))}
-          className="flex flex-none items-center gap-2 rounded-button border border-line px-3.5 py-1.5 text-sm font-bold text-ink-mid transition duration-150 ease-out hover:border-ink-soft hover:text-ink active:opacity-80"
+          className="flex flex-none items-center gap-1.5 rounded-button bg-card px-3.5 py-1.5 text-sm font-medium text-ink transition duration-150 ease-out hover:bg-brand-soft active:bg-brand-soft"
           /* Every topic event carries WHICH topic and WHICH language — see
              TRACKING.md. `from` is what separates the surfaces, and it stays a
              prop even with one caller: the event's shape is not something a
@@ -56,10 +57,7 @@ export async function TopicChips({
           data-track-from={from}
           data-track-lang={lang}
         >
-          <span
-            className="size-1.5 flex-none rounded-full"
-            style={{ background: accentColor(category) }}
-          />
+          <TopicIcon id={category.id} className="size-4" />
           {categoryName(category, lang)}
         </a>
       ))}
