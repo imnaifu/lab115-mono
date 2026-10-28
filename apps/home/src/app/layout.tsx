@@ -1,11 +1,25 @@
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
+import { Nunito } from "next/font/google";
 import { headers } from "next/headers";
 import { strings } from "@/lib/i18n";
 import { DEFAULT_LANG, href, isLang, LANGS, otherLang, type Lang } from "@/lib/lang";
 import { SITE } from "@/lib/config";
 import { ogCardFor } from "@/lib/seo";
 import "@/index.css";
+
+/**
+ * The wordmark's face. next/font downloads it at BUILD time and serves it from
+ * this site, so a visit never waits on Google; only the one weight the
+ * wordmark uses, Latin only. Exposed as `--font-nunito`, which index.css folds
+ * into `--font-display`.
+ */
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: "800",
+  display: "swap",
+  variable: "--font-nunito",
+});
 
 /**
  * What both the layout and its metadata need.
@@ -105,8 +119,9 @@ export async function generateMetadata(): Promise<Metadata> {
        * This was `apple-touch-icon.svg`. iOS does not read SVG for a home-screen
        * icon — it ignores the link and screenshots the page instead, which is why
        * "add to home screen" produced a thumbnail of the hero rather than the mark.
-       * The file is the same artwork as favicon.svg rasterized at 180x180, the size
-       * iOS asks for.
+       * The file is favicon.svg's mark rasterized at 180x180, the size iOS asks
+       * for, with the tile run edge to edge and no outline: iOS rounds the
+       * corners itself and would clip an outline drawn at the edge.
        */
       apple: "/apple-touch-icon.png",
     },
@@ -114,12 +129,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  // Both values, so the browser tints its own chrome to match whichever
-  // appearance the reader is in rather than guessing from the first paint.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
+  // One value: the page is light-only (see index.css), so the browser chrome
+  // matches `--color-paper` whatever appearance the reader is in.
+  themeColor: "#ffffff",
 };
 
 export default async function RootLayout({
@@ -130,8 +142,8 @@ export default async function RootLayout({
   const lang = await langFromHeader();
 
   return (
-    <html lang={lang}>
-      <body className="bg-surface font-sans text-ink antialiased">
+    <html lang={lang} className={nunito.variable}>
+      <body className="bg-paper font-sans text-ink antialiased">
         {children}
       </body>
     </html>

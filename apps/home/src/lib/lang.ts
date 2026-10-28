@@ -19,9 +19,10 @@
  * self-canonical, and nothing offers Google a second address to prefer.
  * `detectLang` below is kept but no longer decides where anyone lands.
  *
- * THE COST: an English speaker who types the bare domain gets Chinese and has to
- * use the switch in the nav. That is the trade — any server-side negotiation on
- * `/` rebuilds the alias this removes.
+ * THE COST: an English speaker who types the bare domain gets the Chinese title
+ * and description. The page itself shows only the wordmark, so that is all they
+ * miss, and there is no language switch on it any more. That is the trade — any
+ * server-side negotiation on `/` rebuilds the alias this removes.
  *
  * Same contract as apps/daily, deliberately: the two sites link to each other, the
  * same report named pages on both, and they were fixed the same way.

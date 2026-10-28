@@ -1,26 +1,27 @@
 import { notFound } from "next/navigation";
-import { Nav } from "@/components/Nav";
-import { Hero } from "@/components/Hero";
-import { Products } from "@/components/Products";
-import { Method } from "@/components/Method";
-import { Footer } from "@/components/Footer";
+import { Blocks } from "@/components/Blocks";
+import { LogoMark, WORDMARK } from "@/components/Logo";
 import { strings } from "@/lib/i18n";
 import { href, isLang, LANGS } from "@/lib/lang";
 import { SITE } from "@/lib/config";
-import { JsonLd, organization, productList, website } from "@/lib/seo";
+import { JsonLd, organization, website } from "@/lib/seo";
 
 /**
- * The complete set of languages, so `/zh` and `/en` are the only paths that
+ * The complete set of languages, so `/` and `/en` are the only paths that
  * resolve. They still render per request rather than at build time — the root
  * layout reads the `x-lang` header, and `headers()` makes the whole tree
  * dynamic. That is the price of one `<html lang>` for a bilingual site, and
  * apps/daily pays it the same way.
+ *
+ * The two pages look identical now — the screen carries no copy — but they keep
+ * their own title, description and `<html lang>`, and keeping both URLs alive
+ * means nothing already indexed or linked starts returning 404.
  */
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
 }
 
-/** Anything outside `/zh` and `/en` is not a page here. */
+/** Anything outside `/` and `/en` is not a page here. */
 export const dynamicParams = false;
 
 export default async function HomePage({
@@ -36,17 +37,14 @@ export default async function HomePage({
   return (
     <>
       {/**
-       * WHO PUBLISHES THIS AND WHAT IS ON IT. The page had no structured data at
-       * all — see the note at the top of lib/seo.tsx for why that is the expensive
-       * omission on a two-URL site.
+       * WHO PUBLISHES THIS. See the note at the top of lib/seo.tsx.
        *
-       * A `@graph` of three, because there are three separate things to say and
-       * nesting them would collapse distinctions that matter: the ORGANIZATION is
-       * the brand, which owns properties on other domains; the WEBSITE is this
-       * domain in this language; the PAGE is what a reader is looking at, and the
-       * product shelf is its `mainEntity`. Everything cross-references by `@id`
-       * rather than repeating, so a crawler that also reads daily.lab115.com sees
-       * one publisher rather than two that happen to share a name.
+       * The ORGANIZATION is the brand, which owns properties on other domains;
+       * the WEBSITE is this domain in this language; the PAGE is what a reader is
+       * looking at. The product list that used to be the page's `mainEntity` is
+       * gone with the shelf it described — structured data should not claim
+       * content the page no longer shows. The products are still named, as the
+       * organization's `sameAs`.
        */}
       <JsonLd
         data={{
@@ -63,30 +61,24 @@ export default async function HomePage({
               inLanguage: lang === "zh" ? "zh-CN" : "en-US",
               isPartOf: { "@id": `${SITE}${href(lang, "/")}#site` },
               publisher: { "@id": `${SITE}/#org` },
-              mainEntity: productList(lang),
             },
           ],
         }}
       />
 
-      {/* First thing in the tab order: a keyboard reader should not have to
-          walk the whole nav on every visit (HIG — Accessibility). */}
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-[15px] focus:text-surface"
-      >
-        {text.skipToContent}
-      </a>
+      {/* One screen, nothing to scroll to: the mark and the wordmark over the
+          blocks. Sizes are in viewport units so the lockup fills the screen at
+          any size, and `portrait:` re-lays it for a phone held upright. */}
+      <main className="relative h-dvh overflow-hidden bg-paper">
+        <Blocks />
 
-      <Nav lang={lang} />
-
-      <main id="main">
-        <Hero lang={lang} />
-        <Products lang={lang} />
-        <Method lang={lang} />
+        <h1 className="absolute bottom-[13%] left-[7%] flex flex-col items-start gap-[2.5vmin] portrait:bottom-[9%] portrait:left-[8%] portrait:gap-[4vw]">
+          <LogoMark className="size-[15vmin] portrait:size-[22vw]" />
+          <span className="font-display text-[10.5vw] leading-[0.9] font-extrabold tracking-[-0.01em] text-ink portrait:text-[21vw]">
+            {WORDMARK}
+          </span>
+        </h1>
       </main>
-
-      <Footer lang={lang} />
     </>
   );
 }

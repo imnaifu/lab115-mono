@@ -63,31 +63,27 @@ npm run build    # production build (output: standalone)
 
 ## apps/home
 
-`lab115.com` —— 实验室的门面。一页，中英双语，介绍 LAB115 是个 **AI product lab**
-并把两个在线产品（`daily` 和 Chrome 商店上的 RedNote Exporter）指出去。没有后端、
-没有表单、没有联系方式，就是一张会自己适配深浅色的静态名片。
+`lab115.com` —— 实验室的门面。只有一屏：标志、字标 `lab115` 和几块平涂色块，没有
+导航、文案、按钮和页脚，也不滚动。没有后端、没有表单。
 
-设计基线是 **Apple HIG**（[dickwu/apple-design-skill](https://github.com/dickwu/apple-design-skill)
-把它整理成了平台无关的规则）：系统字体不外挂 webfont、语义色板而不是写死的
-颜色值、正文对比度 ≥ 4.5:1、触控目标 ≥ 44px、只有浮在内容之上的导航栏用模糊材质。
+视觉用 **Sokosoko** 设计系统（[设计系统](https://claude.ai/artifact/KPRSTffJfVbQawMQ8681A7)）：
+白底、圆角、单一 ink 线色、粉彩平涂、只有一个暖黄。**只有浅色**，不跟随系统深色模式。
+颜色 token 在 `src/index.css`，值抄自设计系统的 `tokens.json` —— 改色先改设计系统。
+字标用 Nunito 800，由 `next/font` 在构建时下载并自托管，访问时不请求 Google。
 
-两套色板，别把它们混用：
+色块的排法在 `src/components/Blocks.tsx`：位置都是屏幕百分比，横屏和竖屏（`portrait:`）
+各排一次。链接预览图 `src/lib/og.tsx` 用同一组数字画同一个画面，**改一个要改两个**。
 
-- **语义 token**（`--color-ink`、`--color-surface`……）在 `src/index.css` 里声明浅色，
-  再在 `@media (prefers-color-scheme: dark)` 里**只重新声明这些变量**。所以
-  `bg-surface` 这类工具类会自己跟着系统翻转，JSX 里一个 `dark:` 前缀都没有。
-- **`--color-night*`** 恒定不变。Hero 和 footer 是一块**在浅色模式下也保持深色**的
-  画布（apple.com 产品页的开场就是这么干的），它需要保证不会被翻白的颜色。
+标志是手写 SVG，`src/components/Logo.tsx`：黄底圆角方块加 ink 描边，里面三笔等宽等高、
+两直一弧，读作 1·1·5。og 卡片直接引用其中的 `MARK` 常量；`public/favicon.svg` 和
+`public/apple-touch-icon.png`（180×180，满版无描边）是静态文件，**改坐标要同步这两个**。
 
-改文案去 `src/lib/i18n.ts`（两种语言各一个对象，上下对照着读就能看出有没有跑偏），
-改产品卡片和外链去 `src/data/products.ts` —— **产品上架、换域名，只改那一个文件**。
+页面上已经没有文字：`src/lib/i18n.ts` 只剩 title、description 这类 meta 文案，
+`src/data/products.ts` 只给结构化数据里 `Organization` 的 `sameAs` 用。
 
-Logo 是手写 SVG，`src/components/Logo.tsx`：三笔等宽等高，两直一弧，读作 1·1·5。
-`public/favicon.svg` 和 `public/apple-touch-icon.svg` 是同一组坐标，**改一个要改三个**。
-
-语言路由抄的 `apps/daily`：`/zh`、`/en` 双前缀，裸路径由 `src/proxy.ts` 按
-`Accept-Language` 重定向，`<html lang>` 通过 `x-lang` 请求头传给 root layout
-（App Router 里 layout 看不到下面的路由段）。代价是页面按请求渲染而不是静态预渲染。
+语言路由和 `apps/daily` 一致：中文是不带前缀的 `/`，英文是 `/en`，旧的 `/zh` 308 到 `/`。
+`<html lang>` 通过 `src/proxy.ts` 设置的 `x-lang` 请求头传给 root layout（App Router 里
+layout 看不到下面的路由段），代价是页面按请求渲染而不是静态预渲染。
 
 > **部署注意**：这是**根域名**，不在 `*.lab115.com` 通配符的覆盖范围里 ——
 > 通配证书不含 apex。`lab115.com` 和 `www.lab115.com` 都需要各自的 A 记录指向服务器，

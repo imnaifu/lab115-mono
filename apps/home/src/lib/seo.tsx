@@ -43,9 +43,9 @@ export function JsonLd({ data }: { data: object }) {
  * repeated inline, so a crawler reading both pages sees one publisher instead of
  * two that happen to match.
  *
- * `sameAs` carries the properties this brand owns. It is the machine-readable half
- * of the link in the product shelf, and the reason it is worth stating twice: a
- * link says "go here", `sameAs` says "that is also us".
+ * `sameAs` carries the properties this brand owns. The page no longer links to
+ * them — it shows only the wordmark — so this is now the one place the site says
+ * that daily.lab115.com and the extension are also us.
  */
 export function organization() {
   return {
@@ -71,49 +71,6 @@ export function website(lang: Lang) {
     description: text.metaDescription,
     inLanguage: lang === "zh" ? "zh-CN" : "en-US",
     publisher: { "@id": `${SITE}/#org` },
-  };
-}
-
-/**
- * The shelf, as a list of things that exist.
- *
- * `SoftwareApplication` rather than `Product`, because that is what these are and
- * the type carries the two fields that make the difference in a result:
- * `applicationCategory` and `operatingSystem`. `offers` at price 0 is not padding
- * either — for software, a crawler treats the absence of an offer as unknown
- * rather than as free, and "free" is the single most useful fact about both of
- * these.
- *
- * The copy comes from data/products.ts. Nothing is written twice: the same strings
- * the cards render are the ones declared here, so a product whose description
- * changes cannot end up describing itself two ways.
- */
-export function productList(lang: Lang) {
-  return {
-    "@type": "ItemList",
-    numberOfItems: PRODUCTS.length,
-    itemListElement: PRODUCTS.map((product, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "SoftwareApplication",
-        name: product.name,
-        url: product.url,
-        description: product.description[lang],
-        // The Chrome extension runs in a browser; the digest IS a website. Read
-        // off the url rather than stored, because it is a fact about where the
-        // thing lives and that is what the url already says.
-        applicationCategory: product.url.includes("chromewebstore")
-          ? "BrowserApplication"
-          : "WebApplication",
-        operatingSystem: product.url.includes("chromewebstore")
-          ? "Chrome"
-          : "Any",
-        inLanguage: ["zh-CN", "en-US"],
-        offers: { "@type": "Offer", price: 0, priceCurrency: "USD" },
-        publisher: { "@id": `${SITE}/#org` },
-      },
-    })),
   };
 }
 
