@@ -128,6 +128,8 @@ func _process(delta: float) -> void:
 		_settings_open = false
 	_settings_overlay.visible = _settings_open
 	if _settings_open and _tilt_hint != null:
+		# How tilt steering works (or why it can't yet) only matters while it's switched on.
+		_tilt_hint.visible = Tilt.enabled()
 		_tilt_hint.text = TILT_HINTS.get(Tilt.state(), "左右以水平为准，前后以开局时拿手机的角度为准；玩的时候点右上角的手机按钮可以重新校准")
 	if state != _shown_state:
 		_shown_state = state
