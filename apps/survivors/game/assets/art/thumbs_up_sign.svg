@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 80">
+<ellipse cx="48" cy="75" rx="40" ry="3.5" fill="#000" fill-opacity="0.13"/>
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<rect x="27" y="50" width="7" height="22" fill="#a9b3c4"/>
+<rect x="62" y="50" width="7" height="22" fill="#a9b3c4"/>
+<rect x="16" y="68" width="64" height="7" rx="3" fill="#dfe4ea"/>
+<path d="M6 75 Q3 66 10 65 Q13 59 19 63 Q25 63 23 75 Z" fill="#6cc25a"/>
+<path d="M90 75 Q93 66 86 65 Q83 59 77 63 Q71 63 73 75 Z" fill="#6cc25a"/>
+<rect x="6" y="4" width="84" height="50" rx="11" fill="#3f7fe0"/>
+</g>
+<rect x="11.5" y="9.5" width="73" height="39" rx="7" fill="none" stroke="#7fadf0" stroke-width="2"/>
+<g transform="translate(48 29.5) rotate(-6) scale(0.86) translate(-52 -32)" stroke="#2f3542" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round">
+<path d="M44 28 L48 15 Q49.5 10.5 53.5 11.5 Q57 12.5 56 17.5 L54.5 26 L62 26 Q66 26 66 30 Q66 33.5 62.5 33.5 Q66 34 65.5 37.5 Q65 40.5 62 40.5 Q65 41 64.5 44.5 Q64 47.5 61 47.5 Q63.5 48 63 50.5 Q62.5 53 59.5 53 L45 53 Q38 53 38 46 L38 35 Q38 29 44 28 Z" fill="#fff"/>
+<path d="M56 33.5 L62.5 33.5 M56 40.5 L62 40.5 M56 47.5 L61 47.5" fill="none" stroke-width="2.6"/>
+<path d="M44.5 32 Q48 30.5 52 31" fill="none" stroke-width="2.4"/>
+</g>
+</svg>

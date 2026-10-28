@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80">
+<ellipse cx="62" cy="74" rx="58" ry="3.5" fill="#000" fill-opacity="0.13"/>
+<g transform="translate(26 17) scale(0.55) translate(-33 -29)" stroke="#2f3542" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+<path d="M28 92 Q25 62 30 30 L37 30 Q34 62 38 92 Z" fill="#c98a4b"/>
+<path d="M33 28 Q24 22 13 41 Q21 36 25 38 Q28 31 34 30 Z" fill="#5aae4a"/>
+<path d="M33 28 Q43 22 53 41 Q45 36 41 38 Q38 31 32 30 Z" fill="#5aae4a"/>
+<path d="M33 28 Q20 11 3 21 Q14 23 18 30 Q26 25 33 30 Z" fill="#6cc25a"/>
+<path d="M33 28 Q46 11 63 21 Q52 23 48 30 Q40 25 33 30 Z" fill="#6cc25a"/>
+<path d="M33 29 Q26 13 34 2 Q39 10 45 11 Q36 17 35 29 Z" fill="#82d36f"/>
+</g>
+<g transform="translate(72 14) scale(0.5) translate(-33 -29)" stroke="#2f3542" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round">
+<path d="M28 92 Q25 62 30 30 L37 30 Q34 62 38 92 Z" fill="#c98a4b"/>
+<path d="M33 28 Q24 22 13 41 Q21 36 25 38 Q28 31 34 30 Z" fill="#5aae4a"/>
+<path d="M33 28 Q43 22 53 41 Q45 36 41 38 Q38 31 32 30 Z" fill="#5aae4a"/>
+<path d="M33 28 Q20 11 3 21 Q14 23 18 30 Q26 25 33 30 Z" fill="#6cc25a"/>
+<path d="M33 28 Q46 11 63 21 Q52 23 48 30 Q40 25 33 30 Z" fill="#6cc25a"/>
+<path d="M33 29 Q26 13 34 2 Q39 10 45 11 Q36 17 35 29 Z" fill="#82d36f"/>
+</g>
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<rect x="110.5" y="20" width="5" height="51" fill="#a9b3c4"/>
+<rect x="8" y="32" width="80" height="39" fill="#fff"/>
+<rect x="4" y="22" width="88" height="6" rx="1.5" fill="#fff"/>
+<rect x="4" y="27" width="88" height="8" fill="#e0533b"/>
+<rect x="14" y="42" width="22" height="16" rx="1.5" fill="#bfe3ff"/>
+<rect x="60" y="42" width="22" height="16" rx="1.5" fill="#bfe3ff"/>
+<rect x="42" y="45" width="12" height="26" fill="#bfe3ff"/>
+<path d="M25 42 L25 58 M71 42 L71 58" fill="none" stroke-width="2"/>
+<path d="M0 0 L11 -10 L11 -4.5 L30 -4.5 L30 4.5 L11 4.5 L11 10 Z" fill="#ffd36b" transform="translate(113 18) rotate(-25) translate(-20 0)"/>
+</g>
+<path d="M17 52 L22 46 M63 52 L68 46" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="51" cy="59" r="1.3" fill="#2f3542"/>
+</svg>

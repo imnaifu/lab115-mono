@@ -286,16 +286,21 @@ func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, sou
 		Sound.play("hit")
 
 
-## A point just outside the visible screen in the given direction from the player.
+## A point just outside the visible screen in the given direction from the player, or, if
+## that is water, the first of the opposite and the two sideways directions that is land:
+## nothing walks out of the sea.
 func offscreen_point(direction: Vector2) -> Vector2:
 	var half := view_half() + Vector2(SPAWN_MARGIN, SPAWN_MARGIN)
-	var scale_x := half.x / absf(direction.x) if absf(direction.x) > 0.001 else INF
-	var scale_y := half.y / absf(direction.y) if absf(direction.y) > 0.001 else INF
-	var point := player.position + direction * minf(scale_x, scale_y)
-	# Nothing walks out of the Bay: come from the land side instead.
-	if city.is_water(point):
-		point.x = player.position.x - (point.x - player.position.x)
-	return point
+	var first_try := Vector2.ZERO
+	for heading in [direction, -direction, direction.orthogonal(), -direction.orthogonal()]:
+		var scale_x := half.x / absf(heading.x) if absf(heading.x) > 0.001 else INF
+		var scale_y := half.y / absf(heading.y) if absf(heading.y) > 0.001 else INF
+		var point: Vector2 = player.position + heading * minf(scale_x, scale_y)
+		if not city.is_water(point):
+			return point
+		if first_try == Vector2.ZERO:
+			first_try = point
+	return first_try
 
 
 ## Random spawn direction, biased toward where the player is walking so they run into enemies

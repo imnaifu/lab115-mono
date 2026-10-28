@@ -83,6 +83,7 @@ const EN := {
 	"圣何塞": "San Jose",
 	"山区": "The Hills",
 	"海湾": "The Bay",
+	"海滩": "The Beach",
 	# Enemies
 	"消息红点": "Notification",
 	"未读邮件": "Unread Mail",

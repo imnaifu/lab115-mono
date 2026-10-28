@@ -1,24 +1,25 @@
 class_name Minimap
 extends Control
-## The peninsula at a glance, top right of the HUD: San Francisco up north, San Jose down south,
-## the hills to the west and the Bay to the east (the one edge you can't walk past), with the
-## player, what the screen shows, and any bosses on it.
+## The peninsula at a glance, top right of the HUD: San Francisco up north at its tip, San
+## Jose down south, the hills and the Pacific to the west, the Bay to the east, the freeways and
+## Caltrain running down it, with the player, what the screen shows, and any bosses on it.
 ##
 ## It always shows the whole of the named map (OVERVIEW). The city goes on past that; a player
 ## who walks off its edge makes the map zoom out to take them in too, rather than slide the
 ## named part off the map.
 
-## The named part of the world, in world pixels: from the far side of the hills to past the
-## Bay's shore, and from north of the Golden Gate (Lombard St) to south of San Jose.
-const OVERVIEW := Rect2(-2240.0, -2800.0, 4480.0, 5200.0)
+## The named part of the world, in world pixels: from the Pacific to across the Bay, and from
+## the Golden Gate's water to south of San Jose.
+const OVERVIEW := Rect2(-2800.0, -3300.0, 5600.0, 6300.0)
 ## The map keeps OVERVIEW's proportions.
 const MAP_SIZE := Vector2(60.0, 70.0)
 ## Bolder than the districts' ground colours, which are pale on purpose and blur together at
 ## this size: the design's pastel fills, one per district.
 const DISTRICT_COLORS := {
 	"peninsula": Art.FILL_MINT, "sf": Art.FILL_LILAC, "sj": Art.BRAND_SOFT,
-	"hills": Color("f0dc9a"), "bay": City.SAND,
+	"hills": Color("f0dc9a"), "bay": City.SAND, "beach": City.SAND,
 }
+const FREEWAY_COLOR := Color("f2c230")
 const INSET := 3.0
 ## Room kept around a player outside OVERVIEW, as a fraction of OVERVIEW's size.
 const FOLLOW_MARGIN := 0.06
@@ -60,21 +61,26 @@ func _draw() -> void:
 			var block := Vector2i(block_x, block_y)
 			var ground: Color = DISTRICT_COLORS[BayArea.district_of(block)]
 			_fill(map, window, Rect2(Vector2(block) * City.BLOCK, City.BLOCK), ground)
-	# The water, which is what "the end of the map" is.
-	_fill(map, window, Rect2(BayArea.WATER_X, window.position.y, window.end.x - BayArea.WATER_X, window.size.y), City.WATER)
-	# Roads: a thin white line along every block edge, like a street map, stopping at the water.
+	# Roads: a thin white line along every block edge, like a street map; the freeways bolder
+	# and yellow, Caltrain a dark line beside Alma St. The water goes over them all.
 	var road := Color(Art.PAPER, 0.8)
-	var land_end := minf(window.end.x, BayArea.WATER_X)
-	var show_roads := City.BLOCK.x * map_scale.x >= MIN_BLOCK_PIXELS_FOR_ROADS
-	for row in range(first.y, last.y + 2):
-		var y := map.position.y + (row * City.BLOCK.y - window.position.y) * map_scale.y
-		if show_roads and y > map.position.y and y < map.end.y:
-			draw_line(Vector2(map.position.x, y), Vector2(map.position.x + (land_end - window.position.x) * map_scale.x, y), road, 1.0)
-	for column in range(first.x, last.x + 2):
-		var world_x := column * City.BLOCK.x
-		var x := map.position.x + (world_x - window.position.x) * map_scale.x
-		if show_roads and world_x < BayArea.WATER_X and x > map.position.x and x < map.end.x:
-			draw_line(Vector2(x, map.position.y), Vector2(x, map.end.y), road, 1.0)
+	if City.BLOCK.x * map_scale.x >= MIN_BLOCK_PIXELS_FOR_ROADS:
+		for row in range(first.y, last.y + 2):
+			var y := map.position.y + (row * City.BLOCK.y - window.position.y) * map_scale.y
+			if y > map.position.y and y < map.end.y:
+				draw_line(Vector2(map.position.x, y), Vector2(map.end.x, y), road, 1.0)
+		for column in range(first.x, last.x + 2):
+			var x := map.position.x + (column * City.BLOCK.x - window.position.x) * map_scale.x
+			if x > map.position.x and x < map.end.x:
+				draw_line(Vector2(x, map.position.y), Vector2(x, map.end.y), road, 1.0)
+	for column: int in BayArea.FREEWAYS:
+		var from_y: float = BayArea.FREEWAYS[column]["from_row"] * City.BLOCK.y
+		_line(map, window, Vector2(column * City.BLOCK.x, from_y), Vector2(column * City.BLOCK.x, window.end.y), FREEWAY_COLOR, 2.0)
+	var track_x := BayArea.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
+	_line(map, window, Vector2(track_x, BayArea.RAILWAY_FROM_ROW * City.BLOCK.y), Vector2(track_x, window.end.y), Color(Art.INK, 0.6), 1.0)
+	# The water, which is what "the end of the map" is.
+	for water: Rect2 in BayArea.water_rects(window):
+		_fill(map, window, water, City.WATER)
 
 	# Bosses, then the player on top: what the screen shows, and a dot where they stand.
 	for enemy in game.enemies:
@@ -104,6 +110,20 @@ func _window() -> Rect2:
 		var extra := window.size.x / aspect - window.size.y
 		window = window.grow_individual(0.0, extra / 2.0, 0.0, extra / 2.0)
 	return window
+
+
+## A world-space line, clipped to the map.
+func _line(map: Rect2, window: Rect2, from: Vector2, to: Vector2, color: Color, width: float) -> void:
+	var start := _to_map(map, window, from)
+	var end := _to_map(map, window, to)
+	# Off the map altogether (clamping would drag it along the edge instead).
+	if maxf(start.x, end.x) < map.position.x or minf(start.x, end.x) > map.end.x \
+			or maxf(start.y, end.y) < map.position.y or minf(start.y, end.y) > map.end.y:
+		return
+	start = start.clamp(map.position, map.end)
+	end = end.clamp(map.position, map.end)
+	if start != end:
+		draw_line(start, end, color, width)
 
 
 func _to_map(map: Rect2, window: Rect2, world: Vector2) -> Vector2:

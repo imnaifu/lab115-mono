@@ -1,12 +1,12 @@
 class_name City
 extends Node2D
-## The endless Bay Area around the player: a grid of roads with real street names, districts
-## with their own buildings (BayArea), landmarks, parody company signs, and the Bay to the
-## east. Everything is derived from a hash of the block (or cell) coordinates, so the layout
+## The Bay Area around the player: a grid of roads with real street names, districts with
+## their own buildings (BayArea), landmarks, parody company signs, the freeways and Caltrain,
+## and the water round the peninsula (the Golden Gate, the Pacific and the Bay). Everything is derived from a hash of the block (or cell) coordinates, so the layout
 ## never visibly repeats and is the same when you walk back.
 ##
-## Ground, roads, salt ponds and water are flat, so this node draws them itself under
-## everything. Buildings, trees, props and signs stand up, so they are spawned per block into
+## Ground, roads, rails, salt ponds, the runway and water are flat, so this node draws them
+## itself under everything. Buildings, trees, props and signs stand up, so they are spawned per block into
 ## Game's y-sorted entity layer, where the player walks behind or in front of them.
 ##
 ## The base of each building, tree trunks and the water are solid: resolve() pushes a body out
@@ -24,6 +24,24 @@ const PAVEMENT := Color("eef0e8")
 const WATER := Color("8fcbe8")
 const SAND := Color("f3e5b5")
 const SALT_PONDS := [Color("f2a7b8"), Color("f5c28a"), Color("c98a6a"), Color("b8dca0")]
+## Freeways are wider and darker than streets, with a double yellow line down the middle.
+const FREEWAY_HALF := 34.0
+const FREEWAY_ASPHALT := Color("b4b9c1")
+const FREEWAY_YELLOW := Color("f2c230")
+## The railway beside its street: two rails on sleepers, this far east of the street's centre.
+const RAILWAY_OFFSET := 44.0
+const RAILWAY_HALF := 9.0
+const SLEEPER := Color("a0785a")
+const RAIL := Color("6b7280")
+## Painted route shields on the freeway, one per block.
+const SHIELD_SIZE := 22.0
+## The airport's runway, across the middle of its block.
+const RUNWAY_HALF := 26.0
+const RUNWAY := Color("8e949e")
+## The sand between land and water.
+const SAND_EDGE := 12.0
+## The campus signs on the lawn are the rooftop signs this much bigger.
+const CAMPUS_SIGN_SCALE := 1.9
 
 const DECOR_CELL := 32.0
 const DECOR_CHANCE := 0.07
@@ -56,6 +74,7 @@ var _blocks := {}
 var _fading: Array = []
 var _solid_cells := {}
 var _missing_warned := false
+var _traffic: Traffic
 
 
 func _process(delta: float) -> void:
@@ -67,6 +86,9 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	_update_blocks(view_half)
 	_fade_buildings(delta)
+	if _traffic == null:
+		_traffic = Traffic.new(self, game.entity_layer)
+	_traffic.tick(delta, Rect2(follow.position - view_half, view_half * 2.0))
 
 
 # --- Collision -----------------------------------------------------------------------------
@@ -85,9 +107,7 @@ func resolve(point: Vector2, radius: float) -> Vector2:
 
 
 func _resolve_once(point: Vector2, radius: float) -> Vector2:
-	var resolved := point
-	if resolved.x > BayArea.WATER_X - radius:
-		resolved.x = BayArea.WATER_X - radius
+	var resolved := _out_of_water(point, radius)
 	var bucket = _solid_cells.get(Vector2i((resolved / SOLID_CELL).floor()))
 	if bucket == null:
 		return resolved
@@ -105,11 +125,39 @@ func _resolve_once(point: Vector2, radius: float) -> Vector2:
 
 
 func is_water(point: Vector2) -> bool:
-	return point.x > BayArea.WATER_X
+	return BayArea.is_water(point)
+
+
+## Pushes a body off the water: out through the nearest shore, whichever way that is.
+func _out_of_water(point: Vector2, radius: float) -> Vector2:
+	var reach := Rect2(point - Vector2(radius, radius), Vector2(radius, radius) * 2.0)
+	if not (BayArea.is_water(reach.position) or BayArea.is_water(reach.end) \
+			or BayArea.is_water(Vector2(reach.position.x, reach.end.y)) or BayArea.is_water(Vector2(reach.end.x, reach.position.y)) \
+			or BayArea.is_water(point)):
+		return point
+	var resolved := point
+	for water: Rect2 in BayArea.water_rects(reach.grow(BayArea.BLOCK_SIZE.x)):
+		var closest := resolved.clamp(water.position, water.end)
+		var offset := resolved - closest
+		var distance_sq := offset.length_squared()
+		if distance_sq >= radius * radius:
+			continue
+		if distance_sq > 0.0001:
+			resolved = closest + offset / sqrt(distance_sq) * radius
+		else:
+			# Inside: out through the nearest edge.
+			var exits := [Vector2(water.position.x - radius, resolved.y), Vector2(water.end.x + radius, resolved.y),
+				Vector2(resolved.x, water.position.y - radius), Vector2(resolved.x, water.end.y + radius)]
+			var best: Vector2 = exits[0]
+			for exit: Vector2 in exits:
+				if exit.distance_squared_to(resolved) < best.distance_squared_to(resolved):
+					best = exit
+			resolved = best
+	return resolved
 
 
 ## Every solid rect (building bases, tree trunks) of the loaded blocks that touches `area`,
-## for FlowField to mark as walls. The water isn't a rect; see BayArea.WATER_X.
+## for FlowField to mark as walls. The water isn't among them; see BayArea.water_rects.
 func solids_in(area: Rect2) -> Array[Rect2]:
 	var found: Array[Rect2] = []
 	for content: Dictionary in _blocks.values():
@@ -152,7 +200,6 @@ func _draw() -> void:
 	var first := Vector2i((area.position / BLOCK).floor())
 	var last := Vector2i((area.end / BLOCK).floor())
 	var road_reach := ROAD_HALF + SIDEWALK
-	var land_end := minf(area.end.x, BayArea.WATER_X)
 
 	# Each district's ground colour, block by block.
 	for block_x in range(first.x, last.x + 1):
@@ -160,21 +207,22 @@ func _draw() -> void:
 			var district: Dictionary = BayArea.DISTRICTS[BayArea.district_of(Vector2i(block_x, block_y))]
 			draw_rect(Rect2(Vector2(block_x, block_y) * BLOCK, BLOCK), district["ground"])
 
-	_draw_salt_ponds(area)
+	_draw_salt_ponds(area, first.y, last.y)
+	_draw_runways(first, last)
 
-	# Sidewalks first, then asphalt on top, so crossings join up cleanly. Roads stop at the water.
+	# Sidewalks first, then asphalt on top, so crossings join up cleanly. Roads run everywhere;
+	# the water is drawn over them afterwards.
 	for fill: Array in [[road_reach, PAVEMENT], [ROAD_HALF, ASPHALT]]:
 		for row in range(first.y, last.y + 1):
-			draw_rect(Rect2(area.position.x, row * BLOCK.y - fill[0], land_end - area.position.x, fill[0] * 2.0), fill[1])
+			draw_rect(Rect2(area.position.x, row * BLOCK.y - fill[0], area.size.x, fill[0] * 2.0), fill[1])
 		for column in range(first.x, last.x + 1):
-			if column * BLOCK.x + fill[0] < BayArea.WATER_X:
-				draw_rect(Rect2(column * BLOCK.x - fill[0], area.position.y, fill[0] * 2.0, area.size.y), fill[1])
+			draw_rect(Rect2(column * BLOCK.x - fill[0], area.position.y, fill[0] * 2.0, area.size.y), fill[1])
 
 	# Outlines and lane dashes, broken at every crossing.
 	for row in range(first.y, last.y + 1):
 		for column in range(first.x - 1, last.x + 1):
-			var from := column * BLOCK.x + road_reach
-			var to := minf((column + 1) * BLOCK.x - road_reach, BayArea.WATER_X)
+			var from := column * BLOCK.x + _road_reach_at(column, row)
+			var to := (column + 1) * BLOCK.x - _road_reach_at(column + 1, row)
 			if from >= to:
 				continue
 			var y := row * BLOCK.y
@@ -184,15 +232,19 @@ func _draw() -> void:
 				draw_rect(Rect2(x, y - 1.5, 15, 3), Color.WHITE)
 	for column in range(first.x, last.x + 1):
 		var x := column * BLOCK.x
-		if x + road_reach >= BayArea.WATER_X:
-			continue
 		for row in range(first.y - 1, last.y + 1):
 			var from := row * BLOCK.y + road_reach
 			var to := (row + 1) * BLOCK.y - road_reach
-			for edge in [-road_reach, -ROAD_HALF, ROAD_HALF, road_reach]:
-				draw_line(Vector2(x + edge, from), Vector2(x + edge, to), Art.INK, 2.0)
-			for y in range(int(from) + 10, int(to) - 20, 30):
-				draw_rect(Rect2(x - 1.5, y, 3, 15), Color.WHITE)
+			var freeway := BayArea.freeway_at(column, row)
+			if freeway.is_empty():
+				for edge in [-road_reach, -ROAD_HALF, ROAD_HALF, road_reach]:
+					draw_line(Vector2(x + edge, from), Vector2(x + edge, to), Art.INK, 2.0)
+				for y in range(int(from) + 10, int(to) - 20, 30):
+					draw_rect(Rect2(x - 1.5, y, 3, 15), Color.WHITE)
+			else:
+				_draw_freeway(x, row, freeway)
+			if column == BayArea.RAILWAY_COLUMN and BayArea.has_railway(row):
+				_draw_railway(x + RAILWAY_OFFSET, row * BLOCK.y + road_reach, (row + 1) * BLOCK.y - road_reach)
 
 	_draw_water(area)
 
@@ -205,9 +257,11 @@ func _draw() -> void:
 			if roll >= DECOR_CHANCE:
 				continue
 			var spot := (Vector2(cell_x, cell_y) + Vector2(_noise(cell_x, cell_y, 2), _noise(cell_x, cell_y, 3))) * DECOR_CELL
-			if _near_road(spot, road_reach + 8.0) or spot.x > BayArea.SHORE_COLUMN * BLOCK.x:
+			var block := Vector2i((spot / BLOCK).floor())
+			if _near_road(spot, road_reach + 8.0) or BayArea.district_of(block) == "bay" or BayArea.is_water(spot) \
+					or (BayArea.RUNWAYS.has(block) and absf(spot.y - (block.y + 0.5) * BLOCK.y) < RUNWAY_HALF + 8.0):
 				continue
-			var district: Dictionary = BayArea.DISTRICTS[BayArea.district_of(Vector2i((spot / BLOCK).floor()))]
+			var district: Dictionary = BayArea.DISTRICTS[BayArea.district_of(block)]
 			var choices: Array = district["decor"]
 			# Reuse the roll to pick the variant so each cell needs one more hash at most.
 			var decor: Array = choices[floori(roll / DECOR_CHANCE * choices.size())]
@@ -217,43 +271,122 @@ func _draw() -> void:
 			draw_texture_rect(texture, Rect2(spot - draw_size / 2.0, draw_size), false)
 
 
-## The South Bay's colourful salt ponds, between the shore road and the water.
-func _draw_salt_ponds(area: Rect2) -> void:
-	var from := BayArea.SHORE_COLUMN * BLOCK.x + ROAD_HALF + SIDEWALK + 10.0
-	var to := BayArea.WATER_X - 14.0
-	if area.end.x < from or area.position.x > to:
-		return
-	var pond_height := 90.0
-	var first := floori(area.position.y / pond_height)
-	var last := floori(area.end.y / pond_height)
-	for index in range(first, last + 1):
-		var top := index * pond_height
-		# Leave the east-west roads clear where they run out to the shore.
-		var middle := top + pond_height / 2.0
-		if absf(middle - roundf(middle / BLOCK.y) * BLOCK.y) < ROAD_HALF + SIDEWALK + pond_height / 2.0:
+## How far a north-south road's surface reaches either side of its centre line on a row (a
+## freeway's further), so the east-west road markings stop at its edge.
+func _road_reach_at(column: int, row: int) -> float:
+	return FREEWAY_HALF + SIDEWALK if not BayArea.freeway_at(column, row).is_empty() else ROAD_HALF + SIDEWALK
+
+
+## A freeway's block-long segment: wider, darker asphalt carried over the crossings at either
+## end (it reads as an overpass), white lane dashes either side of a double yellow line, and
+## the route shield painted on each carriageway.
+func _draw_freeway(x: float, row: int, freeway: Dictionary) -> void:
+	var top := row * BLOCK.y
+	var bottom := (row + 1) * BLOCK.y
+	var reach := FREEWAY_HALF + SIDEWALK
+	draw_rect(Rect2(x - reach, top - ROAD_HALF, reach * 2.0, BLOCK.y + ROAD_HALF * 2.0), PAVEMENT)
+	draw_rect(Rect2(x - FREEWAY_HALF, top - ROAD_HALF, FREEWAY_HALF * 2.0, BLOCK.y + ROAD_HALF * 2.0), FREEWAY_ASPHALT)
+	var edge_from := top + ROAD_HALF + SIDEWALK
+	var edge_to := bottom - ROAD_HALF - SIDEWALK
+	for edge in [-reach, -FREEWAY_HALF, FREEWAY_HALF, reach]:
+		draw_line(Vector2(x + edge, edge_from), Vector2(x + edge, edge_to), Art.INK, 2.0)
+	for side in [-2.5, 2.5]:
+		draw_line(Vector2(x + side, top - ROAD_HALF), Vector2(x + side, bottom + ROAD_HALF), FREEWAY_YELLOW, 2.0)
+	for lane in [-FREEWAY_HALF / 2.0, FREEWAY_HALF / 2.0]:
+		for y in range(int(edge_from) + 10, int(edge_to) - 20, 30):
+			draw_rect(Rect2(x + lane - 1.5, y, 3, 15), Color.WHITE)
+	var middle := (edge_from + edge_to) / 2.0
+	for lane in [-FREEWAY_HALF / 2.0, FREEWAY_HALF / 2.0]:
+		_draw_shield(Vector2(x + lane, middle), freeway)
+
+
+func _draw_shield(center: Vector2, freeway: Dictionary) -> void:
+	var texture := Art.texture(freeway["shield"])
+	draw_texture_rect(texture, Rect2(center - Vector2.ONE * SHIELD_SIZE / 2.0, Vector2.ONE * SHIELD_SIZE), false)
+	var font := Art.display_font(800)
+	var text: String = freeway["number"]
+	var font_size := 9
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var color := Art.INK if freeway["shield"] == "shield_us" else Color.WHITE
+	draw_string(font, center + Vector2(-width / 2.0, 5.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
+
+## Caltrain's track between two crossings: sleepers, then two rails over them.
+func _draw_railway(x: float, from: float, to: float) -> void:
+	draw_rect(Rect2(x - RAILWAY_HALF - 3.0, from, (RAILWAY_HALF + 3.0) * 2.0, to - from), Color(Art.INK, 0.12))
+	for y in range(int(from) + 3, int(to), 9):
+		draw_rect(Rect2(x - RAILWAY_HALF - 2.0, y, (RAILWAY_HALF + 2.0) * 2.0, 3.0), SLEEPER)
+	for side in [-RAILWAY_HALF + 2.0, RAILWAY_HALF - 2.0]:
+		draw_line(Vector2(x + side, from), Vector2(x + side, to), RAIL, 2.0)
+
+
+## SFO's runway (BayArea.RUNWAYS): a long grey strip across its block with a dashed centre
+## line, threshold bars at both ends and the runway number.
+func _draw_runways(first: Vector2i, last: Vector2i) -> void:
+	for block: Vector2i in BayArea.RUNWAYS:
+		if block.x < first.x or block.x > last.x or block.y < first.y or block.y > last.y:
 			continue
-		var pond := Rect2(from, top + 6.0, to - from, pond_height - 12.0)
-		var color: Color = SALT_PONDS[floori(_noise(index, 0, 11) * SALT_PONDS.size())]
-		draw_rect(pond.grow(2.0), Art.INK)
-		draw_rect(pond, color)
+		var origin := Vector2(block) * BLOCK
+		var runway := Rect2(origin.x + ROAD_HALF + SIDEWALK + 10.0, origin.y + BLOCK.y / 2.0 - RUNWAY_HALF,
+			BLOCK.x - (ROAD_HALF + SIDEWALK + 10.0) * 2.0, RUNWAY_HALF * 2.0)
+		draw_rect(runway.grow(2.0), Art.INK)
+		draw_rect(runway, RUNWAY)
+		var middle := runway.get_center().y
+		for x in range(int(runway.position.x) + 50, int(runway.end.x) - 50, 28):
+			draw_rect(Rect2(x, middle - 1.5, 16, 3), Color.WHITE)
+		for end_x in [runway.position.x + 8.0, runway.end.x - 32.0]:
+			for i in 5:
+				draw_rect(Rect2(end_x, runway.position.y + 5.0 + i * 9.6, 24, 5), Color.WHITE)
+		var font := Art.display_font(800)
+		draw_string(font, Vector2(runway.position.x + 38.0, middle + 6.0), "28R", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+		draw_string(font, Vector2(runway.end.x - 70.0, middle + 6.0), "10L", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 
 
+## The South Bay's colourful salt ponds, between the shore road and the water, on the rows
+## where the Bay still has them (not the waterfront of San Francisco and the airport).
+func _draw_salt_ponds(area: Rect2, first_row: int, last_row: int) -> void:
+	var pond_height := 90.0
+	for row in range(first_row, last_row + 1):
+		var column = BayArea.east_shore_column(row)
+		if column == null or row < BayArea.SALT_POND_FROM_ROW:
+			continue
+		var from: float = column * BLOCK.x + ROAD_HALF + SIDEWALK + 10.0
+		var to := BayArea.east_water_x(row) - 14.0
+		if area.end.x < from or area.position.x > to:
+			continue
+		var row_top := row * BLOCK.y + ROAD_HALF + SIDEWALK + 6.0
+		var row_bottom := (row + 1) * BLOCK.y - ROAD_HALF - SIDEWALK - 6.0
+		var count := floori((row_bottom - row_top) / pond_height)
+		for index in count:
+			var top := row_top + index * (row_bottom - row_top) / count
+			var pond := Rect2(from, top + 4.0, to - from, (row_bottom - row_top) / count - 8.0)
+			var color: Color = SALT_PONDS[floori(_noise(row * 8 + index, 0, 11) * SALT_PONDS.size())]
+			draw_rect(pond.grow(2.0), Art.INK)
+			draw_rect(pond, color)
+
+
+## The water round the peninsula. Drawn in three passes over all of it, so the shore gets a sand
+## edge and an ink line while the seams between the water's rects don't show: sand grown out,
+## then ink grown a little, then the water itself on top.
 func _draw_water(area: Rect2) -> void:
-	if area.end.x < BayArea.WATER_X - 12.0:
+	var rects := BayArea.water_rects(area.grow(SAND_EDGE + 2.0))
+	if rects.is_empty():
 		return
-	draw_rect(Rect2(BayArea.WATER_X - 12.0, area.position.y, 12.0, area.size.y), SAND)
-	var water := Rect2(BayArea.WATER_X, area.position.y, area.end.x - BayArea.WATER_X, area.size.y)
-	draw_rect(water, WATER)
-	draw_line(Vector2(BayArea.WATER_X, area.position.y), Vector2(BayArea.WATER_X, area.end.y), Art.INK, 2.0)
+	for water: Rect2 in rects:
+		draw_rect(water.grow(SAND_EDGE), SAND)
+	for water: Rect2 in rects:
+		draw_rect(water.grow(2.0), Art.INK)
+	for water: Rect2 in rects:
+		draw_rect(water, WATER)
 	# Little wave ticks scattered on a grid.
-	var first := Vector2i((water.position / 48.0).floor())
-	var last := Vector2i((water.end / 48.0).ceil())
+	var first := Vector2i((area.position / 48.0).floor())
+	var last := Vector2i((area.end / 48.0).ceil())
 	for cell_x in range(first.x, last.x + 1):
 		for cell_y in range(first.y, last.y + 1):
 			if _noise(cell_x, cell_y, 12) > 0.35:
 				continue
 			var at := Vector2(cell_x, cell_y) * 48.0 + Vector2(_noise(cell_x, cell_y, 13), _noise(cell_x, cell_y, 14)) * 30.0
-			if at.x < BayArea.WATER_X + 8.0:
+			if not (BayArea.is_water(at + Vector2(-8, -8)) and BayArea.is_water(at + Vector2(16, 8))):
 				continue
 			draw_arc(at, 5.0, PI * 1.15, PI * 1.85, 8, Color.WHITE, 1.6, true)
 			draw_arc(at + Vector2(8, 0), 5.0, PI * 1.15, PI * 1.85, 8, Color.WHITE, 1.6, true)
@@ -303,26 +436,40 @@ func _populate(block: Vector2i) -> Dictionary:
 	var content := {"nodes": [], "solids": [], "fading": []}
 	var district: Dictionary = BayArea.DISTRICTS[BayArea.district_of(block)]
 	var origin := Vector2(block) * BLOCK
-	var inner_left := origin.x + ROAD_HALF + SIDEWALK + 14.0
-	var inner_right := minf(origin.x + BLOCK.x - ROAD_HALF - SIDEWALK - 14.0, BayArea.SHORE_COLUMN * BLOCK.x - 14.0)
+	var inner_left := origin.x + _road_reach_at(block.x, block.y) + 14.0
+	if block.x == BayArea.RAILWAY_COLUMN and BayArea.has_railway(block.y):
+		inner_left += RAILWAY_OFFSET + RAILWAY_HALF
+	var inner_right := origin.x + BLOCK.x - _road_reach_at(block.x + 1, block.y) - 14.0
 	var street_y := origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0
 	var lawn_top := origin.y + ROAD_HALF + SIDEWALK + 50.0
 	var tallest := 0.0
-	var is_park: bool = rng.randf() < district["park_chance"]
+	var is_park: bool = rng.randf() < district["park_chance"] or BayArea.RUNWAYS.has(block)
 
-	if origin.x + ROAD_HALF + SIDEWALK < BayArea.WATER_X:
+	var corner := origin + Vector2(_road_reach_at(block.x, block.y) + 6.0, ROAD_HALF + SIDEWALK + 34.0)
+	if not BayArea.is_water(corner):
 		var street_sign := StreetSign.new()
-		street_sign.names = [BayArea.east_west_name(block.y), BayArea.north_south_name(block.x)]
-		street_sign.position = origin + Vector2(ROAD_HALF + SIDEWALK + 6.0, ROAD_HALF + SIDEWALK + 34.0)
+		street_sign.names = [BayArea.east_west_name(block.y), BayArea.north_south_name(block.x, block.y)]
+		street_sign.position = corner
 		content["nodes"].append(_place(street_sign))
+	_place_freeway_sign(content, block)
 
 	var landmark: String = BayArea.LANDMARKS.get(block, "")
 	if landmark.begins_with("art:"):
 		tallest = _place_landmark(content, landmark.trim_prefix("art:"), Vector2(origin.x + BLOCK.x / 2.0, street_y))
 	elif landmark.begins_with("brand_row:"):
 		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, landmark.trim_prefix("brand_row:"))
+		_place_campus_sign(content, landmark.trim_prefix("brand_row:"), Vector2(inner_left + 70.0, lawn_top + 40.0))
 	elif not is_park and inner_right > inner_left:
 		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, "")
+	var lawn_landmark: String = BayArea.LAWN_LANDMARKS.get(block, "")
+	if lawn_landmark != "":
+		_place_landmark(content, lawn_landmark, Vector2(origin.x + BLOCK.x * 0.62, lawn_top + 90.0))
+	if BayArea.RUNWAYS.has(block):
+		# Seen from above and lying flat on the runway, nose west like a plane lining up on 28R.
+		var plane := Art.sprite("plane", BayArea.HEIGHTS["plane"])
+		plane.position = origin + Vector2(BLOCK.x * 0.62, BLOCK.y / 2.0)
+		plane.rotation = -PI / 2.0
+		content["nodes"].append(_place(plane))
 
 	var lawn_bottom := street_y - tallest - 12.0
 	if lawn_bottom - lawn_top > 30.0 and inner_right > inner_left:
@@ -330,7 +477,9 @@ func _populate(block: Vector2i) -> Dictionary:
 			var spot := Vector2(rng.randf_range(inner_left, inner_right), rng.randf_range(lawn_top, lawn_bottom))
 			content["nodes"].append(_place_art("bush", BayArea.HEIGHTS["bush"], spot))
 		var tree: String = district["tree"] if district["tree"] != "" else "palm"
-		for i in rng.randi_range(district["lawn_trees"][0], district["lawn_trees"][1]):
+		# Trees would hide a lawn landmark; bushes are low enough.
+		var tree_count := 0 if BayArea.LAWN_LANDMARKS.has(block) else rng.randi_range(district["lawn_trees"][0], district["lawn_trees"][1])
+		for i in tree_count:
 			var spot := Vector2(rng.randf_range(inner_left, inner_right), rng.randf_range(lawn_top + 40.0, lawn_bottom))
 			_place_tree(content, tree, spot)
 	return content
@@ -374,6 +523,33 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 		var spot := Vector2(rng.randf_range(left, right), street_y + SIDEWALK + 2.0)
 		content["nodes"].append(_place_art(prop, BayArea.HEIGHTS[prop], spot))
 	return tallest
+
+
+## A big standalone version of a company's sign on the lawn in front of its campus.
+func _place_campus_sign(content: Dictionary, brand: String, feet: Vector2) -> void:
+	var holder := Node2D.new()
+	holder.position = feet
+	var brand_sign := BrandSign.new()
+	brand_sign.brand = BayArea.BRANDS[brand]
+	brand_sign.scale = Vector2.ONE * CAMPUS_SIGN_SCALE
+	holder.add_child(brand_sign)
+	content["nodes"].append(_place(holder))
+
+
+## A green overhead-style sign beside the freeway every other block, pointing each way.
+func _place_freeway_sign(content: Dictionary, block: Vector2i) -> void:
+	var freeway := BayArea.freeway_at(block.x, block.y)
+	if freeway.is_empty() or posmod(block.y, 2) != 0:
+		return
+	# Below the street sign at the corner.
+	var at := Vector2(block.x * BLOCK.x + FREEWAY_HALF + SIDEWALK + 44.0, block.y * BLOCK.y + 150.0)
+	if BayArea.is_water(at):
+		return
+	var sign := FreewaySign.new()
+	sign.number = freeway["number"]
+	sign.north = posmod(block.y, 4) == 0
+	sign.position = at
+	content["nodes"].append(_place(sign))
 
 
 func _place_landmark(content: Dictionary, art: String, feet: Vector2) -> float:
@@ -472,6 +648,11 @@ func _fade_buildings(delta: float) -> void:
 		var behind := player_at.y < drawn.end.y and player_at.y + Player.SIZE / 2.0 > drawn.position.y \
 			and player_at.x > drawn.position.x and player_at.x < drawn.end.x
 		holder.modulate.a = move_toward(holder.modulate.a, BEHIND_ALPHA if behind else 1.0, delta * 4.0)
+
+
+## _noise for the moving scenery (Traffic).
+func noise(cell_x: int, cell_y: int, salt: int) -> float:
+	return _noise(cell_x, cell_y, salt)
 
 
 ## Deterministic pseudo-random value in [0, 1) for integer coordinates (wraps on overflow).

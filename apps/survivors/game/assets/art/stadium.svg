@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 110">
+<ellipse cx="100" cy="102" rx="94" ry="5" fill="#000" fill-opacity="0.13"/>
+<g fill="none" stroke-linecap="round">
+<path d="M18 50 L18 14 M182 50 L182 14" stroke="#2f3542" stroke-width="6.5"/>
+<path d="M18 50 L18 14 M182 50 L182 14" stroke="#a9b3c4" stroke-width="3"/>
+</g>
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<rect x="8" y="4" width="20" height="11" rx="2" fill="#fff7e0"/>
+<rect x="172" y="4" width="20" height="11" rx="2" fill="#fff7e0"/>
+<rect x="126" y="7" width="44" height="5" rx="1.5" fill="#eef1f6"/>
+<rect x="128" y="11" width="40" height="44" fill="#8fd3ff"/>
+</g>
+<g fill="#ffd36b"><circle cx="13" cy="9.5" r="1.8"/><circle cx="18" cy="9.5" r="1.8"/><circle cx="23" cy="9.5" r="1.8"/><circle cx="177" cy="9.5" r="1.8"/><circle cx="182" cy="9.5" r="1.8"/><circle cx="187" cy="9.5" r="1.8"/></g>
+<path d="M128 19 L168 19 M128 27 L168 27 M128 35 L168 35 M141 11 L141 45 M154 11 L154 45" stroke="#5fb4e6" stroke-width="1.6"/>
+<path d="M132 23 L137 15 M146 31 L151 23" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<path d="M12 56 L12 74 A88 26 0 0 0 188 74 L188 56 Z" fill="#dfe4ea"/>
+<ellipse cx="100" cy="56" rx="88" ry="26" fill="#eef1f6"/>
+<ellipse cx="100" cy="57" rx="82" ry="23" fill="#d63a2f" stroke-width="2.2"/>
+<ellipse cx="100" cy="58" rx="71" ry="19" fill="#f4f6fa" stroke-width="2"/>
+<ellipse cx="100" cy="58.5" rx="67" ry="17.5" fill="#d63a2f" stroke-width="2"/>
+<ellipse cx="100" cy="60" rx="55" ry="13" fill="#5aae4a" stroke-width="2.2"/>
+</g>
+<ellipse cx="100" cy="57.5" rx="77" ry="21" fill="none" stroke="#b52f26" stroke-width="1.6"/>
+<ellipse cx="100" cy="59.2" rx="61" ry="15.2" fill="none" stroke="#b52f26" stroke-width="1.6"/>
+<path d="M66 52.5 L134 52.5 L140 66 L60 66 Z" fill="#6cc25a" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M77.3 52.5 L73.3 66 M88.7 52.5 L86.7 66 M100 52.5 L100 66 M111.3 52.5 L113.3 66 M122.7 52.5 L126.7 66" stroke="#fff" stroke-width="1.3"/>
+<path d="M40 76 L40 92 M70 81.4 L70 97.4 M100 83 L100 99 M130 81.4 L130 97.4 M160 76 L160 92" stroke="#b8c2d0" stroke-width="2"/>
+<path d="M13 66 A88 26 0 0 0 187 66" fill="none" stroke="#2f3542" stroke-width="7"/>
+<path d="M13 66 A88 26 0 0 0 187 66" fill="none" stroke="#8fd3ff" stroke-width="3.5"/>
+<path d="M12 56 L12 74 A88 26 0 0 0 188 74 L188 56" fill="none" stroke="#2f3542" stroke-width="3" stroke-linejoin="round"/>
+</svg>

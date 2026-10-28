@@ -20,7 +20,7 @@ extends RefCounted
 ## than once: keep the one with the most `seconds`.
 
 ## Bumped when the balance changes, so data from before and after can be told apart.
-const VERSION := "2026-10-28.3"
+const VERSION := "2026-10-28.4"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.

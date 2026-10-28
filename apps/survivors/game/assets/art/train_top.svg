@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 192">
+<g stroke="#2f3542" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+<rect x="13" y="90" width="6" height="12" rx="1.5" fill="#4a5a7a"/>
+<path d="M5 22 Q5 4 16 3 Q27 4 27 22 L27 92 Q27 94 25 94 L7 94 Q5 94 5 92 Z" fill="#d5dbe5"/>
+<path d="M5 24 L27 24 L27 22 Q27 4 16 3 Q5 4 5 22 Z" fill="#e0533b"/>
+<path d="M5 100 Q5 98 7 98 L25 98 Q27 98 27 100 L27 184 Q27 189 22 189 L10 189 Q5 189 5 184 Z" fill="#d5dbe5"/>
+</g>
+<path d="M8.5 15 Q16 8.5 23.5 15 L23.5 18 Q16 13 8.5 18 Z" fill="#2e2a4a"/>
+<g fill="#a9b3c4" stroke="#2f3542" stroke-width="2" stroke-linejoin="round">
+<rect x="10.5" y="32" width="11" height="9" rx="2"/><rect x="10.5" y="54" width="11" height="9" rx="2"/><rect x="10.5" y="76" width="11" height="9" rx="2"/>
+<rect x="10.5" y="110" width="11" height="9" rx="2"/><rect x="10.5" y="132" width="11" height="9" rx="2"/><rect x="10.5" y="154" width="11" height="9" rx="2"/><rect x="10.5" y="174" width="11" height="9" rx="2"/>
+</g>
+<path d="M13 34.5 L13 38.5 M16 34.5 L16 38.5 M19 34.5 L19 38.5 M13 56.5 L13 60.5 M16 56.5 L16 60.5 M19 56.5 L19 60.5 M13 78.5 L13 82.5 M16 78.5 L16 82.5 M19 78.5 L19 82.5 M13 112.5 L13 116.5 M16 112.5 L16 116.5 M19 112.5 L19 116.5 M13 134.5 L13 138.5 M16 134.5 L16 138.5 M19 134.5 L19 138.5 M13 156.5 L13 160.5 M16 156.5 L16 160.5 M19 156.5 L19 160.5 M13 176.5 L13 180.5 M16 176.5 L16 180.5 M19 176.5 L19 180.5" stroke="#6b7890" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M8 28 L8 90 M8 102 L8 184" stroke="#fff" stroke-opacity="0.7" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

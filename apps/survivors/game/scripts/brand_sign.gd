@@ -4,11 +4,12 @@ extends Node2D
 ## same ink-outlined style as the drawings. The name uses the game font, so the sign is drawn
 ## here rather than baked into an SVG. Sits with its legs' feet at the node's origin.
 
-const FONT_SIZE := 9
-const HEIGHT := 15.0
-const LEG := 4.0
-const PADDING := 4.0
-const ICON := 11.0
+## About half again as big as the first version, which read as small print from a distance.
+const FONT_SIZE := 13
+const HEIGHT := 21.0
+const LEG := 5.0
+const PADDING := 5.0
+const ICON := 16.0
 
 ## An entry of BayArea.BRANDS: text, colour and an optional icon art or badge text.
 var brand: Dictionary
