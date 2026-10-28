@@ -17,8 +17,8 @@ const SQUASH := 0.06
 const BASE_MOVE_SPEED := 62.0
 const BASE_PICKUP_RADIUS := 40.0
 ## The health bar under the player, tall enough to hold the HP number inside it.
-const HP_BAR_SIZE := Vector2(32.0, 10.0)
-const HP_FONT_SIZE := 7
+const HP_BAR_SIZE := Vector2(38.0, 11.0)
+const HP_FONT_SIZE := 8
 
 var game: Game
 var max_hp := 100.0
@@ -45,6 +45,7 @@ var _sprite: Sprite2D
 var _camera: Camera2D
 var _bar_track: StyleBoxFlat
 var _bar_fill: StyleBoxFlat
+var _bar_outline: StyleBoxFlat
 ## Standing still with the nap perk (Perks): healing, shown as a "Zz" over the head.
 var _napping := false
 
@@ -95,19 +96,23 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# A pill like the HUD's readouts: white track, red fill, the exact HP in ink inside it.
-	# Ink reads on both the red and the white, so the digits need no outline.
+	# A pill like the HUD's: white track, red fill, an ink outline over both, and the HP as it is
+	# now inside it (just the current value: the bar already shows how full it is). Ink reads on
+	# both the red and the white, so the digits need no outline.
 	var bar := Rect2(-HP_BAR_SIZE.x / 2.0, SIZE / 2.0 + 2.0, HP_BAR_SIZE.x, HP_BAR_SIZE.y)
 	if _bar_track == null:
-		_bar_track = _pill_style(Art.PAPER, 1)
-		_bar_fill = _pill_style(Art.RED, 0)
+		_bar_track = _pill_style(Art.PAPER, 0)
+		_bar_fill = _pill_style(Art.HP_RED, 0)
+		_bar_outline = _pill_style(Color.TRANSPARENT, 2)
+		_bar_outline.draw_center = false
 	draw_style_box(_bar_track, bar)
 	var fill_width := bar.size.x * clampf(hp / max_hp, 0.0, 1.0)
 	if fill_width > 0.0:
 		# Never thinner than it is tall, so the rounded ends stay round as it runs out.
-		draw_style_box(_bar_fill, Rect2(bar.position, Vector2(maxf(fill_width, bar.size.y), bar.size.y)).grow(-1.0))
-	var text := "%d/%d" % [ceili(hp), roundi(max_hp)]
-	var font := Art.display_font(800)
+		draw_style_box(_bar_fill, Rect2(bar.position, Vector2(maxf(fill_width, bar.size.y), bar.size.y)))
+	draw_style_box(_bar_outline, bar)
+	var text := str(ceili(hp))
+	var font := Art.display_font(900)
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE).x
 	var baseline := Vector2(-width / 2.0, bar.get_center().y + (font.get_ascent(HP_FONT_SIZE) - font.get_descent(HP_FONT_SIZE)) / 2.0)
 	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE, Art.INK)

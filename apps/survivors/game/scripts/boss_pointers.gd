@@ -4,13 +4,14 @@ extends Node2D
 ## so a boss walking in (or one the player ran away from) is never a surprise. Drawn in the world
 ## around the player, so a phone playing turned sideways gets them turned with everything else.
 
-## Kept clear of the screen's edges; more at the top, where the upgrade slots and minimap sit.
-const INSET_SIDE := 18.0
-const INSET_TOP := 72.0
-const INSET_BOTTOM := 18.0
-const DISC_RADIUS := 11.0
-const FACE_SIZE := 16.0
-const ARROW_SIZE := 6.0
+## Kept clear of the screen's edges (the arrow reaches DISC_RADIUS + ARROW_SIZE past the disc's
+## centre); more at the top, where the upgrade slots and minimap sit.
+const INSET_SIDE := 32.0
+const INSET_TOP := 80.0
+const INSET_BOTTOM := 32.0
+const DISC_RADIUS := 15.0
+const FACE_SIZE := 20.0
+const ARROW_SIZE := 7.0
 
 var game: Game
 
@@ -47,9 +48,12 @@ func _draw() -> void:
 		var tip := spot + direction * (DISC_RADIUS + ARROW_SIZE + 2.0)
 		var base := spot + direction * (DISC_RADIUS + 1.0)
 		var side := direction.orthogonal() * ARROW_SIZE
-		draw_colored_polygon(PackedVector2Array([tip, base + side, base - side]), Art.RED)
-		draw_circle(spot, DISC_RADIUS, Art.PAPER)
-		draw_arc(spot, DISC_RADIUS, 0.0, TAU, 32, Art.RED, 2.0, true)
+		var arrow := PackedVector2Array([tip, base + side, base - side])
+		draw_colored_polygon(arrow, Art.BOSS_RED)
+		arrow.append(tip)
+		draw_polyline(arrow, Art.INK, 1.5, true)
+		draw_circle(spot, DISC_RADIUS, Art.PINK_LIGHT)
+		draw_arc(spot, DISC_RADIUS - 1.25, 0.0, TAU, 32, Art.BOSS_RED, 2.5, true)
 		var face := Art.texture(Spawner.ENEMY_TYPES[enemy.type_name]["art"])
 		var face_size := face.get_size() * FACE_SIZE / maxf(face.get_width(), face.get_height())
 		draw_texture_rect(face, Rect2(spot - face_size / 2.0, face_size), false)

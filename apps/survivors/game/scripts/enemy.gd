@@ -174,6 +174,7 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 	if _ability_left > 0.0:
 		return velocity
 	_ability_left = _ability_every()
+	game.boss_move.emit(ability)
 	match ability:
 		"charge":
 			_windup_left = CHARGE_WINDUP
@@ -193,6 +194,11 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 		"lob":
 			_throw_pies()
 	return velocity
+
+
+## Rushing down its lane (the "charge" move), for the result screen's cause of death.
+func is_charging() -> bool:
+	return _charge_left > 0.0
 
 
 func _ability_every() -> float:

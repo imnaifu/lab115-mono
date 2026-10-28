@@ -8,6 +8,8 @@ signal level_up_offered(choices: Array)
 signal run_ended(victory: bool)
 signal announced(text: String)
 signal chest_opened(funding_round: Dictionary, items: Array)
+## A boss is starting one of its moves (Enemy.ABILITIES); the HUD explains how to dodge it.
+signal boss_move(ability: String)
 
 ## CHEST is a boss's funding bag being opened (the slot machine in Hud).
 enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED }
@@ -245,9 +247,11 @@ func lob_pie(from: Vector2, to: Vector2, seconds: float, damage: float, thrower:
 
 
 ## Damage to the player from anything: contact, a bullet, a pie. `by` is the enemy type, kept
-## as what last hurt them (Telemetry's killer).
-func hurt_player(amount: float, by: String) -> void:
+## as what last hurt them (Telemetry's killer), and `how` the way it landed: "contact",
+## "charge", "bullet" or "pie" (the result screen's cause of death).
+func hurt_player(amount: float, by: String, how: String = "contact") -> void:
 	telemetry.last_hurt_by = by
+	telemetry.last_hurt_how = how
 	player.take_damage(amount)
 
 
@@ -464,7 +468,7 @@ func _check_player_contact() -> void:
 		if strongest == null or enemy.damage > strongest.damage:
 			strongest = enemy
 	if strongest != null:
-		hurt_player(strongest.damage, strongest.type_name)
+		hurt_player(strongest.damage, strongest.type_name, "charge" if strongest.is_charging() else "contact")
 
 
 func _cell_of(point: Vector2) -> Vector2i:

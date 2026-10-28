@@ -28,7 +28,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.6"
+const VERSION := "2026-10-28.7"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -57,8 +57,10 @@ var _bosses_killed := 0
 var _peak_enemies := 0
 var _started := false
 var _finished := false
-## The type of the last enemy that hurt the player; at death, what killed them.
+## The type of the last enemy that hurt the player; at death, what killed them. `last_hurt_how`
+## is how that hit landed (Game.hurt_player).
 var last_hurt_by := ""
+var last_hurt_how := ""
 
 
 func _init(game: Game) -> void:
@@ -148,9 +150,6 @@ func on_chest(round_id: String) -> void:
 	_chests.append(round_id)
 
 
-func bosses_killed() -> int:
-	return _bosses_killed
-
 
 func on_enemy_spawned(enemy: Enemy) -> void:
 	if enemy.is_elite:
@@ -190,6 +189,7 @@ func _summary(result: String) -> Dictionary:
 		"level": _game.level,
 		"kills": _game.kills,
 		"killer": last_hurt_by,
+		"killer_how": last_hurt_how,
 		"hp": ceili(player.hp),
 		"max_hp": roundi(player.max_hp),
 		"weapons": ",".join(weapons),

@@ -12,7 +12,7 @@ extends Control
 ## the Golden Gate's water to south of San Jose.
 const OVERVIEW := Rect2(-2800.0, -3300.0, 5600.0, 6300.0)
 ## The map keeps OVERVIEW's proportions.
-const MAP_SIZE := Vector2(60.0, 70.0)
+const MAP_SIZE := Vector2(72.0, 81.0)
 ## Bolder than the districts' ground colours, which are pale on purpose and blur together at
 ## this size: the design's pastel fills, one per district.
 const DISTRICT_COLORS := {
@@ -36,9 +36,9 @@ func _ready() -> void:
 	custom_minimum_size = MAP_SIZE + Vector2.ONE * INSET * 2.0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame.bg_color = Color(Art.PAPER, 0.0)
-	_frame.border_color = Art.LINE_STRONG
-	_frame.set_border_width_all(1)
-	_frame.set_corner_radius_all(8)
+	_frame.border_color = Art.INK
+	_frame.set_border_width_all(2)
+	_frame.set_corner_radius_all(10)
 	_frame.anti_aliasing = true
 
 

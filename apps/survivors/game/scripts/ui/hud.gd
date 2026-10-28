@@ -1,56 +1,55 @@
 class_name Hud
 extends CanvasLayer
-## Screen-space UI: XP bar, timer, kills, inventory slots and the touch joystick, plus the
-## title, level-up, funding bag, pause and end-of-run overlays. Keeps running while the tree is paused so
-## the overlays can take input.
-## Overlay visibility follows game.state every frame instead of being toggled by events, so a
-## pick made from code (the smoke-test bot) closes the level-up panel too.
+## Screen-space UI, drawn after the design canvas 「硅谷幸存者 · 界面设计」: the HUD (upgrade slots,
+## XP, clock, boss readouts, kills, minimap, joystick, hints) and the title, level-up, funding
+## bag, pause, result and settings screens. Keeps running while the tree is paused so the
+## screens can take input. The pieces come from UiKit.
+## Screen visibility follows game.state every frame instead of being toggled by events, so a
+## pick made from code (the smoke-test bot) closes the level-up screen too.
 ## Layout is anchored rather than placed, because the view is 640x360 or wider in landscape
 ## and 360x640 or taller on an upright phone in portrait; a phone set to landscape turns the
-## whole layer a quarter turn instead (fit_screen, Game.apply_orientation).
+## whole layer a quarter turn instead (fit_screen, Game.apply_orientation). A screen is built
+## when it opens, in the arrangement for the shape the HUD has then.
 
-## Ignore picks for a moment after the panel opens, so keys held down while playing don't
-## choose a card by accident.
+## Ignore picks for a moment after the cards appear, so keys held down while playing don't
+## choose one by accident.
 const PICK_DELAY_MS := 300
 const SLOT_COUNT := 6
-const SLOT_SIZE := 20.0
-## The pastel well behind an upgrade's icon, by the kind of upgrade.
-const KIND_COLORS := {"weapon": Art.FILL_SKY, "passive": Art.FILL_MINT, "heal": Art.FILL_PINK}
-## Corner radii: small chips, cards, panels; PILL is clamped to half the height, so anything
-## drawn with it is fully round at the ends.
-const RADIUS_SM := 6
-const RADIUS_MD := 12
-const RADIUS_LG := 20
-const PILL := 99
-## The title screen's parade of the cast.
-const PARADE := ["ping", "bug", "mail", "meeting", "ghost404", "techdebt", "server"]
-## Width the title screen's text wraps at, which keeps the English title on two lines instead
-## of stretching the column past the screen.
-const TITLE_TEXT_WIDTH := 340.0
-const TITLE_SIZE := 40
+const SLOT_SIZE := 19.0
+## The title screen's cast standing on a line: art, height, how high it hops from.
+const PARADE := [["ping", 40.0, 4.0], ["bug", 46.0, 18.0], ["coder", 56.0, 0.0], ["mail", 44.0, 14.0], ["ghost404", 46.0, 4.0]]
+const TITLE_SIZE := 44
 const LOW_HP_RATIO := 0.35
-## The boss bar's top edge, and the screen width it needs to sit there, level with the upgrade
-## slots (the slots plus the bar's half width, twice over); narrower screens get it lower.
-const BOSS_BAR_TOP := 48
-const XP_BAR_WIDTH := 140.0
+const XP_BAR_SIZE := Vector2(96, 18)
+## The boss bar sits under the clock; on an upright phone it must clear the minimap.
+const BOSS_BAR_WIDTH := 110.0
+const BOSS_BAR_WIDTH_PORTRAIT := 80.0
 ## Level-up cards side by side when there are more than three of them (the headhunter perk).
 const LEVEL_UP_CARD_MIN_WIDTH := 112.0
-const BOSS_BAR_TOP_NARROW := 70
-const BOSS_BAR_MIN_WIDTH := 450.0
-const TOAST_BELOW_BOSS_BAR := 42
-## The next-boss countdown under the timer shows this many seconds ahead; where the boss bar
-## sits right under the timer, it moves down this far to make room.
+## The next-boss countdown under the clock shows this many seconds ahead.
 const NEXT_BOSS_WARNING := 20.0
-const NEXT_BOSS_ROOM := 18
 ## A first few runs show how to move until the player does, after this long standing still.
 const MOVE_HINT_AFTER := 2.0
 const MOVE_HINT_RUNS := 3
+## How a boss move is dodged, shown at the bottom the first time it comes up in a run.
+const BOSS_MOVE_HINTS := {
+	"charge": "红色通道要冲过来了，横着躲开",
+	"summon": "它在召唤小怪，别被围住",
+	"blink": "红圈是它要闪现到的地方，别站进去",
+	"volley": "蓄力完会朝四周发弹，躲到楼后面",
+	"lob": "地上的阴影是饼的落点，快离开",
+}
+const WARNING_SECONDS := 3.5
 ## The funding bag's slot machine: laps of all the rounds before landing, and how long it spins.
 const CHEST_SPIN_LAPS := 4
 const CHEST_SPIN_SECONDS := 1.6
-const ROUND_COLORS := {"angel": Art.FILL_MINT, "series_a": Art.FILL_SKY, "ipo": Art.BRAND}
-## Space kept around a pause or end panel that has to shrink to fit the screen.
+## Space kept around a screen that has to shrink to fit.
 const FIT_MARGIN := 8.0
+## How far the funding bag sticks up over the top of its dialog.
+const BAG_OVERHANG := 36.0
+const RANKING_ROWS := 6
+## How the last hit landed (Telemetry.last_hurt_how), for the result's 凶手 line.
+const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中"}
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
 	"asking": "请在弹窗里允许访问动作与方向",
@@ -62,49 +61,60 @@ const TILT_HINTS := {
 var game: Game
 
 var _root: Control
+var _top_bar: Control
 var _xp_bar: ProgressBar
 var _level_label: Label
 var _time_label: Label
-var _kills_label: Label
+var _center_column: VBoxContainer
+var _next_boss_pill: Control
+var _next_boss_time: Label
 var _boss_bar: Control
 var _boss_name: Label
 var _boss_more: Label
 var _boss_progress: ProgressBar
-var _boss_hp_label: Label
+var _kills_label: Label
 var _minimap: Minimap
 var _district_label: Label
 var _district := ""
 var _pause_button: Button
 var _recalibrate_button: Button
-var _top_bar: Control
 var _weapon_slots: Array[Panel] = []
 var _passive_slots: Array[Panel] = []
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_tween: Tween
+var _move_hint: Control
+var _warning: Control
+var _warning_label: Label
+var _warning_tween: Tween
+## Boss moves already explained this run.
+var _warned := {}
 var _vignette: TextureRect
 var _joystick: Joystick
 var _touch_index := -1
 var _title_overlay: Control
+var _title_holder: Control
+var _title_heading: Control
 var _level_up_overlay: Control
 var _cards_holder: CenterContainer
-var _pause_overlay: Control
-var _pause_holder: CenterContainer
-var _end_overlay: Control
-var _end_holder: CenterContainer
 var _chest_overlay: Control
 var _chest_holder: CenterContainer
 var _chest_spin: Tween
 var _chest_revealed := false
 ## Shows the bag's result straight away (the button pressed mid-spin).
 var _chest_reveal := Callable()
-var _next_boss_pill: Control
-var _next_boss_label: Label
-var _move_hint: Control
+var _reel_prev: Label
+var _reel_label: Label
+var _reel_next: Label
+var _odds_chips: Array[PanelContainer] = []
+var _pause_overlay: Control
+var _pause_holder: CenterContainer
+var _end_overlay: Control
+var _end_holder: Control
 var _victory := false
 var _sharing := false
 var _settings_overlay: Control
-var _settings_holder: CenterContainer
+var _settings_holder: Control
 var _settings_open := false
 var _tilt_hint: Label
 var _shown_state := -1
@@ -113,7 +123,6 @@ var _xp_flash := 0.0
 var _seen_xp := Vector2i.ZERO
 var _accept_picks_at := 0
 var _clock := 0.0
-var _title_heading: Control
 
 
 func _ready() -> void:
@@ -121,7 +130,7 @@ func _ready() -> void:
 	_root = Control.new()
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.theme = _build_theme()
+	_root.theme = UiKit.build_theme()
 	add_child(_root)
 
 	_build_vignette()
@@ -131,28 +140,32 @@ func _ready() -> void:
 	_root.add_child(_joystick)
 	_build_top_bar()
 	_build_toast()
-	_build_move_hint()
-	_title_overlay = _build_title()
-	# Overlays wash the world out to the design's cream ground instead of dimming it.
-	_level_up_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
+	_build_bottom_hints()
+	_title_overlay = _overlay(Art.PAPER_SOFT)
+	_title_holder = _full(_title_overlay)
+	_add_corner_version(_title_overlay)
+	# Dialogs that pause play darken the world; the result and settings are pages of their own.
+	_level_up_overlay = _overlay(Art.SCRIM)
 	_cards_holder = _centered(_level_up_overlay)
-	_pause_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
+	_chest_overlay = _overlay(Art.SCRIM)
+	_chest_holder = _centered(_chest_overlay)
+	_pause_overlay = _overlay(Art.SCRIM)
 	_pause_holder = _centered(_pause_overlay)
 	_add_corner_version(_pause_overlay)
-	_end_overlay = _overlay(Color(Art.PAPER_SOFT, 0.88))
-	_end_holder = _centered(_end_overlay)
+	_end_overlay = _overlay(Art.PAPER_SOFT)
+	_end_holder = _full(_end_overlay)
 	_add_corner_version(_end_overlay)
-	_chest_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
-	_chest_holder = _centered(_chest_overlay)
 	# Last, so it opens on top of the title or pause screen it was opened from.
-	_settings_overlay = _overlay(Color(Art.PAPER_SOFT, 0.6))
-	_settings_holder = _centered(_settings_overlay)
+	_settings_overlay = _overlay(Art.PAPER_SOFT)
+	_settings_holder = _full(_settings_overlay)
+	_show_title()
 
 	game.inventory_changed.connect(_refresh_inventory)
 	game.level_up_offered.connect(_show_level_up)
 	game.run_ended.connect(_show_end)
 	game.announced.connect(_show_toast)
 	game.chest_opened.connect(_show_chest)
+	game.boss_move.connect(_on_boss_move)
 
 
 func _notification(what: int) -> void:
@@ -174,6 +187,8 @@ func _process(delta: float) -> void:
 	_kills_label.text = str(game.kills)
 	_update_next_boss()
 	_update_boss_bar()
+	# The announcements drop in under whatever the centre column shows right now.
+	_toast.offset_top = _center_column.position.y + _center_column.size.y + 6.0
 	var district := BayArea.district_of(Vector2i((game.player.position / City.BLOCK).floor()))
 	if district != _district:
 		_district = district
@@ -185,24 +200,27 @@ func _process(delta: float) -> void:
 
 	var state := game.state
 	_title_overlay.visible = state == Game.State.TITLE
-	_top_bar.visible = state != Game.State.TITLE
+	# Only during play: under a dialog it shows through the scrim, behind the dialog's title.
+	_top_bar.visible = state == Game.State.PLAYING
 	_pause_button.visible = state == Game.State.PLAYING
 	_recalibrate_button.visible = state == Game.State.PLAYING and Tilt.enabled()
 	_level_up_overlay.visible = state == Game.State.LEVEL_UP
 	_pause_overlay.visible = state == Game.State.PAUSED
 	_end_overlay.visible = state == Game.State.ENDED
 	_chest_overlay.visible = state == Game.State.CHEST
+	_warning.visible = _warning.visible and state == Game.State.PLAYING
 	_move_hint.visible = state == Game.State.PLAYING and not game.has_moved and game.elapsed > MOVE_HINT_AFTER \
-		and game.runs_before < MOVE_HINT_RUNS and not Tilt.enabled()
+		and game.runs_before < MOVE_HINT_RUNS and not Tilt.enabled() and not _warning.visible
 	if _move_hint.visible:
 		_move_hint.modulate.a = 0.75 + 0.25 * sin(_clock * 5.0)
 	if state != Game.State.TITLE and state != Game.State.PAUSED:
 		_settings_open = false
 	_settings_overlay.visible = _settings_open
 	if _settings_open and _tilt_hint != null:
-		# How tilt steering works (or why it can't yet) only matters while it's switched on.
-		_tilt_hint.visible = Tilt.enabled()
-		_tilt_hint.text = TILT_HINTS.get(Tilt.state(), "左右以水平为准，前后以开局时拿手机的角度为准；玩的时候点右上角的手机按钮可以重新校准")
+		# Why tilt steering can't work yet only matters while it's switched on.
+		var tilt_state := Tilt.state()
+		_tilt_hint.visible = Tilt.enabled() and TILT_HINTS.has(tilt_state)
+		_tilt_hint.text = TILT_HINTS.get(tilt_state, "")
 	if state != _shown_state:
 		_shown_state = state
 		if state != Game.State.PLAYING:
@@ -263,6 +281,8 @@ func fit_screen(turned: bool) -> void:
 	else:
 		transform = Transform2D.IDENTITY
 		_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The title has a portrait and a landscape arrangement.
+	_show_title.call_deferred()
 
 
 # --- Touch joystick ------------------------------------------------------------------------
@@ -290,8 +310,8 @@ func _release_touch() -> void:
 
 
 class Joystick extends Control:
-	const RADIUS := 34.0
-	const KNOB_RADIUS := 13.0
+	const RADIUS := 48.0
+	const KNOB_RADIUS := 20.0
 	const DEAD_ZONE := 0.15
 
 	var origin := Vector2.ZERO
@@ -320,12 +340,12 @@ class Joystick extends Control:
 		if not active:
 			return
 		draw_circle(origin, RADIUS, Color(Art.PAPER, 0.35))
-		draw_arc(origin, RADIUS, 0.0, TAU, 48, Color(Art.LINE_STRONG, 0.8), 2.0, true)
-		draw_circle(knob, KNOB_RADIUS, Color(Art.PAPER, 0.95))
-		draw_arc(knob, KNOB_RADIUS, 0.0, TAU, 32, Art.LINE_STRONG, 2.0, true)
+		draw_arc(origin, RADIUS - 1.0, 0.0, TAU, 48, Color(Art.INK, 0.25), 2.0, true)
+		draw_circle(knob, KNOB_RADIUS, Color(Art.PAPER, 0.9))
+		draw_arc(knob, KNOB_RADIUS - 1.0, 0.0, TAU, 32, Art.INK, 2.5, true)
 
 
-# --- Top bar -------------------------------------------------------------------------------
+# --- HUD -----------------------------------------------------------------------------------
 
 func _build_top_bar() -> void:
 	_top_bar = Control.new()
@@ -333,168 +353,150 @@ func _build_top_bar() -> void:
 	_top_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_top_bar)
 
-	# The XP bar: a short pill centred over the timer, with the level written inside it. A
-	# full-width line along the screen's edge was too easy to miss.
-	_xp_bar = ProgressBar.new()
-	_xp_bar.max_value = 1.0
-	_xp_bar.show_percentage = false
-	_xp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_xp_bar.anchor_left = 0.5
-	_xp_bar.anchor_right = 0.5
-	_xp_bar.offset_left = -XP_BAR_WIDTH / 2.0
-	_xp_bar.offset_right = XP_BAR_WIDTH / 2.0
-	_xp_bar.offset_top = 3
-	_xp_bar.offset_bottom = 19
-	_top_bar.add_child(_xp_bar)
-	_level_label = _label("Lv 1", 12, "DisplayLabel")
-	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_xp_bar.add_child(_level_label)
-
+	# Weapons over passives, top left.
 	var slots := VBoxContainer.new()
-	slots.position = Vector2(6, 22)
+	slots.position = Vector2(8, 8)
 	slots.add_theme_constant_override("separation", 3)
 	slots.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_top_bar.add_child(slots)
 	for slot_list in [_weapon_slots, _passive_slots]:
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 2)
+		row.add_theme_constant_override("separation", 3)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slots.add_child(row)
 		for i in SLOT_COUNT:
-			var slot := _slot()
+			var slot := Panel.new()
+			slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
+			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			row.add_child(slot)
 			slot_list.append(slot)
+			_fill_slot(slot, "", 0, Art.PAPER)
 
-	# Readouts over the world sit on white pills rather than outlined text.
-	var time_pill := _pill()
-	time_pill.anchor_left = 0.5
-	time_pill.anchor_right = 0.5
-	time_pill.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	time_pill.offset_top = 22
-	_top_bar.add_child(time_pill)
-	_time_label = _label("00:00", 15, "DisplayLabel")
-	time_pill.add_child(_time_label)
+	# XP, the clock and the boss readouts, top centre, stacked so a hidden one takes no room.
+	_center_column = VBoxContainer.new()
+	_center_column.anchor_left = 0.5
+	_center_column.anchor_right = 0.5
+	_center_column.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_center_column.offset_top = 8
+	_center_column.add_theme_constant_override("separation", 2)
+	_center_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_top_bar.add_child(_center_column)
 
-	# The next boss's countdown, under the timer: a moment to get ready (Survivor.io shows it).
-	_next_boss_pill = PanelContainer.new()
-	_next_boss_pill.add_theme_stylebox_override("panel", _box(Art.FILL_PINK, Art.RED, 1, PILL, Vector4(8, 0, 8, 1)))
-	_next_boss_pill.anchor_left = 0.5
-	_next_boss_pill.anchor_right = 0.5
-	_next_boss_pill.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_next_boss_pill.offset_top = 45
-	_next_boss_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_xp_bar = _progress(XP_BAR_SIZE, Art.PAPER, Art.BRAND)
+	_xp_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# The outline goes over the fill, so the yellow never covers it.
+	var outline := Panel.new()
+	outline.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ring := UiKit.box(Color.TRANSPARENT, Art.INK, UiKit.OUTLINE, UiKit.PILL)
+	ring.draw_center = false
+	outline.add_theme_stylebox_override("panel", ring)
+	_xp_bar.add_child(outline)
+	_level_label = UiKit.label("Lv 1", 11, "display")
+	_level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_level_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_xp_bar.add_child(_level_label)
+	_center_column.add_child(_xp_bar)
+
+	# The clock in big digits with a white edge, no pill: it reads over any ground.
+	_time_label = UiKit.label("00:00", 24, "display")
+	_time_label.add_theme_constant_override("outline_size", 7)
+	_time_label.add_theme_color_override("font_outline_color", Art.PAPER)
+	_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_time_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_center_column.add_child(_time_label)
+
+	# The next boss's countdown: a moment to get ready (Survivor.io shows one).
+	_next_boss_pill = UiKit.panel(UiKit.box(Art.PAPER, Art.BOSS_RED, UiKit.OUTLINE, UiKit.PILL, Vector4(8, 1, 8, 2)))
+	_next_boss_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_next_boss_pill.visible = false
-	_top_bar.add_child(_next_boss_pill)
-	_next_boss_label = _label("", 9, "StrongLabel")
-	_next_boss_pill.add_child(_next_boss_label)
+	var countdown := HBoxContainer.new()
+	countdown.add_theme_constant_override("separation", 4)
+	countdown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_next_boss_pill.add_child(countdown)
+	countdown.add_child(UiKit.label("下一个 boss", 10, "strong", Art.BOSS_RED))
+	_next_boss_time = UiKit.label("", 10, "display", Art.BOSS_RED)
+	countdown.add_child(_next_boss_time)
+	_center_column.add_child(_next_boss_pill)
 
-	_build_boss_bar()
+	# The boss out the longest: name, health, how many more are out.
+	_boss_bar = UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.PILL, Vector4(8, 3, 8, 3)))
+	_boss_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_boss_bar.visible = false
+	var boss_row := HBoxContainer.new()
+	boss_row.add_theme_constant_override("separation", 6)
+	boss_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_bar.add_child(boss_row)
+	_boss_name = UiKit.label("", 11, "heavy", Art.BOSS_RED)
+	boss_row.add_child(_boss_name)
+	_boss_progress = _progress(Vector2(BOSS_BAR_WIDTH, 8), Art.PINK_LIGHT, Art.BOSS_RED)
+	_boss_progress.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	boss_row.add_child(_boss_progress)
+	_boss_more = UiKit.label("", 10, "display", Art.INK_MUTED)
+	boss_row.add_child(_boss_more)
+	_center_column.add_child(_boss_bar)
 
-	# The minimap under the buttons, with the district's name beneath it.
-	var map_column := VBoxContainer.new()
-	map_column.add_theme_constant_override("separation", 1)
-	map_column.anchor_left = 1.0
-	map_column.anchor_right = 1.0
-	map_column.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	map_column.offset_right = -6
-	map_column.offset_top = 52
-	map_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_top_bar.add_child(map_column)
-	_minimap = Minimap.new()
-	_minimap.game = game
-	map_column.add_child(_minimap)
-	var district_pill := _pill()
-	district_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	map_column.add_child(district_pill)
-	_district_label = _label("", 9, "StrongLabel")
-	district_pill.add_child(_district_label)
-
-	var right := HBoxContainer.new()
-	right.alignment = BoxContainer.ALIGNMENT_END
-	right.add_theme_constant_override("separation", 4)
+	# Kills and the buttons, the minimap under them, the district under that.
+	var right := VBoxContainer.new()
 	right.anchor_left = 1.0
 	right.anchor_right = 1.0
-	right.offset_left = -130
-	right.offset_right = -6
-	right.offset_top = 22
-	right.offset_bottom = 46
+	right.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	right.offset_right = -8
+	right.offset_top = 6
+	right.add_theme_constant_override("separation", 6)
 	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_top_bar.add_child(right)
-	var kills_pill := _pill()
-	kills_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	right.add_child(kills_pill)
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_END
+	buttons.add_theme_constant_override("separation", 6)
+	buttons.size_flags_horizontal = Control.SIZE_SHRINK_END
+	buttons.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right.add_child(buttons)
+	var kills := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.PILL, Vector4(8, 3, 9, 3)))
+	kills.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var kills_row := HBoxContainer.new()
 	kills_row.add_theme_constant_override("separation", 3)
 	kills_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	kills_pill.add_child(kills_row)
-	kills_row.add_child(_icon("skull", 12))
-	_kills_label = _label("0", 12, "DisplayLabel")
+	kills.add_child(kills_row)
+	kills_row.add_child(UiKit.icon("skull", 12))
+	_kills_label = UiKit.label("0", 11, "display")
 	kills_row.add_child(_kills_label)
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(4, 0)
-	right.add_child(spacer)
+	buttons.add_child(kills)
 	# Re-zeroes tilt steering mid-run, without pausing (resuming re-zeroes it anyway).
-	_recalibrate_button = Button.new()
-	_recalibrate_button.icon = Art.texture("phone_tilt")
-	_recalibrate_button.expand_icon = true
-	_recalibrate_button.custom_minimum_size = Vector2(24, 24)
-	_recalibrate_button.focus_mode = Control.FOCUS_NONE
-	_recalibrate_button.theme_type_variation = "IconButton"
-	_recalibrate_button.pressed.connect(_recalibrate_tilt)
-	_click_on_press(_recalibrate_button)
-	right.add_child(_recalibrate_button)
-	_pause_button = Button.new()
-	_pause_button.icon = Art.texture("pause")
-	_pause_button.expand_icon = true
-	_pause_button.custom_minimum_size = Vector2(24, 24)
-	_pause_button.focus_mode = Control.FOCUS_NONE
-	_pause_button.theme_type_variation = "IconButton"
-	_pause_button.pressed.connect(game.set_paused.bind(true))
-	_click_on_press(_pause_button)
-	right.add_child(_pause_button)
+	_recalibrate_button = UiKit.round_button("phone_tilt", _recalibrate_tilt)
+	buttons.add_child(_recalibrate_button)
+	_pause_button = UiKit.round_button("pause", game.set_paused.bind(true))
+	buttons.add_child(_pause_button)
+	_minimap = Minimap.new()
+	_minimap.game = game
+	_minimap.size_flags_horizontal = Control.SIZE_SHRINK_END
+	right.add_child(_minimap)
+	var district := UiKit.panel(UiKit.box(Art.PAPER, Color.TRANSPARENT, 0, UiKit.PILL, Vector4(8, 1, 8, 1)))
+	district.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_district_label = UiKit.label("", 10, "strong")
+	district.add_child(_district_label)
+	right.add_child(district)
 
 
-## The boss with the longest time on the field: its name, health bar and numbers, plus how many
-## more bosses are out, on a white panel centred under the timer (lower on narrow screens, see
-## _place_boss_bar).
-func _build_boss_bar() -> void:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, RADIUS_MD, Vector4(8, 1, 8, 5)))
-	panel.anchor_left = 0.5
-	panel.anchor_right = 0.5
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.offset_top = BOSS_BAR_TOP
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.visible = false
-	_top_bar.add_child(panel)
-	_boss_bar = panel
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 1)
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(column)
-	var name_row := HBoxContainer.new()
-	name_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	name_row.add_theme_constant_override("separation", 4)
-	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(name_row)
-	_boss_name = _label("", 10, "StrongLabel")
-	name_row.add_child(_boss_name)
-	_boss_more = _label("", 10, "MutedLabel")
-	name_row.add_child(_boss_more)
-	_boss_progress = ProgressBar.new()
-	_boss_progress.max_value = 1.0
-	_boss_progress.show_percentage = false
-	_boss_progress.custom_minimum_size = Vector2(150, 11)
-	_boss_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_boss_progress.add_theme_stylebox_override("fill", _box(Art.RED, Art.INK, 1, PILL))
-	column.add_child(_boss_progress)
-	_boss_hp_label = _label("", 8, "DisplayLabel")
-	_boss_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_boss_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_hp_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_boss_progress.add_child(_boss_hp_label)
+## A rounded bar: `track` behind, `fill` for the value.
+func _progress(bar_size: Vector2, track: Color, fill: Color) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.max_value = 1.0
+	bar.show_percentage = false
+	bar.custom_minimum_size = bar_size
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_theme_stylebox_override("background", UiKit.box(track, Color.TRANSPARENT, 0, UiKit.PILL))
+	bar.add_theme_stylebox_override("fill", UiKit.box(fill, Color.TRANSPARENT, 0, UiKit.PILL))
+	return bar
+
+
+func _update_next_boss() -> void:
+	var seconds_left := game.spawner.seconds_to_next_boss()
+	_next_boss_pill.visible = seconds_left > 0.0 and seconds_left <= NEXT_BOSS_WARNING
+	if _next_boss_pill.visible:
+		_next_boss_time.text = "0:%02d" % ceili(seconds_left)
 
 
 func _update_boss_bar() -> void:
@@ -510,33 +512,11 @@ func _update_boss_bar() -> void:
 	_boss_bar.visible = boss != null
 	if boss == null:
 		return
-	_place_boss_bar()
+	_boss_progress.custom_minimum_size.x = BOSS_BAR_WIDTH_PORTRAIT if _is_portrait() else BOSS_BAR_WIDTH
 	_boss_name.text = Spawner.ENEMY_TYPES[boss.type_name]["name"]
 	_boss_more.text = "+%d" % others if others > 0 else ""
+	_boss_more.visible = others > 0
 	_boss_progress.value = maxf(boss.hp, 0.0) / boss.max_hp
-	_boss_hp_label.text = "%d / %d" % [ceili(maxf(boss.hp, 0.0)), roundi(boss.max_hp)]
-
-
-## Under the timer when the screen is wide enough to fit it between the upgrade slots and the
-## buttons (below the next-boss countdown while that shows); below the slots on narrow (upright)
-## screens. The toast moves down with it.
-func _place_boss_bar() -> void:
-	var top := BOSS_BAR_TOP_NARROW
-	if _root.size.x >= BOSS_BAR_MIN_WIDTH:
-		top = BOSS_BAR_TOP + (NEXT_BOSS_ROOM if _next_boss_pill.visible else 0)
-	if _boss_bar.offset_top != top:
-		_boss_bar.offset_top = top
-		_toast.offset_top = top + TOAST_BELOW_BOSS_BAR
-
-
-func _update_next_boss() -> void:
-	var seconds_left := game.spawner.seconds_to_next_boss()
-	_next_boss_pill.visible = seconds_left > 0.0 and seconds_left <= NEXT_BOSS_WARNING
-	if _next_boss_pill.visible:
-		_next_boss_label.text = tr("下一个 boss %s") % ("0:%02d" % ceili(seconds_left))
-		# Shrink back around the text each time, like the toast.
-		_next_boss_pill.offset_left = 0
-		_next_boss_pill.offset_right = 0
 
 
 func _recalibrate_tilt() -> void:
@@ -544,56 +524,51 @@ func _recalibrate_tilt() -> void:
 	_show_toast("已按现在的角度重新校准")
 
 
-func _slot() -> Panel:
-	var slot := Panel.new()
-	slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
-	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_theme_stylebox_override("panel", _box(Color(Art.PAPER, 0.5), Color(Art.LINE_STRONG, 0.6), 1, RADIUS_SM))
-	return slot
-
-
 func _refresh_inventory() -> void:
 	var weapons := game.player.weapons
 	for i in SLOT_COUNT:
 		var weapon: Weapon = weapons[i] if i < weapons.size() else null
-		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0)
+		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0, Art.SKY_LIGHT)
 	var passive_ids := game.upgrades.passive_levels.keys()
 	for i in SLOT_COUNT:
 		var passive_id: String = passive_ids[i] if i < passive_ids.size() else ""
 		var art: String = Upgrades.PASSIVES[passive_id]["art"] if passive_id != "" else ""
-		_fill_slot(_passive_slots[i], art, game.upgrades.passive_levels.get(passive_id, 0))
+		_fill_slot(_passive_slots[i], art, game.upgrades.passive_levels.get(passive_id, 0), Art.MINT_LIGHT)
 
 
-func _fill_slot(slot: Panel, art: String, item_level: int) -> void:
+## A slot: the item's icon on its tint with the level on a small ink badge; empty, a faint square.
+func _fill_slot(slot: Panel, art: String, item_level: int, fill: Color) -> void:
 	for child in slot.get_children():
 		child.queue_free()
 	var filled := art != ""
-	slot.add_theme_stylebox_override("panel", _box(Color(Art.PAPER, 0.95 if filled else 0.5), Color(Art.LINE_STRONG, 1.0 if filled else 0.6), 1, RADIUS_SM))
+	slot.add_theme_stylebox_override("panel", UiKit.box(fill if filled else Color(Art.PAPER, 0.7), Color(Art.INK, 1.0 if filled else 0.35), 1, 4))
 	if not filled:
 		return
-	var icon := _icon(art, SLOT_SIZE - 4)
-	icon.position = Vector2(2, 2)
+	var icon := UiKit.icon(art, SLOT_SIZE - 5.0)
+	icon.position = Vector2(2.5, 2.5)
 	slot.add_child(icon)
-	var badge := _label(str(item_level), 8, "DisplayLabel")
-	# A white edge keeps the number readable where it overlaps the icon.
-	badge.add_theme_constant_override("outline_size", 3)
-	badge.add_theme_color_override("font_outline_color", Art.PAPER)
-	badge.position = Vector2(SLOT_SIZE - 6, SLOT_SIZE - 12)
+	var badge := Panel.new()
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_theme_stylebox_override("panel", UiKit.box(Art.INK, Color.TRANSPARENT, 0, UiKit.PILL))
+	badge.position = Vector2(SLOT_SIZE - 7.0, SLOT_SIZE - 6.0)
+	badge.size = Vector2(10, 10)
 	slot.add_child(badge)
+	var number := UiKit.label(str(item_level), 7, "display", Art.PAPER)
+	number.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	number.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	badge.add_child(number)
 
 
 func _build_toast() -> void:
-	_toast = PanelContainer.new()
-	_toast.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, Vector4(14, 4, 14, 5)))
+	_toast = UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.PILL, Vector4(14, 4, 14, 5)))
 	_toast.anchor_left = 0.5
 	_toast.anchor_right = 0.5
-	# Below the boss bar, which sits under the timer.
-	_toast.offset_top = BOSS_BAR_TOP + TOAST_BELOW_BOSS_BAR
 	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast.modulate.a = 0.0
 	_toast.resized.connect(func() -> void: _toast.pivot_offset = _toast.size / 2.0)
-	_toast_label = _label("", 13, "StrongLabel")
+	_toast_label = UiKit.label("", 13, "strong")
 	_toast.add_child(_toast_label)
 	_root.add_child(_toast)
 
@@ -613,30 +588,59 @@ func _show_toast(text: String) -> void:
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.5)
 
 
-## How to move, near the bottom, for a first few runs until the player does (the live data had a
-## first-time player stand still at level 1 for half a minute).
-func _build_move_hint() -> void:
-	_move_hint = PanelContainer.new()
-	_move_hint.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, Vector4(14, 4, 14, 5)))
-	_move_hint.anchor_left = 0.5
-	_move_hint.anchor_right = 0.5
-	_move_hint.anchor_top = 1.0
-	_move_hint.anchor_bottom = 1.0
-	_move_hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_move_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_move_hint.offset_bottom = -48
-	_move_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_move_hint.visible = false
-	var text := "按住屏幕任意位置拖动，就能移动" if Device.is_handheld() else "用 WASD 或方向键移动"
-	_move_hint.add_child(_label(text, 13, "StrongLabel"))
+## Two pills near the bottom: how to move, for a first few runs until the player does (the live
+## data had a first-time player stand still at level 1 for half a minute); and in red, how to
+## dodge a boss move the first time it comes up in a run.
+func _build_bottom_hints() -> void:
+	var drag := "按住屏幕任意处拖动来走位" if Device.is_handheld() else "用 WASD 或方向键走位"
+	_move_hint = _bottom_pill(Art.INK, "ui_hand", drag)
 	_root.add_child(_move_hint)
+	_warning = _bottom_pill(Art.BOSS_RED, "ui_warning", "")
+	_warning_label = _warning.get_child(0).get_child(1)
+	_root.add_child(_warning)
+
+
+func _bottom_pill(color: Color, art: String, text: String) -> Control:
+	var pill := UiKit.panel(UiKit.box(Art.PAPER, color, UiKit.OUTLINE, UiKit.PILL, Vector4(12, 5, 12, 5)))
+	pill.anchor_left = 0.5
+	pill.anchor_right = 0.5
+	pill.anchor_top = 1.0
+	pill.anchor_bottom = 1.0
+	pill.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	pill.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	pill.offset_bottom = -14
+	pill.visible = false
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_child(row)
+	row.add_child(UiKit.icon(art, 14, color))
+	row.add_child(UiKit.label(text, 12, "strong", color))
+	return pill
+
+
+func _on_boss_move(ability: String) -> void:
+	if _warned.has(ability) or not BOSS_MOVE_HINTS.has(ability):
+		return
+	_warned[ability] = true
+	_warning_label.text = BOSS_MOVE_HINTS[ability]
+	_warning.offset_left = 0
+	_warning.offset_right = 0
+	_warning.visible = true
+	_warning.modulate.a = 1.0
+	if _warning_tween != null:
+		_warning_tween.kill()
+	_warning_tween = create_tween()
+	_warning_tween.tween_interval(WARNING_SECONDS)
+	_warning_tween.tween_property(_warning, "modulate:a", 0.0, 0.4)
+	_warning_tween.tween_callback(func() -> void: _warning.visible = false)
 
 
 ## Red edges that pulse in as HP runs low.
 func _build_vignette() -> void:
 	var gradient := Gradient.new()
 	gradient.offsets = PackedFloat32Array([0.0, 0.6, 1.0])
-	gradient.colors = PackedColorArray([Color(Art.RED, 0.0), Color(Art.RED, 0.0), Color(Art.RED, 0.75)])
+	gradient.colors = PackedColorArray([Color(Art.HP_RED, 0.0), Color(Art.HP_RED, 0.0), Color(Art.HP_RED, 0.7)])
 	var texture := GradientTexture2D.new()
 	texture.gradient = gradient
 	texture.fill = GradientTexture2D.FILL_RADIAL
@@ -654,65 +658,124 @@ func _build_vignette() -> void:
 
 # --- Title ---------------------------------------------------------------------------------
 
-func _build_title() -> Control:
-	var overlay := _overlay(Color(Art.PAPER_SOFT, 0.78))
+func _show_title() -> void:
+	_clear(_title_holder)
+	var portrait := _is_portrait()
+	# Two soft circles behind everything, as in the design.
+	_title_holder.add_child(_blob(Art.FILL_SKY, 0.45, 140.0, Vector2(-40.0, 120.0), false))
+	_title_holder.add_child(_blob(Art.FILL_MINT, 0.5, 120.0, Vector2(-50.0, 40.0), true))
+
+	var page := _page(Vector4(24, 56, 24, 24) if portrait else Vector4(24, 20, 24, 14))
+	_title_holder.add_child(page)
 	var column := VBoxContainer.new()
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 10)
-	_centered(overlay).add_child(column)
+	column.add_theme_constant_override("separation", 0)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.add_child(column)
 
-	_title_heading = _heading("硅谷幸存者", TITLE_SIZE)
+	column.add_child(UiKit.kicker("SILICON VALLEY SURVIVORS"))
+	column.add_child(UiKit.gap(6))
+	_title_heading = _heading("硅谷幸存者", TITLE_SIZE if portrait else 40)
 	column.add_child(_title_heading)
-	_root.resized.connect(_fit_title)
-
-	var parade := HBoxContainer.new()
-	parade.alignment = BoxContainer.ALIGNMENT_CENTER
-	parade.add_theme_constant_override("separation", 6)
-	column.add_child(parade)
-	for i in PARADE.size():
-		var holder := Control.new()
-		holder.custom_minimum_size = Vector2(26, 30)
-		parade.add_child(holder)
-		var icon := _icon(PARADE[i], 26)
-		holder.add_child(icon)
-		# Each one hops on its own beat, so the row ripples.
-		var hop := icon.create_tween().set_loops()
-		hop.tween_interval(i * 0.08)
-		hop.tween_property(icon, "position:y", -5.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		hop.tween_property(icon, "position:y", 0.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		hop.tween_interval((PARADE.size() - i) * 0.08 + 0.3)
-
-	var pitch := _label("躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市！", 13)
+	var pitch := UiKit.label("躲开 Bug、会议和 Deadline\n撑过 10 分钟就能敲钟上市" if portrait else "躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市！", 15 if portrait else 13)
 	pitch.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	pitch.custom_minimum_size = Vector2(TITLE_TEXT_WIDTH, 0)
+	column.add_child(UiKit.gap(12 if portrait else 6))
 	column.add_child(pitch)
+	column.add_child(UiKit.gap(24 if portrait else 8))
+	column.add_child(_parade(1.0 if portrait else 0.75))
+	column.add_child(UiKit.gap(32 if portrait else 18))
 
-	var buttons := HBoxContainer.new()
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 10)
-	column.add_child(buttons)
-	var start := _button("开始搬砖", game.start_run, true)
-	start.custom_minimum_size = Vector2(150, 40)
-	start.add_theme_font_size_override("font_size", 16)
-	buttons.add_child(start)
-	buttons.add_child(_settings_button())
-	start.call_deferred("grab_focus")
+	var start := UiKit.primary_button("开始搬砖", game.start_run, 56.0 if portrait else 48.0, 20)
+	start.custom_minimum_size.x = 312.0 if portrait else 200.0
+	start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var settings := _settings_button()
+	settings.custom_minimum_size.x = 140.0 if portrait else 120.0
+	settings.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if portrait:
+		column.add_child(start)
+		column.add_child(UiKit.gap(12))
+		column.add_child(settings)
+	else:
+		var buttons := HBoxContainer.new()
+		buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+		buttons.add_theme_constant_override("separation", 12)
+		buttons.add_child(start)
+		buttons.add_child(settings)
+		column.add_child(buttons)
 
-	var controls := _label("电脑：WASD / 方向键移动　手机：按住屏幕拖动", 10, "MutedLabel")
-	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	controls.custom_minimum_size = Vector2(TITLE_TEXT_WIDTH, 0)
-	column.add_child(controls)
+	column.add_child(UiKit.filler())
+	var hint := HBoxContainer.new()
+	hint.alignment = BoxContainer.ALIGNMENT_CENTER
+	hint.add_theme_constant_override("separation", 8)
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint.add_child(UiKit.icon("ui_hand", 18, Art.INK_MUTED))
+	var hint_label := UiKit.label("按住屏幕任意处拖动来走位，武器会自动攻击" if Device.is_handheld() else "WASD 或方向键走位，武器会自动攻击", 12, "muted")
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint_label.custom_minimum_size = Vector2(minf(280.0, _root.size.x - 80.0), 0)
+	hint.add_child(hint_label)
+	column.add_child(hint)
+	# Rebuilt on every orientation change, mid-run too, when the title is hidden; and twice in a
+	# frame can happen, so only a start button still on screen takes the focus.
+	if game.state == Game.State.TITLE:
+		(func() -> void:
+			if is_instance_valid(start) and start.is_inside_tree():
+				_focus(start)).call_deferred()
+	_fit_title()
 
-	_add_corner_version(overlay)
-	return overlay
+
+## A soft disc of `color` peeking in from the left (or right) edge.
+func _blob(color: Color, alpha: float, diameter: float, offset: Vector2, from_right: bool) -> Control:
+	var disc := Panel.new()
+	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc.add_theme_stylebox_override("panel", UiKit.box(Color(color, alpha), Color.TRANSPARENT, 0, UiKit.PILL))
+	if from_right:
+		disc.anchor_left = 1.0
+		disc.anchor_right = 1.0
+		disc.offset_left = -diameter - offset.x
+		disc.offset_right = -offset.x
+	else:
+		disc.offset_left = offset.x
+		disc.offset_right = offset.x + diameter
+	disc.offset_top = offset.y
+	disc.offset_bottom = offset.y + diameter
+	return disc
 
 
-## Which build this is, in the bottom-right corner of the title, pause and end screens, so a
+## The cast standing on a line, each hopping on its own beat so the row ripples.
+func _parade(scale: float) -> Control:
+	var stage := Control.new()
+	stage.custom_minimum_size = Vector2(312.0, 86.0) * scale
+	stage.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ground := Panel.new()
+	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ground.add_theme_stylebox_override("panel", UiKit.box(Art.INK, Color.TRANSPARENT, 0, 2))
+	ground.anchor_top = 1.0
+	ground.anchor_bottom = 1.0
+	ground.anchor_right = 1.0
+	ground.offset_top = -3.0
+	stage.add_child(ground)
+	var slot_width := stage.custom_minimum_size.x / PARADE.size()
+	for i in PARADE.size():
+		var entry: Array = PARADE[i]
+		var art_size: float = entry[1] * scale
+		var rest_y: float = stage.custom_minimum_size.y - 3.0 - art_size - entry[2] * scale
+		var figure := UiKit.icon(entry[0], art_size)
+		figure.position = Vector2(slot_width * (i + 0.5) - art_size / 2.0, rest_y)
+		stage.add_child(figure)
+		var hop := figure.create_tween().set_loops()
+		hop.tween_interval(i * 0.08)
+		hop.tween_property(figure, "position:y", rest_y - 5.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		hop.tween_property(figure, "position:y", rest_y, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		hop.tween_interval((PARADE.size() - i) * 0.08 + 0.3)
+	return stage
+
+
+## Which build this is, in the bottom-right corner of the title, pause and result screens, so a
 ## phone still on an old one can be told apart at a glance.
 func _add_corner_version(overlay: Control) -> void:
-	var version := _label("v" + Telemetry.VERSION, 9, "MutedLabel")
+	var version := UiKit.label("v" + Telemetry.VERSION, 9, "muted")
+	version.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	version.anchor_left = 1.0
 	version.anchor_right = 1.0
 	version.anchor_top = 1.0
@@ -724,148 +787,216 @@ func _add_corner_version(overlay: Control) -> void:
 	overlay.add_child(version)
 
 
+## A heading on a highlighter stroke: a yellow pill behind the lower part of the text, a little
+## wider than it. Kept to one line, so the stroke is a dash under the words.
+func _heading(text: String, font_size: int) -> Control:
+	var holder := MarginContainer.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# The container stretches this to the label's size; the stroke inside is anchored to its
+	# bottom edge, which a container child can't be.
+	var backdrop := Control.new()
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(backdrop)
+	var bar := Panel.new()
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_theme_stylebox_override("panel", UiKit.box(Art.BRAND, Color.TRANSPARENT, 0, 3))
+	bar.anchor_right = 1.0
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	backdrop.add_child(bar)
+	var label := UiKit.label(text, font_size, "display")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	holder.add_child(label)
+	_size_heading(holder, font_size)
+	return holder
+
+
+func _size_heading(holder: Control, font_size: int) -> void:
+	var bar: Control = holder.get_child(0).get_child(0)
+	bar.offset_left = -font_size * 0.15
+	bar.offset_right = font_size * 0.15
+	bar.offset_bottom = -font_size * 0.12
+	bar.offset_top = bar.offset_bottom - font_size * 0.36
+	(holder.get_child(1) as Label).add_theme_font_size_override("font_size", font_size)
+
+
+## Shrinks the title when its name in the current language is too wide for one line on this
+## screen (Silicon Valley Survivors on an upright phone).
+func _fit_title() -> void:
+	if _title_heading == null or not is_instance_valid(_title_heading) or _root.size.x <= 0.0:
+		return
+	var label: Label = _title_heading.get_child(1)
+	var room := minf(_root.size.x - 40.0, 600.0)
+	var width := Art.display_font(900).get_string_size(label.atr(label.text), HORIZONTAL_ALIGNMENT_LEFT, -1, TITLE_SIZE).x
+	_size_heading(_title_heading, TITLE_SIZE if width <= room else floori(TITLE_SIZE * room / width))
+
+
 # --- Level-up ------------------------------------------------------------------------------
 
 func _show_level_up(choices: Array) -> void:
 	_clear(_cards_holder)
 	var portrait := _is_portrait()
 	var column := VBoxContainer.new()
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 0)
 	_cards_holder.add_child(column)
 
-	column.add_child(_heading(tr("升级啦！ Lv %d") % game.level, 24))
+	column.add_child(UiKit.kicker("LEVEL UP", Art.BRAND_SOFT))
+	var title := UiKit.label(tr("升级！Lv %d") % game.level, 28, "display", Art.PAPER)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	var sub := UiKit.label("选一张带走", 13, "body", Art.BRAND_SOFT)
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(sub)
+	column.add_child(UiKit.gap(18 if portrait else 12))
 
-	var cards := _stack(portrait)
+	var narrow := not portrait and choices.size() > 3
+	var cards: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
-	cards.add_theme_constant_override("separation", 8 if portrait else 10)
+	cards.add_theme_constant_override("separation", 12 if portrait else 10)
 	column.add_child(cards)
+	var recommended := false
 	for i in choices.size():
-		var card := _make_card(choices[i], i, portrait)
-		if not portrait and choices.size() > 3:
-			# Four or five side by side (the headhunter perk) still fit the 640-wide view.
-			card.custom_minimum_size = Vector2(LEVEL_UP_CARD_MIN_WIDTH, 222)
+		var card := _make_card(choices[i], i, portrait, narrow, choices.size() > 3)
 		cards.add_child(card)
+		recommended = recommended or choices[i].get("recommended", false)
 		_pop_in(card, i * 0.06)
 
-	_fit_cards.call_deferred(cards)
-
-	var hint := _label("按数字键或点卡片选择", 10, "MutedLabel")
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var hint_text := "按数字键或点卡片选择"
+	if recommended:
+		hint_text = "手上不到 3 把武器时，新武器卡会标「推荐」"
+	elif Device.is_handheld():
+		hint_text = "点一张卡片带走"
+	var hint := UiKit.panel(UiKit.box(Color(Art.PAPER, 0.14), Color.TRANSPARENT, 0, UiKit.PILL, Vector4(12, 6, 12, 6)))
+	hint.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var hint_row := HBoxContainer.new()
+	hint_row.add_theme_constant_override("separation", 6)
+	hint_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint.add_child(hint_row)
+	hint_row.add_child(UiKit.icon("ui_info", 14))
+	hint_row.add_child(UiKit.label(hint_text, 12, "body", Art.PAPER))
+	column.add_child(UiKit.gap(18 if portrait else 12))
 	column.add_child(hint)
 
 	_level_up_overlay.visible = true
 	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
-	(cards.get_child(0) as Button).grab_focus()
+	_focus(cards.get_child(0))
+	_fit_cards.call_deferred(cards)
+	_fit_to_screen(_cards_holder)
 
 
-## A level-up choice: a tall card side by side in landscape, a wide row (`compact`) stacked in
-## portrait.
-func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
+## A level-up choice: a wide row in portrait, a tall card side by side in landscape (`narrow`
+## when four or five share the row). A recommended card stands out the way the main button
+## does, on a hard shadow, with 推荐 on its corner.
+func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, crowded: bool) -> Button:
 	var kind: String = choice["kind"]
-	var well: Color = KIND_COLORS[kind]
+	var level: int = choice["level"]
+	var fresh := level == 1 and kind != "heal"
+	var recommended: bool = choice.get("recommended", false)
+	var inset := 10.0 if crowded else 14.0
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(300, 86) if compact else Vector2(150, 196)
-	# Flat with a hairline at rest; the design's only shadow appears on hover.
-	card.add_theme_stylebox_override("normal", _box(Art.PAPER, Art.LINE, 1, RADIUS_MD))
-	card.add_theme_stylebox_override("hover", _with_hover_shadow(_box(Art.PAPER, Art.LINE_STRONG, 1, RADIUS_MD)))
-	card.add_theme_stylebox_override("pressed", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 2, RADIUS_MD))
-	card.add_theme_stylebox_override("focus", _focus_ring(RADIUS_MD))
+	card.custom_minimum_size = Vector2(minf(328.0, _root.size.x - 32.0), 0.0) if portrait \
+		else Vector2(LEVEL_UP_CARD_MIN_WIDTH if narrow else 150.0, 0.0)
+	var padding := Vector4.ONE * inset
+	card.add_theme_stylebox_override("normal", UiKit.raised(Art.PAPER, UiKit.RADIUS_CARD, padding) if recommended \
+		else UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, padding))
+	card.add_theme_stylebox_override("hover", UiKit.raised(Art.PAPER_SOFT, UiKit.RADIUS_CARD, padding) if recommended \
+		else UiKit.box(Art.PAPER, Art.LINE_STRONG, UiKit.OUTLINE, UiKit.RADIUS_CARD, padding))
+	card.add_theme_stylebox_override("pressed", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE_HEAVY, UiKit.RADIUS_CARD, padding))
+	card.add_theme_stylebox_override("focus", UiKit.focus_ring(UiKit.RADIUS_CARD))
 	card.pressed.connect(_pick.bind(index))
 	card.mouse_entered.connect(_hover.bind(card, true))
 	card.mouse_exited.connect(_hover.bind(card, false))
 	card.resized.connect(func() -> void: card.pivot_offset = card.size / 2.0)
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 8)
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.add_child(margin)
+	# A Button doesn't lay out its children, so the content sits in a margin of its own, clear of
+	# the outline (and of the shadow under a recommended card).
+	var content := MarginContainer.new()
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var edge := inset + UiKit.OUTLINE_HEAVY
+	content.add_theme_constant_override("margin_left", int(edge))
+	content.add_theme_constant_override("margin_right", int(edge))
+	content.add_theme_constant_override("margin_top", int(edge))
+	content.add_theme_constant_override("margin_bottom", int(edge + (UiKit.SHADOW_DROP if recommended else 0)))
+	card.add_child(content)
 
-	var tag: Control = null
-	if choice.get("recommended", false):
-		tag = _tag("推荐")
-	elif choice["level"] == 1:
-		tag = _tag("新！")
-	var bubble := _icon_bubble(choice["art"], 40.0 if compact else 52.0, well)
-	var name_label := _label(choice["name"], 15, "StrongLabel")
-	var description := _label(choice["text"], 11, "MutedLabel")
+	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT if fresh else Art.PAPER_SUNK
+	var well := UiKit.well(choice["art"], (48.0 if crowded else 60.0) if portrait else (44.0 if narrow else 52.0), fill)
+	var name_label := UiKit.label(choice["name"], 17 if portrait else 15, "heavy")
+	var badge: Control = null
+	if fresh:
+		badge = UiKit.tag("新武器", Art.SKY_LIGHT, Art.LINK) if kind == "weapon" else UiKit.tag("被动", Art.MINT_LIGHT, Art.GREEN_INK)
+	elif kind != "heal":
+		badge = UiKit.level_dots(level - 1, choice["max"], true)
+	var description := UiKit.label(choice["text"], 13 if portrait else 11, "muted")
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	# What the card changes in numbers ("伤害 14 → 18"), translated already; none on the fallback
-	# card.
+	# What the card changes in numbers ("伤害 14 → 18"), translated already; none on the fallback card.
 	var numbers_text := game.upgrades.numbers(choice)
 	var numbers: Label = null
 	if numbers_text != "":
-		numbers = _label(numbers_text, 10, "StrongLabel")
+		numbers = UiKit.label(numbers_text, 12 if portrait else 10, "strong", Art.LINK)
 		numbers.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		numbers.add_theme_color_override("font_color", Art.LINK)
 
-	if compact:
+	if portrait:
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
+		row.add_theme_constant_override("separation", 12)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		margin.add_child(row)
-		row.add_child(_key_badge(index))
-		row.add_child(bubble)
+		content.add_child(row)
+		row.add_child(well)
 		var text_column := VBoxContainer.new()
+		text_column.add_theme_constant_override("separation", 2)
 		text_column.alignment = BoxContainer.ALIGNMENT_CENTER
 		text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(text_column)
 		var name_row := HBoxContainer.new()
-		name_row.add_theme_constant_override("separation", 6)
+		name_row.add_theme_constant_override("separation", 8)
 		name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		text_column.add_child(name_row)
 		name_row.add_child(name_label)
-		if kind != "heal":
-			name_row.add_child(_level_dots(choice["level"], choice["max"]))
-		if tag != null:
-			name_row.add_child(tag)
+		if badge != null:
+			name_row.add_child(badge)
 		text_column.add_child(description)
 		if numbers != null:
 			text_column.add_child(numbers)
-		return card
+	else:
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation", 4)
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.add_child(column)
+		column.add_child(UiKit.gap(4))
+		column.add_child(well)
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		# Four or five narrow cards side by side: a long English name takes two lines instead of
+		# widening its card.
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(name_label)
+		if badge != null:
+			badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			column.add_child(badge)
+		description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		column.add_child(description)
+		if numbers != null:
+			numbers.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			column.add_child(numbers)
 
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 5)
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_child(column)
-	var top := HBoxContainer.new()
-	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(top)
-	top.add_child(_key_badge(index))
-	var filler := Control.new()
-	filler.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	filler.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_child(filler)
-	if tag != null:
-		top.add_child(tag)
-	var bubble_row := CenterContainer.new()
-	bubble_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bubble_row.add_child(bubble)
-	column.add_child(bubble_row)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# Four or five narrow cards side by side: a long English name takes two lines instead of
-	# widening its card.
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(name_label)
-	if kind != "heal":
-		var dots_row := CenterContainer.new()
-		dots_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		dots_row.add_child(_level_dots(choice["level"], choice["max"]))
-		column.add_child(dots_row)
-	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(description)
-	if numbers != null:
-		numbers.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		column.add_child(numbers)
+	if recommended:
+		var corner := UiKit.tag("推荐", Art.BRAND, Art.INK, UiKit.OUTLINE, 12)
+		corner.anchor_left = 1.0
+		corner.anchor_right = 1.0
+		corner.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		corner.offset_right = -12
+		corner.offset_top = -11
+		card.add_child(corner)
 	return card
 
 
 ## Grows each card to what its text needs once wrapped (a Button doesn't size to its children):
 ## English runs longer, and the numbers line adds a line or two.
 func _fit_cards(cards: Control) -> void:
+	if not is_instance_valid(cards):
+		return
 	for card: Control in cards.get_children():
 		var content: Control = card.get_child(0)
 		card.custom_minimum_size = card.custom_minimum_size.max(content.get_combined_minimum_size())
@@ -882,54 +1013,206 @@ func _hover(card: Control, entered: bool) -> void:
 	tween.tween_property(card, "scale", Vector2.ONE * (1.03 if entered else 1.0), 0.15)
 
 
-func _key_badge(index: int) -> Control:
-	var badge := PanelContainer.new()
-	badge.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, PILL, Vector4(6, 0, 6, 0)))
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	badge.add_child(_label(str(index + 1), 10, "DisplayLabel"))
-	return badge
+# --- Funding bag ---------------------------------------------------------------------------
+
+## A boss's funding bag: a reel runs through the rounds and lands on the one Game rolled, then
+## the upgrades it brought appear (Game has applied them already).
+func _show_chest(funding_round: Dictionary, items: Array) -> void:
+	_clear(_chest_holder)
+	_chest_revealed = false
+	_odds_chips.clear()
+	var portrait := _is_portrait()
+	var dialog := UiKit.panel(UiKit.dialog_box(Vector4(18, 18, 18, 18)))
+	dialog.custom_minimum_size = Vector2(minf(320.0, _root.size.x - 40.0), 0.0) if portrait else Vector2(minf(560.0, _root.size.x - 40.0), 0.0)
+	_chest_holder.add_child(dialog)
+	var body: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
+	body.add_theme_constant_override("separation", 12 if portrait else 20)
+	dialog.add_child(body)
+
+	var head := VBoxContainer.new()
+	head.add_theme_constant_override("separation", 0)
+	if portrait:
+		head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	else:
+		# Sideways the reel keeps a fixed width and the upgrades get the rest, for their names.
+		head.custom_minimum_size = Vector2(240, 0)
+	body.add_child(head)
+	# The bag sits on the dialog's top edge, on a white disc that hides the outline behind it.
+	var bag_anchor := Control.new()
+	bag_anchor.custom_minimum_size = Vector2(0, 14)
+	bag_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(bag_anchor)
+	var disc := UiKit.panel(UiKit.box(Art.PAPER, Color.TRANSPARENT, 0, UiKit.PILL, Vector4(4, 4, 4, 4)))
+	disc.anchor_left = 0.5
+	disc.anchor_right = 0.5
+	disc.offset_left = -32
+	disc.offset_right = 32
+	disc.offset_top = -50
+	disc.offset_bottom = 14
+	disc.add_child(UiKit.icon("moneybag", 56))
+	bag_anchor.add_child(disc)
+	head.add_child(UiKit.kicker("FUNDING ROUND"))
+	var title := UiKit.label("融资开奖", 26, "heavy")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.add_child(title)
+	head.add_child(UiKit.gap(12))
+
+	# The reel: the round before and after the one in the window, greyed out.
+	var reel := UiKit.panel(UiKit.box(Art.PAPER_SOFT, Art.INK, UiKit.OUTLINE_HEAVY, 14, Vector4(8, 4, 8, 4)))
+	reel.clip_contents = true
+	var reel_stack := VBoxContainer.new()
+	reel_stack.add_theme_constant_override("separation", 0)
+	reel_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	reel.add_child(reel_stack)
+	_reel_prev = _reel_side_label()
+	reel_stack.add_child(_reel_prev)
+	var window := UiKit.panel(UiKit.box(Art.BRAND, Art.INK, UiKit.OUTLINE, 10))
+	window.custom_minimum_size = Vector2(0, 52)
+	_reel_label = UiKit.label("", 26, "heavy")
+	_reel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_reel_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	window.add_child(_reel_label)
+	reel_stack.add_child(window)
+	_reel_next = _reel_side_label()
+	reel_stack.add_child(_reel_next)
+	head.add_child(reel)
+	_set_reel(0)
+
+	# What each round gives and how often, the landed one marked once the reel stops.
+	var odds := GridContainer.new()
+	odds.columns = Game.FUNDING_ROUNDS.size()
+	odds.add_theme_constant_override("h_separation", 6)
+	odds.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for option: Dictionary in Game.FUNDING_ROUNDS:
+		var chip := UiKit.panel(UiKit.box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, 10, Vector4(4, 5, 4, 5)))
+		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var chip_column := VBoxContainer.new()
+		chip_column.add_theme_constant_override("separation", 0)
+		chip_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(chip_column)
+		var round_name := UiKit.label(option["name"], 13, "strong")
+		round_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		chip_column.add_child(round_name)
+		var chance := UiKit.label(tr("升 %d 样 · %d%%") % [option["items"], roundi(option["weight"])], 11, "muted")
+		chance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		chip_column.add_child(chance)
+		odds.add_child(chip)
+		_odds_chips.append(chip)
+	head.add_child(UiKit.gap(10))
+	head.add_child(odds)
+
+	var tail := VBoxContainer.new()
+	tail.add_theme_constant_override("separation", 10)
+	tail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tail.alignment = BoxContainer.ALIGNMENT_CENTER
+	body.add_child(tail)
+	var result := UiKit.label("", 15, "heavy")
+	result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tail.add_child(result)
+	# One upgrade a row, so every name has room (two columns sideways made the dialog too wide).
+	var prize := VBoxContainer.new()
+	prize.add_theme_constant_override("separation", 8)
+	tail.add_child(prize)
+	var take := UiKit.primary_button("收下", _on_chest_button)
+	tail.add_child(take)
+	_focus(take)
+	_pop_in(dialog, 0.0)
+	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
+	_fit_to_screen(_chest_holder, BAG_OVERHANG)
+
+	# Laps of every round, slowing down, then the winning one.
+	var landing := Game.FUNDING_ROUNDS.find(funding_round)
+	var steps := float(CHEST_SPIN_LAPS * Game.FUNDING_ROUNDS.size() + landing)
+	_chest_reveal = _reveal_chest.bind(landing, result, prize, funding_round, items)
+	_chest_spin = dialog.create_tween()
+	_chest_spin.tween_method(_spin_reel, 0.0, steps, CHEST_SPIN_SECONDS) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	_chest_spin.tween_callback(_chest_reveal)
 
 
-## A small highlighted pill: 新！ on fresh upgrades, 推荐 on the weapons a young build needs.
-func _tag(text_key: String) -> Control:
-	var tag := PanelContainer.new()
-	tag.add_theme_stylebox_override("panel", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 1, PILL, Vector4(6, 0, 6, 0)))
-	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	tag.add_child(_label(text_key, 10, "StrongLabel"))
-	return tag
+func _reel_side_label() -> Label:
+	var side := UiKit.label("", 14, "strong", Art.LINE_STRONG)
+	side.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	side.custom_minimum_size = Vector2(0, 26)
+	side.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return side
 
 
-## The upgrade's icon on a pastel disc, like the design's category tiles.
-func _icon_bubble(art: String, size: float, fill: Color) -> Control:
-	var disc := Panel.new()
-	disc.custom_minimum_size = Vector2(size, size)
-	disc.add_theme_stylebox_override("panel", _box(fill, Color.TRANSPARENT, 0, PILL))
-	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Stay round inside a row instead of stretching to the row's height.
-	disc.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var icon := _icon(art, size * 0.74)
-	icon.position = Vector2.ONE * size * 0.13
-	disc.add_child(icon)
-	return disc
+func _set_reel(index: int) -> void:
+	var rounds := Game.FUNDING_ROUNDS
+	var count := rounds.size()
+	_reel_prev.text = rounds[(index + count - 1) % count]["name"]
+	_reel_label.text = rounds[index % count]["name"]
+	_reel_next.text = rounds[(index + 1) % count]["name"]
 
 
-## One pip per level (five, or fewer for a perk with a lower cap): ink up to `filled`, the rest
-## hollow.
-func _level_dots(filled: int, total: int = Upgrades.MAX_LEVEL) -> Control:
+func _spin_reel(step: float) -> void:
+	var index := floori(step) % Game.FUNDING_ROUNDS.size()
+	if _reel_label.text != Game.FUNDING_ROUNDS[index]["name"]:
+		_set_reel(index)
+		Sound.play("xp")
+
+
+func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_round: Dictionary, items: Array) -> void:
+	if _chest_revealed:
+		return
+	_chest_revealed = true
+	if _chest_spin != null and _chest_spin.is_valid():
+		_chest_spin.kill()
+	_set_reel(landing)
+	_odds_chips[landing].add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, 10, Vector4(4, 5, 4, 5)))
+	result.text = tr("%s到账！白给 %d 样升级") % [tr(funding_round["name"]), items.size()]
+	Sound.play("win" if funding_round["id"] == "ipo" else "level_up")
+	# The same upgrade twice in one bag is one row, from its first level to its last.
+	var rows: Array[Dictionary] = []
+	var row_of := {}
+	for item: Dictionary in items:
+		if row_of.has(item["id"]):
+			rows[row_of[item["id"]]]["level"] = item["level"]
+		else:
+			row_of[item["id"]] = rows.size()
+			var entry := item.duplicate()
+			entry["from"] = item["level"] - 1
+			rows.append(entry)
+	for i in rows.size():
+		var row := _prize_row(rows[i], _is_portrait())
+		prize.add_child(row)
+		_pop_in(row, 0.1 + i * 0.1)
+	_fit_to_screen(_chest_holder, BAG_OVERHANG)
+
+
+## One upgrade out of the bag: its icon, name and the level it went to.
+func _prize_row(item: Dictionary, roomy: bool) -> Control:
+	var row_panel := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
+	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_panel.resized.connect(func() -> void: row_panel.pivot_offset = row_panel.size / 2.0)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 3)
+	row.add_theme_constant_override("separation", 10)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	for i in total:
-		var dot := Panel.new()
-		dot.custom_minimum_size = Vector2(8, 8)
-		var done := i < filled
-		dot.add_theme_stylebox_override("panel", _box(Art.INK if done else Art.PAPER_SUNK, Art.INK if done else Art.LINE_STRONG, 1, PILL))
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(dot)
-	return row
+	row_panel.add_child(row)
+	var kind: String = item["kind"]
+	var level: int = item["level"]
+	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT
+	row.add_child(UiKit.well(item["art"], 34 if roomy else 28, fill, UiKit.RADIUS_SM))
+	var name_label := UiKit.label(item["name"], 14, "strong")
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.clip_text = true
+	name_label.custom_minimum_size = Vector2(60, 0)
+	row.add_child(name_label)
+	var from: int = item.get("from", level - 1)
+	var step := tr("回复 30") if kind == "heal" else tr("新") if level == 1 else "Lv %d → %d" % [from, level]
+	row.add_child(UiKit.label(step, 12, "display", Art.LINK))
+	return row_panel
+
+
+## Mid-spin it shows the result at once; after that it closes the bag.
+func _on_chest_button() -> void:
+	if game.state != Game.State.CHEST or Time.get_ticks_msec() < _accept_picks_at:
+		return
+	if not _chest_revealed:
+		_chest_reveal.call()
+		return
+	game.close_chest()
 
 
 # --- Pause ---------------------------------------------------------------------------------
@@ -937,167 +1220,279 @@ func _level_dots(filled: int, total: int = Upgrades.MAX_LEVEL) -> Control:
 func _show_pause() -> void:
 	_clear(_pause_holder)
 	var portrait := _is_portrait()
-	var panel := _panel()
-	_pause_holder.add_child(panel)
+	var dialog := UiKit.panel(UiKit.dialog_box(Vector4(16, 16, 16, 16)))
+	# Upright, the card takes the screen like the design; sideways it is a wide card.
+	dialog.custom_minimum_size = _root.size - Vector2(32, 48) if portrait else Vector2(minf(600.0, _root.size.x - 40.0), 0.0)
+	_pause_holder.add_child(dialog)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	panel.add_child(column)
+	column.add_theme_constant_override("separation", 12 if portrait else 10)
+	dialog.add_child(column)
 
-	column.add_child(_heading("休息一下", 22))
+	var header := HBoxContainer.new()
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(header)
+	var title := UiKit.label("暂停", 22, "heavy")
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	header.add_child(UiKit.label(_clock_text(game.elapsed), 13, "display"))
 
-	var build := _stack(portrait)
-	build.add_theme_constant_override("separation", 10 if portrait else 18)
-	column.add_child(build)
-	var weapon_rows: Array = []
+	var build := VBoxContainer.new()
+	build.add_theme_constant_override("separation", 6)
+	build.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var weapon_chips: Array = []
 	for weapon in game.player.weapons:
-		var entry: Dictionary = Upgrades.WEAPONS[weapon.id]
-		weapon_rows.append([entry["art"], entry["name"], weapon.level])
-	build.add_child(_build_list("武器", weapon_rows))
-	var passive_rows: Array = []
+		weapon_chips.append([Upgrades.WEAPONS[weapon.id]["name"], weapon.level])
+	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), SLOT_COUNT], 12, "strong", Art.INK_MUTED))
+	build.add_child(_chip_grid(weapon_chips, Art.SKY_LIGHT))
+	var passive_chips: Array = []
 	for passive_id: String in game.upgrades.passive_levels:
-		var entry: Dictionary = Upgrades.PASSIVES[passive_id]
-		passive_rows.append([entry["art"], entry["name"], game.upgrades.passive_levels[passive_id], Upgrades.max_level("passive", passive_id)])
-	build.add_child(_build_list("能力", passive_rows))
+		passive_chips.append([Upgrades.PASSIVES[passive_id]["name"], game.upgrades.passive_levels[passive_id]])
+	build.add_child(UiKit.gap(4))
+	build.add_child(UiKit.label(tr("被动 %d / %d") % [passive_chips.size(), Upgrades.MAX_PASSIVES], 12, "strong", Art.INK_MUTED))
+	build.add_child(_chip_grid(passive_chips, Art.MINT_LIGHT))
 
 	var player := game.player
-	var stats := GridContainer.new()
-	stats.columns = 2 if portrait else 3
-	stats.add_theme_constant_override("h_separation", 16)
-	stats.add_theme_constant_override("v_separation", 2)
-	column.add_child(stats)
-	for text in [
-		tr("生命 %d / %d") % [ceili(player.hp), roundi(player.max_hp)],
-		tr("伤害 +%d%%") % roundi((player.might - 1.0) * 100.0),
-		tr("冷却 -%d%%") % roundi((1.0 - player.cooldown_scale) * 100.0),
-		tr("移速 +%d%%") % roundi((player.move_speed / Player.BASE_MOVE_SPEED - 1.0) * 100.0),
-		tr("拾取 +%d%%") % roundi((player.pickup_radius / Player.BASE_PICKUP_RADIUS - 1.0) * 100.0),
-		tr("护甲 %d　回血 %.1f/秒") % [roundi(player.armor), player.regen],
+	var stats := UiKit.panel(UiKit.box(Art.PAPER_SOFT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	var stat_grid := GridContainer.new()
+	stat_grid.columns = 3
+	stat_grid.add_theme_constant_override("h_separation", 10)
+	stat_grid.add_theme_constant_override("v_separation", 6)
+	stat_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats.add_child(stat_grid)
+	# Health as it is now only: the cap shows on the bar under the player anyway.
+	for stat: Array in [
+		["生命", str(ceili(player.hp))],
+		["伤害", "×%.2f" % player.might],
+		["冷却", "×%.2f" % player.cooldown_scale],
+		["移速", str(roundi(player.move_speed))],
+		["拾取", str(roundi(player.pickup_radius))],
+		["护甲 · 回血", "%d · %s/s" % [roundi(player.armor), Upgrades._short_float(player.regen)]],
 	]:
-		stats.add_child(_label(text, 11))
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 0)
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cell.add_child(UiKit.label(stat[0], 11, "muted"))
+		var value := UiKit.label(stat[1], 15, "display")
+		value.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		cell.add_child(value)
+		stat_grid.add_child(cell)
 
+	var actions := VBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	var resume := UiKit.primary_button("继续", game.set_paused.bind(false))
+	actions.add_child(resume)
+	var second_row := HBoxContainer.new()
+	second_row.add_theme_constant_override("separation", 8)
+	actions.add_child(second_row)
+	var restart := UiKit.secondary_button("重新开始", game.restart)
+	restart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	second_row.add_child(restart)
+	var settings := _settings_button()
+	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	second_row.add_child(settings)
+
+	var recalibrate: Label = null
 	if Tilt.enabled():
-		var recalibrate := _label("继续时会按那时拿手机的角度重新校准", 10, "MutedLabel")
-		recalibrate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		column.add_child(recalibrate)
+		recalibrate = UiKit.label("继续时会按那时拿手机的角度重新校准", 11, "muted")
+		recalibrate.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
-	# Three buttons side by side don't fit the 360-wide portrait view; there "resume" gets a row
-	# of its own and the other two share the next.
-	var buttons := HBoxContainer.new()
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 8 if portrait else 10)
-	var resume := _button("继续（Esc）", game.set_paused.bind(false), true)
 	if portrait:
-		resume.custom_minimum_size.x = 200
-		resume.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		column.add_child(resume)
+		column.add_child(build)
+		column.add_child(stats)
+		if recalibrate != null:
+			column.add_child(recalibrate)
+		column.add_child(UiKit.filler())
+		column.add_child(actions)
 	else:
-		buttons.add_child(resume)
-	column.add_child(buttons)
-	buttons.add_child(_button("重新开始（R）", game.restart))
-	buttons.add_child(_settings_button())
-	resume.grab_focus()
-	_pop_in(panel, 0.0)
+		var body := HBoxContainer.new()
+		body.add_theme_constant_override("separation", 18)
+		column.add_child(body)
+		body.add_child(build)
+		var side := VBoxContainer.new()
+		side.add_theme_constant_override("separation", 10)
+		side.custom_minimum_size = Vector2(250, 0)
+		body.add_child(side)
+		side.add_child(stats)
+		if recalibrate != null:
+			side.add_child(recalibrate)
+		side.add_child(UiKit.filler())
+		side.add_child(actions)
+	_focus(resume)
+	_pop_in(dialog, 0.0)
 	_fit_to_screen(_pause_holder)
 
 
-func _build_list(title: String, rows: Array) -> Control:
-	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 3)
-	list.custom_minimum_size = Vector2(170, 0)
-	list.add_child(_label(title, 12, "MutedLabel"))
-	if rows.is_empty():
-		list.add_child(_label("还没有", 11, "MutedLabel"))
-	for row_data: Array in rows:
+## Name-and-level chips two to a row, or "none yet".
+func _chip_grid(entries: Array, fill: Color) -> Control:
+	if entries.is_empty():
+		return UiKit.label("还没有", 12, "muted")
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for entry: Array in entries:
+		var chip := UiKit.panel(UiKit.box(fill, Color.TRANSPARENT, 0, 10, Vector4(8, 5, 8, 5)))
+		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		chip.custom_minimum_size = Vector2(120, 0)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
-		row.add_child(_icon(row_data[0], 18))
-		var name_label := _label(row_data[1], 12)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(row)
+		var name_label := UiKit.label(entry[0], 13, "strong")
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.clip_text = true
 		row.add_child(name_label)
-		row.add_child(_level_dots(row_data[2], row_data[3] if row_data.size() > 3 else Upgrades.MAX_LEVEL))
-		list.add_child(row)
-	return list
+		row.add_child(UiKit.label("Lv %d" % entry[1], 12, "display"))
+		grid.add_child(chip)
+	return grid
 
 
-# --- End -----------------------------------------------------------------------------------
+# --- Result --------------------------------------------------------------------------------
 
 func _show_end(victory: bool) -> void:
 	_victory = victory
 	_clear(_end_holder)
-	var panel := _panel()
-	_end_holder.add_child(panel)
-	# Landscape is too short for everything in one column: the damage ranking goes on the right.
 	var portrait := _is_portrait()
-	var body := _stack(portrait)
-	body.add_theme_constant_override("separation", 8 if portrait else 20)
-	panel.add_child(body)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	body.add_child(column)
+	var page := _page(Vector4(16, 22, 16, 26) if portrait else Vector4(24, 16, 24, 24))
+	_end_holder.add_child(page)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 10)
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var right := left
+	if portrait:
+		page.add_child(left)
+	else:
+		var body := HBoxContainer.new()
+		body.add_theme_constant_override("separation", 20)
+		page.add_child(body)
+		body.add_child(left)
+		right = VBoxContainer.new()
+		right.add_theme_constant_override("separation", 10)
+		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		body.add_child(right)
 
-	column.add_child(_heading("敲钟上市！" if victory else "项目黄了…", 30, Art.BRAND if victory else Art.FILL_PINK))
-	var subtitle := _label("撑过了 10 分钟，公司成功 IPO" if victory else "公司没撑住……再融一轮？", 12, "MutedLabel")
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	subtitle.custom_minimum_size = Vector2(260, 0)
-	column.add_child(subtitle)
+	left.add_child(UiKit.kicker("IPO DAY" if victory else "GAME OVER"))
+	var title := UiKit.label("敲钟上市！" if victory else "项目黄了…", 30, "heavy")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	left.add_child(title)
+	var sub := UiKit.label(tr("第 %d 局") % (game.runs_before + 1), 13, "muted")
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	left.add_child(sub)
 
 	var stats := HBoxContainer.new()
-	stats.alignment = BoxContainer.ALIGNMENT_CENTER
 	stats.add_theme_constant_override("separation", 8)
-	column.add_child(stats)
-	for stat: Array in [["存活", _clock_text(game.elapsed)], ["等级", str(game.level)], ["击杀", str(game.kills)]]:
-		stats.add_child(_stat_chip(stat[0], stat[1]))
+	left.add_child(stats)
+	for stat: Array in [["存活", _clock_text(game.elapsed)], ["等级", "Lv %d" % game.level], ["击杀", str(game.kills)]]:
+		var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(4, 6, 4, 6)))
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var card_column := VBoxContainer.new()
+		card_column.add_theme_constant_override("separation", 0)
+		card_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(card_column)
+		var value := UiKit.label(stat[1], 22, "display")
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		value.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		card_column.add_child(value)
+		var caption := UiKit.label(stat[0], 12, "muted")
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		card_column.add_child(caption)
+		stats.add_child(card)
 
-	var ranking := _damage_ranking()
-	if ranking.get_child_count() <= 1:
-		# Nothing dealt damage (just its caption): not shown, and never in the tree to be freed with it.
-		ranking.free()
-	elif portrait:
-		column.add_child(ranking)
-	else:
-		ranking.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		body.add_child(ranking)
-
+	var culprit := _culprit_row(victory)
+	if culprit != null:
+		left.add_child(culprit)
 	var advice := _end_advice(victory)
-	if advice != "":
-		var advice_label := _label(advice, 11)
-		advice_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		advice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		advice_label.custom_minimum_size = Vector2(280, 0)
-		advice_label.add_theme_color_override("font_color", Art.LINK)
-		column.add_child(advice_label)
+	if not advice.is_empty():
+		left.add_child(_advice_card(advice))
+	var ranking := _damage_ranking()
+	if ranking != null:
+		right.add_child(ranking)
 
+	right.add_child(UiKit.filler())
 	var buttons := HBoxContainer.new()
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 8)
-	column.add_child(buttons)
-	var again := _button("再来一局（R）", game.restart, true)
+	buttons.add_theme_constant_override("separation", 10)
+	right.add_child(buttons)
+	var share := UiKit.secondary_button("生成战绩图", _make_share_image, 50.0, 15)
+	share.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(share)
+	var again := UiKit.primary_button("再来一局", game.restart)
+	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	again.size_flags_stretch_ratio = 1.3
 	buttons.add_child(again)
-	buttons.add_child(_button("生成战绩图", _make_share_image))
-	again.grab_focus()
-	_pop_in(panel, 0.0)
+	_focus(again)
+	_pop_in(page, 0.0)
 	_fit_to_screen(_end_holder)
 
 
-## One line for the next run after a loss: what most likely went wrong (the live data's early
-## deaths were mostly one-weapon builds).
-func _end_advice(victory: bool) -> String:
+## Who ended the run and how, on pink (or, after a win, who came closest).
+func _culprit_row(victory: bool) -> Control:
+	var killer := game.telemetry.last_hurt_by
+	if not Spawner.ENEMY_TYPES.has(killer):
+		return null
+	var data: Dictionary = Spawner.ENEMY_TYPES[killer]
+	var row_panel := UiKit.panel(UiKit.box(Art.PINK_LIGHT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_panel.add_child(row)
+	var face := UiKit.panel(UiKit.box(Art.PAPER, Art.BOSS_RED, UiKit.OUTLINE, UiKit.PILL))
+	face.custom_minimum_size = Vector2(34, 34)
+	face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var face_centre := CenterContainer.new()
+	face_centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face.add_child(face_centre)
+	face_centre.add_child(UiKit.icon(data["art"], 22))
+	row.add_child(face)
+	row.add_child(UiKit.label("差点送走我的" if victory else "凶手", 14, "muted"))
+	var name_label := UiKit.label(data["name"], 14, "heavy")
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_label)
+	if not victory:
+		var how := game.telemetry.last_hurt_how
+		var cause: String = KILL_CAUSES.get(how, "被 boss 撞倒" if data.get("elite", false) else "被围殴")
+		row.add_child(UiKit.label(cause, 12, "strong", Art.BOSS_RED))
+	return row_panel
+
+
+## The next run's one tip after a loss, as [headline, detail]: what most likely went wrong (the
+## live data's early deaths were mostly one-weapon builds).
+func _end_advice(victory: bool) -> Array:
 	if victory:
-		return ""
+		return []
 	var weapons := game.player.weapons.size()
-	var advice := ""
 	if weapons <= 2:
-		advice = tr("只有 %d 把武器？前期先拿武器卡，清怪快经验才多") % weapons
-	elif _bosses_out() >= 2:
-		advice = tr("被 %d 个 boss 围住了：边走边打，别停在原地") % _bosses_out()
-	elif Spawner.ENEMY_TYPES.get(game.telemetry.last_hurt_by, {}).get("elite", false):
-		advice = tr("boss 出招前会画出范围，看到就往旁边躲")
-	elif game.elapsed < 120.0:
-		advice = tr("多走动，去捡星星升级")
-	else:
-		advice = tr("试试多拿撸铁或降噪耳机，更抗揍")
-	return advice
+		return [tr("只带了 %d 把武器。") % weapons, tr("升级时先拿武器卡，凑够 3–4 把再拿被动。")]
+	var bosses := _bosses_out()
+	if bosses >= 2:
+		return [tr("被 %d 个 boss 围住了。") % bosses, tr("边走边打，别停在原地。")]
+	if Spawner.ENEMY_TYPES.get(game.telemetry.last_hurt_by, {}).get("elite", false):
+		return [tr("倒在了 boss 的招式下。"), tr("出招前地上会画出范围，看到就往旁边躲。")]
+	if game.elapsed < 120.0:
+		return [tr("开局要多走动。"), tr("走到星星旁边才能捡到经验升级。")]
+	return [tr("差一点。"), tr("试试多拿撸铁或降噪耳机，更抗揍。")]
+
+
+func _advice_card(advice: Array) -> Control:
+	var card := UiKit.panel(UiKit.box(Art.BRAND_SOFT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(row)
+	var bulb := UiKit.icon("ui_bulb", 18, Art.INK)
+	bulb.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	row.add_child(bulb)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 2)
+	lines.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(lines)
+	for i in advice.size():
+		var line := UiKit.label(advice[i], 13, "heavy" if i == 0 else "body")
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lines.add_child(line)
+	return card
 
 
 func _bosses_out() -> int:
@@ -1106,6 +1501,64 @@ func _bosses_out() -> int:
 		if enemy.is_elite and not enemy.dead:
 			count += 1
 	return count
+
+
+## Weapons (and the perks that deal damage) by their share of all damage dealt this run, or null
+## when nothing dealt any.
+func _damage_ranking() -> Control:
+	var total := 0.0
+	var entries: Array = []
+	for source: String in game.damage_by_source:
+		total += game.damage_by_source[source]
+		if Upgrades.WEAPONS.has(source) or Upgrades.PASSIVES.has(source):
+			entries.append([source, game.damage_by_source[source]])
+	if entries.is_empty() or total <= 0.0:
+		return null
+	entries.sort_custom(func(a: Array, b: Array) -> bool: return a[1] > b[1])
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 6)
+	list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(list)
+	list.add_child(UiKit.label("伤害排行", 13, "strong", Art.INK_MUTED))
+	for entry: Array in entries.slice(0, RANKING_ROWS):
+		var source: Dictionary = Upgrades.WEAPONS[entry[0]] if Upgrades.WEAPONS.has(entry[0]) else Upgrades.PASSIVES[entry[0]]
+		var share: float = entry[1] / total
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var name_label := UiKit.label(source["name"], 13, "strong")
+		name_label.custom_minimum_size = Vector2(64, 0)
+		row.add_child(name_label)
+		row.add_child(ShareBar.new(share))
+		var percent := UiKit.label("%d%%" % roundi(share * 100.0), 13, "display")
+		percent.custom_minimum_size = Vector2(36, 0)
+		percent.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(percent)
+		list.add_child(row)
+	return card
+
+
+## A share of the whole as a bar: sky fill with an ink edge on a sunk track.
+class ShareBar extends Control:
+	var share := 0.0
+
+	func _init(value: float) -> void:
+		share = value
+		custom_minimum_size = Vector2(40, 12)
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		draw_style_box(UiKit.box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, UiKit.PILL), Rect2(Vector2.ZERO, size))
+		var width := size.x * clampf(share, 0.0, 1.0)
+		if width <= 0.0:
+			return
+		var fill := UiKit.box(Art.FILL_SKY, Art.INK, 0, UiKit.PILL)
+		fill.border_width_right = 2
+		draw_style_box(fill, Rect2(Vector2.ZERO, Vector2(maxf(width, size.y), size.y)))
 
 
 ## Renders the result image (ShareCard) and hands it to the page to save or share; elsewhere
@@ -1131,202 +1584,155 @@ func _make_share_image() -> void:
 	share.show(Marshalls.raw_to_base64(image.save_png_to_buffer()), tr(hint), tr("分享"), tr("保存图片"), tr("关闭"))
 
 
-func _stat_chip(caption: String, value: String) -> Control:
-	var chip := PanelContainer.new()
-	chip.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, RADIUS_MD, Vector4(14, 4, 14, 6)))
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 0)
-	chip.add_child(column)
-	var caption_label := _label(caption, 10, "MutedLabel")
-	caption_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(caption_label)
-	var value_label := _label(value, 18, "DisplayLabel")
-	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(value_label)
-	return chip
-
-
-## Weapons (and the perks that deal damage) ranked by the damage they dealt this run, with bars
-## relative to the best.
-func _damage_ranking() -> Control:
-	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 3)
-	list.add_child(_label("伤害排行", 12, "MutedLabel"))
-	var entries: Array = []
-	for source: String in game.damage_by_source:
-		if Upgrades.WEAPONS.has(source) or Upgrades.PASSIVES.has(source):
-			entries.append([source, game.damage_by_source[source]])
-	entries.sort_custom(func(a: Array, b: Array) -> bool: return a[1] > b[1])
-	var best: float = entries[0][1] if not entries.is_empty() else 1.0
-	for entry: Array in entries:
-		var weapon: Dictionary = Upgrades.WEAPONS[entry[0]] if Upgrades.WEAPONS.has(entry[0]) else Upgrades.PASSIVES[entry[0]]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		row.add_child(_icon(weapon["art"], 18))
-		var name_label := _label(weapon["name"], 11)
-		name_label.custom_minimum_size = Vector2(66, 0)
-		row.add_child(name_label)
-		var track := Panel.new()
-		track.custom_minimum_size = Vector2(120, 10)
-		track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		track.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, PILL))
-		var fill := Panel.new()
-		fill.add_theme_stylebox_override("panel", _box(Art.BRAND_DEEP, Color.TRANSPARENT, 0, PILL))
-		fill.position = Vector2(2, 2)
-		fill.size = Vector2(maxf(116.0 * entry[1] / best, 6.0), 6)
-		track.add_child(fill)
-		row.add_child(track)
-		row.add_child(_label(Lang.short_number(entry[1]), 11, "DisplayLabel"))
-		list.add_child(row)
-	return list
-
-
-# --- Funding bag ---------------------------------------------------------------------------
-
-## A boss's funding bag: a slot machine runs through the rounds and lands on the one Game rolled,
-## then the upgrades it brought pop in (Game has applied them already).
-func _show_chest(funding_round: Dictionary, items: Array) -> void:
-	_clear(_chest_holder)
-	_chest_revealed = false
-	var panel := _panel()
-	_chest_holder.add_child(panel)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
-	column.custom_minimum_size = Vector2(260, 0)
-	panel.add_child(column)
-	column.add_child(_heading("融资开奖！", 22))
-
-	var reel := PanelContainer.new()
-	reel.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 2, RADIUS_MD, Vector4(24, 4, 24, 6)))
-	reel.custom_minimum_size = Vector2(170, 0)
-	reel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(reel)
-	var reel_label := _label(Game.FUNDING_ROUNDS[0]["name"], 26, "DisplayLabel")
-	reel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	reel.add_child(reel_label)
-
-	var prize := HBoxContainer.new()
-	prize.alignment = BoxContainer.ALIGNMENT_CENTER
-	prize.add_theme_constant_override("separation", 6)
-	prize.custom_minimum_size = Vector2(0, 76)
-	column.add_child(prize)
-
-	var take := _button("收下", _on_chest_button, true)
-	take.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(take)
-	take.grab_focus()
-	_pop_in(panel, 0.0)
-	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
-
-	# Laps of every round, slowing down, then the winning one.
-	var landing := Game.FUNDING_ROUNDS.find(funding_round)
-	var steps := float(CHEST_SPIN_LAPS * Game.FUNDING_ROUNDS.size() + landing)
-	_chest_reveal = _reveal_chest.bind(reel, reel_label, prize, funding_round, items)
-	_chest_spin = panel.create_tween()
-	_chest_spin.tween_method(_spin_reel.bind(reel_label), 0.0, steps, CHEST_SPIN_SECONDS) \
-		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	_chest_spin.tween_callback(_chest_reveal)
-
-
-func _spin_reel(step: float, reel_label: Label) -> void:
-	var funding_round: Dictionary = Game.FUNDING_ROUNDS[floori(step) % Game.FUNDING_ROUNDS.size()]
-	if reel_label.text != funding_round["name"]:
-		reel_label.text = funding_round["name"]
-		Sound.play("xp")
-
-
-func _reveal_chest(reel: PanelContainer, reel_label: Label, prize: HBoxContainer, funding_round: Dictionary, items: Array) -> void:
-	if _chest_revealed:
-		return
-	_chest_revealed = true
-	if _chest_spin != null and _chest_spin.is_valid():
-		_chest_spin.kill()
-	reel_label.text = funding_round["name"]
-	reel.add_theme_stylebox_override("panel", _box(ROUND_COLORS[funding_round["id"]], Art.INK, 2, RADIUS_MD, Vector4(24, 4, 24, 6)))
-	reel.pivot_offset = reel.size / 2.0
-	_pop_in(reel, 0.0)
-	Sound.play("win" if funding_round["id"] == "ipo" else "level_up")
-	for i in items.size():
-		var item: Dictionary = items[i]
-		var cell := VBoxContainer.new()
-		cell.add_theme_constant_override("separation", 2)
-		cell.custom_minimum_size = Vector2(52, 0)
-		prize.add_child(cell)
-		var bubble_row := CenterContainer.new()
-		bubble_row.add_child(_icon_bubble(item["art"], 36.0, KIND_COLORS[item["kind"]]))
-		cell.add_child(bubble_row)
-		var name_label := _label(item["name"], 10, "StrongLabel")
-		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		cell.add_child(name_label)
-		if item["kind"] != "heal":
-			var dots_row := CenterContainer.new()
-			dots_row.add_child(_level_dots(item["level"], item["max"]))
-			cell.add_child(dots_row)
-		cell.resized.connect(func() -> void: cell.pivot_offset = cell.size / 2.0)
-		_pop_in(cell, 0.1 + i * 0.12)
-
-
-## Mid-spin it shows the result at once; after that it closes the bag.
-func _on_chest_button() -> void:
-	if game.state != Game.State.CHEST or Time.get_ticks_msec() < _accept_picks_at:
-		return
-	if not _chest_revealed:
-		_chest_reveal.call()
-		return
-	game.close_chest()
-
-
 # --- Settings ------------------------------------------------------------------------------
 
 func _settings_button() -> Button:
-	var button := _button("设置", _open_settings)
+	var button := UiKit.secondary_button("设置", _open_settings)
 	button.icon = Art.texture("gear")
 	# The SVG imports at 4x; cap it to text height instead of drawing it at texture size.
 	button.add_theme_constant_override("icon_max_width", 18)
-	button.custom_minimum_size = Vector2(96, 32)
 	return button
 
 
+## Settings as a page of its own: language, screen orientation (phones), switches for tilt,
+## sound and music.
 func _open_settings() -> void:
 	_settings_open = true
 	_clear(_settings_holder)
-	var panel := _panel()
-	_settings_holder.add_child(panel)
+	var portrait := _is_portrait()
+	var page := _page(Vector4(16, 20, 16, 20) if portrait else Vector4(24, 14, 24, 16))
+	_settings_holder.add_child(page)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
-	column.custom_minimum_size = Vector2(260, 0)
-	panel.add_child(column)
+	column.add_theme_constant_override("separation", 14 if portrait else 10)
+	page.add_child(column)
 
-	column.add_child(_heading("设置", 22))
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	column.add_child(header)
+	header.add_child(UiKit.round_button("ui_back", _close_settings, 44.0, Art.INK))
+	var title := UiKit.label("设置", 22, "heavy")
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(title)
 
-	var current := Lang.current()
-	var language_choice := _choice_row("语言", [["中文", current == "zh"], ["English", current == "en"]], _on_language_picked)
-	column.add_child(language_choice)
-
+	var general: Array[Control] = []
+	general.append(_setting_row("语言", "Language", UiKit.segmented(["中文", "English"], 0 if Lang.current() == "zh" else 1, _on_language_picked, Art.PAPER_SUNK), ""))
 	if Device.is_handheld():
 		var landscape := Device.prefers_landscape()
-		column.add_child(_choice_row("屏幕方向", [["竖屏", not landscape], ["横屏", landscape]], _on_orientation_picked))
-
+		general.append(_setting_row("屏幕方向", "", UiKit.segmented(["跟随手机", "横屏"], 1 if landscape else 0, _on_orientation_picked, Art.PAPER_SUNK), "选「横屏」后竖着拿手机，整个游戏会转 90°"))
+	var switches: Array[Control] = []
 	_tilt_hint = null
 	if Tilt.available():
-		var tilt_on := Tilt.enabled()
-		column.add_child(_choice_row("陀螺仪移动", [["开", tilt_on], ["关", not tilt_on]], _on_tilt_picked))
-		_tilt_hint = _label("", 10, "MutedLabel")
+		switches.append(_switch_row("陀螺仪", "倾斜手机来走位（iOS 需点一下授权）", Tilt.enabled(), Tilt.set_enabled))
+		_tilt_hint = UiKit.label("", 12, "strong", Art.BOSS_RED)
 		_tilt_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_tilt_hint.custom_minimum_size = Vector2(260, 0)
-		column.add_child(_tilt_hint)
+		switches.append(_tilt_hint)
+	switches.append(_switch_row("音效", "连续捡星星时音调逐个升高", Sound.sfx_enabled(), Sound.set_sfx_enabled))
+	switches.append(_switch_row("音乐", "标题和战斗各一首循环曲", Sound.music_enabled(), Sound.set_music_enabled))
 
-	var sound_on := Sound.sfx_enabled()
-	column.add_child(_choice_row("音效", [["开", sound_on], ["关", not sound_on]], _on_sound_picked))
-	var music_on := Sound.music_enabled()
-	column.add_child(_choice_row("音乐", [["开", music_on], ["关", not music_on]], _on_music_picked))
+	if portrait:
+		var rows: Array[Control] = []
+		rows.append_array(general)
+		rows.append_array(switches)
+		column.add_child(_settings_card(rows))
+	else:
+		var body := HBoxContainer.new()
+		body.add_theme_constant_override("separation", 12)
+		column.add_child(body)
+		var left := _settings_card(general)
+		left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		left.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		body.add_child(left)
+		var right := _settings_card(switches)
+		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		right.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		body.add_child(right)
 
-	var back := _button("返回", _close_settings, true)
-	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(back)
-	(language_choice.get_child(1) as Button).grab_focus()
-	_pop_in(panel, 0.0)
+	if Tilt.available():
+		var note := UiKit.panel(UiKit.box(Art.SKY_LIGHT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
+		var note_row := HBoxContainer.new()
+		note_row.add_theme_constant_override("separation", 8)
+		note_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		note.add_child(note_row)
+		var info := UiKit.icon("ui_info", 16, Art.LINK)
+		info.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		note_row.add_child(info)
+		var note_text := UiKit.label("开了陀螺仪后，右上角会多一个「校准」按钮：以开局时拿手机的角度为准，倾斜 18° 跑满速。", 12)
+		note_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		note_row.add_child(note_text)
+		column.add_child(note)
+
+	column.add_child(UiKit.filler())
+	var done := UiKit.primary_button("完成", _close_settings)
+	if not portrait:
+		done.custom_minimum_size.x = 200
+		done.size_flags_horizontal = Control.SIZE_SHRINK_END
+	column.add_child(done)
+	_focus(done)
+	_fit_to_screen(_settings_holder)
+
+
+## White card holding setting rows with hairlines between them.
+func _settings_card(rows: Array[Control]) -> Control:
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(14, 2, 14, 2)))
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 0)
+	list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(list)
+	for i in rows.size():
+		if i > 0 and not rows[i] is Label:
+			var hairline := ColorRect.new()
+			hairline.color = Art.LINE
+			hairline.custom_minimum_size = Vector2(0, 1)
+			hairline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			list.add_child(hairline)
+		list.add_child(rows[i])
+	return card
+
+
+## A setting with a choice under its name, and a hint under that.
+func _setting_row(title: String, subtitle: String, control: Control, hint: String) -> Control:
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 6)
+	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_row.add_child(UiKit.label(title, 15, "strong"))
+	# The English name beside the Chinese one; in English the name is that already.
+	if subtitle != "" and Lang.current() == "zh":
+		var latin := UiKit.label(subtitle, 12, "display", Art.INK_MUTED)
+		latin.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		name_row.add_child(latin)
+	row.add_child(UiKit.gap(4))
+	row.add_child(name_row)
+	row.add_child(control)
+	if hint != "":
+		var hint_label := UiKit.label(hint, 12, "muted")
+		hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(hint_label)
+	row.add_child(UiKit.gap(4))
+	return row
+
+
+## A setting that is on or off: its name and hint, a switch on the right.
+func _switch_row(title: String, hint: String, on: bool, setter: Callable) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 0)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	text.add_child(UiKit.gap(10))
+	text.add_child(UiKit.label(title, 15, "strong"))
+	var hint_label := UiKit.label(hint, 12, "muted")
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.add_child(hint_label)
+	text.add_child(UiKit.gap(10))
+	var switch := UiKit.ToggleSwitch.new(on)
+	switch.toggled.connect(setter)
+	row.add_child(switch)
+	return row
 
 
 func _close_settings() -> void:
@@ -1335,57 +1741,16 @@ func _close_settings() -> void:
 		_show_pause()
 
 
-## A caption followed by a set of choice buttons (see _choice_buttons).
-func _choice_row(caption: String, options: Array, on_pick: Callable) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	var caption_label := _label(caption, 13, "StrongLabel")
-	caption_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(caption_label)
-	for option in _choice_buttons(options, on_pick, Vector2(72, 30)):
-		row.add_child(option)
-	return row
-
-
-## Mutually exclusive toggle buttons; `options` is [[text, selected]]. Calls `on_pick` with the
-## chosen index.
-func _choice_buttons(options: Array, on_pick: Callable, button_size: Vector2) -> Array[Button]:
-	var group := ButtonGroup.new()
-	var buttons: Array[Button] = []
-	for i in options.size():
-		var option := Button.new()
-		option.text = options[i][0]
-		option.toggle_mode = true
-		option.button_group = group
-		option.button_pressed = options[i][1]
-		option.theme_type_variation = "ChoiceButton"
-		option.custom_minimum_size = button_size
-		option.pressed.connect(on_pick.bind(i))
-		_click_on_press(option)
-		buttons.append(option)
-	return buttons
-
-
 func _on_language_picked(index: int) -> void:
 	Lang.choose(Lang.LANGUAGES[index])
 
 
-func _on_tilt_picked(index: int) -> void:
-	Tilt.set_enabled(index == 0)
-
-
-func _on_sound_picked(index: int) -> void:
-	Sound.set_sfx_enabled(index == 0)
-
-
-func _on_music_picked(index: int) -> void:
-	Sound.set_music_enabled(index == 0)
-
-
+## "Follow the phone" lays the game out the way the phone is held; "landscape" turns it on an
+## upright phone.
 func _on_orientation_picked(index: int) -> void:
 	Settings.set_value("orientation", "portrait" if index == 0 else "landscape")
 	game.apply_orientation()
-	# The panels were laid out for the old shape; build them again once the HUD has refitted.
+	# The screens were laid out for the old shape; build them again once the HUD has refitted.
 	_reopen_settings.call_deferred()
 
 
@@ -1401,13 +1766,6 @@ func _reopen_settings() -> void:
 ## rather than the viewport, which is also tall while a landscape game is drawn turned.
 func _is_portrait() -> bool:
 	return _root.size.y > _root.size.x
-
-
-## Stacks top to bottom in portrait, side by side in landscape.
-func _stack(vertical: bool) -> BoxContainer:
-	if vertical:
-		return VBoxContainer.new()
-	return HBoxContainer.new()
 
 
 func _overlay(color: Color) -> Control:
@@ -1427,26 +1785,62 @@ func _centered(parent: Control) -> CenterContainer:
 	return center
 
 
-func _panel() -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE, 1, RADIUS_LG, Vector4(18, 14, 18, 16)))
-	panel.resized.connect(func() -> void: panel.pivot_offset = panel.size / 2.0)
-	return panel
+## A full-screen holder for a page (title, result, settings).
+func _full(parent: Control) -> Control:
+	var holder := Control.new()
+	holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(holder)
+	return holder
 
 
-## Shrinks a panel that came out taller or wider than the screen (a full build in English on a
-## short landscape screen) until it fits, around the screen's centre.
-func _fit_to_screen(holder: Control) -> void:
+## A page's content area: the whole screen inside `margins` (left, top, right, bottom).
+func _page(margins: Vector4) -> MarginContainer:
+	var page := MarginContainer.new()
+	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.add_theme_constant_override("margin_left", int(margins.x))
+	page.add_theme_constant_override("margin_top", int(margins.y))
+	page.add_theme_constant_override("margin_right", int(margins.z))
+	page.add_theme_constant_override("margin_bottom", int(margins.w))
+	page.resized.connect(func() -> void: page.pivot_offset = page.size / 2.0)
+	return page
+
+
+## Shrinks a screen that comes out taller or wider than the view (a full build in English on a
+## short landscape screen) until it fits, around the screen's centre; `overhang` is height drawn
+## outside the screen's own box (the funding bag). Wrapped text and fitted cards settle over a
+## few frames, so it refits every time the screen's size changes.
+func _fit_to_screen(holder: Control, overhang: float = 0.0) -> void:
 	holder.scale = Vector2.ONE
-	# The containers lay the new panel out at the end of this frame.
-	await get_tree().process_frame
-	if not is_instance_valid(holder) or holder.get_child_count() == 0:
+	if holder.get_child_count() == 0:
 		return
-	var panel: Control = holder.get_child(0)
-	var room := _root.size - Vector2.ONE * FIT_MARGIN * 2.0
-	var factor := minf(1.0, minf(room.x / panel.size.x, room.y / panel.size.y))
+	var screen: Control = holder.get_child(0)
+	if not screen.resized.is_connected(_refit):
+		screen.resized.connect(_refit.bind(holder, screen, overhang))
+	_refit.call_deferred(holder, screen, overhang)
+
+
+func _refit(holder: Control, screen: Control, overhang: float) -> void:
+	if not is_instance_valid(screen) or screen.get_parent() != holder or screen.size.x <= 0.0:
+		return
+	var room := _root.size - Vector2(FIT_MARGIN * 2.0, FIT_MARGIN * 2.0 + overhang)
+	if screen is MarginContainer:
+		# A page's margins count as room already.
+		room = _root.size
+	# A screen bigger than the view grows its holder past the view's right and bottom edges; put
+	# the holder's centre back on the view's (lower by half the overhang, which then has the room
+	# above) before shrinking around it.
 	holder.pivot_offset = holder.size / 2.0
-	holder.scale = Vector2.ONE * factor
+	holder.position = (_root.size - holder.size) / 2.0 + Vector2(0.0, overhang / 2.0)
+	holder.scale = Vector2.ONE * minf(1.0, minf(room.x / screen.size.x, room.y / screen.size.y))
+
+
+## Puts the keyboard focus on a screen's main control, on computers only: phones have no keys
+## to move it, so there the focus ring would only be a stray blue outline.
+func _focus(control: Control) -> void:
+	if not Device.is_handheld():
+		control.grab_focus()
 
 
 func _clear(holder: Node) -> void:
@@ -1457,187 +1851,13 @@ func _clear(holder: Node) -> void:
 
 func _pop_in(node: Control, delay: float) -> void:
 	node.modulate.a = 0.0
-	node.scale = Vector2.ONE * 0.85
+	node.scale = Vector2.ONE * 0.9
 	var tween := node.create_tween().set_parallel()
 	tween.tween_property(node, "modulate:a", 1.0, 0.12).set_delay(delay)
 	tween.tween_property(node, "scale", Vector2.ONE, 0.22).set_delay(delay) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-## A pill button; `primary` makes it the yellow one, for the single action a screen is about.
-func _button(text: String, action: Callable, primary: bool = false) -> Button:
-	var button := Button.new()
-	button.text = text
-	if primary:
-		button.theme_type_variation = "PrimaryButton"
-	button.custom_minimum_size = Vector2(110, 32)
-	button.pressed.connect(action)
-	_click_on_press(button)
-	return button
-
-
-## Level-up cards are left out on purpose: picking one plays its own sound (Game.choose_upgrade).
-func _click_on_press(button: BaseButton) -> void:
-	button.pressed.connect(func() -> void: Sound.play("click"))
-
-
-## Ink text. `variation` picks one of the theme's label styles (see _build_theme):
-## "MutedLabel" for captions and hints, "StrongLabel" for names, "DisplayLabel" for headings and
-## numbers in the rounded face.
-func _label(text: String, font_size: int, variation: String = "") -> Label:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", font_size)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.theme_type_variation = variation
-	return label
-
-
-## A heading on a highlighter stroke, the design's section-heading look: a pill of `stroke`
-## behind the lower part of the text, a little wider than it. Kept to one line, so the stroke is
-## a dash under the words rather than a bar across the panel.
-func _heading(text: String, font_size: int, stroke: Color = Art.BRAND) -> Control:
-	var holder := MarginContainer.new()
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	# The container stretches this to the label's size; the stroke inside is anchored to its
-	# bottom edge, which a container child can't be.
-	var backdrop := Control.new()
-	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(backdrop)
-	var bar := Panel.new()
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.add_theme_stylebox_override("panel", _box(Color(stroke, 0.85), Color.TRANSPARENT, 0, PILL))
-	bar.anchor_right = 1.0
-	bar.anchor_top = 1.0
-	bar.anchor_bottom = 1.0
-	backdrop.add_child(bar)
-	var label := _label(text, font_size, "DisplayLabel")
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	holder.add_child(label)
-	_size_heading(holder, font_size)
-	return holder
-
-
-func _size_heading(holder: Control, font_size: int) -> void:
-	var bar: Control = holder.get_child(0).get_child(0)
-	bar.offset_left = -font_size * 0.3
-	bar.offset_right = font_size * 0.3
-	bar.offset_bottom = -font_size * 0.15
-	bar.offset_top = bar.offset_bottom - font_size * 0.42
-	(holder.get_child(1) as Label).add_theme_font_size_override("font_size", font_size)
-
-
-## Shrinks the title when its name in the current language is too wide for one line on this
-## screen (Silicon Valley Survivors on an upright phone).
-func _fit_title() -> void:
-	if _title_heading == null or _root.size.x <= 0.0:
-		return
-	var label: Label = _title_heading.get_child(1)
-	var room := minf(_root.size.x - 40.0, 600.0)
-	var width := Art.display_font(800).get_string_size(label.atr(label.text), HORIZONTAL_ALIGNMENT_LEFT, -1, TITLE_SIZE).x
-	_size_heading(_title_heading, TITLE_SIZE if width <= room else floori(TITLE_SIZE * room / width))
-
-
-## A white pill for a readout over the world (timer, kills).
-func _pill() -> PanelContainer:
-	var pill := PanelContainer.new()
-	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pill.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, Vector4(10, 1, 10, 1)))
-	return pill
-
-
-func _icon(art: String, size: float) -> TextureRect:
-	var icon := TextureRect.new()
-	icon.texture = Art.texture(art)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(size, size)
-	icon.size = Vector2(size, size)
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return icon
-
-
 func _clock_text(seconds_elapsed: float) -> String:
 	var seconds := floori(seconds_elapsed)
 	return "%02d:%02d" % [floori(seconds / 60.0), seconds % 60]
-
-
-## A flat rounded box. `padding` is left, top, right, bottom.
-func _box(background: Color, border: Color, border_width: int, radius: int, padding: Vector4 = Vector4.ZERO) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background
-	style.border_color = border
-	style.set_border_width_all(border_width)
-	style.set_corner_radius_all(radius)
-	style.anti_aliasing = true
-	style.content_margin_left = padding.x
-	style.content_margin_top = padding.y
-	style.content_margin_right = padding.z
-	style.content_margin_bottom = padding.w
-	return style
-
-
-## The design's one shadow, a soft lift under a hovered card.
-func _with_hover_shadow(style: StyleBoxFlat) -> StyleBoxFlat:
-	style.shadow_color = Color(Art.INK, 0.12)
-	style.shadow_size = 8
-	style.shadow_offset = Vector2(0, 3)
-	return style
-
-
-## Keyboard focus: a 2px ring just outside the control.
-func _focus_ring(radius: int) -> StyleBoxFlat:
-	var ring := _box(Color.TRANSPARENT, Art.LINK, 2, radius)
-	ring.draw_center = false
-	ring.set_expand_margin_all(3)
-	return ring
-
-
-func _build_theme() -> Theme:
-	var theme := Theme.new()
-	theme.default_font = Art.font(500)
-	theme.default_font_size = 12
-	theme.set_color("font_color", "Label", Art.INK)
-	theme.set_type_variation("MutedLabel", "Label")
-	theme.set_color("font_color", "MutedLabel", Art.INK_MUTED)
-	theme.set_type_variation("StrongLabel", "Label")
-	theme.set_font("font", "StrongLabel", Art.font(700))
-	theme.set_type_variation("DisplayLabel", "Label")
-	theme.set_font("font", "DisplayLabel", Art.display_font(800))
-
-	# Everything pressable is a pill. A plain Button is the secondary style (white, grey
-	# outline); PrimaryButton is the yellow one, one per screen.
-	var padding := Vector4(16, 4, 16, 4)
-	theme.set_stylebox("normal", "Button", _box(Art.PAPER, Art.LINE_STRONG, 2, PILL, padding))
-	theme.set_stylebox("hover", "Button", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 2, PILL, padding))
-	theme.set_stylebox("pressed", "Button", _box(Art.LINE, Art.LINE_STRONG, 2, PILL, padding))
-	theme.set_stylebox("focus", "Button", _focus_ring(PILL))
-	theme.set_font("font", "Button", Art.font(700))
-	theme.set_font_size("font_size", "Button", 13)
-	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
-		theme.set_color(color_name, "Button", Art.INK)
-
-	theme.set_type_variation("PrimaryButton", "Button")
-	theme.set_stylebox("normal", "PrimaryButton", _box(Art.BRAND, Art.BRAND, 2, PILL, padding))
-	theme.set_stylebox("hover", "PrimaryButton", _box(Art.BRAND_DEEP, Art.BRAND_DEEP, 2, PILL, padding))
-	theme.set_stylebox("pressed", "PrimaryButton", _box(Art.BRAND_DEEP, Art.BRAND_DEEP, 2, PILL, padding))
-
-	# Settings options: white when off, soft yellow with a deeper outline when chosen.
-	var choice_padding := Vector4(10, 2, 10, 2)
-	theme.set_type_variation("ChoiceButton", "Button")
-	theme.set_stylebox("normal", "ChoiceButton", _box(Art.PAPER, Art.LINE_STRONG, 2, PILL, choice_padding))
-	theme.set_stylebox("hover", "ChoiceButton", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 2, PILL, choice_padding))
-	theme.set_stylebox("pressed", "ChoiceButton", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 2, PILL, choice_padding))
-	theme.set_stylebox("hover_pressed", "ChoiceButton", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 2, PILL, choice_padding))
-
-	var icon_padding := Vector4(4, 4, 4, 4)
-	theme.set_type_variation("IconButton", "Button")
-	theme.set_stylebox("normal", "IconButton", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, icon_padding))
-	theme.set_stylebox("hover", "IconButton", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 1, PILL, icon_padding))
-	theme.set_stylebox("pressed", "IconButton", _box(Art.LINE, Art.LINE_STRONG, 1, PILL, icon_padding))
-
-	# The XP bar: a white track filling with yellow.
-	theme.set_stylebox("background", "ProgressBar", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL))
-	theme.set_stylebox("fill", "ProgressBar", _box(Art.BRAND, Art.BRAND_DEEP, 1, PILL))
-	return theme

@@ -36,6 +36,18 @@ const FILL_SKY := Color("bcdcf2")
 const FILL_MINT := Color("bfe3cf")
 const FILL_LILAC := Color("d9d1f2")
 const FILL_PINK := Color("f6c6cf")
+## Lighter tints of those for chips and card wells: weapons sky, passives mint, danger pink.
+const SKY_LIGHT := Color("e5f0fb")
+const MINT_LIGHT := Color("e3f4ea")
+const PINK_LIGHT := Color("fde6e8")
+## Text on MINT_LIGHT (the 被动 tag).
+const GREEN_INK := Color("276b43")
+## Bosses and danger in the UI: boss bar, countdown, warnings, the off-screen pointers.
+const BOSS_RED := Color("b23344")
+## The player's health.
+const HP_RED := Color("d94b5c")
+## Behind dialogs that pause the game (level-up, funding bag, pause).
+const SCRIM := Color(0.11, 0.12, 0.15, 0.48)
 
 ## World colours, used by the map and the effects rather than the UI.
 const LAWN := Color("dcefc6")

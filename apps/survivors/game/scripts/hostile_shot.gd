@@ -58,13 +58,13 @@ func tick(delta: float, game: Game) -> void:
 			if _seconds_left <= 0.0 or game.city.resolve(position, 1.0) != position:
 				done = true
 			elif _hits(game.player, BULLET_RADIUS):
-				game.hurt_player(damage, thrower)
+				game.hurt_player(damage, thrower, "bullet")
 				done = true
 		Kind.LOB:
 			_flown += delta
 			if _flown >= _flight:
 				if _hits(game.player, LOB_RADIUS):
-					game.hurt_player(damage, thrower)
+					game.hurt_player(damage, thrower, "pie")
 				Effects.poof(game, position, Color("f2c46b"))
 				done = true
 			else:
