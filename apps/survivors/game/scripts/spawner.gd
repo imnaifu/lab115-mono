@@ -53,7 +53,28 @@ const ENEMY_TYPES := {
 	"investor": {"name": "投资人", "art": "investor", "size": 58.0, "color": Color("bcdcf2"),
 		"hp": 1960.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "summon"},
+	# The late bosses, one new move each. Spaghetti code keeps leaking bugs and, killed, falls
+	# apart into smaller piles (`splits_into`), which don't split again.
+	"spaghetti": {"name": "屎山代码", "art": "spaghetti", "size": 60.0, "color": Color("c98d5a"),
+		"hp": 2200.0, "speed": 22.0, "damage": 26.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "summon", "summon_type": "bug", "summon_count": 6,
+		"splits_into": "spaghetti_small", "split_count": 3},
+	"spaghetti_small": {"name": "小屎山", "art": "spaghetti", "size": 30.0, "color": Color("c98d5a"),
+		"hp": 260.0, "speed": 34.0, "damage": 14.0, "xp": 8, "radius": 9.0, "knockback_resist": 0.6},
+	"scope_change": {"name": "需求变更", "art": "scope_change", "size": 52.0, "color": Color("d9d1f2"),
+		"hp": 1700.0, "speed": 34.0, "damage": 28.0, "xp": 70, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "blink"},
+	"incident": {"name": "P0 线上事故", "art": "incident", "size": 54.0, "color": Color("ff5d5d"),
+		"hp": 1600.0, "speed": 30.0, "damage": 26.0, "xp": 70, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "volley"},
+	"pie_boss": {"name": "老板画饼", "art": "pie_boss", "size": 58.0, "color": Color("f2c46b"),
+		"hp": 1900.0, "speed": 28.0, "damage": 24.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "lob"},
 }
+## A boss due while this many are still out waits until one is down. Players who keep up
+## never see the wait; it stops a player who has fallen behind from being buried under bosses
+## (the live data's deaths had four or five alive at once).
+const MAX_BOSSES_OUT := 3
 
 ## Mix of the steady trickle by run time; each entry applies until its `until` second.
 ## The opening is slow bugs only; pings, fast and weaving, join once the player has a level or two.
@@ -69,7 +90,8 @@ const WAVES := [
 
 ## Scripted moments, sorted by time: a boss every minute (bosses rather than an ever bigger
 ## crowd are what the run escalates with), and rings of regular enemies in between. An event
-## without `text` arrives silently alongside the one before it.
+## without `text` arrives silently alongside the one before it. From 7:00 each boss is a new
+## one with its own move, rather than repeats of the earlier ones.
 const EVENTS := [
 	{"at": 60.0, "kind": "elite", "type": "techdebt_elite", "count": 1, "text": "精英怪：祖传技术债！"},
 	{"at": 90.0, "kind": "ring", "type": "ping", "count": 16, "text": "消息轰炸！"},
@@ -80,11 +102,12 @@ const EVENTS := [
 	{"at": 300.0, "kind": "elite", "type": "ai", "count": 1, "text": "首领出现：AI 大模型"},
 	{"at": 360.0, "kind": "elite", "type": "investor", "count": 1, "text": "首领出现：投资人"},
 	{"at": 390.0, "kind": "ring", "type": "ghost", "count": 30, "text": "404 幽灵合围！"},
-	{"at": 420.0, "kind": "elite", "type": "layoff", "count": 2, "text": "裁员潮：裁员通知 ×2"},
-	{"at": 480.0, "kind": "elite", "type": "deadline", "count": 2, "text": "两个 Deadline 撞车了！"},
+	{"at": 420.0, "kind": "elite", "type": "spaghetti", "count": 1, "text": "首领出现：屎山代码"},
+	{"at": 450.0, "kind": "elite", "type": "scope_change", "count": 1, "text": "需求变更！"},
+	{"at": 480.0, "kind": "elite", "type": "incident", "count": 1, "text": "P0 线上事故！"},
 	{"at": 510.0, "kind": "ring", "type": "ping", "count": 48, "text": "消息轰炸 ×2！"},
-	{"at": 540.0, "kind": "elite", "type": "ai", "count": 1, "text": "最后的考验：AI 大模型 + 投资人"},
-	{"at": 540.0, "kind": "elite", "type": "investor", "count": 1},
+	{"at": 540.0, "kind": "elite", "type": "pie_boss", "count": 1, "text": "最后的考验：老板画饼 + AI 大模型"},
+	{"at": 540.0, "kind": "elite", "type": "ai", "count": 1},
 ]
 
 var max_alive := MAX_ALIVE
@@ -92,6 +115,8 @@ var max_alive := MAX_ALIVE
 var _game: Game
 var _spawn_budget := 0.0
 var _next_event := 0
+## Events whose time has come but that haven't gone out yet (a boss held by MAX_BOSSES_OUT).
+var _due_events: Array[Dictionary] = []
 
 
 func _init(game: Game) -> void:
@@ -115,8 +140,9 @@ func hp_scale() -> float:
 
 func tick(delta: float) -> void:
 	while _next_event < EVENTS.size() and _game.elapsed >= EVENTS[_next_event]["at"]:
-		_run_event(EVENTS[_next_event])
+		_due_events.append(EVENTS[_next_event])
 		_next_event += 1
+	_release_due_events()
 
 	_spawn_budget += spawn_rate() * delta
 	while _spawn_budget >= 1.0:
@@ -138,6 +164,32 @@ func _pick_type() -> String:
 	for type_name in names:
 		weights.append(mix[type_name])
 	return names[_game.rng.rand_weighted(weights)]
+
+
+## Sends out the due events in order, except that a boss waits while MAX_BOSSES_OUT are out;
+## rings behind a waiting boss still go out on time.
+func _release_due_events() -> void:
+	var index := 0
+	var bosses_out := -1
+	while index < _due_events.size():
+		var event := _due_events[index]
+		if event["kind"] == "elite":
+			if bosses_out < 0:
+				bosses_out = _bosses_out()
+			if bosses_out >= MAX_BOSSES_OUT:
+				index += 1
+				continue
+			bosses_out += event["count"]
+		_due_events.remove_at(index)
+		_run_event(event)
+
+
+func _bosses_out() -> int:
+	var count := 0
+	for enemy in _game.enemies:
+		if enemy.is_elite and not enemy.dead:
+			count += 1
+	return count
 
 
 func _run_event(event: Dictionary) -> void:

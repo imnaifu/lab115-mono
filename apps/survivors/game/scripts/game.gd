@@ -58,7 +58,10 @@ var upgrades: Upgrades
 var city: City
 var flow_field: FlowField
 var telemetry: Telemetry
+var perks: Perks
 var hud: Hud
+## Boss attacks in flight (HostileShot), ticked here.
+var hostile_shots: Array[HostileShot] = []
 
 var pickup_layer: Node2D
 var entity_layer: Node2D
@@ -104,6 +107,7 @@ func _ready() -> void:
 	upgrades = Upgrades.new(self)
 	spawner = Spawner.new(self)
 	telemetry = Telemetry.new(self)
+	perks = Perks.new(self)
 	player.add_weapon(Upgrades.create_weapon(Upgrades.STARTING_WEAPON))
 
 	hud = Hud.new()
@@ -134,6 +138,8 @@ func _process(delta: float) -> void:
 	flow_field.update(delta, player.position)
 	_rebuild_grid()
 	_tick_enemies(delta)
+	_tick_hostile_shots(delta)
+	perks.tick(delta)
 	_tick_pickups(delta)
 	_check_player_contact()
 
@@ -197,6 +203,29 @@ func summon_around(boss: Enemy, type_name: String, count: int, radius: float) ->
 	for i in mini(count, spawner.max_alive - enemies.size()):
 		spawn_enemy(type_name, boss.position + Vector2.from_angle(TAU * i / count) * radius)
 	Effects.poof(self, boss.position, boss.color)
+
+
+## A boss's bullet (Enemy "volley").
+func fire_bullet(at: Vector2, velocity: Vector2, damage: float, thrower: String) -> void:
+	var shot := HostileShot.new()
+	shot.setup_bullet(at, velocity, damage, thrower)
+	effect_layer.add_child(shot)
+	hostile_shots.append(shot)
+
+
+## A boss's pie, thrown from `from` to land on `to` (Enemy "lob").
+func lob_pie(from: Vector2, to: Vector2, seconds: float, damage: float, thrower: String) -> void:
+	var shot := HostileShot.new()
+	shot.setup_lob(from, city.resolve(to, 1.0), seconds, damage, thrower)
+	effect_layer.add_child(shot)
+	hostile_shots.append(shot)
+
+
+## Damage to the player from anything: contact, a bullet, a pie. `by` is the enemy type, kept
+## as what last hurt them (Telemetry's killer).
+func hurt_player(amount: float, by: String) -> void:
+	telemetry.last_hurt_by = by
+	player.take_damage(amount)
 
 
 ## All living enemies whose body overlaps the circle.
@@ -289,6 +318,13 @@ func _kill(enemy: Enemy) -> void:
 	Sound.play("kill")
 	Effects.poof(self, enemy.position, enemy.color)
 	_drop_xp(enemy.position, enemy.xp_value)
+	perks.on_kill(enemy)
+	var data: Dictionary = Spawner.ENEMY_TYPES[enemy.type_name]
+	# Splits regardless of the crowd cap: the pieces are the rest of the boss fight.
+	if data.has("splits_into"):
+		var pieces: int = data["split_count"]
+		for i in pieces:
+			spawn_enemy(data["splits_into"], enemy.position + Vector2.from_angle(TAU * i / pieces) * enemy.radius)
 	if not _star_hint_done:
 		_star_hint_done = true
 		Settings.set_value("star_hint_shown", true)
@@ -382,14 +418,22 @@ func _separation(enemy: Enemy) -> Vector2:
 	return push
 
 
+func _tick_hostile_shots(delta: float) -> void:
+	for i in range(hostile_shots.size() - 1, -1, -1):
+		var shot := hostile_shots[i]
+		shot.tick(delta, self)
+		if shot.done:
+			shot.queue_free()
+			hostile_shots.remove_at(i)
+
+
 func _check_player_contact() -> void:
 	var strongest: Enemy = null
 	for enemy in query_enemies(player.position, Player.HURT_RADIUS):
 		if strongest == null or enemy.damage > strongest.damage:
 			strongest = enemy
 	if strongest != null:
-		telemetry.last_hurt_by = strongest.type_name
-		player.take_damage(strongest.damage)
+		hurt_player(strongest.damage, strongest.type_name)
 
 
 func _cell_of(point: Vector2) -> Vector2i:
@@ -466,7 +510,7 @@ func add_xp(amount: int) -> void:
 func _offer_level_up() -> void:
 	if state != State.PLAYING or queued_level_ups <= 0:
 		return
-	current_choices = upgrades.roll_choices(3)
+	current_choices = upgrades.roll_choices(upgrades.choice_count())
 	state = State.LEVEL_UP
 	get_tree().paused = true
 	Sound.play("level_up")

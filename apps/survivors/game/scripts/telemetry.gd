@@ -15,10 +15,12 @@ extends RefCounted
 ##   damage share, the picks in order, a `timeline` of "seconds:level/HP/enemies" every 30 s,
 ##   bosses met and killed, and frames per second (average and worst second).
 ## A run still going when the page closes is saved as a snapshot every SNAPSHOT_SECONDS and
-## sent as a "quit" by the page itself, then or on the next visit.
+## sent as a "quit" by the page itself when it closes and again on the next visit (in-app
+## browsers often close before the first send gets out), so the same `run` can arrive more
+## than once: keep the one with the most `seconds`.
 
 ## Bumped when the balance changes, so data from before and after can be told apart.
-const VERSION := "2026-10-28.2"
+const VERSION := "2026-10-28.3"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -118,7 +120,7 @@ func finish(result: String) -> void:
 		return
 	_finished = true
 	_send("run_end", _summary(result))
-	_call("clear()")
+	_call("clear(%s)" % JSON.stringify(_run_id))
 
 
 func _summary(result: String) -> Dictionary:
@@ -150,12 +152,17 @@ func _summary(result: String) -> Dictionary:
 		"fps_worst": roundi(_fps_worst) if _fps_count > 0 else 0,
 		"device": "phone" if Device.is_handheld() else "desktop",
 	}
-	# Each weapon's share of all damage dealt, in percent (the end screen's ranking).
+	# Each weapon's share of all damage dealt, in percent (the end screen's ranking), plus the
+	# perks that deal damage, once they have.
 	var total := 0.0
 	for amount: float in _game.damage_by_source.values():
 		total += amount
-	for weapon_id: String in Upgrades.WEAPONS:
-		data["dmg_" + weapon_id] = roundi(100.0 * _game.damage_by_source.get(weapon_id, 0.0) / maxf(total, 1.0))
+	var sources: Array = Upgrades.WEAPONS.keys()
+	for source: String in _game.damage_by_source:
+		if not sources.has(source):
+			sources.append(source)
+	for source: String in sources:
+		data["dmg_" + source] = roundi(100.0 * _game.damage_by_source.get(source, 0.0) / maxf(total, 1.0))
 	return data
 
 

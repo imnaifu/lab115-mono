@@ -1,6 +1,6 @@
 class_name Effects
 extends RefCounted
-## Short-lived visual feedback: damage numbers, death puffs and lightning strikes.
+## Short-lived visual feedback: damage numbers, death puffs, lightning strikes and blast rings.
 
 const MAX_DAMAGE_NUMBERS := 40
 
@@ -88,6 +88,39 @@ static func lightning(game: Game, target: Vector2, cloud_art: String) -> void:
 		tween.tween_property(node, "modulate:a", 0.0, 0.2)
 		tween.tween_callback(node.queue_free)
 	poof(game, target, Art.YELLOW)
+
+
+## A ring spreading out to `radius` and fading: the perks' blasts (stand-up, scapegoat, a
+## cost-cut explosion), so the player sees how far one reached.
+static func ring(game: Game, at: Vector2, radius: float, color: Color) -> void:
+	var blast := BlastRing.new()
+	blast.position = at
+	blast.radius = radius
+	blast.color = color
+	game.effect_layer.add_child(blast)
+
+
+class BlastRing:
+	extends Node2D
+
+	const SECONDS := 0.3
+
+	var radius := 40.0
+	var color := Color.WHITE
+	var _age := 0.0
+
+	func _process(delta: float) -> void:
+		_age += delta
+		if _age >= SECONDS:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var progress := _age / SECONDS
+		var reach := radius * (0.35 + 0.65 * progress)
+		draw_circle(Vector2.ZERO, reach, Color(color, 0.22 * (1.0 - progress)))
+		draw_arc(Vector2.ZERO, reach, 0.0, TAU, 40, Color(color, 0.9 * (1.0 - progress)), 2.5, true)
 
 
 static func _bolt_line(points: PackedVector2Array, width: float, color: Color) -> Line2D:

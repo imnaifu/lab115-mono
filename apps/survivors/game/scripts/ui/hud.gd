@@ -32,6 +32,9 @@ const LOW_HP_RATIO := 0.35
 ## The boss bar's top edge, and the screen width it needs to sit there, level with the upgrade
 ## slots (the slots plus the bar's half width, twice over); narrower screens get it lower.
 const BOSS_BAR_TOP := 48
+const XP_BAR_WIDTH := 140.0
+## Level-up cards side by side when there are more than three of them (the headhunter perk).
+const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 const BOSS_BAR_TOP_NARROW := 70
 const BOSS_BAR_MIN_WIDTH := 450.0
 const TOAST_BELOW_BOSS_BAR := 42
@@ -202,7 +205,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif key == KEY_R:
 				game.restart()
 		Game.State.LEVEL_UP:
-			if key >= KEY_1 and key <= KEY_3:
+			if key >= KEY_1 and key <= KEY_9:
 				_pick(key - KEY_1)
 		Game.State.ENDED:
 			if key == KEY_R or key == KEY_ENTER or key == KEY_KP_ENTER:
@@ -291,21 +294,23 @@ func _build_top_bar() -> void:
 	_top_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_top_bar)
 
+	# The XP bar: a short pill centred over the timer, with the level written inside it. A
+	# full-width line along the screen's edge was too easy to miss.
 	_xp_bar = ProgressBar.new()
 	_xp_bar.max_value = 1.0
 	_xp_bar.show_percentage = false
 	_xp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_xp_bar.anchor_right = 1.0
-	_xp_bar.offset_left = 6
-	_xp_bar.offset_right = -6
-	_xp_bar.offset_top = 5
-	_xp_bar.offset_bottom = 17
+	_xp_bar.anchor_left = 0.5
+	_xp_bar.anchor_right = 0.5
+	_xp_bar.offset_left = -XP_BAR_WIDTH / 2.0
+	_xp_bar.offset_right = XP_BAR_WIDTH / 2.0
+	_xp_bar.offset_top = 3
+	_xp_bar.offset_bottom = 19
 	_top_bar.add_child(_xp_bar)
-	_level_label = _label("Lv 1", 10, "DisplayLabel")
-	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_level_label = _label("Lv 1", 12, "DisplayLabel")
+	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_level_label.offset_right = -6
 	_xp_bar.add_child(_level_label)
 
 	var slots := VBoxContainer.new()
@@ -637,10 +642,13 @@ func _show_level_up(choices: Array) -> void:
 	column.add_child(cards)
 	for i in choices.size():
 		var card := _make_card(choices[i], i, portrait)
+		if not portrait and choices.size() > 3:
+			# Four or five side by side (the headhunter perk) still fit the 640-wide view.
+			card.custom_minimum_size = Vector2(LEVEL_UP_CARD_MIN_WIDTH, 190)
 		cards.add_child(card)
 		_pop_in(card, i * 0.06)
 
-	var hint := _label("按 1 / 2 / 3 或点卡片选择", 10, "MutedLabel")
+	var hint := _label("按数字键或点卡片选择", 10, "MutedLabel")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(hint)
 
@@ -697,7 +705,7 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 		text_column.add_child(name_row)
 		name_row.add_child(name_label)
 		if kind != "heal":
-			name_row.add_child(_level_dots(choice["level"]))
+			name_row.add_child(_level_dots(choice["level"], choice["max"]))
 		if tag != null:
 			name_row.add_child(tag)
 		text_column.add_child(description)
@@ -726,7 +734,7 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	if kind != "heal":
 		var dots_row := CenterContainer.new()
 		dots_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		dots_row.add_child(_level_dots(choice["level"]))
+		dots_row.add_child(_level_dots(choice["level"], choice["max"]))
 		column.add_child(dots_row)
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(description)
@@ -777,13 +785,14 @@ func _icon_bubble(art: String, size: float, fill: Color) -> Control:
 	return disc
 
 
-## Five pips: ink up to `filled`, the rest hollow.
-func _level_dots(filled: int) -> Control:
+## One pip per level (five, or fewer for a perk with a lower cap): ink up to `filled`, the rest
+## hollow.
+func _level_dots(filled: int, total: int = Upgrades.MAX_LEVEL) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	for i in Upgrades.MAX_LEVEL:
+	for i in total:
 		var dot := Panel.new()
 		dot.custom_minimum_size = Vector2(8, 8)
 		var done := i < filled
@@ -817,7 +826,7 @@ func _show_pause() -> void:
 	var passive_rows: Array = []
 	for passive_id: String in game.upgrades.passive_levels:
 		var entry: Dictionary = Upgrades.PASSIVES[passive_id]
-		passive_rows.append([entry["art"], entry["name"], game.upgrades.passive_levels[passive_id]])
+		passive_rows.append([entry["art"], entry["name"], game.upgrades.passive_levels[passive_id], Upgrades.max_level("passive", passive_id)])
 	build.add_child(_build_list("能力", passive_rows))
 
 	var player := game.player
@@ -872,7 +881,7 @@ func _build_list(title: String, rows: Array) -> Control:
 		var name_label := _label(row_data[1], 12)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
-		row.add_child(_level_dots(row_data[2]))
+		row.add_child(_level_dots(row_data[2], row_data[3] if row_data.size() > 3 else Upgrades.MAX_LEVEL))
 		list.add_child(row)
 	return list
 
@@ -925,19 +934,20 @@ func _stat_chip(caption: String, value: String) -> Control:
 	return chip
 
 
-## Weapons ranked by the damage they dealt this run, with bars relative to the best.
+## Weapons (and the perks that deal damage) ranked by the damage they dealt this run, with bars
+## relative to the best.
 func _damage_ranking() -> Control:
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 3)
 	list.add_child(_label("伤害排行", 12, "MutedLabel"))
 	var entries: Array = []
 	for source: String in game.damage_by_source:
-		if Upgrades.WEAPONS.has(source):
+		if Upgrades.WEAPONS.has(source) or Upgrades.PASSIVES.has(source):
 			entries.append([source, game.damage_by_source[source]])
 	entries.sort_custom(func(a: Array, b: Array) -> bool: return a[1] > b[1])
 	var best: float = entries[0][1] if not entries.is_empty() else 1.0
 	for entry: Array in entries:
-		var weapon: Dictionary = Upgrades.WEAPONS[entry[0]]
+		var weapon: Dictionary = Upgrades.WEAPONS[entry[0]] if Upgrades.WEAPONS.has(entry[0]) else Upgrades.PASSIVES[entry[0]]
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		row.add_child(_icon(weapon["art"], 18))

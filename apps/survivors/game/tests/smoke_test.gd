@@ -17,7 +17,9 @@ extends SceneTree
 ## --sound (play the sound effects and music; off by default, since nobody listens to a test run
 ## and streams still playing when it quits are reported as leaked),
 ## --all-weapons=N (start with every weapon at level N and take only perks at level-ups, to
-## compare the weapons' damage share in the report).
+## compare the weapons' damage share in the report), --perks=id:level,... (start with those
+## passives, e.g. --perks=standup:5,cost_cut:5), --boss=type,... (bring those enemy types in
+## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -47,6 +49,8 @@ var _pause_shot_taken := false
 var _lang := ""
 var _teleport: Variant = null
 var _all_weapons_level := 0
+var _perks := PackedStringArray()
+var _bosses := PackedStringArray()
 ## Player level when each REPORT_TIMES second was reached, for comparing pacing between builds.
 var _levels_at := {}
 var _worst_frame_ms := 0.0
@@ -83,6 +87,10 @@ func _initialize() -> void:
 			Settings.overrides.erase("music")
 		elif arg.begins_with("--all-weapons="):
 			_all_weapons_level = clampi(int(value), 1, Upgrades.MAX_LEVEL)
+		elif arg.begins_with("--perks="):
+			_perks = value.split(",")
+		elif arg.begins_with("--boss="):
+			_bosses = value.split(",")
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):
@@ -119,6 +127,14 @@ func _process(_delta: float) -> bool:
 				_game.player.position = _teleport
 			if _all_weapons_level > 0:
 				_grant_all_weapons()
+			for perk in _perks:
+				for i in int(perk.get_slice(":", 1)):
+					_game.upgrades.apply({"kind": "passive", "id": perk.get_slice(":", 0)})
+			if not _perks.is_empty():
+				_game.inventory_changed.emit()
+			for i in _bosses.size():
+				var side := Vector2.from_angle(TAU * i / _bosses.size()) * 110.0
+				_game.spawn_enemy(_bosses[i], _game.player.position + side)
 		Game.State.PAUSED:
 			if _pause_at >= 0.0 and not _pause_shot_taken and _shot_dir != "":
 				_pause_frames += 1
@@ -237,6 +253,7 @@ func _report() -> int:
 		_game.player.hp, _game.player.max_hp])
 	print("[smoke] weapons=%s passives=%s" % [", ".join(weapon_levels), ", ".join(passive_levels)])
 	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
+	print("[smoke] bosses killed=%d of %d" % [_game.telemetry._bosses_killed, _game.telemetry._bosses_seen])
 	var uncollected_xp := 0
 	for pickup in _game.pickups:
 		if pickup.kind == Pickup.Kind.XP:

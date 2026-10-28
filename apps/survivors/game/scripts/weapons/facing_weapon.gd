@@ -4,7 +4,8 @@ extends Weapon
 ## (Silicon Valley: 复制粘贴.)
 
 const COUNT := [1, 1, 2, 2, 3]
-const DAMAGE := [8.0, 11.0, 11.0, 14.0, 14.0]
+## Raised after the live runs had it at 1-7% of all damage even at full level.
+const DAMAGE := [10.0, 14.0, 14.0, 18.0, 18.0]
 ## Enemies each file passes through. Players walk away from a crowd as often as into it, so a
 ## file that reaches the crowd has to count for more than one hit.
 const PIERCE := [2, 2, 2, 2, 3]

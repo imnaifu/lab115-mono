@@ -4,8 +4,9 @@ extends Control
 ## the hills to the west and the Bay to the east (the one edge you can't walk past), with the
 ## player, what the screen shows, and any bosses on it.
 ##
-## It shows a fixed stretch of the world (OVERVIEW). The city goes on past that; a player who
-## walks off its edge drags the window along, so they never drop off the map.
+## It always shows the whole of the named map (OVERVIEW). The city goes on past that; a player
+## who walks off its edge makes the map zoom out to take them in too, rather than slide the
+## named part off the map.
 
 ## The named part of the world, in world pixels: from the far side of the hills to past the
 ## Bay's shore, and from north of the Golden Gate (Lombard St) to south of San Jose.
@@ -19,8 +20,11 @@ const DISTRICT_COLORS := {
 	"hills": Color("f0dc9a"), "bay": City.SAND,
 }
 const INSET := 3.0
-## How far inside the window's edge the player stays once the window follows them.
-const FOLLOW_MARGIN := 0.12
+## Room kept around a player outside OVERVIEW, as a fraction of OVERVIEW's size.
+const FOLLOW_MARGIN := 0.06
+## Below this many map pixels per block the street lines would smear into a grey wash, so
+## they are left out (only when zoomed far out).
+const MIN_BLOCK_PIXELS_FOR_ROADS := 3.0
 
 var game: Game
 
@@ -61,14 +65,15 @@ func _draw() -> void:
 	# Roads: a thin white line along every block edge, like a street map, stopping at the water.
 	var road := Color(Art.PAPER, 0.8)
 	var land_end := minf(window.end.x, BayArea.WATER_X)
+	var show_roads := City.BLOCK.x * map_scale.x >= MIN_BLOCK_PIXELS_FOR_ROADS
 	for row in range(first.y, last.y + 2):
 		var y := map.position.y + (row * City.BLOCK.y - window.position.y) * map_scale.y
-		if y > map.position.y and y < map.end.y:
+		if show_roads and y > map.position.y and y < map.end.y:
 			draw_line(Vector2(map.position.x, y), Vector2(map.position.x + (land_end - window.position.x) * map_scale.x, y), road, 1.0)
 	for column in range(first.x, last.x + 2):
 		var world_x := column * City.BLOCK.x
 		var x := map.position.x + (world_x - window.position.x) * map_scale.x
-		if world_x < BayArea.WATER_X and x > map.position.x and x < map.end.x:
+		if show_roads and world_x < BayArea.WATER_X and x > map.position.x and x < map.end.x:
 			draw_line(Vector2(x, map.position.y), Vector2(x, map.end.y), road, 1.0)
 
 	# Bosses, then the player on top: what the screen shows, and a dot where they stand.
@@ -86,13 +91,18 @@ func _draw() -> void:
 	draw_style_box(_frame, outer)
 
 
-## OVERVIEW, slid along with the player once they walk past its edge.
+## OVERVIEW, grown to take in a player who walked past its edge, and widened on its short
+## side to keep the map's proportions.
 func _window() -> Rect2:
-	var window := OVERVIEW
 	var margin := OVERVIEW.size * FOLLOW_MARGIN
-	var player_at := game.player.position
-	window.position.x = clampf(window.position.x, player_at.x + margin.x - window.size.x, player_at.x - margin.x)
-	window.position.y = clampf(window.position.y, player_at.y + margin.y - window.size.y, player_at.y - margin.y)
+	var window := OVERVIEW.merge(Rect2(game.player.position - margin, margin * 2.0))
+	var aspect := MAP_SIZE.x / MAP_SIZE.y
+	if window.size.x < window.size.y * aspect:
+		var extra := window.size.y * aspect - window.size.x
+		window = window.grow_individual(extra / 2.0, 0.0, extra / 2.0, 0.0)
+	else:
+		var extra := window.size.x / aspect - window.size.y
+		window = window.grow_individual(0.0, extra / 2.0, 0.0, extra / 2.0)
 	return window
 
 

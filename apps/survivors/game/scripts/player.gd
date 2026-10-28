@@ -45,6 +45,8 @@ var _sprite: Sprite2D
 var _camera: Camera2D
 var _bar_track: StyleBoxFlat
 var _bar_fill: StyleBoxFlat
+## Standing still with the nap perk (Perks): healing, shown as a "Zz" over the head.
+var _napping := false
 
 
 func _ready() -> void:
@@ -109,6 +111,9 @@ func _draw() -> void:
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE).x
 	var baseline := Vector2(-width / 2.0, bar.get_center().y + (font.get_ascent(HP_FONT_SIZE) - font.get_descent(HP_FONT_SIZE)) / 2.0)
 	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE, Art.INK)
+	if _napping:
+		draw_string_outline(font, Vector2(SIZE * 0.2, -SIZE * 0.45), "Zz", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 4, Art.PAPER)
+		draw_string(font, Vector2(SIZE * 0.2, -SIZE * 0.45), "Zz", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Art.BLUE)
 
 
 static func _pill_style(color: Color, border: int) -> StyleBoxFlat:
@@ -145,13 +150,21 @@ func get_weapon(weapon_id: String) -> Weapon:
 func take_damage(amount: float) -> void:
 	if _invuln_left > 0.0 or hp <= 0.0:
 		return
-	hp = maxf(0.0, hp - maxf(1.0, amount - armor))
+	var lost := minf(hp, maxf(1.0, amount - armor))
+	hp -= lost
 	_invuln_left = INVULN_SECONDS
 	Sound.play("hurt")
 	_shake_left = SHAKE_SECONDS
 	queue_redraw()
+	game.perks.on_hurt(lost)
 	if hp <= 0.0:
 		died.emit()
+
+
+func set_napping(value: bool) -> void:
+	if value != _napping:
+		_napping = value
+		queue_redraw()
 
 
 func heal(amount: float) -> void:

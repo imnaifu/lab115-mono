@@ -5,8 +5,9 @@ extends Weapon
 
 ## Starts a little wider than the player's own sprite; any smaller and only what is already
 ## biting them is in range.
-const RADIUS := [36.0, 42.0, 42.0, 50.0, 58.0]
-const DAMAGE := [5.0, 5.0, 7.0, 7.0, 10.0]
+## Raised after the live runs had it at 2-9% of all damage even at full level.
+const RADIUS := [40.0, 46.0, 46.0, 54.0, 62.0]
+const DAMAGE := [6.0, 6.0, 9.0, 9.0, 13.0]
 const TICK_SECONDS := [0.6, 0.6, 0.5, 0.5, 0.4]
 const RIPPLES := 3
 

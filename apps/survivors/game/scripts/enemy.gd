@@ -7,14 +7,19 @@ extends Node2D
 ## Some bosses have a move (Spawner.ENEMY_TYPES "ability"):
 ## - "charge": every few seconds it stops, shows the lane it is about to rush down, then rushes
 ##   down it. The wind-up is the player's cue to step aside.
-## - "summon": every few seconds it calls a ring of meeting invites around itself.
+## - "summon": every few seconds it calls a ring of minions around itself (meeting invites unless
+##   the type names its own `summon_type` / `summon_count`).
+## - "blink": stops, marks a spot just ahead of where the player is walking, then appears there.
+## - "volley": stops, braces, then fires a ring of bullets outward.
+## - "lob": throws pies at where the player is heading; each shows its landing spot until it lands.
+## Every wind-up is drawn (lane, landing circle, bracing ring) so a move can always be dodged.
 
 const FLASH_SECONDS := 0.08
 ## Modulate above 1 pushes the sprite toward white for the hit flash.
 const FLASH_COLOR := Color(6, 6, 6)
 ## How far a hop squashes and stretches the sprite, as a fraction of its size.
 const SQUASH := 0.08
-const ABILITIES := ["charge", "summon"]
+const ABILITIES := ["charge", "summon", "blink", "volley", "lob"]
 const CHARGE_EVERY := 3.5
 const CHARGE_WINDUP := 0.8
 const CHARGE_SECONDS := 0.6
@@ -23,6 +28,25 @@ const SUMMON_EVERY := 4.5
 const SUMMON_TYPE := "meeting"
 const SUMMON_COUNT := 8
 const SUMMON_RADIUS := 34.0
+const BLINK_EVERY := 4.0
+const BLINK_WINDUP := 0.75
+## Where it lands: this far along the player's walk (seconds of their velocity), give or take.
+const BLINK_LEAD_SECONDS := 0.5
+const BLINK_SCATTER := 24.0
+const VOLLEY_EVERY := 3.2
+const VOLLEY_WINDUP := 0.6
+const VOLLEY_SHOTS := 12
+const VOLLEY_SPEED := 85.0
+const VOLLEY_DAMAGE := 14.0
+const LOB_EVERY := 3.0
+const LOB_PIES := 3
+const LOB_FLIGHT_SECONDS := 1.1
+const LOB_LEAD_SECONDS := 0.6
+const LOB_SPREAD := 34.0
+const LOB_DAMAGE := 18.0
+## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
+const BOSS_STUN_SCALE := 0.5
+const STUN_TINT := Color(0.72, 0.84, 1.0)
 
 var type_name := ""
 var max_hp := 10.0
@@ -42,6 +66,8 @@ var ability := ""
 var game: Game
 ## Seconds left of following the flow field around a building, once it started to (Game).
 var detour_left := 0.0
+## Seconds left standing still, stunned (the stand-up perk).
+var stun_left := 0.0
 
 var _knockback := Vector2.ZERO
 var _wobble := 0.0
@@ -56,6 +82,11 @@ var _ability_left := 0.0
 var _windup_left := 0.0
 var _charge_left := 0.0
 var _charge_direction := Vector2.ZERO
+var _summon_type := SUMMON_TYPE
+var _summon_count := SUMMON_COUNT
+var _blink_target := Vector2.ZERO
+## Turns each volley half a gap, so standing in a gap only works once.
+var _volley_turn := 0.0
 
 
 func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
@@ -73,8 +104,10 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 	knockback_resist = data.get("knockback_resist", 0.0)
 	_wobble = data.get("wobble", 0.0)
 	ability = data.get("ability", "")
+	_summon_type = data.get("summon_type", SUMMON_TYPE)
+	_summon_count = data.get("summon_count", SUMMON_COUNT)
 	# Half a cycle in, so a boss shows its move soon after it walks on screen.
-	_ability_left = (CHARGE_EVERY if ability == "charge" else SUMMON_EVERY) * 0.5
+	_ability_left = _ability_every() * 0.5
 	_phase = randf() * TAU
 	if ghostly:
 		_base_modulate = Color(1, 1, 1, 0.8)
@@ -91,7 +124,13 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 	var velocity := direction * speed
 	if _wobble > 0.0:
 		velocity += direction.orthogonal() * sin(_phase * 0.7) * _wobble
-	if ability != "":
+	if stun_left > 0.0:
+		# Stunned: no walking and no boss move (its timers wait too); knockback still applies.
+		stun_left -= delta
+		velocity = Vector2.ZERO
+		if stun_left <= 0.0 and _flash_left <= 0.0:
+			_sprite.modulate = _base_modulate
+	elif ability != "":
 		velocity = _use_ability(delta, direction, velocity)
 	position += (velocity + _knockback) * delta + separation * 0.3
 	_knockback = _knockback.lerp(Vector2.ZERO, minf(1.0, 10.0 * delta))
@@ -114,35 +153,97 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 	if _flash_left > 0.0:
 		_flash_left -= delta
 		if _flash_left <= 0.0:
-			_sprite.modulate = _base_modulate
+			_sprite.modulate = _rest_modulate()
 
 
-## The velocity to move with this frame once the boss move in progress has had its say: a
-## charge winding up stands still, a charge under way rushes along its locked lane.
+## The velocity to move with this frame once the boss move in progress has had its say: any
+## wind-up stands still, a charge under way rushes along its locked lane.
 func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector2:
 	if _charge_left > 0.0:
 		_charge_left -= delta
 		return _charge_direction * CHARGE_SPEED
 	if _windup_left > 0.0:
 		_windup_left -= delta
+		# Redrawn every frame: the boss can still be shoved while it winds up, and the landing
+		# circle is drawn relative to it.
+		queue_redraw()
 		if _windup_left <= 0.0:
-			_charge_left = CHARGE_SECONDS
-			queue_redraw()
+			_finish_windup()
 		return Vector2.ZERO
 	_ability_left -= delta
 	if _ability_left > 0.0:
 		return velocity
+	_ability_left = _ability_every()
 	match ability:
 		"charge":
-			_ability_left = CHARGE_EVERY
 			_windup_left = CHARGE_WINDUP
 			_charge_direction = direction
-			queue_redraw()
 			return Vector2.ZERO
 		"summon":
-			_ability_left = SUMMON_EVERY
-			game.summon_around(self, SUMMON_TYPE, SUMMON_COUNT, SUMMON_RADIUS)
+			game.summon_around(self, _summon_type, _summon_count, SUMMON_RADIUS)
+		"blink":
+			var player := game.player
+			var ahead := player.position + player.velocity * BLINK_LEAD_SECONDS
+			_blink_target = game.city.resolve(ahead + Vector2.from_angle(randf() * TAU) * randf() * BLINK_SCATTER, radius)
+			_windup_left = BLINK_WINDUP
+			return Vector2.ZERO
+		"volley":
+			_windup_left = VOLLEY_WINDUP
+			return Vector2.ZERO
+		"lob":
+			_throw_pies()
 	return velocity
+
+
+func _ability_every() -> float:
+	match ability:
+		"charge":
+			return CHARGE_EVERY
+		"blink":
+			return BLINK_EVERY
+		"volley":
+			return VOLLEY_EVERY
+		"lob":
+			return LOB_EVERY
+	return SUMMON_EVERY
+
+
+func _finish_windup() -> void:
+	match ability:
+		"charge":
+			_charge_left = CHARGE_SECONDS
+		"blink":
+			Effects.poof(game, position, color)
+			position = _blink_target
+			Effects.poof(game, position, color)
+		"volley":
+			_volley_turn = 0.5 - _volley_turn
+			for i in VOLLEY_SHOTS:
+				var heading := Vector2.from_angle(TAU * (i + _volley_turn) / VOLLEY_SHOTS)
+				game.fire_bullet(position + heading * radius, heading * VOLLEY_SPEED, VOLLEY_DAMAGE, type_name)
+			Sound.play("zap")
+	queue_redraw()
+
+
+## One pie at where the player is heading and the rest to either side of it.
+func _throw_pies() -> void:
+	var player := game.player
+	var aim := player.position + player.velocity * LOB_LEAD_SECONDS
+	var side := (aim - position).normalized().orthogonal()
+	for i in LOB_PIES:
+		var offset := side * (i - (LOB_PIES - 1) / 2.0) * LOB_SPREAD
+		game.lob_pie(position + Vector2(0, -radius), aim + offset, LOB_FLIGHT_SECONDS, LOB_DAMAGE, type_name)
+
+
+## Stops it in place for a while (bosses for less), tinted so it reads as frozen.
+func stun(seconds: float) -> void:
+	stun_left = maxf(stun_left, seconds * (BOSS_STUN_SCALE if is_elite else 1.0))
+	if _flash_left <= 0.0:
+		_sprite.modulate = _rest_modulate()
+
+
+func _rest_modulate() -> Color:
+	return _base_modulate * STUN_TINT if stun_left > 0.0 else _base_modulate
 
 
 func take_hit(amount: float, push: Vector2) -> void:
@@ -158,12 +259,25 @@ func _draw() -> void:
 	if not is_elite:
 		return
 	if _windup_left > 0.0:
-		# The lane the charge will cover, so the player sees where not to stand.
-		draw_set_transform(Vector2.ZERO, _charge_direction.angle())
-		var lane := Rect2(0.0, -radius - 4.0, CHARGE_SPEED * CHARGE_SECONDS + radius, (radius + 4.0) * 2.0)
-		draw_rect(lane, Color(Art.RED, 0.18))
-		draw_rect(lane, Color(Art.RED, 0.6), false, 1.5)
-		draw_set_transform(Vector2.ZERO)
+		match ability:
+			"charge":
+				# The lane the charge will cover, so the player sees where not to stand.
+				draw_set_transform(Vector2.ZERO, _charge_direction.angle())
+				var lane := Rect2(0.0, -radius - 4.0, CHARGE_SPEED * CHARGE_SECONDS + radius, (radius + 4.0) * 2.0)
+				draw_rect(lane, Color(Art.RED, 0.18))
+				draw_rect(lane, Color(Art.RED, 0.6), false, 1.5)
+				draw_set_transform(Vector2.ZERO)
+			"blink":
+				# Where it will appear, filling in as the moment comes.
+				var landing := _blink_target - position
+				var progress := 1.0 - _windup_left / BLINK_WINDUP
+				draw_circle(landing, radius + 6.0, Color(Art.RED, 0.15))
+				draw_circle(landing, (radius + 6.0) * progress, Color(Art.RED, 0.2))
+				draw_arc(landing, radius + 6.0, 0.0, TAU, 32, Color(Art.RED, 0.7), 1.5, true)
+			"volley":
+				# A ring tightening onto the boss: the volley goes off when it closes.
+				var closing := _windup_left / VOLLEY_WINDUP
+				draw_arc(Vector2.ZERO, radius + 4.0 + 16.0 * closing, 0.0, TAU, 32, Color(Art.RED, 0.8 - 0.4 * closing), 2.0, true)
 	var width := _size * 0.7
 	var bar := Rect2(-width / 2.0, -_size / 2.0 - 8.0, width, 5.0)
 	draw_rect(bar.grow(1.0), Art.INK)
