@@ -1,7 +1,7 @@
 class_name Hud
 extends CanvasLayer
 ## Screen-space UI: XP bar, timer, kills, inventory slots and the touch joystick, plus the
-## title, level-up, pause and end-of-run overlays. Keeps running while the tree is paused so
+## title, level-up, funding bag, pause and end-of-run overlays. Keeps running while the tree is paused so
 ## the overlays can take input.
 ## Overlay visibility follows game.state every frame instead of being toggled by events, so a
 ## pick made from code (the smoke-test bot) closes the level-up panel too.
@@ -38,6 +38,19 @@ const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 const BOSS_BAR_TOP_NARROW := 70
 const BOSS_BAR_MIN_WIDTH := 450.0
 const TOAST_BELOW_BOSS_BAR := 42
+## The next-boss countdown under the timer shows this many seconds ahead; where the boss bar
+## sits right under the timer, it moves down this far to make room.
+const NEXT_BOSS_WARNING := 20.0
+const NEXT_BOSS_ROOM := 18
+## A first few runs show how to move until the player does, after this long standing still.
+const MOVE_HINT_AFTER := 2.0
+const MOVE_HINT_RUNS := 3
+## The funding bag's slot machine: laps of all the rounds before landing, and how long it spins.
+const CHEST_SPIN_LAPS := 4
+const CHEST_SPIN_SECONDS := 1.6
+const ROUND_COLORS := {"angel": Art.FILL_MINT, "series_a": Art.FILL_SKY, "ipo": Art.BRAND}
+## Space kept around a pause or end panel that has to shrink to fit the screen.
+const FIT_MARGIN := 8.0
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
 	"asking": "请在弹窗里允许访问动作与方向",
@@ -79,6 +92,18 @@ var _pause_overlay: Control
 var _pause_holder: CenterContainer
 var _end_overlay: Control
 var _end_holder: CenterContainer
+var _chest_overlay: Control
+var _chest_holder: CenterContainer
+var _chest_spin: Tween
+var _chest_revealed := false
+## Shows the bag's result straight away (the button pressed mid-spin).
+var _chest_reveal := Callable()
+var _next_boss_pill: Control
+var _next_boss_label: Label
+var _move_hint: Control
+var _difficulty_hint: Label
+var _victory := false
+var _sharing := false
 var _settings_overlay: Control
 var _settings_holder: CenterContainer
 var _settings_open := false
@@ -107,14 +132,19 @@ func _ready() -> void:
 	_root.add_child(_joystick)
 	_build_top_bar()
 	_build_toast()
+	_build_move_hint()
 	_title_overlay = _build_title()
 	# Overlays wash the world out to the design's cream ground instead of dimming it.
 	_level_up_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
 	_cards_holder = _centered(_level_up_overlay)
 	_pause_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
 	_pause_holder = _centered(_pause_overlay)
+	_add_corner_version(_pause_overlay)
 	_end_overlay = _overlay(Color(Art.PAPER_SOFT, 0.88))
 	_end_holder = _centered(_end_overlay)
+	_add_corner_version(_end_overlay)
+	_chest_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
+	_chest_holder = _centered(_chest_overlay)
 	# Last, so it opens on top of the title or pause screen it was opened from.
 	_settings_overlay = _overlay(Color(Art.PAPER_SOFT, 0.6))
 	_settings_holder = _centered(_settings_overlay)
@@ -123,6 +153,7 @@ func _ready() -> void:
 	game.level_up_offered.connect(_show_level_up)
 	game.run_ended.connect(_show_end)
 	game.announced.connect(_show_toast)
+	game.chest_opened.connect(_show_chest)
 
 
 func _notification(what: int) -> void:
@@ -142,6 +173,7 @@ func _process(delta: float) -> void:
 	_level_label.text = "Lv %d" % game.level
 	_time_label.text = _clock_text(game.elapsed)
 	_kills_label.text = str(game.kills)
+	_update_next_boss()
 	_update_boss_bar()
 	var district := BayArea.district_of(Vector2i((game.player.position / City.BLOCK).floor()))
 	if district != _district:
@@ -160,6 +192,11 @@ func _process(delta: float) -> void:
 	_level_up_overlay.visible = state == Game.State.LEVEL_UP
 	_pause_overlay.visible = state == Game.State.PAUSED
 	_end_overlay.visible = state == Game.State.ENDED
+	_chest_overlay.visible = state == Game.State.CHEST
+	_move_hint.visible = state == Game.State.PLAYING and not game.has_moved and game.elapsed > MOVE_HINT_AFTER \
+		and game.runs_before < MOVE_HINT_RUNS and not Tilt.enabled()
+	if _move_hint.visible:
+		_move_hint.modulate.a = 0.75 + 0.25 * sin(_clock * 5.0)
 	if state != Game.State.TITLE and state != Game.State.PAUSED:
 		_settings_open = false
 	_settings_overlay.visible = _settings_open
@@ -207,6 +244,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.State.LEVEL_UP:
 			if key >= KEY_1 and key <= KEY_9:
 				_pick(key - KEY_1)
+		Game.State.CHEST:
+			if key == KEY_ENTER or key == KEY_KP_ENTER or key == KEY_SPACE:
+				_on_chest_button()
 		Game.State.ENDED:
 			if key == KEY_R or key == KEY_ENTER or key == KEY_KP_ENTER:
 				game.restart()
@@ -338,6 +378,19 @@ func _build_top_bar() -> void:
 	_time_label = _label("00:00", 15, "DisplayLabel")
 	time_pill.add_child(_time_label)
 
+	# The next boss's countdown, under the timer: a moment to get ready (Survivor.io shows it).
+	_next_boss_pill = PanelContainer.new()
+	_next_boss_pill.add_theme_stylebox_override("panel", _box(Art.FILL_PINK, Art.RED, 1, PILL, Vector4(8, 0, 8, 1)))
+	_next_boss_pill.anchor_left = 0.5
+	_next_boss_pill.anchor_right = 0.5
+	_next_boss_pill.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_next_boss_pill.offset_top = 45
+	_next_boss_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_next_boss_pill.visible = false
+	_top_bar.add_child(_next_boss_pill)
+	_next_boss_label = _label("", 9, "StrongLabel")
+	_next_boss_pill.add_child(_next_boss_label)
+
 	_build_boss_bar()
 
 	# The minimap under the buttons, with the district's name beneath it.
@@ -466,12 +519,25 @@ func _update_boss_bar() -> void:
 
 
 ## Under the timer when the screen is wide enough to fit it between the upgrade slots and the
-## buttons; below the slots on narrow (upright) screens. The toast moves down with it.
+## buttons (below the next-boss countdown while that shows); below the slots on narrow (upright)
+## screens. The toast moves down with it.
 func _place_boss_bar() -> void:
-	var top := BOSS_BAR_TOP if _root.size.x >= BOSS_BAR_MIN_WIDTH else BOSS_BAR_TOP_NARROW
+	var top := BOSS_BAR_TOP_NARROW
+	if _root.size.x >= BOSS_BAR_MIN_WIDTH:
+		top = BOSS_BAR_TOP + (NEXT_BOSS_ROOM if _next_boss_pill.visible else 0)
 	if _boss_bar.offset_top != top:
 		_boss_bar.offset_top = top
 		_toast.offset_top = top + TOAST_BELOW_BOSS_BAR
+
+
+func _update_next_boss() -> void:
+	var seconds_left := game.spawner.seconds_to_next_boss()
+	_next_boss_pill.visible = seconds_left > 0.0 and seconds_left <= NEXT_BOSS_WARNING
+	if _next_boss_pill.visible:
+		_next_boss_label.text = tr("下一个 boss %s") % ("0:%02d" % ceili(seconds_left))
+		# Shrink back around the text each time, like the toast.
+		_next_boss_pill.offset_left = 0
+		_next_boss_pill.offset_right = 0
 
 
 func _recalibrate_tilt() -> void:
@@ -548,6 +614,25 @@ func _show_toast(text: String) -> void:
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.5)
 
 
+## How to move, near the bottom, for a first few runs until the player does (the live data had a
+## first-time player stand still at level 1 for half a minute).
+func _build_move_hint() -> void:
+	_move_hint = PanelContainer.new()
+	_move_hint.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, Vector4(14, 4, 14, 5)))
+	_move_hint.anchor_left = 0.5
+	_move_hint.anchor_right = 0.5
+	_move_hint.anchor_top = 1.0
+	_move_hint.anchor_bottom = 1.0
+	_move_hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_move_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_move_hint.offset_bottom = -48
+	_move_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_move_hint.visible = false
+	var text := "按住屏幕任意位置拖动，就能移动" if Device.is_handheld() else "用 WASD 或方向键移动"
+	_move_hint.add_child(_label(text, 13, "StrongLabel"))
+	_root.add_child(_move_hint)
+
+
 ## Red edges that pulse in as HP runs low.
 func _build_vignette() -> void:
 	var gradient := Gradient.new()
@@ -615,13 +700,48 @@ func _build_title() -> Control:
 	buttons.add_child(_settings_button())
 	start.call_deferred("grab_focus")
 
+	var tiers: Array = []
+	for tier_id: String in Difficulty.ORDER:
+		tiers.append([Difficulty.TIERS[tier_id]["name"], tier_id == Difficulty.current_id])
+	var difficulty_row := HBoxContainer.new()
+	difficulty_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	difficulty_row.add_theme_constant_override("separation", 6)
+	column.add_child(difficulty_row)
+	for option in _choice_buttons(tiers, _on_difficulty_picked, Vector2(84, 28)):
+		option.focus_mode = Control.FOCUS_NONE
+		difficulty_row.add_child(option)
+	_difficulty_hint = _label(Difficulty.TIERS[Difficulty.current_id]["hint"], 10, "MutedLabel")
+	_difficulty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_difficulty_hint)
+
 	var controls := _label("电脑：WASD / 方向键移动　手机：按住屏幕拖动", 10, "MutedLabel")
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	controls.custom_minimum_size = Vector2(TITLE_TEXT_WIDTH, 0)
 	column.add_child(controls)
 
+	_add_corner_version(overlay)
 	return overlay
+
+
+func _on_difficulty_picked(index: int) -> void:
+	Difficulty.choose(Difficulty.ORDER[index])
+	_difficulty_hint.text = Difficulty.TIERS[Difficulty.current_id]["hint"]
+
+
+## Which build this is, in the bottom-right corner of the title, pause and end screens, so a
+## phone still on an old one can be told apart at a glance.
+func _add_corner_version(overlay: Control) -> void:
+	var version := _label("v" + Telemetry.VERSION, 9, "MutedLabel")
+	version.anchor_left = 1.0
+	version.anchor_right = 1.0
+	version.anchor_top = 1.0
+	version.anchor_bottom = 1.0
+	version.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	version.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	version.offset_right = -8
+	version.offset_bottom = -6
+	overlay.add_child(version)
 
 
 # --- Level-up ------------------------------------------------------------------------------
@@ -644,9 +764,11 @@ func _show_level_up(choices: Array) -> void:
 		var card := _make_card(choices[i], i, portrait)
 		if not portrait and choices.size() > 3:
 			# Four or five side by side (the headhunter perk) still fit the 640-wide view.
-			card.custom_minimum_size = Vector2(LEVEL_UP_CARD_MIN_WIDTH, 190)
+			card.custom_minimum_size = Vector2(LEVEL_UP_CARD_MIN_WIDTH, 222)
 		cards.add_child(card)
 		_pop_in(card, i * 0.06)
+
+	_fit_cards.call_deferred(cards)
 
 	var hint := _label("按数字键或点卡片选择", 10, "MutedLabel")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -663,7 +785,7 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	var kind: String = choice["kind"]
 	var well: Color = KIND_COLORS[kind]
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(300, 74) if compact else Vector2(150, 180)
+	card.custom_minimum_size = Vector2(300, 86) if compact else Vector2(150, 196)
 	# Flat with a hairline at rest; the design's only shadow appears on hover.
 	card.add_theme_stylebox_override("normal", _box(Art.PAPER, Art.LINE, 1, RADIUS_MD))
 	card.add_theme_stylebox_override("hover", _with_hover_shadow(_box(Art.PAPER, Art.LINE_STRONG, 1, RADIUS_MD)))
@@ -681,11 +803,23 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(margin)
 
-	var tag := _tag("新！") if choice["level"] == 1 else null
+	var tag: Control = null
+	if choice.get("recommended", false):
+		tag = _tag("推荐")
+	elif choice["level"] == 1:
+		tag = _tag("新！")
 	var bubble := _icon_bubble(choice["art"], 40.0 if compact else 52.0, well)
 	var name_label := _label(choice["name"], 15, "StrongLabel")
 	var description := _label(choice["text"], 11, "MutedLabel")
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# What the card changes in numbers ("伤害 14 → 18"), translated already; none on the fallback
+	# card.
+	var numbers_text := game.upgrades.numbers(choice)
+	var numbers: Label = null
+	if numbers_text != "":
+		numbers = _label(numbers_text, 10, "StrongLabel")
+		numbers.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		numbers.add_theme_color_override("font_color", Art.LINK)
 
 	if compact:
 		var row := HBoxContainer.new()
@@ -709,6 +843,8 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 		if tag != null:
 			name_row.add_child(tag)
 		text_column.add_child(description)
+		if numbers != null:
+			text_column.add_child(numbers)
 		return card
 
 	var column := VBoxContainer.new()
@@ -730,6 +866,9 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	bubble_row.add_child(bubble)
 	column.add_child(bubble_row)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Four or five narrow cards side by side: a long English name takes two lines instead of
+	# widening its card.
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(name_label)
 	if kind != "heal":
 		var dots_row := CenterContainer.new()
@@ -738,7 +877,18 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 		column.add_child(dots_row)
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(description)
+	if numbers != null:
+		numbers.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		column.add_child(numbers)
 	return card
+
+
+## Grows each card to what its text needs once wrapped (a Button doesn't size to its children):
+## English runs longer, and the numbers line adds a line or two.
+func _fit_cards(cards: Control) -> void:
+	for card: Control in cards.get_children():
+		var content: Control = card.get_child(0)
+		card.custom_minimum_size = card.custom_minimum_size.max(content.get_combined_minimum_size())
 
 
 func _pick(index: int) -> void:
@@ -761,7 +911,7 @@ func _key_badge(index: int) -> Control:
 	return badge
 
 
-## A small highlighted pill: 新！ on fresh upgrades.
+## A small highlighted pill: 新！ on fresh upgrades, 推荐 on the weapons a young build needs.
 func _tag(text_key: String) -> Control:
 	var tag := PanelContainer.new()
 	tag.add_theme_stylebox_override("panel", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 1, PILL, Vector4(6, 0, 6, 0)))
@@ -810,7 +960,7 @@ func _show_pause() -> void:
 	var panel := _panel()
 	_pause_holder.add_child(panel)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 8)
 	panel.add_child(column)
 
 	column.add_child(_heading("休息一下", 22))
@@ -850,21 +1000,26 @@ func _show_pause() -> void:
 		recalibrate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(recalibrate)
 
-	# Three buttons side by side don't fit the 360-wide portrait view; stack them there.
-	var buttons := _stack(portrait)
+	column.add_child(_difficulty_switcher())
+
+	# Three buttons side by side don't fit the 360-wide portrait view; there "resume" gets a row
+	# of its own and the other two share the next.
+	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 8 if portrait else 10)
-	column.add_child(buttons)
 	var resume := _button("继续（Esc）", game.set_paused.bind(false), true)
-	buttons.add_child(resume)
+	if portrait:
+		resume.custom_minimum_size.x = 200
+		resume.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		column.add_child(resume)
+	else:
+		buttons.add_child(resume)
+	column.add_child(buttons)
 	buttons.add_child(_button("重新开始（R）", game.restart))
 	buttons.add_child(_settings_button())
-	if portrait:
-		for button: Button in buttons.get_children():
-			button.custom_minimum_size.x = 200
-			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	resume.grab_focus()
 	_pop_in(panel, 0.0)
+	_fit_to_screen(_pause_holder)
 
 
 func _build_list(title: String, rows: Array) -> Control:
@@ -889,16 +1044,26 @@ func _build_list(title: String, rows: Array) -> Control:
 # --- End -----------------------------------------------------------------------------------
 
 func _show_end(victory: bool) -> void:
+	_victory = victory
 	_clear(_end_holder)
 	var panel := _panel()
 	_end_holder.add_child(panel)
+	# Landscape is too short for everything in one column: the damage ranking goes on the right.
+	var portrait := _is_portrait()
+	var body := _stack(portrait)
+	body.add_theme_constant_override("separation", 8 if portrait else 20)
+	panel.add_child(body)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
-	panel.add_child(column)
+	body.add_child(column)
 
 	column.add_child(_heading("敲钟上市！" if victory else "项目黄了…", 30, Art.BRAND if victory else Art.FILL_PINK))
-	var subtitle := _label("撑过了 10 分钟，公司成功 IPO" if victory else "公司没撑住……再融一轮？", 12, "MutedLabel")
+	# Joined from translated parts: a Label only translates text that matches a whole entry.
+	var outcome := tr("撑过了 10 分钟，公司成功 IPO" if victory else "公司没撑住……再融一轮？")
+	var subtitle := _label("%s · %s" % [outcome, tr(Difficulty.tier_name())], 12, "MutedLabel")
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.custom_minimum_size = Vector2(260, 0)
 	column.add_child(subtitle)
 
 	var stats := HBoxContainer.new()
@@ -909,14 +1074,118 @@ func _show_end(victory: bool) -> void:
 		stats.add_child(_stat_chip(stat[0], stat[1]))
 
 	var ranking := _damage_ranking()
-	if ranking.get_child_count() > 1:
+	if ranking.get_child_count() <= 1:
+		# Nothing dealt damage (just its caption): not shown, and never in the tree to be freed with it.
+		ranking.free()
+	elif portrait:
 		column.add_child(ranking)
+	else:
+		ranking.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		body.add_child(ranking)
 
+	var advice := _end_advice(victory)
+	if advice != "":
+		var advice_label := _label(advice, 11)
+		advice_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		advice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		advice_label.custom_minimum_size = Vector2(280, 0)
+		advice_label.add_theme_color_override("font_color", Art.LINK)
+		column.add_child(advice_label)
+
+	column.add_child(_difficulty_switcher())
+
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons.add_theme_constant_override("separation", 8)
+	column.add_child(buttons)
 	var again := _button("再来一局（R）", game.restart, true)
-	again.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(again)
+	buttons.add_child(again)
+	buttons.add_child(_button("生成战绩图", _make_share_image))
 	again.grab_focus()
 	_pop_in(panel, 0.0)
+	_fit_to_screen(_end_holder)
+
+
+## One line for the next run: on a loss, what most likely went wrong (the live data's early
+## deaths were mostly one-weapon builds); on a win below 996, that a harder tier exists.
+func _end_advice(victory: bool) -> String:
+	if victory:
+		return tr("太轻松？在下面换成「%s」试试") % tr(Difficulty.TIERS["996"]["name"]) if Difficulty.current_id != "996" else ""
+	var weapons := game.player.weapons.size()
+	var advice := ""
+	if weapons <= 2:
+		advice = tr("只有 %d 把武器？前期先拿武器卡，清怪快经验才多") % weapons
+	elif _bosses_out() >= 2:
+		advice = tr("被 %d 个 boss 围住了：边走边打，别停在原地") % _bosses_out()
+	elif Spawner.ENEMY_TYPES.get(game.telemetry.last_hurt_by, {}).get("elite", false):
+		advice = tr("boss 出招前会画出范围，看到就往旁边躲")
+	elif game.elapsed < 120.0:
+		advice = tr("多走动，去捡星星升级")
+	else:
+		advice = tr("试试多拿撸铁或降噪耳机，更抗揍")
+	if game.elapsed < 240.0 and Difficulty.current_id != "intern":
+		advice += "\n" + tr("觉得难？在下面换成「%s」试试") % tr(Difficulty.TIERS["intern"]["name"])
+	return advice
+
+
+## The difficulty on the pause and end screens: this run's tier is chosen; picking another one
+## restarts straight away at it (a tier can't change mid-run), as the line under it says.
+func _difficulty_switcher() -> Control:
+	var tiers: Array = []
+	for tier_id: String in Difficulty.ORDER:
+		tiers.append([Difficulty.TIERS[tier_id]["name"], tier_id == Difficulty.current_id])
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 6)
+	box.add_child(row)
+	for option in _choice_buttons(tiers, _on_difficulty_switched, Vector2(76, 28)):
+		option.focus_mode = Control.FOCUS_NONE
+		row.add_child(option)
+	var hint := _label("换难度会马上重开一局", 10, "MutedLabel")
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(hint)
+	return box
+
+
+func _on_difficulty_switched(index: int) -> void:
+	var tier_id: String = Difficulty.ORDER[index]
+	if tier_id == Difficulty.current_id:
+		return
+	Difficulty.save_for_next_run(tier_id)
+	game.restart()
+
+
+func _bosses_out() -> int:
+	var count := 0
+	for enemy in game.enemies:
+		if enemy.is_elite and not enemy.dead:
+			count += 1
+	return count
+
+
+## Renders the result image (ShareCard) and hands it to the page to save or share; elsewhere
+## (the editor, the smoke test) it is saved to user://share_card.png.
+func _make_share_image() -> void:
+	if _sharing:
+		return
+	_sharing = true
+	var card := ShareCard.new()
+	add_child(card)
+	card.build(game, _victory, _root.theme)
+	var image: Image = await card.capture()
+	card.queue_free()
+	_sharing = false
+	if not OS.has_feature("web"):
+		image.save_png("user://share_card.png")
+		print("[hud] result image saved to %s" % ProjectSettings.globalize_path("user://share_card.png"))
+		return
+	var share := JavaScriptBridge.get_interface("survivorsShare")
+	if share == null:
+		return
+	var hint := "长按图片保存，或发给朋友" if Device.is_handheld() else "右键图片可以另存为"
+	share.show(Marshalls.raw_to_base64(image.save_png_to_buffer()), tr(hint), tr("分享"), tr("保存图片"), tr("关闭"))
 
 
 func _stat_chip(caption: String, value: String) -> Control:
@@ -967,6 +1236,102 @@ func _damage_ranking() -> Control:
 		row.add_child(_label(Lang.short_number(entry[1]), 11, "DisplayLabel"))
 		list.add_child(row)
 	return list
+
+
+# --- Funding bag ---------------------------------------------------------------------------
+
+## A boss's funding bag: a slot machine runs through the rounds and lands on the one Game rolled,
+## then the upgrades it brought pop in (Game has applied them already).
+func _show_chest(funding_round: Dictionary, items: Array) -> void:
+	_clear(_chest_holder)
+	_chest_revealed = false
+	var panel := _panel()
+	_chest_holder.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	column.custom_minimum_size = Vector2(260, 0)
+	panel.add_child(column)
+	column.add_child(_heading("融资开奖！", 22))
+
+	var reel := PanelContainer.new()
+	reel.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 2, RADIUS_MD, Vector4(24, 4, 24, 6)))
+	reel.custom_minimum_size = Vector2(170, 0)
+	reel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(reel)
+	var reel_label := _label(Game.FUNDING_ROUNDS[0]["name"], 26, "DisplayLabel")
+	reel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	reel.add_child(reel_label)
+
+	var prize := HBoxContainer.new()
+	prize.alignment = BoxContainer.ALIGNMENT_CENTER
+	prize.add_theme_constant_override("separation", 6)
+	prize.custom_minimum_size = Vector2(0, 76)
+	column.add_child(prize)
+
+	var take := _button("收下", _on_chest_button, true)
+	take.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(take)
+	take.grab_focus()
+	_pop_in(panel, 0.0)
+	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
+
+	# Laps of every round, slowing down, then the winning one.
+	var landing := Game.FUNDING_ROUNDS.find(funding_round)
+	var steps := float(CHEST_SPIN_LAPS * Game.FUNDING_ROUNDS.size() + landing)
+	_chest_reveal = _reveal_chest.bind(reel, reel_label, prize, funding_round, items)
+	_chest_spin = panel.create_tween()
+	_chest_spin.tween_method(_spin_reel.bind(reel_label), 0.0, steps, CHEST_SPIN_SECONDS) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	_chest_spin.tween_callback(_chest_reveal)
+
+
+func _spin_reel(step: float, reel_label: Label) -> void:
+	var funding_round: Dictionary = Game.FUNDING_ROUNDS[floori(step) % Game.FUNDING_ROUNDS.size()]
+	if reel_label.text != funding_round["name"]:
+		reel_label.text = funding_round["name"]
+		Sound.play("xp")
+
+
+func _reveal_chest(reel: PanelContainer, reel_label: Label, prize: HBoxContainer, funding_round: Dictionary, items: Array) -> void:
+	if _chest_revealed:
+		return
+	_chest_revealed = true
+	if _chest_spin != null and _chest_spin.is_valid():
+		_chest_spin.kill()
+	reel_label.text = funding_round["name"]
+	reel.add_theme_stylebox_override("panel", _box(ROUND_COLORS[funding_round["id"]], Art.INK, 2, RADIUS_MD, Vector4(24, 4, 24, 6)))
+	reel.pivot_offset = reel.size / 2.0
+	_pop_in(reel, 0.0)
+	Sound.play("win" if funding_round["id"] == "ipo" else "level_up")
+	for i in items.size():
+		var item: Dictionary = items[i]
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 2)
+		cell.custom_minimum_size = Vector2(52, 0)
+		prize.add_child(cell)
+		var bubble_row := CenterContainer.new()
+		bubble_row.add_child(_icon_bubble(item["art"], 36.0, KIND_COLORS[item["kind"]]))
+		cell.add_child(bubble_row)
+		var name_label := _label(item["name"], 10, "StrongLabel")
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cell.add_child(name_label)
+		if item["kind"] != "heal":
+			var dots_row := CenterContainer.new()
+			dots_row.add_child(_level_dots(item["level"], item["max"]))
+			cell.add_child(dots_row)
+		cell.resized.connect(func() -> void: cell.pivot_offset = cell.size / 2.0)
+		_pop_in(cell, 0.1 + i * 0.12)
+
+
+## Mid-spin it shows the result at once; after that it closes the bag.
+func _on_chest_button() -> void:
+	if game.state != Game.State.CHEST or Time.get_ticks_msec() < _accept_picks_at:
+		return
+	if not _chest_revealed:
+		_chest_reveal.call()
+		return
+	game.close_chest()
 
 
 # --- Settings ------------------------------------------------------------------------------
@@ -1124,6 +1489,21 @@ func _panel() -> PanelContainer:
 	panel.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE, 1, RADIUS_LG, Vector4(18, 14, 18, 16)))
 	panel.resized.connect(func() -> void: panel.pivot_offset = panel.size / 2.0)
 	return panel
+
+
+## Shrinks a panel that came out taller or wider than the screen (a full build in English on a
+## short landscape screen) until it fits, around the screen's centre.
+func _fit_to_screen(holder: Control) -> void:
+	holder.scale = Vector2.ONE
+	# The containers lay the new panel out at the end of this frame.
+	await get_tree().process_frame
+	if not is_instance_valid(holder) or holder.get_child_count() == 0:
+		return
+	var panel: Control = holder.get_child(0)
+	var room := _root.size - Vector2.ONE * FIT_MARGIN * 2.0
+	var factor := minf(1.0, minf(room.x / panel.size.x, room.y / panel.size.y))
+	holder.pivot_offset = holder.size / 2.0
+	holder.scale = Vector2.ONE * factor
 
 
 func _clear(holder: Node) -> void:

@@ -19,7 +19,9 @@ extends SceneTree
 ## --all-weapons=N (start with every weapon at level N and take only perks at level-ups, to
 ## compare the weapons' damage share in the report), --perks=id:level,... (start with those
 ## passives, e.g. --perks=standup:5,cost_cut:5), --boss=type,... (bring those enemy types in
-## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves).
+## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves),
+## --difficulty=intern|normal|996 (this run's tier, not saved), --share (with --shots, also
+## render the end screen's result image into the shots directory).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -51,6 +53,11 @@ var _teleport: Variant = null
 var _all_weapons_level := 0
 var _perks := PackedStringArray()
 var _bosses := PackedStringArray()
+var _chests := 0
+var _chest_frames := 0
+var _chest_shot_taken := false
+var _share := false
+var _share_started := false
 ## Player level when each REPORT_TIMES second was reached, for comparing pacing between builds.
 var _levels_at := {}
 var _worst_frame_ms := 0.0
@@ -91,6 +98,10 @@ func _initialize() -> void:
 			_perks = value.split(",")
 		elif arg.begins_with("--boss="):
 			_bosses = value.split(",")
+		elif arg.begins_with("--difficulty="):
+			Settings.overrides["difficulty"] = value
+		elif arg == "--share":
+			_share = true
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):
@@ -153,6 +164,16 @@ func _process(_delta: float) -> bool:
 				_level_up_shot_taken = true
 			_game.choose_upgrade(_pick_choice())
 			_upgrades_taken += 1
+		Game.State.CHEST:
+			if _shot_dir != "" and not _chest_shot_taken:
+				# Long enough for the slot machine to land.
+				_chest_frames += 1
+				if _chest_frames < 120:
+					return false
+				_save_shot("chest")
+				_chest_shot_taken = true
+			_chests += 1
+			_game.close_chest()
 		Game.State.PLAYING:
 			_game.player.input_override = _steer()
 			if _god:
@@ -179,7 +200,17 @@ func _process(_delta: float) -> bool:
 		_end_frames += 1
 		if _end_frames < OVERLAY_SETTLE_FRAMES:
 			return false
-		_save_shot("end")
+		if _end_frames == OVERLAY_SETTLE_FRAMES:
+			_save_shot("end")
+		if _share and DisplayServer.get_name() != "headless":
+			if not _share_started:
+				_share_started = true
+				_game.hud._make_share_image()
+				return false
+			if _game.hud._sharing:
+				return false
+			DirAccess.copy_absolute(ProjectSettings.globalize_path("user://share_card.png"), "%s/shot_share.png" % _shot_dir)
+			print("[smoke] saved %s/shot_share.png" % _shot_dir)
 	if _game.state == Game.State.ENDED or _frames >= _max_frames:
 		quit(_report())
 		return true
@@ -253,7 +284,8 @@ func _report() -> int:
 		_game.player.hp, _game.player.max_hp])
 	print("[smoke] weapons=%s passives=%s" % [", ".join(weapon_levels), ", ".join(passive_levels)])
 	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
-	print("[smoke] bosses killed=%d of %d" % [_game.telemetry._bosses_killed, _game.telemetry._bosses_seen])
+	print("[smoke] bosses killed=%d of %d, funding bags opened=%d (%s), difficulty=%s" % [
+		_game.telemetry._bosses_killed, _game.telemetry._bosses_seen, _chests, ",".join(_game.telemetry._chests), Difficulty.current_id])
 	var uncollected_xp := 0
 	for pickup in _game.pickups:
 		if pickup.kind == Pickup.Kind.XP:

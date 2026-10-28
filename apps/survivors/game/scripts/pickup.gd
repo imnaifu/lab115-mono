@@ -23,6 +23,10 @@ const HALO_COLORS := {Kind.XP: Color("fff3a8"), Kind.HEAL: Color("ffd25e"), Kind
 ## Each pickup swells and shrinks a little, and every few seconds flashes brighter.
 const PULSE := 0.08
 const TWINKLE_EVERY := 2.5
+## The bouncing arrow and spreading ring on the first star a device ever sees (point_at).
+const POINTER_HEIGHT := 20.0
+const POINTER_SIZE := 7.0
+const POINTER_RING := 16.0
 
 static var _halo_texture: GradientTexture2D
 
@@ -36,6 +40,7 @@ var _base_scale := 1.0
 var _size := 13.0
 var _sprite: Sprite2D
 var _halo: Sprite2D
+var _pointed := false
 
 
 func setup(pickup_kind: Kind, amount: int) -> void:
@@ -56,6 +61,12 @@ func add_value(amount: int) -> void:
 	_refresh_texture()
 
 
+## Marks this pickup with a bouncing arrow until it is collected.
+func point_at() -> void:
+	_pointed = true
+	queue_redraw()
+
+
 func attract() -> void:
 	if _attracted:
 		return
@@ -74,6 +85,8 @@ func tick(delta: float, player: Player) -> bool:
 	var flash := clampf(1.0 - absf(twinkle - 0.15) / 0.15, 0.0, 1.0)
 	_sprite.modulate = Color(1, 1, 1).lerp(Color(1.8, 1.8, 1.8), flash)
 	_halo.scale = Vector2.ONE * (_size * HALO_SCALE / _halo.texture.get_height()) * (1.0 + 0.25 * flash)
+	if _pointed:
+		queue_redraw()
 	var offset := player.position - position
 	var distance_sq := offset.length_squared()
 	if not _attracted and distance_sq <= player.pickup_radius * player.pickup_radius:
@@ -84,6 +97,20 @@ func tick(delta: float, player: Player) -> bool:
 	var distance := sqrt(distance_sq)
 	position += offset / maxf(distance, 0.001) * minf(_speed * delta, distance)
 	return distance <= COLLECT_DISTANCE
+
+
+func _draw() -> void:
+	if not _pointed:
+		return
+	# A ring spreading out from the star once a second, and an arrow bobbing above it.
+	var spread := fmod(_bob_phase / 3.0, 1.0)
+	draw_arc(Vector2.ZERO, _size * 0.5 + POINTER_RING * spread, 0.0, TAU, 32, Color(Art.BRAND_DEEP, 1.0 - spread), 2.0, true)
+	var tip := Vector2(0.0, -_size * 0.5 - 4.0 - absf(sin(_bob_phase * 1.5)) * 4.0)
+	var arrow := PackedVector2Array([tip, tip + Vector2(-POINTER_SIZE, -POINTER_SIZE), tip + Vector2(POINTER_SIZE, -POINTER_SIZE)])
+	draw_colored_polygon(arrow, Art.BRAND)
+	arrow.append(tip)
+	draw_polyline(arrow, Art.INK, 1.5, true)
+	draw_line(tip + Vector2(0.0, -POINTER_SIZE), tip + Vector2(0.0, -POINTER_HEIGHT), Art.INK, 2.0, true)
 
 
 func _refresh_texture() -> void:

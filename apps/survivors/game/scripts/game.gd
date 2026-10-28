@@ -7,8 +7,10 @@ signal inventory_changed
 signal level_up_offered(choices: Array)
 signal run_ended(victory: bool)
 signal announced(text: String)
+signal chest_opened(funding_round: Dictionary, items: Array)
 
-enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, ENDED }
+## CHEST is a boss's funding bag being opened (the slot machine in Hud).
+enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED }
 
 const RUN_SECONDS := 600.0
 ## Logical view sizes; project.godot's viewport size is the landscape one.
@@ -32,6 +34,14 @@ const HEAL_DROP_CHANCE := 0.012
 ## gets its first upgrades quickly; from level 5 on the curve applies.
 const EARLY_LEVEL_XP := [3, 7, 13, 20]
 const MAGNET_DROP_CHANCE := 0.004
+## A boss's funding bag opens as a slot machine landing on a round, which decides how many free
+## upgrades come out (Vampire Survivors' chests: 1, 3 or 5 items). Rare big rounds are the
+## jackpot moment.
+const FUNDING_ROUNDS := [
+	{"id": "angel", "name": "天使轮", "items": 1, "weight": 75.0},
+	{"id": "series_a", "name": "A 轮", "items": 3, "weight": 20.0},
+	{"id": "ipo", "name": "IPO", "items": 5, "weight": 5.0},
+]
 
 ## Set by restart() so "play again" skips the title screen; static so it survives the reload.
 static var skip_title := false
@@ -48,6 +58,12 @@ var queued_level_ups := 0
 var current_choices: Array = []
 ## Total damage dealt per weapon id, for the end-of-run ranking.
 var damage_by_source := {}
+## Runs this device had played before this one (Settings' runs_played as the scene loaded).
+var runs_before := 0
+## Whether the player has moved yet this run; the HUD shows how to until they do.
+var has_moved := false
+## Funding bags picked up while another was open, opened once it closes.
+var chests_waiting := 0
 
 var rng := RandomNumberGenerator.new()
 var player: Player
@@ -79,6 +95,8 @@ func _ready() -> void:
 	Lang.setup()
 	Tilt.setup()
 	_star_hint_done = Settings.get_value("star_hint_shown", false)
+	runs_before = Settings.get_value("runs_played", 0)
+	Difficulty.load_saved()
 	rng.randomize()
 
 	player = Player.new()
@@ -103,6 +121,9 @@ func _ready() -> void:
 	number_layer = _add_layer(20)
 	entity_layer.add_child(player)
 	add_child(city)
+	var boss_pointers := BossPointers.new()
+	boss_pointers.game = self
+	number_layer.add_child(boss_pointers)
 
 	upgrades = Upgrades.new(self)
 	spawner = Spawner.new(self)
@@ -124,6 +145,7 @@ func _ready() -> void:
 	else:
 		get_tree().paused = true
 		Sound.music("title")
+		telemetry.on_title_shown()
 
 
 func _process(delta: float) -> void:
@@ -133,6 +155,8 @@ func _process(delta: float) -> void:
 	if elapsed >= RUN_SECONDS:
 		_end_run(true)
 		return
+	if not has_moved and player.velocity.length_squared() > 1.0:
+		has_moved = true
 	spawner.tick(delta)
 	telemetry.tick(delta)
 	flow_field.update(delta, player.position)
@@ -188,7 +212,9 @@ func apply_orientation() -> void:
 
 func spawn_enemy(type_name: String, at: Vector2) -> Enemy:
 	var enemy := Enemy.new()
-	enemy.setup(type_name, Spawner.ENEMY_TYPES[type_name], spawner.hp_scale())
+	var data: Dictionary = Spawner.ENEMY_TYPES[type_name]
+	var tier_hp := Difficulty.value("boss_hp" if data.get("elite", false) else "enemy_hp")
+	enemy.setup(type_name, data, spawner.hp_scale() * tier_hp)
 	enemy.game = self
 	enemy.position = at if enemy.ghostly else city.resolve(at, enemy.radius)
 	entity_layer.add_child(enemy)
@@ -225,7 +251,7 @@ func lob_pie(from: Vector2, to: Vector2, seconds: float, damage: float, thrower:
 ## as what last hurt them (Telemetry's killer).
 func hurt_player(amount: float, by: String) -> void:
 	telemetry.last_hurt_by = by
-	player.take_damage(amount)
+	player.take_damage(amount * Difficulty.value("damage"))
 
 
 ## All living enemies whose body overlaps the circle.
@@ -322,7 +348,7 @@ func _kill(enemy: Enemy) -> void:
 	telemetry.on_enemy_killed(enemy)
 	Sound.play("kill")
 	Effects.poof(self, enemy.position, enemy.color)
-	_drop_xp(enemy.position, enemy.xp_value)
+	var star := _drop_xp(enemy.position, enemy.xp_value)
 	perks.on_kill(enemy)
 	var data: Dictionary = Spawner.ENEMY_TYPES[enemy.type_name]
 	# Splits regardless of the crowd cap: the pieces are the rest of the boss fight.
@@ -330,10 +356,13 @@ func _kill(enemy: Enemy) -> void:
 		var pieces: int = data["split_count"]
 		for i in pieces:
 			spawn_enemy(data["splits_into"], enemy.position + Vector2.from_angle(TAU * i / pieces) * enemy.radius)
-	if not _star_hint_done:
+	if not _star_hint_done and star != null:
 		_star_hint_done = true
 		Settings.set_value("star_hint_shown", true)
 		announce("捡星星升级！走近就会自动吸过来")
+		# The live data had a first-time player stay at level 1 for 30 seconds: a toast at the top
+		# wasn't enough to send them to the star.
+		star.point_at()
 	if enemy.is_elite:
 		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), 1)
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
@@ -447,23 +476,25 @@ func _cell_of(point: Vector2) -> Vector2i:
 
 # --- Pickups & XP --------------------------------------------------------------------------
 
-func _drop_xp(at: Vector2, value: int) -> void:
+## The new star, or null when the XP went into one already on the ground.
+func _drop_xp(at: Vector2, value: int) -> Pickup:
 	if pickups.size() >= MAX_PICKUPS:
 		# Fold the XP into an existing star instead of piling up nodes in long runs.
 		for attempt in 8:
 			var existing := pickups[rng.randi() % pickups.size()]
 			if existing.kind == Pickup.Kind.XP:
 				existing.add_value(value)
-				return
-	_drop(Pickup.Kind.XP, at, value)
+				return null
+	return _drop(Pickup.Kind.XP, at, value)
 
 
-func _drop(kind: Pickup.Kind, at: Vector2, value: int) -> void:
+func _drop(kind: Pickup.Kind, at: Vector2, value: int) -> Pickup:
 	var pickup := Pickup.new()
 	pickup.setup(kind, value)
 	pickup.position = at + Vector2(rng.randf_range(-3, 3), rng.randf_range(-3, 3))
 	pickup_layer.add_child(pickup)
 	pickups.append(pickup)
+	return pickup
 
 
 func _tick_pickups(delta: float) -> void:
@@ -485,10 +516,7 @@ func _collect(pickup: Pickup) -> void:
 			player.heal(30.0)
 			announce("珍珠奶茶，回血 30！")
 		Pickup.Kind.BONUS:
-			# No sound of its own: the level-up it grants plays one straight away.
-			queued_level_ups += 1
-			announce("拿到融资！免费升级一次")
-			_offer_level_up()
+			_open_chest()
 		Pickup.Kind.MAGNET:
 			Sound.play("magnet")
 			for other in pickups:
@@ -516,6 +544,7 @@ func _offer_level_up() -> void:
 	if state != State.PLAYING or queued_level_ups <= 0:
 		return
 	current_choices = upgrades.roll_choices(upgrades.choice_count())
+	telemetry.on_offer(current_choices)
 	state = State.LEVEL_UP
 	get_tree().paused = true
 	Sound.play("level_up")
@@ -533,6 +562,40 @@ func choose_upgrade(index: int) -> void:
 	get_tree().paused = false
 	inventory_changed.emit()
 	# Several level-ups can be banked at once (big gems, chests); offer them back to back.
+	_offer_level_up()
+
+
+# --- Funding bags ------------------------------------------------------------------------
+
+## Rolls the round, hands out its upgrades straight away and pauses while the HUD plays the slot
+## machine. A second bag picked up meanwhile waits its turn.
+func _open_chest() -> void:
+	if state != State.PLAYING:
+		chests_waiting += 1
+		return
+	var weights := PackedFloat32Array()
+	for funding_round: Dictionary in FUNDING_ROUNDS:
+		weights.append(funding_round["weight"])
+	var funding_round: Dictionary = FUNDING_ROUNDS[rng.rand_weighted(weights)]
+	var items := upgrades.open_chest(funding_round["items"])
+	telemetry.on_chest(funding_round["id"])
+	state = State.CHEST
+	get_tree().paused = true
+	inventory_changed.emit()
+	chest_opened.emit(funding_round, items)
+
+
+## The HUD's "take it" button (and the smoke-test bot).
+func close_chest() -> void:
+	if state != State.CHEST:
+		return
+	state = State.PLAYING
+	get_tree().paused = false
+	if chests_waiting > 0:
+		chests_waiting -= 1
+		_open_chest()
+		return
+	# Level-ups earned while the bag was open (its stars, a kill landing as it opened).
 	_offer_level_up()
 
 

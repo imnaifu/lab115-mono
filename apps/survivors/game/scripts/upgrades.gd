@@ -8,6 +8,12 @@ const MAX_LEVEL := 5
 ## Passives a run can hold, like the six weapon slots: once six are picked, only those level up.
 const MAX_PASSIVES := 6
 const BASE_CHOICES := 3
+## New-weapon cards every run's first level-ups always include (two, then one). In the live data,
+## first-time players who filled up on passives were left with one weapon and died at 2–4
+## minutes, while those who took weapons early lived; the novel passives made that trap worse.
+const NEW_WEAPONS_GUARANTEED := [2, 1]
+## New weapons are marked 推荐 (recommended) until the player carries this many.
+const RECOMMEND_UNTIL_WEAPONS := 3
 
 const WEAPONS := {
 	"enter": {"name": "回车键", "art": "enter_key", "behavior": "aimed",
@@ -42,6 +48,13 @@ const PASSIVES := {
 	"headhunter": {"name": "猎头电话", "art": "headhunter", "text": "升级时多 1 个选项", "max": 2},
 }
 
+## The names the weapon stats go by on cards, most telling first; a card shows at most
+## MAX_STATS_SHOWN of the ones that change (its text already sums up the step), so five narrow
+## cards side by side still fit.
+const WEAPON_STAT_NAMES := {"damage": "伤害", "count": "数量", "pierce": "穿透", "radius": "范围",
+	"speed": "速度", "size": "大小", "cooldown": "间隔"}
+const MAX_STATS_SHOWN := 2
+
 ## Offered only when everything else is maxed out.
 const FALLBACK := {"kind": "heal", "id": "heal", "level": 0, "name": "摸鱼一会儿", "art": "boba", "text": "回复 30 生命"}
 
@@ -49,6 +62,8 @@ const STARTING_WEAPON := "enter"
 
 var passive_levels := {}
 var _game: Game
+## Level-ups offered so far this run (for NEW_WEAPONS_GUARANTEED).
+var _offers := 0
 
 
 func _init(game: Game) -> void:
@@ -79,7 +94,40 @@ static func create_weapon(weapon_id: String) -> Weapon:
 	return weapon
 
 
+## The cards for a level-up.
 func roll_choices(count: int) -> Array:
+	var guaranteed: int = NEW_WEAPONS_GUARANTEED[_offers] if _offers < NEW_WEAPONS_GUARANTEED.size() else 0
+	_offers += 1
+	var picked := _roll(count, guaranteed)
+	var carried := _game.player.weapons.size()
+	for choice: Dictionary in picked:
+		if choice["kind"] == "weapon" and choice["level"] == 1 and carried < RECOMMEND_UNTIL_WEAPONS:
+			choice["recommended"] = true
+	return picked
+
+
+## A funding bag's upgrades (Game.FUNDING_ROUNDS), applied at once. Like Vampire Survivors'
+## chests they level up what the player already carries; only once all of that is at its cap do
+## new things come out.
+func open_chest(count: int) -> Array:
+	var items: Array = []
+	for i in count:
+		var carried: Array = []
+		for weapon in _game.player.weapons:
+			if weapon.level < MAX_LEVEL:
+				carried.append(_choice("weapon", weapon.id, weapon.level + 1))
+		for passive_id: String in passive_levels:
+			if passive_levels[passive_id] < max_level("passive", passive_id):
+				carried.append(_choice("passive", passive_id, passive_levels[passive_id] + 1))
+		var item: Dictionary = carried[_game.rng.randi() % carried.size()] if not carried.is_empty() else _roll(1, 0)[0]
+		apply(item)
+		items.append(item)
+	return items
+
+
+## `count` cards from the weighted pool, the first `new_weapons` of them weapons not yet carried
+## (as many as there are). The fallback card when the pool is empty.
+func _roll(count: int, new_weapons: int) -> Array:
 	var pool: Array = []
 	var weights := PackedFloat32Array()
 	for weapon_id: String in WEAPONS:
@@ -101,6 +149,17 @@ func roll_choices(count: int) -> Array:
 			weights.append(2.0)
 
 	var picked: Array = []
+	for i in mini(new_weapons, count):
+		var fresh: Array[int] = []
+		for index in pool.size():
+			if pool[index]["kind"] == "weapon" and pool[index]["level"] == 1:
+				fresh.append(index)
+		if fresh.is_empty():
+			break
+		var index := fresh[_game.rng.randi() % fresh.size()]
+		picked.append(pool[index])
+		pool.remove_at(index)
+		weights.remove_at(index)
 	while picked.size() < count and not pool.is_empty():
 		var index := _game.rng.rand_weighted(weights)
 		picked.append(pool[index])
@@ -108,7 +167,17 @@ func roll_choices(count: int) -> Array:
 		weights.remove_at(index)
 	if picked.is_empty():
 		picked.append(FALLBACK)
+	# The guaranteed weapons shouldn't always sit in the first slots.
+	_shuffle(picked)
 	return picked
+
+
+func _shuffle(items: Array) -> void:
+	for i in range(items.size() - 1, 0, -1):
+		var other := _game.rng.randi_range(0, i)
+		var held = items[i]
+		items[i] = items[other]
+		items[other] = held
 
 
 ## How many cards a level-up offers: three, plus one per level of the headhunter perk.
@@ -156,6 +225,121 @@ func _apply_passive(passive_id: String) -> void:
 			player.pickup_radius *= 1.3
 		"regen":
 			player.regen += 0.3
+
+
+## What a card changes, in numbers ("伤害 14 → 18 · 数量 1 → 2"), already translated: a weapon's
+## stats that change at that level (just its damage for a new one), a passive's total before and
+## after. Damage and gaps include the player's current bonuses, so they match the numbers that
+## pop up in play.
+func numbers(choice: Dictionary) -> String:
+	var next_level: int = choice["level"]
+	match choice["kind"]:
+		"weapon":
+			var after := weapon_stats(choice["id"], next_level)
+			if next_level == 1:
+				return _step("伤害", "", _shown_stat("damage", after["damage"]))
+			var before := weapon_stats(choice["id"], next_level - 1)
+			var parts := PackedStringArray()
+			for stat_key: String in WEAPON_STAT_NAMES:
+				if after.has(stat_key) and after[stat_key] != before[stat_key] and parts.size() < MAX_STATS_SHOWN:
+					parts.append(_step(WEAPON_STAT_NAMES[stat_key], _shown_stat(stat_key, before[stat_key]), _shown_stat(stat_key, after[stat_key])))
+			return " · ".join(parts)
+		"passive":
+			return _passive_numbers(choice["id"], next_level)
+	return ""
+
+
+## A weapon's numbers at a level, read from its script's own tables so cards can't drift from
+## what the weapon does. `cooldown` is seconds between attacks, `size` a scale.
+static func weapon_stats(weapon_id: String, weapon_level: int) -> Dictionary:
+	var i := weapon_level - 1
+	match WEAPONS[weapon_id]["behavior"]:
+		"aimed":
+			return {"damage": AimedWeapon.DAMAGE[i], "count": AimedWeapon.COUNT[i], "pierce": AimedWeapon.PIERCE[i]}
+		"facing":
+			return {"damage": FacingWeapon.DAMAGE[i], "count": FacingWeapon.COUNT[i], "pierce": FacingWeapon.PIERCE[i], "cooldown": FacingWeapon.COOLDOWN[i]}
+		"seek":
+			return {"damage": SeekerWeapon.DAMAGE[i], "count": SeekerWeapon.COUNT[i], "speed": SeekerWeapon.SPEED[i]}
+		"strike":
+			return {"damage": StrikeWeapon.DAMAGE[i], "count": StrikeWeapon.COUNT[i], "radius": StrikeWeapon.SPLASH_RADIUS[i], "cooldown": StrikeWeapon.COOLDOWN[i]}
+		"toss":
+			return {"damage": TossWeapon.DAMAGE[i], "count": TossWeapon.COUNT[i], "size": TossWeapon.SIZE[i]}
+		"aura":
+			return {"damage": AuraWeapon.DAMAGE[i], "radius": AuraWeapon.RADIUS[i], "cooldown": AuraWeapon.TICK_SECONDS[i]}
+	return {}
+
+
+func _shown_stat(stat_key: String, value: Variant) -> String:
+	var player := _game.player
+	match stat_key:
+		"damage":
+			return str(roundi(value * player.might))
+		"cooldown":
+			return tr("%s 秒") % _short_float(value * player.cooldown_scale)
+		"size":
+			return "×%s" % _short_float(value)
+	return str(roundi(value))
+
+
+func _passive_numbers(passive_id: String, next_level: int) -> String:
+	var player := _game.player
+	var current := next_level - 1
+	match passive_id:
+		"might":
+			return _step("伤害", "+%d%%" % roundi((player.might - 1.0) * 100.0), "+%d%%" % roundi((player.might - 0.9) * 100.0))
+		"armor":
+			return _step("护甲", str(roundi(player.armor)), str(roundi(player.armor + 1.0)))
+		"vitality":
+			return _step("生命上限", str(roundi(player.max_hp)), str(roundi(player.max_hp + 20.0)))
+		"swiftness":
+			return _step("移速", _percent_over(player.move_speed / Player.BASE_MOVE_SPEED), _percent_over(player.move_speed * 1.08 / Player.BASE_MOVE_SPEED))
+		"haste":
+			return _step("冷却", "-%d%%" % roundi((1.0 - player.cooldown_scale) * 100.0), "-%d%%" % roundi((1.0 - player.cooldown_scale * 0.92) * 100.0))
+		"magnet":
+			return _step("拾取", _percent_over(player.pickup_radius / Player.BASE_PICKUP_RADIUS), _percent_over(player.pickup_radius * 1.3 / Player.BASE_PICKUP_RADIUS))
+		"regen":
+			return _step("回血", tr("%s/秒") % _short_float(player.regen), tr("%s/秒") % _short_float(player.regen + 0.3))
+		"stock":
+			return _step("每分钟伤害", "+%d%%" % roundi(Perks.VESTING_MIGHT * current * 100.0), "+%d%%" % roundi(Perks.VESTING_MIGHT * next_level * 100.0))
+		"scapegoat":
+			return _perk_step("反伤", Perks.SCAPEGOAT_MULTIPLIER, current, next_level, "×%s")
+		"cost_cut":
+			return _perk_step("爆炸几率", Perks.BLAST_CHANCE, current, next_level, "%s%%", 100.0)
+		"open_source":
+			return _perk_step("炮台几率", Perks.TURRET_CHANCE, current, next_level, "%s%%", 100.0)
+		"standup":
+			return _perk_step("站会间隔", Perks.STANDUP_EVERY, current, next_level, tr("%s 秒"))
+		"nap":
+			return _perk_step("午休回血", Perks.NAP_REGEN, current, next_level, tr("%s/秒"))
+		"headhunter":
+			return _step("选项", str(BASE_CHOICES + current), str(BASE_CHOICES + next_level))
+	return ""
+
+
+## A perk's value from its per-level table, before and after; just the new value at level 1.
+func _perk_step(stat_name: String, table: Array, current: int, next_level: int, value_format: String, scale: float = 1.0) -> String:
+	var after: String = value_format % _short_float(table[next_level - 1] * scale)
+	if current == 0:
+		return _step(stat_name, "", after)
+	return _step(stat_name, value_format % _short_float(table[current - 1] * scale), after)
+
+
+## "name before → after", or "name after" with no before (or one of nothing, like "+0%").
+func _step(stat_name: String, before: String, after: String) -> String:
+	if before in ["", "0", "+0%", "-0%"]:
+		return "%s %s" % [tr(stat_name), after]
+	return "%s %s → %s" % [tr(stat_name), before, after]
+
+
+## A multiplier over the base as "+8%".
+static func _percent_over(ratio: float) -> String:
+	return "+%d%%" % roundi((ratio - 1.0) * 100.0)
+
+
+## 1.5 as "1.5", 2.0 as "2", rounded to one decimal.
+static func _short_float(value: float) -> String:
+	var rounded := snappedf(value, 0.1)
+	return str(roundi(rounded)) if is_equal_approx(rounded, roundf(rounded)) else "%.1f" % rounded
 
 
 func _choice(kind: String, choice_id: String, next_level: int) -> Dictionary:

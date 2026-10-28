@@ -5,7 +5,7 @@
 ```
 game/              # Godot 工程（玩法、素材、测试都在这里，见 game/README.md）
 Dockerfile         # 第一阶段装 Godot、从 game/ 导出 Web 版；第二阶段 nginx:alpine 提供，wasm / pck / js 预先 gzip
-nginx.conf         # gzip_static + no-cache（文件名每次导出都一样，必须按 ETag 重新校验）
+nginx.conf         # gzip_static + no-cache（大多数文件名每次导出都一样，必须按 ETag 重新校验）；带哈希的游戏包 index-<哈希>.pck 永久缓存
 check-project.mjs  # CI 的 "build"：检查工程文件齐全、地图用到的 soco-st 楼图和 sound.gd 用到的音效都已入库、裁剪过的字体收了脚本里的所有字
 ```
 

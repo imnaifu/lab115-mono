@@ -71,10 +71,9 @@ const ENEMY_TYPES := {
 		"hp": 1900.0, "speed": 28.0, "damage": 24.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "lob"},
 }
-## A boss due while this many are still out waits until one is down. Players who keep up
-## never see the wait; it stops a player who has fallen behind from being buried under bosses
-## (the live data's deaths had four or five alive at once).
-const MAX_BOSSES_OUT := 3
+## A boss due while this many are still out waits until one is down (Difficulty's `max_bosses`,
+## 3 on normal). Players who keep up never see the wait; it stops a player who has fallen behind
+## from being buried under bosses (the live data's deaths had four or five alive at once).
 
 ## Mix of the steady trickle by run time; each entry applies until its `until` second.
 ## The opening is slow bugs only; pings, fast and weaving, join once the player has a level or two.
@@ -115,7 +114,7 @@ var max_alive := MAX_ALIVE
 var _game: Game
 var _spawn_budget := 0.0
 var _next_event := 0
-## Events whose time has come but that haven't gone out yet (a boss held by MAX_BOSSES_OUT).
+## Events whose time has come but that haven't gone out yet (a boss held back by the cap).
 var _due_events: Array[Dictionary] = []
 
 
@@ -130,7 +129,7 @@ func _init(game: Game) -> void:
 ## the bosses now carry more of the pressure.
 func spawn_rate() -> float:
 	var ease_in := lerpf(EASE_IN_START, 1.0, minf(_game.elapsed / EASE_IN_SECONDS, 1.0))
-	return (0.8 + _game.elapsed / 60.0 * 0.55) * ease_in
+	return (0.8 + _game.elapsed / 60.0 * 0.55) * ease_in * Difficulty.value("spawn")
 
 
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 3x by the ten-minute mark.
@@ -153,6 +152,15 @@ func tick(delta: float) -> void:
 		_game.spawn_enemy(_pick_type(), _game.offscreen_point(_game.random_direction()))
 
 
+## Seconds until the next boss is due, or -1 when none is left. A boss already due but held
+## back by the cap doesn't count: there is no time to show for it.
+func seconds_to_next_boss() -> float:
+	for index in range(_next_event, EVENTS.size()):
+		if EVENTS[index]["kind"] == "elite":
+			return EVENTS[index]["at"] - _game.elapsed
+	return -1.0
+
+
 func _pick_type() -> String:
 	var mix: Dictionary = WAVES[-1]["mix"]
 	for wave: Dictionary in WAVES:
@@ -166,17 +174,18 @@ func _pick_type() -> String:
 	return names[_game.rng.rand_weighted(weights)]
 
 
-## Sends out the due events in order, except that a boss waits while MAX_BOSSES_OUT are out;
-## rings behind a waiting boss still go out on time.
+## Sends out the due events in order, except that a boss waits while the difficulty's
+## `max_bosses` are out; rings behind a waiting boss still go out on time.
 func _release_due_events() -> void:
 	var index := 0
 	var bosses_out := -1
+	var max_bosses_out := int(Difficulty.value("max_bosses"))
 	while index < _due_events.size():
 		var event := _due_events[index]
 		if event["kind"] == "elite":
 			if bosses_out < 0:
 				bosses_out = _bosses_out()
-			if bosses_out >= MAX_BOSSES_OUT:
+			if bosses_out >= max_bosses_out:
 				index += 1
 				continue
 			bosses_out += event["count"]
