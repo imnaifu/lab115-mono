@@ -8,8 +8,10 @@ SRT/VTT files. Everything runs locally by default: no paid APIs, accounts or GPU
 
 Episode 1: **"100 people, 4 windows — which line rule makes everyone wait the least?"**
 
-This is a local tool inside the lab115 monorepo. It is not deployed and has no Dockerfile or compose
-service. CI runs `npm run build` (typecheck + Vite build), which needs neither Python nor a browser.
+This is a local tool inside the lab115 monorepo. Only its preview page is deployed, at
+**https://video.lab115.com** (see [Online preview](#online-preview)); voicing and exporting always
+run locally. CI and the image run `npm run build` (typecheck + Vite build), which needs neither
+Python nor a browser.
 
 ## What you need to provide
 
@@ -65,6 +67,7 @@ npm run render -- --story stories/queue-demo.json
 | `npm run studio` | Remotion Studio: every story as a composition, scrub any frame, hear the cached narration |
 | `npm run render:legacy -- --story <story>` | The previous Playwright + FFmpeg exporter (same options), kept while Remotion settles |
 | `npm run tts:evaluate` | Re-run the Kokoro compatibility and speed benchmark on this machine |
+| `npm run publish:voice` | Copy the clips the stories use into `public/__simlab/voice/` for the [online preview](#online-preview) (not under `output/`; commit them) |
 
 Every command writes to a **new** directory under `output/<command>/<name>-<timestamp>/`. Nothing
 is overwritten. `output/`, `cache/` and `.venv-tts/` are git-ignored.
@@ -274,6 +277,22 @@ composition with its narration clips on the timeline; scrub to any frame. It lin
 - **Narration**: once clips are generated, playback at 1× plays the real voice, and the audio clock drives the picture and captions. If a change makes the text differ from the generated audio (e.g. a new seed changes a number), the panel says how many clips are missing and timing falls back to estimates. At other speeds the preview is silent. Effects and music are export-only.
 - Scrub bar, 0.25–4× speed, `Space`, `←/→` (one frame), `Shift+←/→` (5 s), `c` for the clean view, low-res mode.
 - Tabs show the metrics (single run and batch kept separate), assumptions, metric definitions, and every narration clip with its time (click to jump).
+
+### Online preview
+
+**https://video.lab115.com** serves the same preview page as a static build (`Dockerfile`,
+`nginx.conf`; the `video` service in the repo's `docker-compose.yml`), redeployed by Coolify on
+every push to `main`. A static build has no dev server, so:
+
+- **Narration** comes from `public/__simlab/voice/`, which `npm run publish:voice` fills from
+  `cache/voice` with exactly the clips the stories use now. After changing narration, run
+  `npm run voice -- --story … --all`, then `npm run publish:voice`, and commit the clips with the
+  story. Kokoro stories are published; `"files"` stories only with `--include <story>` — their
+  recordings may not be yours to publish (queue-switching's are macOS `say` stand-ins, licensed
+  for personal use only, so it plays silently online). Changing settings online changes the text,
+  so those sentences fall back to estimated timing, as they do locally.
+- **Illustrations** are placeholders: Soco-st files may not be redistributed, are not in git, and
+  `.dockerignore` keeps them out of a locally built image too.
 
 ## Exporting
 

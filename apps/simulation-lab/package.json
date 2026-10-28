@@ -19,7 +19,8 @@
     "tts:evaluate": "PYTORCH_ENABLE_MPS_FALLBACK=1 .venv-tts/bin/python tts/evaluate.py output/tts-eval/$(date +%Y%m%d-%H%M%S)",
     "assets": "tsx src/cli/assets.ts",
     "render:legacy": "tsx src/cli/renderLegacy.ts",
-    "studio": "tsx src/cli/studio.ts"
+    "studio": "tsx src/cli/studio.ts",
+    "publish:voice": "tsx src/cli/publishVoice.ts"
   },
   "dependencies": {
     "@fontsource/noto-sans-sc": "^5.3.1",

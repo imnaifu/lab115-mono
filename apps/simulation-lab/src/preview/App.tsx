@@ -306,7 +306,7 @@ export function App() {
           </svg>
           Simulation Lab
         </span>
-        <span className="header-meta">local preview · frames match the export</span>
+        <span className="header-meta">{import.meta.env.PROD ? "preview" : "local preview"} · frames match the export</span>
       </header>
       <div className="layout">
         <aside className="sidebar">
@@ -375,14 +375,19 @@ export function App() {
               ? "This story has no narration."
               : cachedClips === clips.length
                 ? `${clips.length}/${clips.length} clips generated — timing from real audio.`
-                : `${cachedClips}/${clips.length} clips generated. Missing clips use estimated timing (settings or text changed?). Run: npm run voice -- --story stories/${scene?.story.name}.json --all`}
+                : import.meta.env.PROD
+                  ? // Online only published clips exist (npm run publish:voice); there is nothing to run.
+                    `${cachedClips}/${clips.length} clips have audio; the rest use estimated timing.`
+                  : `${cachedClips}/${clips.length} clips generated. Missing clips use estimated timing (settings or text changed?). Run: npm run voice -- --story stories/${scene?.story.name}.json --all`}
           </p>
           <button className="sk-btn sk-btn--secondary" onClick={refreshManifest}>
             Reload narration
           </button>
           <h2>Illustrations</h2>
           {library && library.missing.length === 0 && <p className="hint">All illustration files found.</p>}
-          {library && library.missing.length > 0 && (
+          {/* Soco-st files may not be redistributed, so the deployed build never has them. */}
+          {library && library.missing.length > 0 && import.meta.env.PROD && <p className="hint">The online preview uses placeholder illustrations.</p>}
+          {library && library.missing.length > 0 && !import.meta.env.PROD && (
             <div className="notice">
               {library.missing.length} slot(s) use placeholders. Add Soco-st files to <code>public/assets/socost/</code> and list them in <code>config/assets.socost.json</code>, then reload (check with <code>npm run assets</code>).
               <ul>

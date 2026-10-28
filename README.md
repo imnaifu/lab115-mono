@@ -15,6 +15,7 @@ repo/
 │   │   └── src/{app,components,data,hooks,utils,i18n.ts,icons.ts,index.css}
 │   ├── daily/                # daily.lab115.com — site *and* cron in one container
 │   ├── madlibs/              # madlibs.lab115.com — 疯狂填词 fill-in-the-blank stories
+│   ├── simulation-lab/       # video.lab115.com — simulation videos: preview online, rendering local
 │   ├── xhs-watcher/          # local worker — not deployed either
 │   └── xhs-watch-ext/        # Chrome extension — not deployed at all
 ├── docker-compose.yml        # one service per app + Traefik host routing

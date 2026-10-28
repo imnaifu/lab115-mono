@@ -204,6 +204,29 @@ services:
       # nginx listens on 80 inside the container
       - traefik.http.services.survivors.loadbalancer.server.port=80
 
+  # Simulation Lab (apps/simulation-lab): the interactive preview of the simulation videos, a
+  # static Vite build behind nginx with the published narration clips. Rendering stays local.
+  video:
+    build:
+      context: ./apps/simulation-lab
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.video-http.entryPoints=http
+      - traefik.http.routers.video-http.rule=Host(`video.lab115.com`)
+      - traefik.http.routers.video-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.video-https.entryPoints=https
+      - traefik.http.routers.video-https.rule=Host(`video.lab115.com`)
+      - traefik.http.routers.video-https.tls=true
+      - traefik.http.routers.video-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.video-https.middlewares=gzip
+      # nginx listens on 80 inside the container
+      - traefik.http.services.video.loadbalancer.server.port=80
+
   # Self-hosted analytics at stats.lab115.com, running ALONGSIDE GA rather than
   # instead of it. GA's script barely loads from mainland China, so a reader
   # there was invisible; this one is served from our own domain through the same

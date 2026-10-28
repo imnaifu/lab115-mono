@@ -1,0 +1,11 @@
+# Build context is this directory; keep local outputs, caches and the TTS environment out of it.
+node_modules/
+dist/
+output/
+cache/
+audio/
+.venv-tts/
+remotion/public/
+# Soco-st illustrations may not be redistributed: never ship them, even from a local build.
+public/assets/socost/*
+!public/assets/socost/README.md
