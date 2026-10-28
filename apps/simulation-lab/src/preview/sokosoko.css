@@ -1,0 +1,42 @@
+/* Copy of the Sokosoko design system's components/bundle.css
+   (https://claude.ai/artifact/KPRSTffJfVbQawMQ8681A7). One change: the Google Fonts @import is
+   removed — the page uses the same bundled fonts as the video (src/render/fonts.ts). Token values
+   are injected as CSS custom properties from src/style/channel.ts (see main.tsx). */
+/* Sokosoko component styles — every value is a token */
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);}
+.sk-btn{display:inline-flex;align-items:center;gap:var(--space-1);font:700 14px/20px var(--font-sans);letter-spacing:.04em;padding:var(--space-3) var(--space-5);border-radius:var(--radius-pill);border:2px solid transparent;cursor:pointer;text-decoration:none;transition:background .15s,transform .15s}
+.sk-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sk-btn--primary{background:var(--brand);color:var(--ink)}
+.sk-btn--primary:hover{background:var(--brand-deep)}
+.sk-btn--primary:active{transform:translateY(1px)}
+.sk-btn--secondary{background:var(--paper);color:var(--ink);border-color:var(--line-strong)}
+.sk-btn--secondary:hover{background:var(--paper-sunk)}
+.sk-btn--ghost{background:transparent;color:var(--link);padding-left:var(--space-2);padding-right:var(--space-2)}
+.sk-btn[disabled]{background:var(--paper-sunk);color:var(--ink-muted);border-color:transparent;cursor:not-allowed}
+.sk-tag{display:inline-flex;align-items:center;font:500 12px/18px var(--font-sans);padding:var(--space-1) var(--space-3);border-radius:var(--radius-pill);background:var(--paper-sunk);color:var(--ink);text-decoration:none;border:1px solid transparent}
+.sk-tag:hover{border-color:var(--line-strong)}
+.sk-tag[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand-deep)}
+.sk-tag:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sk-tags{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.sk-search{display:flex;align-items:center;gap:var(--space-2);background:var(--paper-sunk);border:2px solid transparent;border-radius:var(--radius-pill);padding:var(--space-1) var(--space-1) var(--space-1) var(--space-4);max-width:520px}
+.sk-search:focus-within{border-color:var(--focus);background:var(--paper)}
+.sk-search input{flex:1;border:0;background:transparent;font:400 15px/26px var(--font-sans);color:var(--ink);outline:none;min-width:0}
+.sk-search input::placeholder{color:var(--ink-muted)}
+.sk-card{display:block;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);padding:var(--space-3);text-decoration:none;color:var(--ink);transition:box-shadow .15s,transform .15s}
+.sk-card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px)}
+.sk-card:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sk-card__well{aspect-ratio:1/1;background:var(--paper-sunk);border-radius:var(--radius-sm);display:grid;place-items:center;position:relative}
+.sk-card__fav{position:absolute;top:var(--space-2);right:var(--space-2);width:28px;height:28px;border-radius:var(--radius-pill);background:var(--paper);display:grid;place-items:center;border:0;cursor:pointer}
+.sk-card__title{font:400 13px/20px var(--font-sans);margin:var(--space-2) 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sk-cat{display:flex;flex-direction:column;align-items:center;gap:var(--space-2);text-decoration:none;color:var(--ink);font:700 14px/20px var(--font-sans)}
+.sk-cat__disc{width:88px;height:88px;border-radius:var(--radius-pill);display:grid;place-items:center;transition:transform .15s}
+.sk-cat:hover .sk-cat__disc{transform:scale(1.05)}
+.sk-header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-5);padding:var(--space-4) var(--space-5);background:var(--paper);border-bottom:1px solid var(--line)}
+.sk-logo{font:700 22px/1 var(--font-display);color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:var(--space-2)}
+.sk-nav{display:flex;gap:var(--space-5);list-style:none;margin:0;padding:0}
+.sk-nav a{font:700 14px/20px var(--font-sans);color:var(--ink);text-decoration:none;padding:var(--space-1) 0;border-bottom:3px solid transparent}
+.sk-nav a:hover,.sk-nav a[aria-current="page"]{border-bottom-color:var(--brand)}
+.sk-h2{font:700 22px/32px var(--font-display);letter-spacing:.04em;text-align:center;margin:0;position:relative;display:inline-block;padding:0 var(--space-3);z-index:0}
+.sk-h2::before{content:"";position:absolute;left:0;right:0;bottom:2px;height:12px;background:var(--brand);border-radius:var(--radius-pill);z-index:-1;opacity:.85}
+.sk-h2-wrap{text-align:center}
+.sk-h2-sub{display:block;font:500 12px/18px var(--font-sans);color:var(--ink-muted);letter-spacing:.12em;margin-top:var(--space-1)}

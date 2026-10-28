@@ -1,0 +1,7 @@
+# Local TTS (Kokoro-82M, Apache-2.0). Installed into .venv-tts by `npm run setup:tts`.
+# Versions are the ones verified on macOS arm64 (2026-10-26); kokoro needs Python 3.10–3.12.
+kokoro==0.9.4
+misaki[zh]==0.9.4
+soundfile>=0.12
+# English G2P needs spaCy's small English model; its auto-download fails inside uv venvs.
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl

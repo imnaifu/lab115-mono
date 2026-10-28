@@ -1,0 +1,53 @@
+{"name":"Sokosoko","version":1,
+"color":{"themes":[{"id":"light","name":"Light"}],
+"note":"Interpreted from soco-st.com's described style (simple, cute, line-drawn, color-changeable). Values are an interpretation, not extracted CSS.",
+"tokens":[
+{"name":"paper","value":"#ffffff","usage":"Page background and card surfaces. Most of every screen is this white."},
+{"name":"paper-soft","value":"#faf7f0","usage":"Warm cream band behind alternating sections (Popular 热门 / New 最新) and the footer."},
+{"name":"paper-sunk","value":"#f3efe6","usage":"Tag chip fill, thumbnail well behind illustrations, search field fill."},
+{"name":"line","value":"#e6e0d4","usage":"Decorative hairlines: card borders, dividers. Never the only boundary of a control."},
+{"name":"line-strong","value":"#8a909c","usage":"Control borders (inputs, secondary buttons); 3.2:1 on paper."},
+{"name":"ink","value":"#2f3542","usage":"All body text and headings (12.3:1 on paper); also the single line colour of illustrations."},
+{"name":"ink-muted","value":"#666b7a","usage":"Secondary text: counts, dates, captions. 4.9:1 on paper, 4.6:1 on paper-sunk."},
+{"name":"brand","value":"#f7c948","usage":"Signature warm yellow. Fill for primary buttons, active nav underline, highlight blobs. Text on it is always ink (7.8:1) — never white."},
+{"name":"brand-deep","value":"#e0a91b","usage":"Hover/pressed fill for brand buttons; ink on it 5.8:1."},
+{"name":"brand-soft","value":"#fdf1cc","usage":"Soft yellow highlight: selected tag, notice banners, '可自由换色！' callouts."},
+{"name":"link","value":"#2f6fb0","usage":"Inline text links and focus rings (5.2:1 on paper)."},
+{"name":"focus","value":"{link}","usage":"2px focus ring on every interactive element."},
+{"name":"fav","value":"#d94b5c","usage":"Favourite heart icon (4.1:1, icon use). Not for body text."},
+{"name":"fill-skin","value":"#f8d5b8","usage":"Illustration fill — skin. Decorative only, never behind text smaller than 24px without ink."},
+{"name":"fill-sky","value":"#bcdcf2","usage":"Illustration fill — clothing/sky; also category-tile background."},
+{"name":"fill-mint","value":"#bfe3cf","usage":"Illustration fill — plants/clothing; category-tile background."},
+{"name":"fill-pink","value":"#f6c6cf","usage":"Illustration fill — cheeks/clothing; category-tile background."},
+{"name":"fill-lilac","value":"#d9d1f2","usage":"Illustration fill — clothing/goods; also the third series colour (e.g. rule C) beside fill-sky and fill-mint: similar lightness, distinct hue, ink on it 8.4:1. Added so a third series never borrows brand-soft, which reads as emphasis."},
+{"name":"fill-yellow","value":"{brand-soft}","usage":"Illustration fill — light yellow areas; category-tile background."}
+]},
+"type":{"fonts":[],
+"families":{"display":"\"Nunito\", \"Noto Sans SC\", \"PingFang SC\", system-ui, sans-serif","sans":"\"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif"},
+"groups":[
+{"name":"Display","family":"display","styles":[
+{"name":"display","fontSize":"40px","lineHeight":"52px","fontWeight":700,"letterSpacing":"0.02em","sample":"简单够用的插画 Simple, good-enough illustrations","usage":"Hero tagline only."},
+{"name":"heading-1","fontSize":"28px","lineHeight":"40px","fontWeight":700,"letterSpacing":"0.02em","sample":"免费可商用插画素材 Free illustrations","usage":"Page title."},
+{"name":"heading-2","fontSize":"22px","lineHeight":"32px","fontWeight":700,"letterSpacing":"0.04em","sample":"热门插画 Popular","usage":"Section headings, centred over a brand blob."}]},
+{"name":"Text","family":"sans","styles":[
+{"name":"heading-3","fontSize":"17px","lineHeight":"26px","fontWeight":700,"sample":"按关键词浏览 Browse by keyword","usage":"Sub-section heading, card group titles."},
+{"name":"body","fontSize":"15px","lineHeight":"26px","fontWeight":400,"sample":"支持 PNG、SVG、EPS 格式下载。Download as PNG, SVG or EPS.","usage":"Paragraphs; generous 1.73 leading for Chinese."},
+{"name":"label","fontSize":"14px","lineHeight":"20px","fontWeight":700,"letterSpacing":"0.04em","sample":"下载 Download","usage":"Buttons, nav items."},
+{"name":"small","fontSize":"13px","lineHeight":"20px","fontWeight":400,"sample":"共 2117 张插画 · 2,117 illustrations","usage":"Meta lines, card titles."},
+{"name":"caption","fontSize":"12px","lineHeight":"18px","fontWeight":500,"sample":"#商务","usage":"Tag chips, footnotes."}]}]},
+"spacing":{"tokens":[
+{"name":"space-1","value":"4px","usage":"Icon-to-label gap."},
+{"name":"space-2","value":"8px","usage":"Gap between tag chips."},
+{"name":"space-3","value":"12px","usage":"Card inner padding, button vertical padding."},
+{"name":"space-4","value":"16px","usage":"Grid gutter on mobile, page side gutter."},
+{"name":"space-5","value":"24px","usage":"Grid gutter on desktop; button horizontal padding."},
+{"name":"space-6","value":"32px","usage":"Gap between heading and its grid."},
+{"name":"space-7","value":"48px","usage":"Section padding on mobile."},
+{"name":"space-8","value":"80px","usage":"Section padding on desktop."}]},
+"radius":{"tokens":[
+{"name":"radius-sm","value":"6px","usage":"Inputs inside a card, small badges."},
+{"name":"radius-md","value":"12px","usage":"Illustration cards, thumbnail wells."},
+{"name":"radius-lg","value":"20px","usage":"Category tiles, banners, modals."},
+{"name":"radius-pill","value":"999px","usage":"Buttons, tag chips, search field — everything you press is round."}]},
+"shadow":{"tokens":[
+{"name":"shadow-hover","value":"0 6px 16px rgba(47,53,66,0.10)","usage":"Card lift on hover. The only shadow; resting surfaces are flat."}]}}

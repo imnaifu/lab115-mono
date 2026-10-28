@@ -1,0 +1,14 @@
+# Generated runs, frames and videos — never commit.
+/output/
+/dist/
+# Narration recordings are user-provided and can be large.
+/audio/*
+!/audio/README.md
+# Local TTS environment and generated voice clips (re-creatable).
+/.venv-tts/
+/cache/
+# Soco-st illustrations: licensed for use, not for redistribution — keep them local.
+/public/assets/socost/*
+!/public/assets/socost/README.md
+# Remotion public folder: generated links to public/assets and cache/ (src/export/remotionPublic.ts).
+/remotion/public/

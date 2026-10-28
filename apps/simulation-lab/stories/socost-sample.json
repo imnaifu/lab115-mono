@@ -1,0 +1,31 @@
+{
+  "name": "socost-sample",
+  "experiment": "queue",
+  "title": "One checkout, three shoppers",
+  "language": "en",
+  "config": "configs/queue-lane-sample.json",
+  "seed": 78,
+  "compare": ["single"],
+  "video": { "width": 1920, "height": 1080, "fps": 30 },
+  "voice": { "provider": "kokoro", "voice": "af_heart", "model": "v1.0", "speed": 1.1, "gap": 0.25 },
+  "sound": { "sfx": false },
+  "chapters": [
+    {
+      "id": "arrive",
+      "kind": "sim",
+      "shot": { "type": "lane", "variant": "single", "window": 0 },
+      "sim": { "from": "start", "to": { "anchor": "firstEnd", "offset": -2 }, "speed": 7.4 },
+      "pauseBefore": 0.6,
+      "narration": "Three shoppers join the line, one after another."
+    },
+    {
+      "id": "move-up",
+      "kind": "sim",
+      "shot": { "type": "lane", "variant": "single", "window": 0 },
+      "sim": { "to": { "anchor": "firstEnd", "offset": 20 }, "speed": 7.4 },
+      "pauseBefore": 0.1,
+      "pauseAfter": 0.3,
+      "narration": "The first one pays and leaves. The others move up."
+    }
+  ]
+}

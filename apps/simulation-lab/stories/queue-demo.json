@@ -1,0 +1,255 @@
+{
+  "name": "queue-demo",
+  "experiment": "queue",
+  "title": "One line or many?",
+  "language": "en",
+  "config": "configs/queue-demo.json",
+  "seed": 7,
+  "compare": [
+    "single",
+    "shortest"
+  ],
+  "focus": {
+    "pick": "maxWaitGap",
+    "arrivalWindow": [
+      0.3,
+      0.75
+    ]
+  },
+  "batch": {
+    "runs": 200,
+    "seedStart": 1
+  },
+  "video": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "voice": {
+    "provider": "kokoro",
+    "voice": "af_heart",
+    "model": "v1.0",
+    "speed": 1.1,
+    "gap": 0.25,
+    "lexicon": {
+      "Poisson": "[Poisson](/pwɑsˈɔn/)"
+    }
+  },
+  "sound": {
+    "sfx": true,
+    "music": null
+  },
+  "showIds": false,
+  "chapters": [
+    {
+      "id": "hook",
+      "kind": "sim",
+      "sim": {
+        "from": {
+          "anchor": "focus.arrival",
+          "offset": -5
+        },
+        "to": {
+          "anchor": "focus.arrival",
+          "offset": 40
+        }
+      },
+      "highlight": true,
+      "narration": "Same person, same moment. Customer {{focus.id}} waits {{focus.left.wait}} on the left, and {{focus.right.wait}} on the right.",
+      "shot": {
+        "type": "split",
+        "view": "close",
+        "cards": [
+          {
+            "value": "focusWait",
+            "label": "Waits",
+            "side": "left",
+            "at": {
+              "clip": 1,
+              "word": "left"
+            }
+          },
+          {
+            "value": "focusWait",
+            "label": "Waits",
+            "side": "right",
+            "at": {
+              "clip": 1,
+              "word": "right"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "title",
+      "kind": "title",
+      "sim": {
+        "at": {
+          "anchor": "end",
+          "scale": 0.4
+        }
+      },
+      "title": "{{customers}} people. {{windows}} windows.",
+      "subtitle": "Which way of lining up is fastest?",
+      "narration": "Which way of lining up is fastest?"
+    },
+    {
+      "id": "rules",
+      "kind": "cards",
+      "sim": {
+        "at": "start"
+      },
+      "heading": "Three rules",
+      "bullets": [
+        "{{single.label}}: everyone shares one line; the front person takes the next free window.",
+        "{{shortest.label}}: one line per window; join the shortest and stay.",
+        "{{switch.label}}: like B, but you may walk to a line that looks clearly faster."
+      ],
+      "narration": [
+        "A: one shared line.",
+        "B: pick the shortest line and stay.",
+        "C: the same, but you may switch."
+      ]
+    },
+    {
+      "id": "guess",
+      "kind": "poll",
+      "sim": {
+        "at": "start"
+      },
+      "subtitle": "Which rule gives the lowest average wait?",
+      "countdown": 3,
+      "narration": "Pause and guess."
+    },
+    {
+      "id": "race",
+      "kind": "sim",
+      "duration": 7,
+      "sim": {
+        "from": "start",
+        "to": {
+          "anchor": "focus.arrival",
+          "offset": -20
+        }
+      },
+      "narration": "Same customers, same arrival times. Colour shows the wait so far.",
+      "shot": {
+        "type": "split",
+        "view": "wide",
+        "enter": "open",
+        "cards": [
+          {
+            "value": "served"
+          }
+        ]
+      }
+    },
+    {
+      "id": "focus",
+      "kind": "sim",
+      "duration": 5,
+      "sim": {
+        "to": {
+          "anchor": "focus.lastStart",
+          "offset": 15
+        }
+      },
+      "highlight": {
+        "from": "focus.arrival"
+      },
+      "callout": "Both arrived at {{focus.arrival}}",
+      "narration": [
+        "Customer {{focus.id}} again.",
+        {
+          "text": "On the right, a slow customer blocks the line.",
+          "when": "focus.right.slowAhead > 0"
+        },
+        {
+          "text": "On the right, that line simply moves slower.",
+          "unless": "focus.right.slowAhead > 0"
+        }
+      ],
+      "shot": {
+        "type": "split",
+        "view": "close",
+        "enter": "push",
+        "cards": [
+          {
+            "value": "focusWaitLive"
+          }
+        ]
+      }
+    },
+    {
+      "id": "finish",
+      "kind": "sim",
+      "sim": {
+        "to": "end",
+        "speed": 500
+      },
+      "narration": "All done: {{left.makespan}} versus {{right.makespan}}.",
+      "shot": {
+        "type": "split",
+        "view": "wide",
+        "enter": "pull",
+        "cards": [
+          {
+            "value": "makespan",
+            "size": "M"
+          }
+        ]
+      }
+    },
+    {
+      "id": "results",
+      "kind": "chart",
+      "heading": "Results",
+      "narration": [
+        "Lowest average wait: rule {{best.short}}.",
+        "Across {{batch.runs}} random runs, rule {{batch.best.short}} wins {{batch.best.wins}} times."
+      ]
+    },
+    {
+      "id": "twist",
+      "kind": "chart",
+      "heading": "Typical vs. unlucky",
+      "reveal": false,
+      "emphasis": [
+        "medianWait",
+        "p95Wait"
+      ],
+      "narration": [
+        {
+          "text": "The twist: the typical person waited less with separate lines.",
+          "when": "right.medianWait < left.medianWait && right.p95Wait > left.p95Wait"
+        },
+        {
+          "text": "But the worst five percent waited {{right.p95Wait}}, versus {{left.p95Wait}}.",
+          "when": "right.medianWait < left.medianWait && right.p95Wait > left.p95Wait"
+        },
+        {
+          "text": "Typical waits: {{left.medianWait}} and {{right.medianWait}}. Worst five percent: {{left.p95Wait}} and {{right.p95Wait}}.",
+          "unless": "right.medianWait < left.medianWait && right.p95Wait > left.p95Wait"
+        }
+      ]
+    },
+    {
+      "id": "assumptions",
+      "kind": "cards",
+      "sim": {
+        "at": "end"
+      },
+      "heading": "Model assumptions",
+      "bullets": [
+        "Every rule gets the same {{customers}} customers ({{slowCount}} slow ones in this run).",
+        "Nobody knows in advance how long a service will take.",
+        "No one leaves the line, cuts in, or takes a break."
+      ],
+      "narration": [
+        "A simple model, not a law of nature.",
+        "Try your own settings."
+      ]
+    }
+  ]
+}

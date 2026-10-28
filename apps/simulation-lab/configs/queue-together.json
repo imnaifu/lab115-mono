@@ -1,0 +1,9 @@
+{
+  "customers": 100,
+  "windows": 4,
+  "windowSpeeds": [1, 1, 1, 1],
+  "arrival": { "mode": "together", "meanGap": 18 },
+  "service": { "mean": 60, "cv": 0.5, "slowFraction": 0.08, "slowMultiplier": 5 },
+  "switching": { "cost": 10, "threshold": 30, "cooldown": 60, "maxSwitches": 2, "speedsVisible": true },
+  "presentation": { "waitRedAt": 1800 }
+}

@@ -1,0 +1,89 @@
+/* Preview page layout on top of the design system's component classes (sokosoko.css: sk-header,
+   sk-btn, sk-tag…). Every value is a design-system token, injected as a CSS custom property from
+   src/style/channel.ts (see main.tsx) — no colours are defined here. */
+
+* { box-sizing: border-box; }
+body { font: 400 15px/26px var(--font-sans); }
+h1, h2 { margin: 0; }
+code { font-size: 13px; background: var(--paper-sunk); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
+
+.header-meta { font: 400 13px/20px var(--font-sans); color: var(--ink-muted); }
+
+.layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: calc(100vh - 69px); }
+.sidebar { background: var(--paper-soft); border-right: 1px solid var(--line); padding: var(--space-5); }
+.sidebar h2 { font: 700 17px/26px var(--font-sans); margin: var(--space-6) 0 var(--space-3); }
+.sidebar h2:first-child { margin-top: 0; }
+.sidebar .sk-tags { margin-bottom: var(--space-4); }
+.main { padding: var(--space-6) var(--space-6) var(--space-8); min-width: 0; max-width: 1360px; }
+
+/* heading-1 plus the design system's small uppercase kicker. */
+.page-title { font: 700 28px/40px var(--font-display); letter-spacing: 0.02em; }
+.kicker { display: block; font: 500 12px/18px var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); margin: var(--space-1) 0 var(--space-5); }
+
+.field { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+.field span { font: 400 13px/20px var(--font-sans); color: var(--ink-muted); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2); }
+.check { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); font: 400 13px/20px var(--font-sans); }
+.check input { accent-color: var(--ink); width: 16px; height: 16px; margin: 0; }
+
+/* Form controls: the design system's control border (line-strong, 3.2:1) and focus ring. */
+.field input, .field select, .transport select {
+  font: 400 15px/24px var(--font-sans);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+.field input:focus-visible, .field select:focus-visible, .transport select:focus-visible, .check input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sidebar .sk-btn { width: 100%; justify-content: center; margin-top: var(--space-2); }
+.link { border: 0; background: none; padding: 0; font: inherit; color: var(--link); text-decoration: underline; cursor: pointer; }
+.link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hint { font: 400 13px/20px var(--font-sans); color: var(--ink-muted); margin: var(--space-2) 0; }
+
+.frame { width: 100%; height: auto; display: block; border-radius: var(--radius-md); border: 1px solid var(--line); background: var(--paper); }
+.transport { display: flex; gap: var(--space-3); align-items: center; margin: var(--space-4) 0 var(--space-6); flex-wrap: wrap; }
+.scrubber { flex: 1; min-width: 160px; margin: 0; accent-color: var(--ink); }
+.time { font: 400 13px/20px var(--font-sans); font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+/* Read-only status chips, styled like the design system's Tag (pressed = active). */
+.status { font: 500 12px/18px var(--font-sans); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--paper-sunk); border: 1px solid transparent; }
+.status.on { background: var(--brand-soft); border-color: var(--brand-deep); }
+
+.error { background: var(--paper); border: 2px solid var(--fav); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); white-space: pre-wrap; }
+/* Notice banner: brand-soft, as the design system's callouts. */
+.notice { background: var(--brand-soft); border-radius: var(--radius-md); padding: var(--space-3); font: 400 13px/20px var(--font-sans); }
+.notice ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); max-height: 140px; overflow-y: auto; }
+
+.info > .sk-tags { margin-bottom: var(--space-5); }
+.info ul, .info dl, .info ol { max-width: 900px; padding-left: var(--space-5); }
+.info dl { padding-left: 0; }
+.info dt { font-weight: 700; margin-top: var(--space-3); }
+.info dd { margin: 0; color: var(--ink-muted); }
+.script li { margin-bottom: var(--space-3); }
+.script p { margin: var(--space-1) 0 0; color: var(--ink-muted); }
+.script p.estimated { opacity: 0.6; }
+
+table { border-collapse: collapse; width: 100%; max-width: 900px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+th { font: 700 15px/22px var(--font-display); }
+tr.group td { font: 700 15px/22px var(--font-display); text-align: left; padding-top: var(--space-5); background: var(--paper-soft); }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: var(--radius-pill); border: 1.5px solid var(--ink); margin-right: var(--space-2); vertical-align: -1px; }
+
+/* Clean view: the frame alone on the cream band (the system avoids dark grounds). */
+.clean { position: fixed; inset: 0; background: var(--paper-soft); display: flex; align-items: center; justify-content: center; }
+.clean .frame { width: auto; height: auto; max-width: 100vw; max-height: 100vh; border-radius: 0; border: none; }
+.clean-transport { position: fixed; left: var(--space-4); right: var(--space-4); bottom: var(--space-3); opacity: 0; transition: opacity 0.15s; display: flex; gap: var(--space-2); align-items: center; background: var(--paper); border: 1px solid var(--line); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); }
+.clean-transport .transport { flex: 1; margin: 0; }
+.clean:hover .clean-transport, .clean-transport:focus-within { opacity: 1; }
+
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { border-right: none; border-bottom: 1px solid var(--line); padding: var(--space-4); }
+  .main { padding: var(--space-4) var(--space-4) var(--space-7); }
+  .header-meta { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

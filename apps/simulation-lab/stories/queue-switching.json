@@ -1,0 +1,41 @@
+{
+  "name": "queue-switching",
+  "experiment": "queue",
+  "title": "Does switching lines pay off?",
+  "language": "en",
+  "config": "configs/queue-together.json",
+  "seed": 3,
+  "compare": ["shortest", "switch"],
+  "focus": { "pick": "maxWaitGap" },
+  "batch": { "runs": 200, "seedStart": 1 },
+  "video": { "width": 1920, "height": 1080, "fps": 30 },
+  "voice": { "provider": "files", "gap": 0.3 },
+  "sound": { "sfx": false },
+  "showIds": true,
+  "chapters": [
+    {
+      "id": "question",
+      "kind": "title",
+      "sim": { "at": "start" },
+      "title": "Should you switch lines?",
+      "subtitle": "{{customers}} people arrive at once, {{windows}} windows",
+      "narration": "Everyone arrives at once. Some people are allowed to switch lines."
+    },
+    {
+      "id": "run",
+      "kind": "sim",
+      "sim": { "from": "start", "to": "end", "speed": 120 },
+      "highlight": true,
+      "narration": [
+        "Left: stay in your line. Right: switch when another line looks clearly faster.",
+        "Customer {{focus.id}} waits {{focus.left.wait}} on the left, and {{focus.right.wait}} on the right."
+      ]
+    },
+    {
+      "id": "results",
+      "kind": "chart",
+      "heading": "Results",
+      "narration": "Across {{batch.runs}} runs, rule {{batch.best.short}} had the lowest average wait in {{batch.best.wins}} of them."
+    }
+  ]
+}

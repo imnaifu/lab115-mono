@@ -1,0 +1,27 @@
+{
+  "library": "Soco-st",
+  "terms": "https://soco-st.com/guide",
+  "dir": "public/assets/socost",
+  "rules": [
+    "Download files from soco-st.com yourself; hotlinking is not allowed.",
+    "Allowed edits: resize, flip, crop, simple compositing, animation. Never change or replace facial parts, never make someone look like a different person.",
+    "Do not redistribute the files (as-is or edited) — they stay out of git (see .gitignore).",
+    "Do not use them for AI training or as references for AI image generation."
+  ],
+  "assets": [
+    { "id": "shopper-1", "kind": "character", "role": "customer", "file": null, "facing": "right", "heightScale": 1, "source": null, "notes": "full-body, side or 3/4 view" },
+    { "id": "shopper-2", "kind": "character", "role": "customer", "file": null, "facing": "right", "heightScale": 1, "source": null, "notes": "" },
+    { "id": "shopper-3", "kind": "character", "role": "customer", "file": null, "facing": "right", "heightScale": 1, "source": null, "notes": "" },
+    { "id": "shopper-4", "kind": "character", "role": "customer", "file": null, "facing": "right", "heightScale": 1, "source": null, "notes": "" },
+    { "id": "shopper-5", "kind": "character", "role": "customer", "file": null, "facing": "right", "heightScale": 1, "source": null, "notes": "" },
+    { "id": "shopper-6", "kind": "character", "role": "customer", "file": null, "facing": "right", "heightScale": 1, "source": null, "notes": "" },
+    { "id": "cashier", "kind": "character", "role": "cashier", "file": null, "facing": "left", "heightScale": 1, "source": null, "notes": "staff / apron, stands behind the counter" },
+    { "id": "checkout-counter", "kind": "prop", "role": "checkout-counter", "file": null, "height": 230, "source": null, "notes": "register desk / checkout, side view" },
+    { "id": "shelf-1", "kind": "prop", "role": "shelf", "file": null, "height": 330, "source": null, "notes": "store shelf with goods" },
+    { "id": "shelf-2", "kind": "prop", "role": "shelf", "file": null, "height": 330, "source": null, "notes": "" },
+    { "id": "entrance", "kind": "prop", "role": "entrance", "file": null, "height": 420, "source": null, "notes": "shop door / automatic door" },
+    { "id": "basket-stack", "kind": "prop", "role": "basket", "file": null, "height": 110, "source": null, "notes": "shopping basket(s), decorative only" },
+    { "id": "cart", "kind": "prop", "role": "cart", "file": null, "height": 170, "source": null, "notes": "shopping cart, decorative only" },
+    { "id": "plant", "kind": "prop", "role": "decor", "file": null, "height": 200, "source": null, "notes": "potted plant or similar" }
+  ]
+}

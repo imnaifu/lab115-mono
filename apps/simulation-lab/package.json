@@ -1,0 +1,48 @@
+{
+  "name": "simulation-lab",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Code-defined simulation experiments rendered to YouTube-ready videos.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "simulate": "tsx src/cli/simulate.ts",
+    "batch": "tsx src/cli/batch.ts",
+    "render": "tsx src/cli/render.ts",
+    "setup:browser": "remotion browser ensure && playwright install chromium",
+    "setup:tts": "bash scripts/setup-tts.sh",
+    "voice": "tsx src/cli/voice.ts",
+    "timeline": "tsx src/cli/timeline.ts",
+    "tts:evaluate": "PYTORCH_ENABLE_MPS_FALLBACK=1 .venv-tts/bin/python tts/evaluate.py output/tts-eval/$(date +%Y%m%d-%H%M%S)",
+    "assets": "tsx src/cli/assets.ts",
+    "render:legacy": "tsx src/cli/renderLegacy.ts",
+    "studio": "tsx src/cli/studio.ts"
+  },
+  "dependencies": {
+    "@fontsource/noto-sans-sc": "^5.3.1",
+    "@fontsource/nunito": "^5.3.0",
+    "@remotion/bundler": "4.0.534",
+    "@remotion/cli": "4.0.534",
+    "@remotion/renderer": "4.0.534",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "4.0.534"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "playwright": "^1.64.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "zod": "4.6.6"
+  }
+}
