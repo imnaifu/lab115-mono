@@ -8,6 +8,10 @@ const MAX_ALIVE := 350
 ## lower there to keep the frame rate up.
 const MAX_ALIVE_MOBILE := 260
 const RING_RADIUS := 210.0
+## The first minutes spawn fewer enemies than the curve says (60% at the start, back to the full
+## rate by 3:00), so the lone starting weapon isn't swamped before the first upgrades land.
+const EASE_IN_SECONDS := 180.0
+const EASE_IN_START := 0.6
 
 ## `size` is the art's frame height in logical pixels, `radius` the body used for hits and
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on
@@ -35,7 +39,9 @@ const ENEMY_TYPES := {
 }
 
 ## Mix of the steady trickle by run time; each entry applies until its `until` second.
+## The opening is slow bugs only; pings, fast and weaving, join once the player has a level or two.
 const WAVES := [
+	{"until": 30.0, "mix": {"bug": 1}},
 	{"until": 60.0, "mix": {"ping": 3, "bug": 2}},
 	{"until": 150.0, "mix": {"ping": 2, "bug": 3, "mail": 2}},
 	{"until": 240.0, "mix": {"bug": 1, "mail": 3, "meeting": 2, "ghost": 1}},
@@ -46,7 +52,7 @@ const WAVES := [
 
 ## Scripted moments, sorted by time.
 const EVENTS := [
-	{"at": 90.0, "kind": "ring", "type": "ping", "count": 24, "text": "消息轰炸！"},
+	{"at": 90.0, "kind": "ring", "type": "ping", "count": 16, "text": "消息轰炸！"},
 	{"at": 150.0, "kind": "elite", "type": "deadline", "count": 1, "text": "Deadline 逼近！"},
 	{"at": 210.0, "kind": "ring", "type": "bug", "count": 30, "text": "Bug 大爆发！"},
 	{"at": 300.0, "kind": "elite", "type": "ai", "count": 1, "text": "首领出现：AI 大模型"},
@@ -69,9 +75,11 @@ func _init(game: Game) -> void:
 		max_alive = MAX_ALIVE_MOBILE
 
 
-## Spawns per second: 1 at the start, about 9 by the ten-minute mark.
+## Spawns per second: 0.6 at the start (eased in, see EASE_IN_SECONDS), about 9 by the
+## ten-minute mark.
 func spawn_rate() -> float:
-	return 1.0 + _game.elapsed / 60.0 * 0.8
+	var ease_in := lerpf(EASE_IN_START, 1.0, minf(_game.elapsed / EASE_IN_SECONDS, 1.0))
+	return (1.0 + _game.elapsed / 60.0 * 0.8) * ease_in
 
 
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons.

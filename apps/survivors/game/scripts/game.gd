@@ -24,6 +24,9 @@ const MAX_ENEMY_RADIUS := 16.0
 const RELOCATE_DISTANCE := 560.0
 const MAX_PICKUPS := 400
 const HEAL_DROP_CHANCE := 0.012
+## XP for the first level-ups, cheaper than the curve in xp_to_next() (5, 11, 17, 23) so a new run
+## gets its first upgrades quickly; from level 5 on the curve applies.
+const EARLY_LEVEL_XP := [3, 7, 13, 20]
 const MAGNET_DROP_CHANCE := 0.004
 
 ## Set by restart() so "play again" skips the title screen; static so it survives the reload.
@@ -412,6 +415,8 @@ func _collect(pickup: Pickup) -> void:
 
 
 func xp_to_next() -> int:
+	if level <= EARLY_LEVEL_XP.size():
+		return EARLY_LEVEL_XP[level - 1]
 	return 5 + (level - 1) * 6 + maxi(0, level - 20) * 4
 
 
