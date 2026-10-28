@@ -14,7 +14,7 @@ var names: Array = []
 
 
 func _draw() -> void:
-	var font := Art.font()
+	var font := Art.display_font(700)
 	draw_line(Vector2.ZERO, Vector2(0.0, -POLE), Color("7a8494"), 2.0)
 	for i in names.size():
 		var text: String = names[i]

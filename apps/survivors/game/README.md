@@ -36,7 +36,7 @@ scripts/
 ├── city.gd            # 无限地图：按坐标哈希生成街区、画地面 / 马路 / 盐田 / 海，楼和树的碰撞
 ├── bay_area.gd        # 湾区关卡数据：分区、各区的楼和树、地标位置、街名、恶搞公司招牌
 ├── brand_sign.gd / street_sign.gd   # 楼顶招牌、路口街名牌（文字用游戏字体现画）
-├── art.gd             # 按名字取素材、楼的裁边、配色、字体
+├── art.gd             # 按名字取素材、楼的裁边、配色（界面用的 Sokosoko 色板）、字体
 ├── lang.gd            # 中→英翻译表（代码里的中文就是原文）与语言切换
 ├── settings.gd        # 存设置
 ├── tilt.gd            # 陀螺仪：经 JavaScriptBridge 读浏览器的 deviceorientation
@@ -44,15 +44,15 @@ scripts/
 ├── pickup.gd / projectile.gd / effects.gd
 └── ui/hud.gd          # 顶栏、触屏摇杆、开始 / 升级 / 暂停 / 结算 / 设置面板
 tests/smoke_test.gd    # 机器人自动玩一局的冒烟测试
-tools/                 # 导出 Web 版、下载 Web 导出模板、渲染启动图和 PWA 图标、重新下载 soco-st 素材
+tools/                 # 导出 Web 版、下载 Web 导出模板、渲染启动图和 PWA 图标、重新下载 soco-st 素材、裁剪字体
 assets/icons/          # PWA 图标（tools/render_icons.gd 从主角 SVG 生成；PWA 目前关着，留着以后用）
 assets/art/            # 自绘 SVG（主角、敌人、武器、道具、场景、图标）
-assets/fonts/          # 站酷快乐体（OFL，许可证同目录）
+assets/fonts/          # Nunito + 思源黑体，只留游戏用到的字（tools/subset_fonts.py 生成，glyphs.txt 是字表；OFL，许可证同目录）
 assets/audio/          # sfx/ 音效（按用途命名）、music/ 标题和战斗两首循环音乐（.import 里开了 loop）
 assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录来源、可重新下载）
 ```
 
-**换皮 / 加城市**：攻击方式的脚本按「怎么打」命名，名字和素材都在数据表里 —— 敌人在 `spawner.gd` 的 `ENEMY_TYPES`，武器和被动在 `upgrades.gd`，地图（分区、地标、街名、招牌）在 `bay_area.gd`。新加的中文文案要同步加进 `lang.gd` 的 `EN`。
+**换皮 / 加城市**：攻击方式的脚本按「怎么打」命名，名字和素材都在数据表里 —— 敌人在 `spawner.gd` 的 `ENEMY_TYPES`，武器和被动在 `upgrades.gd`，地图（分区、地标、街名、招牌）在 `bay_area.gd`。新加的中文文案要同步加进 `lang.gd` 的 `EN`；文案里有字体还没收的字时，重跑 `tools/subset_fonts.py`（CI 的 `check-project.mjs` 会查出漏掉的字）。
 
 **恶搞招牌**：故意不用任何真实 logo —— 名字和图标都是自己画的谐音梗，避免商标和版权问题。加新招牌改 `bay_area.gd` 的 `BRANDS`。
 
@@ -60,9 +60,14 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 
 ## 素材
 
-- 角色、敌人、武器、道具、场景和图标都是手写的 SVG（`assets/art/`），粗描边平涂风格。新增素材照着现有的写：64×64 viewBox、描边色 `#3a2a2e`、线宽 3.5。
+- 角色、敌人、武器、道具、场景和图标都是手写的 SVG（`assets/art/`），粗描边平涂风格。新增素材照着现有的写：64×64 viewBox、描边色 `#2f3542`（和界面文字同一个墨色）、线宽 3.5。
+- 界面照 Sokosoko 设计规范（仿 soco-st.com 的风格）：米白底上放白色面板、墨色文字、能点的都是胶囊形、只用一个暖黄（`#f7c948`）标最重要的东西 —— 每屏一个黄色主按钮、标题下的荧光笔条、经验条。默认扁平，只有升级卡悬停时有阴影。色值在 `art.gd`，控件样式在 `hud.gd` 的 `_build_theme()`。
 - 楼来自 [ソコスト（soco-st.com）](https://soco-st.com/guide)：可商用、可用于游戏、不需署名，但**禁止把图片本身当免费 / 图库素材再分发**，也禁止以它为底稿另画、拿去喂 AI。PNG 放在 `assets/soco-st/` 里入了库，好让部署时直接构建；仓库是公开的，原图因此能被直接下载，这是有意接受的风险。
-- 字体：[站酷快乐体](https://github.com/googlefonts/zcool-kuaile)，SIL OFL 1.1。
+- 字体：标题和数字用 [Nunito](https://github.com/googlefonts/nunito)（圆体，只有拉丁字母），其余和所有中文用 [思源黑体 / Noto Sans SC](https://github.com/notofonts/noto-cjk)，都是 SIL OFL 1.1。两个都是可变字体，一个文件出所有字重；完整的思源黑体有 17 MB，`tools/subset_fonts.py` 只留脚本字符串里用到的字（约 400 个），两个加起来不到 200 KB：
+  ```bash
+  python3 -m venv /tmp/fonttools && /tmp/fonttools/bin/pip install fonttools
+  /tmp/fonttools/bin/python tools/subset_fonts.py
+  ```
 - 音效：Kenney 的 [Interface Sounds](https://opengameart.org/content/interface-sounds)（CC0），按用途改了名，原文件名对照见 `assets/audio/README.md`。音乐：[Ninja Adventure](https://github.com/pixel-boy/NinjaAdventure) 的 theme_lost_village（标题）和 theme_plain（战斗），CC0。都不需要署名，游戏里也不写出处。
 
 ## 测试
@@ -95,6 +100,6 @@ push 到 main 就行：Coolify 构建 `apps/survivors/Dockerfile` 时会下载 G
 
 ## 已知限制
 
-- 首次加载约 15 MB（gzip 后：引擎 wasm 10 MB + 游戏包 4.7 MB），之后浏览器按 ETag 复用。
+- 首次加载约 16 MB（gzip 后：引擎 wasm 10 MB + 游戏包 6.2 MB，其中音乐约 1.8 MB），之后浏览器按 ETag 复用。
 - 数值是加楼的碰撞之前用机器人粗调的；机器人不会绕墙，现在的普通局存活时间已经没有参考价值，手感要真人玩过再调。
 - 陀螺仪只在手机浏览器（HTTPS）里出现；iOS 会弹窗要权限，微信等内置浏览器支持程度不一。

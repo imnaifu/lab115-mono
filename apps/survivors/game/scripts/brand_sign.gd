@@ -17,7 +17,7 @@ static var _board: StyleBoxFlat
 
 
 func _draw() -> void:
-	var font := Art.font()
+	var font := Art.display_font(800)
 	var text: String = brand["text"]
 	var color: Color = brand["color"]
 	var icon_art: String = brand.get("icon", "")

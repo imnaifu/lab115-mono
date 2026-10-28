@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 <ellipse cx="32" cy="60" rx="18" ry="3.5" fill="#000" fill-opacity="0.13"/>
-<g stroke="#3a2a2e" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+<g stroke="#2f3542" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
 <path d="M32 12 L32 6" fill="none"/>
 <circle cx="32" cy="5" r="3.5" fill="#ffd25e"/>
 <rect x="18" y="45" width="28" height="13" rx="5" fill="#b3a8ff"/>
@@ -11,7 +11,7 @@
 </g>
 <ellipse cx="24.5" cy="29" rx="3.6" ry="4.6" fill="#6ff0ff"/>
 <ellipse cx="39.5" cy="29" rx="3.6" ry="4.6" fill="#6ff0ff"/>
-<path d="M28 43 L36 43" stroke="#3a2a2e" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M28 43 L36 43" stroke="#2f3542" stroke-width="2.4" stroke-linecap="round"/>
 <path d="M28 51.5 L32 49 L36 51.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
 <ellipse cx="15" cy="42" rx="2.6" ry="1.6" fill="#ff9aa2"/>
 <ellipse cx="49" cy="42" rx="2.6" ry="1.6" fill="#ff9aa2"/>

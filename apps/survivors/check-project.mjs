@@ -1,8 +1,9 @@
 // CI's "build" for this app. The real build, a Godot web export, happens inside the Docker
 // image (see Dockerfile), which CI doesn't run; this catches the mistakes that would otherwise
 // only surface there: a building the map uses missing from game/assets/soco-st/, a sound
-// scripts/sound.gd plays missing from game/assets/audio/, or a file the export needs gone.
-import { existsSync, readFileSync } from "node:fs";
+// scripts/sound.gd plays missing from game/assets/audio/, text using a character the subset
+// fonts leave out, or a file the export needs gone.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 const game = new URL("./game/", import.meta.url);
 const problems = [];
@@ -25,8 +26,24 @@ if (sounds.length === 0) problems.push("found no sounds in game/scripts/sound.gd
 for (const file of sounds) {
   if (!existsSync(new URL(`assets/audio/${file}`, game))) problems.push(`missing game/assets/audio/${file}`);
 }
+// The fonts are cut down to the characters in the scripts' string literals; tools/subset_fonts.py
+// lists them in glyphs.txt. Same literal pattern as that script.
+const glyphs = new Set(readFileSync(new URL("assets/fonts/glyphs.txt", game), "utf8").replace(/\n$/, ""));
+const missing = new Set();
+const scripts = readdirSync(new URL("scripts/", game), { recursive: true }).filter((file) => file.endsWith(".gd"));
+for (const file of scripts) {
+  const text = readFileSync(new URL(`scripts/${file}`, game), "utf8");
+  for (const literal of text.matchAll(/"(?:[^"\\\n]|\\.)*"/g)) {
+    for (const char of literal[0].slice(1, -1)) {
+      if (char >= " " && !glyphs.has(char)) missing.add(char);
+    }
+  }
+}
+if (missing.size > 0) {
+  problems.push(`text uses characters the fonts leave out (rerun game/tools/subset_fonts.py): ${[...missing].join(" ")}`);
+}
 if (problems.length > 0) {
   console.error(problems.join("\n"));
   process.exit(1);
 }
-console.log(`game project present; all ${buildings.length} soco-st buildings the map uses and all ${sounds.length} sounds are committed`);
+console.log(`game project present; all ${buildings.length} soco-st buildings the map uses and all ${sounds.length} sounds are committed; the fonts cover every character in the scripts`);

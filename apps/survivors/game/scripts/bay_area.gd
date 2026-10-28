@@ -106,7 +106,7 @@ const BRANDS := {
 	"linkedout": {"text": "Linked", "badge": "out", "color": Color("2f6fb5")},
 	"sailsforce": {"text": "Sailsforce", "icon": "icon_sail", "color": Color("2f9ad6")},
 	"sandhill": {"text": "Sand Hill Capital", "icon": "moneybag", "color": Color("8a6a2c")},
-	"station": {"text": "Palo Alto", "color": Color("3a2a2e")},
+	"station": {"text": "Palo Alto", "color": Color("2f3542")},
 }
 
 ## Real street names, roughly where they run. North-south roads by block column, east-west

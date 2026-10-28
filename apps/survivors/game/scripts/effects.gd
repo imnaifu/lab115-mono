@@ -15,7 +15,7 @@ static func damage_number(game: Game, at: Vector2, amount: float) -> void:
 		return
 	if _number_settings == null:
 		_number_settings = LabelSettings.new()
-		_number_settings.font = Art.font()
+		_number_settings.font = Art.display_font(800)
 		_number_settings.font_size = 10
 		_number_settings.outline_size = 4
 		_number_settings.outline_color = Art.INK

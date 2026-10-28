@@ -14,13 +14,20 @@ extends CanvasLayer
 const PICK_DELAY_MS := 300
 const SLOT_COUNT := 6
 const SLOT_SIZE := 20.0
-## Accent colour of a card or row by the kind of upgrade.
-const KIND_COLORS := {"weapon": Art.BLUE, "passive": Art.GREEN, "heal": Art.PINK}
+## The pastel well behind an upgrade's icon, by the kind of upgrade.
+const KIND_COLORS := {"weapon": Art.FILL_SKY, "passive": Art.FILL_MINT, "heal": Art.FILL_PINK}
+## Corner radii: small chips, cards, panels; PILL is clamped to half the height, so anything
+## drawn with it is fully round at the ends.
+const RADIUS_SM := 6
+const RADIUS_MD := 12
+const RADIUS_LG := 20
+const PILL := 99
 ## The title screen's parade of the cast.
 const PARADE := ["ping", "bug", "mail", "meeting", "ghost404", "techdebt", "server"]
 ## Width the title screen's text wraps at, which keeps the English title on two lines instead
 ## of stretching the column past the screen.
 const TITLE_TEXT_WIDTH := 340.0
+const TITLE_SIZE := 40
 const LOW_HP_RATIO := 0.35
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
@@ -65,6 +72,7 @@ var _xp_flash := 0.0
 var _seen_xp := Vector2i.ZERO
 var _accept_picks_at := 0
 var _clock := 0.0
+var _title_heading: Control
 
 
 func _ready() -> void:
@@ -83,20 +91,26 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_toast()
 	_title_overlay = _build_title()
-	_level_up_overlay = _overlay(Color(Art.INK, 0.45))
+	# Overlays wash the world out to the design's cream ground instead of dimming it.
+	_level_up_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
 	_cards_holder = _centered(_level_up_overlay)
-	_pause_overlay = _overlay(Color(Art.INK, 0.45))
+	_pause_overlay = _overlay(Color(Art.PAPER_SOFT, 0.85))
 	_pause_holder = _centered(_pause_overlay)
-	_end_overlay = _overlay(Color(Art.INK, 0.55))
+	_end_overlay = _overlay(Color(Art.PAPER_SOFT, 0.88))
 	_end_holder = _centered(_end_overlay)
 	# Last, so it opens on top of the title or pause screen it was opened from.
-	_settings_overlay = _overlay(Color(Art.INK, 0.5))
+	_settings_overlay = _overlay(Color(Art.PAPER_SOFT, 0.6))
 	_settings_holder = _centered(_settings_overlay)
 
 	game.inventory_changed.connect(_refresh_inventory)
 	game.level_up_offered.connect(_show_level_up)
 	game.run_ended.connect(_show_end)
 	game.announced.connect(_show_toast)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED:
+		_fit_title()
 
 
 func _process(delta: float) -> void:
@@ -244,10 +258,10 @@ class Joystick extends Control:
 	func _draw() -> void:
 		if not active:
 			return
-		draw_circle(origin, RADIUS, Color(1, 1, 1, 0.25))
-		draw_arc(origin, RADIUS, 0.0, TAU, 48, Color(Art.INK, 0.5), 2.0, true)
-		draw_circle(knob, KNOB_RADIUS, Color(1, 1, 1, 0.9))
-		draw_arc(knob, KNOB_RADIUS, 0.0, TAU, 32, Art.INK, 2.0, true)
+		draw_circle(origin, RADIUS, Color(Art.PAPER, 0.35))
+		draw_arc(origin, RADIUS, 0.0, TAU, 48, Color(Art.LINE_STRONG, 0.8), 2.0, true)
+		draw_circle(knob, KNOB_RADIUS, Color(Art.PAPER, 0.95))
+		draw_arc(knob, KNOB_RADIUS, 0.0, TAU, 32, Art.LINE_STRONG, 2.0, true)
 
 
 # --- Top bar -------------------------------------------------------------------------------
@@ -268,7 +282,7 @@ func _build_top_bar() -> void:
 	_xp_bar.offset_top = 5
 	_xp_bar.offset_bottom = 17
 	_top_bar.add_child(_xp_bar)
-	_level_label = _label("Lv 1", 10, true)
+	_level_label = _label("Lv 1", 10, "DisplayLabel")
 	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -290,14 +304,15 @@ func _build_top_bar() -> void:
 			row.add_child(slot)
 			slot_list.append(slot)
 
-	_time_label = _label("00:00", 20)
-	_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_time_label.anchor_left = 0.5
-	_time_label.anchor_right = 0.5
-	_time_label.offset_left = -40
-	_time_label.offset_right = 40
-	_time_label.offset_top = 19
-	_top_bar.add_child(_time_label)
+	# Readouts over the world sit on white pills rather than outlined text.
+	var time_pill := _pill()
+	time_pill.anchor_left = 0.5
+	time_pill.anchor_right = 0.5
+	time_pill.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	time_pill.offset_top = 22
+	_top_bar.add_child(time_pill)
+	_time_label = _label("00:00", 15, "DisplayLabel")
+	time_pill.add_child(_time_label)
 
 	var right := HBoxContainer.new()
 	right.alignment = BoxContainer.ALIGNMENT_END
@@ -310,9 +325,16 @@ func _build_top_bar() -> void:
 	right.offset_bottom = 46
 	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_top_bar.add_child(right)
-	right.add_child(_icon("skull", 14))
-	_kills_label = _label("0", 13)
-	right.add_child(_kills_label)
+	var kills_pill := _pill()
+	kills_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	right.add_child(kills_pill)
+	var kills_row := HBoxContainer.new()
+	kills_row.add_theme_constant_override("separation", 3)
+	kills_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	kills_pill.add_child(kills_row)
+	kills_row.add_child(_icon("skull", 12))
+	_kills_label = _label("0", 12, "DisplayLabel")
+	kills_row.add_child(_kills_label)
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(4, 0)
 	right.add_child(spacer)
@@ -346,7 +368,7 @@ func _slot() -> Panel:
 	var slot := Panel.new()
 	slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
 	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_theme_stylebox_override("panel", _box(Color(Art.PAPER, 0.35), Color(Art.INK, 0.5), 2, 5))
+	slot.add_theme_stylebox_override("panel", _box(Color(Art.PAPER, 0.5), Color(Art.LINE_STRONG, 0.6), 1, RADIUS_SM))
 	return slot
 
 
@@ -366,20 +388,23 @@ func _fill_slot(slot: Panel, art: String, item_level: int) -> void:
 	for child in slot.get_children():
 		child.queue_free()
 	var filled := art != ""
-	slot.add_theme_stylebox_override("panel", _box(Color(Art.PAPER, 0.92 if filled else 0.35), Color(Art.INK, 1.0 if filled else 0.5), 2, 5))
+	slot.add_theme_stylebox_override("panel", _box(Color(Art.PAPER, 0.95 if filled else 0.5), Color(Art.LINE_STRONG, 1.0 if filled else 0.6), 1, RADIUS_SM))
 	if not filled:
 		return
 	var icon := _icon(art, SLOT_SIZE - 4)
 	icon.position = Vector2(2, 2)
 	slot.add_child(icon)
-	var badge := _label(str(item_level), 8)
-	badge.position = Vector2(SLOT_SIZE - 6, SLOT_SIZE - 11)
+	var badge := _label(str(item_level), 8, "DisplayLabel")
+	# A white edge keeps the number readable where it overlaps the icon.
+	badge.add_theme_constant_override("outline_size", 3)
+	badge.add_theme_color_override("font_outline_color", Art.PAPER)
+	badge.position = Vector2(SLOT_SIZE - 6, SLOT_SIZE - 12)
 	slot.add_child(badge)
 
 
 func _build_toast() -> void:
 	_toast = PanelContainer.new()
-	_toast.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.INK, 2, 12, Vector4(12, 4, 12, 4)))
+	_toast.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, Vector4(14, 4, 14, 5)))
 	_toast.anchor_left = 0.5
 	_toast.anchor_right = 0.5
 	_toast.offset_top = 70
@@ -387,7 +412,7 @@ func _build_toast() -> void:
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast.modulate.a = 0.0
 	_toast.resized.connect(func() -> void: _toast.pivot_offset = _toast.size / 2.0)
-	_toast_label = _label("", 13, true)
+	_toast_label = _label("", 13, "StrongLabel")
 	_toast.add_child(_toast_label)
 	_root.add_child(_toast)
 
@@ -430,18 +455,15 @@ func _build_vignette() -> void:
 # --- Title ---------------------------------------------------------------------------------
 
 func _build_title() -> Control:
-	var overlay := _overlay(Color(Art.LAWN, 0.7))
+	var overlay := _overlay(Color(Art.PAPER_SOFT, 0.78))
 	var column := VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 10)
 	_centered(overlay).add_child(column)
 
-	var title := _label("硅谷幸存者", 40)
-	title.add_theme_constant_override("outline_size", 12)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.custom_minimum_size = Vector2(TITLE_TEXT_WIDTH, 0)
-	column.add_child(title)
+	_title_heading = _heading("硅谷幸存者", TITLE_SIZE)
+	column.add_child(_title_heading)
+	_root.resized.connect(_fit_title)
 
 	var parade := HBoxContainer.new()
 	parade.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -470,17 +492,14 @@ func _build_title() -> Control:
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 10)
 	column.add_child(buttons)
-	var start := Button.new()
-	start.text = "开始搬砖"
+	var start := _button("开始搬砖", game.start_run, true)
 	start.custom_minimum_size = Vector2(150, 40)
-	start.add_theme_font_size_override("font_size", 18)
-	start.pressed.connect(game.start_run)
-	_click_on_press(start)
+	start.add_theme_font_size_override("font_size", 16)
 	buttons.add_child(start)
 	buttons.add_child(_settings_button())
 	start.call_deferred("grab_focus")
 
-	var controls := _label("电脑：WASD / 方向键移动　手机：按住屏幕拖动", 10)
+	var controls := _label("电脑：WASD / 方向键移动　手机：按住屏幕拖动", 10, "MutedLabel")
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	controls.custom_minimum_size = Vector2(TITLE_TEXT_WIDTH, 0)
@@ -499,11 +518,7 @@ func _show_level_up(choices: Array) -> void:
 	column.add_theme_constant_override("separation", 10)
 	_cards_holder.add_child(column)
 
-	var heading := _label(tr("升级啦！ Lv %d") % game.level, 24)
-	heading.add_theme_color_override("font_color", Art.YELLOW)
-	heading.add_theme_constant_override("outline_size", 8)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(heading)
+	column.add_child(_heading(tr("升级啦！ Lv %d") % game.level, 24))
 
 	var cards := _stack(portrait)
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -514,7 +529,7 @@ func _show_level_up(choices: Array) -> void:
 		cards.add_child(card)
 		_pop_in(card, i * 0.06)
 
-	var hint := _label("按 1 / 2 / 3 或点卡片选择", 10)
+	var hint := _label("按 1 / 2 / 3 或点卡片选择", 10, "MutedLabel")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(hint)
 
@@ -527,13 +542,14 @@ func _show_level_up(choices: Array) -> void:
 ## portrait.
 func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	var kind: String = choice["kind"]
-	var accent: Color = KIND_COLORS[kind]
+	var well: Color = KIND_COLORS[kind]
 	var card := Button.new()
 	card.custom_minimum_size = Vector2(300, 74) if compact else Vector2(150, 180)
-	card.add_theme_stylebox_override("normal", _box(Art.PAPER, accent, 3, 12, Vector4.ZERO, true))
-	card.add_theme_stylebox_override("hover", _box(Color.WHITE, Art.INK, 3, 12, Vector4.ZERO, true))
-	card.add_theme_stylebox_override("pressed", _box(Color("fff3cf"), Art.INK, 3, 12, Vector4.ZERO, true))
-	card.add_theme_stylebox_override("focus", _box(Color.TRANSPARENT, Art.INK, 3, 12, Vector4.ZERO, false, false))
+	# Flat with a hairline at rest; the design's only shadow appears on hover.
+	card.add_theme_stylebox_override("normal", _box(Art.PAPER, Art.LINE, 1, RADIUS_MD))
+	card.add_theme_stylebox_override("hover", _with_hover_shadow(_box(Art.PAPER, Art.LINE_STRONG, 1, RADIUS_MD)))
+	card.add_theme_stylebox_override("pressed", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 2, RADIUS_MD))
+	card.add_theme_stylebox_override("focus", _focus_ring(RADIUS_MD))
 	card.pressed.connect(_pick.bind(index))
 	card.mouse_entered.connect(_hover.bind(card, true))
 	card.mouse_exited.connect(_hover.bind(card, false))
@@ -546,11 +562,10 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(margin)
 
-	var tag := _tag("新！", Art.RED) if choice["level"] == 1 else null
-	var bubble := _icon_bubble(choice["art"], 40.0 if compact else 52.0, accent)
-	var name_label := _label(choice["name"], 15, true)
-	var description := _label(choice["text"], 11, true)
-	description.modulate = Color(1, 1, 1, 0.85)
+	var tag := _tag("新！") if choice["level"] == 1 else null
+	var bubble := _icon_bubble(choice["art"], 40.0 if compact else 52.0, well)
+	var name_label := _label(choice["name"], 15, "StrongLabel")
+	var description := _label(choice["text"], 11, "MutedLabel")
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	if compact:
@@ -571,7 +586,7 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 		text_column.add_child(name_row)
 		name_row.add_child(name_label)
 		if kind != "heal":
-			name_row.add_child(_level_dots(choice["level"], accent))
+			name_row.add_child(_level_dots(choice["level"]))
 		if tag != null:
 			name_row.add_child(tag)
 		text_column.add_child(description)
@@ -600,7 +615,7 @@ func _make_card(choice: Dictionary, index: int, compact: bool) -> Button:
 	if kind != "heal":
 		var dots_row := CenterContainer.new()
 		dots_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		dots_row.add_child(_level_dots(choice["level"], accent))
+		dots_row.add_child(_level_dots(choice["level"]))
 		column.add_child(dots_row)
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(description)
@@ -615,37 +630,33 @@ func _pick(index: int) -> void:
 
 func _hover(card: Control, entered: bool) -> void:
 	var tween := card.create_tween()
-	tween.tween_property(card, "scale", Vector2.ONE * (1.04 if entered else 1.0), 0.1)
+	tween.tween_property(card, "scale", Vector2.ONE * (1.03 if entered else 1.0), 0.15)
 
 
 func _key_badge(index: int) -> Control:
 	var badge := PanelContainer.new()
-	badge.add_theme_stylebox_override("panel", _box(Art.INK, Art.INK, 0, 9, Vector4(5, 0, 5, 0)))
+	badge.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, PILL, Vector4(6, 0, 6, 0)))
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	var number := _label(str(index + 1), 10)
-	number.add_theme_constant_override("outline_size", 0)
-	badge.add_child(number)
+	badge.add_child(_label(str(index + 1), 10, "DisplayLabel"))
 	return badge
 
 
-## A small coloured pill: 新！ on fresh upgrades, 推荐 on the title's tilt switch.
-func _tag(text_key: String, color: Color) -> Control:
+## A small highlighted pill: 新！ on fresh upgrades.
+func _tag(text_key: String) -> Control:
 	var tag := PanelContainer.new()
-	tag.add_theme_stylebox_override("panel", _box(color, Art.INK, 2, 8, Vector4(5, 0, 5, 0)))
+	tag.add_theme_stylebox_override("panel", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 1, PILL, Vector4(6, 0, 6, 0)))
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var text := _label(text_key, 10)
-	text.add_theme_constant_override("outline_size", 0)
-	tag.add_child(text)
+	tag.add_child(_label(text_key, 10, "StrongLabel"))
 	return tag
 
 
-## The upgrade's icon on a soft disc of its accent colour.
-func _icon_bubble(art: String, size: float, accent: Color) -> Control:
+## The upgrade's icon on a pastel disc, like the design's category tiles.
+func _icon_bubble(art: String, size: float, fill: Color) -> Control:
 	var disc := Panel.new()
 	disc.custom_minimum_size = Vector2(size, size)
-	disc.add_theme_stylebox_override("panel", _box(Color(accent, 0.2), Color.TRANSPARENT, 0, int(size / 2.0)))
+	disc.add_theme_stylebox_override("panel", _box(fill, Color.TRANSPARENT, 0, PILL))
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Stay round inside a row instead of stretching to the row's height.
 	disc.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -655,8 +666,8 @@ func _icon_bubble(art: String, size: float, accent: Color) -> Control:
 	return disc
 
 
-## Five pips: filled up to `filled`, the rest hollow.
-func _level_dots(filled: int, accent: Color) -> Control:
+## Five pips: ink up to `filled`, the rest hollow.
+func _level_dots(filled: int) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -664,7 +675,8 @@ func _level_dots(filled: int, accent: Color) -> Control:
 	for i in Upgrades.MAX_LEVEL:
 		var dot := Panel.new()
 		dot.custom_minimum_size = Vector2(8, 8)
-		dot.add_theme_stylebox_override("panel", _box(accent if i < filled else Color.WHITE, Art.INK, 1, 4))
+		var done := i < filled
+		dot.add_theme_stylebox_override("panel", _box(Art.INK if done else Art.PAPER_SUNK, Art.INK if done else Art.LINE_STRONG, 1, PILL))
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(dot)
 	return row
@@ -681,9 +693,7 @@ func _show_pause() -> void:
 	column.add_theme_constant_override("separation", 10)
 	panel.add_child(column)
 
-	var heading := _label("休息一下", 22, true)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(heading)
+	column.add_child(_heading("休息一下", 22))
 
 	var build := _stack(portrait)
 	build.add_theme_constant_override("separation", 10 if portrait else 18)
@@ -692,12 +702,12 @@ func _show_pause() -> void:
 	for weapon in game.player.weapons:
 		var entry: Dictionary = Upgrades.WEAPONS[weapon.id]
 		weapon_rows.append([entry["art"], entry["name"], weapon.level])
-	build.add_child(_build_list("武器", weapon_rows, Art.BLUE))
+	build.add_child(_build_list("武器", weapon_rows))
 	var passive_rows: Array = []
 	for passive_id: String in game.upgrades.passive_levels:
 		var entry: Dictionary = Upgrades.PASSIVES[passive_id]
 		passive_rows.append([entry["art"], entry["name"], game.upgrades.passive_levels[passive_id]])
-	build.add_child(_build_list("能力", passive_rows, Art.GREEN))
+	build.add_child(_build_list("能力", passive_rows))
 
 	var player := game.player
 	var stats := GridContainer.new()
@@ -713,11 +723,10 @@ func _show_pause() -> void:
 		tr("拾取 +%d%%") % roundi((player.pickup_radius / Player.BASE_PICKUP_RADIUS - 1.0) * 100.0),
 		tr("护甲 %d　回血 %.1f/秒") % [roundi(player.armor), player.regen],
 	]:
-		stats.add_child(_label(text, 11, true))
+		stats.add_child(_label(text, 11))
 
 	if Tilt.enabled():
-		var recalibrate := _label("继续时会按那时拿手机的角度重新校准", 10, true)
-		recalibrate.modulate = Color(1, 1, 1, 0.6)
+		var recalibrate := _label("继续时会按那时拿手机的角度重新校准", 10, "MutedLabel")
 		recalibrate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(recalibrate)
 
@@ -726,7 +735,7 @@ func _show_pause() -> void:
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 8 if portrait else 10)
 	column.add_child(buttons)
-	var resume := _button("继续（Esc）", game.set_paused.bind(false))
+	var resume := _button("继续（Esc）", game.set_paused.bind(false), true)
 	buttons.add_child(resume)
 	buttons.add_child(_button("重新开始（R）", game.restart))
 	buttons.add_child(_settings_button())
@@ -738,25 +747,21 @@ func _show_pause() -> void:
 	_pop_in(panel, 0.0)
 
 
-func _build_list(title: String, rows: Array, accent: Color) -> Control:
+func _build_list(title: String, rows: Array) -> Control:
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 3)
 	list.custom_minimum_size = Vector2(170, 0)
-	var header := _label(title, 12, true)
-	header.modulate = Color(1, 1, 1, 0.6)
-	list.add_child(header)
+	list.add_child(_label(title, 12, "MutedLabel"))
 	if rows.is_empty():
-		var none := _label("还没有", 11, true)
-		none.modulate = Color(1, 1, 1, 0.5)
-		list.add_child(none)
+		list.add_child(_label("还没有", 11, "MutedLabel"))
 	for row_data: Array in rows:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		row.add_child(_icon(row_data[0], 18))
-		var name_label := _label(row_data[1], 12, true)
+		var name_label := _label(row_data[1], 12)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
-		row.add_child(_level_dots(row_data[2], accent))
+		row.add_child(_level_dots(row_data[2]))
 		list.add_child(row)
 	return list
 
@@ -771,12 +776,8 @@ func _show_end(victory: bool) -> void:
 	column.add_theme_constant_override("separation", 8)
 	panel.add_child(column)
 
-	var title := _label("敲钟上市！" if victory else "项目黄了…", 30)
-	title.add_theme_color_override("font_color", Art.YELLOW if victory else Art.RED)
-	title.add_theme_constant_override("outline_size", 10)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(title)
-	var subtitle := _label("撑过了 10 分钟，公司成功 IPO" if victory else "公司没撑住……再融一轮？", 12, true)
+	column.add_child(_heading("敲钟上市！" if victory else "项目黄了…", 30, Art.BRAND if victory else Art.FILL_PINK))
+	var subtitle := _label("撑过了 10 分钟，公司成功 IPO" if victory else "公司没撑住……再融一轮？", 12, "MutedLabel")
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(subtitle)
 
@@ -791,7 +792,7 @@ func _show_end(victory: bool) -> void:
 	if ranking.get_child_count() > 1:
 		column.add_child(ranking)
 
-	var again := _button("再来一局（R）", game.restart)
+	var again := _button("再来一局（R）", game.restart, true)
 	again.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(again)
 	again.grab_focus()
@@ -800,15 +801,14 @@ func _show_end(victory: bool) -> void:
 
 func _stat_chip(caption: String, value: String) -> Control:
 	var chip := PanelContainer.new()
-	chip.add_theme_stylebox_override("panel", _box(Color.WHITE, Art.INK, 2, 10, Vector4(12, 4, 12, 4)))
+	chip.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, RADIUS_MD, Vector4(14, 4, 14, 6)))
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 0)
 	chip.add_child(column)
-	var caption_label := _label(caption, 10, true)
-	caption_label.modulate = Color(1, 1, 1, 0.6)
+	var caption_label := _label(caption, 10, "MutedLabel")
 	caption_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(caption_label)
-	var value_label := _label(value, 18, true)
+	var value_label := _label(value, 18, "DisplayLabel")
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(value_label)
 	return chip
@@ -818,9 +818,7 @@ func _stat_chip(caption: String, value: String) -> Control:
 func _damage_ranking() -> Control:
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 3)
-	var header := _label("伤害排行", 12, true)
-	header.modulate = Color(1, 1, 1, 0.6)
-	list.add_child(header)
+	list.add_child(_label("伤害排行", 12, "MutedLabel"))
 	var entries: Array = []
 	for source: String in game.damage_by_source:
 		if Upgrades.WEAPONS.has(source):
@@ -832,20 +830,20 @@ func _damage_ranking() -> Control:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		row.add_child(_icon(weapon["art"], 18))
-		var name_label := _label(weapon["name"], 11, true)
+		var name_label := _label(weapon["name"], 11)
 		name_label.custom_minimum_size = Vector2(66, 0)
 		row.add_child(name_label)
 		var track := Panel.new()
 		track.custom_minimum_size = Vector2(120, 10)
 		track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		track.add_theme_stylebox_override("panel", _box(Color.WHITE, Art.INK, 2, 5))
+		track.add_theme_stylebox_override("panel", _box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, PILL))
 		var fill := Panel.new()
-		fill.add_theme_stylebox_override("panel", _box(Art.BLUE, Color.TRANSPARENT, 0, 4))
+		fill.add_theme_stylebox_override("panel", _box(Art.BRAND_DEEP, Color.TRANSPARENT, 0, PILL))
 		fill.position = Vector2(2, 2)
 		fill.size = Vector2(maxf(116.0 * entry[1] / best, 6.0), 6)
 		track.add_child(fill)
 		row.add_child(track)
-		row.add_child(_label(Lang.short_number(entry[1]), 11, true))
+		row.add_child(_label(Lang.short_number(entry[1]), 11, "DisplayLabel"))
 		list.add_child(row)
 	return list
 
@@ -867,13 +865,11 @@ func _open_settings() -> void:
 	var panel := _panel()
 	_settings_holder.add_child(panel)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 12)
+	column.add_theme_constant_override("separation", 10)
 	column.custom_minimum_size = Vector2(260, 0)
 	panel.add_child(column)
 
-	var heading := _label("设置", 22, true)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(heading)
+	column.add_child(_heading("设置", 22))
 
 	var current := Lang.current()
 	var language_choice := _choice_row("语言", [["中文", current == "zh"], ["English", current == "en"]], _on_language_picked)
@@ -887,10 +883,9 @@ func _open_settings() -> void:
 	if Tilt.available():
 		var tilt_on := Tilt.enabled()
 		column.add_child(_choice_row("陀螺仪移动", [["开", tilt_on], ["关", not tilt_on]], _on_tilt_picked))
-		_tilt_hint = _label("", 10, true)
+		_tilt_hint = _label("", 10, "MutedLabel")
 		_tilt_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_tilt_hint.custom_minimum_size = Vector2(260, 0)
-		_tilt_hint.modulate = Color(1, 1, 1, 0.7)
 		column.add_child(_tilt_hint)
 
 	var sound_on := Sound.sfx_enabled()
@@ -898,7 +893,7 @@ func _open_settings() -> void:
 	var music_on := Sound.music_enabled()
 	column.add_child(_choice_row("音乐", [["开", music_on], ["关", not music_on]], _on_music_picked))
 
-	var back := _button("返回", _close_settings)
+	var back := _button("返回", _close_settings, true)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(back)
 	(language_choice.get_child(1) as Button).grab_focus()
@@ -915,7 +910,7 @@ func _close_settings() -> void:
 func _choice_row(caption: String, options: Array, on_pick: Callable) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
-	var caption_label := _label(caption, 13, true)
+	var caption_label := _label(caption, 13, "StrongLabel")
 	caption_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(caption_label)
 	for option in _choice_buttons(options, on_pick, Vector2(72, 30)):
@@ -1005,7 +1000,7 @@ func _centered(parent: Control) -> CenterContainer:
 
 func _panel() -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.INK, 3, 14, Vector4(16, 12, 16, 14), true))
+	panel.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE, 1, RADIUS_LG, Vector4(18, 14, 18, 16)))
 	panel.resized.connect(func() -> void: panel.pivot_offset = panel.size / 2.0)
 	return panel
 
@@ -1025,9 +1020,12 @@ func _pop_in(node: Control, delay: float) -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-func _button(text: String, action: Callable) -> Button:
+## A pill button; `primary` makes it the yellow one, for the single action a screen is about.
+func _button(text: String, action: Callable, primary: bool = false) -> Button:
 	var button := Button.new()
 	button.text = text
+	if primary:
+		button.theme_type_variation = "PrimaryButton"
 	button.custom_minimum_size = Vector2(110, 32)
 	button.pressed.connect(action)
 	_click_on_press(button)
@@ -1039,16 +1037,70 @@ func _click_on_press(button: BaseButton) -> void:
 	button.pressed.connect(func() -> void: Sound.play("click"))
 
 
-## Text in the HUD style: white with an ink outline over the world, or plain ink (`on_paper`)
-## inside panels.
-func _label(text: String, font_size: int, on_paper: bool = false) -> Label:
+## Ink text. `variation` picks one of the theme's label styles (see _build_theme):
+## "MutedLabel" for captions and hints, "StrongLabel" for names, "DisplayLabel" for headings and
+## numbers in the rounded face.
+func _label(text: String, font_size: int, variation: String = "") -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if on_paper:
-		label.theme_type_variation = "PaperLabel"
+	label.theme_type_variation = variation
 	return label
+
+
+## A heading on a highlighter stroke, the design's section-heading look: a pill of `stroke`
+## behind the lower part of the text, a little wider than it. Kept to one line, so the stroke is
+## a dash under the words rather than a bar across the panel.
+func _heading(text: String, font_size: int, stroke: Color = Art.BRAND) -> Control:
+	var holder := MarginContainer.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# The container stretches this to the label's size; the stroke inside is anchored to its
+	# bottom edge, which a container child can't be.
+	var backdrop := Control.new()
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(backdrop)
+	var bar := Panel.new()
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_theme_stylebox_override("panel", _box(Color(stroke, 0.85), Color.TRANSPARENT, 0, PILL))
+	bar.anchor_right = 1.0
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	backdrop.add_child(bar)
+	var label := _label(text, font_size, "DisplayLabel")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	holder.add_child(label)
+	_size_heading(holder, font_size)
+	return holder
+
+
+func _size_heading(holder: Control, font_size: int) -> void:
+	var bar: Control = holder.get_child(0).get_child(0)
+	bar.offset_left = -font_size * 0.3
+	bar.offset_right = font_size * 0.3
+	bar.offset_bottom = -font_size * 0.15
+	bar.offset_top = bar.offset_bottom - font_size * 0.42
+	(holder.get_child(1) as Label).add_theme_font_size_override("font_size", font_size)
+
+
+## Shrinks the title when its name in the current language is too wide for one line on this
+## screen (Silicon Valley Survivors on an upright phone).
+func _fit_title() -> void:
+	if _title_heading == null or _root.size.x <= 0.0:
+		return
+	var label: Label = _title_heading.get_child(1)
+	var room := minf(_root.size.x - 40.0, 600.0)
+	var width := Art.display_font(800).get_string_size(label.atr(label.text), HORIZONTAL_ALIGNMENT_LEFT, -1, TITLE_SIZE).x
+	_size_heading(_title_heading, TITLE_SIZE if width <= room else floori(TITLE_SIZE * room / width))
+
+
+## A white pill for a readout over the world (timer, kills).
+func _pill() -> PanelContainer:
+	var pill := PanelContainer.new()
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_theme_stylebox_override("panel", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, Vector4(10, 1, 10, 1)))
+	return pill
 
 
 func _icon(art: String, size: float) -> TextureRect:
@@ -1067,11 +1119,10 @@ func _clock_text(seconds_elapsed: float) -> String:
 	return "%02d:%02d" % [floori(seconds / 60.0), seconds % 60]
 
 
-## A rounded box in the drawings' style. `padding` is left, top, right, bottom.
-func _box(background: Color, border: Color, border_width: int, radius: int, padding: Vector4 = Vector4.ZERO, shadow: bool = false, draw_center: bool = true) -> StyleBoxFlat:
+## A flat rounded box. `padding` is left, top, right, bottom.
+func _box(background: Color, border: Color, border_width: int, radius: int, padding: Vector4 = Vector4.ZERO) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = background
-	style.draw_center = draw_center
 	style.border_color = border
 	style.set_border_width_all(border_width)
 	style.set_corner_radius_all(radius)
@@ -1080,43 +1131,69 @@ func _box(background: Color, border: Color, border_width: int, radius: int, padd
 	style.content_margin_top = padding.y
 	style.content_margin_right = padding.z
 	style.content_margin_bottom = padding.w
-	if shadow:
-		style.shadow_color = Color(Art.INK, 0.3)
-		style.shadow_offset = Vector2(0, 4)
 	return style
+
+
+## The design's one shadow, a soft lift under a hovered card.
+func _with_hover_shadow(style: StyleBoxFlat) -> StyleBoxFlat:
+	style.shadow_color = Color(Art.INK, 0.12)
+	style.shadow_size = 8
+	style.shadow_offset = Vector2(0, 3)
+	return style
+
+
+## Keyboard focus: a 2px ring just outside the control.
+func _focus_ring(radius: int) -> StyleBoxFlat:
+	var ring := _box(Color.TRANSPARENT, Art.LINK, 2, radius)
+	ring.draw_center = false
+	ring.set_expand_margin_all(3)
+	return ring
 
 
 func _build_theme() -> Theme:
 	var theme := Theme.new()
-	theme.default_font = Art.font()
+	theme.default_font = Art.font(500)
 	theme.default_font_size = 12
-	theme.set_color("font_color", "Label", Color.WHITE)
-	theme.set_color("font_outline_color", "Label", Art.INK)
-	theme.set_constant("outline_size", "Label", 5)
-	theme.set_type_variation("PaperLabel", "Label")
-	theme.set_color("font_color", "PaperLabel", Art.INK)
-	theme.set_constant("outline_size", "PaperLabel", 0)
+	theme.set_color("font_color", "Label", Art.INK)
+	theme.set_type_variation("MutedLabel", "Label")
+	theme.set_color("font_color", "MutedLabel", Art.INK_MUTED)
+	theme.set_type_variation("StrongLabel", "Label")
+	theme.set_font("font", "StrongLabel", Art.font(700))
+	theme.set_type_variation("DisplayLabel", "Label")
+	theme.set_font("font", "DisplayLabel", Art.display_font(800))
 
-	theme.set_stylebox("normal", "Button", _box(Art.YELLOW, Art.INK, 3, 10, Vector4(12, 4, 12, 4), true))
-	theme.set_stylebox("hover", "Button", _box(Color("ffe08f"), Art.INK, 3, 10, Vector4(12, 4, 12, 4), true))
-	theme.set_stylebox("pressed", "Button", _box(Color("f2bd3a"), Art.INK, 3, 10, Vector4(12, 4, 12, 4)))
-	theme.set_stylebox("focus", "Button", _box(Color.TRANSPARENT, Art.BLUE, 3, 13, Vector4.ZERO, false, false))
+	# Everything pressable is a pill. A plain Button is the secondary style (white, grey
+	# outline); PrimaryButton is the yellow one, one per screen.
+	var padding := Vector4(16, 4, 16, 4)
+	theme.set_stylebox("normal", "Button", _box(Art.PAPER, Art.LINE_STRONG, 2, PILL, padding))
+	theme.set_stylebox("hover", "Button", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 2, PILL, padding))
+	theme.set_stylebox("pressed", "Button", _box(Art.LINE, Art.LINE_STRONG, 2, PILL, padding))
+	theme.set_stylebox("focus", "Button", _focus_ring(PILL))
+	theme.set_font("font", "Button", Art.font(700))
+	theme.set_font_size("font_size", "Button", 13)
 	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 		theme.set_color(color_name, "Button", Art.INK)
-	theme.set_font_size("font_size", "Button", 14)
 
-	# Settings options: paper when off, yellow when chosen.
+	theme.set_type_variation("PrimaryButton", "Button")
+	theme.set_stylebox("normal", "PrimaryButton", _box(Art.BRAND, Art.BRAND, 2, PILL, padding))
+	theme.set_stylebox("hover", "PrimaryButton", _box(Art.BRAND_DEEP, Art.BRAND_DEEP, 2, PILL, padding))
+	theme.set_stylebox("pressed", "PrimaryButton", _box(Art.BRAND_DEEP, Art.BRAND_DEEP, 2, PILL, padding))
+
+	# Settings options: white when off, soft yellow with a deeper outline when chosen.
+	var choice_padding := Vector4(10, 2, 10, 2)
 	theme.set_type_variation("ChoiceButton", "Button")
-	theme.set_stylebox("normal", "ChoiceButton", _box(Art.PAPER, Art.INK, 2, 10, Vector4(8, 2, 8, 2)))
-	theme.set_stylebox("hover", "ChoiceButton", _box(Color.WHITE, Art.INK, 2, 10, Vector4(8, 2, 8, 2)))
-	theme.set_stylebox("pressed", "ChoiceButton", _box(Art.YELLOW, Art.INK, 2, 10, Vector4(8, 2, 8, 2)))
-	theme.set_stylebox("hover_pressed", "ChoiceButton", _box(Color("ffe08f"), Art.INK, 2, 10, Vector4(8, 2, 8, 2)))
+	theme.set_stylebox("normal", "ChoiceButton", _box(Art.PAPER, Art.LINE_STRONG, 2, PILL, choice_padding))
+	theme.set_stylebox("hover", "ChoiceButton", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 2, PILL, choice_padding))
+	theme.set_stylebox("pressed", "ChoiceButton", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 2, PILL, choice_padding))
+	theme.set_stylebox("hover_pressed", "ChoiceButton", _box(Art.BRAND_SOFT, Art.BRAND_DEEP, 2, PILL, choice_padding))
 
+	var icon_padding := Vector4(4, 4, 4, 4)
 	theme.set_type_variation("IconButton", "Button")
-	theme.set_stylebox("normal", "IconButton", _box(Art.PAPER, Art.INK, 2, 8, Vector4(4, 4, 4, 4)))
-	theme.set_stylebox("hover", "IconButton", _box(Color.WHITE, Art.INK, 2, 8, Vector4(4, 4, 4, 4)))
-	theme.set_stylebox("pressed", "IconButton", _box(Color("fff3cf"), Art.INK, 2, 8, Vector4(4, 4, 4, 4)))
+	theme.set_stylebox("normal", "IconButton", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL, icon_padding))
+	theme.set_stylebox("hover", "IconButton", _box(Art.PAPER_SUNK, Art.LINE_STRONG, 1, PILL, icon_padding))
+	theme.set_stylebox("pressed", "IconButton", _box(Art.LINE, Art.LINE_STRONG, 1, PILL, icon_padding))
 
-	theme.set_stylebox("background", "ProgressBar", _box(Color.WHITE, Art.INK, 2, 6))
-	theme.set_stylebox("fill", "ProgressBar", _box(Art.BLUE, Art.INK, 2, 6))
+	# The XP bar: a white track filling with yellow.
+	theme.set_stylebox("background", "ProgressBar", _box(Art.PAPER, Art.LINE_STRONG, 1, PILL))
+	theme.set_stylebox("fill", "ProgressBar", _box(Art.BRAND, Art.BRAND_DEEP, 1, PILL))
 	return theme

@@ -1,7 +1,7 @@
 class_name Art
 extends RefCounted
 ## Every texture the game draws, looked up by name: the hand-drawn SVGs in assets/art/, the
-## soco-st buildings in assets/soco-st/, plus the UI font and the shared palette.
+## soco-st buildings in assets/soco-st/, plus the fonts and the shared palette.
 ##
 ## Sizes everywhere are logical pixels of the 640x360 view. SVGs are imported at 4x their
 ## viewBox ([importer_defaults] in project.godot) so they stay sharp on high-DPI screens, which
@@ -9,12 +9,35 @@ extends RefCounted
 
 const ART_DIR := "res://assets/art/"
 const BUILDING_DIR := "res://assets/soco-st/"
-const FONT_PATH := "res://assets/fonts/ZCOOLKuaiLe-Regular.ttf"
+const FONT_DIR := "res://assets/fonts/"
 
-## The outline colour of every drawing; UI borders and text outlines reuse it so the HUD sits
-## in the same style as the art.
-const INK := Color("3a2a2e")
-const PAPER := Color("fffaf0")
+## The UI follows the Sokosoko design system (modelled on soco-st.com, where the buildings come
+## from): white panels on a cream ground, ink text, round controls, one warm yellow for what
+## matters most. INK is also the outline colour of every drawing, so art and UI share one line.
+const INK := Color("2f3542")
+## Secondary text: captions, counts, hints.
+const INK_MUTED := Color("666b7a")
+const PAPER := Color("ffffff")
+## The cream ground behind panels (overlays over the world).
+const PAPER_SOFT := Color("faf7f0")
+## Wells and chips inside a panel: stat chips, bar tracks, key badges.
+const PAPER_SUNK := Color("f3efe6")
+## Hairline card borders; LINE_STRONG for the borders of controls.
+const LINE := Color("e6e0d4")
+const LINE_STRONG := Color("8a909c")
+## The one accent: primary buttons, the heading highlighter, the XP bar. Text on it is INK.
+const BRAND := Color("f7c948")
+const BRAND_DEEP := Color("e0a91b")
+const BRAND_SOFT := Color("fdf1cc")
+## Focus rings.
+const LINK := Color("2f6fb0")
+## Pastel wells behind icons, one per kind of upgrade (similar lightness, different hue).
+const FILL_SKY := Color("bcdcf2")
+const FILL_MINT := Color("bfe3cf")
+const FILL_LILAC := Color("d9d1f2")
+const FILL_PINK := Color("f6c6cf")
+
+## World colours, used by the map and the effects rather than the UI.
 const LAWN := Color("dcefc6")
 const RED := Color("ff5d5d")
 const YELLOW := Color("ffd25e")
@@ -24,7 +47,7 @@ const PINK := Color("ff8fa0")
 
 static var _textures := {}
 static var _buildings := {}
-static var _font: FontFile
+static var _fonts := {}
 
 
 static func texture(art_name: String) -> Texture2D:
@@ -66,7 +89,29 @@ static func star(xp_value: int) -> String:
 	return "star_blue"
 
 
-static func font() -> FontFile:
-	if _font == null:
-		_font = load(FONT_PATH)
-	return _font
+## Noto Sans SC (思源黑体) at a weight from 100 to 900: the text face, Chinese and Latin.
+static func font(weight: int = 500) -> Font:
+	return _font_at("NotoSansSC", weight)
+
+
+## Nunito, the rounded face for headings and numbers; Chinese characters, which it doesn't
+## have, come from Noto Sans SC at the same weight.
+static func display_font(weight: int = 800) -> Font:
+	var key := "display %d" % weight
+	if not _fonts.has(key):
+		var display := _font_at("Nunito", weight).duplicate() as FontVariation
+		display.fallbacks = [font(weight)]
+		_fonts[key] = display
+	return _fonts[key]
+
+
+## Both fonts are variable (tools/subset_fonts.py keeps the weight axis), so each weight is the
+## one file with its wght axis set.
+static func _font_at(family: String, weight: int) -> FontVariation:
+	var key := "%s %d" % [family, weight]
+	if not _fonts.has(key):
+		var variation := FontVariation.new()
+		variation.base_font = load(FONT_DIR + family + ".ttf")
+		variation.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): weight}
+		_fonts[key] = variation
+	return _fonts[key]

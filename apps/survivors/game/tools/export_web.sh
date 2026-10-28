@@ -12,10 +12,10 @@ godot --headless --path . --import
 rm -rf "$out"
 mkdir -p "$out"
 godot --headless --path . --export-release Web "$out/index.html"
-# The font's OFL licence must travel with the font; ship it as a plain file beside the game
+# The fonts' OFL licences must travel with the fonts; ship them as plain files beside the game
 # rather than as a credits line in the UI.
 mkdir -p "$out/licenses"
-cp assets/fonts/OFL.txt "$out/licenses/ZCOOLKuaiLe-OFL.txt"
+cp assets/fonts/Nunito-OFL.txt assets/fonts/NotoSansSC-OFL.txt "$out/licenses/"
 # PWA is off, but browsers from the PWA days still run its caching worker; this replacement
 # clears it out (see the file). Keep it until nobody can still have the old one.
 cp tools/service_worker_removal.js "$out/index.service.worker.js"

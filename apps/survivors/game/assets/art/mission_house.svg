@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 64">
-<g stroke="#3a2a2e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
 <rect x="8" y="24" width="80" height="38" fill="#fbf3e4"/>
 <path d="M2 27 L14 9 L82 9 L94 27 Z" fill="#e0703f"/>
 <path d="M14 9 L10 27 M26 9 L24 27 M38 9 L37 27 M50 9 L50 27 M62 9 L63 27 M74 9 L76 27 M82 9 L88 25" fill="none" stroke="#b04f2c" stroke-width="2"/>
@@ -8,5 +8,5 @@
 <path d="M14 50 L14 40 Q21 33 28 40 L28 50 Z" fill="#bfe3ff"/>
 <path d="M68 50 L68 40 Q75 33 82 40 L82 50 Z" fill="#bfe3ff"/>
 </g>
-<circle cx="48" cy="18" r="3" fill="#fbf3e4" stroke="#3a2a2e" stroke-width="2"/>
+<circle cx="48" cy="18" r="3" fill="#fbf3e4" stroke="#2f3542" stroke-width="2"/>
 </svg>
