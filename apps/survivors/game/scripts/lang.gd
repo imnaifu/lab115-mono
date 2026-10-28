@@ -44,13 +44,6 @@ const EN := {
 	"下一个 boss %s": "Next boss %s",
 	"按住屏幕任意位置拖动，就能移动": "Touch anywhere and drag to move",
 	"用 WASD 或方向键移动": "Move with WASD or the arrow keys",
-	# Difficulty
-	"实习生": "Intern",
-	"正式员工": "Full-timer",
-	"怪更脆、打人更轻，boss 最多同时 2 个": "Softer enemies, lighter hits, at most 2 bosses at once",
-	"标准难度": "The standard game",
-	"怪血 +50%、打人更痛，boss 招式更勤": "Enemy HP +50%, harder hits, bosses use moves more often",
-	"难度": "Difficulty",
 	# Funding bag
 	"融资开奖！": "Funding Round!",
 	"天使轮": "Angel",
@@ -80,9 +73,6 @@ const EN := {
 	"%s 秒": "%ss",
 	"%s/秒": "%s/s",
 	# End-of-run advice
-	"太轻松？在下面换成「%s」试试": "Too easy? Try %s below",
-	"觉得难？在下面换成「%s」试试": "Too hard? Try %s below",
-	"换难度会马上重开一局": "Changing it starts a new run right away",
 	"只有 %d 把武器？前期先拿武器卡，清怪快经验才多": "Only %d weapons? Take weapon cards early: faster kills, more XP",
 	"被 %d 个 boss 围住了：边走边打，别停在原地": "Surrounded by %d bosses: keep moving while you fight",
 	"boss 出招前会画出范围，看到就往旁边躲": "Bosses mark their moves before they hit: step aside when you see one",
@@ -95,6 +85,7 @@ const EN := {
 	"保存图片": "Save Image",
 	"关闭": "Close",
 	"职级": "Grade",
+	"搞定 boss": "Bosses beaten",
 	"撑满 10 分钟，敲钟上市": "Lasted 10 minutes and rang the IPO bell",
 	"被「%s」带走": "Taken out by %s",
 	"倒在了工位上": "Collapsed at the desk",

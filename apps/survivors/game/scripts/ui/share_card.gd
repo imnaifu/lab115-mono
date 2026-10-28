@@ -76,7 +76,7 @@ func build(game: Game, victory: bool, theme: Theme) -> void:
 		["存活", "%02d:%02d" % [floori(seconds / 60.0), seconds % 60]],
 		["职级", grade(game.level)],
 		["击杀", str(game.kills)],
-		["难度", tr(Difficulty.tier_name())],
+		["搞定 boss", str(game.telemetry.bosses_killed())],
 	]:
 		chips.add_child(_chip(chip[0], chip[1]))
 

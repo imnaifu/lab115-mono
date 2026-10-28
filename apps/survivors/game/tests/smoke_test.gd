@@ -20,8 +20,7 @@ extends SceneTree
 ## compare the weapons' damage share in the report), --perks=id:level,... (start with those
 ## passives, e.g. --perks=standup:5,cost_cut:5), --boss=type,... (bring those enemy types in
 ## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves),
-## --difficulty=intern|normal|996 (this run's tier, not saved), --share (with --shots, also
-## render the end screen's result image into the shots directory).
+## --share (with --shots, also render the end screen's result image into the shots directory).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -98,8 +97,6 @@ func _initialize() -> void:
 			_perks = value.split(",")
 		elif arg.begins_with("--boss="):
 			_bosses = value.split(",")
-		elif arg.begins_with("--difficulty="):
-			Settings.overrides["difficulty"] = value
 		elif arg == "--share":
 			_share = true
 		elif arg.begins_with("--teleport="):
@@ -284,8 +281,8 @@ func _report() -> int:
 		_game.player.hp, _game.player.max_hp])
 	print("[smoke] weapons=%s passives=%s" % [", ".join(weapon_levels), ", ".join(passive_levels)])
 	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
-	print("[smoke] bosses killed=%d of %d, funding bags opened=%d (%s), difficulty=%s" % [
-		_game.telemetry._bosses_killed, _game.telemetry._bosses_seen, _chests, ",".join(_game.telemetry._chests), Difficulty.current_id])
+	print("[smoke] bosses killed=%d of %d, funding bags opened=%d (%s)" % [
+		_game.telemetry._bosses_killed, _game.telemetry._bosses_seen, _chests, ",".join(_game.telemetry._chests)])
 	var uncollected_xp := 0
 	for pickup in _game.pickups:
 		if pickup.kind == Pickup.Kind.XP:

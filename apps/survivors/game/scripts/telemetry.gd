@@ -12,14 +12,14 @@ extends RefCounted
 ## - game_ready: once per page load, when the title screen is up: `load_ms` since the page
 ##   started loading (pageviews without it are visitors lost while the game loaded).
 ## - run_start: device, screen, orientation, language, tilt, sound and music, runs played before,
-##   difficulty, `from` (the link's ?from=, e.g. "share" for the result image's QR code), and for
-##   a page's first run `page_ms`, how long after the page opened it started.
+##   `from` (the link's ?from=, e.g. "share" for the result image's QR code), and for a page's
+##   first run `page_ms`, how long after the page opened it started.
 ## - run_end: `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
 ##   rates), `chests` (the funding rounds bags landed on), a `timeline` of
 ##   "seconds:level/HP/enemies" every 30 s, bosses met and killed, the `district` the run ended
-##   in, difficulty, and frames per second (average and worst second).
+##   in, and frames per second (average and worst second).
 ## The page itself also reports script errors (js_error), see export_presets.cfg.
 ## A run still going when the page closes is saved as a snapshot every SNAPSHOT_SECONDS and
 ## sent as a "quit" by the page itself when it closes and again on the next visit (in-app
@@ -28,7 +28,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.5"
+const VERSION := "2026-10-28.6"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -97,7 +97,6 @@ func start() -> void:
 		"sound": Sound.sfx_enabled(),
 		"music": Sound.music_enabled(),
 		"runs_before": runs_before,
-		"difficulty": Difficulty.current_id,
 		"from": _link_source(),
 	}
 	if _runs_on_page == 1:
@@ -149,6 +148,10 @@ func on_chest(round_id: String) -> void:
 	_chests.append(round_id)
 
 
+func bosses_killed() -> int:
+	return _bosses_killed
+
+
 func on_enemy_spawned(enemy: Enemy) -> void:
 	if enemy.is_elite:
 		_bosses_seen += 1
@@ -194,7 +197,6 @@ func _summary(result: String) -> Dictionary:
 		"picks": ",".join(_picks).left(MAX_TEXT),
 		"offered": ",".join(offered).left(MAX_TEXT),
 		"chests": ",".join(_chests).left(MAX_TEXT),
-		"difficulty": Difficulty.current_id,
 		"district": BayArea.district_of(Vector2i((player.position / City.BLOCK).floor())),
 		"timeline": ";".join(_timeline).left(MAX_TEXT),
 		"bosses_seen": _bosses_seen,

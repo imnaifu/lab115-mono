@@ -101,7 +101,6 @@ var _chest_reveal := Callable()
 var _next_boss_pill: Control
 var _next_boss_label: Label
 var _move_hint: Control
-var _difficulty_hint: Label
 var _victory := false
 var _sharing := false
 var _settings_overlay: Control
@@ -700,20 +699,6 @@ func _build_title() -> Control:
 	buttons.add_child(_settings_button())
 	start.call_deferred("grab_focus")
 
-	var tiers: Array = []
-	for tier_id: String in Difficulty.ORDER:
-		tiers.append([Difficulty.TIERS[tier_id]["name"], tier_id == Difficulty.current_id])
-	var difficulty_row := HBoxContainer.new()
-	difficulty_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	difficulty_row.add_theme_constant_override("separation", 6)
-	column.add_child(difficulty_row)
-	for option in _choice_buttons(tiers, _on_difficulty_picked, Vector2(84, 28)):
-		option.focus_mode = Control.FOCUS_NONE
-		difficulty_row.add_child(option)
-	_difficulty_hint = _label(Difficulty.TIERS[Difficulty.current_id]["hint"], 10, "MutedLabel")
-	_difficulty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(_difficulty_hint)
-
 	var controls := _label("电脑：WASD / 方向键移动　手机：按住屏幕拖动", 10, "MutedLabel")
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -722,11 +707,6 @@ func _build_title() -> Control:
 
 	_add_corner_version(overlay)
 	return overlay
-
-
-func _on_difficulty_picked(index: int) -> void:
-	Difficulty.choose(Difficulty.ORDER[index])
-	_difficulty_hint.text = Difficulty.TIERS[Difficulty.current_id]["hint"]
 
 
 ## Which build this is, in the bottom-right corner of the title, pause and end screens, so a
@@ -1000,8 +980,6 @@ func _show_pause() -> void:
 		recalibrate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(recalibrate)
 
-	column.add_child(_difficulty_switcher())
-
 	# Three buttons side by side don't fit the 360-wide portrait view; there "resume" gets a row
 	# of its own and the other two share the next.
 	var buttons := HBoxContainer.new()
@@ -1058,9 +1036,7 @@ func _show_end(victory: bool) -> void:
 	body.add_child(column)
 
 	column.add_child(_heading("敲钟上市！" if victory else "项目黄了…", 30, Art.BRAND if victory else Art.FILL_PINK))
-	# Joined from translated parts: a Label only translates text that matches a whole entry.
-	var outcome := tr("撑过了 10 分钟，公司成功 IPO" if victory else "公司没撑住……再融一轮？")
-	var subtitle := _label("%s · %s" % [outcome, tr(Difficulty.tier_name())], 12, "MutedLabel")
+	var subtitle := _label("撑过了 10 分钟，公司成功 IPO" if victory else "公司没撑住……再融一轮？", 12, "MutedLabel")
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.custom_minimum_size = Vector2(260, 0)
@@ -1092,8 +1068,6 @@ func _show_end(victory: bool) -> void:
 		advice_label.add_theme_color_override("font_color", Art.LINK)
 		column.add_child(advice_label)
 
-	column.add_child(_difficulty_switcher())
-
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 8)
@@ -1106,11 +1080,11 @@ func _show_end(victory: bool) -> void:
 	_fit_to_screen(_end_holder)
 
 
-## One line for the next run: on a loss, what most likely went wrong (the live data's early
-## deaths were mostly one-weapon builds); on a win below 996, that a harder tier exists.
+## One line for the next run after a loss: what most likely went wrong (the live data's early
+## deaths were mostly one-weapon builds).
 func _end_advice(victory: bool) -> String:
 	if victory:
-		return tr("太轻松？在下面换成「%s」试试") % tr(Difficulty.TIERS["996"]["name"]) if Difficulty.current_id != "996" else ""
+		return ""
 	var weapons := game.player.weapons.size()
 	var advice := ""
 	if weapons <= 2:
@@ -1123,38 +1097,7 @@ func _end_advice(victory: bool) -> String:
 		advice = tr("多走动，去捡星星升级")
 	else:
 		advice = tr("试试多拿撸铁或降噪耳机，更抗揍")
-	if game.elapsed < 240.0 and Difficulty.current_id != "intern":
-		advice += "\n" + tr("觉得难？在下面换成「%s」试试") % tr(Difficulty.TIERS["intern"]["name"])
 	return advice
-
-
-## The difficulty on the pause and end screens: this run's tier is chosen; picking another one
-## restarts straight away at it (a tier can't change mid-run), as the line under it says.
-func _difficulty_switcher() -> Control:
-	var tiers: Array = []
-	for tier_id: String in Difficulty.ORDER:
-		tiers.append([Difficulty.TIERS[tier_id]["name"], tier_id == Difficulty.current_id])
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 6)
-	box.add_child(row)
-	for option in _choice_buttons(tiers, _on_difficulty_switched, Vector2(76, 28)):
-		option.focus_mode = Control.FOCUS_NONE
-		row.add_child(option)
-	var hint := _label("换难度会马上重开一局", 10, "MutedLabel")
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(hint)
-	return box
-
-
-func _on_difficulty_switched(index: int) -> void:
-	var tier_id: String = Difficulty.ORDER[index]
-	if tier_id == Difficulty.current_id:
-		return
-	Difficulty.save_for_next_run(tier_id)
-	game.restart()
 
 
 func _bosses_out() -> int:

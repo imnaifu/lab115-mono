@@ -195,19 +195,17 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 	return velocity
 
 
-## Seconds between boss moves, stretched or shortened by the difficulty.
 func _ability_every() -> float:
-	var every := SUMMON_EVERY
 	match ability:
 		"charge":
-			every = CHARGE_EVERY
+			return CHARGE_EVERY
 		"blink":
-			every = BLINK_EVERY
+			return BLINK_EVERY
 		"volley":
-			every = VOLLEY_EVERY
+			return VOLLEY_EVERY
 		"lob":
-			every = LOB_EVERY
-	return every * Difficulty.value("ability_every")
+			return LOB_EVERY
+	return SUMMON_EVERY
 
 
 func _finish_windup() -> void:

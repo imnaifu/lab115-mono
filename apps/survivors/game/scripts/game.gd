@@ -96,7 +96,6 @@ func _ready() -> void:
 	Tilt.setup()
 	_star_hint_done = Settings.get_value("star_hint_shown", false)
 	runs_before = Settings.get_value("runs_played", 0)
-	Difficulty.load_saved()
 	rng.randomize()
 
 	player = Player.new()
@@ -212,9 +211,7 @@ func apply_orientation() -> void:
 
 func spawn_enemy(type_name: String, at: Vector2) -> Enemy:
 	var enemy := Enemy.new()
-	var data: Dictionary = Spawner.ENEMY_TYPES[type_name]
-	var tier_hp := Difficulty.value("boss_hp" if data.get("elite", false) else "enemy_hp")
-	enemy.setup(type_name, data, spawner.hp_scale() * tier_hp)
+	enemy.setup(type_name, Spawner.ENEMY_TYPES[type_name], spawner.hp_scale())
 	enemy.game = self
 	enemy.position = at if enemy.ghostly else city.resolve(at, enemy.radius)
 	entity_layer.add_child(enemy)
@@ -251,7 +248,7 @@ func lob_pie(from: Vector2, to: Vector2, seconds: float, damage: float, thrower:
 ## as what last hurt them (Telemetry's killer).
 func hurt_player(amount: float, by: String) -> void:
 	telemetry.last_hurt_by = by
-	player.take_damage(amount * Difficulty.value("damage"))
+	player.take_damage(amount)
 
 
 ## All living enemies whose body overlaps the circle.
