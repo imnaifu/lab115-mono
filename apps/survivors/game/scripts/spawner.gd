@@ -114,4 +114,5 @@ func _run_event(event: Dictionary) -> void:
 			_game.spawn_enemy(event["type"], _game.player.position + direction * RING_RADIUS)
 		else:
 			_game.spawn_enemy(event["type"], _game.offscreen_point(_game.random_direction()))
+	Sound.play("alarm")
 	_game.announce(event["text"])

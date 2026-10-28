@@ -13,7 +13,9 @@ extends SceneTree
 ## --lang=zh|en (UI language for this run, instead of the saved or system one),
 ## --teleport=X,Y (start the run at that world position, to look at a district),
 ## --handheld (behave as on a phone, e.g. with --window=405x720 to see it held upright),
-## --orientation=portrait|landscape (a phone's Settings choice for this run, not saved).
+## --orientation=portrait|landscape (a phone's Settings choice for this run, not saved),
+## --sound (play the sound effects and music; off by default, since nobody listens to a test run
+## and streams still playing when it quits are reported as leaked).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -43,6 +45,8 @@ var _teleport: Variant = null
 
 
 func _initialize() -> void:
+	Settings.overrides["sound"] = false
+	Settings.overrides["music"] = false
 	for arg in OS.get_cmdline_user_args():
 		var value := arg.get_slice("=", 1)
 		if arg.begins_with("--seconds="):
@@ -65,6 +69,9 @@ func _initialize() -> void:
 			Device.force_handheld = true
 		elif arg.begins_with("--orientation="):
 			Settings.overrides["orientation"] = value
+		elif arg == "--sound":
+			Settings.overrides.erase("sound")
+			Settings.overrides.erase("music")
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):

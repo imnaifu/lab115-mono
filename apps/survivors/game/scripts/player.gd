@@ -120,6 +120,7 @@ func take_damage(amount: float) -> void:
 		return
 	hp = maxf(0.0, hp - maxf(1.0, amount - armor))
 	_invuln_left = INVULN_SECONDS
+	Sound.play("hurt")
 	_shake_left = SHAKE_SECONDS
 	queue_redraw()
 	if hp <= 0.0:

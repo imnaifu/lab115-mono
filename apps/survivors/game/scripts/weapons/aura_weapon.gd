@@ -26,7 +26,7 @@ func _process(delta: float) -> void:
 	_tick_left = stat(TICK_SECONDS) * player.cooldown_scale
 	var damage: float = stat(DAMAGE) * player.might
 	for enemy in game.query_enemies(player.position, stat(RADIUS)):
-		game.damage_enemy(enemy, damage, (enemy.position - player.position).normalized() * 50.0, id)
+		game.damage_enemy(enemy, damage, (enemy.position - player.position).normalized() * 50.0, id, true)
 
 
 func _draw() -> void:

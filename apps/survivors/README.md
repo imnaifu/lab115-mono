@@ -6,7 +6,7 @@
 game/              # Godot 工程（玩法、素材、测试都在这里，见 game/README.md）
 Dockerfile         # 第一阶段装 Godot、从 game/ 导出 Web 版；第二阶段 nginx:alpine 提供，wasm / pck / js 预先 gzip
 nginx.conf         # gzip_static + no-cache（文件名每次导出都一样，必须按 ETag 重新校验）
-check-project.mjs  # CI 的 "build"：检查工程文件齐全、地图用到的 soco-st 楼图都已入库
+check-project.mjs  # CI 的 "build"：检查工程文件齐全、地图用到的 soco-st 楼图和 sound.gd 用到的音效都已入库
 ```
 
 **更新线上版本**：改 `game/` 里的东西，push 到 main。Coolify 构建镜像时会下载 Godot 4.7.2（按服务器架构选 arm64 / x86_64）和 Web 导出模板，在镜像里导出，所以线上永远和仓库里的源码一致，也不依赖谁本地装的 Godot。Godot 和模板那几层是缓存的，平时一次部署只重新导出游戏本身。

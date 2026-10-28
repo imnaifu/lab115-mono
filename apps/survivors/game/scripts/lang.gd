@@ -44,6 +44,8 @@ const EN := {
 	"陀螺仪移动": "Tilt to move",
 	"开": "On",
 	"关": "Off",
+	"音效": "Sound",
+	"音乐": "Music",
 	"返回": "Back",
 	"屏幕方向": "Screen",
 	"竖屏": "Portrait",

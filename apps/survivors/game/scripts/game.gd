@@ -108,6 +108,7 @@ func _ready() -> void:
 		_on_run_started()
 	else:
 		get_tree().paused = true
+		Sound.music("title")
 
 
 func _process(delta: float) -> void:
@@ -219,7 +220,9 @@ func random_visible_enemies(count: int) -> Array[Enemy]:
 	return visible.slice(0, count)
 
 
-func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, source: String = "") -> void:
+## `silent` skips the hit sound, for damage that ticks constantly (the Wi-Fi field) and would
+## otherwise patter non-stop; kills still pop.
+func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, source: String = "", silent: bool = false) -> void:
 	if enemy.dead:
 		return
 	enemy.take_hit(amount, push)
@@ -227,6 +230,8 @@ func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, sou
 	Effects.damage_number(self, enemy.position, amount)
 	if enemy.hp <= 0.0:
 		_kill(enemy)
+	elif not silent:
+		Sound.play("hit")
 
 
 ## A point just outside the visible screen in the given direction from the player.
@@ -257,6 +262,7 @@ func _kill(enemy: Enemy) -> void:
 	enemy.dead = true
 	kills += 1
 	enemies.erase(enemy)
+	Sound.play("kill")
 	Effects.poof(self, enemy.position, enemy.color)
 	_drop_xp(enemy.position, enemy.xp_value)
 	if not _star_hint_done:
@@ -386,15 +392,19 @@ func _tick_pickups(delta: float) -> void:
 func _collect(pickup: Pickup) -> void:
 	match pickup.kind:
 		Pickup.Kind.XP:
+			Sound.xp()
 			add_xp(pickup.value)
 		Pickup.Kind.HEAL:
+			Sound.play("heal")
 			player.heal(30.0)
 			announce("珍珠奶茶，回血 30！")
 		Pickup.Kind.BONUS:
+			# No sound of its own: the level-up it grants plays one straight away.
 			queued_level_ups += 1
 			announce("拿到融资！免费升级一次")
 			_offer_level_up()
 		Pickup.Kind.MAGNET:
+			Sound.play("magnet")
 			for other in pickups:
 				if other.kind == Pickup.Kind.XP:
 					other.attract()
@@ -420,6 +430,7 @@ func _offer_level_up() -> void:
 	current_choices = upgrades.roll_choices(3)
 	state = State.LEVEL_UP
 	get_tree().paused = true
+	Sound.play("level_up")
 	level_up_offered.emit(current_choices)
 
 
@@ -428,6 +439,7 @@ func choose_upgrade(index: int) -> void:
 		return
 	upgrades.apply(current_choices[index])
 	queued_level_ups -= 1
+	Sound.play("pick")
 	state = State.PLAYING
 	get_tree().paused = false
 	inventory_changed.emit()
@@ -449,6 +461,7 @@ func start_run() -> void:
 ## Zeroes the tilt to how the phone is held right now, and says so: without the hint, the first
 ## tilt player wonders why holding the phone at an angle doesn't send them running.
 func _on_run_started() -> void:
+	Sound.music("battle")
 	Tilt.calibrate()
 	if Tilt.enabled():
 		announce("倾斜手机就能移动，前后以现在的角度为准")
@@ -480,6 +493,8 @@ func _end_run(victory: bool) -> void:
 		return
 	state = State.ENDED
 	get_tree().paused = true
+	Sound.stop_music()
+	Sound.play("win" if victory else "lose")
 	run_ended.emit(victory)
 
 

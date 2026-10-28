@@ -18,6 +18,7 @@ func fire() -> bool:
 	if targets.is_empty():
 		return false
 	var damage: float = stat(DAMAGE) * player.might
+	Sound.play("zap")
 	for target in targets:
 		# Copy the position first: the strike may kill the target.
 		var strike_at := target.position

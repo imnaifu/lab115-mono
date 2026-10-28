@@ -324,6 +324,7 @@ func _build_top_bar() -> void:
 	_recalibrate_button.focus_mode = Control.FOCUS_NONE
 	_recalibrate_button.theme_type_variation = "IconButton"
 	_recalibrate_button.pressed.connect(_recalibrate_tilt)
+	_click_on_press(_recalibrate_button)
 	right.add_child(_recalibrate_button)
 	_pause_button = Button.new()
 	_pause_button.icon = Art.texture("pause")
@@ -332,6 +333,7 @@ func _build_top_bar() -> void:
 	_pause_button.focus_mode = Control.FOCUS_NONE
 	_pause_button.theme_type_variation = "IconButton"
 	_pause_button.pressed.connect(game.set_paused.bind(true))
+	_click_on_press(_pause_button)
 	right.add_child(_pause_button)
 
 
@@ -473,6 +475,7 @@ func _build_title() -> Control:
 	start.custom_minimum_size = Vector2(150, 40)
 	start.add_theme_font_size_override("font_size", 18)
 	start.pressed.connect(game.start_run)
+	_click_on_press(start)
 	buttons.add_child(start)
 	buttons.add_child(_settings_button())
 	start.call_deferred("grab_focus")
@@ -890,6 +893,11 @@ func _open_settings() -> void:
 		_tilt_hint.modulate = Color(1, 1, 1, 0.7)
 		column.add_child(_tilt_hint)
 
+	var sound_on := Sound.sfx_enabled()
+	column.add_child(_choice_row("音效", [["开", sound_on], ["关", not sound_on]], _on_sound_picked))
+	var music_on := Sound.music_enabled()
+	column.add_child(_choice_row("音乐", [["开", music_on], ["关", not music_on]], _on_music_picked))
+
 	var back := _button("返回", _close_settings)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(back)
@@ -929,6 +937,7 @@ func _choice_buttons(options: Array, on_pick: Callable, button_size: Vector2) ->
 		option.theme_type_variation = "ChoiceButton"
 		option.custom_minimum_size = button_size
 		option.pressed.connect(on_pick.bind(i))
+		_click_on_press(option)
 		buttons.append(option)
 	return buttons
 
@@ -939,6 +948,14 @@ func _on_language_picked(index: int) -> void:
 
 func _on_tilt_picked(index: int) -> void:
 	Tilt.set_enabled(index == 0)
+
+
+func _on_sound_picked(index: int) -> void:
+	Sound.set_sfx_enabled(index == 0)
+
+
+func _on_music_picked(index: int) -> void:
+	Sound.set_music_enabled(index == 0)
 
 
 func _on_orientation_picked(index: int) -> void:
@@ -1013,7 +1030,13 @@ func _button(text: String, action: Callable) -> Button:
 	button.text = text
 	button.custom_minimum_size = Vector2(110, 32)
 	button.pressed.connect(action)
+	_click_on_press(button)
 	return button
+
+
+## Level-up cards are left out on purpose: picking one plays its own sound (Game.choose_upgrade).
+func _click_on_press(button: BaseButton) -> void:
+	button.pressed.connect(func() -> void: Sound.play("click"))
 
 
 ## Text in the HUD style: white with an ink outline over the world, or plain ink (`on_paper`)
