@@ -12,14 +12,23 @@ extends Node2D
 ## - "blink": stops, marks a spot just ahead of where the player is walking, then appears there.
 ## - "volley": stops, braces, then fires a ring of bullets outward.
 ## - "lob": throws pies at where the player is heading; each shows its landing spot until it lands.
-## Every wind-up is drawn (lane, landing circle, bracing ring) so a move can always be dodged.
+## - "quake": stops while a red circle fills in under it, then goes off: hurts and shoves the
+##   player if inside, and shoves the crowd inside away too, so stepping out of it pays.
+## - "countdown": a countdown over its head; it speeds up as it runs down, and still alive at
+##   zero it goes berserk. Killed in time, its funding bag is at least a Series A (Game).
+## - "clones": flickers, then a see-through copy of it appears near the player; copies break at
+##   any hit, hit half as hard, give nothing, and fade (or go with the original).
+## - "aura": a gold ring round it in which ordinary enemies take half damage (Game); killed, it
+##   spills extra stars.
+## Every wind-up is drawn (lane, landing circle, bracing ring, filling circle, flicker) so a move
+## can always be dodged; the HUD says how the first time each comes up in a run.
 
 const FLASH_SECONDS := 0.08
 ## Modulate above 1 pushes the sprite toward white for the hit flash.
 const FLASH_COLOR := Color(6, 6, 6)
 ## How far a hop squashes and stretches the sprite, as a fraction of its size.
 const SQUASH := 0.08
-const ABILITIES := ["charge", "summon", "blink", "volley", "lob"]
+const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura"]
 const CHARGE_EVERY := 3.5
 const CHARGE_WINDUP := 0.8
 const CHARGE_SECONDS := 0.6
@@ -44,6 +53,30 @@ const LOB_FLIGHT_SECONDS := 1.1
 const LOB_LEAD_SECONDS := 0.6
 const LOB_SPREAD := 34.0
 const LOB_DAMAGE := 18.0
+## The quake's numbers are mild on purpose: it is the first boss move a new player meets (2:00).
+const QUAKE_EVERY := 6.0
+const QUAKE_WINDUP := 1.2
+const QUAKE_RADIUS := 70.0
+const QUAKE_DAMAGE := 8.0
+## How far the quake shoves the player, and how hard it throws the crowd inside outward.
+const QUAKE_SHOVE := 40.0
+const QUAKE_CROWD_PUSH := 220.0
+const COUNTDOWN_SECONDS := 25.0
+## Speed at the end of the countdown, then berserk speed and damage, as multiples of its own.
+## Berserk it is still slower than the player (62), so kiting gets away.
+const COUNTDOWN_SPEEDUP := 1.25
+const BERSERK_SPEED := 1.4
+const BERSERK_DAMAGE := 1.5
+const COUNTDOWN_URGENT := 5.0
+const CLONES_EVERY := 7.0
+const CLONES_WINDUP := 0.8
+const MAX_CLONES := 2
+const CLONE_SECONDS := 8.0
+const AURA_RADIUS := 90.0
+## Damage taken by an ordinary enemy inside an aura, as a fraction.
+const AURA_SHIELD := 0.5
+const AURA_TINT := Color(1.0, 0.9, 0.5)
+const PHANTOM_ALPHA := 0.55
 ## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
 const BOSS_STUN_SCALE := 0.5
 const STUN_TINT := Color(0.72, 0.84, 1.0)
@@ -68,6 +101,14 @@ var game: Game
 var detour_left := 0.0
 ## Seconds left standing still, stunned (the stand-up perk).
 var stun_left := 0.0
+## A Deadline whose countdown ran out.
+var berserk := false
+## Inside an investor's aura this frame (Game sets it): takes less damage, tinted gold.
+var shielded := false
+## On an AI's clone: the AI it came from. Clones also have `life_left` ticking down to 0, at
+## which Game removes them; -1 for everything else.
+var clone_of: Enemy = null
+var life_left := -1.0
 
 var _knockback := Vector2.ZERO
 var _wobble := 0.0
@@ -87,6 +128,11 @@ var _summon_count := SUMMON_COUNT
 var _blink_target := Vector2.ZERO
 ## Turns each volley half a gap, so standing in a gap only works once.
 var _volley_turn := 0.0
+var _countdown_left := 0.0
+var _base_speed := 0.0
+var _base_damage := 0.0
+## Whether this boss's always-on move (countdown, aura) has been reported to the HUD yet.
+var _announced := false
 
 
 func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
@@ -108,10 +154,16 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 	_summon_count = data.get("summon_count", SUMMON_COUNT)
 	# Half a cycle in, so a boss shows its move soon after it walks on screen.
 	_ability_left = _ability_every() * 0.5
+	_countdown_left = COUNTDOWN_SECONDS
 	_phase = randf() * TAU
 	if ghostly:
 		_base_modulate = Color(1, 1, 1, 0.8)
+	if data.get("phantom", false):
+		_base_modulate = Color(1, 1, 1, PHANTOM_ALPHA)
+		life_left = CLONE_SECONDS
 
+	_base_speed = speed
+	_base_damage = damage
 	_size = data["size"]
 	_sprite = Art.sprite(data["art"], _size)
 	_base_scale = _sprite.scale.x
@@ -121,6 +173,8 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 
 ## `direction` is the unit vector to walk along this frame (Game._heading).
 func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
+	if life_left > 0.0:
+		life_left = maxf(0.0, life_left - delta)
 	var velocity := direction * speed
 	if _wobble > 0.0:
 		velocity += direction.orthogonal() * sin(_phase * 0.7) * _wobble
@@ -159,6 +213,15 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 ## The velocity to move with this frame once the boss move in progress has had its say: any
 ## wind-up stands still, a charge under way rushes along its locked lane.
 func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector2:
+	# The always-on moves, which have no wind-up.
+	match ability:
+		"countdown":
+			_tick_countdown(delta)
+			return velocity
+		"aura":
+			_announce()
+			queue_redraw()
+			return velocity
 	if _charge_left > 0.0:
 		_charge_left -= delta
 		return _charge_direction * CHARGE_SPEED
@@ -193,7 +256,67 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 			return Vector2.ZERO
 		"lob":
 			_throw_pies()
+		"quake":
+			_windup_left = QUAKE_WINDUP
+			return Vector2.ZERO
+		"clones":
+			# Only so many at once; the turn is skipped rather than saved up.
+			if game.clones_of(self) < MAX_CLONES:
+				_windup_left = CLONES_WINDUP
+				return Vector2.ZERO
 	return velocity
+
+
+## Tells the HUD about an always-on move once, when the boss first acts.
+func _announce() -> void:
+	if not _announced:
+		_announced = true
+		game.boss_move.emit(ability)
+
+
+func _tick_countdown(delta: float) -> void:
+	_announce()
+	queue_redraw()
+	if berserk:
+		return
+	_countdown_left -= delta
+	speed = _base_speed * lerpf(1.0, COUNTDOWN_SPEEDUP, clampf(1.0 - _countdown_left / COUNTDOWN_SECONDS, 0.0, 1.0))
+	if _countdown_left <= 0.0:
+		berserk = true
+		speed = _base_speed * BERSERK_SPEED
+		damage = _base_damage * BERSERK_DAMAGE
+		Sound.play("alarm")
+		game.announce("Deadline 到了！它暴走了")
+
+
+## Scales its health, full: a boss coming back later in a run a little weaker (Spawner EVENTS).
+func scale_hp(factor: float) -> void:
+	max_hp *= factor
+	hp = max_hp
+
+
+## A Deadline killed before its countdown ran out (its bag is at least a Series A).
+func met_deadline() -> bool:
+	return ability == "countdown" and not berserk
+
+
+## A clone whose time is up, for Game to take away.
+func expired() -> bool:
+	return life_left == 0.0
+
+
+## Thrown by something other than a hit (the quake).
+func shove(push: Vector2) -> void:
+	_knockback += push * (1.0 - knockback_resist)
+
+
+## Inside or out of an investor's aura this frame.
+func set_shielded(inside: bool) -> void:
+	if inside == shielded:
+		return
+	shielded = inside
+	if _flash_left <= 0.0:
+		_sprite.modulate = _rest_modulate()
 
 
 ## Rushing down its lane (the "charge" move), for the result screen's cause of death.
@@ -211,6 +334,10 @@ func _ability_every() -> float:
 			return VOLLEY_EVERY
 		"lob":
 			return LOB_EVERY
+		"quake":
+			return QUAKE_EVERY
+		"clones":
+			return CLONES_EVERY
 	return SUMMON_EVERY
 
 
@@ -228,7 +355,24 @@ func _finish_windup() -> void:
 				var heading := Vector2.from_angle(TAU * (i + _volley_turn) / VOLLEY_SHOTS)
 				game.fire_bullet(position + heading * radius, heading * VOLLEY_SPEED, VOLLEY_DAMAGE, type_name)
 			Sound.play("zap")
+		"quake":
+			_quake()
+		"clones":
+			game.spawn_clone(self)
 	queue_redraw()
+
+
+func _quake() -> void:
+	Effects.ring(game, position, QUAKE_RADIUS, Art.BOSS_RED)
+	Sound.play("zap")
+	var player := game.player
+	var offset := player.position - position
+	if offset.length() <= QUAKE_RADIUS + Player.HURT_RADIUS:
+		game.hurt_player(QUAKE_DAMAGE, type_name, "quake")
+		player.position = game.city.resolve(player.position + offset.normalized() * QUAKE_SHOVE, Player.BODY_RADIUS)
+	for enemy in game.query_enemies(position, QUAKE_RADIUS):
+		if enemy != self and not enemy.is_elite:
+			enemy.shove((enemy.position - position).normalized() * QUAKE_CROWD_PUSH)
 
 
 ## One pie at where the player is heading and the rest to either side of it.
@@ -249,7 +393,8 @@ func stun(seconds: float) -> void:
 
 
 func _rest_modulate() -> Color:
-	return _base_modulate * STUN_TINT if stun_left > 0.0 else _base_modulate
+	var tint := _base_modulate * STUN_TINT if stun_left > 0.0 else _base_modulate
+	return tint * AURA_TINT if shielded else tint
 
 
 func take_hit(amount: float, push: Vector2) -> void:
@@ -262,8 +407,26 @@ func take_hit(amount: float, push: Vector2) -> void:
 
 
 func _draw() -> void:
+	if clone_of != null:
+		# A question mark over a clone, so it reads as not quite the real thing.
+		_draw_mark("?", Vector2(0.0, -_size / 2.0 - 2.0), 14, Art.LINK)
+		return
 	if not is_elite:
 		return
+	match ability:
+		"aura":
+			# The ring inside which its crowd takes half damage, under everything it covers.
+			var glow := 0.08 + 0.04 * sin(_phase * 0.4)
+			draw_circle(Vector2.ZERO, AURA_RADIUS, Color(Art.BRAND, glow))
+			draw_arc(Vector2.ZERO, AURA_RADIUS, 0.0, TAU, 48, Color(Art.BRAND_DEEP, 0.7), 2.0, true)
+		"countdown":
+			if berserk:
+				var pulse := 0.5 + 0.5 * sin(_phase * 1.2)
+				draw_arc(Vector2.ZERO, radius + 8.0 + 3.0 * pulse, 0.0, TAU, 32, Color(Art.BOSS_RED, 0.5 + 0.4 * pulse), 3.0, true)
+			var urgent := berserk or _countdown_left <= COUNTDOWN_URGENT
+			var text := "!" if berserk else str(ceili(maxf(_countdown_left, 0.0)))
+			var size_bump := 2 if urgent and fmod(_phase, 6.0) < 3.0 else 0
+			_draw_mark(text, Vector2(0.0, -_size / 2.0 - 12.0), 16 + size_bump, Art.BOSS_RED if urgent else Art.INK)
 	if _windup_left > 0.0:
 		match ability:
 			"charge":
@@ -284,8 +447,28 @@ func _draw() -> void:
 				# A ring tightening onto the boss: the volley goes off when it closes.
 				var closing := _windup_left / VOLLEY_WINDUP
 				draw_arc(Vector2.ZERO, radius + 4.0 + 16.0 * closing, 0.0, TAU, 32, Color(Art.RED, 0.8 - 0.4 * closing), 2.0, true)
+			"quake":
+				# The circle it will hit, filling in from the middle: it goes off when full.
+				var filled := 1.0 - _windup_left / QUAKE_WINDUP
+				draw_circle(Vector2.ZERO, QUAKE_RADIUS, Color(Art.BOSS_RED, 0.12))
+				draw_circle(Vector2.ZERO, QUAKE_RADIUS * filled, Color(Art.BOSS_RED, 0.22))
+				draw_arc(Vector2.ZERO, QUAKE_RADIUS, 0.0, TAU, 48, Color(Art.BOSS_RED, 0.8), 2.0, true)
+			"clones":
+				# Flickering rings while it makes up a copy.
+				var flicker := fmod(_phase, 2.0) < 1.0
+				draw_arc(Vector2.ZERO, radius + 6.0, 0.0, TAU, 32, Color(Art.LINK, 0.8 if flicker else 0.3), 2.0, true)
+				draw_arc(Vector2.ZERO, radius + 12.0, 0.0, TAU, 32, Color(Art.LINK, 0.3 if flicker else 0.8), 1.5, true)
 	var width := _size * 0.7
 	var bar := Rect2(-width / 2.0, -_size / 2.0 - 8.0, width, 5.0)
 	draw_rect(bar.grow(1.0), Art.INK)
 	draw_rect(bar, Color.WHITE)
 	draw_rect(Rect2(bar.position, Vector2(width * maxf(0.0, hp) / max_hp, bar.size.y)), Art.RED)
+
+
+## A short line of text with a white edge, centred on `at` (the countdown, a clone's mark).
+func _draw_mark(text: String, at: Vector2, font_size: int, color: Color) -> void:
+	var font := Art.display_font(900)
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var baseline := at + Vector2(-width / 2.0, 0.0)
+	draw_string_outline(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 5, Art.PAPER)
+	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)

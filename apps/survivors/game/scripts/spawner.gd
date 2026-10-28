@@ -36,23 +36,31 @@ const ENEMY_TYPES := {
 		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
 	# The early bosses: bigger, tougher versions of regular enemies, for the first minutes. They
 	# hit no harder than the regular enemies of their time and walk slower than the player:
-	# hitting harder, they killed the test bot at 2:00 more often than anything else.
+	# hitting harder, they killed the test bot at 2:00 more often than anything else. Every boss
+	# but the first has a move of its own (Enemy.ABILITIES); the first is only big.
 	"techdebt_elite": {"name": "祖传技术债", "art": "techdebt", "size": 46.0, "color": Color("ffd36b"),
 		"hp": 360.0, "speed": 28.0, "damage": 9.0, "xp": 20, "radius": 11.0, "knockback_resist": 0.9, "elite": true},
 	"server_elite": {"name": "主库宕机", "art": "server", "size": 54.0, "color": Color("a9b3c4"),
-		"hp": 630.0, "speed": 24.0, "damage": 11.0, "xp": 30, "radius": 13.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 630.0, "speed": 24.0, "damage": 11.0, "xp": 30, "radius": 13.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "quake"},
 	# Boss health and damage were raised by 40% / 25% after the first full run on the live site
 	# ended at full health with all twelve bosses down.
 	"layoff": {"name": "裁员通知", "art": "layoff", "size": 54.0, "color": Color("ffc2cf"),
 		"hp": 1400.0, "speed": 32.0, "damage": 22.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "charge"},
 	"deadline": {"name": "Deadline", "art": "deadline", "size": 50.0, "color": Color("ff5d5d"),
-		"hp": 1260.0, "speed": 36.0, "damage": 31.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 1260.0, "speed": 36.0, "damage": 31.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "countdown"},
 	"ai": {"name": "AI 大模型", "art": "ai_boss", "size": 64.0, "color": Color("8c7cf0"),
-		"hp": 2240.0, "speed": 40.0, "damage": 38.0, "xp": 100, "radius": 16.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 2240.0, "speed": 40.0, "damage": 38.0, "xp": 100, "radius": 16.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "clones"},
+	# The AI's see-through copy: breaks at any hit, hits half as hard, gives nothing ("phantom").
+	"ai_clone": {"name": "AI 幻觉", "art": "ai_boss", "size": 54.0, "color": Color("8c7cf0"),
+		"hp": 1.0, "speed": 40.0, "damage": 19.0, "xp": 0, "radius": 13.0, "knockback_resist": 0.6, "phantom": true},
+	# 15% less health than before its aura: the aura makes the crowd round it harder to clear.
 	"investor": {"name": "投资人", "art": "investor", "size": 58.0, "color": Color("bcdcf2"),
-		"hp": 1960.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
-		"ability": "summon"},
+		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "aura"},
 	# The late bosses, one new move each. Spaghetti code keeps leaking bugs and, killed, falls
 	# apart into smaller piles (`splits_into`), which don't split again.
 	"spaghetti": {"name": "屎山代码", "art": "spaghetti", "size": 60.0, "color": Color("c98d5a"),
@@ -107,7 +115,9 @@ const EVENTS := [
 	{"at": 480.0, "kind": "elite", "type": "incident", "count": 1, "text": "P0 线上事故！"},
 	{"at": 510.0, "kind": "ring", "type": "ping", "count": 48, "text": "消息轰炸 ×2！"},
 	{"at": 540.0, "kind": "elite", "type": "pie_boss", "count": 1, "text": "最后的考验：老板画饼 + AI 大模型"},
-	{"at": 540.0, "kind": "elite", "type": "ai", "count": 1},
+	# The AI again, with 15% less health: alongside the pie boss, its clones make the finale hard
+	# enough already.
+	{"at": 540.0, "kind": "elite", "type": "ai", "count": 1, "hp_scale": 0.85},
 ]
 
 var max_alive := MAX_ALIVE
@@ -208,7 +218,8 @@ func _run_event(event: Dictionary) -> void:
 			var direction := Vector2.from_angle(TAU * i / count)
 			_game.spawn_enemy(event["type"], _game.player.position + direction * RING_RADIUS)
 		else:
-			_game.spawn_enemy(event["type"], _game.offscreen_point(_game.random_direction()))
+			var boss := _game.spawn_enemy(event["type"], _game.offscreen_point(_game.random_direction()))
+			boss.scale_hp(event.get("hp_scale", 1.0))
 	if event.has("text"):
 		Sound.play("alarm")
 		_game.announce(event["text"])

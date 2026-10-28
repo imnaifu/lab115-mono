@@ -36,6 +36,12 @@ const HEAL_DROP_CHANCE := 0.012
 ## gets its first upgrades quickly; from level 5 on the curve applies.
 const EARLY_LEVEL_XP := [3, 7, 13, 20]
 const MAGNET_DROP_CHANCE := 0.004
+## An investor killed spills this many extra stars of this value round it: 撤资, the reward
+## for getting through its aura.
+const PULL_OUT_STARS := 8
+const PULL_OUT_STAR_VALUE := 3
+## An AI's clone appears this far from the player.
+const CLONE_DISTANCE := 110.0
 ## A boss's funding bag opens as a slot machine landing on a round, which decides how many free
 ## upgrades come out (Vampire Survivors' chests: 1, 3 or 5 items). Rare big rounds are the
 ## jackpot moment.
@@ -64,8 +70,11 @@ var damage_by_source := {}
 var runs_before := 0
 ## Whether the player has moved yet this run; the HUD shows how to until they do.
 var has_moved := false
-## Funding bags picked up while another was open, opened once it closes.
-var chests_waiting := 0
+## Funding bags picked up while another was open, opened once it closes: each one's lowest round
+## (an index into FUNDING_ROUNDS; see _open_chest).
+var _waiting_chests: Array[int] = []
+## Investors out this frame, whose auras shield the crowd round them (Enemy "aura").
+var _aura_sources: Array[Enemy] = []
 
 var rng := RandomNumberGenerator.new()
 var player: Player
@@ -304,6 +313,8 @@ func random_visible_enemies(count: int) -> Array[Enemy]:
 func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, source: String = "", silent: bool = false) -> void:
 	if enemy.dead:
 		return
+	if enemy.shielded:
+		amount *= Enemy.AURA_SHIELD
 	enemy.take_hit(amount, push)
 	damage_by_source[source] = damage_by_source.get(source, 0.0) + amount
 	Effects.damage_number(self, enemy.position, amount)
@@ -349,8 +360,20 @@ func _kill(enemy: Enemy) -> void:
 	telemetry.on_enemy_killed(enemy)
 	Sound.play("kill")
 	Effects.poof(self, enemy.position, enemy.color)
-	var star := _drop_xp(enemy.position, enemy.xp_value)
+	# An AI's clones go with it; clones themselves give nothing.
+	var star: Pickup = null
+	if enemy.xp_value > 0:
+		star = _drop_xp(enemy.position, enemy.xp_value)
 	perks.on_kill(enemy)
+	match enemy.ability:
+		"clones":
+			for clone in enemies.duplicate():
+				if clone.clone_of == enemy:
+					_remove_quietly(clone)
+		"aura":
+			for i in PULL_OUT_STARS:
+				_drop_xp(enemy.position + Vector2.from_angle(TAU * i / PULL_OUT_STARS) * 28.0, PULL_OUT_STAR_VALUE)
+			announce("撤资了！掉了一地经验")
 	var data: Dictionary = Spawner.ENEMY_TYPES[enemy.type_name]
 	# Splits regardless of the crowd cap: the pieces are the rest of the boss fight.
 	if data.has("splits_into"):
@@ -365,7 +388,12 @@ func _kill(enemy: Enemy) -> void:
 		# wasn't enough to send them to the star.
 		star.point_at()
 	if enemy.is_elite:
-		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), 1)
+		# A Deadline met in time pays: its bag is at least a Series A (按时交付).
+		var lowest_round := 0
+		if enemy.met_deadline():
+			lowest_round = 1
+			announce("按时交付！钱袋保底 A 轮")
+		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
 		_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(0, 12), 1)
 	else:
@@ -394,10 +422,52 @@ func _rebuild_grid() -> void:
 			_enemy_grid[cell] = [enemy]
 
 
+## Takes an enemy off the field with nothing to show for it: a clone fading or going with its AI.
+func _remove_quietly(enemy: Enemy) -> void:
+	if enemy.dead:
+		return
+	enemy.dead = true
+	enemies.erase(enemy)
+	Effects.poof(self, enemy.position, enemy.color)
+	enemy.visible = false
+	_corpses.append(enemy)
+
+
+## A see-through copy of an AI near the player (Enemy "clones").
+func spawn_clone(boss: Enemy) -> void:
+	if clones_of(boss) >= Enemy.MAX_CLONES:
+		return
+	var spot := player.position + Vector2.from_angle(rng.randf() * TAU) * CLONE_DISTANCE
+	var clone := spawn_enemy("ai_clone", spot)
+	clone.clone_of = boss
+	Effects.poof(self, clone.position, clone.color)
+
+
+func clones_of(boss: Enemy) -> int:
+	var count := 0
+	for enemy in enemies:
+		if enemy.clone_of == boss and not enemy.dead:
+			count += 1
+	return count
+
+
 func _tick_enemies(delta: float) -> void:
 	var target := player.position
 	var relocate_sq := RELOCATE_DISTANCE * RELOCATE_DISTANCE
+	_aura_sources.clear()
 	for enemy in enemies:
+		if enemy.ability == "aura" and not enemy.dead:
+			_aura_sources.append(enemy)
+	var aura_reach := Enemy.AURA_RADIUS * Enemy.AURA_RADIUS
+	var expired: Array[Enemy] = []
+	for enemy in enemies:
+		if not enemy.is_elite:
+			var inside := false
+			for source in _aura_sources:
+				if source.position.distance_squared_to(enemy.position) <= aura_reach:
+					inside = true
+					break
+			enemy.set_shielded(inside)
 		var separation := Vector2.ZERO if enemy.ghostly else _separation(enemy)
 		# Ghosts drift through walls; everyone else takes the way round when one is in the way.
 		var around := Vector2.ZERO
@@ -415,6 +485,10 @@ func _tick_enemies(delta: float) -> void:
 		if enemy.position.distance_squared_to(target) > relocate_sq:
 			var fresh_spot := offscreen_point(random_direction())
 			enemy.position = fresh_spot if enemy.ghostly else city.resolve(fresh_spot, enemy.radius)
+		if enemy.expired():
+			expired.append(enemy)
+	for enemy in expired:
+		_remove_quietly(enemy)
 
 
 ## Pushes an enemy out of buildings and the water. One walking straight that presses against a
@@ -517,7 +591,7 @@ func _collect(pickup: Pickup) -> void:
 			player.heal(30.0)
 			announce("珍珠奶茶，回血 30！")
 		Pickup.Kind.BONUS:
-			_open_chest()
+			_open_chest(pickup.value)
 		Pickup.Kind.MAGNET:
 			Sound.play("magnet")
 			for other in pickups:
@@ -568,16 +642,17 @@ func choose_upgrade(index: int) -> void:
 
 # --- Funding bags ------------------------------------------------------------------------
 
-## Rolls the round, hands out its upgrades straight away and pauses while the HUD plays the slot
-## machine. A second bag picked up meanwhile waits its turn.
-func _open_chest() -> void:
+## Rolls the round (at least `lowest_round`, an index into FUNDING_ROUNDS), hands out its
+## upgrades straight away and pauses while the HUD plays the slot machine. A second bag picked
+## up meanwhile waits its turn.
+func _open_chest(lowest_round: int = 0) -> void:
 	if state != State.PLAYING:
-		chests_waiting += 1
+		_waiting_chests.append(lowest_round)
 		return
 	var weights := PackedFloat32Array()
 	for funding_round: Dictionary in FUNDING_ROUNDS:
 		weights.append(funding_round["weight"])
-	var funding_round: Dictionary = FUNDING_ROUNDS[rng.rand_weighted(weights)]
+	var funding_round: Dictionary = FUNDING_ROUNDS[maxi(rng.rand_weighted(weights), lowest_round)]
 	var items := upgrades.open_chest(funding_round["items"])
 	telemetry.on_chest(funding_round["id"])
 	state = State.CHEST
@@ -592,9 +667,8 @@ func close_chest() -> void:
 		return
 	state = State.PLAYING
 	get_tree().paused = false
-	if chests_waiting > 0:
-		chests_waiting -= 1
-		_open_chest()
+	if not _waiting_chests.is_empty():
+		_open_chest(_waiting_chests.pop_front())
 		return
 	# Level-ups earned while the bag was open (its stars, a kill landing as it opened).
 	_offer_level_up()

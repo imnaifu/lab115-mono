@@ -38,6 +38,10 @@ const BOSS_MOVE_HINTS := {
 	"blink": "红圈是它要闪现到的地方，别站进去",
 	"volley": "蓄力完会朝四周发弹，躲到楼后面",
 	"lob": "地上的阴影是饼的落点，快离开",
+	"quake": "红圈填满就会炸开，先退到圈外",
+	"countdown": "头顶倒计时归零前没打死，它就暴走",
+	"clones": "半透明的是幻觉分身，一碰就碎",
+	"aura": "金圈里的小怪减伤一半，先打投资人",
 }
 const WARNING_SECONDS := 3.5
 ## The funding bag's slot machine: laps of all the rounds before landing, and how long it spins.
@@ -49,7 +53,7 @@ const FIT_MARGIN := 8.0
 const BAG_OVERHANG := 36.0
 const RANKING_ROWS := 6
 ## How the last hit landed (Telemetry.last_hurt_how), for the result's 凶手 line.
-const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中"}
+const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中", "quake": "被宕机震飞"}
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
 	"asking": "请在弹窗里允许访问动作与方向",

@@ -26,6 +26,8 @@ const KILLER_ROASTS := {
 	"techdebt": "被技术债压垮了",
 	"scope_change": "需求又变了，人没了",
 	"incident": "P0 事故，背锅下岗",
+	"server_elite": "主库一宕，人也跟着宕了",
+	"ai_clone": "输给了 AI 的幻觉",
 }
 const WIN_ROASTS := ["上市敲钟，期权终于能卖了", "活过了 10 分钟，比大多数创业公司都久", "建议把这段写进简历"]
 const EARLY_ROASTS := ["试用期都没过", "入职第一天就被优化了"]
