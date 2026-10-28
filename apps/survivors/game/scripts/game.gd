@@ -31,9 +31,6 @@ const HEAL_DROP_CHANCE := 0.012
 ## XP for the first level-ups, cheaper than the curve in xp_to_next() (5, 11, 17, 23) so a new run
 ## gets its first upgrades quickly; from level 5 on the curve applies.
 const EARLY_LEVEL_XP := [3, 7, 13, 20]
-## The curve's cost from level 5 on. Below 1 since the crowd was thinned out in favour of
-## bosses: fewer enemies drop fewer stars, and without this the mid-game levelled half as fast.
-const LEVEL_XP_SCALE := 0.75
 const MAGNET_DROP_CHANCE := 0.004
 
 ## Set by restart() so "play again" skips the title screen; static so it survives the reload.
@@ -454,7 +451,7 @@ func _collect(pickup: Pickup) -> void:
 func xp_to_next() -> int:
 	if level <= EARLY_LEVEL_XP.size():
 		return EARLY_LEVEL_XP[level - 1]
-	return roundi((5 + (level - 1) * 6 + maxi(0, level - 20) * 4) * LEVEL_XP_SCALE)
+	return 5 + (level - 1) * 6 + maxi(0, level - 20) * 4
 
 
 func add_xp(amount: int) -> void:

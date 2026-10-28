@@ -38,18 +38,20 @@ const ENEMY_TYPES := {
 	# hit no harder than the regular enemies of their time and walk slower than the player:
 	# hitting harder, they killed the test bot at 2:00 more often than anything else.
 	"techdebt_elite": {"name": "祖传技术债", "art": "techdebt", "size": 46.0, "color": Color("ffd36b"),
-		"hp": 260.0, "speed": 28.0, "damage": 9.0, "xp": 20, "radius": 11.0, "knockback_resist": 0.9, "elite": true},
+		"hp": 360.0, "speed": 28.0, "damage": 9.0, "xp": 20, "radius": 11.0, "knockback_resist": 0.9, "elite": true},
 	"server_elite": {"name": "主库宕机", "art": "server", "size": 54.0, "color": Color("a9b3c4"),
-		"hp": 450.0, "speed": 24.0, "damage": 11.0, "xp": 30, "radius": 13.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 630.0, "speed": 24.0, "damage": 11.0, "xp": 30, "radius": 13.0, "knockback_resist": 1.0, "elite": true},
+	# Boss health and damage were raised by 40% / 25% after the first full run on the live site
+	# ended at full health with all twelve bosses down.
 	"layoff": {"name": "裁员通知", "art": "layoff", "size": 54.0, "color": Color("ffc2cf"),
-		"hp": 1000.0, "speed": 32.0, "damage": 18.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"hp": 1400.0, "speed": 32.0, "damage": 22.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "charge"},
 	"deadline": {"name": "Deadline", "art": "deadline", "size": 50.0, "color": Color("ff5d5d"),
-		"hp": 900.0, "speed": 36.0, "damage": 25.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 1260.0, "speed": 36.0, "damage": 31.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"ai": {"name": "AI 大模型", "art": "ai_boss", "size": 64.0, "color": Color("8c7cf0"),
-		"hp": 1600.0, "speed": 40.0, "damage": 30.0, "xp": 100, "radius": 16.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 2240.0, "speed": 40.0, "damage": 38.0, "xp": 100, "radius": 16.0, "knockback_resist": 1.0, "elite": true},
 	"investor": {"name": "投资人", "art": "investor", "size": 58.0, "color": Color("bcdcf2"),
-		"hp": 1400.0, "speed": 30.0, "damage": 24.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"hp": 1960.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "summon"},
 }
 
@@ -106,9 +108,9 @@ func spawn_rate() -> float:
 	return (0.8 + _game.elapsed / 60.0 * 0.55) * ease_in
 
 
-## Enemy HP multiplier so late enemies keep up with upgraded weapons.
+## Enemy HP multiplier so late enemies keep up with upgraded weapons: 3x by the ten-minute mark.
 func hp_scale() -> float:
-	return 1.0 + _game.elapsed / 60.0 * 0.15
+	return 1.0 + _game.elapsed / 60.0 * 0.2
 
 
 func tick(delta: float) -> void:

@@ -15,13 +15,13 @@ const FLASH_COLOR := Color(6, 6, 6)
 ## How far a hop squashes and stretches the sprite, as a fraction of its size.
 const SQUASH := 0.08
 const ABILITIES := ["charge", "summon"]
-const CHARGE_EVERY := 4.5
+const CHARGE_EVERY := 3.5
 const CHARGE_WINDUP := 0.8
 const CHARGE_SECONDS := 0.6
 const CHARGE_SPEED := 230.0
-const SUMMON_EVERY := 6.0
+const SUMMON_EVERY := 4.5
 const SUMMON_TYPE := "meeting"
-const SUMMON_COUNT := 6
+const SUMMON_COUNT := 8
 const SUMMON_RADIUS := 34.0
 
 var type_name := ""

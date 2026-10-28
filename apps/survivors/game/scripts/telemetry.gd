@@ -18,7 +18,7 @@ extends RefCounted
 ## sent as a "quit" by the page itself, then or on the next visit.
 
 ## Bumped when the balance changes, so data from before and after can be told apart.
-const VERSION := "2026-10-28"
+const VERSION := "2026-10-28.2"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -65,6 +65,9 @@ func start() -> void:
 		"music": Sound.music_enabled(),
 		"runs_before": runs_before,
 	})
+	# Saved right away rather than at the first SNAPSHOT_SECONDS tick, so a page closed in the
+	# first seconds of a run still reports it as a quit.
+	_save_snapshot()
 
 
 ## Called every frame of play.
@@ -88,7 +91,11 @@ func tick(delta: float) -> void:
 	_snapshot_left -= delta
 	if _snapshot_left <= 0.0:
 		_snapshot_left = SNAPSHOT_SECONDS
-		_call("snapshot(%s)" % JSON.stringify(JSON.stringify(_summary("quit"))))
+		_save_snapshot()
+
+
+func _save_snapshot() -> void:
+	_call("snapshot(%s)" % JSON.stringify(JSON.stringify(_summary("quit"))))
 
 
 func on_pick(choice: Dictionary) -> void:
