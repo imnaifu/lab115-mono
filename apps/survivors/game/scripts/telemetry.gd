@@ -11,15 +11,17 @@ extends RefCounted
 ## Events:
 ## - game_ready: once per page load, when the title screen is up: `load_ms` since the page
 ##   started loading (pageviews without it are visitors lost while the game loaded).
-## - run_start: device, screen, orientation, language, tilt, sound and music, runs played before,
+## - run_start: `job` (Jobs), device, screen, orientation, language, tilt, sound and music, runs played before,
 ##   `from` (the link's ?from=, e.g. "share" for the result image's QR code), and for a page's
 ##   first run `page_ms`, how long after the page opened it started.
-## - run_end: `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
+## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
-##   rates), `chests` (the funding rounds bags landed on), a `timeline` of
+##   rates), `chests` (the funding rounds bags landed on), `evolved` (weapons evolved), `ults`
+##   (times the ultimate was used), a `timeline` of
 ##   "seconds:level/HP/enemies" every 30 s, bosses met and killed, the `district` the run ended
-##   in, and frames per second (average and worst second).
+##   in, and frames per second (average and worst second). `dmg_<weapon>` is each weapon's share of
+##   all damage in percent, for the weapons (and damaging perks) that dealt any.
 ## The page itself also reports script errors (js_error), see export_presets.cfg.
 ## A run still going when the page closes is saved as a snapshot every SNAPSHOT_SECONDS and
 ## sent as a "quit" by the page itself when it closes and again on the next visit (in-app
@@ -28,7 +30,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.8"
+const VERSION := "2026-10-28.9"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -52,6 +54,7 @@ var _fps_sum := 0.0
 var _fps_count := 0
 var _fps_worst := INF
 var _second_left := 1.0
+var _ults := 0
 var _bosses_seen := 0
 var _bosses_killed := 0
 var _peak_enemies := 0
@@ -91,6 +94,7 @@ func start() -> void:
 	var data := {
 		"version": VERSION,
 		"run": _run_id,
+		"job": _game.player.job,
 		"device": "phone" if Device.is_handheld() else "desktop",
 		"screen": "%dx%d" % [screen.x, screen.y],
 		"orientation": _orientation(),
@@ -150,6 +154,9 @@ func on_chest(round_id: String) -> void:
 	_chests.append(round_id)
 
 
+func on_ult() -> void:
+	_ults += 1
+
 
 func on_enemy_spawned(enemy: Enemy) -> void:
 	if enemy.is_elite:
@@ -173,8 +180,11 @@ func finish(result: String) -> void:
 func _summary(result: String) -> Dictionary:
 	var player := _game.player
 	var weapons := PackedStringArray()
+	var evolved := PackedStringArray()
 	for weapon in player.weapons:
 		weapons.append("%s:%d" % [weapon.id, weapon.level])
+		if weapon.evolved:
+			evolved.append(weapon.id)
 	var perks := PackedStringArray()
 	for perk_id: String in _game.upgrades.passive_levels:
 		perks.append("%s:%d" % [perk_id, _game.upgrades.passive_levels[perk_id]])
@@ -184,6 +194,7 @@ func _summary(result: String) -> Dictionary:
 	var data := {
 		"version": VERSION,
 		"run": _run_id,
+		"job": player.job,
 		"result": result,
 		"seconds": roundi(_game.elapsed),
 		"level": _game.level,
@@ -197,6 +208,8 @@ func _summary(result: String) -> Dictionary:
 		"picks": ",".join(_picks).left(MAX_TEXT),
 		"offered": ",".join(offered).left(MAX_TEXT),
 		"chests": ",".join(_chests).left(MAX_TEXT),
+		"evolved": ",".join(evolved),
+		"ults": _ults,
 		"district": BayArea.district_of(Vector2i((player.position / City.BLOCK).floor())),
 		"timeline": ";".join(_timeline).left(MAX_TEXT),
 		"bosses_seen": _bosses_seen,
@@ -206,17 +219,13 @@ func _summary(result: String) -> Dictionary:
 		"fps_worst": roundi(_fps_worst) if _fps_count > 0 else 0,
 		"device": "phone" if Device.is_handheld() else "desktop",
 	}
-	# Each weapon's share of all damage dealt, in percent (the end screen's ranking), plus the
-	# perks that deal damage, once they have.
+	# Each source's share of all damage dealt, in percent (the end screen's ranking): only those
+	# that dealt some, now that there are fifteen weapons and a run carries six of them.
 	var total := 0.0
 	for amount: float in _game.damage_by_source.values():
 		total += amount
-	var sources: Array = Upgrades.WEAPONS.keys()
 	for source: String in _game.damage_by_source:
-		if not sources.has(source):
-			sources.append(source)
-	for source: String in sources:
-		data["dmg_" + source] = roundi(100.0 * _game.damage_by_source.get(source, 0.0) / maxf(total, 1.0))
+		data["dmg_" + source] = roundi(100.0 * _game.damage_by_source[source] / maxf(total, 1.0))
 	return data
 
 

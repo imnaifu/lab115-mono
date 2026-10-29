@@ -15,9 +15,11 @@ extends CanvasLayer
 ## choose one by accident.
 const PICK_DELAY_MS := 300
 const SLOT_COUNT := 6
+## Weapon slots built: two rows of SLOT_COUNT, for the data scientist (多开实验) who can carry
+## more than six; everyone else only sees the first row.
+const WEAPON_SLOTS_BUILT := 12
 const SLOT_SIZE := 19.0
 ## The title screen's cast standing on a line: art, height, how high it hops from.
-const PARADE := [["ping", 40.0, 4.0], ["bug", 46.0, 18.0], ["coder", 56.0, 0.0], ["mail", 44.0, 14.0], ["ghost404", 46.0, 4.0]]
 const TITLE_SIZE := 44
 const LOW_HP_RATIO := 0.35
 const XP_BAR_SIZE := Vector2(96, 18)
@@ -87,6 +89,8 @@ var _passive_slots: Array[Panel] = []
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_tween: Tween
+var _ult_holder: Control
+var _ult_name: Label
 var _move_hint: Control
 var _warning: Control
 var _warning_label: Label
@@ -145,6 +149,7 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_toast()
 	_build_bottom_hints()
+	_build_ult_button()
 	_title_overlay = _overlay(Art.PAPER_SOFT)
 	_title_holder = _full(_title_overlay)
 	_add_corner_version(_title_overlay)
@@ -175,6 +180,10 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED:
 		_fit_title()
+		# The job card's lines are put together already translated, so they don't follow the
+		# language on their own: the title is rebuilt instead.
+		if game != null and game.state == Game.State.TITLE:
+			_show_title.call_deferred()
 
 
 func _process(delta: float) -> void:
@@ -201,12 +210,22 @@ func _process(delta: float) -> void:
 	var hp_ratio := game.player.hp / game.player.max_hp
 	var danger := clampf((LOW_HP_RATIO - hp_ratio) / LOW_HP_RATIO, 0.0, 1.0)
 	_vignette.modulate.a = danger * (0.75 + 0.25 * sin(_clock * 6.0)) if game.state == Game.State.PLAYING else 0.0
+	# The music follows the screen: it steps back under a dialog, the heartbeat goes with the
+	# vignette, and the last minute plays faster (dialogs included, so it doesn't slow and
+	# speed up again around every level-up).
+	var playing := game.state == Game.State.PLAYING
+	var dialog := game.state in [Game.State.PAUSED, Game.State.LEVEL_UP, Game.State.CHEST]
+	var last_minute := (playing or dialog) and game.elapsed >= Game.RUN_SECONDS - 60.0
+	Sound.set_mix(dialog, danger if playing else 0.0, last_minute)
 
 	var state := game.state
 	_title_overlay.visible = state == Game.State.TITLE
 	# Only during play: under a dialog it shows through the scrim, behind the dialog's title.
 	_top_bar.visible = state == Game.State.PLAYING
 	_pause_button.visible = state == Game.State.PLAYING
+	_ult_holder.visible = state == Game.State.PLAYING
+	if _ult_holder.visible:
+		_ult_name.text = Jobs.ULTS[game.ultimate.id()]["name"]
 	_recalibrate_button.visible = state == Game.State.PLAYING and Tilt.enabled()
 	_level_up_overlay.visible = state == Game.State.LEVEL_UP
 	_pause_overlay.visible = state == Game.State.PAUSED
@@ -295,6 +314,9 @@ func fit_screen(turned: bool) -> void:
 ## second tap (say, on the pause button) doesn't yank the stick.
 func _on_touch(touch: InputEventScreenTouch) -> void:
 	if touch.pressed:
+		# A press on the ultimate's button is the button's, not the start of a drag.
+		if _ult_holder.visible and _ult_holder.get_rect().has_point(_to_layout(touch.position)):
+			return
 		if game.state == Game.State.PLAYING and _touch_index == -1:
 			_touch_index = touch.index
 			_joystick.begin(_to_layout(touch.position))
@@ -351,6 +373,77 @@ class Joystick extends Control:
 
 # --- HUD -----------------------------------------------------------------------------------
 
+## The ultimate's button in the bottom-right corner, its name under it (and the key, on a
+## computer).
+func _build_ult_button() -> void:
+	_ult_holder = VBoxContainer.new()
+	_ult_holder.anchor_left = 1.0
+	_ult_holder.anchor_right = 1.0
+	_ult_holder.anchor_top = 1.0
+	_ult_holder.anchor_bottom = 1.0
+	_ult_holder.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_ult_holder.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_ult_holder.offset_right = -12
+	_ult_holder.offset_bottom = -10
+	_ult_holder.add_theme_constant_override("separation", 0)
+	_ult_holder.visible = false
+	var button := UltButton.new()
+	button.hud = self
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_ult_holder.add_child(button)
+	_ult_name = UiKit.label("", 11, "heavy")
+	_ult_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ult_name.add_theme_constant_override("outline_size", 5)
+	_ult_name.add_theme_color_override("font_outline_color", Art.PAPER)
+	_ult_holder.add_child(_ult_name)
+	if not Device.is_handheld():
+		var key := UiKit.label("空格", 10, "muted")
+		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		key.add_theme_constant_override("outline_size", 4)
+		key.add_theme_color_override("font_outline_color", Art.PAPER)
+		_ult_holder.add_child(key)
+	_root.add_child(_ult_holder)
+
+
+## The ultimate: its icon on a dark disc with a yellow ring filling up as kills charge it; once
+## full the disc turns yellow and throbs.
+class UltButton extends Control:
+	const DIAMETER := 54.0
+	const ICON_SIZE := 30.0
+
+	var hud: Hud
+	var _clock := 0.0
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(DIAMETER + 6.0, DIAMETER + 6.0)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+
+	func _gui_input(event: InputEvent) -> void:
+		var press := event as InputEventMouseButton
+		if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT:
+			hud.game.ultimate.use()
+			accept_event()
+
+	func _process(delta: float) -> void:
+		_clock += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var ultimate := hud.game.ultimate
+		var ready := ultimate.is_ready()
+		var centre := size / 2.0
+		var grow := 1.0 + (0.06 * sin(_clock * 6.0) if ready else 0.0)
+		var radius := DIAMETER / 2.0 * grow
+		draw_circle(centre, radius + 2.0, Art.INK)
+		draw_circle(centre, radius - 1.0, Art.BRAND if ready else Color("4a5164"))
+		if not ready:
+			draw_arc(centre, radius - 4.0, -PI / 2.0, -PI / 2.0 + TAU * ultimate.charge(), 48, Art.BRAND, 4.0, true)
+		var art: String = Jobs.ULTS[ultimate.id()]["art"]
+		var icon_size := ICON_SIZE * grow
+		draw_texture_rect(Art.texture(art), Rect2(centre - Vector2(icon_size, icon_size) / 2.0, Vector2(icon_size, icon_size)), false,
+			Art.INK if ready else Color(1, 1, 1, 0.55))
+
+
 func _build_top_bar() -> void:
 	_top_bar = Control.new()
 	_top_bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -364,15 +457,17 @@ func _build_top_bar() -> void:
 	slots.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_top_bar.add_child(slots)
 	for slot_list in [_weapon_slots, _passive_slots]:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 3)
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slots.add_child(row)
-		for i in SLOT_COUNT:
+		var grid := GridContainer.new()
+		grid.columns = SLOT_COUNT
+		grid.add_theme_constant_override("h_separation", 3)
+		grid.add_theme_constant_override("v_separation", 3)
+		grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slots.add_child(grid)
+		for i in (WEAPON_SLOTS_BUILT if slot_list == _weapon_slots else SLOT_COUNT):
 			var slot := Panel.new()
 			slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
 			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(slot)
+			grid.add_child(slot)
 			slot_list.append(slot)
 			_fill_slot(slot, "", 0, Art.PAPER)
 
@@ -530,9 +625,11 @@ func _recalibrate_tilt() -> void:
 
 func _refresh_inventory() -> void:
 	var weapons := game.player.weapons
-	for i in SLOT_COUNT:
+	var limit := _weapon_limit()
+	for i in WEAPON_SLOTS_BUILT:
 		var weapon: Weapon = weapons[i] if i < weapons.size() else null
-		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0, Art.SKY_LIGHT)
+		_weapon_slots[i].visible = i < limit
+		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0, Art.SKY_LIGHT, weapon != null and weapon.evolved)
 	var passive_ids := game.upgrades.passive_levels.keys()
 	for i in SLOT_COUNT:
 		var passive_id: String = passive_ids[i] if i < passive_ids.size() else ""
@@ -540,11 +637,20 @@ func _refresh_inventory() -> void:
 		_fill_slot(_passive_slots[i], art, game.upgrades.passive_levels.get(passive_id, 0), Art.MINT_LIGHT)
 
 
-## A slot: the item's icon on its tint with the level on a small ink badge; empty, a faint square.
-func _fill_slot(slot: Panel, art: String, item_level: int, fill: Color) -> void:
+## How many weapons the player's job can carry: six, or for the data scientist every weapon it
+## can get.
+func _weapon_limit() -> int:
+	return mini(Jobs.max_weapons(game.player.job), Upgrades.weapons_for(game.player.job).size())
+
+
+## A slot: the item's icon on its tint with the level on a small ink badge (a star once evolved,
+## on yellow); empty, a faint square.
+func _fill_slot(slot: Panel, art: String, item_level: int, fill: Color, evolved: bool = false) -> void:
 	for child in slot.get_children():
 		child.queue_free()
 	var filled := art != ""
+	if evolved:
+		fill = Art.BRAND_SOFT
 	slot.add_theme_stylebox_override("panel", UiKit.box(fill if filled else Color(Art.PAPER, 0.7), Color(Art.INK, 1.0 if filled else 0.35), 1, 4))
 	if not filled:
 		return
@@ -553,11 +659,11 @@ func _fill_slot(slot: Panel, art: String, item_level: int, fill: Color) -> void:
 	slot.add_child(icon)
 	var badge := Panel.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.add_theme_stylebox_override("panel", UiKit.box(Art.INK, Color.TRANSPARENT, 0, UiKit.PILL))
+	badge.add_theme_stylebox_override("panel", UiKit.box(Art.BRAND if evolved else Art.INK, Art.INK, 1 if evolved else 0, UiKit.PILL))
 	badge.position = Vector2(SLOT_SIZE - 7.0, SLOT_SIZE - 6.0)
 	badge.size = Vector2(10, 10)
 	slot.add_child(badge)
-	var number := UiKit.label(str(item_level), 7, "display", Art.PAPER)
+	var number := UiKit.label("★" if evolved else str(item_level), 7, "display", Art.INK if evolved else Art.PAPER)
 	number.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -624,6 +730,7 @@ func _bottom_pill(color: Color, art: String, text: String) -> Control:
 
 
 func _on_boss_move(ability: String) -> void:
+	Sound.boss_move(ability)
 	if _warned.has(ability) or not BOSS_MOVE_HINTS.has(ability):
 		return
 	_warned[ability] = true
@@ -685,9 +792,9 @@ func _show_title() -> void:
 	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(UiKit.gap(12 if portrait else 6))
 	column.add_child(pitch)
-	column.add_child(UiKit.gap(24 if portrait else 8))
-	column.add_child(_parade(1.0 if portrait else 0.75))
-	column.add_child(UiKit.gap(32 if portrait else 18))
+	column.add_child(UiKit.gap(16 if portrait else 8))
+	column.add_child(_job_picker(portrait))
+	column.add_child(UiKit.gap(20 if portrait else 10))
 
 	var start := UiKit.primary_button("开始搬砖", game.start_run, 56.0 if portrait else 48.0, 20)
 	start.custom_minimum_size.x = 312.0 if portrait else 200.0
@@ -745,34 +852,116 @@ func _blob(color: Color, alpha: float, diameter: float, offset: Vector2, from_ri
 	return disc
 
 
-## The cast standing on a line, each hopping on its own beat so the row ripples.
-func _parade(scale: float) -> Control:
-	var stage := Control.new()
-	stage.custom_minimum_size = Vector2(312.0, 86.0) * scale
-	stage.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var ground := Panel.new()
-	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ground.add_theme_stylebox_override("panel", UiKit.box(Art.INK, Color.TRANSPARENT, 0, 2))
-	ground.anchor_top = 1.0
-	ground.anchor_bottom = 1.0
-	ground.anchor_right = 1.0
-	ground.offset_top = -3.0
-	stage.add_child(ground)
-	var slot_width := stage.custom_minimum_size.x / PARADE.size()
-	for i in PARADE.size():
-		var entry: Array = PARADE[i]
-		var art_size: float = entry[1] * scale
-		var rest_y: float = stage.custom_minimum_size.y - 3.0 - art_size - entry[2] * scale
-		var figure := UiKit.icon(entry[0], art_size)
-		figure.position = Vector2(slot_width * (i + 0.5) - art_size / 2.0, rest_y)
-		stage.add_child(figure)
-		var hop := figure.create_tween().set_loops()
-		hop.tween_interval(i * 0.08)
-		hop.tween_property(figure, "position:y", rest_y - 5.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		hop.tween_property(figure, "position:y", rest_y, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		hop.tween_interval((PARADE.size() - i) * 0.08 + 0.3)
-	return stage
+## The five jobs as round faces to tap, and what the picked one plays like: side by side when
+## the screen lies sideways.
+func _job_picker(portrait: bool) -> Control:
+	var picked := game.player.job
+	var face_size := 52.0 if portrait else 36.0
+	var faces := HBoxContainer.new()
+	faces.alignment = BoxContainer.ALIGNMENT_CENTER
+	faces.add_theme_constant_override("separation", 8 if portrait else 6)
+	faces.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for job_id: String in Jobs.ORDER:
+		faces.add_child(_job_face(job_id, job_id == picked, face_size))
+	var detail := _job_detail(picked, portrait)
+	var holder: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
+	holder.alignment = BoxContainer.ALIGNMENT_CENTER
+	holder.add_theme_constant_override("separation", 10 if portrait else 14)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(faces)
+	holder.add_child(detail)
+	return holder
+
+
+func _job_face(job_id: String, picked: bool, face_size: float) -> Button:
+	var face := Button.new()
+	face.custom_minimum_size = Vector2(face_size, face_size)
+	face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	# Start keeps the keyboard focus; arrow keys change the job (_unhandled_input).
+	face.focus_mode = Control.FOCUS_NONE
+	var resting := UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE_HEAVY, UiKit.PILL) if picked \
+		else UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.PILL)
+	face.add_theme_stylebox_override("normal", resting)
+	face.add_theme_stylebox_override("hover", resting if picked else UiKit.box(Art.PAPER_SOFT, Art.LINE_STRONG, UiKit.OUTLINE, UiKit.PILL))
+	face.add_theme_stylebox_override("pressed", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE_HEAVY, UiKit.PILL))
+	var centre := CenterContainer.new()
+	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	centre.add_child(UiKit.icon(Jobs.JOBS[job_id]["art"], face_size * 0.82))
+	face.add_child(centre)
+	face.pressed.connect(_pick_job.bind(job_id))
+	return face
+
+
+## The picked job: name and what it is good with, its own weapon, its build, how it plays, its
+## ultimate. Sideways there is height for four lines only: the build goes on the name's line and
+## the data scientist's 多开实验 is just its tag.
+func _job_detail(job_id: String, portrait: bool) -> Control:
+	var job_data := Jobs.data(job_id)
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
+	card.custom_minimum_size = Vector2(312.0 if portrait else 356.0, 0.0)
+	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 2)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(column)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 6)
+	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(name_row)
+	name_row.add_child(UiKit.label(job_data["name"], 16, "heavy"))
+	name_row.add_child(_type_tag(job_data["type"], job_data["type"] != ""))
+	var stats := UiKit.label(tr("生命 %d · 护甲 %d · 移速 %d") % [job_data["hp"], job_data["armor"], job_data["speed"]], 11, "muted")
+	stats.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	if not portrait:
+		name_row.add_child(UiKit.filler())
+		name_row.add_child(stats)
+	var weapon_row := HBoxContainer.new()
+	weapon_row.add_theme_constant_override("separation", 4)
+	weapon_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(weapon_row)
+	var weapon: Dictionary = Upgrades.WEAPONS[job_data["weapon"]]
+	weapon_row.add_child(UiKit.icon(weapon["art"], 16))
+	weapon_row.add_child(UiKit.label(tr("专属武器：%s") % tr(weapon["name"]), 12, "strong"))
+	if portrait:
+		column.add_child(stats)
+	var lines: Array[String] = [tr(job_data["pitch"])]
+	if portrait and job_data.get("multitask", false):
+		lines.append(tr("多开实验：武器格不限，伤害 +20%，每拿一把 -5%"))
+	var ult: Dictionary = Jobs.ULTS[job_data["ult"]]
+	lines.append(tr("大招「%s」：%s") % [tr(ult["name"]), tr(ult["text"])])
+	for i in lines.size():
+		var line := UiKit.label(lines[i], 12 if i == 0 else 11, "body" if i == 0 else "muted")
+		line.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		column.add_child(line)
+	return card
+
+
+## A weapon type as a coloured tag ("近战"), "+20%" on it where it is the job's specialty; the
+## data scientist, with no type, is 多开实验.
+func _type_tag(type: String, specialty: bool) -> Control:
+	if type == "":
+		return UiKit.tag("多开实验", Art.PAPER_SUNK, Art.INK)
+	var info: Dictionary = Jobs.TYPES[type]
+	var text := tr(info["name"]) + (" +20%" if specialty else "")
+	var pill := UiKit.tag(text, info["fill"], info["ink"])
+	(pill.get_child(0) as Label).auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	return pill
+
+
+func _pick_job(job_id: String) -> void:
+	if game.state != Game.State.TITLE:
+		return
+	game.set_job(job_id)
+	Sound.play("click")
+	_show_title()
+
+
+## Arrow keys on the title screen: the job before or after the picked one.
+func _step_job(step: int) -> void:
+	var index := Jobs.ORDER.find(game.player.job)
+	_pick_job(Jobs.ORDER[(index + step + Jobs.ORDER.size()) % Jobs.ORDER.size()])
 
 
 ## Which build this is, in the bottom-right corner of the title, pause and result screens, so a
@@ -933,6 +1122,10 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		badge = UiKit.tag("新武器", Art.SKY_LIGHT, Art.LINK) if kind == "weapon" else UiKit.tag("被动", Art.MINT_LIGHT, Art.GREEN_INK)
 	elif kind != "heal":
 		badge = UiKit.level_dots(level - 1, choice["max"], true)
+	# What type of weapon it is, and whether the job is better with it (专精).
+	var type_tag: Control = null
+	if kind == "weapon":
+		type_tag = _type_tag(choice["type"], choice["type"] == Jobs.data(game.player.job)["type"])
 	var description := UiKit.label(choice["text"], 13 if portrait else 11, "muted")
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# What the card changes in numbers ("伤害 14 → 18"), translated already; none on the fallback card.
@@ -961,6 +1154,8 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		name_row.add_child(name_label)
 		if badge != null:
 			name_row.add_child(badge)
+		if type_tag != null:
+			name_row.add_child(type_tag)
 		text_column.add_child(description)
 		if numbers != null:
 			text_column.add_child(numbers)
@@ -979,6 +1174,9 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		if badge != null:
 			badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			column.add_child(badge)
+		if type_tag != null:
+			type_tag.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			column.add_child(type_tag)
 		description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(description)
 		if numbers != null:
@@ -1154,7 +1352,7 @@ func _spin_reel(step: float) -> void:
 	var index := floori(step) % Game.FUNDING_ROUNDS.size()
 	if _reel_label.text != Game.FUNDING_ROUNDS[index]["name"]:
 		_set_reel(index)
-		Sound.play("xp")
+		Sound.play("reel_tick")
 
 
 func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_round: Dictionary, items: Array) -> void:
@@ -1166,7 +1364,7 @@ func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_ro
 	_set_reel(landing)
 	_odds_chips[landing].add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, 10, Vector4(4, 5, 4, 5)))
 	result.text = tr("%s到账！白给 %d 样升级") % [tr(funding_round["name"]), items.size()]
-	Sound.play("win" if funding_round["id"] == "ipo" else "level_up")
+	Sound.play("win" if funding_round["id"] == "ipo" else "payout")
 	# The same upgrade twice in one bag is one row, from its first level to its last.
 	var rows: Array[Dictionary] = []
 	var row_of := {}
@@ -1196,7 +1394,9 @@ func _prize_row(item: Dictionary, roomy: bool) -> Control:
 	row_panel.add_child(row)
 	var kind: String = item["kind"]
 	var level: int = item["level"]
-	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT
+	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.BRAND_SOFT if kind == "evolve" else Art.SKY_LIGHT
+	if kind == "evolve":
+		row_panel.add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
 	row.add_child(UiKit.well(item["art"], 34 if roomy else 28, fill, UiKit.RADIUS_SM))
 	var name_label := UiKit.label(item["name"], 14, "strong")
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1204,7 +1404,7 @@ func _prize_row(item: Dictionary, roomy: bool) -> Control:
 	name_label.custom_minimum_size = Vector2(60, 0)
 	row.add_child(name_label)
 	var from: int = item.get("from", level - 1)
-	var step := tr("回复 30") if kind == "heal" else tr("新") if level == 1 else "Lv %d → %d" % [from, level]
+	var step := tr("回复 30") if kind == "heal" else tr("进化！") if kind == "evolve" else tr("新") if level == 1 else "Lv %d → %d" % [from, level]
 	row.add_child(UiKit.label(step, 12, "display", Art.LINK))
 	return row_panel
 
@@ -1235,9 +1435,12 @@ func _show_pause() -> void:
 	var header := HBoxContainer.new()
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(header)
+	header.add_theme_constant_override("separation", 8)
 	var title := UiKit.label("暂停", 22, "heavy")
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
+	var job_tag := UiKit.tag(Jobs.data(game.player.job)["name"], Art.PAPER_SUNK, Art.INK)
+	header.add_child(job_tag)
+	header.add_child(UiKit.filler())
 	header.add_child(UiKit.label(_clock_text(game.elapsed), 13, "display"))
 
 	var build := VBoxContainer.new()
@@ -1245,12 +1448,13 @@ func _show_pause() -> void:
 	build.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var weapon_chips: Array = []
 	for weapon in game.player.weapons:
-		weapon_chips.append([Upgrades.WEAPONS[weapon.id]["name"], weapon.level])
-	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), SLOT_COUNT], 12, "strong", Art.INK_MUTED))
+		weapon_chips.append([Upgrades.weapon_name(weapon.id, weapon.evolved), weapon.level, weapon.art, weapon.evolved])
+	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), _weapon_limit()], 12, "strong", Art.INK_MUTED))
 	build.add_child(_chip_grid(weapon_chips, Art.SKY_LIGHT))
 	var passive_chips: Array = []
 	for passive_id: String in game.upgrades.passive_levels:
-		passive_chips.append([Upgrades.PASSIVES[passive_id]["name"], game.upgrades.passive_levels[passive_id]])
+		var passive: Dictionary = Upgrades.PASSIVES[passive_id]
+		passive_chips.append([passive["name"], game.upgrades.passive_levels[passive_id], passive["art"], false])
 	build.add_child(UiKit.gap(4))
 	build.add_child(UiKit.label(tr("被动 %d / %d") % [passive_chips.size(), Upgrades.MAX_PASSIVES], 12, "strong", Art.INK_MUTED))
 	build.add_child(_chip_grid(passive_chips, Art.MINT_LIGHT))
@@ -1292,6 +1496,10 @@ func _show_pause() -> void:
 	var restart := UiKit.secondary_button("重新开始", game.restart)
 	restart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	second_row.add_child(restart)
+	# The run so far as a result image, to show off (or ask for help) mid-run.
+	var share := UiKit.secondary_button("分享", _make_share_image)
+	share.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	second_row.add_child(share)
 	var settings := _settings_button()
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	second_row.add_child(settings)
@@ -1327,7 +1535,8 @@ func _show_pause() -> void:
 	_fit_to_screen(_pause_holder)
 
 
-## Name-and-level chips two to a row, or "none yet".
+## Icon, name and level chips two to a row (entries are [name, level, art, evolved]; an evolved
+## weapon's chip is yellow), or "none yet".
 func _chip_grid(entries: Array, fill: Color) -> Control:
 	if entries.is_empty():
 		return UiKit.label("还没有", 12, "muted")
@@ -1337,18 +1546,23 @@ func _chip_grid(entries: Array, fill: Color) -> Control:
 	grid.add_theme_constant_override("v_separation", 6)
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for entry: Array in entries:
-		var chip := UiKit.panel(UiKit.box(fill, Color.TRANSPARENT, 0, 10, Vector4(8, 5, 8, 5)))
+		var chip := UiKit.panel(UiKit.box(Art.BRAND_SOFT if entry[3] else fill, Color.TRANSPARENT, 0, 10, Vector4(6, 4, 8, 4)))
 		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		chip.custom_minimum_size = Vector2(120, 0)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
+		row.add_theme_constant_override("separation", 5)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		chip.add_child(row)
-		var name_label := UiKit.label(entry[0], 13, "strong")
+		row.add_child(UiKit.icon(entry[2], 18))
+		# A size down from the other chips: the icon takes room, and English names run long.
+		var name_label := UiKit.label(entry[0], 12, "strong")
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
 		row.add_child(name_label)
-		row.add_child(UiKit.label("Lv %d" % entry[1], 12, "display"))
+		var level_text := "★" if entry[3] else "Lv %d" % entry[1]
+		var level_label := UiKit.label(level_text, 11, "display")
+		level_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		row.add_child(level_label)
 		grid.add_child(chip)
 	return grid
 
@@ -1381,7 +1595,7 @@ func _show_end(victory: bool) -> void:
 	var title := UiKit.label("敲钟上市！" if victory else "项目黄了…", 30, "heavy")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left.add_child(title)
-	var sub := UiKit.label(tr("第 %d 局") % (game.runs_before + 1), 13, "muted")
+	var sub := UiKit.label(tr("第 %d 局 · %s") % [game.runs_before + 1, tr(Jobs.data(game.player.job)["name"])], 13, "muted")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left.add_child(sub)
 
@@ -1421,6 +1635,9 @@ func _show_end(victory: bool) -> void:
 	var share := UiKit.secondary_button("生成战绩图", _make_share_image, 50.0, 15)
 	share.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(share)
+	var change := UiKit.secondary_button("换职业", game.change_job, 50.0, 15)
+	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(change)
 	var again := UiKit.primary_button("再来一局", game.restart)
 	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.size_flags_stretch_ratio = 1.3
@@ -1526,12 +1743,13 @@ func _damage_ranking() -> Control:
 	card.add_child(list)
 	list.add_child(UiKit.label("伤害排行", 13, "strong", Art.INK_MUTED))
 	for entry: Array in entries.slice(0, RANKING_ROWS):
-		var source: Dictionary = Upgrades.WEAPONS[entry[0]] if Upgrades.WEAPONS.has(entry[0]) else Upgrades.PASSIVES[entry[0]]
+		var source_name: String = Upgrades.weapon_name(entry[0], game.upgrades.is_evolved(entry[0])) \
+			if Upgrades.WEAPONS.has(entry[0]) else Upgrades.PASSIVES[entry[0]]["name"]
 		var share: float = entry[1] / total
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var name_label := UiKit.label(source["name"], 13, "strong")
+		var name_label := UiKit.label(source_name, 13, "strong")
 		name_label.custom_minimum_size = Vector2(64, 0)
 		row.add_child(name_label)
 		row.add_child(ShareBar.new(share))
@@ -1573,7 +1791,8 @@ func _make_share_image() -> void:
 	_sharing = true
 	var card := ShareCard.new()
 	add_child(card)
-	card.build(game, _victory, _root.theme)
+	# From the pause screen it is the run so far.
+	card.build(game, _victory, _root.theme, game.state != Game.State.ENDED)
 	var image: Image = await card.capture()
 	card.queue_free()
 	_sharing = false
@@ -1585,7 +1804,8 @@ func _make_share_image() -> void:
 	if share == null:
 		return
 	var hint := "长按图片保存，或发给朋友" if Device.is_handheld() else "右键图片可以另存为"
-	share.show(Marshalls.raw_to_base64(image.save_png_to_buffer()), tr(hint), tr("分享"), tr("保存图片"), tr("关闭"))
+	# The page swaps in the last hint on iPhone / iPad, where saving goes through the share sheet.
+	share.show(Marshalls.raw_to_base64(image.save_png_to_buffer()), tr(hint), tr("分享"), tr("保存图片"), tr("关闭"), tr("点「保存图片」，再选「存储图像」存进相册"))
 
 
 # --- Settings ------------------------------------------------------------------------------

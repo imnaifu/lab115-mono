@@ -1,7 +1,8 @@
 class_name AuraWeapon
 extends Weapon
 ## A field around the player that keeps damaging and nudging back everything inside it.
-## (Silicon Valley: Wi-Fi 信号 — drawn as signal rings rippling outward.)
+## (Silicon Valley: Wi-Fi 信号 — drawn as signal rings rippling outward.) 5G 基站 (evolved with
+## 工位绿植): a wider field, and every pulse that catches someone heals the player a little.
 
 ## Starts a little wider than the player's own sprite; any smaller and only what is already
 ## biting them is in range.
@@ -10,6 +11,8 @@ const RADIUS := [40.0, 46.0, 46.0, 54.0, 62.0]
 const DAMAGE := [6.0, 6.0, 9.0, 9.0, 13.0]
 const TICK_SECONDS := [0.6, 0.6, 0.5, 0.5, 0.4]
 const RIPPLES := 3
+const EVOLVED_EXTRA_RADIUS := 16.0
+const EVOLVED_HEAL := 0.5
 
 var _tick_left := 0.0
 var _ripple := 0.0
@@ -27,13 +30,20 @@ func _process(delta: float) -> void:
 	if _tick_left > 0.0:
 		return
 	_tick_left = stat(TICK_SECONDS) * player.cooldown_scale
-	var damage: float = stat(DAMAGE) * player.might
-	for enemy in game.query_enemies(player.position, stat(RADIUS)):
+	var damage: float = stat(DAMAGE) * damage_scale()
+	var caught := game.query_enemies(player.position, _radius())
+	for enemy in caught:
 		game.damage_enemy(enemy, damage, (enemy.position - player.position).normalized() * 50.0, id, true)
+	if evolved and not caught.is_empty():
+		player.heal(EVOLVED_HEAL)
+
+
+func _radius() -> float:
+	return stat(RADIUS) + (EVOLVED_EXTRA_RADIUS if evolved else 0.0)
 
 
 func _draw() -> void:
-	var radius: float = stat(RADIUS)
+	var radius := _radius()
 	draw_circle(Vector2.ZERO, radius, Color(Art.BLUE, 0.12))
 	# Rings start at the centre and fade as they reach the edge, like a signal spreading.
 	for i in RIPPLES:

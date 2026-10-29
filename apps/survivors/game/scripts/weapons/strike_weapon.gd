@@ -5,6 +5,7 @@ extends Weapon
 ##
 ## It never misses and reaches anything on screen, so it gets fewer, slower strikes than the
 ## weapons that have to be aimed or need enemies close; with more it took 65-80% of all damage.
+## 多云多活 (evolved with 冰美式): twice the strikes, twice the splash.
 
 const COUNT := [1, 2, 2, 3, 4]
 const DAMAGE := [16.0, 16.0, 22.0, 22.0, 28.0]
@@ -17,15 +18,16 @@ func cooldown() -> float:
 
 
 func fire() -> bool:
-	var targets := game.random_visible_enemies(stat(COUNT))
+	var targets := game.random_visible_enemies(stat(COUNT) * (2 if evolved else 1))
 	if targets.is_empty():
 		return false
-	var damage: float = stat(DAMAGE) * player.might
+	var damage: float = stat(DAMAGE) * damage_scale()
+	var splash: float = stat(SPLASH_RADIUS) * (2.0 if evolved else 1.0)
 	Sound.play("zap")
 	for target in targets:
 		# Copy the position first: the strike may kill the target.
 		var strike_at := target.position
 		Effects.lightning(game, strike_at, art)
-		for enemy in game.query_enemies(strike_at, stat(SPLASH_RADIUS)):
+		for enemy in game.query_enemies(strike_at, splash):
 			game.damage_enemy(enemy, damage, Vector2.ZERO, id)
 	return true

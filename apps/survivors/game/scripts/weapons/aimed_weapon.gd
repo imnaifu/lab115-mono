@@ -1,7 +1,8 @@
 class_name AimedWeapon
 extends Weapon
 ## A quick burst of shots, each aimed at whichever enemy is nearest when it leaves.
-## (Silicon Valley: 回车键.)
+## (Silicon Valley: 回车键.) Shift+Enter 批量提交 (evolved with 双屏显示器): every round sends one
+## key at each enemy on screen instead, nearest first.
 
 const COUNT := [1, 2, 2, 3, 3]
 const DAMAGE := [12.0, 12.0, 18.0, 18.0, 24.0]
@@ -11,6 +12,8 @@ const SPEED := 230.0
 const RANGE := 200.0
 const BURST_GAP := 0.08
 const SIZE := 14.0
+## The most keys one evolved round sends.
+const BATCH_MAX := 12
 
 var _burst_left := 0
 var _burst_timer := 0.0
@@ -30,6 +33,8 @@ func _process(delta: float) -> void:
 
 
 func fire() -> bool:
+	if evolved:
+		return _fire_batch()
 	if game.nearest_enemy(player.position, RANGE) == null:
 		return false
 	_burst_left = stat(COUNT)
@@ -43,3 +48,15 @@ func _shoot_one() -> void:
 	var target := game.nearest_enemy(player.position, RANGE)
 	var direction := player.facing if target == null else (target.position - player.position).normalized()
 	spawn_projectile(SIZE, direction * SPEED, stat(DAMAGE), stat(PIERCE), 1.4)
+
+
+func _fire_batch() -> bool:
+	var targets := game.visible_enemies()
+	if targets.is_empty():
+		return false
+	targets.sort_custom(func(a: Enemy, b: Enemy) -> bool:
+		return a.position.distance_squared_to(player.position) < b.position.distance_squared_to(player.position))
+	for target: Enemy in targets.slice(0, BATCH_MAX):
+		var direction := (target.position - player.position).normalized()
+		spawn_projectile(SIZE, direction * SPEED, stat(DAMAGE), stat(PIERCE), 1.6)
+	return true

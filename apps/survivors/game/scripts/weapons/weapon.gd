@@ -12,6 +12,8 @@ var art := ""
 var game: Game
 var player: Player
 var level := 1
+## Set once it has evolved (Upgrades.EVOLUTIONS): each weapon reads it to attack its evolved way.
+var evolved := false
 
 var _cooldown_left := 0.3
 
@@ -43,6 +45,21 @@ func _on_level_changed() -> void:
 	pass
 
 
+func evolve() -> void:
+	evolved = true
+	_on_evolved()
+
+
+func _on_evolved() -> void:
+	pass
+
+
+## What the damage in this weapon's tables is multiplied by: the player's damage bonus and what
+## their job does for this weapon (专精, 多开实验; Player.weapon_multiplier).
+func damage_scale() -> float:
+	return player.might * player.weapon_multiplier(id)
+
+
 ## Looks up the current level's value in a per-level stat table.
 func stat(table: Array) -> Variant:
 	return table[mini(level, table.size()) - 1]
@@ -50,6 +67,6 @@ func stat(table: Array) -> Variant:
 
 func spawn_projectile(size: float, velocity: Vector2, damage: float, pierce: int, lifetime: float) -> Projectile:
 	var projectile := Projectile.new()
-	projectile.setup(game, id, art, size, player.position, velocity, damage * player.might, pierce, lifetime)
+	projectile.setup(game, id, art, size, player.position, velocity, damage * damage_scale(), pierce, lifetime)
 	game.effect_layer.add_child(projectile)
 	return projectile

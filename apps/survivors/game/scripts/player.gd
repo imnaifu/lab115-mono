@@ -1,7 +1,8 @@
 class_name Player
 extends Node2D
-## The programmer. Reads movement input, carries the weapons and the stats that passives
-## modify, and takes contact damage from enemies (Game decides who is touching).
+## The one you play, as one of the Jobs. Reads movement input, carries the weapons and the stats
+## that passives modify, and takes contact damage from enemies (Game decides who is touching).
+## Keeps a few seconds of its own history for the ultimates that turn time back (Ultimate).
 
 signal died
 
@@ -13,17 +14,23 @@ const HIT_FLASH_SECONDS := 0.12
 const SHAKE_SECONDS := 0.15
 const SIZE := 30.0
 const SQUASH := 0.06
-## Starting values, kept so the pause screen can show what passives have added.
-const BASE_MOVE_SPEED := 62.0
+## Starting pickup range, kept so cards can show what passives have added (the starting speed
+## depends on the job: base_move_speed).
 const BASE_PICKUP_RADIUS := 40.0
+## How far back position, health and damage taken are remembered (git revert, Cmd+Z), sampled
+## every HISTORY_STEP seconds.
+const HISTORY_SECONDS := 5.0
+const HISTORY_STEP := 0.1
 ## The health bar under the player, tall enough to hold the HP number inside it.
 const HP_BAR_SIZE := Vector2(38.0, 11.0)
 const HP_FONT_SIZE := 8
 
 var game: Game
+var job := Jobs.DEFAULT
 var max_hp := 100.0
 var hp := 100.0
-var move_speed := BASE_MOVE_SPEED
+var base_move_speed := 62.0
+var move_speed := 62.0
 var pickup_radius := BASE_PICKUP_RADIUS
 var armor := 0.0
 var regen := 0.0
@@ -48,15 +55,49 @@ var _bar_fill: StyleBoxFlat
 var _bar_outline: StyleBoxFlat
 ## Standing still with the nap perk (Perks): healing, shown as a "Zz" over the head.
 var _napping := false
+var _shake_strength := 2.0
+## [seconds alive, position, hp] every HISTORY_STEP, newest last.
+var _history: Array = []
+## [seconds alive, HP lost] for every hit in the last HISTORY_SECONDS.
+var _hurt_log: Array = []
+var _alive := 0.0
+var _history_left := 0.0
 
 
 func _ready() -> void:
-	_sprite = Art.sprite("coder", SIZE)
+	_sprite = Art.sprite(Jobs.data(job)["art"], SIZE)
 	_base_scale = _sprite.scale.x
 	add_child(_sprite)
 	_camera = Camera2D.new()
 	add_child(_camera)
 	_camera.make_current()
+
+
+## Takes on a job's build (health, armor, speed and look). Weapons are Game's to hand out.
+func setup_job(job_id: String) -> void:
+	job = job_id
+	var job_data := Jobs.data(job_id)
+	max_hp = job_data["hp"]
+	hp = max_hp
+	armor = job_data["armor"]
+	base_move_speed = job_data["speed"]
+	move_speed = base_move_speed
+	if _sprite != null:
+		_sprite.texture = Art.texture(job_data["art"])
+		_base_scale = Art.scale_for(job_data["art"], SIZE)
+		_sprite.scale = Vector2.ONE * _base_scale
+	queue_redraw()
+
+
+## What a weapon's damage is multiplied by for this job: 专精 for weapons of the job's type, or
+## for the data scientist 多开实验, a bonus that shrinks with every weapon carried.
+func weapon_multiplier(weapon_id: String) -> float:
+	var job_data := Jobs.data(job)
+	if job_data.get("multitask", false):
+		return 1.0 + Jobs.MULTITASK_BONUS - Jobs.MULTITASK_PER_WEAPON * weapons.size()
+	if Upgrades.WEAPONS[weapon_id]["type"] == job_data["type"]:
+		return Jobs.SPECIALTY_DAMAGE
+	return 1.0
 
 
 func _process(delta: float) -> void:
@@ -84,6 +125,7 @@ func _process(delta: float) -> void:
 
 	if regen > 0.0 and hp < max_hp:
 		heal(regen * delta)
+	_remember(delta)
 
 	_invuln_left = maxf(0.0, _invuln_left - delta)
 	var blinking := _invuln_left > 0.0 and fmod(_invuln_left, 0.1) < 0.05
@@ -92,7 +134,8 @@ func _process(delta: float) -> void:
 
 	if _shake_left > 0.0:
 		_shake_left -= delta
-		_camera.offset = Vector2(randf_range(-2, 2), randf_range(-2, 2)) if _shake_left > 0.0 else Vector2.ZERO
+		var reach := _shake_strength
+		_camera.offset = Vector2(randf_range(-reach, reach), randf_range(-reach, reach)) if _shake_left > 0.0 else Vector2.ZERO
 
 
 func _draw() -> void:
@@ -157,13 +200,63 @@ func take_damage(amount: float) -> void:
 		return
 	var lost := minf(hp, maxf(1.0, amount - armor))
 	hp -= lost
+	_hurt_log.append([_alive, lost])
 	_invuln_left = INVULN_SECONDS
 	Sound.play("hurt")
-	_shake_left = SHAKE_SECONDS
+	shake(SHAKE_SECONDS, 2.0)
 	queue_redraw()
 	game.perks.on_hurt(lost)
 	if hp <= 0.0:
 		died.emit()
+
+
+## Shakes the camera for a moment (`strength` pixels each way).
+func shake(seconds: float, strength: float) -> void:
+	if seconds >= _shake_left:
+		_shake_strength = strength
+	_shake_left = maxf(_shake_left, seconds)
+
+
+## Can't be hurt for a while (重启). Blinks like after a hit.
+func make_invulnerable(seconds: float) -> void:
+	_invuln_left = maxf(_invuln_left, seconds)
+
+
+## Where the player stood and how much health they had `seconds` ago (as far back as remembered),
+## as [position, hp].
+func state_ago(seconds: float) -> Array:
+	var when := _alive - seconds
+	for entry: Array in _history:
+		if entry[0] >= when:
+			return [entry[1], entry[2]]
+	return [position, hp]
+
+
+## HP lost in the last `seconds`.
+func hurt_within(seconds: float) -> float:
+	var lost := 0.0
+	for entry: Array in _hurt_log:
+		if entry[0] >= _alive - seconds:
+			lost += entry[1]
+	return lost
+
+
+## Forgets the hits counted by hurt_within (once Cmd+Z has given them back).
+func forget_hurt() -> void:
+	_hurt_log.clear()
+
+
+func _remember(delta: float) -> void:
+	_alive += delta
+	_history_left -= delta
+	if _history_left > 0.0:
+		return
+	_history_left = HISTORY_STEP
+	_history.append([_alive, position, hp])
+	while not _history.is_empty() and _alive - _history[0][0] > HISTORY_SECONDS:
+		_history.pop_front()
+	while not _hurt_log.is_empty() and _alive - _hurt_log[0][0] > HISTORY_SECONDS:
+		_hurt_log.pop_front()
 
 
 func set_napping(value: bool) -> void:

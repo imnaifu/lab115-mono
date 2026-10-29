@@ -1,7 +1,8 @@
 class_name FacingWeapon
 extends Weapon
 ## Rapid shots thrown the way the player is facing, fanned side by side.
-## (Silicon Valley: 复制粘贴.)
+## (Silicon Valley: 复制粘贴.) Ctrl+A 全选粘贴 (evolved with 猎头电话): the same volley goes out in
+## eight directions at once.
 
 const COUNT := [1, 1, 2, 2, 3]
 ## Raised after the live runs had it at 1-7% of all damage even at full level.
@@ -20,10 +21,15 @@ func cooldown() -> float:
 
 
 func fire() -> bool:
+	for i in (8 if evolved else 1):
+		_volley(player.facing.rotated(TAU * i / 8.0))
+	return true
+
+
+func _volley(direction: Vector2) -> void:
 	var count: int = stat(COUNT)
-	var side := player.facing.orthogonal()
+	var side := direction.orthogonal()
 	for i in count:
-		var projectile := spawn_projectile(SIZE, player.facing * SPEED, stat(DAMAGE), stat(PIERCE), 0.9)
+		var projectile := spawn_projectile(SIZE, direction * SPEED, stat(DAMAGE), stat(PIERCE), 0.9)
 		projectile.position += side * (i - (count - 1) / 2.0) * SPACING
 		projectile.align_to_velocity = true
-	return true

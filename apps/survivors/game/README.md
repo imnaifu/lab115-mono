@@ -15,7 +15,8 @@ godot -e --path apps/survivors/game           # 用编辑器打开
 ## 玩法
 
 - **操作**：WASD / 方向键 / 手柄左摇杆移动；手机按住屏幕任意处拖动（虚拟摇杆），或在「设置」里打开陀螺仪后倾斜手机（可选，默认关，默认用手指）。陀螺仪左右以真水平为准；前后以开局 / 从暂停回来时拿手机的角度为准（取开头 0.5 秒的平均），玩的时候右上角的手机按钮可随时重新校准。Esc / P / 右上角按钮暂停；升级时按数字键或点卡片；暂停或结束时按 R 重开。窗口失焦会自动暂停。
-- **武器**（各 5 级）：回车键（敲最近的敌人，开局自带）、复制粘贴（朝面向连发，能穿过敌人）、无人机（飞出去追着附近的敌人撞，撞完弹开再找下一个）、云端部署（从云上劈屏幕里的敌人；必中，所以道数和伤害压得比别的低）、机械键盘（上抛砸落、无限穿透）、Wi-Fi 信号（身边持续伤害并推开）。无人机管中距离的散兵，Wi-Fi 管贴身的。
+- **职业**（`jobs.gd`）：开局在开始画面选，记住上次的选择，新玩家默认程序员。程序员（回车键，射击专精）、产品经理（PRD 卷筒，近战专精，更肉更慢）、设计师（钢笔工具，区域专精，更脆更快）、运维（防火墙，召唤专精，最肉最慢）、数据科学家（屏保，没有专精但武器格不限：「多开实验」，每多一把武器总伤害降一点）。专精的类型伤害 +20%、在卡池里更常出现。每个职业一个大招（`ultimate.gd`），打死怪充能，右下角按钮或空格放出。
+- **武器**（15 把，各 5 级，分射击 / 近战 / 区域 / 召唤四类；数值和参考来源见 `DESIGN.md` 2.2）：每个职业一把专属（回车键、PRD 卷筒、钢笔工具、防火墙、屏保），另外 10 把公共：复制粘贴、机械键盘、邮件抄送、订书机、网线鞭、Wi-Fi 信号、云端部署、拉会、无人机、外包团队。武器格 6 个（数据科学家不限），能拿的比格子多，要取舍。10 把武器满级后带着对应被动开钱袋会进化（比如回车键 + 双屏显示器 → Shift+Enter 批量提交）。
 - **被动**（一局最多带 6 种，各 5 级）：加数值的有冰美式（伤害）、降噪耳机（减伤）、撸铁（生命上限）、电动滑板（移速）、双屏显示器（冷却）、人脉名片（拾取范围）、工位绿植（回血）；有自己玩法的有股票期权（拿到后每撑 1 分钟伤害再涨一点，越早拿越赚）、背锅侠（挨打时按受到伤害的几倍炸伤身边的怪）、降本增效（打死的怪有几率爆炸，能连环炸）、开源项目（打死怪有几率留下一个小炮台打 8 秒）、站会（每隔一阵震开并定住身边的怪）、午休（站着不动 1 秒后快速回血，头上冒 Zz）、猎头电话（升级时多给 1 个选项，最多 2 级）。这几个的逻辑在 `perks.gd`。
 - **升级卡**：卡上除了文案，还用蓝字写出具体数字（「伤害 14 → 18 · 数量 1 → 2」，武器最多列两项；伤害和间隔已算上当前的加成，和飘出来的伤害数字对得上）。每局头两次升级保底给新武器卡（第一次至少 2 张、第二次至少 1 张），手上不到 3 把武器时新武器卡标「推荐」—— 线上数据里新手常常前几次全拿被动，只有 1 把武器，3、4 分钟就死。
 - **掉落**：经验星星（蓝 / 绿 / 金按数值分档，要走近才会被吸过来，捡到才加经验；每台设备第一次掉星星时会提示一次，并在那颗星星上画一个跳动的箭头）、珍珠奶茶回 30 血、磁铁吸来全图经验、boss 必掉融资钱袋。
@@ -41,9 +42,11 @@ scripts/
 ├── hostile_shot.gd    # boss 打出来的东西：直线飞的告警弹、抛过来的饼
 ├── flow_field.gd      # 绕楼寻路：以玩家为中心的网格做广度优先，被楼挡住的怪顺着步数绕过去
 ├── spawner.gd         # 敌人数据表、按时间的刷怪配比、脚本事件
-├── upgrades.gd        # 升级池：武器 / 被动的名字、素材、每级文案、卡上的数字，保底武器卡，钱袋给的升级，应用升级
+├── jobs.gd            # 五个职业：专属武器、专精类型、体质、大招；武器类型的名字和颜色
+├── ultimate.gd        # 大招：按击杀充能，五种效果
+├── upgrades.gd        # 升级池：武器（类型、归属职业）/ 被动的名字、素材、每级文案、卡上的数字，武器进化，保底武器卡，钱袋给的升级，应用升级
 ├── perks.gd / turret.gd   # 有自己玩法的被动（股票期权、背锅侠、降本增效、开源项目的炮台、站会、午休）
-├── weapons/           # weapon.gd 基类 + 6 种攻击方式（aimed / facing / seeker / strike / toss / aura）
+├── weapons/           # weapon.gd 基类 + 15 种攻击方式（aimed / facing / seeker / strike / toss / aura / swing / thrust / whip / trail / zone / orbit / squad / bounce / ricochet），各自带进化后的打法
 ├── city.gd            # 地图：按坐标哈希生成街区、画地面 / 马路 / 高速 / 铁轨 / 跑道 / 盐田 / 海，楼、树和海水的碰撞
 ├── traffic.gd         # 会动的风景：高速上的无人车、铁轨上的 Caltrain（位置只由时间算出，不存状态）
 ├── bay_area.gd        # 湾区关卡数据：分区、各区的楼和树、地标位置、街名、恶搞公司招牌
@@ -52,7 +55,7 @@ scripts/
 ├── lang.gd            # 中→英翻译表（代码里的中文就是原文）与语言切换
 ├── settings.gd        # 存设置
 ├── tilt.gd            # 陀螺仪：经 JavaScriptBridge 读浏览器的 deviceorientation
-├── sound.gd           # 音效和音乐：挂在场景树根上（重开一局音乐不断），常见音效限频，连续捡星星音调递增
+├── sound.gd           # 音效和音乐：挂在场景树根上（重开一局音乐不断），常见音效限频，连续捡星星音调递增；音乐和音效分两条 bus，HUD 每帧报告界面 / 血量 / 时间，音乐据此让位或提速，低血量响心跳
 ├── telemetry.gd       # 匿名对局数据，发到 stats.lab115.com 的 Umami（见下文「对局数据」）
 ├── boss_pointers.gd   # 屏幕边缘指向屏幕外 boss 的箭头
 ├── pickup.gd / projectile.gd / effects.gd
@@ -79,8 +82,8 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 
 线上每一局都会匿名上报到自建的 Umami（stats.lab115.com，和 daily 共用一个实例），用来看难度和平衡：
 - `game_ready`：每次打开页面、开始画面出来时发一次，带 `load_ms`（从开始加载页面算起的毫秒数）。有浏览量没有它的，就是加载时流失的人。
-- `run_start`：设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）。
-- `run_end`：结局（`win` / `died` / `restart` 从暂停页重开 / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、各武器伤害占比（`dmg_*`，百分比）、选卡顺序、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（钱袋开出的轮次）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率。每局带一个随机 id，用来去重。
+- `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）。
+- `run_end`：职业（`job`）、结局（`win` / `died` / `restart` 从暂停页重开或换职业 / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、进化了的武器（`evolved`）、大招用了几次（`ults`）、各武器伤害占比（`dmg_*`，百分比，只有打出过伤害的才有）、选卡顺序、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（钱袋开出的轮次）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率。每局带一个随机 id，用来去重。
 - `js_error`：网页和引擎的脚本错误（引擎的错误经 `console.error` 打出来），每次打开页面最多 5 条。
 
 不记录任何身份信息和位置。中途关页面的局：游戏每 10 秒把进度存进 localStorage，关页面或页面被切到后台时由网页发出去（Umami 用 keepalive 发送；手机常常先把页面切到后台、之后直接杀掉，不触发关页面事件）；App 内置浏览器常常来不及发，所以关页面时发完不删存档，下次打开时再补发一次才删 —— 同一局可能收到两条 `run_end`，查数据时按 `run` 去重、取 `seconds` 最大的那条。上报只在 survivors.lab115.com 上发生（Umami 脚本的 `data-domains`），编辑器、本地导出和冒烟测试都不会发。网页这边的代码在 `export_presets.cfg` 的 `html/head_include` 里。
@@ -95,7 +98,7 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
   python3 -m venv /tmp/fonttools && /tmp/fonttools/bin/pip install fonttools
   /tmp/fonttools/bin/python tools/subset_fonts.py
   ```
-- 音效：Kenney 的 [Interface Sounds](https://opengameart.org/content/interface-sounds)（CC0），按用途改了名，原文件名对照见 `assets/audio/README.md`。音乐：[Ninja Adventure](https://github.com/pixel-boy/NinjaAdventure) 的 theme_lost_village（标题）和 theme_plain（战斗），CC0。都不需要署名，游戏里也不写出处。
+- 音效：Kenney 的 Interface / Sci-Fi / Digital / RPG 几个音效包（CC0，取自 OpenGameArt），加一个自己合成的心跳，按用途改了名，来源和原文件名对照见 `assets/audio/README.md`。音乐：[Ninja Adventure](https://github.com/pixel-boy/NinjaAdventure) 的 theme_lost_village（标题）和 theme_plain（战斗），CC0。都不需要署名，游戏里也不写出处。
 
 ## 测试
 
@@ -107,7 +110,9 @@ godot --headless --path . --import                                              
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=610          # 普通一局
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=610 --god    # 无敌跑满 10 分钟，压测性能
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=90 --restart-at=40   # 验证重开
-godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=180 --god --all-weapons=5   # 6 把武器全满级，看各自的伤害占比
+godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=180 --god --all-weapons=5   # 职业能拿的武器全满级，看各自的伤害占比
+godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=610 --job=pm --ult   # 用某个职业玩一局，大招充满就放
+godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=30 --god --job=ops --evolve   # 职业能拿的武器全部满级并进化
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=60 --god --perks=standup:5,cost_cut:5 --boss=incident,pie_boss   # 开局带上这些被动、把这些 boss 叫到身边
 ```
 
@@ -117,7 +122,7 @@ godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=60 
 godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --lang=zh --seconds=80 --god --die-at=75 --pause-at=40 --shots=/tmp/shots --shot-every=30
 ```
 
-截图时加 `--share` 还会把结算页的战绩图存成 `shot_share.png`，开出钱袋时会截 `shot_chest.png`（想早点开出来，可以加 `--boss=techdebt_elite --all-weapons=5`）。
+截图时加 `--share` 还会把结算页的战绩图存成 `shot_share.png`（同时有 `--pause-at` 时存暂停页「分享」的进行中战绩图 `shot_share_pause.png`），开出钱袋时会截 `shot_chest.png`（想早点开出来，可以加 `--boss=techdebt_elite --all-weapons=5`）。
 
 测试默认静音（加 `--sound` 才放音效和音乐：没人听，而且退出时还在放的音频会被报成资源泄漏）。截图时会额外截开始画面、第一次升级、暂停和结算界面；加 `--window=405x720 --handheld` 看手机竖着拿时的样子（再加 `--orientation=landscape` 看选了横屏时转 90° 的样子），`--lang=en` 截英文，`--teleport=X,Y` 开局把角色传到某处看某个区（比如 `--teleport=-280,-1600` 是旧金山的排屋，`--teleport=1700,400` 是海边）。
 

@@ -101,6 +101,9 @@ var game: Game
 var detour_left := 0.0
 ## Seconds left standing still, stunned (the stand-up perk).
 var stun_left := 0.0
+## Seconds left walking at `slow_scale` of its speed (a meeting room, 拉会).
+var slow_left := 0.0
+var slow_scale := 1.0
 ## A Deadline whose countdown ran out.
 var berserk := false
 ## Inside an investor's aura this frame (Game sets it): takes less damage, tinted gold.
@@ -178,6 +181,9 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 	var velocity := direction * speed
 	if _wobble > 0.0:
 		velocity += direction.orthogonal() * sin(_phase * 0.7) * _wobble
+	if slow_left > 0.0:
+		slow_left -= delta
+		velocity *= slow_scale
 	if stun_left > 0.0:
 		# Stunned: no walking and no boss move (its timers wait too); knockback still applies.
 		stun_left -= delta
@@ -354,7 +360,7 @@ func _finish_windup() -> void:
 			for i in VOLLEY_SHOTS:
 				var heading := Vector2.from_angle(TAU * (i + _volley_turn) / VOLLEY_SHOTS)
 				game.fire_bullet(position + heading * radius, heading * VOLLEY_SPEED, VOLLEY_DAMAGE, type_name)
-			Sound.play("zap")
+			Sound.play("boss_fire")
 		"quake":
 			_quake()
 		"clones":
@@ -364,7 +370,7 @@ func _finish_windup() -> void:
 
 func _quake() -> void:
 	Effects.ring(game, position, QUAKE_RADIUS, Art.BOSS_RED)
-	Sound.play("zap")
+	Sound.play("quake")
 	var player := game.player
 	var offset := player.position - position
 	if offset.length() <= QUAKE_RADIUS + Player.HURT_RADIUS:
@@ -390,6 +396,13 @@ func stun(seconds: float) -> void:
 	stun_left = maxf(stun_left, seconds * (BOSS_STUN_SCALE if is_elite else 1.0))
 	if _flash_left <= 0.0:
 		_sprite.modulate = _rest_modulate()
+
+
+## Walks at `scale` of its speed for a while; bosses shrug off half the slowdown. Kept up by
+## whatever slows it calling again while it stays inside.
+func slow(scale: float, seconds: float) -> void:
+	slow_scale = 1.0 - (1.0 - scale) * (0.5 if is_elite else 1.0)
+	slow_left = maxf(slow_left, seconds)
 
 
 func _rest_modulate() -> Color:

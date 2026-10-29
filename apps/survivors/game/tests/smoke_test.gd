@@ -20,7 +20,11 @@ extends SceneTree
 ## compare the weapons' damage share in the report), --perks=id:level,... (start with those
 ## passives, e.g. --perks=standup:5,cost_cut:5), --boss=type,... (bring those enemy types in
 ## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves),
-## --share (with --shots, also render the end screen's result image into the shots directory).
+## --share (with --shots, also render the end screen's result image into the shots directory, or
+## with --pause-at the pause screen's run-so-far image),
+## --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --ult (use the
+## ultimate whenever it is charged), --evolve (start with every weapon the job can carry evolved,
+## to look at the evolutions).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -56,7 +60,12 @@ var _chests := 0
 var _chest_frames := 0
 var _chest_shot_taken := false
 var _share := false
+var _use_ult := false
+var _evolve := false
+## Melee jobs' bots only step away from enemies right on top of them, so their swings land.
+var _avoid_radius := 70.0
 var _share_started := false
+var _share_saved := false
 ## Player level when each REPORT_TIMES second was reached, for comparing pacing between builds.
 var _levels_at := {}
 var _worst_frame_ms := 0.0
@@ -99,6 +108,14 @@ func _initialize() -> void:
 			_bosses = value.split(",")
 		elif arg == "--share":
 			_share = true
+		elif arg.begins_with("--job="):
+			Settings.overrides["job"] = value
+			if Jobs.data(value)["type"] == "melee":
+				_avoid_radius = 35.0
+		elif arg == "--ult":
+			_use_ult = true
+		elif arg == "--evolve":
+			_evolve = true
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):
@@ -133,7 +150,7 @@ func _process(_delta: float) -> bool:
 			_game.start_run()
 			if _teleport != null:
 				_game.player.position = _teleport
-			if _all_weapons_level > 0:
+			if _all_weapons_level > 0 or _evolve:
 				_grant_all_weapons()
 			for perk in _perks:
 				for i in int(perk.get_slice(":", 1)):
@@ -150,6 +167,17 @@ func _process(_delta: float) -> bool:
 					return false
 				_save_shot("pause")
 				_pause_shot_taken = true
+			if _share and _pause_at >= 0.0 and _shot_dir != "" and DisplayServer.get_name() != "headless":
+				if not _share_started:
+					_share_started = true
+					_game.hud._make_share_image()
+					return false
+				if _game.hud._sharing:
+					return false
+				if not _share_saved:
+					_share_saved = true
+					DirAccess.copy_absolute(ProjectSettings.globalize_path("user://share_card.png"), "%s/shot_share_pause.png" % _shot_dir)
+					print("[smoke] saved %s/shot_share_pause.png" % _shot_dir)
 			# The window losing focus pauses the game too; a bot run should carry on.
 			_game.set_paused(false)
 		Game.State.LEVEL_UP:
@@ -175,6 +203,8 @@ func _process(_delta: float) -> bool:
 			_game.player.input_override = _steer()
 			if _god:
 				_game.player.hp = _game.player.max_hp
+			if _use_ult and _game.ultimate.is_ready():
+				_game.ultimate.use()
 			if _die_at >= 0.0 and _game.elapsed >= _die_at:
 				_game.player.take_damage(INF)
 			if _pause_at >= 0.0 and not _pause_shot_taken and _game.elapsed >= _pause_at:
@@ -219,7 +249,7 @@ func _process(_delta: float) -> bool:
 func _steer() -> Vector2:
 	var player := _game.player
 	var away := Vector2.ZERO
-	for enemy in _game.query_enemies(player.position, 70.0):
+	for enemy in _game.query_enemies(player.position, _avoid_radius):
 		var offset := player.position - enemy.position
 		away += offset / maxf(offset.length_squared(), 1.0)
 	_wander_angle += 0.004
@@ -238,14 +268,19 @@ func _steer() -> Vector2:
 	return steer.normalized()
 
 
+## Every weapon the job can carry at the --all-weapons level (full level with --evolve, then
+## evolved).
 func _grant_all_weapons() -> void:
-	for weapon_id: String in Upgrades.WEAPONS:
+	var target_level := Upgrades.MAX_LEVEL if _evolve else _all_weapons_level
+	for weapon_id in Upgrades.weapons_for(_game.player.job):
 		var weapon := _game.player.get_weapon(weapon_id)
 		if weapon == null:
 			weapon = Upgrades.create_weapon(weapon_id)
 			_game.player.add_weapon(weapon)
-		while weapon.level < _all_weapons_level:
+		while weapon.level < target_level:
 			weapon.level_up()
+		if _evolve and Upgrades.EVOLUTIONS.has(weapon_id):
+			weapon.evolve()
 	_game.inventory_changed.emit()
 
 
@@ -271,15 +306,16 @@ func _save_shot(label: String) -> void:
 func _report() -> int:
 	var weapon_levels := PackedStringArray()
 	for weapon in _game.player.weapons:
-		weapon_levels.append("%s:%d" % [weapon.id, weapon.level])
+		weapon_levels.append("%s:%d%s" % [weapon.id, weapon.level, "*" if weapon.evolved else ""])
 	var passive_levels := PackedStringArray()
 	for passive_id: String in _game.upgrades.passive_levels:
 		passive_levels.append("%s:%d" % [passive_id, _game.upgrades.passive_levels[passive_id]])
 	var wall_ms := (Time.get_ticks_usec() - _started_usec) / 1000.0
+	print("[smoke] job=%s ults used=%d" % [_game.player.job, _game.telemetry._ults])
 	print("[smoke] result=%s elapsed=%.1fs level=%d kills=%d upgrades=%d peak_enemies=%d hp=%.0f/%.0f" % [
 		_outcome(), _game.elapsed, _game.level, _game.kills, _upgrades_taken, _peak_enemies,
 		_game.player.hp, _game.player.max_hp])
-	print("[smoke] weapons=%s passives=%s" % [", ".join(weapon_levels), ", ".join(passive_levels)])
+	print("[smoke] weapons=%s passives=%s (* evolved)" % [", ".join(weapon_levels), ", ".join(passive_levels)])
 	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
 	print("[smoke] bosses killed=%d of %d, funding bags opened=%d (%s)" % [
 		_game.telemetry._bosses_killed, _game.telemetry._bosses_seen, _chests, ",".join(_game.telemetry._chests)])

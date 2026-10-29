@@ -3,7 +3,8 @@ extends Weapon
 ## Companions that fly off after enemies on their own: each picks one near the player, rams it,
 ## bounces off, and goes for the next; with nothing in reach they hover by the player.
 ## (Silicon Valley: 无人机.) The Wi-Fi field guards the player's own spot; these clear out
-## enemies a little way off, so the two don't do the same job.
+## enemies a little way off, so the two don't do the same job. 无人车车队 (evolved with 降本增效):
+## robotaxis instead, bigger, harder-hitting and knocking what they ram far back.
 
 const COUNT := [1, 2, 2, 3, 4]
 const DAMAGE := [9.0, 9.0, 13.0, 13.0, 17.0]
@@ -21,6 +22,11 @@ const TURN_RATE := 9.0
 ## Idle drones circle this far from the player.
 const HOVER_RADIUS := 22.0
 const SIZE := 18.0
+const EVOLVED_ART := "robotaxi"
+const EVOLVED_SIZE := 24.0
+const EVOLVED_DAMAGE := 1.5
+const EVOLVED_HIT_RADIUS := 10.0
+const EVOLVED_PUSH := 200.0
 
 
 class Drone:
@@ -51,7 +57,7 @@ func _on_level_changed() -> void:
 func _process(delta: float) -> void:
 	_clock += delta
 	var speed: float = stat(SPEED)
-	var damage: float = stat(DAMAGE) * player.might
+	var damage: float = stat(DAMAGE) * damage_scale() * (EVOLVED_DAMAGE if evolved else 1.0)
 	for i in _drones.size():
 		var drone := _drones[i]
 		if drone.recover_left > 0.0:
@@ -76,9 +82,9 @@ func _process(delta: float) -> void:
 
 ## Hits the first enemy the drone touches, then bounces off it.
 func _ram(drone: Drone, damage: float) -> void:
-	for enemy in game.query_enemies(drone.position, HIT_RADIUS):
+	for enemy in game.query_enemies(drone.position, EVOLVED_HIT_RADIUS if evolved else HIT_RADIUS):
 		var push := drone.velocity.normalized()
-		game.damage_enemy(enemy, damage, push * 80.0, id)
+		game.damage_enemy(enemy, damage, push * (EVOLVED_PUSH if evolved else 80.0), id)
 		drone.velocity = -drone.velocity * 0.6
 		drone.recover_left = RECOVER_SECONDS
 		return
@@ -115,11 +121,17 @@ func _hover_spot(index: int) -> Vector2:
 	return player.position + Vector2.from_angle(angle) * HOVER_RADIUS + Vector2(0, -6)
 
 
+func _on_evolved() -> void:
+	for drone in _drones:
+		drone.sprite.texture = Art.texture(EVOLVED_ART)
+		drone.sprite.scale = Vector2.ONE * Art.scale_for(EVOLVED_ART, EVOLVED_SIZE)
+
+
 func _sync_drone_count() -> void:
 	while _drones.size() < stat(COUNT):
 		var drone := Drone.new()
 		drone.position = player.position
-		drone.sprite = Art.sprite(art, SIZE)
+		drone.sprite = Art.sprite(EVOLVED_ART, EVOLVED_SIZE) if evolved else Art.sprite(art, SIZE)
 		# Drones fly in world space; the weapon itself rides along on the player. A top-level
 		# sprite doesn't inherit the weapon's z either, so it gets its own.
 		drone.sprite.top_level = true

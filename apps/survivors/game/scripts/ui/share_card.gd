@@ -1,8 +1,8 @@
 class_name ShareCard
 extends SubViewport
 ## The result image the end screen makes for sharing (Wordle's result grid is the model: the
-## run at a glance, made to be posted): result, time, level as a job grade, kills, the best
-## weapon, what ended the run, a roast line, and a QR code back to the game (?from=share, so the
+## run at a glance, made to be posted): result, time, level as a job grade, the job played, kills,
+## the best weapon, what ended the run, a roast line, and a QR code back to the game (?from=share, so the
 ## data can count who came from one). Drawn after the design canvas's 战绩图 board at twice its
 ## 360x640, laid out off screen and captured as an image; the web page shows it for long-press
 ## saving or the share sheet (export_presets.cfg's survivorsShare). Nothing is rewarded for
@@ -33,10 +33,13 @@ const WIN_ROASTS := ["上市敲钟，期权终于能卖了", "活过了 10 分�
 const EARLY_ROASTS := ["试用期都没过", "入职第一天就被优化了"]
 const LATE_ROASTS := ["倒在了 IPO 前夜", "就差最后几分钟，可惜"]
 const MIDDLE_ROASTS := ["差一点就上市了，再融一轮？", "项目黄了，但经验还在"]
+## Shared from the pause screen, mid-run.
+const ONGOING_ROASTS := ["还在搬砖，你能撑多久？", "人还在，项目也还在", "先截个图，万一待会儿没了"]
 
 
-## Lays the card out for the run `game` just finished; capture() then renders it.
-func build(game: Game, victory: bool, theme: Theme) -> void:
+## Lays the card out for the run `game` just finished, or with `ongoing` for the run so far (the
+## pause screen's 分享); capture() then renders it.
+func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> void:
 	size = SIZE
 	transparent_bg = false
 	render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -57,22 +60,25 @@ func build(game: Game, victory: bool, theme: Theme) -> void:
 	column.add_theme_constant_override("separation", 0)
 	card.add_child(column)
 
-	column.add_child(UiKit.kicker("SILICON VALLEY SURVIVORS", Art.INK_MUTED, 11 * SCALE))
+	# Unlike the screens' Latin kickers, the card's names the game in the player's language:
+	# nothing else on the image does, and in Chinese 硅谷幸存者 is the name people know it by.
+	column.add_child(UiKit.kicker(tr("硅谷幸存者").to_upper(), Art.INK_MUTED, 11 * SCALE))
 	column.add_child(UiKit.gap(8 * SCALE))
 	var headline := HBoxContainer.new()
 	headline.alignment = BoxContainer.ALIGNMENT_CENTER
 	headline.add_theme_constant_override("separation", 8 * SCALE)
 	column.add_child(headline)
 	# The bell is the IPO's; a run that folded goes without.
-	if victory:
+	if victory and not ongoing:
 		headline.add_child(UiKit.icon("bell", 40 * SCALE))
-	headline.add_child(UiKit.label("敲钟上市！" if victory else "项目黄了…", 32 * SCALE, "heavy"))
+	var headline_text := "还在搬砖…" if ongoing else "敲钟上市！" if victory else "项目黄了…"
+	headline.add_child(UiKit.label(headline_text, 32 * SCALE, "heavy"))
 
 	column.add_child(UiKit.gap(10 * SCALE))
 	var seconds := floori(game.elapsed)
 	column.add_child(_centered(UiKit.label("%02d:%02d" % [floori(seconds / 60.0), seconds % 60], 64 * SCALE, "display")))
 	var left := maxi(0, roundi(Game.RUN_SECONDS) - seconds)
-	var sub := tr("撑满 10 分钟") if victory else tr("离上市还差 %s") % ("%02d:%02d" % [floori(left / 60.0), left % 60])
+	var sub := tr("撑满 10 分钟") if victory and not ongoing else tr("离上市还差 %s") % ("%02d:%02d" % [floori(left / 60.0), left % 60])
 	column.add_child(_centered(UiKit.label(sub, 13 * SCALE, "muted")))
 
 	column.add_child(UiKit.gap(12 * SCALE))
@@ -81,6 +87,8 @@ func build(game: Game, victory: bool, theme: Theme) -> void:
 	var grade_row := HBoxContainer.new()
 	grade_row.add_theme_constant_override("separation", 8 * SCALE)
 	grade_pill.add_child(grade_row)
+	# The job goes with the grade: 产品经理 职级 L5 (the facts row below has no room for a third).
+	grade_row.add_child(_middle(UiKit.label(Jobs.data(game.player.job)["name"], 13 * SCALE, "heavy", Art.PAPER)))
 	grade_row.add_child(_middle(UiKit.label("职级", 13 * SCALE, "body", Art.PAPER)))
 	grade_row.add_child(_middle(UiKit.label(grade(game.level), 20 * SCALE, "display", Art.BRAND)))
 	grade_row.add_child(_middle(UiKit.label("Lv %d" % game.level, 12 * SCALE, "display", Art.FILL_LILAC)))
@@ -95,17 +103,18 @@ func build(game: Game, victory: bool, theme: Theme) -> void:
 	if best != "":
 		var best_row := HBoxContainer.new()
 		best_row.add_theme_constant_override("separation", 6 * SCALE)
-		best_row.add_child(_middle(UiKit.label(Upgrades.WEAPONS[best]["name"], 15 * SCALE, "heavy")))
+		best_row.add_child(_middle(UiKit.label(Upgrades.weapon_name(best, game.upgrades.is_evolved(best)), 15 * SCALE, "heavy")))
 		best_row.add_child(_middle(UiKit.label("%d%%" % roundi(100.0 * game.damage_by_source[best] / _total_damage(game)), 13 * SCALE, "display", Art.INK_MUTED)))
 		facts.add_child(_fact("最强武器", best_row))
 	var killer := game.telemetry.last_hurt_by
-	if Spawner.ENEMY_TYPES.has(killer):
+	if Spawner.ENEMY_TYPES.has(killer) and not ongoing:
 		column.add_child(UiKit.gap(8 * SCALE))
 		column.add_child(_culprit(Spawner.ENEMY_TYPES[killer], victory))
 
 	column.add_child(UiKit.gap(14 * SCALE))
 	var roast := UiKit.panel(UiKit.box(Art.BRAND_SOFT, Color.TRANSPARENT, 0, 12 * SCALE, Vector4(14, 10, 14, 10) * SCALE))
-	var roast_line := UiKit.label(tr("「%s」") % tr(_roast(game, victory, killer)), 14 * SCALE, "heavy")
+	var roast_text: String = ONGOING_ROASTS[randi() % ONGOING_ROASTS.size()] if ongoing else _roast(game, victory, killer)
+	var roast_line := UiKit.label(tr("「%s」") % tr(roast_text), 14 * SCALE, "heavy")
 	roast_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	roast_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	roast.add_child(roast_line)
@@ -126,12 +135,17 @@ func build(game: Game, victory: bool, theme: Theme) -> void:
 	var footer_text := VBoxContainer.new()
 	footer_text.alignment = BoxContainer.ALIGNMENT_CENTER
 	footer_text.add_theme_constant_override("separation", 2 * SCALE)
+	footer_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(footer_text)
 	footer_text.add_child(UiKit.label("扫码一起搬砖", 15 * SCALE, "heavy"))
 	var address := UiKit.label("survivors.lab115.com", 12 * SCALE, "display", Art.INK_MUTED)
 	address.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	footer_text.add_child(address)
-	footer_text.add_child(UiKit.label("躲开 Bug、会议和 Deadline", 11 * SCALE, "muted"))
+	# Wraps: in English the line ran wider than the room next to the QR code and pushed the whole
+	# card past the image's right edge.
+	var tagline := UiKit.label("躲开 Bug、会议和 Deadline", 11 * SCALE, "muted")
+	tagline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	footer_text.add_child(tagline)
 
 
 ## Renders the card once and returns it. Waits for the containers to lay out first.

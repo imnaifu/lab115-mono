@@ -109,7 +109,7 @@ func on_hurt(amount: float) -> void:
 func _hold_standup(damage: float) -> void:
 	var player := _game.player
 	Effects.ring(_game, player.position, STANDUP_RADIUS, Art.BLUE)
-	Sound.play("magnet")
+	Sound.play("standup")
 	for enemy in _game.query_enemies(player.position, STANDUP_RADIUS):
 		enemy.stun(STANDUP_STUN)
 		_game.damage_enemy(enemy, damage * player.might, (enemy.position - player.position).normalized() * STANDUP_PUSH, "standup", true)

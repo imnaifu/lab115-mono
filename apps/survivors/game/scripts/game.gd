@@ -50,6 +50,12 @@ const FUNDING_ROUNDS := [
 	{"id": "series_a", "name": "A 轮", "items": 3, "weight": 20.0},
 	{"id": "ipo", "name": "IPO", "items": 5, "weight": 5.0},
 ]
+## Melee feel: a beat of hit-stop when a melee weapon lands on a boss (at most every
+## HITSTOP_GAP), a small shake when one swing catches a crowd of SHAKE_CROWD or more.
+const HITSTOP_SECONDS := 0.04
+const HITSTOP_GAP := 0.3
+const HITSTOP_SPEED := 0.05
+const SHAKE_CROWD := 5
 
 ## Set by restart() so "play again" skips the title screen; static so it survives the reload.
 static var skip_title := false
@@ -86,6 +92,7 @@ var city: City
 var flow_field: FlowField
 var telemetry: Telemetry
 var perks: Perks
+var ultimate: Ultimate
 var hud: Hud
 ## Boss attacks in flight (HostileShot), ticked here.
 var hostile_shots: Array[HostileShot] = []
@@ -99,10 +106,13 @@ var _enemy_grid := {}
 var _corpses: Array[Enemy] = []
 ## Whether this device has been told that stars are XP (shown once, on the first drop ever).
 var _star_hint_done := false
+var _next_hitstop_msec := 0
 
 
 func _ready() -> void:
 	_register_input_actions()
+	# A hit-stop cut short by the scene reloading would leave the game in slow motion.
+	Engine.time_scale = 1.0
 	Lang.setup()
 	Tilt.setup()
 	_star_hint_done = Settings.get_value("star_hint_shown", false)
@@ -111,6 +121,7 @@ func _ready() -> void:
 
 	player = Player.new()
 	player.game = self
+	player.setup_job(Jobs.saved())
 	player.died.connect(_on_player_died)
 	# Mid-block, on the lawn in front of the first row of buildings rather than on a crossing.
 	player.position = City.BLOCK * Vector2(0.5, 0.45)
@@ -139,7 +150,8 @@ func _ready() -> void:
 	spawner = Spawner.new(self)
 	telemetry = Telemetry.new(self)
 	perks = Perks.new(self)
-	player.add_weapon(Upgrades.create_weapon(Upgrades.STARTING_WEAPON))
+	ultimate = Ultimate.new(self)
+	player.add_weapon(Upgrades.create_weapon(Jobs.data(player.job)["weapon"]))
 
 	hud = Hud.new()
 	hud.game = self
@@ -297,15 +309,32 @@ func nearest_enemy(from: Vector2, max_distance: float) -> Enemy:
 	return best
 
 
-func random_visible_enemies(count: int) -> Array[Enemy]:
+func visible_enemies() -> Array[Enemy]:
 	var visible: Array[Enemy] = []
 	var half := view_half()
 	for enemy in enemies:
 		var offset := (enemy.position - player.position).abs()
 		if not enemy.dead and offset.x < half.x and offset.y < half.y:
 			visible.append(enemy)
+	return visible
+
+
+func random_visible_enemies(count: int) -> Array[Enemy]:
+	var visible := visible_enemies()
 	visible.shuffle()
 	return visible.slice(0, count)
+
+
+## A melee weapon just hit `hits` enemies, a boss among them if `hit_boss`.
+func melee_impact(hits: int, hit_boss: bool) -> void:
+	if hits >= SHAKE_CROWD:
+		player.shake(0.08, 1.5)
+	if not hit_boss or Time.get_ticks_msec() < _next_hitstop_msec:
+		return
+	_next_hitstop_msec = Time.get_ticks_msec() + roundi(HITSTOP_GAP * 1000.0)
+	Engine.time_scale = HITSTOP_SPEED
+	# Counted in real time: game time hardly moves meanwhile.
+	get_tree().create_timer(HITSTOP_SECONDS, true, false, true).timeout.connect(func() -> void: Engine.time_scale = 1.0)
 
 
 ## `silent` skips the hit sound, for damage that ticks constantly (the Wi-Fi field) and would
@@ -358,7 +387,11 @@ func _kill(enemy: Enemy) -> void:
 	kills += 1
 	enemies.erase(enemy)
 	telemetry.on_enemy_killed(enemy)
-	Sound.play("kill")
+	ultimate.on_kill()
+	if enemy.is_elite:
+		Sound.boss_down()
+	else:
+		Sound.play("kill")
 	Effects.poof(self, enemy.position, enemy.color)
 	# An AI's clones go with it; clones themselves give nothing.
 	var star: Pickup = null
@@ -675,6 +708,28 @@ func close_chest() -> void:
 
 
 # --- Run state -----------------------------------------------------------------------------
+
+## Picks the job on the title screen: remembered for next time, and the player rebuilt as it
+## (build, look, starting weapon).
+func set_job(job_id: String) -> void:
+	if state != State.TITLE or job_id == player.job:
+		return
+	Settings.set_value("job", job_id)
+	for weapon in player.weapons:
+		weapon.queue_free()
+	player.weapons.clear()
+	player.setup_job(job_id)
+	player.add_weapon(Upgrades.create_weapon(Jobs.data(job_id)["weapon"]))
+	inventory_changed.emit()
+
+
+## The result screen's 换职业: back to the title screen to pick another job.
+func change_job() -> void:
+	telemetry.finish("restart")
+	skip_title = false
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
 
 ## Leaves the title screen.
 func start_run() -> void:

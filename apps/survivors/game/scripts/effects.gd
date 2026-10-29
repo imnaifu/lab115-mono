@@ -1,6 +1,7 @@
 class_name Effects
 extends RefCounted
-## Short-lived visual feedback: damage numbers, death puffs, lightning strikes and blast rings.
+## Short-lived visual feedback: damage numbers, death puffs, lightning strikes, blast rings, the
+## melee weapons' swings, lashes and stabs, and short callouts over the world.
 
 const MAX_DAMAGE_NUMBERS := 40
 
@@ -98,6 +99,102 @@ static func ring(game: Game, at: Vector2, radius: float, color: Color) -> void:
 	blast.radius = radius
 	blast.color = color
 	game.effect_layer.add_child(blast)
+
+
+## A melee swing: a white crescent with an ink edge sweeping the arc (`arc` radians wide,
+## centred on `angle`, `radius` long) and fading out.
+static func slash(game: Game, at: Vector2, angle: float, arc: float, radius: float) -> void:
+	var swing := Swoosh.new()
+	swing.position = at
+	swing.shape = Swoosh.Shape.ARC
+	swing.angle = angle
+	swing.arc = arc
+	swing.reach = radius
+	game.effect_layer.add_child(swing)
+
+
+## A lash or stab: a white bar from `at` along `direction`, `length` long and `width` wide.
+static func lash(game: Game, at: Vector2, direction: Vector2, length: float, width: float) -> void:
+	var swing := Swoosh.new()
+	swing.position = at
+	swing.shape = Swoosh.Shape.BAR
+	swing.angle = direction.angle()
+	swing.reach = length
+	swing.width = width
+	game.effect_layer.add_child(swing)
+
+
+## A word or two popping up over the world and drifting up (屏保 hitting a corner).
+static func callout(game: Game, at: Vector2, text: String, color: Color) -> void:
+	var label := Label.new()
+	label.text = text
+	var settings := LabelSettings.new()
+	settings.font = Art.display_font(900)
+	settings.font_size = 13
+	settings.font_color = color
+	settings.outline_size = 5
+	settings.outline_color = Art.INK
+	label.label_settings = settings
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.size = Vector2(120, 18)
+	label.position = at + Vector2(-60, -30)
+	game.number_layer.add_child(label)
+	var tween := label.create_tween()
+	tween.tween_property(label, "position:y", label.position.y - 16.0, 0.8).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.5)
+	tween.tween_callback(label.queue_free)
+
+
+## Melee swings: drawn once, fading over SECONDS.
+class Swoosh:
+	extends Node2D
+
+	enum Shape { ARC, BAR }
+
+	const SECONDS := 0.15
+
+	var shape := Shape.ARC
+	var angle := 0.0
+	var arc := PI
+	var reach := 50.0
+	var width := 12.0
+	var _age := 0.0
+
+	func _process(delta: float) -> void:
+		_age += delta
+		if _age >= SECONDS:
+			queue_free()
+			return
+		modulate.a = 1.0 - _age / SECONDS
+		queue_redraw()
+
+	func _draw() -> void:
+		match shape:
+			Shape.ARC:
+				# A crescent: thick near the middle of the swing, thin at its ends.
+				var inner := reach * 0.55
+				var steps := maxi(8, ceili(arc / 0.15))
+				var outer_points := PackedVector2Array()
+				var inner_points := PackedVector2Array()
+				for i in steps + 1:
+					var along := float(i) / steps
+					var heading := angle - arc / 2.0 + arc * along
+					var bulge := sin(along * PI)
+					outer_points.append(Vector2.from_angle(heading) * reach)
+					inner_points.append(Vector2.from_angle(heading) * lerpf(reach, inner, bulge))
+				inner_points.reverse()
+				var crescent := outer_points + inner_points
+				draw_colored_polygon(crescent, Color(1, 1, 1, 0.85))
+				outer_points.append(outer_points[outer_points.size() - 1])
+				draw_polyline(outer_points, Art.INK, 2.0, true)
+			Shape.BAR:
+				var along := Vector2.from_angle(angle)
+				var side := along.orthogonal() * width / 2.0
+				var tip := along * reach
+				var bar := PackedVector2Array([side, tip + side * 0.4, tip - side * 0.4, -side])
+				draw_colored_polygon(bar, Color(1, 1, 1, 0.85))
+				bar.append(side)
+				draw_polyline(bar, Art.INK, 2.0, true)
 
 
 class BlastRing:
