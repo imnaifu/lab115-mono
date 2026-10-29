@@ -9,6 +9,9 @@ extends RefCounted
 ## out sideways, off the lane (pushed along it, a player would be carried off faster than they can
 ## walk). Bosses don't budge (their knockback resistance). A train coming makes its track flash
 ## first, so being hit by one is never a surprise.
+##
+## A bump shows: dust off whatever was hit, enemies spinning off the road, the player leaning
+## over, a car rocking for a moment, speed lines off a train, and now and then a 砰.
 
 const CAR_SPEED := 95.0
 ## Halved (from 260) when cars started bumping into things, so crossing a freeway is a matter of
@@ -28,6 +31,13 @@ const TRAIN_PUSH_PLAYER := 200.0
 const ENEMY_SHOVE_GAP := 0.4
 ## The track flashes for this long before a train comes on screen.
 const TRAIN_WARNING_SECONDS := 1.5
+## A 砰 at most this often, so a car ploughing through a crowd says it once.
+const BANG_GAP := 0.6
+## A train hitting something this close to the player shakes the screen.
+const TRAIN_SHAKE_REACH := 160.0
+## A car that hit something rocks (up to WOBBLE radians) for this long.
+const WOBBLE := 0.2
+const WOBBLE_SECONDS := 0.35
 ## Lanes either side of the centre line: southbound on the west half, northbound on the east.
 const LANE_OFFSET := 17.0
 const TRAIN_SPEED := 240.0
@@ -43,6 +53,9 @@ var _cars: Array[Sprite2D] = []
 var _trains: Array[Sprite2D] = []
 ## Enemy instance id -> when traffic last shoved it.
 var _shoved_at := {}
+## A car (lane, its place along the lane) -> when it last hit something, for its rocking.
+var _hit_at := {}
+var _last_bang := -INF
 var _warning: TrackWarning
 
 
@@ -70,7 +83,8 @@ func tick(delta: float, view: Rect2) -> void:
 			for at_y in _along(start_y, area.end.y, CAR_SPACING, shift, CAR_JITTER, column * 2 + (1 if northbound else 0)):
 				var spot := Vector2(x + (LANE_OFFSET if northbound else -LANE_OFFSET), at_y)
 				if not BayArea.is_water(spot):
-					car_spots.append([spot, northbound])
+					# Where it sits along the lane with the drive taken out names the car for good.
+					car_spots.append([spot, northbound, Vector2i(column * 2 + (1 if northbound else 0), roundi(at_y - shift))])
 	_show(_cars, car_spots, "car_top", CAR_SIZE)
 
 	var train_spots: Array = []
@@ -90,22 +104,33 @@ func tick(delta: float, view: Rect2) -> void:
 	var game := _city.game
 	if game != null and game.state == Game.State.PLAYING:
 		for spot: Array in car_spots:
-			_bump(game, spot[0], CAR_HALF, CAR_PUSH_ENEMY, CAR_PUSH_PLAYER)
+			if _bump(game, spot[0], CAR_HALF, CAR_PUSH_ENEMY, CAR_PUSH_PLAYER, false):
+				_hit_at[spot[2]] = _time
 		for spot: Array in train_spots:
-			_bump(game, spot[0], Vector2(TRAIN_HALF_WIDTH, TRAIN_LENGTH / 2.0), TRAIN_PUSH_ENEMY, TRAIN_PUSH_PLAYER)
-		# Forget enemies not shoved for a while, so the table doesn't grow over a run.
+			_bump(game, spot[0], Vector2(TRAIN_HALF_WIDTH, TRAIN_LENGTH / 2.0), TRAIN_PUSH_ENEMY, TRAIN_PUSH_PLAYER, true)
+		# Forget enemies not shoved and cars not rocking for a while, so the tables don't grow
+		# over a run.
 		if _shoved_at.size() > 200:
 			for key in _shoved_at.keys():
 				if _time - _shoved_at[key] > ENEMY_SHOVE_GAP:
 					_shoved_at.erase(key)
+		if _hit_at.size() > 50:
+			for key in _hit_at.keys():
+				if _time - _hit_at[key] > WOBBLE_SECONDS:
+					_hit_at.erase(key)
 
 
 ## Pushes the player and enemies overlapping a vehicle centred at `at` (its footprint `half`
-## either side, the lane running north-south) out sideways, away from its centre line.
-func _bump(game: Game, at: Vector2, half: Vector2, enemy_push: float, player_push: float) -> void:
+## either side, the lane running north-south) out sideways, away from its centre line. Whether
+## it shoved anything (a car that did rocks).
+func _bump(game: Game, at: Vector2, half: Vector2, enemy_push: float, player_push: float, train: bool) -> bool:
+	var hit := false
 	var player := game.player
 	if _overlaps(player.position, Player.BODY_RADIUS, at, half):
-		player.shove(Vector2(_side(player.position.x, at.x) * player_push, 0.0))
+		var push := Vector2(_side(player.position.x, at.x) * player_push, 0.0)
+		if player.shove(push):
+			hit = true
+			_impact(game, player.position, push, train)
 	for enemy in game.query_enemies(at, half.length()):
 		if not _overlaps(enemy.position, enemy.radius, at, half):
 			continue
@@ -113,7 +138,24 @@ func _bump(game: Game, at: Vector2, half: Vector2, enemy_push: float, player_pus
 		if _time - _shoved_at.get(key, -INF) < ENEMY_SHOVE_GAP:
 			continue
 		_shoved_at[key] = _time
-		enemy.shove(Vector2(_side(enemy.position.x, at.x) * enemy_push, 0.0))
+		var push := Vector2(_side(enemy.position.x, at.x) * enemy_push, 0.0)
+		enemy.shove(push, true)
+		hit = true
+		_impact(game, enemy.position, push, train)
+	return hit
+
+
+## What a bump looks like where it landed: dust, speed lines off a train, now and then a 砰,
+## and a shake when a train hits something near the player.
+func _impact(game: Game, at: Vector2, push: Vector2, train: bool) -> void:
+	Effects.dust(game, at, push)
+	if train:
+		Effects.streaks(game, at, push)
+		if at.distance_to(game.player.position) < TRAIN_SHAKE_REACH:
+			game.player.shake(0.15, 2.5)
+	if _time - _last_bang >= BANG_GAP:
+		_last_bang = _time
+		Effects.callout(game, at, tr("砰！"), Art.YELLOW, 16 if train else 13)
 
 
 static func _overlaps(point: Vector2, radius: float, at: Vector2, half: Vector2) -> bool:
@@ -154,6 +196,16 @@ func _show(pool: Array[Sprite2D], spots: Array, art: String, size: float) -> voi
 			sprite.position = spots[i][0]
 			# The art faces north; southbound traffic is turned round.
 			sprite.rotation = 0.0 if spots[i][1] else PI
+			if spots[i].size() > 2:
+				sprite.rotation += _wobble(spots[i][2])
+
+
+## How far a car that just hit something is rocked over, dying away over WOBBLE_SECONDS.
+func _wobble(car: Vector2i) -> float:
+	var since: float = _time - _hit_at.get(car, -INF)
+	if since >= WOBBLE_SECONDS:
+		return 0.0
+	return sin(since * 45.0) * WOBBLE * (1.0 - since / WOBBLE_SECONDS)
 
 
 ## A red band pulsing over the stretch of track on screen while a train is on its way.

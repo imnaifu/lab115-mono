@@ -19,6 +19,8 @@ const SLOT_SIZE := 19.0
 ## The title screen's cast standing on a line: art, height, how high it hops from.
 const TITLE_SIZE := 44
 const LOW_HP_RATIO := 0.35
+## How red the screen's edges flash for a hit just taken (of the low-health vignette's full red).
+const HURT_FLASH := 0.6
 const XP_BAR_SIZE := Vector2(96, 18)
 ## The boss bar sits under the clock; on an upright phone it must clear the minimap.
 const BOSS_BAR_WIDTH := 110.0
@@ -203,7 +205,9 @@ func _process(delta: float) -> void:
 
 	var hp_ratio := game.player.hp / game.player.max_hp
 	var danger := clampf((LOW_HP_RATIO - hp_ratio) / LOW_HP_RATIO, 0.0, 1.0)
-	_vignette.modulate.a = danger * (0.75 + 0.25 * sin(_clock * 6.0)) if game.state == Game.State.PLAYING else 0.0
+	# Low health keeps the edges pulsing; a hit just taken flashes them whatever the health.
+	var glow := maxf(danger * (0.75 + 0.25 * sin(_clock * 6.0)), game.player.hurt_glow() * HURT_FLASH)
+	_vignette.modulate.a = glow if game.state == Game.State.PLAYING else 0.0
 	# The music follows the screen: it steps back under a dialog, the heartbeat goes with the
 	# vignette, and the last minute plays faster (dialogs included, so it doesn't slow and
 	# speed up again around every level-up).

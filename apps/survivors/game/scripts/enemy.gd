@@ -28,6 +28,14 @@ const FLASH_SECONDS := 0.08
 const FLASH_COLOR := Color(6, 6, 6)
 ## How far a hop squashes and stretches the sprite, as a fraction of its size.
 const SQUASH := 0.08
+## A hit presses the sprite in along the blow (by up to HIT_SQUASH of its size), and it springs
+## back a little past its shape before settling; harder pushes squash more, bosses less.
+const HIT_SQUASH := 0.25
+const HIT_SQUASH_SECONDS := 0.16
+## A push this hard counts as a full-strength blow for the squash.
+const HIT_SQUASH_FULL_PUSH := 140.0
+## Knocked off a lane by a car or a train: once round in this long.
+const SPIN_SECONDS := 0.45
 const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura"]
 const CHARGE_EVERY := 3.5
 const CHARGE_WINDUP := 0.8
@@ -114,6 +122,11 @@ var clone_of: Enemy = null
 var life_left := -1.0
 
 var _knockback := Vector2.ZERO
+var _hit_squash_left := 0.0
+var _hit_squash := 0.0
+var _hit_axis := Vector2.DOWN
+var _spin_left := 0.0
+var _spin_way := 1.0
 var _wobble := 0.0
 var _phase := 0.0
 var _flash_left := 0.0
@@ -196,6 +209,7 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 	_knockback = _knockback.lerp(Vector2.ZERO, minf(1.0, 10.0 * delta))
 
 	_phase += delta * 10.0
+	var body_scale := Vector2.ONE * _base_scale
 	if ghostly:
 		_sprite.position.y = sin(_phase * 0.3) * 2.0
 	elif _windup_left > 0.0:
@@ -206,7 +220,9 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 		var hop := absf(sin(_phase * 16.0 / _size * 1.5))
 		_sprite.position = Vector2(0.0, -hop * 2.0)
 		var squash := (hop - 0.5) * 2.0 * SQUASH
-		_sprite.scale = Vector2(_base_scale * (1.0 - squash), _base_scale * (1.0 + squash))
+		body_scale = Vector2(_base_scale * (1.0 - squash), _base_scale * (1.0 + squash))
+	_sprite.scale = body_scale * _hit_shape(delta)
+	_sprite.rotation = _spin_angle(delta)
 	if absf(direction.x) > 0.2:
 		_sprite.flip_h = direction.x < 0.0
 
@@ -311,9 +327,18 @@ func expired() -> bool:
 	return life_left == 0.0
 
 
-## Thrown by something other than a hit (the quake).
-func shove(push: Vector2) -> void:
+## Thrown by something other than a hit: the quake, or a car or a train, which send it spinning
+## (`spin`) unless it's too heavy to move much.
+func shove(push: Vector2, spin: bool = false) -> void:
 	_knockback += push * (1.0 - knockback_resist)
+	if spin and knockback_resist < 0.9:
+		_spin_left = SPIN_SECONDS
+		_spin_way = -1.0 if push.x < 0.0 else 1.0
+
+
+## The sprite as drawn this frame, for the death pop to copy.
+func body_sprite() -> Sprite2D:
+	return _sprite
 
 
 ## Inside or out of an investor's aura this frame.
@@ -405,6 +430,27 @@ func slow(scale: float, seconds: float) -> void:
 	slow_left = maxf(slow_left, seconds)
 
 
+## The hit squash this frame, as a scale on the sprite: pressed in along the blow and bulging
+## across it, springing back a little past round, then settling.
+func _hit_shape(delta: float) -> Vector2:
+	if _hit_squash_left <= 0.0:
+		return Vector2.ONE
+	_hit_squash_left = maxf(0.0, _hit_squash_left - delta)
+	var progress := 1.0 - _hit_squash_left / HIT_SQUASH_SECONDS
+	var amount := _hit_squash * cos(progress * PI * 1.5) * (1.0 - progress)
+	var along := _hit_axis.abs()
+	return Vector2(1.0 - amount * along.x + amount * 0.6 * along.y, 1.0 - amount * along.y + amount * 0.6 * along.x)
+
+
+## How far round a spin off the road has turned it: fast off the bump, slowing to upright.
+func _spin_angle(delta: float) -> float:
+	if _spin_left <= 0.0:
+		return 0.0
+	_spin_left = maxf(0.0, _spin_left - delta)
+	var progress := 1.0 - _spin_left / SPIN_SECONDS
+	return _spin_way * TAU * (1.0 - pow(1.0 - progress, 2.0))
+
+
 func _rest_modulate() -> Color:
 	var tint := _base_modulate * STUN_TINT if stun_left > 0.0 else _base_modulate
 	return tint * AURA_TINT if shielded else tint
@@ -415,6 +461,10 @@ func take_hit(amount: float, push: Vector2) -> void:
 	_knockback += push * (1.0 - knockback_resist)
 	_flash_left = FLASH_SECONDS
 	_sprite.modulate = FLASH_COLOR
+	_hit_squash_left = HIT_SQUASH_SECONDS
+	# A pushless hit (lightning, an aura) presses down from above.
+	_hit_axis = push.normalized() if push != Vector2.ZERO else Vector2.DOWN
+	_hit_squash = HIT_SQUASH * clampf(push.length() / HIT_SQUASH_FULL_PUSH, 0.5, 1.0) * (1.0 - 0.6 * knockback_resist)
 	if is_elite:
 		queue_redraw()
 

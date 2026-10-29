@@ -1,12 +1,19 @@
 class_name Effects
 extends RefCounted
-## Short-lived visual feedback: damage numbers, death puffs, lightning strikes, blast rings, the
-## melee weapons' lashes and stabs, paper scraps, and short callouts over the world. (The PRD
-## roll's swing is drawn by SwingWeapon itself, as it follows the player.)
+## Short-lived visual feedback: damage numbers, hit sparks, dust, death puffs and pops,
+## lightning strikes, blast rings, the melee weapons' lashes and stabs, paper scraps, and short
+## callouts over the world. (The PRD roll's swing is drawn by SwingWeapon itself, as it follows
+## the player.)
 
 const MAX_DAMAGE_NUMBERS := 40
+## Hits at least this hard get a bigger, yellow number.
+const BIG_HIT := 30.0
+## Kills popping at once; past that a kill only puffs (a bomb going off in a crowd).
+const MAX_DEATH_POPS := 24
+const DEATH_POP_GROUP := "death_pop"
 
 static var _number_settings: LabelSettings
+static var _big_number_settings: LabelSettings
 static var _fade_ramp: Gradient
 static var _dot: GradientTexture2D
 
@@ -16,25 +23,92 @@ static func damage_number(game: Game, at: Vector2, amount: float) -> void:
 	if game.number_layer.get_child_count() >= MAX_DAMAGE_NUMBERS:
 		return
 	if _number_settings == null:
-		_number_settings = LabelSettings.new()
-		_number_settings.font = Art.display_font(900)
-		_number_settings.font_size = 10
-		_number_settings.outline_size = 4
-		_number_settings.outline_color = Art.INK
+		_number_settings = _number_style(10, Color.WHITE)
+		_big_number_settings = _number_style(13, Art.YELLOW)
+	var big := amount >= BIG_HIT
 	var label := Label.new()
 	label.text = str(roundi(amount))
-	label.label_settings = _number_settings
+	label.label_settings = _big_number_settings if big else _number_settings
 	# Digits never need translating; skip the lookup for the dozens spawned per second.
 	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.size = Vector2(32, 14)
+	label.size = Vector2(32, 18 if big else 14)
 	label.position = at + Vector2(randf_range(-4, 4) - 16, -22)
+	# Pops in oversized and settles, so a hit lands with a beat instead of a label appearing.
+	label.pivot_offset = label.size / 2.0
+	label.scale = Vector2.ONE * (1.8 if big else 1.5)
 	game.number_layer.add_child(label)
 	var tween := label.create_tween()
-	tween.tween_property(label, "position:y", label.position.y - 10.0, 0.45) \
+	tween.tween_property(label, "scale", Vector2.ONE, 0.1).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(label, "position:y", label.position.y - 10.0, 0.45) \
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.2).set_delay(0.25)
 	tween.tween_callback(label.queue_free)
+
+
+static func _number_style(size: int, color: Color) -> LabelSettings:
+	var settings := LabelSettings.new()
+	settings.font = Art.display_font(900)
+	settings.font_size = size
+	settings.font_color = color
+	settings.outline_size = 4
+	settings.outline_color = Art.INK
+	return settings
+
+
+## A white star where a hit landed, bigger for a heavy one.
+static func spark(game: Game, at: Vector2, big: bool) -> void:
+	_bursts(game).add(Bursts.SPARK, at, randf() * TAU, 1.4 if big else 1.0)
+
+
+## A little cloud of dust kicked up behind something knocked along `direction`.
+static func dust(game: Game, at: Vector2, direction: Vector2) -> void:
+	_bursts(game).add(Bursts.DUST, at, direction.angle(), 1.0)
+
+
+## Speed lines thrown out along `direction` from a heavy impact (a train).
+static func streaks(game: Game, at: Vector2, direction: Vector2) -> void:
+	_bursts(game).add(Bursts.STREAKS, at, direction.angle(), 1.0)
+
+
+## The game's one node drawing every spark, dust cloud and streak: hits come dozens a second,
+## too many for a node each.
+static func _bursts(game: Game) -> Bursts:
+	var layer := game.effect_layer.get_node_or_null(^"Bursts") as Bursts
+	if layer == null:
+		layer = Bursts.new()
+		layer.name = "Bursts"
+		game.effect_layer.add_child(layer)
+	return layer
+
+
+## A killed enemy's last beat: a copy of it flashes white and swells back into its own colours,
+## then squashes flat into the ground and fades, so a kill reads as more than the sprite blinking
+## out. (Left white throughout, a few kills together read as a cloud.) A boss takes longer.
+static func death_pop(game: Game, sprite: Sprite2D, at: Vector2, boss: bool) -> void:
+	if game.get_tree().get_node_count_in_group(DEATH_POP_GROUP) >= MAX_DEATH_POPS:
+		return
+	var corpse := Sprite2D.new()
+	corpse.texture = sprite.texture
+	corpse.flip_h = sprite.flip_h
+	corpse.offset = sprite.offset
+	corpse.position = at + sprite.position
+	corpse.scale = sprite.scale
+	corpse.modulate = Enemy.FLASH_COLOR
+	corpse.add_to_group(DEATH_POP_GROUP)
+	game.effect_layer.add_child(corpse)
+	var base := sprite.scale
+	var swell := 1.5 if boss else 1.3
+	var seconds := 0.3 if boss else 0.15
+	# Squashed towards its feet rather than its middle, as if pressed into the ground.
+	var feet := corpse.position.y + sprite.texture.get_height() * base.y / 2.0
+	var tween := corpse.create_tween()
+	tween.tween_property(corpse, "scale", base * swell, seconds * 0.35).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(corpse, "modulate", Color.WHITE, seconds * 0.35)
+	tween.tween_property(corpse, "scale", Vector2(base.x * swell * 1.2, 0.0), seconds * 0.65).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(corpse, "position:y", feet, seconds * 0.65).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(corpse, "modulate", Color(1, 1, 1, 0), seconds * 0.65)
+	tween.tween_callback(corpse.queue_free)
 
 
 static func poof(game: Game, at: Vector2, color: Color) -> void:
@@ -120,14 +194,14 @@ static func scraps(game: Game, at: Vector2) -> void:
 	game.effect_layer.add_child(burst)
 
 
-## A word or two popping up over the world and drifting up (屏保 hitting a corner, the product
-## manager's catchphrases).
-static func callout(game: Game, at: Vector2, text: String, color: Color) -> void:
+## A word or two popping up over the world and drifting up (屏保 hitting a corner, every job's
+## trash talk, a car's 砰).
+static func callout(game: Game, at: Vector2, text: String, color: Color, size: int = 13) -> void:
 	var label := Label.new()
 	label.text = text
 	var settings := LabelSettings.new()
 	settings.font = Art.display_font(900)
-	settings.font_size = 13
+	settings.font_size = size
 	settings.font_color = color
 	settings.outline_size = 5
 	settings.outline_color = Art.INK
@@ -140,6 +214,92 @@ static func callout(game: Game, at: Vector2, text: String, color: Color) -> void
 	tween.tween_property(label, "position:y", label.position.y - 16.0, 0.8).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.5)
 	tween.tween_callback(label.queue_free)
+
+
+## Hit sparks, dust clouds and impact streaks, all drawn by this one node: each is a kind, a
+## spot, an angle, a size and an age.
+class Bursts:
+	extends Node2D
+
+	const SPARK := 0
+	const DUST := 1
+	const STREAKS := 2
+	const LIFETIMES := [0.12, 0.35, 0.22]
+	## The oldest go first past this many, so a bomb in a crowd can't pile up hundreds.
+	const MAX_BURSTS := 80
+	const DUST_COLOR := Color("d9d2c3")
+
+	var _kinds := PackedInt32Array()
+	var _spots := PackedVector2Array()
+	var _angles := PackedFloat32Array()
+	var _sizes := PackedFloat32Array()
+	var _ages := PackedFloat32Array()
+	## Whether anything was drawn last frame, so the last one fading still clears.
+	var _drawn := false
+
+	func add(kind: int, at: Vector2, angle: float, size: float) -> void:
+		if _kinds.size() >= MAX_BURSTS:
+			_remove(0)
+		_kinds.append(kind)
+		_spots.append(at)
+		_angles.append(angle)
+		_sizes.append(size)
+		_ages.append(0.0)
+
+	func _process(delta: float) -> void:
+		for i in range(_kinds.size() - 1, -1, -1):
+			_ages[i] += delta
+			if _ages[i] >= LIFETIMES[_kinds[i]]:
+				_remove(i)
+		if _drawn or not _kinds.is_empty():
+			queue_redraw()
+		_drawn = not _kinds.is_empty()
+
+	func _remove(index: int) -> void:
+		_kinds.remove_at(index)
+		_spots.remove_at(index)
+		_angles.remove_at(index)
+		_sizes.remove_at(index)
+		_ages.remove_at(index)
+
+	func _draw() -> void:
+		for i in _kinds.size():
+			var progress: float = _ages[i] / LIFETIMES[_kinds[i]]
+			match _kinds[i]:
+				SPARK:
+					_draw_spark(_spots[i], _angles[i], _sizes[i], progress)
+				DUST:
+					_draw_dust(_spots[i], _angles[i], progress)
+				STREAKS:
+					_draw_streaks(_spots[i], _angles[i], progress)
+
+	## A four-pointed star, inked like the drawings, growing a little as it fades.
+	func _draw_spark(at: Vector2, angle: float, size: float, progress: float) -> void:
+		var reach := 7.0 * size * (0.8 + 0.5 * progress)
+		var star := PackedVector2Array()
+		for point in 8:
+			var length := reach if point % 2 == 0 else reach * 0.3
+			star.append(at + Vector2.from_angle(angle + TAU * point / 8.0) * length)
+		var alpha := 1.0 - progress * progress
+		draw_colored_polygon(star, Color(1, 1, 1, alpha))
+		star.append(star[0])
+		draw_polyline(star, Color(Art.INK, alpha), 1.2, true)
+
+	## Three soft puffs behind whatever was knocked, drifting back and spreading.
+	func _draw_dust(at: Vector2, angle: float, progress: float) -> void:
+		for puff in 3:
+			var heading := Vector2.from_angle(angle + PI + (puff - 1) * 0.7)
+			var center := at + heading * (4.0 + 10.0 * progress) + Vector2(0.0, 4.0)
+			draw_circle(center, 2.5 + 3.0 * progress, Color(DUST_COLOR, 0.8 * (1.0 - progress)))
+
+	## Three inked lines fanned out along the impact, racing outwards and shrinking.
+	func _draw_streaks(at: Vector2, angle: float, progress: float) -> void:
+		for line in 3:
+			var heading := Vector2.from_angle(angle + (line - 1) * 0.35)
+			var start := at + heading * (8.0 + 26.0 * progress)
+			var finish := start + heading * 16.0 * (1.0 - progress)
+			draw_line(start, finish, Art.INK, 4.0, true)
+			draw_line(start, finish, Art.PAPER, 2.0, true)
 
 
 ## A lash or stab: drawn once, fading over SECONDS.

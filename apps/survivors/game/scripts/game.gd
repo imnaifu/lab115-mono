@@ -56,6 +56,12 @@ const HITSTOP_SECONDS := 0.04
 const HITSTOP_GAP := 0.3
 const HITSTOP_SPEED := 0.05
 const SHAKE_CROWD := 5
+## A boss going down: a longer beat of hit-stop, a ring and a shake.
+const BOSS_KILL_HITSTOP := 0.08
+## Hits pushing at least this hard kick up dust behind what they hit.
+const DUST_PUSH := 120.0
+## Every job talks trash (Jobs "lines") when its own weapon lands a hit, at most this often.
+const TAUNT_GAP := 3.0
 
 ## Set by restart() so "play again" skips the title screen; static so it survives the reload.
 static var skip_title := false
@@ -106,6 +112,8 @@ var _corpses: Array[Enemy] = []
 ## Whether this device has been told that stars are XP (shown once, on the first drop ever).
 var _star_hint_done := false
 var _next_hitstop_msec := 0
+## Run time (`elapsed`) before which the job's weapon keeps quiet.
+var _next_taunt_at := 0.0
 ## Where the outsourced workers stand this frame (SquadWeapon sets it): enemies near one go for it
 ## instead of the player.
 var decoys: Array[Vector2] = []
@@ -330,12 +338,19 @@ func random_visible_enemies(count: int) -> Array[Enemy]:
 func melee_impact(hits: int, hit_boss: bool) -> void:
 	if hits >= SHAKE_CROWD:
 		player.shake(0.08, 1.5)
-	if not hit_boss or Time.get_ticks_msec() < _next_hitstop_msec:
+	if hit_boss:
+		hitstop(HITSTOP_SECONDS)
+
+
+## Nearly freezes the game for `seconds` (at most once every HITSTOP_GAP).
+func hitstop(seconds: float) -> void:
+	if Time.get_ticks_msec() < _next_hitstop_msec:
 		return
 	_next_hitstop_msec = Time.get_ticks_msec() + roundi(HITSTOP_GAP * 1000.0)
 	Engine.time_scale = HITSTOP_SPEED
-	# Counted in real time: game time hardly moves meanwhile.
-	get_tree().create_timer(HITSTOP_SECONDS, true, false, true).timeout.connect(func() -> void: Engine.time_scale = 1.0)
+	# Counted in real time: game time hardly moves meanwhile. Bound to Engine rather than to the
+	# game, so a scene reloaded in between can't leave the game slowed down.
+	get_tree().create_timer(seconds, true, false, true).timeout.connect(Engine.set.bind(&"time_scale", 1.0))
 
 
 ## `silent` skips the hit sound, for damage that ticks constantly (the Wi-Fi field) and would
@@ -348,10 +363,29 @@ func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, sou
 	enemy.take_hit(amount, push)
 	damage_by_source[source] = damage_by_source.get(source, 0.0) + amount
 	Effects.damage_number(self, enemy.position, amount)
+	# No spark for the constant ticks (the Wi-Fi field, the axes), which would cover the crowd.
+	if not silent:
+		# On the side the blow came from.
+		var contact := -push.normalized() * enemy.radius * 0.6 if push != Vector2.ZERO \
+			else Vector2(randf_range(-3.0, 3.0), randf_range(-3.0, 3.0))
+		Effects.spark(self, enemy.position + contact, amount >= Effects.BIG_HIT)
+	if push.length() >= DUST_PUSH and enemy.knockback_resist < 0.9:
+		Effects.dust(self, enemy.position, push)
+	if source == Jobs.data(player.job)["weapon"]:
+		_taunt()
 	if enemy.hp <= 0.0:
 		_kill(enemy)
 	elif not silent:
 		Sound.play("hit")
+
+
+## A line of the job's trash talk over the player (TAUNT_GAP apart at most).
+func _taunt() -> void:
+	if elapsed < _next_taunt_at:
+		return
+	_next_taunt_at = elapsed + TAUNT_GAP
+	var lines: Array = Jobs.data(player.job)["lines"]
+	Effects.callout(self, player.position + Vector2(0.0, -10.0), tr(lines[randi() % lines.size()]), Art.PAPER)
 
 
 ## A point just outside the visible screen in the given direction from the player, or, if
@@ -393,6 +427,11 @@ func _kill(enemy: Enemy) -> void:
 	else:
 		Sound.play("kill")
 	Effects.poof(self, enemy.position, enemy.color)
+	Effects.death_pop(self, enemy.body_sprite(), enemy.position, enemy.is_elite)
+	if enemy.is_elite:
+		Effects.ring(self, enemy.position, enemy.radius * 4.0, enemy.color)
+		player.shake(0.25, 3.0)
+		hitstop(BOSS_KILL_HITSTOP)
 	# An AI's clones go with it; clones themselves give nothing.
 	var star: Pickup = null
 	if enemy.xp_value > 0:

@@ -30,12 +30,8 @@ const AIM_RANGE := 70.0
 const EVOLVED_RADIUS := 80.0
 const EVOLVED_STUN := 0.6
 ## Enemies per swing that shed paper scraps, so a swing through a crowd doesn't spawn dozens.
+## (The product manager's lines moved to Jobs with every other job's, said by Game._taunt.)
 const SCRAPS_PER_SWING := 4
-## A line at most this often, and only on a swing that hit something.
-const LINE_GAP := 2.5
-const LINES := ["改个需求", "这个很简单", "明天能上吗", "加个按钮", "对齐一下", "用户要的", "先上线再说"]
-
-var _line_left := 0.0
 
 
 ## What the swing is with `longer` upgrades to 更长 and `wider` to 更宽 (the cards' numbers too).
@@ -75,16 +71,8 @@ func fire() -> bool:
 	var sweep := Sweep.new()
 	sweep.setup(art, aim.angle(), arc, radius)
 	add_child(sweep)
-	if hits > 0 and _line_left <= 0.0:
-		_line_left = LINE_GAP
-		Effects.callout(game, player.position + Vector2(0.0, -10.0), tr(LINES[game.rng.randi() % LINES.size()]), Art.PAPER)
 	game.melee_impact(hits, hit_boss)
 	return true
-
-
-func _process(delta: float) -> void:
-	super(delta)
-	_line_left -= delta
 
 
 ## One swing as drawn: the rolled-up PRD sweeping from one end of the arc to the other (all the

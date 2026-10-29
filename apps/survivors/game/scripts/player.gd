@@ -30,6 +30,14 @@ const LOW_HP_FLASH_FAST := 6.0
 ## don't bat them about; and how fast the push dies away.
 const SHOVE_COOLDOWN := 1.0
 const SHOVE_DECAY := 8.0
+## Taking a hit: the sprite is pressed flat for HURT_SQUASH_SECONDS and the screen's edges flash
+## red for HURT_GLOW_SECONDS (Hud).
+const HURT_SQUASH := 0.3
+const HURT_SQUASH_SECONDS := 0.18
+const HURT_GLOW_SECONDS := 0.3
+## Shoved by traffic: leans over (up to TILT radians) and back upright.
+const TILT := 0.5
+const TILT_SECONDS := 0.4
 
 var game: Game
 var job := Jobs.DEFAULT
@@ -66,6 +74,9 @@ var _low_hp_clock := 0.0
 ## A push from traffic, added to the walk and dying away; no damage comes with it.
 var _shove := Vector2.ZERO
 var _shove_cooldown := 0.0
+var _hurt_left := 0.0
+var _tilt_left := 0.0
+var _tilt_way := 1.0
 var _shake_strength := 2.0
 
 
@@ -118,6 +129,8 @@ func _process(delta: float) -> void:
 	else:
 		_sprite.position.y = 0.0
 		_sprite.scale = Vector2.ONE * _base_scale
+	_sprite.scale *= _hurt_shape(delta)
+	_sprite.rotation = _tilt_angle(delta)
 
 	if regen > 0.0 and hp < max_hp:
 		heal(regen * delta)
@@ -216,6 +229,7 @@ func take_damage(amount: float) -> void:
 	var lost := minf(hp, maxf(1.0, amount - armor))
 	hp -= lost
 	_invuln_left = INVULN_SECONDS
+	_hurt_left = HURT_GLOW_SECONDS
 	Sound.play("hurt")
 	shake(SHAKE_SECONDS, 2.0)
 	queue_redraw()
@@ -232,7 +246,35 @@ func shove(push: Vector2) -> bool:
 	_shove_cooldown = SHOVE_COOLDOWN
 	_shove += push
 	shake(0.12, 2.0)
+	_tilt_left = TILT_SECONDS
+	_tilt_way = -1.0 if push.x < 0.0 else 1.0
 	return true
+
+
+## How strongly the screen's edges flash red for a hit just taken: 1 right after it, down to 0.
+func hurt_glow() -> float:
+	return clampf(_hurt_left / HURT_GLOW_SECONDS, 0.0, 1.0)
+
+
+## The hurt squash this frame, as a scale on the sprite: flattened, springing back a little
+## past its shape, settling. Counts down the red edges' time too.
+func _hurt_shape(delta: float) -> Vector2:
+	if _hurt_left <= 0.0:
+		return Vector2.ONE
+	_hurt_left = maxf(0.0, _hurt_left - delta)
+	var progress := (HURT_GLOW_SECONDS - _hurt_left) / HURT_SQUASH_SECONDS
+	if progress >= 1.0:
+		return Vector2.ONE
+	var amount := HURT_SQUASH * cos(progress * PI * 1.5) * (1.0 - progress)
+	return Vector2(1.0 + amount, 1.0 - amount)
+
+
+## How far over a shove has tipped the player: out and back upright.
+func _tilt_angle(delta: float) -> float:
+	if _tilt_left <= 0.0:
+		return 0.0
+	_tilt_left = maxf(0.0, _tilt_left - delta)
+	return _tilt_way * TILT * sin(PI * (1.0 - _tilt_left / TILT_SECONDS))
 
 
 ## Shakes the camera for a moment (`strength` pixels each way).
