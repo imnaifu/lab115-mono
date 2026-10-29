@@ -23,7 +23,7 @@ const JOBS := {
 		"pitch": "数位笔朝前一路戳，越升戳得越多越密"},
 	"ops": {"name": "运维", "art": "ops", "weapon": "firewall",
 		"hp": 130.0, "armor": 1.0, "speed": 56.0,
-		"pitch": "站得住：墙绕身转着打，召唤物替你打"},
+		"pitch": "站得住：墙护着身边，召唤物替你打"},
 	"data_scientist": {"name": "数据科学家", "art": "data_scientist", "weapon": "guides",
 		"hp": 100.0, "armor": 0.0, "speed": 62.0,
 		"pitch": "拉出横竖坐标轴，跑位把怪引到轴上"},
