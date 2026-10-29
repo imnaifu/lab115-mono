@@ -1,6 +1,6 @@
 // CI's "build" for this app. The real build, a Godot web export, happens inside the Docker
 // image (see Dockerfile), which CI doesn't run; this catches the mistakes that would otherwise
-// only surface there: a building the map uses missing from game/assets/soco-st/, a sound
+// only surface there: a building or drawing a map uses missing from game/assets/, a sound
 // scripts/sound.gd plays missing from game/assets/audio/, text using a character the subset
 // fonts leave out, or a file the export needs gone.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -10,10 +10,16 @@ const problems = [];
 for (const file of ["project.godot", "export_presets.cfg", "tools/export_web.sh", "tools/fetch_web_templates.py", "tools/service_worker_removal.js"]) {
   if (!existsSync(new URL(file, game))) problems.push(`missing game/${file}`);
 }
-const bayArea = readFileSync(new URL("scripts/bay_area.gd", game), "utf8");
-const buildings = [...new Set([...bayArea.matchAll(/"soco:([a-z0-9_]+)"/g)].map((match) => match[1]))];
+// Every map (scripts/maps.gd lists them), and the achievements' pictures.
+const maps = ["bay_area.gd", "beijing.gd"].map((file) => readFileSync(new URL(`scripts/${file}`, game), "utf8")).join("\n");
+const buildings = [...new Set([...maps.matchAll(/"soco:([a-z0-9_]+)"/g)].map((match) => match[1]))];
 for (const name of buildings) {
   if (!existsSync(new URL(`assets/soco-st/${name}.png`, game))) problems.push(`missing game/assets/soco-st/${name}.png`);
+}
+const achievements = readFileSync(new URL("scripts/achievements.gd", game), "utf8");
+const drawings = new Set([...(maps + achievements).matchAll(/"art:([a-z0-9_]+)"|"(?:art|icon|tree)": "([a-z0-9_]+)"/g)].map((match) => match[1] ?? match[2]));
+for (const name of drawings) {
+  if (!existsSync(new URL(`assets/art/${name}.svg`, game))) problems.push(`missing game/assets/art/${name}.svg`);
 }
 // The keys of EFFECTS / TRACKS in sound.gd are the file names under sfx/ and music/.
 const sound = readFileSync(new URL("scripts/sound.gd", game), "utf8");
@@ -46,4 +52,4 @@ if (problems.length > 0) {
   console.error(problems.join("\n"));
   process.exit(1);
 }
-console.log(`game project present; all ${buildings.length} soco-st buildings the map uses and all ${sounds.length} sounds are committed; the fonts cover every character in the scripts`);
+console.log(`game project present; all ${buildings.length} soco-st buildings and ${drawings.size} drawings the maps use and all ${sounds.length} sounds are committed; the fonts cover every character in the scripts`);

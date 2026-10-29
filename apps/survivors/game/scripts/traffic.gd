@@ -72,26 +72,26 @@ func tick(delta: float, view: Rect2) -> void:
 	_time += delta
 	var area := view.grow(MARGIN)
 	var car_spots: Array = []
-	for column: int in BayArea.FREEWAYS:
+	for column: int in Maps.current.FREEWAYS:
 		var x := column * City.BLOCK.x
 		if x < area.position.x - City.FREEWAY_HALF or x > area.end.x + City.FREEWAY_HALF:
 			continue
-		var freeway: Dictionary = BayArea.FREEWAYS[column]
+		var freeway: Dictionary = Maps.current.FREEWAYS[column]
 		var start_y := maxf(area.position.y, freeway["from_row"] * City.BLOCK.y)
 		for northbound in [true, false]:
 			var shift := -_time * CAR_SPEED if northbound else _time * CAR_SPEED
 			for at_y in _along(start_y, area.end.y, CAR_SPACING, shift, CAR_JITTER, column * 2 + (1 if northbound else 0)):
 				var spot := Vector2(x + (LANE_OFFSET if northbound else -LANE_OFFSET), at_y)
-				if not BayArea.is_water(spot):
+				if not Maps.current.is_water(spot):
 					# Where it sits along the lane with the drive taken out names the car for good.
 					car_spots.append([spot, northbound, Vector2i(column * 2 + (1 if northbound else 0), roundi(at_y - shift))])
 	_show(_cars, car_spots, "car_top", CAR_SIZE)
 
 	var train_spots: Array = []
-	var track_x := BayArea.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
+	var track_x: float = Maps.current.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
 	var warn := false
 	if track_x > area.position.x and track_x < area.end.x:
-		var start_y := maxf(area.position.y, BayArea.RAILWAY_FROM_ROW * City.BLOCK.y)
+		var start_y := maxf(area.position.y, Maps.current.RAILWAY_FROM_ROW * City.BLOCK.y)
 		for at_y in _along(start_y - TRAIN_LENGTH, area.end.y + TRAIN_LENGTH, TRAIN_SPACING, -_time * TRAIN_SPEED, 0.0, 99):
 			train_spots.append([Vector2(track_x, at_y), true])
 		# A train still below the screen (they run north) and due within the warning time.

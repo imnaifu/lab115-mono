@@ -125,18 +125,18 @@ func _resolve_once(point: Vector2, radius: float) -> Vector2:
 
 
 func is_water(point: Vector2) -> bool:
-	return BayArea.is_water(point)
+	return Maps.current.is_water(point)
 
 
 ## Pushes a body off the water: out through the nearest shore, whichever way that is.
 func _out_of_water(point: Vector2, radius: float) -> Vector2:
 	var reach := Rect2(point - Vector2(radius, radius), Vector2(radius, radius) * 2.0)
-	if not (BayArea.is_water(reach.position) or BayArea.is_water(reach.end) \
-			or BayArea.is_water(Vector2(reach.position.x, reach.end.y)) or BayArea.is_water(Vector2(reach.end.x, reach.position.y)) \
-			or BayArea.is_water(point)):
+	if not (Maps.current.is_water(reach.position) or Maps.current.is_water(reach.end) \
+			or Maps.current.is_water(Vector2(reach.position.x, reach.end.y)) or Maps.current.is_water(Vector2(reach.end.x, reach.position.y)) \
+			or Maps.current.is_water(point)):
 		return point
 	var resolved := point
-	for water: Rect2 in BayArea.water_rects(reach.grow(BayArea.BLOCK_SIZE.x)):
+	for water: Rect2 in Maps.current.water_rects(reach.grow(Maps.current.BLOCK_SIZE.x)):
 		var closest := resolved.clamp(water.position, water.end)
 		var offset := resolved - closest
 		var distance_sq := offset.length_squared()
@@ -157,7 +157,7 @@ func _out_of_water(point: Vector2, radius: float) -> Vector2:
 
 
 ## Every solid rect (building bases, tree trunks) of the loaded blocks that touches `area`,
-## for FlowField to mark as walls. The water isn't among them; see BayArea.water_rects.
+## for FlowField to mark as walls. The water isn't among them; see Maps.current.water_rects.
 func solids_in(area: Rect2) -> Array[Rect2]:
 	var found: Array[Rect2] = []
 	for content: Dictionary in _blocks.values():
@@ -204,7 +204,7 @@ func _draw() -> void:
 	# Each district's ground colour, block by block.
 	for block_x in range(first.x, last.x + 1):
 		for block_y in range(first.y, last.y + 1):
-			var district: Dictionary = BayArea.DISTRICTS[BayArea.district_of(Vector2i(block_x, block_y))]
+			var district: Dictionary = Maps.current.DISTRICTS[Maps.current.district_of(Vector2i(block_x, block_y))]
 			draw_rect(Rect2(Vector2(block_x, block_y) * BLOCK, BLOCK), district["ground"])
 
 	_draw_salt_ponds(area, first.y, last.y)
@@ -235,7 +235,7 @@ func _draw() -> void:
 		for row in range(first.y - 1, last.y + 1):
 			var from := row * BLOCK.y + road_reach
 			var to := (row + 1) * BLOCK.y - road_reach
-			var freeway := BayArea.freeway_at(column, row)
+			var freeway: Dictionary = Maps.current.freeway_at(column, row)
 			if freeway.is_empty():
 				for edge in [-road_reach, -ROAD_HALF, ROAD_HALF, road_reach]:
 					draw_line(Vector2(x + edge, from), Vector2(x + edge, to), Art.INK, 2.0)
@@ -243,7 +243,7 @@ func _draw() -> void:
 					draw_rect(Rect2(x - 1.5, y, 3, 15), Color.WHITE)
 			else:
 				_draw_freeway(x, row, freeway)
-			if column == BayArea.RAILWAY_COLUMN and BayArea.has_railway(row):
+			if column == Maps.current.RAILWAY_COLUMN and Maps.current.has_railway(row):
 				_draw_railway(x + RAILWAY_OFFSET, row * BLOCK.y + road_reach, (row + 1) * BLOCK.y - road_reach)
 
 	_draw_water(area)
@@ -258,10 +258,10 @@ func _draw() -> void:
 				continue
 			var spot := (Vector2(cell_x, cell_y) + Vector2(_noise(cell_x, cell_y, 2), _noise(cell_x, cell_y, 3))) * DECOR_CELL
 			var block := Vector2i((spot / BLOCK).floor())
-			if _near_road(spot, road_reach + 8.0) or BayArea.district_of(block) == "bay" or BayArea.is_water(spot) \
-					or (BayArea.RUNWAYS.has(block) and absf(spot.y - (block.y + 0.5) * BLOCK.y) < RUNWAY_HALF + 8.0):
+			if _near_road(spot, road_reach + 8.0) or Maps.current.district_of(block) == "bay" or Maps.current.is_water(spot) \
+					or (Maps.current.RUNWAYS.has(block) and absf(spot.y - (block.y + 0.5) * BLOCK.y) < RUNWAY_HALF + 8.0):
 				continue
-			var district: Dictionary = BayArea.DISTRICTS[BayArea.district_of(block)]
+			var district: Dictionary = Maps.current.DISTRICTS[Maps.current.district_of(block)]
 			var choices: Array = district["decor"]
 			# Reuse the roll to pick the variant so each cell needs one more hash at most.
 			var decor: Array = choices[floori(roll / DECOR_CHANCE * choices.size())]
@@ -274,7 +274,7 @@ func _draw() -> void:
 ## How far a north-south road's surface reaches either side of its centre line on a row (a
 ## freeway's further), so the east-west road markings stop at its edge.
 func _road_reach_at(column: int, row: int) -> float:
-	return FREEWAY_HALF + SIDEWALK if not BayArea.freeway_at(column, row).is_empty() else ROAD_HALF + SIDEWALK
+	return FREEWAY_HALF + SIDEWALK if not Maps.current.freeway_at(column, row).is_empty() else ROAD_HALF + SIDEWALK
 
 
 ## A freeway's block-long segment: wider, darker asphalt carried over the crossings at either
@@ -320,10 +320,10 @@ func _draw_railway(x: float, from: float, to: float) -> void:
 		draw_line(Vector2(x + side, from), Vector2(x + side, to), RAIL, 2.0)
 
 
-## SFO's runway (BayArea.RUNWAYS): a long grey strip across its block with a dashed centre
+## SFO's runway (Maps.current.RUNWAYS): a long grey strip across its block with a dashed centre
 ## line, threshold bars at both ends and the runway number.
 func _draw_runways(first: Vector2i, last: Vector2i) -> void:
-	for block: Vector2i in BayArea.RUNWAYS:
+	for block: Vector2i in Maps.current.RUNWAYS:
 		if block.x < first.x or block.x > last.x or block.y < first.y or block.y > last.y:
 			continue
 		var origin := Vector2(block) * BLOCK
@@ -347,11 +347,11 @@ func _draw_runways(first: Vector2i, last: Vector2i) -> void:
 func _draw_salt_ponds(area: Rect2, first_row: int, last_row: int) -> void:
 	var pond_height := 90.0
 	for row in range(first_row, last_row + 1):
-		var column = BayArea.east_shore_column(row)
-		if column == null or row < BayArea.SALT_POND_FROM_ROW:
+		var column = Maps.current.east_shore_column(row)
+		if column == null or row < Maps.current.SALT_POND_FROM_ROW:
 			continue
 		var from: float = column * BLOCK.x + ROAD_HALF + SIDEWALK + 10.0
-		var to := BayArea.east_water_x(row) - 14.0
+		var to: float = Maps.current.east_water_x(row) - 14.0
 		if area.end.x < from or area.position.x > to:
 			continue
 		var row_top := row * BLOCK.y + ROAD_HALF + SIDEWALK + 6.0
@@ -369,7 +369,7 @@ func _draw_salt_ponds(area: Rect2, first_row: int, last_row: int) -> void:
 ## edge and an ink line while the seams between the water's rects don't show: sand grown out,
 ## then ink grown a little, then the water itself on top.
 func _draw_water(area: Rect2) -> void:
-	var rects := BayArea.water_rects(area.grow(SAND_EDGE + 2.0))
+	var rects: Array[Rect2] = Maps.current.water_rects(area.grow(SAND_EDGE + 2.0))
 	if rects.is_empty():
 		return
 	for water: Rect2 in rects:
@@ -386,7 +386,7 @@ func _draw_water(area: Rect2) -> void:
 			if _noise(cell_x, cell_y, 12) > 0.35:
 				continue
 			var at := Vector2(cell_x, cell_y) * 48.0 + Vector2(_noise(cell_x, cell_y, 13), _noise(cell_x, cell_y, 14)) * 30.0
-			if not (BayArea.is_water(at + Vector2(-8, -8)) and BayArea.is_water(at + Vector2(16, 8))):
+			if not (Maps.current.is_water(at + Vector2(-8, -8)) and Maps.current.is_water(at + Vector2(16, 8))):
 				continue
 			draw_arc(at, 5.0, PI * 1.15, PI * 1.85, 8, Color.WHITE, 1.6, true)
 			draw_arc(at + Vector2(8, 0), 5.0, PI * 1.15, PI * 1.85, 8, Color.WHITE, 1.6, true)
@@ -433,11 +433,11 @@ func _clear_block(content: Dictionary) -> void:
 func stamp_spot(block: Vector2i) -> Vector2:
 	var origin := Vector2(block) * BLOCK
 	var lawn_top := origin.y + ROAD_HALF + SIDEWALK + 50.0
-	if BayArea.LAWN_LANDMARKS.has(block):
+	if Maps.current.LAWN_LANDMARKS.has(block):
 		return Vector2(origin.x + BLOCK.x * 0.62, lawn_top + 90.0)
-	if String(BayArea.LANDMARKS.get(block, "")).begins_with("brand_row:"):
+	if String(Maps.current.LANDMARKS.get(block, "")).begins_with("brand_row:"):
 		var inner_left := origin.x + _road_reach_at(block.x, block.y) + 14.0
-		if block.x == BayArea.RAILWAY_COLUMN and BayArea.has_railway(block.y):
+		if block.x == Maps.current.RAILWAY_COLUMN and Maps.current.has_railway(block.y):
 			inner_left += RAILWAY_OFFSET + RAILWAY_HALF
 		return Vector2(inner_left + 70.0, lawn_top + 40.0)
 	return Vector2(origin.x + BLOCK.x / 2.0, origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0)
@@ -450,26 +450,26 @@ func _populate(block: Vector2i) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(_noise(block.x, block.y, 7) * 2147483647.0) + seed_value
 	var content := {"nodes": [], "solids": [], "fading": []}
-	var district: Dictionary = BayArea.DISTRICTS[BayArea.district_of(block)]
+	var district: Dictionary = Maps.current.DISTRICTS[Maps.current.district_of(block)]
 	var origin := Vector2(block) * BLOCK
 	var inner_left := origin.x + _road_reach_at(block.x, block.y) + 14.0
-	if block.x == BayArea.RAILWAY_COLUMN and BayArea.has_railway(block.y):
+	if block.x == Maps.current.RAILWAY_COLUMN and Maps.current.has_railway(block.y):
 		inner_left += RAILWAY_OFFSET + RAILWAY_HALF
 	var inner_right := origin.x + BLOCK.x - _road_reach_at(block.x + 1, block.y) - 14.0
 	var street_y := origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0
 	var lawn_top := origin.y + ROAD_HALF + SIDEWALK + 50.0
 	var tallest := 0.0
-	var is_park: bool = rng.randf() < district["park_chance"] or BayArea.RUNWAYS.has(block)
+	var is_park: bool = rng.randf() < district["park_chance"] or Maps.current.RUNWAYS.has(block)
 
 	var corner := origin + Vector2(_road_reach_at(block.x, block.y) + 6.0, ROAD_HALF + SIDEWALK + 34.0)
-	if not BayArea.is_water(corner):
+	if not Maps.current.is_water(corner):
 		var street_sign := StreetSign.new()
-		street_sign.names = [BayArea.east_west_name(block.y), BayArea.north_south_name(block.x, block.y)]
+		street_sign.names = [Maps.current.east_west_name(block.y), Maps.current.north_south_name(block.x, block.y)]
 		street_sign.position = corner
 		content["nodes"].append(_place(street_sign))
 	_place_freeway_sign(content, block)
 
-	var landmark: String = BayArea.LANDMARKS.get(block, "")
+	var landmark: String = Maps.current.LANDMARKS.get(block, "")
 	if landmark.begins_with("art:"):
 		tallest = _place_landmark(content, landmark.trim_prefix("art:"), Vector2(origin.x + BLOCK.x / 2.0, street_y))
 	elif landmark.begins_with("brand_row:"):
@@ -477,12 +477,12 @@ func _populate(block: Vector2i) -> Dictionary:
 		_place_campus_sign(content, landmark.trim_prefix("brand_row:"), Vector2(inner_left + 70.0, lawn_top + 40.0))
 	elif not is_park and inner_right > inner_left:
 		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, "")
-	var lawn_landmark: String = BayArea.LAWN_LANDMARKS.get(block, "")
+	var lawn_landmark: String = Maps.current.LAWN_LANDMARKS.get(block, "")
 	if lawn_landmark != "":
 		_place_landmark(content, lawn_landmark, Vector2(origin.x + BLOCK.x * 0.62, lawn_top + 90.0))
-	if BayArea.RUNWAYS.has(block):
+	if Maps.current.RUNWAYS.has(block):
 		# Seen from above and lying flat on the runway, nose west like a plane lining up on 28R.
-		var plane := Art.sprite("plane", BayArea.HEIGHTS["plane"])
+		var plane := Art.sprite("plane", Maps.current.HEIGHTS["plane"])
 		plane.position = origin + Vector2(BLOCK.x * 0.62, BLOCK.y / 2.0)
 		plane.rotation = -PI / 2.0
 		content["nodes"].append(_place(plane))
@@ -491,10 +491,10 @@ func _populate(block: Vector2i) -> Dictionary:
 	if lawn_bottom - lawn_top > 30.0 and inner_right > inner_left:
 		for i in rng.randi_range(district["bushes"][0], district["bushes"][1]):
 			var spot := Vector2(rng.randf_range(inner_left, inner_right), rng.randf_range(lawn_top, lawn_bottom))
-			content["nodes"].append(_place_art("bush", BayArea.HEIGHTS["bush"], spot, true))
+			content["nodes"].append(_place_art("bush", Maps.current.HEIGHTS["bush"], spot, true))
 		var tree: String = district["tree"] if district["tree"] != "" else "palm"
 		# Trees would hide a lawn landmark; bushes are low enough.
-		var tree_count := 0 if BayArea.LAWN_LANDMARKS.has(block) else rng.randi_range(district["lawn_trees"][0], district["lawn_trees"][1])
+		var tree_count := 0 if Maps.current.LAWN_LANDMARKS.has(block) else rng.randi_range(district["lawn_trees"][0], district["lawn_trees"][1])
 		for i in tree_count:
 			var spot := Vector2(rng.randf_range(inner_left, inner_right), rng.randf_range(lawn_top + 40.0, lawn_bottom))
 			_place_tree(content, tree, spot)
@@ -508,7 +508,7 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 	var structures: Array = district["structures"]
 	# A company campus is office blocks wherever it is, not a row of branded family homes.
 	if forced_brand != "":
-		structures = BayArea.DISTRICTS["peninsula"]["structures"]
+		structures = Maps.current.DISTRICTS[Maps.current.CAMPUS_DISTRICT]["structures"]
 	if structures.is_empty():
 		return 0.0
 	var tallest := 0.0
@@ -537,7 +537,7 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 	if not props.is_empty() and rng.randf() < 0.5:
 		var prop: String = props[rng.randi() % props.size()]
 		var spot := Vector2(rng.randf_range(left, right), street_y + SIDEWALK + 2.0)
-		content["nodes"].append(_place_art(prop, BayArea.HEIGHTS[prop], spot, true))
+		content["nodes"].append(_place_art(prop, Maps.current.HEIGHTS[prop], spot, true))
 	return tallest
 
 
@@ -546,7 +546,7 @@ func _place_campus_sign(content: Dictionary, brand: String, feet: Vector2) -> vo
 	var holder := Node2D.new()
 	holder.position = feet
 	var brand_sign := BrandSign.new()
-	brand_sign.brand = BayArea.BRANDS[brand]
+	brand_sign.brand = Maps.current.BRANDS[brand]
 	brand_sign.scale = Vector2.ONE * CAMPUS_SIGN_SCALE
 	holder.add_child(brand_sign)
 	content["nodes"].append(_place(holder))
@@ -554,16 +554,18 @@ func _place_campus_sign(content: Dictionary, brand: String, feet: Vector2) -> vo
 
 ## A green overhead-style sign beside the freeway every other block, pointing each way.
 func _place_freeway_sign(content: Dictionary, block: Vector2i) -> void:
-	var freeway := BayArea.freeway_at(block.x, block.y)
+	var freeway: Dictionary = Maps.current.freeway_at(block.x, block.y)
 	if freeway.is_empty() or posmod(block.y, 2) != 0:
 		return
 	# Below the street sign at the corner.
 	var at := Vector2(block.x * BLOCK.x + FREEWAY_HALF + SIDEWALK + 44.0, block.y * BLOCK.y + 150.0)
-	if BayArea.is_water(at):
+	if Maps.current.is_water(at):
 		return
 	var sign := FreewaySign.new()
 	sign.number = freeway["number"]
 	sign.north = posmod(block.y, 4) == 0
+	sign.toward_north = freeway["north"]
+	sign.toward_south = freeway["south"]
 	sign.position = at
 	content["nodes"].append(_place(sign))
 
@@ -572,7 +574,7 @@ func _place_landmark(content: Dictionary, art: String, feet: Vector2) -> float:
 	var spec := "art:" + art
 	var texture := _structure_texture(spec)
 	var size := _structure_size(spec, texture)
-	_place_structure(content, spec, texture, size, feet, BayArea.LANDMARK_BRANDS.get(art, ""), BayArea.SOLID_SPANS.get(art, []))
+	_place_structure(content, spec, texture, size, feet, Maps.current.LANDMARK_BRANDS.get(art, ""), Maps.current.SOLID_SPANS.get(art, []))
 	return size.y
 
 
@@ -592,7 +594,7 @@ func _structure_size(spec: String, texture: Texture2D) -> Vector2:
 	var natural := texture.get_size()
 	if spec.begins_with("soco:"):
 		return natural * BUILDING_SCALE
-	return natural * (BayArea.HEIGHTS[spec.get_slice(":", 1)] / natural.y)
+	return natural * (Maps.current.HEIGHTS[spec.get_slice(":", 1)] / natural.y)
 
 
 ## Puts a building or landmark down with its base centre at `feet`, makes its base solid (the
@@ -609,7 +611,7 @@ func _place_structure(content: Dictionary, spec: String, texture: Texture2D, siz
 	holder.add_child(sprite)
 	if brand != "":
 		var brand_sign := BrandSign.new()
-		brand_sign.brand = BayArea.BRANDS[brand]
+		brand_sign.brand = Maps.current.BRANDS[brand]
 		brand_sign.position = Vector2(0, -size.y + 1.0)
 		holder.add_child(brand_sign)
 	content["nodes"].append(_place(holder))
@@ -632,7 +634,7 @@ func _place_structure(content: Dictionary, spec: String, texture: Texture2D, siz
 ## Trees are solid only at the trunk, so you can walk behind the crown; street trees between
 ## buildings aren't solid at all (see _place_row).
 func _place_tree(content: Dictionary, tree: String, feet: Vector2, solid := true) -> void:
-	content["nodes"].append(_place_art(tree, BayArea.HEIGHTS[tree], feet, not solid))
+	content["nodes"].append(_place_art(tree, Maps.current.HEIGHTS[tree], feet, not solid))
 	if not solid:
 		return
 	var trunk := Rect2(feet.x - TRUNK.x / 2.0, feet.y - TRUNK.y, TRUNK.x, TRUNK.y)

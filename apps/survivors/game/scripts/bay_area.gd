@@ -10,6 +10,16 @@ extends RefCounted
 ## widens, the hills and Sand Hill Road lie to the west with the ocean beyond them, the Bay
 ## widens to the east and ends at San Jose, which goes on south (and east, round the Bay's end)
 ## for ever. US-101 runs down the Bay side, I-280 down the hills side, Caltrain beside Alma St.
+##
+## One of the maps (Maps); Beijing has the same names, so whatever reads Maps.current works on
+## either.
+
+const NAME := "硅谷"
+## The district whose office blocks line a company campus wherever it stands (City._place_row).
+const CAMPUS_DISTRICT := "peninsula"
+## The named part of the world for the minimap, in world pixels: from the Pacific to across the
+## Bay, and from the Golden Gate's water to south of San Jose.
+const OVERVIEW := Rect2(-2800.0, -3300.0, 5600.0, 6300.0)
 
 ## Block rows at or above / below these are San Francisco / San Jose; columns at or before
 ## HILLS_COLUMN are the hills. (560 x 400 below is City.BLOCK, spelled out to keep the two
@@ -30,9 +40,10 @@ const NORTH_WATER_Y := NORTH_SHORE_ROW * 400.0 - SHORE_STRIP
 ## coast applies only between them, and a road is water only where both rows it divides are,
 ## so a road along a stretch of coast is never half under water.
 const ROAD_BAND := 40.0
-## The freeways and the railway, by block column, and the first row they run from.
-const FREEWAYS := {2: {"number": "101", "shield": "shield_us", "from_row": -1},
-	-2: {"number": "280", "shield": "shield_interstate", "from_row": -2}}
+## The freeways and the railway, by block column, and the first row they run from; `north` /
+## `south` are where the green signs point.
+const FREEWAYS := {2: {"number": "101", "shield": "shield_us", "from_row": -1, "north": "San Francisco", "south": "San Jose"},
+	-2: {"number": "280", "shield": "shield_interstate", "from_row": -2, "north": "San Francisco", "south": "San Jose"}}
 const RAILWAY_COLUMN := -1
 const RAILWAY_FROM_ROW := -6
 ## Salt ponds line the shore from this row south (further north is a waterfront).

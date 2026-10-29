@@ -216,10 +216,10 @@ func _process(delta: float) -> void:
 	# The announcements drop in under whatever the centre column shows right now.
 	_toast.offset_top = _center_column.position.y + _center_column.size.y + 6.0
 	_badge.offset_top = _toast.offset_top + 34.0
-	var district := BayArea.district_of(Vector2i((game.player.position / City.BLOCK).floor()))
+	var district: String = Maps.current.district_of(Vector2i((game.player.position / City.BLOCK).floor()))
 	if district != _district:
 		_district = district
-		_district_label.text = BayArea.DISTRICTS[district]["name"]
+		_district_label.text = Maps.current.DISTRICTS[district]["name"]
 
 	var hp_ratio := game.player.hp / game.player.max_hp
 	var danger := clampf((LOW_HP_RATIO - hp_ratio) / LOW_HP_RATIO, 0.0, 1.0)
@@ -665,7 +665,7 @@ func _build_badge() -> void:
 
 
 func _on_checked_in(id: String) -> void:
-	var stamp: Dictionary = BayArea.STAMPS[id]
+	var stamp: Dictionary = Maps.current.STAMPS[id]
 	_queue_badge([stamp["art"], tr("打卡成功") + " · " + Stamps.bonus_text(id), tr(stamp["name"]), Art.HP_RED, true])
 
 
@@ -806,6 +806,8 @@ func _show_title() -> void:
 	column.add_child(pitch)
 	column.add_child(UiKit.gap(16 if portrait else 8))
 	column.add_child(_job_picker(portrait))
+	column.add_child(UiKit.gap(14 if portrait else 8))
+	column.add_child(_map_picker())
 	column.add_child(UiKit.gap(20 if portrait else 10))
 
 	var start := UiKit.primary_button("开始搬砖", game.start_run, 56.0 if portrait else 48.0, 20)
@@ -854,6 +856,49 @@ func _show_title() -> void:
 			if is_instance_valid(start) and start.is_inside_tree():
 				_focus(start)).call_deferred()
 	_fit_title()
+
+
+## Which map to play, side by side; a locked one is marked so, with what opens it underneath.
+func _map_picker() -> Control:
+	var names := []
+	var hint := ""
+	for map_id: String in Maps.ORDER:
+		var map_name := tr(Maps.script_of(map_id).NAME)
+		if Maps.unlocked(map_id):
+			names.append(map_name)
+		else:
+			names.append(map_name + tr("（未解锁）"))
+			hint = Maps.unlock_hint(map_id)
+	var holder := VBoxContainer.new()
+	holder.add_theme_constant_override("separation", 4)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(row)
+	var label := UiKit.label("地图", 13, "strong", Art.INK_MUTED)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+	var picker := UiKit.segmented(names, Maps.ORDER.find(Maps.current_id), _pick_map, Art.PAPER_SUNK, 32.0)
+	picker.custom_minimum_size.x = 240.0
+	row.add_child(picker)
+	if hint != "":
+		var hint_label := UiKit.label(hint, 11, "muted")
+		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		holder.add_child(hint_label)
+	return holder
+
+
+func _pick_map(index: int) -> void:
+	var map_id: String = Maps.ORDER[index]
+	if map_id == Maps.current_id:
+		return
+	if not Maps.unlocked(map_id):
+		# Back onto the map in use; the line under the picker says what opens this one.
+		_show_title.call_deferred()
+		return
+	game.change_map(map_id)
 
 
 ## A soft disc of `color` peeking in from the left (or right) edge.
@@ -1671,7 +1716,7 @@ func _earned_row() -> Control:
 	var parts := PackedStringArray()
 	var stamp_names := PackedStringArray()
 	for id in game.stamps.new_ids:
-		stamp_names.append(tr(BayArea.STAMPS[id]["name"]))
+		stamp_names.append(tr(Maps.current.STAMPS[id]["name"]))
 	if not stamp_names.is_empty():
 		parts.append(tr("打卡 ") + "、".join(stamp_names))
 	var achievement_names := PackedStringArray()
@@ -1966,9 +2011,11 @@ func _open_collection(tab: int = -1) -> void:
 	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
-	var stamped := Achievements.progress("stamps_all")[0] as int
+	var stamped := 0
+	for map_id: String in Maps.ORDER:
+		stamped += Maps.stamps_on(map_id)
 	var earned := Progress.achievement_ids().size()
-	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, BayArea.STAMPS.size()],
+	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
 		"%s %d/%d" % [tr("成就"), earned, Achievements.LIST.size()]], _collection_tab, _open_collection, Art.PAPER_SUNK)
 	tabs.custom_minimum_size.x = 260.0
 	if portrait:
@@ -1997,21 +2044,33 @@ func _fill_stamps(body: VBoxContainer, portrait: bool) -> void:
 	var summary := tr("走到地标跟前站 1 秒就能打卡，每个地标都送一点永久加成") if totals.is_empty() \
 		else tr("已获得：") + "  ".join(totals)
 	body.add_child(_collection_note(summary))
-	var grid := GridContainer.new()
-	# One column on an upright phone: two squeeze the names and notes into a few characters a line.
-	grid.columns = 1 if portrait else 3
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_child(grid)
-	for id: String in BayArea.STAMPS:
-		var stamp: Dictionary = BayArea.STAMPS[id]
-		var done := Progress.has_stamp(id)
-		var block: Vector2i = stamp["block"]
-		var district := tr(BayArea.DISTRICTS[BayArea.district_of(block)]["name"])
-		var where := tr("%s · %s 和 %s 路口") % [district, BayArea.north_south_name(block.x, block.y), BayArea.east_west_name(block.y + 1)]
-		var lines := [tr(stamp["note"]) if done else where, (tr("已打卡 · ") if done else tr("打卡后 · ")) + Stamps.bonus_text(id)]
-		grid.add_child(_collection_card(stamp["art"], tr(stamp["name"]), lines, done, [], portrait))
+	# A section per map, the one in use first; a locked map's landmarks stay hidden behind what
+	# opens it.
+	var order: Array = Maps.ORDER.duplicate()
+	order.erase(Maps.current_id)
+	order.push_front(Maps.current_id)
+	for map_id: String in order:
+		var map := Maps.script_of(map_id)
+		var stamps: Dictionary = map.STAMPS
+		body.add_child(UiKit.label("%s %d/%d" % [tr(map.NAME), Maps.stamps_on(map_id), stamps.size()], 13, "strong", Art.INK_MUTED))
+		if not Maps.unlocked(map_id):
+			body.add_child(_collection_card("ui_info", tr("还没解锁"), [Maps.unlock_hint(map_id)], false, [], portrait))
+			continue
+		var grid := GridContainer.new()
+		# One column on an upright phone: two squeeze the names and notes into a few characters a line.
+		grid.columns = 1 if portrait else 3
+		grid.add_theme_constant_override("h_separation", 8)
+		grid.add_theme_constant_override("v_separation", 8)
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		body.add_child(grid)
+		for id: String in stamps:
+			var stamp: Dictionary = stamps[id]
+			var done := Progress.has_stamp(id)
+			var block: Vector2i = stamp["block"]
+			var district := tr(map.DISTRICTS[map.district_of(block)]["name"])
+			var where := tr("%s · %s 和 %s 路口") % [district, map.north_south_name(block.x, block.y), map.east_west_name(block.y + 1)]
+			var lines := [tr(stamp["note"]) if done else where, (tr("已打卡 · ") if done else tr("打卡后 · ")) + Stamps.bonus_text(id)]
+			grid.add_child(_collection_card(stamp["art"], tr(stamp["name"]), lines, done, [], portrait))
 
 
 func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:

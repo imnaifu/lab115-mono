@@ -13,6 +13,7 @@ const LIST := [
 	{"id": "first_day", "art": "coffee", "group": "生存", "name": "第一天上班", "text": "打完第一局"},
 	{"id": "probation", "art": "stock_options", "group": "生存", "name": "转正", "text": "一局撑过 5 分钟"},
 	{"id": "ipo", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑满 10 分钟通关"},
+	{"id": "win_beijing", "art": "subway_13", "group": "生存", "name": "后厂村敲钟", "text": "在北京地图通关"},
 	{"id": "close_call", "art": "heart", "group": "生存", "name": "极限上市", "text": "剩不到 10 点血通关"},
 	{"id": "untouched", "art": "firewall", "group": "生存", "name": "毫发无损", "text": "开局 3 分钟一滴血没掉"},
 	{"id": "thousand", "art": "skull", "group": "战斗", "name": "千人斩", "text": "一局打死 1000 个怪"},
@@ -28,7 +29,8 @@ const LIST := [
 	{"id": "win_data_scientist", "art": "data_scientist", "group": "职业", "name": "数据科学家敲钟", "text": "用数据科学家通关", "job": "data_scientist"},
 	{"id": "stamps_5", "art": "stanford_tower", "group": "打卡", "name": "网红打卡", "text": "打卡 5 个地标", "goal": 5},
 	{"id": "stamps_all", "art": "golden_gate", "group": "打卡", "name": "湾区通", "text": "硅谷 13 个地标全部打卡", "goal": 13},
-	{"id": "train_hit", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 撞飞一次"},
+	{"id": "bj_stamps_all", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 13 个地标全部打卡", "goal": 13},
+	{"id": "train_hit", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
 ]
 const GROUPS := ["生存", "战斗", "职业", "打卡", "彩蛋"]
 const SURVIVE_SECONDS := 300.0
@@ -83,15 +85,20 @@ static func progress(id: String) -> Array:
 			done = Progress.stat("kills", 0)
 		"all_bosses":
 			done = (Progress.stat("bosses", []) as Array).size()
-		"stamps_5", "stamps_all":
+		"stamps_5":
 			done = _stamps_done()
+		"stamps_all":
+			done = Maps.stamps_on("sv")
+		"bj_stamps_all":
+			done = Maps.stamps_on("bj")
 	return [mini(done, entry["goal"]), entry["goal"]]
 
 
+## Landmarks checked in at on every map.
 static func _stamps_done() -> int:
 	var count := 0
 	for id in Progress.stamp_ids():
-		if BayArea.STAMPS.has(id):
+		if not Maps.stamp(id).is_empty():
 			count += 1
 	return count
 
@@ -115,11 +122,12 @@ func tick(delta: float) -> void:
 	for weapon in player.weapons:
 		if weapon.evolved:
 			_unlock("first_evolve")
-	var stamped := _stamps_done()
-	if stamped >= data("stamps_5")["goal"]:
+	if _stamps_done() >= data("stamps_5")["goal"]:
 		_unlock("stamps_5")
-	if stamped >= BayArea.STAMPS.size():
+	if Maps.stamps_on("sv") >= BayArea.STAMPS.size():
 		_unlock("stamps_all")
+	if Maps.stamps_on("bj") >= Beijing.STAMPS.size():
+		_unlock("bj_stamps_all")
 
 
 ## The player lost health (not just touched while still flashing from the last hit).
@@ -150,6 +158,8 @@ func finish(victory: bool) -> void:
 		if _game.player.hp <= CLOSE_CALL_HP:
 			_unlock("close_call")
 		_unlock("win_" + _game.player.job)
+		if Maps.current_id == "bj":
+			_unlock("win_beijing")
 	Progress.set_stat("runs", Progress.stat("runs", 0) + 1)
 	Progress.set_stat("kills", Progress.stat("kills", 0) + _game.kills)
 	Progress.set_stat("bosses", Array(_all_bosses()))

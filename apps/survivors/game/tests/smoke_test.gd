@@ -25,8 +25,8 @@ extends SceneTree
 ## --only-perks (at level-ups take a passive whenever one is offered, so the run shows what the
 ## starting weapon alone does), --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
 ## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
-## to look at the evolutions), --stamps=N|all (start having checked in at the first N landmarks,
-## or all of them), --collection=0|1 (with --shots, also screenshot the title's 打卡 · 成就 page on
+## to look at the evolutions), --map=sv|bj (play that map, locked or not), --stamps=N|all (start
+## having checked in at the first N of the map's landmarks, or all of them), --collection=0|1 (with --shots, also screenshot the title's 打卡 · 成就 page on
 ## that tab). Progress (打卡, 成就) is kept in memory only: a bot run never touches the save.
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
@@ -127,8 +127,11 @@ func _initialize() -> void:
 			_hold_hp = clampf(float(value), 0.01, 1.0)
 		elif arg == "--evolve":
 			_evolve = true
+		elif arg.begins_with("--map="):
+			Settings.overrides["map"] = value
+			Maps.unlock_all = true
 		elif arg.begins_with("--stamps="):
-			_stamps_before = BayArea.STAMPS.size() if value == "all" else int(value)
+			_stamps_before = 1000 if value == "all" else int(value)
 		elif arg.begins_with("--collection="):
 			_collection_tab = int(value)
 		elif arg.begins_with("--teleport="):
@@ -158,7 +161,7 @@ func _process(_delta: float) -> bool:
 	match _game.state:
 		Game.State.TITLE:
 			if _title_frames == 0:
-				for id: String in BayArea.STAMPS.keys().slice(0, _stamps_before):
+				for id: String in Maps.current.STAMPS.keys().slice(0, _stamps_before):
 					Progress.add_stamp(id)
 			if _shot_dir != "":
 				_title_frames += 1
@@ -342,7 +345,7 @@ func _report() -> int:
 	for passive_id: String in _game.upgrades.passive_levels:
 		passive_levels.append("%s:%d" % [passive_id, _game.upgrades.passive_levels[passive_id]])
 	var wall_ms := (Time.get_ticks_usec() - _started_usec) / 1000.0
-	print("[smoke] job=%s" % _game.player.job)
+	print("[smoke] job=%s map=%s" % [_game.player.job, Maps.current_id])
 	print("[smoke] result=%s elapsed=%.1fs level=%d kills=%d upgrades=%d peak_enemies=%d hp=%.0f/%.0f" % [
 		_outcome(), _game.elapsed, _game.level, _game.kills, _upgrades_taken, _peak_enemies,
 		_game.player.hp, _game.player.max_hp])

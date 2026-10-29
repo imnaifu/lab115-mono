@@ -15,7 +15,8 @@ extends RefCounted
 ##   `from` (the link's ?from=, e.g. "share" for the result image's QR code), and for a page's
 ##   first run `page_ms`, how long after the page opened it started; from .19, `stamps` and
 ##   `achievements`, how many landmarks this device has checked in at and achievements earned
-##   (局外成长: the stamps' bonuses make a player stronger, so compare runs with the same count).
+##   (局外成长: the stamps' bonuses make a player stronger, so compare runs with the same count);
+##   from .20 both events carry `map` (sv 硅谷, bj 北京).
 ## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
@@ -33,7 +34,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.19"
+const VERSION := "2026-10-28.20"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -97,6 +98,7 @@ func start() -> void:
 		"version": VERSION,
 		"run": _run_id,
 		"job": _game.player.job,
+		"map": Maps.current_id,
 		"device": "phone" if Device.is_handheld() else "desktop",
 		"screen": "%dx%d" % [screen.x, screen.y],
 		"orientation": _orientation(),
@@ -201,6 +203,7 @@ func _summary(result: String) -> Dictionary:
 		"version": VERSION,
 		"run": _run_id,
 		"job": player.job,
+		"map": Maps.current_id,
 		"result": result,
 		"seconds": roundi(_game.elapsed),
 		"level": _game.level,
@@ -215,7 +218,7 @@ func _summary(result: String) -> Dictionary:
 		"offered": ",".join(offered).left(MAX_TEXT),
 		"chests": ",".join(_chests).left(MAX_TEXT),
 		"evolved": ",".join(evolved),
-		"district": BayArea.district_of(Vector2i((player.position / City.BLOCK).floor())),
+		"district": Maps.current.district_of(Vector2i((player.position / City.BLOCK).floor())),
 		"timeline": ";".join(_timeline).left(MAX_TEXT),
 		"bosses_seen": _bosses_seen,
 		"bosses_killed": _bosses_killed,

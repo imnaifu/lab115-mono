@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 96">
+<ellipse cx="110" cy="90" rx="104" ry="5" fill="#000" fill-opacity="0.13"/>
+<defs><clipPath id="bowl"><path d="M8 34 Q8 18 110 16 Q212 18 212 34 L206 74 Q200 88 110 88 Q20 88 14 74 Z"/></clipPath></defs>
+<path d="M8 34 Q8 18 110 16 Q212 18 212 34 L206 74 Q200 88 110 88 Q20 88 14 74 Z" fill="#c9cdd4"/>
+<path d="M8 34 Q8 18 110 16 Q212 18 212 34 L206 74 Q200 88 110 88 Q20 88 14 74 Z" fill="#e0533b" fill-opacity="0.12"/>
+<path d="M18 22 L40 80 M40 22 L18 80 M33 22 L55 80 M55 22 L33 80 M48 22 L70 80 M70 22 L48 80 M63 22 L85 80 M85 22 L63 80 M78 22 L100 80 M100 22 L78 80 M93 22 L115 80 M115 22 L93 80 M108 22 L130 80 M130 22 L108 80 M123 22 L145 80 M145 22 L123 80 M138 22 L160 80 M160 22 L138 80 M153 22 L175 80 M175 22 L153 80 M168 22 L190 80 M190 22 L168 80 M183 22 L205 80 M205 22 L183 80" stroke="#7b8494" stroke-width="3" fill="none" clip-path="url(#bowl)"/>
+<path d="M8 34 Q8 18 110 16 Q212 18 212 34 L206 74 Q200 88 110 88 Q20 88 14 74 Z" fill="none" stroke="#2f3542" stroke-width="3" stroke-linejoin="round"/>
+<ellipse cx="110" cy="26" rx="70" ry="7" fill="#8fd3ff" stroke="#2f3542" stroke-width="2.5"/>
+</svg>

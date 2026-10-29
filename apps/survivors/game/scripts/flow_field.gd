@@ -108,7 +108,7 @@ func _start_build(target: Vector2) -> void:
 	for solid: Rect2 in _city.solids_in(area.grow(CLEARANCE)):
 		_mark_blocked(solid.grow(CLEARANCE))
 	# The water round the peninsula is a wall too.
-	for water: Rect2 in BayArea.water_rects(area.grow(CLEARANCE)):
+	for water: Rect2 in Maps.current.water_rects(area.grow(CLEARANCE)):
 		_mark_blocked(water.grow(CLEARANCE))
 	# The outer ring stays blocked, which saves a bounds check per step of the flood.
 	for i in SPAN:

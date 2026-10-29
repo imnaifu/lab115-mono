@@ -48,7 +48,9 @@ scripts/
 ├── weapons/           # weapon.gd 基类 + 15 种攻击方式（aimed / facing / bomber / strike / toss / aura / swing / poke / guides / trail / zone / orbit / squad / bounce / ricochet），各自带进化后的打法；专属武器的五种按两个方向的升级次数算数值
 ├── city.gd            # 地图：按坐标哈希生成街区、画地面 / 马路 / 高速 / 铁轨 / 跑道 / 盐田 / 海，楼、树和海水的碰撞
 ├── traffic.gd         # 高速上的无人车、铁轨上的 Caltrain（位置只由时间算出，不存状态）；撞到人和怪往两侧推开，不扣血；火车来前铁轨闪红
-├── bay_area.gd        # 湾区关卡数据：分区、各区的楼和树、地标位置和能打卡的地标（STAMPS）、街名、恶搞公司招牌
+├── maps.gd            # 地图切换：这一局用哪张（Maps.current）、北京的解锁条件、跨地图查打卡
+├── bay_area.gd        # 硅谷（湾区）地图数据：分区、各区的楼和树、地标位置和能打卡的地标（STAMPS）、街名、恶搞公司招牌
+├── beijing.gd         # 北京（西二旗）地图数据，和 bay_area.gd 同名的常量和函数
 ├── brand_sign.gd / street_sign.gd / freeway_sign.gd   # 楼顶招牌、路口街名牌、高速路牌（文字用游戏字体现画）
 ├── art.gd             # 按名字取素材、楼的裁边、配色（界面用的 Sokosoko 色板）、字体
 ├── lang.gd            # 中→英翻译表（代码里的中文就是原文）与语言切换
@@ -84,8 +86,8 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 
 线上每一局都会匿名上报到自建的 Umami（stats.lab115.com，和 daily 共用一个实例），用来看难度和平衡：
 - `game_ready`：每次打开页面、开始画面出来时发一次，带 `load_ms`（从开始加载页面算起的毫秒数）。有浏览量没有它的，就是加载时流失的人。
-- `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）；`.19` 起带 `stamps`、`achievements`（这台设备打过几个卡、拿了几个成就：打卡有永久加成，比强度时要按它分开看）。
-- `run_end`：职业（`job`）、结局（`win` / `died` / `restart` 从暂停页重开或换职业 / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、进化了的武器（`evolved`）、各武器伤害占比（`dmg_*`，百分比，只有打出过伤害的才有）、选卡顺序（专属武器的方向卡记成 `prd:b` 这样）、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（钱袋开出的轮次）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率；`.19` 起带 `new_stamps`、`new_achievements`（这局新打卡的地标和新拿的成就，逗号分隔）。每局带一个随机 id，用来去重。
+- `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）；`.19` 起带 `stamps`、`achievements`（这台设备打过几个卡、拿了几个成就：打卡有永久加成，比强度时要按它分开看），`.20` 起带 `map`（`sv` 硅谷 / `bj` 北京）。
+- `run_end`：职业（`job`）、结局（`win` / `died` / `restart` 从暂停页重开或换职业 / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、进化了的武器（`evolved`）、各武器伤害占比（`dmg_*`，百分比，只有打出过伤害的才有）、选卡顺序（专属武器的方向卡记成 `prd:b` 这样）、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（钱袋开出的轮次）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率；`.19` 起带 `new_stamps`、`new_achievements`（这局新打卡的地标和新拿的成就，逗号分隔），`.20` 起带 `map`。每局带一个随机 id，用来去重。
 - `js_error`：网页和引擎的脚本错误（引擎的错误经 `console.error` 打出来），每次打开页面最多 5 条。
 
 不记录任何身份信息和位置。中途关页面的局：游戏每 10 秒把进度存进 localStorage，关页面或页面被切到后台时由网页发出去（Umami 用 keepalive 发送；手机常常先把页面切到后台、之后直接杀掉，不触发关页面事件）；App 内置浏览器常常来不及发，所以关页面时发完不删存档，下次打开时再补发一次才删 —— 同一局可能收到两条 `run_end`，查数据时按 `run` 去重、取 `seconds` 最大的那条。上报只在 survivors.lab115.com 上发生（Umami 脚本的 `data-domains`），编辑器、本地导出和冒烟测试都不会发。网页这边的代码在 `export_presets.cfg` 的 `html/head_include` 里。
@@ -125,7 +127,7 @@ godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=60 
 godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --lang=zh --seconds=80 --god --die-at=75 --pause-at=40 --shots=/tmp/shots --shot-every=30
 ```
 
-看「打卡 · 成就」页：`--stamps=N`（开局前先打卡前 N 个地标，`all` 是全部）配 `--collection=0`（打卡页）或 `--collection=1`（成就页）。机器人的打卡和成就只记在内存里，不会写进你本机的存档。
+玩北京：`--map=bj`（不管解锁没有）。看「打卡 · 成就」页：`--stamps=N`（开局前先打卡当前地图的前 N 个地标，`all` 是全部）配 `--collection=0`（打卡页）或 `--collection=1`（成就页）。机器人的打卡和成就只记在内存里，不会写进你本机的存档。
 
 ```bash
 godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --window=405x720 --handheld --seconds=3 --stamps=7 --collection=0 --shots=/tmp/shots

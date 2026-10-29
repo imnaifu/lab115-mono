@@ -1,28 +1,28 @@
 class_name Minimap
 extends Control
-## The peninsula at a glance, top right of the HUD: San Francisco up north at its tip, San
-## Jose down south, the hills and the Pacific to the west, the Bay to the east, the freeways and
-## Caltrain running down it, with the player, what the screen shows, any bosses on it, and the
-## landmarks to check in at (打卡): a hollow pin until checked in at, then a gold one.
+## The map at a glance, top right of the HUD: on 硅谷 San Francisco up north at its tip, San
+## Jose down south, the hills and the Pacific to the west, the Bay to the east; on 北京 回龙观 up
+## north, the universities down south, the lake to the south-west. The freeways and the railway,
+## the player, what the screen shows, any bosses on it, and the landmarks to check in at (打卡): a
+## hollow pin until checked in at, then a gold one.
 ##
-## It always shows the whole of the named map (OVERVIEW). The city goes on past that; a player
-## who walks off its edge makes the map zoom out to take them in too, rather than slide the
-## named part off the map.
-
-## The named part of the world, in world pixels: from the Pacific to across the Bay, and from
-## the Golden Gate's water to south of San Jose.
-const OVERVIEW := Rect2(-2800.0, -3300.0, 5600.0, 6300.0)
-## The map keeps OVERVIEW's proportions.
+## It always shows the whole of the named map (the map's OVERVIEW). The city goes on past that; a
+## player who walks off its edge makes the map zoom out to take them in too, rather than slide
+## the named part off the map.
+## 硅谷's overview's proportions; another map's is widened to fit (_window).
 const MAP_SIZE := Vector2(72.0, 81.0)
 ## Bolder than the districts' ground colours, which are pale on purpose and blur together at
 ## this size: the design's pastel fills, one per district.
 const DISTRICT_COLORS := {
 	"peninsula": Art.FILL_MINT, "sf": Art.FILL_LILAC, "sj": Art.BRAND_SOFT,
 	"hills": Color("f0dc9a"), "bay": City.SAND, "beach": City.SAND,
+	# 北京 (Beijing.DISTRICTS)
+	"houchang": Art.FILL_MINT, "huilongguan": Art.FILL_PINK, "haidian": Art.FILL_LILAC,
+	"yiheyuan": Color("cfe6b0"), "xishan": Color("f0dc9a"), "aoyun": Art.BRAND_SOFT, "lake": City.SAND,
 }
 const FREEWAY_COLOR := Color("f2c230")
 const INSET := 3.0
-## Room kept around a player outside OVERVIEW, as a fraction of OVERVIEW's size.
+## Room kept around a player outside the overview, as a fraction of its size.
 const FOLLOW_MARGIN := 0.06
 ## Below this many map pixels per block the street lines would smear into a grey wash, so
 ## they are left out (only when zoomed far out).
@@ -60,7 +60,7 @@ func _draw() -> void:
 	for block_x in range(first.x, last.x + 1):
 		for block_y in range(first.y, last.y + 1):
 			var block := Vector2i(block_x, block_y)
-			var ground: Color = DISTRICT_COLORS[BayArea.district_of(block)]
+			var ground: Color = DISTRICT_COLORS[Maps.current.district_of(block)]
 			_fill(map, window, Rect2(Vector2(block) * City.BLOCK, City.BLOCK), ground)
 	# Roads: a thin white line along every block edge, like a street map; the freeways bolder
 	# and yellow, Caltrain a dark line beside Alma St. The water goes over them all.
@@ -74,16 +74,16 @@ func _draw() -> void:
 			var x := map.position.x + (column * City.BLOCK.x - window.position.x) * map_scale.x
 			if x > map.position.x and x < map.end.x:
 				draw_line(Vector2(x, map.position.y), Vector2(x, map.end.y), road, 1.0)
-	for column: int in BayArea.FREEWAYS:
-		var from_y: float = BayArea.FREEWAYS[column]["from_row"] * City.BLOCK.y
+	for column: int in Maps.current.FREEWAYS:
+		var from_y: float = Maps.current.FREEWAYS[column]["from_row"] * City.BLOCK.y
 		_line(map, window, Vector2(column * City.BLOCK.x, from_y), Vector2(column * City.BLOCK.x, window.end.y), FREEWAY_COLOR, 2.0)
-	var track_x := BayArea.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
-	_line(map, window, Vector2(track_x, BayArea.RAILWAY_FROM_ROW * City.BLOCK.y), Vector2(track_x, window.end.y), Color(Art.INK, 0.6), 1.0)
+	var track_x: float = Maps.current.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
+	_line(map, window, Vector2(track_x, Maps.current.RAILWAY_FROM_ROW * City.BLOCK.y), Vector2(track_x, window.end.y), Color(Art.INK, 0.6), 1.0)
 	# The water, which is what "the end of the map" is.
-	for water: Rect2 in BayArea.water_rects(window):
+	for water: Rect2 in Maps.current.water_rects(window):
 		_fill(map, window, water, City.WATER)
 
-	for id: String in BayArea.STAMPS:
+	for id: String in Maps.current.STAMPS:
 		var pin := _to_map(map, window, game.stamps.spot(id))
 		if not map.has_point(pin):
 			continue
@@ -108,11 +108,12 @@ func _draw() -> void:
 	draw_style_box(_frame, outer)
 
 
-## OVERVIEW, grown to take in a player who walked past its edge, and widened on its short
-## side to keep the map's proportions.
+## The map's overview, grown to take in a player who walked past its edge, and widened on its
+## short side to keep the map's proportions.
 func _window() -> Rect2:
-	var margin := OVERVIEW.size * FOLLOW_MARGIN
-	var window := OVERVIEW.merge(Rect2(game.player.position - margin, margin * 2.0))
+	var overview: Rect2 = Maps.current.OVERVIEW
+	var margin := overview.size * FOLLOW_MARGIN
+	var window := overview.merge(Rect2(game.player.position - margin, margin * 2.0))
 	var aspect := MAP_SIZE.x / MAP_SIZE.y
 	if window.size.x < window.size.y * aspect:
 		var extra := window.size.y * aspect - window.size.x

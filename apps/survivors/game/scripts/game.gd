@@ -132,6 +132,8 @@ func _ready() -> void:
 	runs_before = Settings.get_value("runs_played", 0)
 	rng.randomize()
 
+	# The world is built from the map, so it is settled before anything else.
+	Maps.use(Maps.saved())
 	stamps = Stamps.new(self)
 	achievements = Achievements.new(self)
 	player = Player.new()
@@ -790,6 +792,14 @@ func set_job(job_id: String) -> void:
 	player.setup_job(job_id)
 	player.add_weapon(Upgrades.create_weapon(Jobs.data(job_id)["weapon"]))
 	inventory_changed.emit()
+
+
+## The title screen's map picker: the city is built from the map, so the scene starts over on it
+## (behind the title, which stays up).
+func change_map(map_id: String) -> void:
+	Settings.set_value("map", map_id)
+	skip_title = false
+	get_tree().reload_current_scene()
 
 
 ## The result screen's 换职业: back to the title screen to pick another job.
