@@ -45,10 +45,10 @@ const WEAPONS := {
 		"levels": ["往怪最多的地方拉个会：圈里的怪变慢、持续掉血", "伤害 +2，会议室更大", "同时多开一个会", "伤害 +2，会议室更大", "再多开一个会，伤害 +3，会议室更大"]},
 	"firewall": {"name": "防火墙", "art": "firewall", "behavior": "orbit", "type": "summon", "job": "ops",
 		"levels": ["一面墙护着你：身边有怪就飞过去撞开，先打离你最近的"]},
-	"drone": {"name": "无人机", "art": "drone", "behavior": "seek", "type": "summon",
-		"levels": ["飞出去追着附近的敌人撞", "多一架无人机", "伤害 +4，飞得更快", "多一架无人机", "多一架，伤害 +4，飞得更快"]},
+	"drone": {"name": "无人机", "art": "drone", "behavior": "bomber", "type": "summon",
+		"levels": ["飞到怪最多的地方扔炸弹，炸一片", "多一架无人机", "伤害 +6，炸得更大", "多一架无人机", "多一架，伤害 +6，炸得更大"]},
 	"outsource": {"name": "外包团队", "art": "outsourcing", "behavior": "squad", "type": "summon",
-		"levels": ["招 2 个外包，自己找怪打；被打倒几秒后重新招人", "多招 1 个", "伤害 +3，更抗揍", "多招 1 个", "多招 1 个，伤害 +3，更抗揍"]},
+		"levels": ["招 2 个外包站在你身边，附近的怪会先去打他们；被打倒几秒后重新招人", "多招 1 个", "更抗揍，伤害 +3", "多招 1 个", "多招 1 个，更抗揍，伤害 +3"]},
 }
 
 ## A weapon at full level evolves at the next funding bag while the player carries its passive
@@ -64,7 +64,7 @@ const EVOLUTIONS := {
 	"wifi": {"passive": "regen", "name": "5G 基站", "text": "范围更大，打中怪就回一点血"},
 	"cloud": {"passive": "might", "name": "多云多活", "text": "劈的道数翻倍，范围翻倍"},
 	"firewall": {"passive": "armor", "name": "零信任", "text": "6 面墙，撞到的怪定住 0.4 秒"},
-	"drone": {"passive": "cost_cut", "name": "无人车车队", "text": "换成横冲直撞的无人车，伤害更高，撞飞"},
+	"drone": {"passive": "cost_cut", "name": "集束轰炸", "text": "每颗炸弹落地再炸出 3 颗小炸弹"},
 }
 
 ## A job's own weapon levels up along one of two directions each time, the player's pick: its
@@ -124,8 +124,8 @@ static func create_weapon(weapon_id: String) -> Weapon:
 			weapon = AimedWeapon.new()
 		"facing":
 			weapon = FacingWeapon.new()
-		"seek":
-			weapon = SeekerWeapon.new()
+		"bomber":
+			weapon = BomberWeapon.new()
 		"strike":
 			weapon = StrikeWeapon.new()
 		"toss":
@@ -382,7 +382,9 @@ func numbers(choice: Dictionary) -> String:
 				before = branch_stats(weapon_id, weapon.branch_a, weapon.branch_b)
 				after = branch_stats(weapon_id, weapon.branch_a + more_a, weapon.branch_b + 1 - more_a)
 			else:
-				after = weapon_stats(weapon_id, next_level)
+				# A job's own weapon has no level tables; its numbers before any upgrade stand in (it
+				# is only ever a new card if it was taken away, as tests do).
+				after = branch_stats(weapon_id, 0, 0) if BRANCHES.has(weapon_id) else weapon_stats(weapon_id, next_level)
 				if next_level == 1:
 					return _step("伤害", "", _shown_stat("damage", after["damage"], weapon_id))
 				before = weapon_stats(weapon_id, next_level - 1)
@@ -407,8 +409,8 @@ static func weapon_stats(weapon_id: String, weapon_level: int) -> Dictionary:
 	match WEAPONS[weapon_id]["behavior"]:
 		"facing":
 			return {"damage": FacingWeapon.DAMAGE[i], "count": FacingWeapon.COUNT[i], "pierce": FacingWeapon.PIERCE[i], "cooldown": FacingWeapon.COOLDOWN[i]}
-		"seek":
-			return {"damage": SeekerWeapon.DAMAGE[i], "count": SeekerWeapon.COUNT[i], "speed": SeekerWeapon.SPEED[i]}
+		"bomber":
+			return {"damage": BomberWeapon.DAMAGE[i], "count": BomberWeapon.COUNT[i], "radius": BomberWeapon.BLAST_RADIUS[i]}
 		"strike":
 			return {"damage": StrikeWeapon.DAMAGE[i], "count": StrikeWeapon.COUNT[i], "radius": StrikeWeapon.SPLASH_RADIUS[i], "cooldown": StrikeWeapon.COOLDOWN[i]}
 		"toss":

@@ -26,6 +26,10 @@ const DIGIT_HEIGHT := 0.71
 ## Flashes per second of the health bar at the low-health line and at almost nothing left.
 const LOW_HP_FLASH_SLOW := 3.0
 const LOW_HP_FLASH_FAST := 6.0
+## After traffic shoves the player (Traffic), this long before it can again, so two cars in a row
+## don't bat them about; and how fast the push dies away.
+const SHOVE_COOLDOWN := 1.0
+const SHOVE_DECAY := 8.0
 
 var game: Game
 var job := Jobs.DEFAULT
@@ -59,6 +63,9 @@ var _bar_outline: StyleBoxFlat
 var _napping := false
 ## Seconds spent under the low-health line, for the health bar's flashing.
 var _low_hp_clock := 0.0
+## A push from traffic, added to the walk and dying away; no damage comes with it.
+var _shove := Vector2.ZERO
+var _shove_cooldown := 0.0
 var _shake_strength := 2.0
 
 
@@ -95,7 +102,9 @@ func _process(delta: float) -> void:
 		var keys := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 		direction = (keys + touch_direction + Tilt.direction()).limit_length(1.0)
 	velocity = direction * move_speed
-	position = game.city.resolve(position + velocity * delta, BODY_RADIUS)
+	position = game.city.resolve(position + (velocity + _shove) * delta, BODY_RADIUS)
+	_shove = _shove.lerp(Vector2.ZERO, minf(1.0, SHOVE_DECAY * delta))
+	_shove_cooldown = maxf(0.0, _shove_cooldown - delta)
 
 	if direction.length_squared() > 0.01:
 		facing = direction.normalized()
@@ -213,6 +222,17 @@ func take_damage(amount: float) -> void:
 	game.perks.on_hurt(lost)
 	if hp <= 0.0:
 		died.emit()
+
+
+## Knocked aside by a car or a train: pushed, never hurt. Whether it took (not within
+## SHOVE_COOLDOWN of the last one).
+func shove(push: Vector2) -> bool:
+	if _shove_cooldown > 0.0:
+		return false
+	_shove_cooldown = SHOVE_COOLDOWN
+	_shove += push
+	shake(0.12, 2.0)
+	return true
 
 
 ## Shakes the camera for a moment (`strength` pixels each way).

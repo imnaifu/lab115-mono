@@ -106,6 +106,9 @@ var _corpses: Array[Enemy] = []
 ## Whether this device has been told that stars are XP (shown once, on the first drop ever).
 var _star_hint_done := false
 var _next_hitstop_msec := 0
+## Where the outsourced workers stand this frame (SquadWeapon sets it): enemies near one go for it
+## instead of the player.
+var decoys: Array[Vector2] = []
 
 
 func _ready() -> void:
@@ -509,9 +512,14 @@ func _tick_enemies(delta: float) -> void:
 				enemy.detour_left -= delta
 				around = flow_field.heading(enemy.position, true)
 		var heading := around if around != Vector2.ZERO else (target - enemy.position).normalized()
+		# A decoy close by draws it off the player (they stand right by the player, so no walls to
+		# go round in between).
+		var lure: Variant = _lure_for(enemy)
+		if lure != null:
+			heading = ((lure as Vector2) - enemy.position).normalized()
 		enemy.tick(delta, heading, separation)
 		if not enemy.ghostly:
-			_keep_out_of_walls(enemy, target, delta, around == Vector2.ZERO)
+			_keep_out_of_walls(enemy, target if lure == null else lure as Vector2, delta, around == Vector2.ZERO or lure != null)
 		if enemy.position.distance_squared_to(target) > relocate_sq:
 			var fresh_spot := offscreen_point(random_direction())
 			enemy.position = fresh_spot if enemy.ghostly else city.resolve(fresh_spot, enemy.radius)
@@ -519,6 +527,20 @@ func _tick_enemies(delta: float) -> void:
 			expired.append(enemy)
 	for enemy in expired:
 		_remove_quietly(enemy)
+
+
+## The closest decoy within SquadWeapon.LURE_RADIUS of the enemy, or null; bosses ignore them.
+func _lure_for(enemy: Enemy) -> Variant:
+	if decoys.is_empty() or enemy.is_elite:
+		return null
+	var best: Variant = null
+	var best_distance := SquadWeapon.LURE_RADIUS * SquadWeapon.LURE_RADIUS
+	for decoy in decoys:
+		var distance := decoy.distance_squared_to(enemy.position)
+		if distance < best_distance:
+			best_distance = distance
+			best = decoy
+	return best
 
 
 ## Pushes an enemy out of buildings and the water. One walking straight that presses against a
