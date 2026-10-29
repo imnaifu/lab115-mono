@@ -22,7 +22,8 @@ extends SceneTree
 ## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves),
 ## --share (with --shots, also render the end screen's result image into the shots directory, or
 ## with --pause-at the pause screen's run-so-far image),
-## --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --ult (use the
+## --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
+## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --ult (use the
 ## ultimate whenever it is charged), --evolve (start with every weapon the job can carry evolved,
 ## to look at the evolutions).
 
@@ -61,6 +62,7 @@ var _chest_frames := 0
 var _chest_shot_taken := false
 var _share := false
 var _use_ult := false
+var _hold_hp := -1.0
 var _evolve := false
 ## Melee jobs' bots only step away from enemies right on top of them, so their swings land.
 var _avoid_radius := 70.0
@@ -114,6 +116,8 @@ func _initialize() -> void:
 				_avoid_radius = 35.0
 		elif arg == "--ult":
 			_use_ult = true
+		elif arg.begins_with("--hold-hp="):
+			_hold_hp = clampf(float(value), 0.01, 1.0)
 		elif arg == "--evolve":
 			_evolve = true
 		elif arg.begins_with("--teleport="):
@@ -203,6 +207,9 @@ func _process(_delta: float) -> bool:
 			_game.player.input_override = _steer()
 			if _god:
 				_game.player.hp = _game.player.max_hp
+			if _hold_hp > 0.0:
+				_game.player.hp = _game.player.max_hp * _hold_hp
+				_game.player.queue_redraw()
 			if _use_ult and _game.ultimate.is_ready():
 				_game.ultimate.use()
 			if _die_at >= 0.0 and _game.elapsed >= _die_at:
@@ -222,7 +229,8 @@ func _process(_delta: float) -> bool:
 	_last_frame_usec = now_usec
 
 	if _shot_dir != "" and _shot_every_frames > 0 and _frames % _shot_every_frames == 0:
-		_save_shot("%03ds" % floori(_game.elapsed))
+		# Several a second get tenths in their names, or they would overwrite each other.
+		_save_shot("%03ds" % floori(_game.elapsed) if _shot_every_frames >= 60 else "%05.1fs" % _game.elapsed)
 	if _game.state == Game.State.ENDED and _shot_dir != "":
 		_end_frames += 1
 		if _end_frames < OVERLAY_SETTLE_FRAMES:

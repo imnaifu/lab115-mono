@@ -124,7 +124,7 @@ godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --lang=z
 
 截图时加 `--share` 还会把结算页的战绩图存成 `shot_share.png`（同时有 `--pause-at` 时存暂停页「分享」的进行中战绩图 `shot_share_pause.png`），开出钱袋时会截 `shot_chest.png`（想早点开出来，可以加 `--boss=techdebt_elite --all-weapons=5`）。
 
-测试默认静音（加 `--sound` 才放音效和音乐：没人听，而且退出时还在放的音频会被报成资源泄漏）。截图时会额外截开始画面、第一次升级、暂停和结算界面；加 `--window=405x720 --handheld` 看手机竖着拿时的样子（再加 `--orientation=landscape` 看选了横屏时转 90° 的样子），`--lang=en` 截英文，`--teleport=X,Y` 开局把角色传到某处看某个区（比如 `--teleport=-280,-1600` 是旧金山的排屋，`--teleport=1700,400` 是海边）。
+测试默认静音（加 `--sound` 才放音效和音乐：没人听，而且退出时还在放的音频会被报成资源泄漏）。截图时会额外截开始画面、第一次升级、暂停和结算界面；加 `--window=405x720 --handheld` 看手机竖着拿时的样子（再加 `--orientation=landscape` 看选了横屏时转 90° 的样子），`--lang=en` 截英文，`--hold-hp=0.2` 让血量停在 20%（看低血量时血条的颜色和闪烁），`--shot-every` 小于 1 秒时文件名带小数秒，`--teleport=X,Y` 开局把角色传到某处看某个区（比如 `--teleport=-280,-1600` 是旧金山的排屋，`--teleport=1700,400` 是海边）。
 
 ## 发布
 

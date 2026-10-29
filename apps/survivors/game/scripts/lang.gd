@@ -377,6 +377,14 @@ const EN := {
 	"6 面墙，挡掉的子弹原路反弹": "6 walls; blocked bullets fly back",
 	"无人车车队": "Robotaxi Fleet",
 	"换成横冲直撞的无人车，伤害更高，撞飞": "Robotaxis instead: harder hits that send enemies flying",
+	# The product manager's lines (PRD 卷筒)
+	"改个需求": "Just one small change",
+	"这个很简单": "It's an easy one",
+	"明天能上吗": "Ship it tomorrow?",
+	"加个按钮": "Add a button",
+	"对齐一下": "Let's align",
+	"用户要的": "Users asked for it",
+	"先上线再说": "Ship first, fix later",
 	"摸鱼一会儿": "Slack Off",
 	"回复 30 生命": "Heal 30 HP",
 }

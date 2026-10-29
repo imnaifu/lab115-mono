@@ -24,6 +24,9 @@ const HISTORY_STEP := 0.1
 ## The health bar under the player, tall enough to hold the HP number inside it.
 const HP_BAR_SIZE := Vector2(38.0, 11.0)
 const HP_FONT_SIZE := 8
+## Flashes per second of the health bar at the low-health line and at almost nothing left.
+const LOW_HP_FLASH_SLOW := 3.0
+const LOW_HP_FLASH_FAST := 6.0
 
 var game: Game
 var job := Jobs.DEFAULT
@@ -55,6 +58,8 @@ var _bar_fill: StyleBoxFlat
 var _bar_outline: StyleBoxFlat
 ## Standing still with the nap perk (Perks): healing, shown as a "Zz" over the head.
 var _napping := false
+## Seconds spent under the low-health line, for the health bar's flashing.
+var _low_hp_clock := 0.0
 var _shake_strength := 2.0
 ## [seconds alive, position, hp] every HISTORY_STEP, newest last.
 var _history: Array = []
@@ -137,11 +142,29 @@ func _process(delta: float) -> void:
 		var reach := _shake_strength
 		_camera.offset = Vector2(randf_range(-reach, reach), randf_range(-reach, reach)) if _shake_left > 0.0 else Vector2.ZERO
 
+	# The bar flashes while health is low, so it has to be redrawn every frame then.
+	if hp > 0.0 and hp / max_hp < Hud.LOW_HP_RATIO:
+		_low_hp_clock += delta
+		queue_redraw()
+
+
+## The health bar's fill: green when full, yellow at half, red at the low-health line (the one
+## the screen's red edges and the heartbeat start at), and under it flashing against the white
+## track, faster the lower it gets.
+func _hp_fill_color(ratio: float) -> Color:
+	if ratio >= 0.5:
+		return Art.YELLOW.lerp(Art.GREEN, (ratio - 0.5) / 0.5)
+	if ratio >= Hud.LOW_HP_RATIO:
+		return Art.HP_RED.lerp(Art.YELLOW, (ratio - Hud.LOW_HP_RATIO) / (0.5 - Hud.LOW_HP_RATIO))
+	var flashes_per_second := lerpf(LOW_HP_FLASH_FAST, LOW_HP_FLASH_SLOW, ratio / Hud.LOW_HP_RATIO)
+	return Art.HP_RED if fmod(_low_hp_clock * flashes_per_second, 1.0) < 0.6 else Art.PAPER
+
 
 func _draw() -> void:
-	# A pill like the HUD's: white track, red fill, an ink outline over both, and the HP as it is
-	# now inside it (just the current value: the bar already shows how full it is). Ink reads on
-	# both the red and the white, so the digits need no outline.
+	# A pill like the HUD's: white track, a fill coloured by how much health is left, an ink
+	# outline over both, and the HP as it is now inside it (just the current value: the bar
+	# already shows how full it is). Ink reads on the green, yellow, red and white alike, so the
+	# digits need no outline.
 	var bar := Rect2(-HP_BAR_SIZE.x / 2.0, SIZE / 2.0 + 2.0, HP_BAR_SIZE.x, HP_BAR_SIZE.y)
 	if _bar_track == null:
 		_bar_track = _pill_style(Art.PAPER, 0)
@@ -149,7 +172,9 @@ func _draw() -> void:
 		_bar_outline = _pill_style(Color.TRANSPARENT, 2)
 		_bar_outline.draw_center = false
 	draw_style_box(_bar_track, bar)
-	var fill_width := bar.size.x * clampf(hp / max_hp, 0.0, 1.0)
+	var ratio := clampf(hp / max_hp, 0.0, 1.0)
+	var fill_width := bar.size.x * ratio
+	_bar_fill.bg_color = _hp_fill_color(ratio)
 	if fill_width > 0.0:
 		# Never thinner than it is tall, so the rounded ends stay round as it runs out.
 		draw_style_box(_bar_fill, Rect2(bar.position, Vector2(maxf(fill_width, bar.size.y), bar.size.y)))

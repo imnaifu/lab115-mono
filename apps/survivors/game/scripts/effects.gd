@@ -1,7 +1,8 @@
 class_name Effects
 extends RefCounted
 ## Short-lived visual feedback: damage numbers, death puffs, lightning strikes, blast rings, the
-## melee weapons' swings, lashes and stabs, and short callouts over the world.
+## melee weapons' lashes and stabs, paper scraps, and short callouts over the world. (The PRD
+## roll's swing is drawn by SwingWeapon itself, as it follows the player.)
 
 const MAX_DAMAGE_NUMBERS := 40
 
@@ -101,30 +102,26 @@ static func ring(game: Game, at: Vector2, radius: float, color: Color) -> void:
 	game.effect_layer.add_child(blast)
 
 
-## A melee swing: a white crescent with an ink edge sweeping the arc (`arc` radians wide,
-## centred on `angle`, `radius` long) and fading out.
-static func slash(game: Game, at: Vector2, angle: float, arc: float, radius: float) -> void:
-	var swing := Swoosh.new()
-	swing.position = at
-	swing.shape = Swoosh.Shape.ARC
-	swing.angle = angle
-	swing.arc = arc
-	swing.reach = radius
-	game.effect_layer.add_child(swing)
-
-
 ## A lash or stab: a white bar from `at` along `direction`, `length` long and `width` wide.
 static func lash(game: Game, at: Vector2, direction: Vector2, length: float, width: float) -> void:
 	var swing := Swoosh.new()
 	swing.position = at
-	swing.shape = Swoosh.Shape.BAR
 	swing.angle = direction.angle()
 	swing.reach = length
 	swing.width = width
 	game.effect_layer.add_child(swing)
 
 
-## A word or two popping up over the world and drifting up (屏保 hitting a corner).
+## A few torn bits of paper flying off something hit with the PRD roll: white with an ink edge,
+## so they show on the lawn as well as the road (a puff of white dots wouldn't).
+static func scraps(game: Game, at: Vector2) -> void:
+	var burst := PaperScraps.new()
+	burst.position = at
+	game.effect_layer.add_child(burst)
+
+
+## A word or two popping up over the world and drifting up (屏保 hitting a corner, the product
+## manager's catchphrases).
 static func callout(game: Game, at: Vector2, text: String, color: Color) -> void:
 	var label := Label.new()
 	label.text = text
@@ -145,17 +142,13 @@ static func callout(game: Game, at: Vector2, text: String, color: Color) -> void
 	tween.tween_callback(label.queue_free)
 
 
-## Melee swings: drawn once, fading over SECONDS.
+## A lash or stab: drawn once, fading over SECONDS.
 class Swoosh:
 	extends Node2D
 
-	enum Shape { ARC, BAR }
-
 	const SECONDS := 0.15
 
-	var shape := Shape.ARC
 	var angle := 0.0
-	var arc := PI
 	var reach := 50.0
 	var width := 12.0
 	var _age := 0.0
@@ -169,32 +162,48 @@ class Swoosh:
 		queue_redraw()
 
 	func _draw() -> void:
-		match shape:
-			Shape.ARC:
-				# A crescent: thick near the middle of the swing, thin at its ends.
-				var inner := reach * 0.55
-				var steps := maxi(8, ceili(arc / 0.15))
-				var outer_points := PackedVector2Array()
-				var inner_points := PackedVector2Array()
-				for i in steps + 1:
-					var along := float(i) / steps
-					var heading := angle - arc / 2.0 + arc * along
-					var bulge := sin(along * PI)
-					outer_points.append(Vector2.from_angle(heading) * reach)
-					inner_points.append(Vector2.from_angle(heading) * lerpf(reach, inner, bulge))
-				inner_points.reverse()
-				var crescent := outer_points + inner_points
-				draw_colored_polygon(crescent, Color(1, 1, 1, 0.85))
-				outer_points.append(outer_points[outer_points.size() - 1])
-				draw_polyline(outer_points, Art.INK, 2.0, true)
-			Shape.BAR:
-				var along := Vector2.from_angle(angle)
-				var side := along.orthogonal() * width / 2.0
-				var tip := along * reach
-				var bar := PackedVector2Array([side, tip + side * 0.4, tip - side * 0.4, -side])
-				draw_colored_polygon(bar, Color(1, 1, 1, 0.85))
-				bar.append(side)
-				draw_polyline(bar, Art.INK, 2.0, true)
+		var along := Vector2.from_angle(angle)
+		var side := along.orthogonal() * width / 2.0
+		var tip := along * reach
+		var bar := PackedVector2Array([side, tip + side * 0.4, tip - side * 0.4, -side])
+		draw_colored_polygon(bar, Color(1, 1, 1, 0.85))
+		bar.append(side)
+		draw_polyline(bar, Art.INK, 2.0, true)
+
+
+class PaperScraps:
+	extends Node2D
+
+	const SECONDS := 0.35
+	const COUNT := 4
+	const SPEED := 70.0
+
+	var _age := 0.0
+	var _headings := PackedFloat32Array()
+	var _spins := PackedFloat32Array()
+
+	func _ready() -> void:
+		for i in COUNT:
+			_headings.append(TAU * (i + randf() * 0.6) / COUNT)
+			_spins.append(randf_range(-9.0, 9.0))
+
+	func _process(delta: float) -> void:
+		_age += delta
+		if _age >= SECONDS:
+			queue_free()
+			return
+		modulate.a = 1.0 - _age / SECONDS
+		queue_redraw()
+
+	func _draw() -> void:
+		# Flung out fast, slowing down.
+		var travel := SPEED * SECONDS * (1.0 - pow(1.0 - _age / SECONDS, 2.0))
+		for i in COUNT:
+			draw_set_transform(Vector2.from_angle(_headings[i]) * travel, _spins[i] * _age, Vector2.ONE)
+			var scrap := Rect2(-3.0, -2.0, 6.0, 4.0)
+			draw_rect(scrap, Art.PAPER)
+			draw_rect(scrap, Art.INK, false, 1.0)
+		draw_set_transform(Vector2.ZERO)
 
 
 class BlastRing:
