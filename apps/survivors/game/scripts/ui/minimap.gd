@@ -2,7 +2,8 @@ class_name Minimap
 extends Control
 ## The peninsula at a glance, top right of the HUD: San Francisco up north at its tip, San
 ## Jose down south, the hills and the Pacific to the west, the Bay to the east, the freeways and
-## Caltrain running down it, with the player, what the screen shows, and any bosses on it.
+## Caltrain running down it, with the player, what the screen shows, any bosses on it, and the
+## landmarks to check in at (打卡): a hollow pin until checked in at, then a gold one.
 ##
 ## It always shows the whole of the named map (OVERVIEW). The city goes on past that; a player
 ## who walks off its edge makes the map zoom out to take them in too, rather than slide the
@@ -81,6 +82,16 @@ func _draw() -> void:
 	# The water, which is what "the end of the map" is.
 	for water: Rect2 in BayArea.water_rects(window):
 		_fill(map, window, water, City.WATER)
+
+	for id: String in BayArea.STAMPS:
+		var pin := _to_map(map, window, game.stamps.spot(id))
+		if not map.has_point(pin):
+			continue
+		if Progress.has_stamp(id):
+			draw_circle(pin, 2.2, Art.BRAND)
+			draw_arc(pin, 2.2, 0.0, TAU, 12, Art.INK, 1.0, true)
+		else:
+			draw_arc(pin, 2.0, 0.0, TAU, 12, Art.HP_RED, 1.2, true)
 
 	# Bosses, then the player on top: what the screen shows, and a dot where they stand.
 	for enemy in game.enemies:

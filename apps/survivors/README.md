@@ -1,6 +1,6 @@
 # apps/survivors
 
-`survivors.lab115.com` —— 硅谷幸存者，一个 Godot 4.7 做的割草游戏。
+`survivors.lab115.com` —— 大厂幸存者（Big Tech Survivors，原名「硅谷幸存者」），一个 Godot 4.7 做的割草游戏。
 
 ```
 game/              # Godot 工程（玩法、素材、测试都在这里，见 game/README.md）

@@ -1,4 +1,4 @@
-# 硅谷幸存者: exports the Godot project in game/ to a web build, then serves it with nginx.
+# 大厂幸存者 (Big Tech Survivors): exports the Godot project in game/ to a web build, then serves it with nginx.
 # The export runs here instead of being committed, so what's live is always what's in the repo
 # and shipping doesn't depend on anyone's local Godot install.
 

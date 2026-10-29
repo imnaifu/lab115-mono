@@ -121,6 +121,18 @@ var _sharing := false
 var _settings_overlay: Control
 var _settings_holder: Control
 var _settings_open := false
+## The 打卡 · 成就 page (from the title screen), and which tab it shows.
+var _collection_overlay: Control
+var _collection_holder: Control
+var _collection_open := false
+var _collection_tab := 0
+## The banner for a landmark checked in at or an achievement earned, and the ones waiting.
+var _badge: PanelContainer
+var _badge_icon: TextureRect
+var _badge_kicker: Label
+var _badge_title: Label
+var _badge_tween: Tween
+var _badge_queue: Array = []
 var _tilt_hint: Label
 var _shown_state := -1
 ## Brightens the XP bar for a moment whenever XP comes in, so picking up a star registers.
@@ -145,6 +157,7 @@ func _ready() -> void:
 	_root.add_child(_joystick)
 	_build_top_bar()
 	_build_toast()
+	_build_badge()
 	_build_bottom_hints()
 	_title_overlay = _overlay(Art.PAPER_SOFT)
 	_title_holder = _full(_title_overlay)
@@ -160,6 +173,8 @@ func _ready() -> void:
 	_end_overlay = _overlay(Art.PAPER_SOFT)
 	_end_holder = _full(_end_overlay)
 	_add_corner_version(_end_overlay)
+	_collection_overlay = _overlay(Art.PAPER_SOFT)
+	_collection_holder = _full(_collection_overlay)
 	# Last, so it opens on top of the title or pause screen it was opened from.
 	_settings_overlay = _overlay(Art.PAPER_SOFT)
 	_settings_holder = _full(_settings_overlay)
@@ -171,6 +186,8 @@ func _ready() -> void:
 	game.announced.connect(_show_toast)
 	game.chest_opened.connect(_show_chest)
 	game.boss_move.connect(_on_boss_move)
+	game.stamps.checked_in.connect(_on_checked_in)
+	game.achievements.unlocked.connect(_on_achievement)
 
 
 func _notification(what: int) -> void:
@@ -198,6 +215,7 @@ func _process(delta: float) -> void:
 	_update_boss_bar()
 	# The announcements drop in under whatever the centre column shows right now.
 	_toast.offset_top = _center_column.position.y + _center_column.size.y + 6.0
+	_badge.offset_top = _toast.offset_top + 34.0
 	var district := BayArea.district_of(Vector2i((game.player.position / City.BLOCK).floor()))
 	if district != _district:
 		_district = district
@@ -233,6 +251,9 @@ func _process(delta: float) -> void:
 		_move_hint.modulate.a = 0.75 + 0.25 * sin(_clock * 5.0)
 	if state != Game.State.TITLE and state != Game.State.PAUSED:
 		_settings_open = false
+	if state != Game.State.TITLE:
+		_collection_open = false
+	_collection_overlay.visible = _collection_open
 	_settings_overlay.visible = _settings_open
 	if _settings_open and _tilt_hint != null:
 		# Why tilt steering can't work yet only matters while it's switched on.
@@ -263,6 +284,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _settings_open:
 		if key == KEY_ESCAPE:
 			_close_settings()
+		return
+	if _collection_open:
+		if key == KEY_ESCAPE:
+			_collection_open = false
 		return
 	match game.state:
 		Game.State.TITLE:
@@ -611,6 +636,80 @@ func _show_toast(text: String) -> void:
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.5)
 
 
+## The banner for 局外成长 earned mid-run: a card under the announcements with a picture, a line
+## saying what happened and the name. A landmark's comes down like a red stamp, slightly askew;
+## an achievement's pops in gold. Several at once wait their turn.
+func _build_badge() -> void:
+	_badge = UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6, 16, 6)))
+	_badge.anchor_left = 0.5
+	_badge.anchor_right = 0.5
+	_badge.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_badge.modulate.a = 0.0
+	_badge.resized.connect(func() -> void: _badge.pivot_offset = _badge.size / 2.0)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_badge.add_child(row)
+	_badge_icon = UiKit.icon("star_gold", 34.0)
+	row.add_child(_badge_icon)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 0)
+	lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(lines)
+	_badge_kicker = UiKit.label("", 11, "strong")
+	lines.add_child(_badge_kicker)
+	_badge_title = UiKit.label("", 17, "heavy")
+	lines.add_child(_badge_title)
+	_root.add_child(_badge)
+
+
+func _on_checked_in(id: String) -> void:
+	var stamp: Dictionary = BayArea.STAMPS[id]
+	_queue_badge([stamp["art"], tr("打卡成功") + " · " + Stamps.bonus_text(id), tr(stamp["name"]), Art.HP_RED, true])
+
+
+func _on_achievement(id: String) -> void:
+	var entry := Achievements.data(id)
+	_queue_badge([entry["art"], tr("成就达成"), tr(entry["name"]), Art.BRAND_DEEP, false])
+
+
+## `badge` is [art, line, name, colour, whether it's a stamp].
+func _queue_badge(badge: Array) -> void:
+	_badge_queue.append(badge)
+	if _badge_tween == null or not _badge_tween.is_running():
+		_next_badge()
+
+
+func _next_badge() -> void:
+	if _badge_queue.is_empty():
+		return
+	var badge: Array = _badge_queue.pop_front()
+	var stamp: bool = badge[4]
+	_badge_icon.texture = Art.texture(badge[0])
+	_badge_kicker.text = badge[1]
+	_badge_kicker.add_theme_color_override("font_color", badge[3])
+	_badge_title.text = badge[2]
+	_badge.add_theme_stylebox_override("panel", UiKit.box(Art.PAPER, badge[3] if stamp else Art.INK, UiKit.OUTLINE_HEAVY if stamp else UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6, 16, 6)))
+	# Back to a zero-width anchor point, so the box regrows round the centre for the new text.
+	_badge.offset_left = 0
+	_badge.offset_right = 0
+	_badge.rotation = -0.06 if stamp else 0.0
+	_badge.scale = Vector2.ONE * (1.7 if stamp else 0.7)
+	_badge.modulate.a = 0.0
+	Sound.play("pick" if stamp else "level_up")
+	_badge_tween = create_tween()
+	if stamp:
+		# Slammed down: big, then hard onto the page.
+		_badge_tween.tween_property(_badge, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	else:
+		_badge_tween.tween_property(_badge, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_badge_tween.parallel().tween_property(_badge, "modulate:a", 1.0, 0.08)
+	_badge_tween.tween_interval(2.2)
+	_badge_tween.tween_property(_badge, "modulate:a", 0.0, 0.4)
+	_badge_tween.tween_callback(_next_badge)
+
+
 ## Two pills near the bottom: how to move, for a first few runs until the player does (the live
 ## data had a first-time player stand still at level 1 for half a minute); and in red, how to
 ## dodge a boss move the first time it comes up in a run.
@@ -696,9 +795,9 @@ func _show_title() -> void:
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	page.add_child(column)
 
-	column.add_child(UiKit.kicker("SILICON VALLEY SURVIVORS"))
+	column.add_child(UiKit.kicker("BIG TECH SURVIVORS"))
 	column.add_child(UiKit.gap(6))
-	_title_heading = _heading("硅谷幸存者", TITLE_SIZE if portrait else 40)
+	_title_heading = _heading("大厂幸存者", TITLE_SIZE if portrait else 40)
 	column.add_child(_title_heading)
 	var pitch := UiKit.label("躲开 Bug、会议和 Deadline\n撑过 10 分钟就能敲钟上市" if portrait else "躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市！", 15 if portrait else 13)
 	pitch.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -715,15 +814,25 @@ func _show_title() -> void:
 	var settings := _settings_button()
 	settings.custom_minimum_size.x = 140.0 if portrait else 120.0
 	settings.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var collection := UiKit.secondary_button("打卡 · 成就", _open_collection)
+	collection.icon = Art.texture("star_gold")
+	collection.add_theme_constant_override("icon_max_width", 18)
+	collection.custom_minimum_size.x = 150.0 if portrait else 140.0
 	if portrait:
 		column.add_child(start)
 		column.add_child(UiKit.gap(12))
-		column.add_child(settings)
+		var more := HBoxContainer.new()
+		more.alignment = BoxContainer.ALIGNMENT_CENTER
+		more.add_theme_constant_override("separation", 12)
+		more.add_child(collection)
+		more.add_child(settings)
+		column.add_child(more)
 	else:
 		var buttons := HBoxContainer.new()
 		buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 		buttons.add_theme_constant_override("separation", 12)
 		buttons.add_child(start)
+		buttons.add_child(collection)
 		buttons.add_child(settings)
 		column.add_child(buttons)
 
@@ -914,7 +1023,7 @@ func _size_heading(holder: Control, font_size: int) -> void:
 
 
 ## Shrinks the title when its name in the current language is too wide for one line on this
-## screen (Silicon Valley Survivors on an upright phone).
+## screen (Big Tech Survivors on an upright phone).
 func _fit_title() -> void:
 	if _title_heading == null or not is_instance_valid(_title_heading) or _root.size.x <= 0.0:
 		return
@@ -1527,6 +1636,9 @@ func _show_end(victory: bool) -> void:
 	var culprit := _culprit_row(victory)
 	if culprit != null:
 		left.add_child(culprit)
+	var earned := _earned_row()
+	if earned != null:
+		left.add_child(earned)
 	var advice := _end_advice(victory)
 	if not advice.is_empty():
 		left.add_child(_advice_card(advice))
@@ -1551,6 +1663,35 @@ func _show_end(victory: bool) -> void:
 	_focus(again)
 	_pop_in(page, 0.0)
 	_fit_to_screen(_end_holder)
+
+
+## What the run added to 局外成长, on gold: landmarks checked in at and achievements earned;
+## null when nothing.
+func _earned_row() -> Control:
+	var parts := PackedStringArray()
+	var stamp_names := PackedStringArray()
+	for id in game.stamps.new_ids:
+		stamp_names.append(tr(BayArea.STAMPS[id]["name"]))
+	if not stamp_names.is_empty():
+		parts.append(tr("打卡 ") + "、".join(stamp_names))
+	var achievement_names := PackedStringArray()
+	for id in game.achievements.new_ids:
+		achievement_names.append(tr(Achievements.data(id)["name"]))
+	if not achievement_names.is_empty():
+		parts.append(tr("成就 ") + "、".join(achievement_names))
+	if parts.is_empty():
+		return null
+	var row := UiKit.panel(UiKit.box(Art.BRAND_SOFT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(10, 6, 10, 6)))
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 8)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(line)
+	line.add_child(UiKit.icon("star_gold", 18))
+	var label := UiKit.label(tr("本局收获：") + " · ".join(parts), 12, "strong")
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line.add_child(label)
+	return row
 
 
 ## Who ended the run and how, on pink (or, after a win, who came closest).
@@ -1800,6 +1941,147 @@ func _open_settings() -> void:
 	column.add_child(done)
 	_focus(done)
 	_fit_to_screen(_settings_holder)
+
+
+## The 打卡 · 成就 page: every landmark (checked in at or still to find, with where it is and what
+## it gives) and every achievement (with progress for the counted ones), on two tabs.
+func _open_collection(tab: int = -1) -> void:
+	if tab >= 0:
+		_collection_tab = tab
+	_collection_open = true
+	_clear(_collection_holder)
+	var portrait := _is_portrait()
+	var page := _page(Vector4(16, 20, 16, 16) if portrait else Vector4(24, 14, 24, 12))
+	_collection_holder.add_child(page)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12 if portrait else 8)
+	page.add_child(column)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	column.add_child(header)
+	var back := UiKit.round_button("ui_back", func() -> void: _collection_open = false, 44.0, Art.INK)
+	header.add_child(back)
+	var title := UiKit.label("打卡 · 成就", 22, "heavy")
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var stamped := Achievements.progress("stamps_all")[0] as int
+	var earned := Progress.achievement_ids().size()
+	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, BayArea.STAMPS.size()],
+		"%s %d/%d" % [tr("成就"), earned, Achievements.LIST.size()]], _collection_tab, _open_collection, Art.PAPER_SUNK)
+	tabs.custom_minimum_size.x = 260.0
+	if portrait:
+		column.add_child(tabs)
+	else:
+		tabs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		header.add_child(tabs)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
+	if _collection_tab == 0:
+		_fill_stamps(body, portrait)
+	else:
+		_fill_achievements(body, portrait)
+	_focus(back)
+
+
+func _fill_stamps(body: VBoxContainer, portrait: bool) -> void:
+	var totals := Stamps.total_text()
+	var summary := tr("走到地标跟前站 1 秒就能打卡，每个地标都送一点永久加成") if totals.is_empty() \
+		else tr("已获得：") + "  ".join(totals)
+	body.add_child(_collection_note(summary))
+	var grid := GridContainer.new()
+	# One column on an upright phone: two squeeze the names and notes into a few characters a line.
+	grid.columns = 1 if portrait else 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(grid)
+	for id: String in BayArea.STAMPS:
+		var stamp: Dictionary = BayArea.STAMPS[id]
+		var done := Progress.has_stamp(id)
+		var block: Vector2i = stamp["block"]
+		var district := tr(BayArea.DISTRICTS[BayArea.district_of(block)]["name"])
+		var where := tr("%s · %s 和 %s 路口") % [district, BayArea.north_south_name(block.x, block.y), BayArea.east_west_name(block.y + 1)]
+		var lines := [tr(stamp["note"]) if done else where, (tr("已打卡 · ") if done else tr("打卡后 · ")) + Stamps.bonus_text(id)]
+		grid.add_child(_collection_card(stamp["art"], tr(stamp["name"]), lines, done, [], portrait))
+
+
+func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
+	for group: String in Achievements.GROUPS:
+		# A plain label rather than a kicker: kickers stay Latin and untranslated, these are words.
+		body.add_child(UiKit.label(group, 13, "strong", Art.INK_MUTED))
+		var grid := GridContainer.new()
+		grid.columns = 1 if portrait else 2
+		grid.add_theme_constant_override("h_separation", 8)
+		grid.add_theme_constant_override("v_separation", 8)
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		body.add_child(grid)
+		for entry: Dictionary in Achievements.LIST:
+			if entry["group"] != group:
+				continue
+			var done := Progress.has_achievement(entry["id"])
+			var counted := Achievements.progress(entry["id"])
+			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), [tr(entry["text"])], done, counted if not done else [], portrait))
+
+
+## A line of explanation on a soft blue panel at the top of a tab.
+func _collection_note(text: String) -> Control:
+	var note := UiKit.panel(UiKit.box(Art.SKY_LIGHT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
+	var label := UiKit.label(text, 12)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.add_child(label)
+	return note
+
+
+## One landmark or achievement: its picture in a well (a grey silhouette until earned), the
+## name, a line or two, and a bar for counted progress ([done, goal], or empty).
+func _collection_card(art: String, title: String, lines: Array, done: bool, counted: Array, portrait: bool) -> Control:
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK if done else Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(10, 8, 10, 8)))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(row)
+	var well := UiKit.well(art, 44.0 if portrait else 40.0, Art.BRAND_SOFT if done else Art.PAPER_SUNK)
+	if not done:
+		# A silhouette: what to look for, not what it looks like yet.
+		well.get_child(0).get_child(0).modulate = Color(0, 0, 0, 0.18)
+	row.add_child(well)
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 1)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	var name_label := UiKit.label(title, 14, "strong", Art.INK if done else Art.INK_MUTED)
+	# Wrapping, so a long name never makes the page wider than the screen.
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.add_child(name_label)
+	for line: String in lines:
+		var label := UiKit.label(line, 11, "muted")
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.add_child(label)
+	if not counted.is_empty() and counted[1] > 0:
+		var bar_row := HBoxContainer.new()
+		bar_row.add_theme_constant_override("separation", 6)
+		bar_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text.add_child(bar_row)
+		var bar := _progress(Vector2(0, 6), Art.PAPER_SUNK, Art.BRAND)
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bar.value = float(counted[0]) / counted[1]
+		bar_row.add_child(bar)
+		var numbers := UiKit.label("%d/%d" % counted, 11, "strong", Art.INK_MUTED)
+		numbers.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		bar_row.add_child(numbers)
+	return card
 
 
 ## White card holding setting rows with hairlines between them.

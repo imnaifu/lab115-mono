@@ -427,6 +427,22 @@ func _clear_block(content: Dictionary) -> void:
 		_fading.erase(entry)
 
 
+## Where to stand to check in at the landmark on `block` (Stamps): at the foot of a landmark
+## drawing, by a campus's mascot on the lawn, or else by its sign. Worked out the way _populate
+## places them, without building the block (the minimap wants every one, near or not).
+func stamp_spot(block: Vector2i) -> Vector2:
+	var origin := Vector2(block) * BLOCK
+	var lawn_top := origin.y + ROAD_HALF + SIDEWALK + 50.0
+	if BayArea.LAWN_LANDMARKS.has(block):
+		return Vector2(origin.x + BLOCK.x * 0.62, lawn_top + 90.0)
+	if String(BayArea.LANDMARKS.get(block, "")).begins_with("brand_row:"):
+		var inner_left := origin.x + _road_reach_at(block.x, block.y) + 14.0
+		if block.x == BayArea.RAILWAY_COLUMN and BayArea.has_railway(block.y):
+			inner_left += RAILWAY_OFFSET + RAILWAY_HALF
+		return Vector2(inner_left + 70.0, lawn_top + 40.0)
+	return Vector2(origin.x + BLOCK.x / 2.0, origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0)
+
+
 ## Builds one block: a street sign at its corner, a row of buildings (or a landmark) along its
 ## bottom road with trees in the gaps and props on the sidewalk, and bushes and trees dotted
 ## over the lawn behind. Some blocks are parks with no buildings.

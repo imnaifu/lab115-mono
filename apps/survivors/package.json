@@ -1,7 +1,7 @@
 {
   "name": "survivors",
   "private": true,
-  "description": "硅谷幸存者 — a Godot game (game/), exported to the web inside the Docker build and served by nginx",
+  "description": "大厂幸存者 (Big Tech Survivors) — a Godot game (game/), exported to the web inside the Docker build and served by nginx",
   "scripts": {
     "build": "node check-project.mjs"
   }

@@ -117,6 +117,9 @@ var _next_taunt_at := 0.0
 ## Where the outsourced workers stand this frame (SquadWeapon sets it): enemies near one go for it
 ## instead of the player.
 var decoys: Array[Vector2] = []
+## What this run adds to 局外成长: landmarks checked in at, achievements earned.
+var stamps: Stamps
+var achievements: Achievements
 
 
 func _ready() -> void:
@@ -129,6 +132,8 @@ func _ready() -> void:
 	runs_before = Settings.get_value("runs_played", 0)
 	rng.randomize()
 
+	stamps = Stamps.new(self)
+	achievements = Achievements.new(self)
 	player = Player.new()
 	player.game = self
 	player.setup_job(Jobs.saved())
@@ -197,6 +202,8 @@ func _process(delta: float) -> void:
 	perks.tick(delta)
 	_tick_pickups(delta)
 	_check_player_contact()
+	stamps.tick(delta)
+	achievements.tick(delta)
 
 
 func _notification(what: int) -> void:
@@ -282,7 +289,10 @@ func lob_pie(from: Vector2, to: Vector2, seconds: float, damage: float, thrower:
 func hurt_player(amount: float, by: String, how: String = "contact") -> void:
 	telemetry.last_hurt_by = by
 	telemetry.last_hurt_how = how
+	var hp_before := player.hp
 	player.take_damage(amount)
+	if player.hp < hp_before:
+		achievements.on_hurt()
 
 
 ## All living enemies whose body overlaps the circle.
@@ -429,6 +439,7 @@ func _kill(enemy: Enemy) -> void:
 	Effects.poof(self, enemy.position, enemy.color)
 	Effects.death_pop(self, enemy.body_sprite(), enemy.position, enemy.is_elite)
 	if enemy.is_elite:
+		achievements.on_boss_killed(enemy.type_name)
 		Effects.ring(self, enemy.position, enemy.radius * 4.0, enemy.color)
 		player.shake(0.25, 3.0)
 		hitstop(BOSS_KILL_HITSTOP)
@@ -783,6 +794,7 @@ func set_job(job_id: String) -> void:
 
 ## The result screen's 换职业: back to the title screen to pick another job.
 func change_job() -> void:
+	achievements.finish(false)
 	telemetry.finish("restart")
 	skip_title = false
 	get_tree().paused = false
@@ -801,6 +813,9 @@ func start_run() -> void:
 ## Zeroes the tilt to how the phone is held right now, and says so: without the hint, the first
 ## tilt player wonders why holding the phone at an angle doesn't send them running.
 func _on_run_started() -> void:
+	# Every landmark checked in at in earlier runs: after the job's own build, before the run's
+	# data notes the player's numbers.
+	Stamps.apply_all(player)
 	telemetry.start()
 	Sound.music("battle")
 	Tilt.calibrate()
@@ -821,6 +836,7 @@ func set_paused(value: bool) -> void:
 
 func restart() -> void:
 	# A run given up from the pause screen; after a death or a win it was already sent.
+	achievements.finish(false)
 	telemetry.finish("restart")
 	skip_title = true
 	get_tree().paused = false
@@ -836,6 +852,8 @@ func _end_run(victory: bool) -> void:
 		return
 	state = State.ENDED
 	get_tree().paused = true
+	# Before the run's data goes out and the result screen is built: both list what it earned.
+	achievements.finish(victory)
 	telemetry.finish("win" if victory else "died")
 	Sound.stop_music()
 	Sound.play("win" if victory else "lose")

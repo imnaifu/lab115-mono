@@ -13,7 +13,9 @@ extends RefCounted
 ##   started loading (pageviews without it are visitors lost while the game loaded).
 ## - run_start: `job` (Jobs), device, screen, orientation, language, tilt, sound and music, runs played before,
 ##   `from` (the link's ?from=, e.g. "share" for the result image's QR code), and for a page's
-##   first run `page_ms`, how long after the page opened it started.
+##   first run `page_ms`, how long after the page opened it started; from .19, `stamps` and
+##   `achievements`, how many landmarks this device has checked in at and achievements earned
+##   (局外成长: the stamps' bonuses make a player stronger, so compare runs with the same count).
 ## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
@@ -21,7 +23,8 @@ extends RefCounted
 ##   `timeline` of
 ##   "seconds:level/HP/enemies" every 30 s, bosses met and killed, the `district` the run ended
 ##   in, and frames per second (average and worst second). `dmg_<weapon>` is each weapon's share of
-##   all damage in percent, for the weapons (and damaging perks) that dealt any.
+##   all damage in percent, for the weapons (and damaging perks) that dealt any. From .19,
+##   `new_stamps` and `new_achievements`: the ids checked in at and earned this run.
 ## The page itself also reports script errors (js_error), see export_presets.cfg.
 ## A run still going when the page closes is saved as a snapshot every SNAPSHOT_SECONDS and
 ## sent as a "quit" by the page itself when it closes and again on the next visit (in-app
@@ -30,7 +33,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.18"
+const VERSION := "2026-10-28.19"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -103,6 +106,8 @@ func start() -> void:
 		"music": Sound.music_enabled(),
 		"runs_before": runs_before,
 		"from": _link_source(),
+		"stamps": Progress.stamp_ids().size(),
+		"achievements": Progress.achievement_ids().size(),
 	}
 	if _runs_on_page == 1:
 		data["page_ms"] = _page_ms()
@@ -218,6 +223,8 @@ func _summary(result: String) -> Dictionary:
 		"fps_avg": roundi(_fps_sum / _fps_count) if _fps_count > 0 else 0,
 		"fps_worst": roundi(_fps_worst) if _fps_count > 0 else 0,
 		"device": "phone" if Device.is_handheld() else "desktop",
+		"new_stamps": ",".join(_game.stamps.new_ids),
+		"new_achievements": ",".join(_game.achievements.new_ids),
 	}
 	# Each source's share of all damage dealt, in percent (the end screen's ranking): only those
 	# that dealt some, now that there are fifteen weapons and a run carries six of them.

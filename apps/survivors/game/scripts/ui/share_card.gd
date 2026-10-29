@@ -61,8 +61,8 @@ func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> vo
 	card.add_child(column)
 
 	# Unlike the screens' Latin kickers, the card's names the game in the player's language:
-	# nothing else on the image does, and in Chinese 硅谷幸存者 is the name people know it by.
-	column.add_child(UiKit.kicker(tr("硅谷幸存者").to_upper(), Art.INK_MUTED, 11 * SCALE))
+	# nothing else on the image does, and in Chinese 大厂幸存者 is the name people know it by.
+	column.add_child(UiKit.kicker(tr("大厂幸存者").to_upper(), Art.INK_MUTED, 11 * SCALE))
 	column.add_child(UiKit.gap(8 * SCALE))
 	var headline := HBoxContainer.new()
 	headline.alignment = BoxContainer.ALIGNMENT_CENTER
