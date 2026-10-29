@@ -22,7 +22,8 @@ extends SceneTree
 ## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves),
 ## --share (with --shots, also render the end screen's result image into the shots directory, or
 ## with --pause-at the pause screen's run-so-far image),
-## --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
+## --only-perks (at level-ups take a passive whenever one is offered, so the run shows what the
+## starting weapon alone does), --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
 ## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
 ## to look at the evolutions).
 
@@ -61,6 +62,7 @@ var _chest_frames := 0
 var _chest_shot_taken := false
 var _share := false
 var _hold_hp := -1.0
+var _only_perks := false
 var _evolve := false
 ## Melee jobs' bots only step away from enemies right on top of them, so their swings land.
 var _avoid_radius := 70.0
@@ -112,6 +114,8 @@ func _initialize() -> void:
 			Settings.overrides["job"] = value
 			if Upgrades.WEAPONS[Jobs.data(value)["weapon"]]["type"] == "melee":
 				_avoid_radius = 35.0
+		elif arg == "--only-perks":
+			_only_perks = true
 		elif arg.begins_with("--hold-hp="):
 			_hold_hp = clampf(float(value), 0.01, 1.0)
 		elif arg == "--evolve":
@@ -290,7 +294,7 @@ func _grant_all_weapons() -> void:
 ## A random card; with --all-weapons, a perk whenever one is offered so the weapons stay level.
 func _pick_choice() -> int:
 	var choices := _game.current_choices
-	if _all_weapons_level > 0:
+	if _all_weapons_level > 0 or _only_perks:
 		for i in choices.size():
 			if choices[i]["kind"] != "weapon":
 				return i

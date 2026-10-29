@@ -10,7 +10,9 @@ extends Weapon
 ## 更多网格线 adds one more line each way, 更粗更久 makes every line wider, longer-lasting and
 ## harder-hitting.
 
-const COOLDOWN := 2.4
+## 2.0, down from 2.4, so the lines are up three quarters of the time: data scientist bots ended
+## their first three minutes anywhere from level 5 to 11, one at a third of its health.
+const COOLDOWN := 2.0
 ## Per tick, every TICK seconds, to everything on a line.
 const BASE_DAMAGE := 5.0
 const DAMAGE_PER_THICKER := 2.0

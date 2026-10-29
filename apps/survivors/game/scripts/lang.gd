@@ -308,7 +308,7 @@ const EN := {
 	"同时多开一个会": "One more meeting at once",
 	"再多开一个会，伤害 +3，会议室更大": "Another meeting, damage +3, bigger room",
 	"防火墙": "Firewall",
-	"一面墙绕着你转，撞到的怪受伤并被推开；怪钻进圈里，墙会收进去打": "A wall circles you, hurting and knocking back what it hits; when an enemy gets inside, the circle closes in on it",
+	"两面墙绕着你转，撞到的怪受伤并被推开": "Two walls circle you, hurting and knocking back what they hit",
 	"多一面墙": "One more wall",
 	"外包团队": "Contractors",
 	"招 2 个外包，自己找怪打；被打倒几秒后重新招人": "Hires 2 contractors who go after enemies; a downed one is replaced after a few seconds",

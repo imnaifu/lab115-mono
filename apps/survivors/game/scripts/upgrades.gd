@@ -44,7 +44,7 @@ const WEAPONS := {
 	"meeting_room": {"name": "拉会", "art": "meeting_room", "behavior": "zone", "type": "area",
 		"levels": ["往怪最多的地方拉个会：圈里的怪变慢、持续掉血", "伤害 +2，会议室更大", "同时多开一个会", "伤害 +2，会议室更大", "再多开一个会，伤害 +3，会议室更大"]},
 	"firewall": {"name": "防火墙", "art": "firewall", "behavior": "orbit", "type": "summon", "job": "ops",
-		"levels": ["一面墙绕着你转，撞到的怪受伤并被推开；怪钻进圈里，墙会收进去打"]},
+		"levels": ["两面墙绕着你转，撞到的怪受伤并被推开"]},
 	"drone": {"name": "无人机", "art": "drone", "behavior": "seek", "type": "summon",
 		"levels": ["飞出去追着附近的敌人撞", "多一架无人机", "伤害 +4，飞得更快", "多一架无人机", "多一架，伤害 +4，飞得更快"]},
 	"outsource": {"name": "外包团队", "art": "outsourcing", "behavior": "squad", "type": "summon",

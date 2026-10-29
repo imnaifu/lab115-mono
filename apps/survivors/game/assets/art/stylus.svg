@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 <g transform="rotate(45 32 32)">
-<g stroke="#2f3542" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
-<rect x="25" y="4" width="14" height="40" rx="6" fill="#ff8fa0"/>
-<path d="M25 44 L39 44 L34 56 L30 56 Z" fill="#f4f6fa"/>
-<path d="M30 56 L32 61 L34 56" fill="#2f3542"/>
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<rect x="27" y="3" width="10" height="15" rx="4" fill="#4a5a7a"/>
+<path d="M37 6 L40 6 L40 21 L37 23" fill="none" stroke-width="2.5"/>
+<rect x="27" y="17" width="10" height="26" rx="2" fill="#ff8fa0"/>
+<rect x="27.5" y="43" width="9" height="6" fill="#4a5a7a"/>
+<path d="M27.5 49 L36.5 49 L33.5 57 L30.5 57 Z" fill="#dfe4ea"/>
 </g>
-<rect x="28.5" y="14" width="7" height="12" rx="3" fill="#ffffff" fill-opacity="0.85"/>
-<path d="M25 36 L39 36" stroke="#2f3542" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M30.5 57 L32 62 L33.5 57 Z" fill="#2f3542"/>
+<rect x="29" y="20" width="2.5" height="18" rx="1.2" fill="#ffffff" fill-opacity="0.8"/>
 </g>
 </svg>

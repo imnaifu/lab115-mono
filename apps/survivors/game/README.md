@@ -111,6 +111,7 @@ godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=610
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=90 --restart-at=40   # 验证重开
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=180 --god --all-weapons=5   # 职业能拿的武器全满级，看各自的伤害占比
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=610 --job=pm   # 用某个职业玩一局
+godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=90 --job=ops --only-perks   # 升级只拿被动，只看开局武器本身的强度
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=30 --god --job=ops --evolve   # 职业能拿的武器全部满级并进化
 godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=60 --god --perks=standup:5,cost_cut:5 --boss=incident,pie_boss   # 开局带上这些被动、把这些 boss 叫到身边
 ```
