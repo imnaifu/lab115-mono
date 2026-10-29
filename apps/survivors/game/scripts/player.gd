@@ -87,17 +87,6 @@ func setup_job(job_id: String) -> void:
 	queue_redraw()
 
 
-## What a weapon's damage is multiplied by for this job: 专精 for weapons of the job's type, or
-## for the data scientist 多开实验, a bonus that shrinks with every weapon carried.
-func weapon_multiplier(weapon_id: String) -> float:
-	var job_data := Jobs.data(job)
-	if job_data.get("multitask", false):
-		return 1.0 + Jobs.MULTITASK_BONUS - Jobs.MULTITASK_PER_WEAPON * weapons.size()
-	if Upgrades.WEAPONS[weapon_id]["type"] == job_data["type"]:
-		return Jobs.SPECIALTY_DAMAGE
-	return 1.0
-
-
 func _process(delta: float) -> void:
 	var direction: Vector2
 	if input_override != null:

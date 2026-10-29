@@ -65,10 +65,9 @@ func _on_evolved() -> void:
 	pass
 
 
-## What the damage in this weapon's tables is multiplied by: the player's damage bonus and what
-## their job does for this weapon (专精, 多开实验; Player.weapon_multiplier).
+## What the damage in this weapon's tables is multiplied by: the player's damage bonus.
 func damage_scale() -> float:
-	return player.might * player.weapon_multiplier(id)
+	return player.might
 
 
 ## Looks up the current level's value in a per-level stat table.

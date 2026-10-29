@@ -15,9 +15,6 @@ extends CanvasLayer
 ## choose one by accident.
 const PICK_DELAY_MS := 300
 const SLOT_COUNT := 6
-## Weapon slots built: two rows of SLOT_COUNT, for the data scientist (多开实验) who can carry
-## more than six; everyone else only sees the first row.
-const WEAPON_SLOTS_BUILT := 12
 const SLOT_SIZE := 19.0
 ## The title screen's cast standing on a line: art, height, how high it hops from.
 const TITLE_SIZE := 44
@@ -383,7 +380,7 @@ func _build_top_bar() -> void:
 		grid.add_theme_constant_override("v_separation", 3)
 		grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slots.add_child(grid)
-		for i in (WEAPON_SLOTS_BUILT if slot_list == _weapon_slots else SLOT_COUNT):
+		for i in SLOT_COUNT:
 			var slot := Panel.new()
 			slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
 			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -545,22 +542,14 @@ func _recalibrate_tilt() -> void:
 
 func _refresh_inventory() -> void:
 	var weapons := game.player.weapons
-	var limit := _weapon_limit()
-	for i in WEAPON_SLOTS_BUILT:
+	for i in SLOT_COUNT:
 		var weapon: Weapon = weapons[i] if i < weapons.size() else null
-		_weapon_slots[i].visible = i < limit
 		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0, Art.SKY_LIGHT, weapon != null and weapon.evolved)
 	var passive_ids := game.upgrades.passive_levels.keys()
 	for i in SLOT_COUNT:
 		var passive_id: String = passive_ids[i] if i < passive_ids.size() else ""
 		var art: String = Upgrades.PASSIVES[passive_id]["art"] if passive_id != "" else ""
 		_fill_slot(_passive_slots[i], art, game.upgrades.passive_levels.get(passive_id, 0), Art.MINT_LIGHT)
-
-
-## How many weapons the player's job can carry: six, or for the data scientist every weapon it
-## can get.
-func _weapon_limit() -> int:
-	return mini(Jobs.max_weapons(game.player.job), Upgrades.weapons_for(game.player.job).size())
 
 
 ## A slot: the item's icon on its tint with the level on a small ink badge (a star once evolved,
@@ -813,9 +802,8 @@ func _job_face(job_id: String, picked: bool, face_size: float) -> Button:
 	return face
 
 
-## The picked job: name and what it is good with, its own weapon, its build and how it plays.
-## Sideways there is height for four lines only: the build goes on the name's line and
-## the data scientist's 多开实验 is just its tag.
+## The picked job: name and its weapon's type, its own weapon, its build and how it plays.
+## Sideways there is height for four lines only: the build goes on the name's line.
 func _job_detail(job_id: String, portrait: bool) -> Control:
 	var job_data := Jobs.data(job_id)
 	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
@@ -830,7 +818,7 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(name_row)
 	name_row.add_child(UiKit.label(job_data["name"], 16, "heavy"))
-	name_row.add_child(_type_tag(job_data["type"], job_data["type"] != ""))
+	name_row.add_child(_type_tag(Upgrades.WEAPONS[job_data["weapon"]]["type"]))
 	var stats := UiKit.label(tr("生命 %d · 护甲 %d · 移速 %d") % [job_data["hp"], job_data["armor"], job_data["speed"]], 11, "muted")
 	stats.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	if not portrait:
@@ -845,27 +833,16 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	weapon_row.add_child(UiKit.label(tr("专属武器：%s") % tr(weapon["name"]), 12, "strong"))
 	if portrait:
 		column.add_child(stats)
-	var lines: Array[String] = [tr(job_data["pitch"])]
-	if portrait and job_data.get("multitask", false):
-		lines.append(tr("多开实验：武器格不限，伤害 +20%，每拿一把 -5%"))
-	for i in lines.size():
-		var line := UiKit.label(lines[i], 12 if i == 0 else 11, "body" if i == 0 else "muted")
-		line.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		column.add_child(line)
+	var pitch := UiKit.label(job_data["pitch"], 12)
+	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(pitch)
 	return card
 
 
-## A weapon type as a coloured tag ("近战"), "+20%" on it where it is the job's specialty; the
-## data scientist, with no type, is 多开实验.
-func _type_tag(type: String, specialty: bool) -> Control:
-	if type == "":
-		return UiKit.tag("多开实验", Art.PAPER_SUNK, Art.INK)
+## A weapon type as a coloured tag: 射击, 近战, 区域, 召唤.
+func _type_tag(type: String) -> Control:
 	var info: Dictionary = Jobs.TYPES[type]
-	var text := tr(info["name"]) + (" +20%" if specialty else "")
-	var pill := UiKit.tag(text, info["fill"], info["ink"])
-	(pill.get_child(0) as Label).auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	return pill
+	return UiKit.tag(info["name"], info["fill"], info["ink"])
 
 
 func _pick_job(job_id: String) -> void:
@@ -1040,10 +1017,10 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		badge = UiKit.tag("新武器", Art.SKY_LIGHT, Art.LINK) if kind == "weapon" else UiKit.tag("被动", Art.MINT_LIGHT, Art.GREEN_INK)
 	elif kind != "heal":
 		badge = UiKit.level_dots(level - 1, choice["max"], true)
-	# What type of weapon it is, and whether the job is better with it (专精).
+	# What type of weapon it is.
 	var type_tag: Control = null
 	if kind == "weapon":
-		type_tag = _type_tag(choice["type"], choice["type"] == Jobs.data(game.player.job)["type"])
+		type_tag = _type_tag(choice["type"])
 	var description := UiKit.label(choice["text"], 13 if portrait else 11, "muted")
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# What the card changes in numbers ("伤害 14 → 18"), translated already; none on the fallback card.
@@ -1374,7 +1351,7 @@ func _show_pause() -> void:
 	var weapon_chips: Array = []
 	for weapon in game.player.weapons:
 		weapon_chips.append([Upgrades.weapon_name(weapon.id, weapon.evolved), weapon.level, weapon.art, weapon.evolved])
-	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), _weapon_limit()], 12, "strong", Art.INK_MUTED))
+	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), Jobs.MAX_WEAPONS], 12, "strong", Art.INK_MUTED))
 	build.add_child(_chip_grid(weapon_chips, Art.SKY_LIGHT))
 	var passive_chips: Array = []
 	for passive_id: String in game.upgrades.passive_levels:

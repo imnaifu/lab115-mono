@@ -110,7 +110,7 @@ func _initialize() -> void:
 			_share = true
 		elif arg.begins_with("--job="):
 			Settings.overrides["job"] = value
-			if Jobs.data(value)["type"] == "melee":
+			if Upgrades.WEAPONS[Jobs.data(value)["weapon"]]["type"] == "melee":
 				_avoid_radius = 35.0
 		elif arg.begins_with("--hold-hp="):
 			_hold_hp = clampf(float(value), 0.01, 1.0)

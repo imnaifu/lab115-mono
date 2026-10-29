@@ -243,21 +243,18 @@ func _roll(count: int, new_weapons: int) -> Array:
 	var pool: Array = []
 	var weights := PackedFloat32Array()
 	var player := _game.player
-	var job_type: String = Jobs.data(player.job)["type"]
-	var slots_left := player.weapons.size() < Jobs.max_weapons(player.job)
+	var slots_left := player.weapons.size() < Jobs.MAX_WEAPONS
 	for weapon_id in weapons_for(player.job):
-		# 专精: the job's own type turns up more often.
-		var favour := Jobs.SPECIALTY_WEIGHT if WEAPONS[weapon_id]["type"] == job_type else 1.0
 		var weapon := player.get_weapon(weapon_id)
 		if weapon == null:
 			if slots_left:
 				pool.append(_choice("weapon", weapon_id, 1))
-				weights.append(2.0 * favour)
+				weights.append(2.0)
 		elif weapon.level < MAX_LEVEL:
 			# Upgrading what you already carry is favoured so builds come together. The job's own
 			# weapon stands in as one entry and comes out as its pair of direction cards.
 			pool.append({"kind": "pair", "id": weapon_id} if BRANCHES.has(weapon_id) else _choice("weapon", weapon_id, weapon.level + 1))
-			weights.append(3.0 * favour)
+			weights.append(3.0)
 	var passive_slots_full := passive_levels.size() >= MAX_PASSIVES
 	for passive_id: String in PASSIVES:
 		var current: int = passive_levels.get(passive_id, 0)
@@ -451,7 +448,7 @@ func _shown_stat(stat_key: String, value: Variant, weapon_id: String) -> String:
 	var player := _game.player
 	match stat_key:
 		"damage":
-			return str(roundi(value * player.might * player.weapon_multiplier(weapon_id)))
+			return str(roundi(value * player.might))
 		"cooldown":
 			return tr("%s 秒") % _short_float(value * player.cooldown_scale)
 		"size":
