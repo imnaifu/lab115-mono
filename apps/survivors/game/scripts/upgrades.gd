@@ -31,10 +31,10 @@ const WEAPONS := {
 		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "多抄送 1 个", "伤害 +3，发得更勤", "多发一封，多抄送 1 个", "伤害 +3，多抄送 1 个，发得更勤"]},
 	"prd": {"name": "PRD 卷筒", "art": "prd_roll", "behavior": "swing", "type": "melee", "job": "pm",
 		"levels": ["朝最近的怪抡一扇形，把一片怪打退；升过两次后打中会定住一下"]},
-	"poke": {"name": "埋点", "art": "poke", "behavior": "poke", "type": "melee", "job": "data_scientist",
-		"levels": ["朝最近的怪和反方向来回连戳，每下戳穿一条线"]},
-	"guides": {"name": "参考线", "art": "guides", "behavior": "guides", "type": "area", "job": "designer",
-		"levels": ["以你为中心拉出横竖两条贯穿全屏的参考线，线上的怪持续掉血"]},
+	"poke": {"name": "数位笔", "art": "stylus", "behavior": "poke", "type": "melee", "job": "designer",
+		"levels": ["朝面朝的方向戳一下，戳穿一条线；没怪也照戳"]},
+	"guides": {"name": "坐标轴", "art": "axes", "behavior": "guides", "type": "area", "job": "data_scientist",
+		"levels": ["以你为中心拉出横竖两条贯穿全屏的坐标轴，轴上的怪持续掉血"]},
 	"pen": {"name": "钢笔工具", "art": "pen_tool", "behavior": "trail", "type": "area",
 		"levels": ["走过的地方留下一条线，碰到的怪持续掉血", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +4，线粗一半、留 3 秒"]},
 	"wifi": {"name": "Wi-Fi 信号", "art": "wifi", "behavior": "aura", "type": "area",
@@ -58,8 +58,8 @@ const EVOLUTIONS := {
 	"copy": {"passive": "headhunter", "name": "Ctrl+A 全选粘贴", "text": "朝 8 个方向一起粘贴"},
 	"screensaver": {"passive": "armor", "name": "动态壁纸", "text": "每次碰到屏幕边缘都炸一圈"},
 	"prd": {"passive": "standup", "name": "需求评审会", "text": "每次都抡满一圈，范围更大，定得更久"},
-	"poke": {"passive": "magnet", "name": "全埋点", "text": "一轮朝 12 个方向戳，线长 +20%"},
-	"guides": {"passive": "open_source", "name": "设计系统", "text": "参考线不再消失，一直留到下一组画出来"},
+	"poke": {"passive": "magnet", "name": "多点触控", "text": "每次朝 12 个方向一起戳，线长 +20%"},
+	"guides": {"passive": "open_source", "name": "实时看板", "text": "坐标轴不再消失，一直留到下一组画出来"},
 	"pen": {"passive": "swiftness", "name": "矢量图层", "text": "线留两倍久；画个圈，圈里的怪受一次重击"},
 	"wifi": {"passive": "regen", "name": "5G 基站", "text": "范围更大，打中怪就回一点血"},
 	"cloud": {"passive": "might", "name": "多云多活", "text": "劈的道数翻倍，范围翻倍"},
@@ -74,8 +74,8 @@ const BRANCHES := {
 	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +6，穿透 +1"}},
 	"prd": {"a": {"name": "更长", "text": "抡得更远，伤害 +6，出手更快"}, "b": {"name": "更宽", "text": "扇形更宽（四次就是一整圈），伤害 +6，出手更快"}},
 	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +7，推得更远"}},
-	"guides": {"a": {"name": "更多线", "text": "横竖各多一条参考线"}, "b": {"name": "更粗更久", "text": "线更粗、留得更久，伤害 +2"}},
-	"poke": {"a": {"name": "更长", "text": "戳得更远，伤害 +3；四次都选它时远处伤害 +40%"}, "b": {"name": "更多方向", "text": "一轮多戳几个方向，伤害 +3"}},
+	"guides": {"a": {"name": "更多网格线", "text": "横竖各多一条网格线"}, "b": {"name": "更粗更久", "text": "线更粗、留得更久，伤害 +2"}},
+	"poke": {"a": {"name": "更多方向", "text": "多戳几个方向（前 → 前后 → 四向 → 六向 → 八向），伤害 +3"}, "b": {"name": "更多次数", "text": "一轮多戳一下，伤害 +3"}},
 }
 
 const PASSIVES := {
@@ -100,7 +100,7 @@ const PASSIVES := {
 ## MAX_STATS_SHOWN of the ones that change (its text already sums up the step), so five narrow
 ## cards side by side still fit.
 const WEAPON_STAT_NAMES := {"damage": "伤害", "count": "数量", "pierce": "穿透", "radius": "范围",
-	"range": "长度", "arc": "角度", "speed": "速度", "size": "大小", "duration": "持续", "cooldown": "间隔"}
+	"range": "长度", "arc": "角度", "times": "次数", "speed": "速度", "size": "大小", "duration": "持续", "cooldown": "间隔"}
 const MAX_STATS_SHOWN := 2
 
 ## Offered only when everything else is maxed out.

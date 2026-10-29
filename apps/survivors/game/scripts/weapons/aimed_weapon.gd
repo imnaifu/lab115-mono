@@ -1,6 +1,8 @@
 class_name AimedWeapon
 extends Weapon
-## A quick burst of shots, each aimed at whichever enemy is nearest when it leaves.
+## A quick burst of shots, each aimed at whichever enemy is nearest when it leaves, or the way the
+## player faces with none in range: it fires whether or not there is anything to hit (the user's
+## call, for every job's own weapon).
 ## (Silicon Valley: 回车键.) Shift+Enter 批量提交 (evolved with 双屏显示器): every round sends one
 ## key at each enemy on screen instead, nearest first.
 ##
@@ -46,8 +48,6 @@ func _process(delta: float) -> void:
 func fire() -> bool:
 	if evolved:
 		return _fire_batch()
-	if game.nearest_enemy(player.position, RANGE) == null:
-		return false
 	_burst_left = branch_stats(branch_a, branch_b)["count"]
 	_burst_timer = 0.0
 	return true
@@ -64,7 +64,8 @@ func _shoot_one() -> void:
 func _fire_batch() -> bool:
 	var targets := game.visible_enemies()
 	if targets.is_empty():
-		return false
+		_key(player.facing, 1.6)
+		return true
 	targets.sort_custom(func(a: Enemy, b: Enemy) -> bool:
 		return a.position.distance_squared_to(player.position) < b.position.distance_squared_to(player.position))
 	for target: Enemy in targets.slice(0, BATCH_MAX):

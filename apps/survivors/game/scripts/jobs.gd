@@ -18,15 +18,15 @@ const JOBS := {
 	"pm": {"name": "产品经理", "art": "pm", "weapon": "prd",
 		"hp": 120.0, "armor": 1.0, "speed": 59.0,
 		"pitch": "冲进怪堆抡，把怪推开、定住"},
-	"designer": {"name": "设计师", "art": "designer", "weapon": "guides",
+	"designer": {"name": "设计师", "art": "designer", "weapon": "poke",
 		"hp": 90.0, "armor": 0.0, "speed": 71.0,
-		"pitch": "拉出横竖参考线，跑位把怪引到线上"},
+		"pitch": "数位笔朝前一路戳，越升戳得越多越密"},
 	"ops": {"name": "运维", "art": "ops", "weapon": "firewall",
 		"hp": 130.0, "armor": 1.0, "speed": 56.0,
 		"pitch": "站得住：墙绕身转着打，召唤物替你打"},
-	"data_scientist": {"name": "数据科学家", "art": "data_scientist", "weapon": "poke",
+	"data_scientist": {"name": "数据科学家", "art": "data_scientist", "weapon": "guides",
 		"hp": 100.0, "armor": 0.0, "speed": 62.0,
-		"pitch": "围着自己来回戳着埋点，前后左右都照顾到"},
+		"pitch": "拉出横竖坐标轴，跑位把怪引到轴上"},
 }
 
 ## Weapon types: card tag colours (tint, text) and names.

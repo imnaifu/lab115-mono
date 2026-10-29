@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://do18odx5qu7bj"
-path="res://.godot/imported/poke.svg-1c66c021f3dfd08f0be0428b58f154a9.ctex"
+uid="uid://b5ns1qbgfme5q"
+path="res://.godot/imported/axes.svg-549abe4979d30f563f31b42abd58a855.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/poke.svg"
-dest_files=["res://.godot/imported/poke.svg-1c66c021f3dfd08f0be0428b58f154a9.ctex"]
+source_file="res://assets/art/axes.svg"
+dest_files=["res://.godot/imported/axes.svg-549abe4979d30f563f31b42abd58a855.ctex"]
 
 [params]
 

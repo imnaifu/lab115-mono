@@ -1,13 +1,14 @@
 class_name GuideWeapon
 extends Weapon
-## Guide lines, like a design tool's: every so often a horizontal and a vertical line are pulled
-## across the whole screen through where the player stands, and stay a moment; enemies on a line
-## keep taking damage. (Silicon Valley: 参考线.) Vampire Survivors' Song of Mana, a column of light
-## through the player, turned into a design tool's guides. 设计系统 (evolved with 开源项目): the
-## guides stay until the next set replaces them.
+## A chart's axes: every so often a horizontal and a vertical line are pulled across the whole
+## screen through where the player stands, and stay a moment; enemies on a line keep taking
+## damage. (Silicon Valley: 坐标轴; it was the designer's 参考线, guides, until the two jobs swapped
+## weapons.) Vampire Survivors' Song of Mana, a column of light through the player.
+## 实时看板 (evolved with 开源项目): the lines stay until the next set replaces them.
 ##
-## The designer's own weapon, so it levels up along two directions (Upgrades.BRANCHES): 更多线
-## adds one more line each way, 更粗更久 makes every line wider, longer-lasting and harder-hitting.
+## The data scientist's own weapon, so it levels up along two directions (Upgrades.BRANCHES):
+## 更多网格线 adds one more line each way, 更粗更久 makes every line wider, longer-lasting and
+## harder-hitting.
 
 const COOLDOWN := 2.4
 ## Per tick, every TICK seconds, to everything on a line.
@@ -20,7 +21,8 @@ const BASE_SECONDS := 1.5
 const SECONDS_PER_THICKER := 0.4
 ## How far from the player each line of a set runs, the first through the player.
 const OFFSETS := [0.0, 40.0, -40.0, 80.0, -80.0]
-const COLOR := Color("ff5d9e")
+## The data scientist's purple.
+const COLOR := Color("8c7cf0")
 
 
 class Guide:
@@ -35,7 +37,7 @@ var _guides: Array[Guide] = []
 var _floor: Node2D
 
 
-## The guides with `more` upgrades to 更多线 and `thicker` to 更粗更久 (the cards' numbers too):
+## The lines with `more` upgrades to 更多网格线 and `thicker` to 更粗更久 (the cards' numbers too):
 ## `count` lines each way.
 static func branch_stats(more: int, thicker: int) -> Dictionary:
 	return {"count": 1 + more, "damage": BASE_DAMAGE + DAMAGE_PER_THICKER * thicker,
