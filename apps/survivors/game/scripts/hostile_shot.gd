@@ -72,30 +72,6 @@ func tick(delta: float, game: Game) -> void:
 				queue_redraw()
 
 
-## Where a wall in its way would meet it: a bullet's own position; a pie's spot over the ground
-## along its flight, once it is coming down (its second half), or null while it is still high.
-func blockable_point() -> Variant:
-	if done:
-		return null
-	if kind == Kind.BULLET:
-		return position
-	var progress := _flown / _flight
-	return _from.lerp(position, progress) if progress > 0.5 else null
-
-
-## How far from its blockable point it reaches.
-func block_radius() -> float:
-	return BULLET_RADIUS if kind == Kind.BULLET else PIE_SIZE / 2.0
-
-
-## Stopped by the ops' firewall: gone with a puff. A bullet's velocity, for sending it back.
-func block(game: Game) -> Vector2:
-	var at := position if kind == Kind.BULLET else _from.lerp(position, _flown / _flight)
-	done = true
-	Effects.poof(game, at, Art.RED if kind == Kind.BULLET else Color("f2c46b"))
-	return _velocity
-
-
 func _hits(player: Player, reach: float) -> bool:
 	var hit_distance := reach + Player.HURT_RADIUS
 	return position.distance_squared_to(player.position) <= hit_distance * hit_distance

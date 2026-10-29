@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d3v1hvjalcxvm"
-path="res://.godot/imported/stapler.svg-e0cfc19f02f95f0be7b753cc0af0e976.ctex"
+uid="uid://bsuiia15kd4m8"
+path="res://.godot/imported/guides.svg-67632461ac96954fcd66a5765338e681.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/stapler.svg"
-dest_files=["res://.godot/imported/stapler.svg-e0cfc19f02f95f0be7b753cc0af0e976.ctex"]
+source_file="res://assets/art/guides.svg"
+dest_files=["res://.godot/imported/guides.svg-67632461ac96954fcd66a5765338e681.ctex"]
 
 [params]
 

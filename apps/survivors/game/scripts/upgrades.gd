@@ -16,12 +16,13 @@ const NEW_WEAPONS_GUARANTEED := [2, 1]
 const RECOMMEND_UNTIL_WEAPONS := 3
 
 ## `type` is the attack type (Jobs.TYPES); `job` marks a weapon only that job can carry (its
-## starting weapon). Ordered by type, so the pause screen lists them in a stable order.
+## starting weapon), which levels up by BRANCHES instead, so `levels` only describes it. Ordered
+## by type, so the pause screen lists them in a stable order.
 const WEAPONS := {
 	"enter": {"name": "回车键", "art": "enter_key", "behavior": "aimed", "type": "shoot", "job": "coder",
-		"levels": ["自动敲向最近的敌人", "每轮多敲一下", "伤害 +6", "每轮多敲一下", "穿透 +2，伤害 +6"]},
-	"screensaver": {"name": "屏保", "art": "screensaver", "behavior": "bounce", "type": "shoot", "job": "data_scientist",
-		"levels": ["往随机方向发出 logo，碰到屏幕边缘就反弹，穿透一切；撞进屏幕角落会炸一圈", "伤害 +4", "多一个 logo，飞得更快、更久", "伤害 +6", "多一个 logo，伤害 +6，飞得更快、更久"]},
+		"levels": ["自动敲向最近的敌人"]},
+	"screensaver": {"name": "屏保", "art": "screensaver", "behavior": "bounce", "type": "shoot",
+		"levels": ["logo 一直在屏幕里弹来弹去，穿透一切；撞进屏幕角落会炸一圈", "伤害 +4", "多一个 logo，飞得更快", "伤害 +4", "多一个 logo，伤害 +6，飞得更快"]},
 	"copy": {"name": "复制粘贴", "art": "paper", "behavior": "facing", "type": "shoot",
 		"levels": ["朝面向的方向连发文件，能穿过敌人", "伤害 +4", "多粘贴一份", "伤害 +4", "多粘贴一份，出手更快，穿透 +1"]},
 	"keyboard": {"name": "机械键盘", "art": "keyboard", "behavior": "toss", "type": "shoot",
@@ -29,12 +30,12 @@ const WEAPONS := {
 	"email": {"name": "邮件抄送", "art": "email_cc", "behavior": "ricochet", "type": "shoot",
 		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "多抄送 1 个", "伤害 +3，发得更勤", "多发一封，多抄送 1 个", "伤害 +3，多抄送 1 个，发得更勤"]},
 	"prd": {"name": "PRD 卷筒", "art": "prd_roll", "behavior": "swing", "type": "melee", "job": "pm",
-		"levels": ["朝最近的怪抡一扇形，把一片怪打退", "伤害 +6，出手更快", "扇形更大，打中会定住一下", "伤害 +8，出手更快", "抡满一圈，伤害 +10，定得更久"]},
-	"stapler": {"name": "订书机", "art": "stapler", "behavior": "thrust", "type": "melee",
-		"levels": ["朝最近的怪连戳三下，一下戳穿一条线", "伤害 +2", "戳得更远、更快", "伤害 +3", "戳得最远，远处的怪伤害 +40%"]},
-	"cable": {"name": "网线鞭", "art": "cable_whip", "behavior": "whip", "type": "melee",
-		"levels": ["朝面向的方向甩出网线，抽中一长条", "前后都甩", "伤害 +6，出手更快", "鞭子更长，出手更快", "伤害 +10，鞭子更长更粗，出手更快"]},
-	"pen": {"name": "钢笔工具", "art": "pen_tool", "behavior": "trail", "type": "area", "job": "designer",
+		"levels": ["朝最近的怪抡一扇形，把一片怪打退；升过两次后打中会定住一下"]},
+	"poke": {"name": "埋点", "art": "poke", "behavior": "poke", "type": "melee", "job": "data_scientist",
+		"levels": ["朝最近的怪和反方向来回连戳，每下戳穿一条线"]},
+	"guides": {"name": "参考线", "art": "guides", "behavior": "guides", "type": "area", "job": "designer",
+		"levels": ["以你为中心拉出横竖两条贯穿全屏的参考线，线上的怪持续掉血"]},
+	"pen": {"name": "钢笔工具", "art": "pen_tool", "behavior": "trail", "type": "area",
 		"levels": ["走过的地方留下一条线，碰到的怪持续掉血", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +4，线粗一半、留 3 秒"]},
 	"wifi": {"name": "Wi-Fi 信号", "art": "wifi", "behavior": "aura", "type": "area",
 		"levels": ["持续伤害身边的敌人", "信号范围变大", "伤害 +3，频率更高", "信号范围变大", "伤害 +4，范围更大，频率更高"]},
@@ -43,7 +44,7 @@ const WEAPONS := {
 	"meeting_room": {"name": "拉会", "art": "meeting_room", "behavior": "zone", "type": "area",
 		"levels": ["往怪最多的地方拉个会：圈里的怪变慢、持续掉血", "伤害 +2，会议室更大", "同时多开一个会", "伤害 +2，会议室更大", "再多开一个会，伤害 +3，会议室更大"]},
 	"firewall": {"name": "防火墙", "art": "firewall", "behavior": "orbit", "type": "summon", "job": "ops",
-		"levels": ["几面墙绕着你转，撞开怪，挡掉 boss 的子弹和饼", "伤害 +5", "多一面墙，转得更快", "伤害 +5", "多一面墙，伤害 +5，转得更快"]},
+		"levels": ["一面墙绕着你转，撞到的怪受伤并被推开；怪钻进圈里，墙会收进去打"]},
 	"drone": {"name": "无人机", "art": "drone", "behavior": "seek", "type": "summon",
 		"levels": ["飞出去追着附近的敌人撞", "多一架无人机", "伤害 +4，飞得更快", "多一架无人机", "多一架，伤害 +4，飞得更快"]},
 	"outsource": {"name": "外包团队", "art": "outsourcing", "behavior": "squad", "type": "summon",
@@ -57,12 +58,24 @@ const EVOLUTIONS := {
 	"copy": {"passive": "headhunter", "name": "Ctrl+A 全选粘贴", "text": "朝 8 个方向一起粘贴"},
 	"screensaver": {"passive": "armor", "name": "动态壁纸", "text": "每次碰到屏幕边缘都炸一圈"},
 	"prd": {"passive": "standup", "name": "需求评审会", "text": "每次都抡满一圈，范围更大，定得更久"},
-	"cable": {"passive": "magnet", "name": "光纤", "text": "长度翻倍，四个方向一起甩"},
+	"poke": {"passive": "magnet", "name": "全埋点", "text": "一轮朝 12 个方向戳，线长 +20%"},
+	"guides": {"passive": "open_source", "name": "设计系统", "text": "参考线不再消失，一直留到下一组画出来"},
 	"pen": {"passive": "swiftness", "name": "矢量图层", "text": "线留两倍久；画个圈，圈里的怪受一次重击"},
 	"wifi": {"passive": "regen", "name": "5G 基站", "text": "范围更大，打中怪就回一点血"},
 	"cloud": {"passive": "might", "name": "多云多活", "text": "劈的道数翻倍，范围翻倍"},
-	"firewall": {"passive": "armor", "name": "零信任", "text": "6 面墙，挡掉的子弹原路反弹"},
+	"firewall": {"passive": "armor", "name": "零信任", "text": "6 面墙，撞到的怪定住 0.4 秒"},
 	"drone": {"passive": "cost_cut", "name": "无人车车队", "text": "换成横冲直撞的无人车，伤害更高，撞飞"},
+}
+
+## A job's own weapon levels up along one of two directions each time, the player's pick: its
+## level-up comes as a pair of cards, one per direction. `a` and `b` count up the weapon's
+## branch_a / branch_b; four upgrades in all, in any mix, still take it to MAX_LEVEL.
+const BRANCHES := {
+	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +6，穿透 +1"}},
+	"prd": {"a": {"name": "更长", "text": "抡得更远，伤害 +6，出手更快"}, "b": {"name": "更宽", "text": "扇形更宽（四次就是一整圈），伤害 +6，出手更快"}},
+	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +7，推得更远"}},
+	"guides": {"a": {"name": "更多线", "text": "横竖各多一条参考线"}, "b": {"name": "更粗更久", "text": "线更粗、留得更久，伤害 +2"}},
+	"poke": {"a": {"name": "更长", "text": "戳得更远，伤害 +3；四次都选它时远处伤害 +40%"}, "b": {"name": "更多方向", "text": "一轮多戳几个方向，伤害 +3"}},
 }
 
 const PASSIVES := {
@@ -87,7 +100,7 @@ const PASSIVES := {
 ## MAX_STATS_SHOWN of the ones that change (its text already sums up the step), so five narrow
 ## cards side by side still fit.
 const WEAPON_STAT_NAMES := {"damage": "伤害", "count": "数量", "pierce": "穿透", "radius": "范围",
-	"range": "长度", "speed": "速度", "size": "大小", "cooldown": "间隔"}
+	"range": "长度", "arc": "角度", "speed": "速度", "size": "大小", "duration": "持续", "cooldown": "间隔"}
 const MAX_STATS_SHOWN := 2
 
 ## Offered only when everything else is maxed out.
@@ -127,10 +140,10 @@ static func create_weapon(weapon_id: String) -> Weapon:
 			weapon = OrbitWeapon.new()
 		"bounce":
 			weapon = BounceWeapon.new()
-		"whip":
-			weapon = WhipWeapon.new()
-		"thrust":
-			weapon = ThrustWeapon.new()
+		"guides":
+			weapon = GuideWeapon.new()
+		"poke":
+			weapon = PokeWeapon.new()
 		"zone":
 			weapon = ZoneWeapon.new()
 		"squad":
@@ -174,7 +187,9 @@ func open_chest(count: int) -> Array:
 		var carried: Array = []
 		for weapon in _game.player.weapons:
 			if weapon.level < MAX_LEVEL:
-				carried.append(_choice("weapon", weapon.id, weapon.level + 1))
+				# A job's own weapon goes up one of its two directions, picked at random.
+				carried.append(_branch_choice(weapon.id, "a" if _game.rng.randf() < 0.5 else "b") if BRANCHES.has(weapon.id) \
+					else _choice("weapon", weapon.id, weapon.level + 1))
 		for passive_id: String in passive_levels:
 			if passive_levels[passive_id] < max_level("passive", passive_id):
 				carried.append(_choice("passive", passive_id, passive_levels[passive_id] + 1))
@@ -239,8 +254,9 @@ func _roll(count: int, new_weapons: int) -> Array:
 				pool.append(_choice("weapon", weapon_id, 1))
 				weights.append(2.0 * favour)
 		elif weapon.level < MAX_LEVEL:
-			# Upgrading what you already carry is favoured so builds come together.
-			pool.append(_choice("weapon", weapon_id, weapon.level + 1))
+			# Upgrading what you already carry is favoured so builds come together. The job's own
+			# weapon stands in as one entry and comes out as its pair of direction cards.
+			pool.append({"kind": "pair", "id": weapon_id} if BRANCHES.has(weapon_id) else _choice("weapon", weapon_id, weapon.level + 1))
 			weights.append(3.0 * favour)
 	var passive_slots_full := passive_levels.size() >= MAX_PASSIVES
 	for passive_id: String in PASSIVES:
@@ -267,14 +283,34 @@ func _roll(count: int, new_weapons: int) -> Array:
 		weights.remove_at(index)
 	while picked.size() < count and not pool.is_empty():
 		var index := _game.rng.rand_weighted(weights)
-		picked.append(pool[index])
+		var entry: Dictionary = pool[index]
 		pool.remove_at(index)
 		weights.remove_at(index)
+		if entry["kind"] != "pair":
+			picked.append(entry)
+		elif picked.size() + 2 <= count:
+			picked.append(_branch_choice(entry["id"], "a"))
+			picked.append(_branch_choice(entry["id"], "b"))
+		# A pair drawn for the last card is left out: half of one would be no choice.
 	if picked.is_empty():
 		picked.append(FALLBACK)
-	# The guaranteed weapons shouldn't always sit in the first slots.
+	# The guaranteed weapons shouldn't always sit in the first slots; a pair stays side by side.
 	_shuffle(picked)
+	_pair_up(picked)
 	return picked
+
+
+## Moves a weapon's second direction card right after its first.
+func _pair_up(cards: Array) -> void:
+	for i in cards.size():
+		if cards[i].get("branch", "") != "a":
+			continue
+		for j in cards.size():
+			if j != i and cards[j]["id"] == cards[i]["id"] and cards[j].get("branch", "") == "b":
+				var partner = cards[j]
+				cards.remove_at(j)
+				cards.insert(i + 1 if j > i else i, partner)
+				return
 
 
 func _shuffle(items: Array) -> void:
@@ -304,7 +340,7 @@ func apply(choice: Dictionary) -> void:
 			if weapon == null:
 				player.add_weapon(create_weapon(choice["id"]))
 			else:
-				weapon.level_up()
+				weapon.level_up(choice.get("branch", ""))
 		"passive":
 			passive_levels[choice["id"]] = passive_levels.get(choice["id"], 0) + 1
 			_apply_passive(choice["id"])
@@ -341,10 +377,18 @@ func numbers(choice: Dictionary) -> String:
 	match choice["kind"]:
 		"weapon":
 			var weapon_id: String = choice["id"]
-			var after := weapon_stats(weapon_id, next_level)
-			if next_level == 1:
-				return _step("伤害", "", _shown_stat("damage", after["damage"], weapon_id))
-			var before := weapon_stats(weapon_id, next_level - 1)
+			var after: Dictionary
+			var before: Dictionary
+			if choice.has("branch"):
+				var weapon := _game.player.get_weapon(weapon_id)
+				var more_a := 1 if choice["branch"] == "a" else 0
+				before = branch_stats(weapon_id, weapon.branch_a, weapon.branch_b)
+				after = branch_stats(weapon_id, weapon.branch_a + more_a, weapon.branch_b + 1 - more_a)
+			else:
+				after = weapon_stats(weapon_id, next_level)
+				if next_level == 1:
+					return _step("伤害", "", _shown_stat("damage", after["damage"], weapon_id))
+				before = weapon_stats(weapon_id, next_level - 1)
 			var parts := PackedStringArray()
 			for stat_key: String in WEAPON_STAT_NAMES:
 				if after.has(stat_key) and after[stat_key] != before[stat_key] and parts.size() < MAX_STATS_SHOWN:
@@ -364,8 +408,6 @@ func numbers(choice: Dictionary) -> String:
 static func weapon_stats(weapon_id: String, weapon_level: int) -> Dictionary:
 	var i := weapon_level - 1
 	match WEAPONS[weapon_id]["behavior"]:
-		"aimed":
-			return {"damage": AimedWeapon.DAMAGE[i], "count": AimedWeapon.COUNT[i], "pierce": AimedWeapon.PIERCE[i]}
 		"facing":
 			return {"damage": FacingWeapon.DAMAGE[i], "count": FacingWeapon.COUNT[i], "pierce": FacingWeapon.PIERCE[i], "cooldown": FacingWeapon.COOLDOWN[i]}
 		"seek":
@@ -376,24 +418,32 @@ static func weapon_stats(weapon_id: String, weapon_level: int) -> Dictionary:
 			return {"damage": TossWeapon.DAMAGE[i], "count": TossWeapon.COUNT[i], "size": TossWeapon.SIZE[i]}
 		"aura":
 			return {"damage": AuraWeapon.DAMAGE[i], "radius": AuraWeapon.RADIUS[i], "cooldown": AuraWeapon.TICK_SECONDS[i]}
-		"swing":
-			return {"damage": SwingWeapon.DAMAGE[i], "radius": SwingWeapon.RADIUS[i], "cooldown": SwingWeapon.COOLDOWN[i]}
 		"trail":
 			return {"damage": TrailWeapon.DAMAGE[i], "size": TrailWeapon.WIDTH[i] / TrailWeapon.WIDTH[0]}
-		"orbit":
-			return {"damage": OrbitWeapon.DAMAGE[i], "count": OrbitWeapon.COUNT[i], "speed": OrbitWeapon.SPIN[i] * OrbitWeapon.ORBIT_RADIUS[i]}
 		"bounce":
 			return {"damage": BounceWeapon.DAMAGE[i], "count": BounceWeapon.COUNT[i], "speed": BounceWeapon.SPEED[i]}
-		"whip":
-			return {"damage": WhipWeapon.DAMAGE[i], "range": WhipWeapon.LENGTH[i], "cooldown": WhipWeapon.COOLDOWN[i]}
-		"thrust":
-			return {"damage": ThrustWeapon.DAMAGE[i][2], "range": ThrustWeapon.LENGTH[i], "cooldown": ThrustWeapon.COOLDOWN[i]}
 		"zone":
 			return {"damage": ZoneWeapon.DAMAGE[i], "count": ZoneWeapon.COUNT[i], "radius": ZoneWeapon.RADIUS[i]}
 		"squad":
 			return {"damage": SquadWeapon.DAMAGE[i], "count": SquadWeapon.COUNT[i]}
 		"ricochet":
 			return {"damage": RicochetWeapon.DAMAGE[i], "count": RicochetWeapon.BOUNCES[i], "cooldown": RicochetWeapon.COOLDOWN[i]}
+	return {}
+
+
+## A job's own weapon's numbers after `a` and `b` upgrades in its two directions (BRANCHES).
+static func branch_stats(weapon_id: String, a: int, b: int) -> Dictionary:
+	match WEAPONS[weapon_id]["behavior"]:
+		"aimed":
+			return AimedWeapon.branch_stats(a, b)
+		"swing":
+			return SwingWeapon.branch_stats(a, b)
+		"orbit":
+			return OrbitWeapon.branch_stats(a, b)
+		"guides":
+			return GuideWeapon.branch_stats(a, b)
+		"poke":
+			return PokeWeapon.branch_stats(a, b)
 	return {}
 
 
@@ -406,6 +456,10 @@ func _shown_stat(stat_key: String, value: Variant, weapon_id: String) -> String:
 			return tr("%s 秒") % _short_float(value * player.cooldown_scale)
 		"size":
 			return "×%s" % _short_float(value)
+		"arc":
+			return "%d°" % roundi(value)
+		"duration":
+			return tr("%s 秒") % _short_float(value)
 	return str(roundi(value))
 
 
@@ -470,10 +524,21 @@ static func _short_float(value: float) -> String:
 	return str(roundi(rounded)) if is_equal_approx(rounded, roundf(rounded)) else "%.1f" % rounded
 
 
+## A job weapon's card for one direction: its name and text, `branch` for apply().
+func _branch_choice(weapon_id: String, branch: String) -> Dictionary:
+	var weapon := _game.player.get_weapon(weapon_id)
+	var direction: Dictionary = BRANCHES[weapon_id][branch]
+	var choice := _choice("weapon", weapon_id, weapon.level + 1)
+	choice["branch"] = branch
+	choice["branch_name"] = direction["name"]
+	choice["text"] = direction["text"]
+	return choice
+
+
 ## A card. Weapon cards also carry their `type` (the card's type tag).
 func _choice(kind: String, choice_id: String, next_level: int) -> Dictionary:
 	var table: Dictionary = WEAPONS[choice_id] if kind == "weapon" else PASSIVES[choice_id]
-	var text: String = table["levels"][next_level - 1] if kind == "weapon" else table["text"]
+	var text: String = table["levels"][mini(next_level, table["levels"].size()) - 1] if kind == "weapon" else table["text"]
 	var choice := {"kind": kind, "id": choice_id, "level": next_level, "max": max_level(kind, choice_id),
 		"name": table["name"], "art": table["art"], "text": text}
 	if kind == "weapon":

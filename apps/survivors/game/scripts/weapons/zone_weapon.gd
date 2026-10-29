@@ -39,6 +39,13 @@ func _ready() -> void:
 	game.add_child(_floor)
 
 
+## The ground drawing lives on the game, not under the weapon: it goes with the weapon (a job
+## switched on the title screen drops its weapon).
+func _exit_tree() -> void:
+	if is_instance_valid(_floor):
+		_floor.queue_free()
+
+
 func cooldown() -> float:
 	return COOLDOWN
 

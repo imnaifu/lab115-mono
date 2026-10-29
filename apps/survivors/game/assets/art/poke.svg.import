@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c6tiupnv73vfg"
-path="res://.godot/imported/cable_whip.svg-37d826541a58abfe844bd33fb8fc7c11.ctex"
+uid="uid://do18odx5qu7bj"
+path="res://.godot/imported/poke.svg-1c66c021f3dfd08f0be0428b58f154a9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/cable_whip.svg"
-dest_files=["res://.godot/imported/cable_whip.svg-37d826541a58abfe844bd33fb8fc7c11.ctex"]
+source_file="res://assets/art/poke.svg"
+dest_files=["res://.godot/imported/poke.svg-1c66c021f3dfd08f0be0428b58f154a9.ctex"]
 
 [params]
 

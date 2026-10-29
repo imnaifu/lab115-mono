@@ -17,8 +17,8 @@ extends RefCounted
 ## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
-##   rates), `chests` (the funding rounds bags landed on), `evolved` (weapons evolved), `ults`
-##   (times the ultimate was used), a `timeline` of
+##   rates), `chests` (the funding rounds bags landed on), `evolved` (weapons evolved), a
+##   `timeline` of
 ##   "seconds:level/HP/enemies" every 30 s, bosses met and killed, the `district` the run ended
 ##   in, and frames per second (average and worst second). `dmg_<weapon>` is each weapon's share of
 ##   all damage in percent, for the weapons (and damaging perks) that dealt any.
@@ -30,7 +30,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.11"
+const VERSION := "2026-10-28.12"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -54,7 +54,6 @@ var _fps_sum := 0.0
 var _fps_count := 0
 var _fps_worst := INF
 var _second_left := 1.0
-var _ults := 0
 var _bosses_seen := 0
 var _bosses_killed := 0
 var _peak_enemies := 0
@@ -142,20 +141,22 @@ func _save_snapshot() -> void:
 
 
 func on_pick(choice: Dictionary) -> void:
-	_picks.append(choice["id"])
+	_picks.append(_card_id(choice))
+
+
+## A card's id in the data; a job weapon's direction card has its direction after it: "prd:b".
+static func _card_id(choice: Dictionary) -> String:
+	return choice["id"] + (":" + choice["branch"] if choice.has("branch") else "")
 
 
 func on_offer(choices: Array) -> void:
 	for choice: Dictionary in choices:
-		_offered[choice["id"]] = _offered.get(choice["id"], 0) + 1
+		var card := _card_id(choice)
+		_offered[card] = _offered.get(card, 0) + 1
 
 
 func on_chest(round_id: String) -> void:
 	_chests.append(round_id)
-
-
-func on_ult() -> void:
-	_ults += 1
 
 
 func on_enemy_spawned(enemy: Enemy) -> void:
@@ -209,7 +210,6 @@ func _summary(result: String) -> Dictionary:
 		"offered": ",".join(offered).left(MAX_TEXT),
 		"chests": ",".join(_chests).left(MAX_TEXT),
 		"evolved": ",".join(evolved),
-		"ults": _ults,
 		"district": BayArea.district_of(Vector2i((player.position / City.BLOCK).floor())),
 		"timeline": ";".join(_timeline).left(MAX_TEXT),
 		"bosses_seen": _bosses_seen,

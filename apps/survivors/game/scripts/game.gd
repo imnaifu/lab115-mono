@@ -92,7 +92,6 @@ var city: City
 var flow_field: FlowField
 var telemetry: Telemetry
 var perks: Perks
-var ultimate: Ultimate
 var hud: Hud
 ## Boss attacks in flight (HostileShot), ticked here.
 var hostile_shots: Array[HostileShot] = []
@@ -150,7 +149,6 @@ func _ready() -> void:
 	spawner = Spawner.new(self)
 	telemetry = Telemetry.new(self)
 	perks = Perks.new(self)
-	ultimate = Ultimate.new(self)
 	player.add_weapon(Upgrades.create_weapon(Jobs.data(player.job)["weapon"]))
 
 	hud = Hud.new()
@@ -387,7 +385,6 @@ func _kill(enemy: Enemy) -> void:
 	kills += 1
 	enemies.erase(enemy)
 	telemetry.on_enemy_killed(enemy)
-	ultimate.on_kill()
 	if enemy.is_elite:
 		Sound.boss_down()
 	else:

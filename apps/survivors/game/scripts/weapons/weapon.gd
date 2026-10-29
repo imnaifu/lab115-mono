@@ -12,6 +12,12 @@ var art := ""
 var game: Game
 var player: Player
 var level := 1
+## A job's own weapon levels up along one of two directions each time (Upgrades.BRANCHES, the
+## player picks): how many of its upgrades went each way. Its stats come from these, not from
+## `level` (which is still 1 + both, for the cards, the slots and evolving). Other weapons leave
+## both at 0.
+var branch_a := 0
+var branch_b := 0
 ## Set once it has evolved (Upgrades.EVOLUTIONS): each weapon reads it to attack its evolved way.
 var evolved := false
 
@@ -36,8 +42,13 @@ func fire() -> bool:
 	return true
 
 
-func level_up() -> void:
+## `branch` ("a" or "b") for a job's own weapon, "" for the others.
+func level_up(branch: String = "") -> void:
 	level += 1
+	if branch == "a":
+		branch_a += 1
+	elif branch == "b":
+		branch_b += 1
 	_on_level_changed()
 
 

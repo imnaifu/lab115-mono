@@ -89,8 +89,6 @@ var _passive_slots: Array[Panel] = []
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_tween: Tween
-var _ult_holder: Control
-var _ult_name: Label
 var _move_hint: Control
 var _warning: Control
 var _warning_label: Label
@@ -149,7 +147,6 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_toast()
 	_build_bottom_hints()
-	_build_ult_button()
 	_title_overlay = _overlay(Art.PAPER_SOFT)
 	_title_holder = _full(_title_overlay)
 	_add_corner_version(_title_overlay)
@@ -223,9 +220,6 @@ func _process(delta: float) -> void:
 	# Only during play: under a dialog it shows through the scrim, behind the dialog's title.
 	_top_bar.visible = state == Game.State.PLAYING
 	_pause_button.visible = state == Game.State.PLAYING
-	_ult_holder.visible = state == Game.State.PLAYING
-	if _ult_holder.visible:
-		_ult_name.text = Jobs.ULTS[game.ultimate.id()]["name"]
 	_recalibrate_button.visible = state == Game.State.PLAYING and Tilt.enabled()
 	_level_up_overlay.visible = state == Game.State.LEVEL_UP
 	_pause_overlay.visible = state == Game.State.PAUSED
@@ -314,9 +308,6 @@ func fit_screen(turned: bool) -> void:
 ## second tap (say, on the pause button) doesn't yank the stick.
 func _on_touch(touch: InputEventScreenTouch) -> void:
 	if touch.pressed:
-		# A press on the ultimate's button is the button's, not the start of a drag.
-		if _ult_holder.visible and _ult_holder.get_rect().has_point(_to_layout(touch.position)):
-			return
 		if game.state == Game.State.PLAYING and _touch_index == -1:
 			_touch_index = touch.index
 			_joystick.begin(_to_layout(touch.position))
@@ -372,77 +363,6 @@ class Joystick extends Control:
 
 
 # --- HUD -----------------------------------------------------------------------------------
-
-## The ultimate's button in the bottom-right corner, its name under it (and the key, on a
-## computer).
-func _build_ult_button() -> void:
-	_ult_holder = VBoxContainer.new()
-	_ult_holder.anchor_left = 1.0
-	_ult_holder.anchor_right = 1.0
-	_ult_holder.anchor_top = 1.0
-	_ult_holder.anchor_bottom = 1.0
-	_ult_holder.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_ult_holder.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_ult_holder.offset_right = -12
-	_ult_holder.offset_bottom = -10
-	_ult_holder.add_theme_constant_override("separation", 0)
-	_ult_holder.visible = false
-	var button := UltButton.new()
-	button.hud = self
-	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_ult_holder.add_child(button)
-	_ult_name = UiKit.label("", 11, "heavy")
-	_ult_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_ult_name.add_theme_constant_override("outline_size", 5)
-	_ult_name.add_theme_color_override("font_outline_color", Art.PAPER)
-	_ult_holder.add_child(_ult_name)
-	if not Device.is_handheld():
-		var key := UiKit.label("空格", 10, "muted")
-		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		key.add_theme_constant_override("outline_size", 4)
-		key.add_theme_color_override("font_outline_color", Art.PAPER)
-		_ult_holder.add_child(key)
-	_root.add_child(_ult_holder)
-
-
-## The ultimate: its icon on a dark disc with a yellow ring filling up as kills charge it; once
-## full the disc turns yellow and throbs.
-class UltButton extends Control:
-	const DIAMETER := 54.0
-	const ICON_SIZE := 30.0
-
-	var hud: Hud
-	var _clock := 0.0
-
-	func _init() -> void:
-		custom_minimum_size = Vector2(DIAMETER + 6.0, DIAMETER + 6.0)
-		mouse_filter = Control.MOUSE_FILTER_STOP
-
-	func _gui_input(event: InputEvent) -> void:
-		var press := event as InputEventMouseButton
-		if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT:
-			hud.game.ultimate.use()
-			accept_event()
-
-	func _process(delta: float) -> void:
-		_clock += delta
-		queue_redraw()
-
-	func _draw() -> void:
-		var ultimate := hud.game.ultimate
-		var ready := ultimate.is_ready()
-		var centre := size / 2.0
-		var grow := 1.0 + (0.06 * sin(_clock * 6.0) if ready else 0.0)
-		var radius := DIAMETER / 2.0 * grow
-		draw_circle(centre, radius + 2.0, Art.INK)
-		draw_circle(centre, radius - 1.0, Art.BRAND if ready else Color("4a5164"))
-		if not ready:
-			draw_arc(centre, radius - 4.0, -PI / 2.0, -PI / 2.0 + TAU * ultimate.charge(), 48, Art.BRAND, 4.0, true)
-		var art: String = Jobs.ULTS[ultimate.id()]["art"]
-		var icon_size := ICON_SIZE * grow
-		draw_texture_rect(Art.texture(art), Rect2(centre - Vector2(icon_size, icon_size) / 2.0, Vector2(icon_size, icon_size)), false,
-			Art.INK if ready else Color(1, 1, 1, 0.55))
-
 
 func _build_top_bar() -> void:
 	_top_bar = Control.new()
@@ -893,8 +813,8 @@ func _job_face(job_id: String, picked: bool, face_size: float) -> Button:
 	return face
 
 
-## The picked job: name and what it is good with, its own weapon, its build, how it plays, its
-## ultimate. Sideways there is height for four lines only: the build goes on the name's line and
+## The picked job: name and what it is good with, its own weapon, its build and how it plays.
+## Sideways there is height for four lines only: the build goes on the name's line and
 ## the data scientist's 多开实验 is just its tag.
 func _job_detail(job_id: String, portrait: bool) -> Control:
 	var job_data := Jobs.data(job_id)
@@ -928,8 +848,6 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	var lines: Array[String] = [tr(job_data["pitch"])]
 	if portrait and job_data.get("multitask", false):
 		lines.append(tr("多开实验：武器格不限，伤害 +20%，每拿一把 -5%"))
-	var ult: Dictionary = Jobs.ULTS[job_data["ult"]]
-	lines.append(tr("大招「%s」：%s") % [tr(ult["name"]), tr(ult["text"])])
 	for i in lines.size():
 		var line := UiKit.label(lines[i], 12 if i == 0 else 11, "body" if i == 0 else "muted")
 		line.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
@@ -1116,7 +1034,7 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 
 	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT if fresh else Art.PAPER_SUNK
 	var well := UiKit.well(choice["art"], (48.0 if crowded else 60.0) if portrait else (44.0 if narrow else 52.0), fill)
-	var name_label := UiKit.label(choice["name"], 17 if portrait else 15, "heavy")
+	var name_label := UiKit.label(_card_name(choice), 17 if portrait else 15, "heavy")
 	var badge: Control = null
 	if fresh:
 		badge = UiKit.tag("新武器", Art.SKY_LIGHT, Art.LINK) if kind == "weapon" else UiKit.tag("被动", Art.MINT_LIGHT, Art.GREEN_INK)
@@ -1192,6 +1110,13 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		corner.offset_top = -11
 		card.add_child(corner)
 	return card
+
+
+## A card's name; a job weapon's direction card adds the direction: 「PRD 卷筒 · 更宽」.
+func _card_name(choice: Dictionary) -> String:
+	if not choice.has("branch_name"):
+		return choice["name"]
+	return "%s · %s" % [tr(choice["name"]), tr(choice["branch_name"])]
 
 
 ## Grows each card to what its text needs once wrapped (a Button doesn't size to its children):
@@ -1398,7 +1323,7 @@ func _prize_row(item: Dictionary, roomy: bool) -> Control:
 	if kind == "evolve":
 		row_panel.add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
 	row.add_child(UiKit.well(item["art"], 34 if roomy else 28, fill, UiKit.RADIUS_SM))
-	var name_label := UiKit.label(item["name"], 14, "strong")
+	var name_label := UiKit.label(_card_name(item), 14, "strong")
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.clip_text = true
 	name_label.custom_minimum_size = Vector2(60, 0)

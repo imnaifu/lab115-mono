@@ -23,8 +23,7 @@ extends SceneTree
 ## --share (with --shots, also render the end screen's result image into the shots directory, or
 ## with --pause-at the pause screen's run-so-far image),
 ## --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
-## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --ult (use the
-## ultimate whenever it is charged), --evolve (start with every weapon the job can carry evolved,
+## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
 ## to look at the evolutions).
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
@@ -61,7 +60,6 @@ var _chests := 0
 var _chest_frames := 0
 var _chest_shot_taken := false
 var _share := false
-var _use_ult := false
 var _hold_hp := -1.0
 var _evolve := false
 ## Melee jobs' bots only step away from enemies right on top of them, so their swings land.
@@ -114,8 +112,6 @@ func _initialize() -> void:
 			Settings.overrides["job"] = value
 			if Jobs.data(value)["type"] == "melee":
 				_avoid_radius = 35.0
-		elif arg == "--ult":
-			_use_ult = true
 		elif arg.begins_with("--hold-hp="):
 			_hold_hp = clampf(float(value), 0.01, 1.0)
 		elif arg == "--evolve":
@@ -210,8 +206,6 @@ func _process(_delta: float) -> bool:
 			if _hold_hp > 0.0:
 				_game.player.hp = _game.player.max_hp * _hold_hp
 				_game.player.queue_redraw()
-			if _use_ult and _game.ultimate.is_ready():
-				_game.ultimate.use()
 			if _die_at >= 0.0 and _game.elapsed >= _die_at:
 				_game.player.take_damage(INF)
 			if _pause_at >= 0.0 and not _pause_shot_taken and _game.elapsed >= _pause_at:
@@ -286,7 +280,8 @@ func _grant_all_weapons() -> void:
 			weapon = Upgrades.create_weapon(weapon_id)
 			_game.player.add_weapon(weapon)
 		while weapon.level < target_level:
-			weapon.level_up()
+			# A job weapon takes its two directions in turn.
+			weapon.level_up(("a" if weapon.branch_a <= weapon.branch_b else "b") if Upgrades.BRANCHES.has(weapon_id) else "")
 		if _evolve and Upgrades.EVOLUTIONS.has(weapon_id):
 			weapon.evolve()
 	_game.inventory_changed.emit()
@@ -319,7 +314,7 @@ func _report() -> int:
 	for passive_id: String in _game.upgrades.passive_levels:
 		passive_levels.append("%s:%d" % [passive_id, _game.upgrades.passive_levels[passive_id]])
 	var wall_ms := (Time.get_ticks_usec() - _started_usec) / 1000.0
-	print("[smoke] job=%s ults used=%d" % [_game.player.job, _game.telemetry._ults])
+	print("[smoke] job=%s" % _game.player.job)
 	print("[smoke] result=%s elapsed=%.1fs level=%d kills=%d upgrades=%d peak_enemies=%d hp=%.0f/%.0f" % [
 		_outcome(), _game.elapsed, _game.level, _game.kills, _upgrades_taken, _peak_enemies,
 		_game.player.hp, _game.player.max_hp])
