@@ -475,7 +475,7 @@ func _populate(block: Vector2i) -> Dictionary:
 	if lawn_bottom - lawn_top > 30.0 and inner_right > inner_left:
 		for i in rng.randi_range(district["bushes"][0], district["bushes"][1]):
 			var spot := Vector2(rng.randf_range(inner_left, inner_right), rng.randf_range(lawn_top, lawn_bottom))
-			content["nodes"].append(_place_art("bush", BayArea.HEIGHTS["bush"], spot))
+			content["nodes"].append(_place_art("bush", BayArea.HEIGHTS["bush"], spot, true))
 		var tree: String = district["tree"] if district["tree"] != "" else "palm"
 		# Trees would hide a lawn landmark; bushes are low enough.
 		var tree_count := 0 if BayArea.LAWN_LANDMARKS.has(block) else rng.randi_range(district["lawn_trees"][0], district["lawn_trees"][1])
@@ -521,7 +521,7 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 	if not props.is_empty() and rng.randf() < 0.5:
 		var prop: String = props[rng.randi() % props.size()]
 		var spot := Vector2(rng.randf_range(left, right), street_y + SIDEWALK + 2.0)
-		content["nodes"].append(_place_art(prop, BayArea.HEIGHTS[prop], spot))
+		content["nodes"].append(_place_art(prop, BayArea.HEIGHTS[prop], spot, true))
 	return tallest
 
 
@@ -616,7 +616,7 @@ func _place_structure(content: Dictionary, spec: String, texture: Texture2D, siz
 ## Trees are solid only at the trunk, so you can walk behind the crown; street trees between
 ## buildings aren't solid at all (see _place_row).
 func _place_tree(content: Dictionary, tree: String, feet: Vector2, solid := true) -> void:
-	content["nodes"].append(_place_art(tree, BayArea.HEIGHTS[tree], feet))
+	content["nodes"].append(_place_art(tree, BayArea.HEIGHTS[tree], feet, not solid))
 	if not solid:
 		return
 	var trunk := Rect2(feet.x - TRUNK.x / 2.0, feet.y - TRUNK.y, TRUNK.x, TRUNK.y)
@@ -624,11 +624,17 @@ func _place_tree(content: Dictionary, tree: String, feet: Vector2, solid := true
 	_file_solid(trunk, true)
 
 
-## Places art standing on `feet` (bottom centre), in the y-sorted entity layer.
-func _place_art(art_name: String, size: float, feet: Vector2) -> Sprite2D:
+## Places art standing on `feet` (bottom centre), in the y-sorted entity layer. The layer sorts
+## scenery by its base but the player and enemies by their centre, so art they can walk into
+## (`walk_through`) sorts half a player higher, drawing unmoved: a player whose feet are past
+## its base is in front. Solid trees keep their base, since a player touching the trunk from
+## behind is only 14 px (trunk + body radius) above it and would pop in front of the crown.
+func _place_art(art_name: String, size: float, feet: Vector2, walk_through := false) -> Sprite2D:
 	var node := Art.sprite(art_name, size)
-	node.offset = Vector2(0, -node.texture.get_height() / 2.0)
-	node.position = feet
+	var sort_lift := Player.SIZE / 2.0 if walk_through else 0.0
+	# offset is in texture pixels, before the sprite's scale.
+	node.offset = Vector2(0, -node.texture.get_height() / 2.0 + sort_lift / node.scale.y)
+	node.position = feet - Vector2(0, sort_lift)
 	_place(node)
 	return node
 
