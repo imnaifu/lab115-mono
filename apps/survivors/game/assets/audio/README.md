@@ -58,4 +58,4 @@ ffmpeg -f lavfi -i "aevalsrc='min(1,t/0.004)*(if(lt(t,0.2),(sin(2*PI*90*t)+0.5*s
 
 原文件直接拷贝、没重新编码；两首响度差约 2 dB，在 `sound.gd` 的 `TRACKS` 里用音量补齐。
 
-音乐和音效各走一条 bus（`Music` / `Effects`，`sound.gd` 启动时建）：暂停、升级、融资开奖时音乐压低 8 dB，血量越低压得越多（最多 8 dB），boss 倒下时让 10 dB 再慢慢回来，最后一分钟音乐提速到 1.05 倍。网页版用浏览器自己的音频播放，只认 bus 音量、不认 bus 上的效果器，所以「让位」只调音量、不加滤波。
+音乐和音效各走一条 bus（`Music` / `Effects`，定义在 `game/default_bus_layout.tres`，Godot 启动时自动加载）。**别在代码里用 `AudioServer.add_bus()` 加 bus**：Godot 4.7.2 的网页版会把运行时加的 bus 排错位置，再设 send 就把所有 bus（连 Master）接成一个环，整个游戏没声音（10-28 线上出过一次）。暂停、升级、融资开奖时音乐压低 8 dB，血量越低压得越多（最多 8 dB），boss 倒下时让 10 dB 再慢慢回来，最后一分钟音乐提速到 1.05 倍。网页版用浏览器自己的音频播放，只认 bus 音量、不认 bus 上的效果器，所以「让位」只调音量、不加滤波。

@@ -61,6 +61,10 @@ const FADE_SECONDS := 0.6
 ## Music and effects each get a bus, so the music can step back without taking the effects with
 ## it. Web builds play through the browser's own audio, which follows bus volumes but not bus
 ## effects (no filters), so stepping back is by volume only.
+## The buses come from default_bus_layout.tres and are never added here: in a web build (Godot
+## 4.7.2) a bus added at run time lands at the wrong index in the browser's audio graph, and
+## pointing it at Master then wires every bus, Master included, into a loop that never reaches
+## the speakers.
 const MUSIC_BUS := "Music"
 const SFX_BUS := "Effects"
 ## How far the music steps back under a dialog (pause, level-up, funding draw), and at zero
@@ -205,8 +209,10 @@ static func _now() -> float:
 func _ready() -> void:
 	# Level-up, pause and end screens pause the tree; their clicks and jingles still play.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_music_bus = _add_bus(MUSIC_BUS)
-	_add_bus(SFX_BUS)
+	_music_bus = AudioServer.get_bus_index(MUSIC_BUS)
+	if _music_bus == -1 or AudioServer.get_bus_index(SFX_BUS) == -1:
+		# Players on a missing bus play on Master; only the music's stepping back is lost.
+		push_error("default_bus_layout.tres lacks the %s / %s buses" % [MUSIC_BUS, SFX_BUS])
 	for i in VOICES:
 		var voice := AudioStreamPlayer.new()
 		voice.bus = SFX_BUS
@@ -226,9 +232,10 @@ func _process(delta: float) -> void:
 	# Under a dialog at low health the deeper of the two applies, not both.
 	var duck := minf(DIALOG_DUCK_DB if _dialog else 0.0, DANGER_DUCK_DB * _danger)
 	duck += BOSS_DUCK_DB * _boss_duck_left / BOSS_DUCK_SECONDS
-	var level := AudioServer.get_bus_volume_db(_music_bus)
-	if not is_equal_approx(level, duck):
-		AudioServer.set_bus_volume_db(_music_bus, move_toward(level, duck, DUCK_SLEW * delta))
+	if _music_bus != -1:
+		var level := AudioServer.get_bus_volume_db(_music_bus)
+		if not is_equal_approx(level, duck):
+			AudioServer.set_bus_volume_db(_music_bus, move_toward(level, duck, DUCK_SLEW * delta))
 
 	if _danger > 0.0 and not _dialog:
 		_heartbeat_left -= delta
@@ -286,17 +293,6 @@ func _start_track() -> void:
 	# A new track starts at its own speed, even if the last run ended in its hurried last minute.
 	_music_player.pitch_scale = 1.0
 	_music_player.play()
-
-
-## The bus called `bus_name`, added (sending to Master) if the project doesn't have one yet.
-func _add_bus(bus_name: String) -> int:
-	var index := AudioServer.get_bus_index(bus_name)
-	if index == -1:
-		AudioServer.add_bus()
-		index = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(index, bus_name)
-		AudioServer.set_bus_send(index, "Master")
-	return index
 
 
 func _kill_fade() -> void:
