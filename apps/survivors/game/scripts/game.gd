@@ -759,7 +759,8 @@ func _offer_level_up() -> void:
 	if state != State.PLAYING or queued_level_ups <= 0:
 		return
 	var lucky := upgrades.lucky_card()
-	current_choices = upgrades.roll_choices(upgrades.choice_count(lucky))
+	# The level this offer is for: `level` has already counted every banked level-up.
+	current_choices = upgrades.roll_choices(upgrades.choice_count(lucky), level - queued_level_ups + 1)
 	# Only a card that really came out counts (a near-empty pool may not fill the extra slot).
 	lucky = lucky and current_choices.size() > upgrades.choice_count()
 	telemetry.on_offer(current_choices)

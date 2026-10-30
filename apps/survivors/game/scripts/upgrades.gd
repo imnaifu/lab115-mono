@@ -17,6 +17,11 @@ const MAX_CHOICES := 5
 const NEW_WEAPONS_GUARANTEED := [2, 1]
 ## New weapons are marked 推荐 (recommended) until the player carries this many.
 const RECOMMEND_UNTIL_WEAPONS := 3
+## The level-ups at which the job's own weapon always comes up, its pair of direction cards plus
+## the rest rolled as usual (Hades' hammer, Deep Rock's overclocks): left to the weighted pool it
+## came up at 7% of level-ups in the live data, 2-4 times in a whole run, and was taken every
+## time. Four, as many as it has upgrades; it can still come up in between.
+const JOB_WEAPON_LEVELS := [3, 6, 10, 15]
 
 ## Card rarity (白 / 绿 / 蓝 / 紫 / 橙): every weapon and passive card rolls one, and the rarer it is
 ## the more its step gives, the level still going up by one. `scale` multiplies a stat passive's
@@ -68,7 +73,7 @@ const WEAPONS := {
 	"wifi": {"name": "Wi-Fi 信号", "art": "wifi", "behavior": "aura", "type": "area",
 		"levels": ["持续伤害身边的敌人", "信号范围变大", "伤害 +3，频率更高", "信号范围变大", "伤害 +4，范围更大，频率更高"]},
 	"cloud": {"name": "云端部署", "art": "cloud", "behavior": "strike", "type": "area",
-		"levels": ["从云上劈中屏幕里的敌人", "多劈一道", "伤害 +6，冷却更短", "多劈一道，范围变大", "多劈一道，伤害 +6，冷却更短"]},
+		"levels": ["从云上劈中身边一大圈里的敌人", "多劈一道", "伤害 +6，冷却更短", "多劈一道，范围变大", "多劈一道，伤害 +6，冷却更短"]},
 	"meeting_room": {"name": "拉会", "art": "meeting_room", "behavior": "zone", "type": "area",
 		"levels": ["往怪最多的地方拉个会：圈里的怪变慢、持续掉血", "伤害 +2，会议室更大", "同时多开一个会", "伤害 +2，会议室更大", "再多开一个会，伤害 +3，会议室更大"]},
 	"firewall": {"name": "防火墙", "art": "firewall", "behavior": "orbit", "type": "summon", "job": "ops",
@@ -192,11 +197,15 @@ static func create_weapon(weapon_id: String) -> Weapon:
 	return weapon
 
 
-## The cards for a level-up.
-func roll_choices(count: int) -> Array:
+## The cards for the level-up to `for_level`. At JOB_WEAPON_LEVELS the job's own weapon's pair of
+## direction cards comes first, marked `milestone`, and the rest are rolled as usual without it.
+func roll_choices(count: int, for_level: int = 0) -> Array:
 	var guaranteed: int = NEW_WEAPONS_GUARANTEED[_offers] if _offers < NEW_WEAPONS_GUARANTEED.size() else 0
 	_offers += 1
-	var picked := _roll(count, guaranteed)
+	var job_pair := _job_pair_due(for_level)
+	var picked := _roll(count - job_pair.size(), guaranteed, "" if job_pair.is_empty() else job_pair[0]["id"])
+	if not job_pair.is_empty():
+		picked = job_pair + picked
 	var carried := _game.player.weapons.size()
 	for choice: Dictionary in picked:
 		if choice["kind"] == "weapon" and choice["level"] == 1 and carried < RECOMMEND_UNTIL_WEAPONS:
@@ -204,6 +213,21 @@ func roll_choices(count: int) -> Array:
 		if choice["kind"] in ["weapon", "passive"]:
 			_set_rarity(choice)
 	return picked
+
+
+## The job's own weapon's two direction cards, marked `milestone`, when `for_level` is one of
+## JOB_WEAPON_LEVELS and it still has upgrades to go; otherwise none.
+func _job_pair_due(for_level: int) -> Array:
+	if not JOB_WEAPON_LEVELS.has(for_level):
+		return []
+	var weapon_id: String = Jobs.data(_game.player.job)["weapon"]
+	var weapon := _game.player.get_weapon(weapon_id)
+	if weapon == null or weapon.level >= MAX_LEVEL or not BRANCHES.has(weapon_id):
+		return []
+	var pair := [_branch_choice(weapon_id, "a"), _branch_choice(weapon_id, "b")]
+	for card: Dictionary in pair:
+		card["milestone"] = true
+	return pair
 
 
 ## How much likelier `luck` makes a tier past the first: each point 1% per tier, compounding
@@ -339,8 +363,9 @@ func is_evolved(weapon_id: String) -> bool:
 
 
 ## `count` cards from the weighted pool, the first `new_weapons` of them weapons not yet carried
-## (as many as there are). The fallback card when the pool is empty.
-func _roll(count: int, new_weapons: int) -> Array:
+## (as many as there are), leaving out `skip_pair`'s pair (already on the table). The fallback
+## card when the pool is empty.
+func _roll(count: int, new_weapons: int, skip_pair: String = "") -> Array:
 	var pool: Array = []
 	var weights := PackedFloat32Array()
 	var player := _game.player
@@ -351,7 +376,7 @@ func _roll(count: int, new_weapons: int) -> Array:
 			if slots_left:
 				pool.append(_choice("weapon", weapon_id, 1))
 				weights.append(2.0)
-		elif weapon.level < MAX_LEVEL:
+		elif weapon.level < MAX_LEVEL and weapon_id != skip_pair:
 			# Upgrading what you already carry is favoured so builds come together. The job's own
 			# weapon stands in as one entry and comes out as its pair of direction cards.
 			pool.append({"kind": "pair", "id": weapon_id} if BRANCHES.has(weapon_id) else _choice("weapon", weapon_id, weapon.level + 1))
@@ -366,6 +391,8 @@ func _roll(count: int, new_weapons: int) -> Array:
 			weights.append(2.0)
 
 	var picked: Array = []
+	if count <= 0:
+		return picked
 	for i in mini(new_weapons, count):
 		var fresh: Array[int] = []
 		var fresh_weights := PackedFloat32Array()
@@ -379,6 +406,7 @@ func _roll(count: int, new_weapons: int) -> Array:
 		picked.append(pool[index])
 		pool.remove_at(index)
 		weights.remove_at(index)
+	var forced := picked.size()
 	while picked.size() < count and not pool.is_empty():
 		var index := _game.rng.rand_weighted(weights)
 		var entry: Dictionary = pool[index]
@@ -386,10 +414,14 @@ func _roll(count: int, new_weapons: int) -> Array:
 		weights.remove_at(index)
 		if entry["kind"] != "pair":
 			picked.append(entry)
-		elif picked.size() + 2 <= count:
+			continue
+		# Drawn for the last card, a pair takes the place of the last drawn card instead of being
+		# left out (half of one would be no choice; leaving it out made it rarer still).
+		if picked.size() + 2 > count and picked.size() > forced:
+			picked.pop_back()
+		if picked.size() + 2 <= count:
 			picked.append(_branch_choice(entry["id"], "a"))
 			picked.append(_branch_choice(entry["id"], "b"))
-		# A pair drawn for the last card is left out: half of one would be no choice.
 	if picked.is_empty():
 		picked.append(FALLBACK)
 	# The guaranteed weapons shouldn't always sit in the first slots; a pair stays side by side.

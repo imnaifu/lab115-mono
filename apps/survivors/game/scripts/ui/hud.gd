@@ -1147,7 +1147,8 @@ func _fit_title() -> void:
 # --- Level-up ------------------------------------------------------------------------------
 
 ## `lucky`: luck added a card (Upgrades.lucky_card), which the line under the title says, with the
-## 锦鲤's koi, so players see what luck does.
+## 锦鲤's koi, so players see what luck does. A level-up where the job's own weapon is due
+## (Upgrades.JOB_WEAPON_LEVELS, its cards marked `milestone`) says so too, with that weapon.
 func _show_level_up(choices: Array, lucky: bool = false) -> void:
 	_clear(_cards_holder)
 	var portrait := _is_portrait()
@@ -1163,9 +1164,22 @@ func _show_level_up(choices: Array, lucky: bool = false) -> void:
 	sub_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	sub_row.add_theme_constant_override("separation", 4)
 	sub_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var milestone: Dictionary = {}
+	for choice: Dictionary in choices:
+		if choice.get("milestone", false):
+			milestone = choice
+			break
+	if not milestone.is_empty():
+		sub_row.add_child(UiKit.icon(milestone["art"], 18))
 	if lucky:
 		sub_row.add_child(UiKit.icon("koi", 18))
-	sub_row.add_child(UiKit.label("运气好，多出一张！选一张带走" if lucky else "选一张带走", 13, "heavy" if lucky else "body", Art.BRAND if lucky else Art.BRAND_SOFT))
+	var sub_text := "选一张带走"
+	if not milestone.is_empty():
+		sub_text = "专属武器升级，运气好还多一张！选一张带走" if lucky else "专属武器升级！选一张带走"
+	elif lucky:
+		sub_text = "运气好，多出一张！选一张带走"
+	var standout := lucky or not milestone.is_empty()
+	sub_row.add_child(UiKit.label(sub_text, 13, "heavy" if standout else "body", Art.BRAND if standout else Art.BRAND_SOFT))
 	column.add_child(sub_row)
 	column.add_child(UiKit.gap(18 if portrait else 12))
 
