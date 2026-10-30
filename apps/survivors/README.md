@@ -21,13 +21,13 @@ CI 跑不了 Godot，`npm run build` 只做 `check-project.mjs` 里的静态检�
 
 `.28` 起游戏的云存档存在自建的 [Nakama](https://github.com/heroiclabs/nakama)（开源游戏服务器，Apache-2.0）上：根目录 `docker-compose.yml` 的 `nakama`（固定 `heroiclabs/nakama:3.41.0`，有 arm64 镜像）和 `nakama-db`（`postgres:16-alpine`，数据在 `./data/nakama-db`，和 Umami 的库分开）。游戏从浏览器直接调它（Nakama 对任何来源都开 CORS，会话是请求头里的 token，不用 cookie），Traefik 把 `nakama.lab115.com` 转到 7350。机制和界面见 `game/DESIGN.md` 2.11，客户端代码 `game/scripts/cloud.gd`，本地测试见 `game/README.md`「云存档」。
 
-**上线前要在 Coolify 里加 1 个环境变量 `NAKAMA_SECRET`**，用 `openssl rand -hex 24` 生成（只有字母和数字，拼进数据库地址也不用转义）。缺了它 `nakama` 会在启动时报错退出（`:?` 检查）、`nakama-db` 也不会初始化，不会带着 Nakama 文档里公开的默认密钥跑起来（那样任何人都能冒充任何玩家）。
+**Coolify 里要有 2 个环境变量**：`NAKAMA_SECRET`，用 `openssl rand -hex 24` 生成（只有字母和数字，拼进数据库地址也不用转义）；`NAKAMA_CONSOLE_PASSWORD`，管理后台的登录密码，单独一个（后台在网页上登录，这个密码泄露了也拿不到任何密钥）。缺了哪个 `nakama` 都会在启动时报错退出（`:?` 检查）、`nakama-db` 也不会初始化，不会带着 Nakama 文档里公开的默认密钥跑起来（那样任何人都能冒充任何玩家）。
 
-它直接当数据库密码和管理后台密码用；Nakama 要的几把签名密钥（玩家的会话和刷新 token、服务端之间调用、后台登录）在启动时由它算出来：每把是 `sha256(秘密:用途)`，各不相同，不用另外保管。代价是它一泄露全部要换：换的时候改这一个值重新部署，所有玩家的登录 token 失效，游戏下次打开会用设备 id 自动重新登录，玩家无感；数据库密码在 `nakama-db` 第一次初始化后就定下来了，换秘密时还要进库改密码（`ALTER USER nakama PASSWORD '…'`）。
+`NAKAMA_SECRET` 直接当数据库密码用；Nakama 要的几把签名密钥（玩家的会话和刷新 token、服务端之间调用、后台登录）在启动时由它算出来：每把是 `sha256(秘密:用途)`，各不相同，不用另外保管。代价是它一泄露全部要换：换的时候改这一个值重新部署，所有玩家的登录 token 失效，游戏下次打开会用设备 id 自动重新登录，玩家无感；数据库密码在 `nakama-db` 第一次初始化后就定下来了，换秘密时还要进库改密码（`ALTER USER nakama PASSWORD '…'`）。
 
 `--socket.server_key`（`survivors-lab115`）写死在 compose 和 `Cloud.SERVER_KEY` 里，它会打进游戏包，本来就不是秘密。
 
-**管理后台**（看玩家、存档）在 <https://nakama-admin.lab115.com>，前面有一道 Cloudflare Access：Zero Trust 里的应用「Nakama admin (survivors)」只放行 `xnaifu@gmail.com`，登录方式是发到这个邮箱的一次性验证码，登录一次管 24 小时；过了这道才是 Nakama 自己的登录，用户名 `chopper`，密码是 `NAKAMA_SECRET`。Access 只拦得住经过 Cloudflare 的访问，所以这个路由还只接受 Cloudflare 的 IP 段（compose 里的 `cloudflare-only`，取自 cloudflare.com/ips，Cloudflare 改了 IP 段要跟着改），直接连服务器 IP 带这个域名会被拒。要加人或换邮箱，改 Zero Trust 里那个应用的策略（API token 在 `~/.config/secrets/cloudflare.env`）。
+**管理后台**（看玩家、存档）在 <https://nakama-admin.lab115.com>，前面有一道 Cloudflare Access：Zero Trust 里的应用「Nakama admin (survivors)」只放行 `xnaifu@gmail.com`，登录方式是发到这个邮箱的一次性验证码，登录一次管 24 小时；过了这道才是 Nakama 自己的登录，用户名 `chopper`，密码是 `NAKAMA_CONSOLE_PASSWORD`。Access 只拦得住经过 Cloudflare 的访问，所以这个路由还只接受 Cloudflare 的 IP 段（compose 里的 `cloudflare-only`，取自 cloudflare.com/ips，Cloudflare 改了 IP 段要跟着改），直接连服务器 IP 带这个域名会被拒。要加人或换邮箱，改 Zero Trust 里那个应用的策略（API token 在 `~/.config/secrets/cloudflare.env`）。
 
 Cloudflare 出问题时，也可以绕过它，经 SSH 直接连服务器本机的 `127.0.0.1:7351`：
 

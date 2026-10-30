@@ -218,21 +218,24 @@ services:
       nakama-db:
         condition: service_healthy
     environment:
-      # The one secret (`openssl rand -hex 24`: hex, so it fits a database address as is).
+      # The secret (`openssl rand -hex 24`: hex, so it fits a database address as is).
       - NAKAMA_SECRET=${NAKAMA_SECRET:-}
+      # The admin console's password, typed into a web page (nakama-admin.lab115.com), so of its
+      # own: whoever learns it still holds none of the keys above.
+      - NAKAMA_CONSOLE_PASSWORD=${NAKAMA_CONSOLE_PASSWORD:-}
     # Nakama takes its settings as flags. `$$` leaves each `$` to the container's shell, so they
-    # are worked out from the secret when it starts: it is the database's and the admin console's
-    # password, and each signing key (players' sessions and refresh tokens, server-to-server calls,
-    # console logins) is a hash of it with what the key is for, so they all differ and nobody has
-    # to keep them. `:?` stops it there, loudly, when the secret is missing, instead of running
-    # with Nakama's documented defaults, with which anyone could sign in as any player. The server
-    # key ships in the game (Cloud.SERVER_KEY) and is no secret. A session lasts two hours; a
-    # device signs in again with its id whenever it needs a new one.
+    # are worked out from the secret when it starts: it is the database's password, and each
+    # signing key (players' sessions and refresh tokens, server-to-server calls, console logins) is
+    # a hash of it with what the key is for, so they all differ and nobody has to keep them. `:?`
+    # stops it there, loudly, when the secret or the console's password is missing, instead of
+    # running with Nakama's documented defaults, with which anyone could sign in as any player.
+    # The server key ships in the game (Cloud.SERVER_KEY) and is no secret. A session lasts two
+    # hours; a device signs in again with its id whenever it needs a new one.
     entrypoint:
       - /bin/sh
       - -ec
       - |
-        : "$${NAKAMA_SECRET:?}"
+        : "$${NAKAMA_SECRET:?}" "$${NAKAMA_CONSOLE_PASSWORD:?}"
         key() { printf '%s' "$${NAKAMA_SECRET}:$$1" | sha256sum | cut -d ' ' -f 1; }
         database="nakama:$${NAKAMA_SECRET}@nakama-db:5432/nakama"
         /nakama/nakama migrate up --database.address "$$database"
@@ -245,7 +248,7 @@ services:
           --session.refresh_encryption_key "$$(key refresh)" \
           --runtime.http_key "$$(key http)" \
           --console.username chopper \
-          --console.password "$${NAKAMA_SECRET}" \
+          --console.password "$${NAKAMA_CONSOLE_PASSWORD}" \
           --console.signing_key "$$(key console)"
     healthcheck:
       test: ["CMD", "/nakama/nakama", "healthcheck"]

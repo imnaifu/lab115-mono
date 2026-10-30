@@ -118,7 +118,7 @@ cd ../../..   # 仓库根目录
 docker compose -p survivors-cloud -f docker-compose.yml -f /path/to/override.yml --env-file /path/to/test.env up -d nakama nakama-db
 ```
 
-override 文件里给 `nakama` 加 `ports: ["127.0.0.1:7350:7350"]`；`test.env` 里写一行 `NAKAMA_SECRET=…`（本地随便填，只用字母和数字）。然后：
+override 文件里给 `nakama` 加 `ports: ["127.0.0.1:7350:7350"]`；`test.env` 里写 `NAKAMA_SECRET=…` 和 `NAKAMA_CONSOLE_PASSWORD=…` 两行（本地随便填，只用字母和数字）。然后：
 
 ```bash
 godot --headless --path . -s tests/cloud_test.gd          # 两台设备合并、换码、删除、连不上，全部通过时退出码 0
