@@ -20,8 +20,8 @@ const NAME := "硅谷"
 ## multiples. 硅谷 is the 965 baseline.
 const HOURS := "965"
 const DIFFICULTY := {"hp": 1.0, "damage": 1.0, "spawn": 1.0}
-## The job grades the run's level reads as (Maps.rank_of): Google-style here.
-const RANKS := ["L3", "L4", "L5", "L6", "L7", "L8"]
+## The job grades the run's level reads as (Maps.rank_of): Google-style here, L1, L2…
+const RANK_PREFIX := "L"
 ## Bosses and enemy rings swapped for local ones (see Beijing); none here, the schedule in
 ## Spawner.EVENTS is this map's own. FINALE_LINE "" keeps the finale's own line.
 const BOSS_SWAPS := {}

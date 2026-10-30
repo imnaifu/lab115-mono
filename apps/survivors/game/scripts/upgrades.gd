@@ -30,14 +30,15 @@ const JOB_WEAPON_LEVELS := [3, 6, 10, 15]
 ## numbers off per-level tables instead, so it jumps `extra_levels` more and only rolls 普通, 史诗
 ## (+1) and 传说 (+2): whole levels can't be split finer, and that way a rarer card still always
 ## gives more, about as much more on average as a stat passive's. `weight` is the chance in percent with no
-## luck (Player.luck, see luck_factor). Frequent and modest on purpose: more than half the cards
-## have a colour, none of them swings a run on its own.
+## luck (Player.luck, see luck_factor). Frequent and modest on purpose: about half the cards have
+## a colour, none of them swings a run on its own. .33 took the rarer tiers down a little at the
+## user's ask (was 45 / 32 / 15 / 6 / 2): epic and legendary also level table perks up faster.
 const RARITIES := [
-	{"id": "common", "name": "普通", "weight": 45.0, "scale": 1.0, "weapon_bonus": 0.0, "extra_levels": 0},
-	{"id": "uncommon", "name": "优秀", "weight": 32.0, "scale": 1.15, "weapon_bonus": 0.04, "extra_levels": 0},
-	{"id": "rare", "name": "稀有", "weight": 15.0, "scale": 1.3, "weapon_bonus": 0.08, "extra_levels": 0},
-	{"id": "epic", "name": "史诗", "weight": 6.0, "scale": 1.6, "weapon_bonus": 0.12, "extra_levels": 1},
-	{"id": "legendary", "name": "传说", "weight": 2.0, "scale": 2.0, "weapon_bonus": 0.2, "extra_levels": 2},
+	{"id": "common", "name": "普通", "weight": 52.0, "scale": 1.0, "weapon_bonus": 0.0, "extra_levels": 0},
+	{"id": "uncommon", "name": "优秀", "weight": 30.0, "scale": 1.15, "weapon_bonus": 0.04, "extra_levels": 0},
+	{"id": "rare", "name": "稀有", "weight": 12.0, "scale": 1.3, "weapon_bonus": 0.08, "extra_levels": 0},
+	{"id": "epic", "name": "史诗", "weight": 4.5, "scale": 1.6, "weapon_bonus": 0.12, "extra_levels": 1},
+	{"id": "legendary", "name": "传说", "weight": 1.5, "scale": 2.0, "weapon_bonus": 0.2, "extra_levels": 2},
 ]
 ## The passives that add a number, by how much at common rarity (percent for the multipliers);
 ## the card text has it as %s. The rest are table perks.

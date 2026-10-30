@@ -11,8 +11,8 @@ extends SubViewport
 const SIZE := Vector2i(720, 1280)
 ## The design board is 360x640; everything below is its sizes doubled.
 const SCALE := 2
-## Job grade by level, the result's headline number: the live data's lost runs ended around
-## level 10-13 (L4), the wins at 45-56 (L7-L8). The map names the grades (Maps.rank_of).
+## Job grade by level, the result's headline number: one grade per level since .33 (L1, L2… on
+## 硅谷, P1, P2… on 北京; Maps.rank_of).
 ## Roasts by what ended the run, then by how it went.
 const KILLER_ROASTS := {
 	"deadline": "死于 Deadline。经典。",
@@ -88,8 +88,8 @@ func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> vo
 	# The job goes with the grade: 产品经理 职级 L5 (the facts row below has no room for a third).
 	grade_row.add_child(_middle(UiKit.label(Jobs.data(game.player.job)["name"], 13 * SCALE, "heavy", Art.PAPER)))
 	grade_row.add_child(_middle(UiKit.label("职级", 13 * SCALE, "body", Art.PAPER)))
+	# The grade is the level since .33 (L12), so there is no separate "Lv" after it.
 	grade_row.add_child(_middle(UiKit.label(grade(game.level), 20 * SCALE, "display", Art.BRAND)))
-	grade_row.add_child(_middle(UiKit.label("Lv %d" % game.level, 12 * SCALE, "display", Art.FILL_LILAC)))
 	column.add_child(grade_pill)
 
 	column.add_child(UiKit.gap(16 * SCALE))

@@ -36,7 +36,12 @@ const HEAL_DROP_CHANCE := 0.012
 ## XP for the first level-ups, cheaper than the curve in xp_to_next() (5, 11, 17, 23) so a new run
 ## gets its first upgrades quickly; from level 5 on the curve applies.
 const EARLY_LEVEL_XP := [3, 7, 13, 20]
-const MAGNET_DROP_CHANCE := 0.004
+## Magnets pull every star on the map at once, so each one can bank several level-ups. Until .32
+## any kill dropped one 0.4% of the time and every boss dropped one: about 13 a run, the user felt
+## the run kept leveling up in bursts. Now only regular kills from level 10 on (Vampire Survivors'
+## Vacuum only drops from level 12), about 4-5 a run.
+const MAGNET_DROP_CHANCE := 0.002
+const MAGNET_FROM_LEVEL := 10
 ## An investor killed spills this many extra stars of this value round it: 撤资, the reward
 ## for getting through its aura.
 const PULL_OUT_STARS := 8
@@ -500,12 +505,11 @@ func _kill(enemy: Enemy) -> void:
 		var chest := _drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
 		chest.affixes = enemy.affixes.size()
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
-		_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(0, 12), 1)
 	else:
 		var roll := rng.randf()
 		if roll < HEAL_DROP_CHANCE:
 			_drop(Pickup.Kind.HEAL, enemy.position + Vector2(6, 0), 1)
-		elif roll < HEAL_DROP_CHANCE + MAGNET_DROP_CHANCE:
+		elif roll < HEAL_DROP_CHANCE + MAGNET_DROP_CHANCE and level >= MAGNET_FROM_LEVEL:
 			_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(6, 0), 1)
 	# Freed only once the grid no longer references it (next rebuild); until then queries skip
 	# it via `dead`. Freeing now would leave a dangling entry for anything that queries before
@@ -740,10 +744,13 @@ func _collect(pickup: Pickup) -> void:
 			announce("磁铁！全图经验飞过来了")
 
 
+## Steeper from level 10 since .33 (was + max(0, level - 20) * 4): the user found the level-ups
+## too frequent. Bots that pick up every star now reach about 39 by 10:00 instead of 49, and have
+## every weapon and passive maxed at 9:00-9:40, some never (before, 7:30-8:30).
 func xp_to_next() -> int:
 	if level <= EARLY_LEVEL_XP.size():
 		return EARLY_LEVEL_XP[level - 1]
-	return 5 + (level - 1) * 6 + maxi(0, level - 20) * 4
+	return 5 + (level - 1) * 6 + maxi(0, level - 10) * 10
 
 
 func add_xp(amount: int) -> void:

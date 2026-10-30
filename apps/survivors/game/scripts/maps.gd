@@ -74,11 +74,11 @@ static func stamp(id: String) -> Dictionary:
 	return {}
 
 
-## The job grade a run's level reads as on the current map (L3-L8 on 硅谷, P5-P10 on 北京): the
-## first under level 10, then a grade every 10 levels, the last from 50 on.
+## The job grade a run's level reads as on the current map: L1, L2… on 硅谷, P1, P2… on 北京. Since
+## .33 every level-up is a promotion and the grade is all the game shows (the user dropped the
+## separate level; before, a grade covered 10 levels and read "L4 · 12").
 static func rank_of(level: int) -> String:
-	var ranks: Array = current.RANKS
-	return ranks[clampi(level / 10, 0, ranks.size() - 1)]
+	return "%s%d" % [current.RANK_PREFIX, level]
 
 
 ## The map's name with its working week, for the map picker: 北京 · 996.

@@ -15,8 +15,8 @@ const NAME := "北京"
 ## 996: the longest week of the maps, so the hardest (BayArea.HOURS says how this works).
 const HOURS := "996"
 const DIFFICULTY := {"hp": 1.3, "damage": 1.2, "spawn": 1.15}
-## Job grades Alibaba-style.
-const RANKS := ["P5", "P6", "P7", "P8", "P9", "P10"]
+## Job grades Alibaba-style, P1, P2…
+const RANK_PREFIX := "P"
 ## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
 ## replaces; Spawner._plan_events): 周报, 35 岁危机, 福报 996, 卷王, 百模大战, 领导视察, 述职 PPT.
 ## 主库宕机, 屎山代码 and 老板画饼 are the same everywhere.

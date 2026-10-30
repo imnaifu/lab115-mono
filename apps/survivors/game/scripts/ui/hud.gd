@@ -189,8 +189,6 @@ var _badge_kicker: Label
 var _badge_title: Label
 var _badge_tween: Tween
 var _badge_queue: Array = []
-## The job grade last shown (Maps.rank_of), to tell a promotion.
-var _shown_rank := ""
 var _tilt_hint: Label
 var _shown_state := -1
 ## Brightens the XP bar for a moment whenever XP comes in, so picking up a star registers.
@@ -271,15 +269,9 @@ func _process(delta: float) -> void:
 		_xp_flash = 1.0
 	_xp_flash = maxf(0.0, _xp_flash - delta * 4.0)
 	_xp_bar.modulate = Color.WHITE.lerp(Color(1.4, 1.4, 1.4), _xp_flash)
-	# The level as a job grade and the level within it: L4 · 12 (P6 · 12 on 北京).
-	var rank := Maps.rank_of(game.level)
-	_level_label.text = "%s · %d" % [rank, game.level]
-	if rank != _shown_rank:
-		# A promotion every 10 levels gets a banner of its own; the first grade is just where a
-		# run starts.
-		if _shown_rank != "":
-			_queue_badge(["stock_options", tr("晋升"), rank, Art.LINK, false])
-		_shown_rank = rank
+	# The level as a job grade: L12 (P12 on 北京). Every level-up is a promotion now (.33), and the
+	# level-up panel says so, so there is no separate 晋升 banner any more.
+	_level_label.text = Maps.rank_of(game.level)
 	_time_label.text = _clock_text(game.elapsed)
 	_kills_label.text = str(game.kills)
 	_update_next_boss()
@@ -514,7 +506,7 @@ func _build_top_bar() -> void:
 	ring.draw_center = false
 	outline.add_theme_stylebox_override("panel", ring)
 	_xp_bar.add_child(outline)
-	_level_label = UiKit.label("Lv 1", 11, "display")
+	_level_label = UiKit.label(Maps.rank_of(1), 11, "display")
 	_level_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1171,8 +1163,10 @@ func _show_level_up(choices: Array, lucky: bool = false) -> void:
 	column.add_theme_constant_override("separation", 0)
 	_cards_holder.add_child(column)
 
-	column.add_child(UiKit.kicker("LEVEL UP", Art.BRAND_SOFT))
-	var title := UiKit.label(tr("升级！%s · %d") % [Maps.rank_of(game.level), game.level], 28, "display", Art.PAPER)
+	column.add_child(UiKit.kicker("PROMOTED", Art.BRAND_SOFT))
+	# Every level-up is a promotion to the next grade (.33). `game.level` already counts the
+	# level-ups still banked, so name the one this panel is for.
+	var title := UiKit.label(tr("升职！%s") % Maps.rank_of(game.level - game.queued_level_ups + 1), 28, "display", Art.PAPER)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
 	var sub_row := HBoxContainer.new()
@@ -1833,7 +1827,7 @@ func _show_end(victory: bool) -> void:
 	var stats := HBoxContainer.new()
 	stats.add_theme_constant_override("separation", 8)
 	left.add_child(stats)
-	for stat: Array in [["存活", _clock_text(game.elapsed)], ["职级", "%s · %d" % [Maps.rank_of(game.level), game.level]], ["击杀", str(game.kills)]]:
+	for stat: Array in [["存活", _clock_text(game.elapsed)], ["职级", Maps.rank_of(game.level)], ["击杀", str(game.kills)]]:
 		var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(4, 6, 4, 6)))
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var card_column := VBoxContainer.new()

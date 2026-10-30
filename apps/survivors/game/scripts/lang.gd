@@ -98,7 +98,7 @@ const EN := {
 	"按住屏幕任意处拖动来走位": "Touch anywhere and drag to move",
 	"用 WASD 或方向键走位": "Move with WASD or the arrow keys",
 	"下一个 boss": "Next boss",
-	"升级！%s · %d": "Level up! %s · %d",
+	"升职！%s": "Promoted! %s",
 	"选一张带走": "Pick one",
 	"运气好，多出一张！选一张带走": "Lucky! An extra card. Pick one",
 	"专属武器升级！选一张带走": "Your own weapon levels up! Pick one",
@@ -380,7 +380,6 @@ const EN := {
 	# The 收藏 page's 图鉴 (Bestiary), job grades, 北京's own bosses (.22)
 	"收藏": "Collection",
 	"图鉴": "Bestiary",
-	"晋升": "Promoted",
 	"遇到过的怪会收进图鉴；boss 每局可能多带招式和词条": "Enemies you meet go in the bestiary; bosses may bring extra moves and affixes each run",
 	"还没遇到": "Not met yet",
 	"招式：": "Move: ",
