@@ -252,7 +252,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # The admin console (7351) stays off the internet: only the server itself reaches it, through
+    # The admin console (7351) is at nakama-admin.lab115.com behind Cloudflare Access: the edge
+    # lets only xnaifu@gmail.com through, with a one-time PIN mailed to it (Zero Trust app
+    # "Nakama admin (survivors)"), and Nakama's own login comes after that. Access only guards the
+    # way through Cloudflare, so this router also refuses anything not coming from Cloudflare's
+    # addresses (cloudflare.com/ips): a request sent straight to the server with that Host can't
+    # skip it. The server itself still reaches the console without either, through
     # `ssh -L 7351:127.0.0.1:7351 mydev` and then http://127.0.0.1:7351.
     ports:
       - "127.0.0.1:7351:7351"
@@ -264,14 +269,30 @@ services:
       - traefik.http.routers.nakama-http.entryPoints=http
       - traefik.http.routers.nakama-http.rule=Host(`nakama.lab115.com`)
       - traefik.http.routers.nakama-http.middlewares=redirect-to-https
+      - traefik.http.routers.nakama-http.service=nakama
       # HTTPS router
       - traefik.http.routers.nakama-https.entryPoints=https
       - traefik.http.routers.nakama-https.rule=Host(`nakama.lab115.com`)
       - traefik.http.routers.nakama-https.tls=true
       - traefik.http.routers.nakama-https.tls.certresolver=letsencrypt
       - traefik.http.routers.nakama-https.middlewares=gzip
-      # The game's API (HTTP and WebSocket); 7351 is the console, above
+      # Two services on one container: every router names its own.
+      - traefik.http.routers.nakama-https.service=nakama
+      # The game's API (HTTP and WebSocket)
       - traefik.http.services.nakama.loadbalancer.server.port=7350
+      # The admin console, see above
+      - traefik.http.middlewares.cloudflare-only.ipallowlist.sourcerange=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
+      - traefik.http.routers.nakama-admin-http.entryPoints=http
+      - traefik.http.routers.nakama-admin-http.rule=Host(`nakama-admin.lab115.com`)
+      - traefik.http.routers.nakama-admin-http.middlewares=redirect-to-https
+      - traefik.http.routers.nakama-admin-http.service=nakama-admin
+      - traefik.http.routers.nakama-admin-https.entryPoints=https
+      - traefik.http.routers.nakama-admin-https.rule=Host(`nakama-admin.lab115.com`)
+      - traefik.http.routers.nakama-admin-https.tls=true
+      - traefik.http.routers.nakama-admin-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.nakama-admin-https.middlewares=cloudflare-only,gzip
+      - traefik.http.routers.nakama-admin-https.service=nakama-admin
+      - traefik.http.services.nakama-admin.loadbalancer.server.port=7351
 
   nakama-db:
     # Its own database rather than a second one in umami-db: either can then be upgraded, backed

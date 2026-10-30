@@ -27,13 +27,15 @@ CI 跑不了 Godot，`npm run build` 只做 `check-project.mjs` 里的静态检�
 
 `--socket.server_key`（`survivors-lab115`）写死在 compose 和 `Cloud.SERVER_KEY` 里，它会打进游戏包，本来就不是秘密。
 
-**管理后台**（看玩家、存档）不上公网，只映射到服务器本机的 `127.0.0.1:7351`：
+**管理后台**（看玩家、存档）在 <https://nakama-admin.lab115.com>，前面有一道 Cloudflare Access：Zero Trust 里的应用「Nakama admin (survivors)」只放行 `xnaifu@gmail.com`，登录方式是发到这个邮箱的一次性验证码，登录一次管 24 小时；过了这道才是 Nakama 自己的登录，用户名 `chopper`，密码是 `NAKAMA_SECRET`。Access 只拦得住经过 Cloudflare 的访问，所以这个路由还只接受 Cloudflare 的 IP 段（compose 里的 `cloudflare-only`，取自 cloudflare.com/ips，Cloudflare 改了 IP 段要跟着改），直接连服务器 IP 带这个域名会被拒。要加人或换邮箱，改 Zero Trust 里那个应用的策略（API token 在 `~/.config/secrets/cloudflare.env`）。
+
+Cloudflare 出问题时，也可以绕过它，经 SSH 直接连服务器本机的 `127.0.0.1:7351`：
 
 ```bash
 ssh -L 7351:127.0.0.1:7351 mydev
 ```
 
-然后浏览器打开 <http://127.0.0.1:7351>，用户名 `chopper`，密码是 `NAKAMA_SECRET`。
+然后浏览器打开 <http://127.0.0.1:7351>，同样用 `chopper` 登录。
 
 **删除只做标记**：玩家在游戏里「删除云存档」时账号和存档都留着，只多一个 `account` / `state` 存储对象（`deleted` 时间、`reason`：`player` 玩家删的，`redeemed` 换设备时被并掉的旧账号，带 `into`），存档码会被摘掉。要真删就在管理后台删那个账号。App 上架前要改成真删除（见 `game/DESIGN.md` 2.11）。
 
