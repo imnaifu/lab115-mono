@@ -2365,11 +2365,14 @@ func _refit(holder: Control, screen: Control, overhang: float) -> void:
 	if screen is MarginContainer:
 		# A page's margins count as room already.
 		room = _root.size
-	# A screen bigger than the view grows its holder past the view's right and bottom edges; put
-	# the holder's centre back on the view's (lower by half the overhang, which then has the room
-	# above) before shrinking around it.
-	holder.pivot_offset = holder.size / 2.0
-	holder.position = (_root.size - holder.size) / 2.0 + Vector2(0.0, overhang / 2.0)
+	# Shrink round the screen's centre and put that on the view's (lower by half the overhang,
+	# which then has the room above). A dialog's CenterContainer grows with it and keeps it centred,
+	# so its centre is the holder's (the dialog's own position lags a frame behind as it re-sorts).
+	# A full-page holder (_full) doesn't grow with a page taller than the view: shrinking round the
+	# holder's centre pushed the page's bottom (the result page's buttons) off a short phone.
+	var box := Rect2(Vector2.ZERO, holder.size) if holder is Container else Rect2(screen.position, screen.size)
+	holder.pivot_offset = box.get_center()
+	holder.position = _root.size / 2.0 - holder.pivot_offset + Vector2(0.0, overhang / 2.0)
 	holder.scale = Vector2.ONE * minf(1.0, minf(room.x / screen.size.x, room.y / screen.size.y))
 
 

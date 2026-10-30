@@ -11,8 +11,8 @@ extends Weapon
 ## pokes more ways at once (front, then back, then the four sides and in between), 更多次数 pokes
 ## more times each round. Either way each upgrade also hits harder. It starts as one poke one way.
 ##
-## Each poke is drawn as the pen itself shooting out along the line, nib first, leaving a stroke of
-## ink behind it (a plain white bar didn't read as a pen).
+## Each poke is drawn as the pen jabbing from the player's side while a drop of ink flicks off its
+## nib to the end of the line and splats there (Jab).
 
 const COOLDOWN := 1.0
 const POKE_GAP := 0.09
@@ -89,17 +89,26 @@ func _poke_all_ways() -> void:
 	game.melee_impact(hits, hit_boss)
 
 
-## One poke as drawn: the pen darting out along `direction` to `reach`, nib first, then fading,
-## with a short streak of ink behind it (a stroke all the way from the player read as a laser).
-## Over the hit puffs, so the pen itself stays in view. A child of the weapon, so it moves with
-## the player.
+## One poke as drawn: the pen, held at the player's side, jabs a little way out and back while a
+## drop of ink flicks off its nib out to `reach` (where the poke ends) and splats there, then fades.
+## The pen used to fly the whole reach itself and fade out over there, too far from the player (the
+## user's words); a stroke all the way from the player before that read as a laser. Over the hit
+## puffs, so the pen and the ink stay in view. A child of the weapon, so it moves with the player.
 class Jab:
 	extends Node2D
 
 	const OUT_SECONDS := 0.08
-	const FADE_SECONDS := 0.14
-	const PEN_SIZE := 30.0
-	const STREAK := 34.0
+	const BACK_SECONDS := 0.12
+	const PEN_FADE_SECONDS := 0.08
+	## The ink drop's flight out to the reach, then its splat fading there.
+	const FLY_SECONDS := 0.1
+	const SPLAT_SECONDS := 0.16
+	const PEN_SIZE := 26.0
+	## Where the pen is held, out from the player's centre, and how far a jab pushes it.
+	const HOLD := 16.0
+	const THRUST := 10.0
+	const DROP_LENGTH := 16.0
+	const DROP_WIDTH := 5.0
 	## stylus.svg draws the pen turned 45°, its nib at the bottom left.
 	const PEN_ART_ANGLE := deg_to_rad(135.0)
 	const INK := Color("ff5d9e")
@@ -121,26 +130,48 @@ class Jab:
 
 	func _process(delta: float) -> void:
 		_age += delta
-		if _age >= OUT_SECONDS + FADE_SECONDS:
+		var pen_done := OUT_SECONDS + BACK_SECONDS + PEN_FADE_SECONDS
+		if _age >= maxf(pen_done, FLY_SECONDS + SPLAT_SECONDS):
 			queue_free()
 			return
-		if _age > OUT_SECONDS:
-			modulate.a = 1.0 - (_age - OUT_SECONDS) / FADE_SECONDS
+		_pen.modulate.a = 1.0 - clampf((_age - OUT_SECONDS - BACK_SECONDS) / PEN_FADE_SECONDS, 0.0, 1.0)
 		_place_pen()
 		queue_redraw()
 
-	## Where the nib is now: shooting out fast, easing into full reach.
+	## How far past where it's held the pen is: quickly out, then back.
+	func _thrust() -> float:
+		if _age < OUT_SECONDS:
+			return THRUST * ease(_age / OUT_SECONDS, 0.4)
+		return THRUST * (1.0 - minf((_age - OUT_SECONDS) / BACK_SECONDS, 1.0))
+
 	func _nib() -> Vector2:
-		return _direction * _reach * ease(minf(_age / OUT_SECONDS, 1.0), 0.4)
+		return _direction * (HOLD + _thrust())
 
 	## The pen sits back from the nib by about a third of its size, so the nib leads.
 	func _place_pen() -> void:
 		_pen.position = _nib() - _direction * PEN_SIZE * 0.3
 
 	func _draw() -> void:
-		var nib := _nib()
-		var tail := nib - _direction * minf(STREAK, nib.length())
-		if nib.distance_to(tail) < 2.0:
+		var side := _direction.orthogonal()
+		if _age < FLY_SECONDS:
+			# The drop, pointed at its front and round at its back, racing out from the nib.
+			var from := HOLD + THRUST
+			var head := _direction * lerpf(from, _reach, ease(_age / FLY_SECONDS, 0.4))
+			var length := minf(DROP_LENGTH, head.length() - from)
+			# Just off the nib it is too short to draw: a flat triangle won't triangulate.
+			if length < 4.0:
+				return
+			var tail := head - _direction * length
+			var drop := PackedVector2Array([head, tail + side * DROP_WIDTH / 2.0, tail - side * DROP_WIDTH / 2.0])
+			draw_circle(tail, DROP_WIDTH / 2.0 + 1.0, Art.INK)
+			draw_colored_polygon(drop, Art.INK)
+			draw_circle(tail, DROP_WIDTH / 2.0 - 0.5, INK)
+			var inner := PackedVector2Array([head - _direction * 2.0, tail + side * (DROP_WIDTH / 2.0 - 1.2), tail - side * (DROP_WIDTH / 2.0 - 1.2)])
+			draw_colored_polygon(inner, INK)
 			return
-		draw_line(tail, nib, Art.INK, 3.5, true)
-		draw_line(tail, nib, INK, 1.8, true)
+		# The splat where the poke ends: a blot and two specks, fading.
+		var fade := 1.0 - clampf((_age - FLY_SECONDS) / SPLAT_SECONDS, 0.0, 1.0)
+		var at := _direction * _reach
+		for speck: Array in [[Vector2.ZERO, 4.0], [side * 6.0 - _direction * 2.0, 1.8], [-side * 5.0 + _direction * 3.0, 1.5]]:
+			draw_circle(at + speck[0], speck[1] + 1.0, Color(Art.INK, fade))
+			draw_circle(at + speck[0], speck[1], Color(INK, fade))
