@@ -91,7 +91,7 @@ const ENEMY_TYPES := {
 	"fubao": {"name": "福报 996", "art": "fubao", "size": 50.0, "color": Color("ff5d5d"),
 		"hp": 1260.0, "speed": 36.0, "damage": 31.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "countdown", "arrival": "福报 996 来了！",
-		"berserk_line": "到点了还没下班！它开始加班暴走", "on_time_line": "准点下班！钱袋保底 A 轮"},
+		"berserk_line": "到点了还没下班！它开始加班暴走", "on_time_line": "准点下班！年终奖保底绩效 A"},
 	"juanwang": {"name": "卷王", "art": "juanwang", "size": 58.0, "color": Color("ffd36b"),
 		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "aura", "arrival": "首领出现：卷王", "death_line": "卷王倒了！掉了一地经验"},

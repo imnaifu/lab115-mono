@@ -46,8 +46,13 @@ const GREEN_INK := Color("276b43")
 const BOSS_RED := Color("b23344")
 ## The player's health.
 const HP_RED := Color("d94b5c")
-## Behind dialogs that pause the game (level-up, funding bag, pause).
+## Behind dialogs that pause the game (level-up, year-end bonus, pause).
 const SCRIM := Color(0.11, 0.12, 0.15, 0.48)
+## Card rarity, 普通 to 传说 (Upgrades.RARITIES), the game's usual white / green / blue / purple /
+## orange: a card's outline, its tag's fill, and the tag's text (dark enough to read on the fill).
+const RARITY_EDGE := [Color("e6e0d4"), Color("4caf6a"), Color("4a8fe8"), Color("9363e8"), Color("f08a24")]
+const RARITY_FILL := [Color("f3efe6"), Color("e3f4ea"), Color("e5f0fb"), Color("efe9fd"), Color("fff0dc")]
+const RARITY_INK := [Color("666b7a"), Color("276b43"), Color("2f6fb0"), Color("6a3fc9"), Color("a8560a")]
 
 ## World colours, used by the map and the effects rather than the UI.
 const LAWN := Color("dcefc6")

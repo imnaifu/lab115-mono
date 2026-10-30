@@ -55,13 +55,21 @@ const AFFIX_NOTES := {
 	"blame": "被打死时甩出 3 个小号的自己",
 }
 const WARNING_SECONDS := 3.5
-## The funding bag's slot machine: laps of all the rounds before landing, and how long it spins.
-const CHEST_SPIN_LAPS := 4
-const CHEST_SPIN_SECONDS := 1.6
+## The year-end bonus chest rocks CHEST_SHAKES times (leaning CHEST_LEAN radians, a little more
+## each swing) over about CHEST_SHAKE_SECONDS before it opens. By rating (绩效 B / A / S): the
+## colour of its rays and stamp, and how many stars fly out.
+const CHEST_SHAKES := 7
+const CHEST_SHAKE_SECONDS := 0.9
+const CHEST_LEAN := 0.12
+const CHEST_ART_SIZE := 96.0
+const CHEST_STAGE_HEIGHT := 128.0
+const CHEST_RAYS := 12
+const CHEST_RAY_TURN_SECONDS := 8.0
+const CHEST_STAR_SIZE := 18.0
+const CHEST_GLOW := [Color("dfe5ee"), Color("f7c948"), Color("ff9f1a")]
+const CHEST_STARS := [0, 6, 14]
 ## Space kept around a screen that has to shrink to fit.
 const FIT_MARGIN := 8.0
-## How far the funding bag sticks up over the top of its dialog.
-const BAG_OVERHANG := 36.0
 const RANKING_ROWS := 6
 ## How the last hit landed (Telemetry.last_hurt_how), for the result's 凶手 line.
 const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中", "quake": "被宕机震飞"}
@@ -114,13 +122,14 @@ var _level_up_overlay: Control
 var _cards_holder: CenterContainer
 var _chest_overlay: Control
 var _chest_holder: CenterContainer
-var _chest_spin: Tween
+var _chest_shake: Tween
 var _chest_revealed := false
-## Shows the bag's result straight away (the button pressed mid-spin).
+## Opens the chest straight away (the button pressed while it still rocks).
 var _chest_reveal := Callable()
-var _reel_prev: Label
-var _reel_label: Label
-var _reel_next: Label
+var _chest_stage: Control
+var _chest_art: TextureRect
+var _chest_burst: Control
+var _chest_stamp: Control
 var _odds_chips: Array[PanelContainer] = []
 var _pause_overlay: Control
 var _pause_holder: CenterContainer
@@ -1102,7 +1111,9 @@ func _fit_title() -> void:
 
 # --- Level-up ------------------------------------------------------------------------------
 
-func _show_level_up(choices: Array) -> void:
+## `lucky`: luck added a card (Upgrades.lucky_card), which the line under the title says, with the
+## 锦鲤's koi, so players see what luck does.
+func _show_level_up(choices: Array, lucky: bool = false) -> void:
 	_clear(_cards_holder)
 	var portrait := _is_portrait()
 	var column := VBoxContainer.new()
@@ -1113,9 +1124,14 @@ func _show_level_up(choices: Array) -> void:
 	var title := UiKit.label(tr("升级！%s · %d") % [Maps.rank_of(game.level), game.level], 28, "display", Art.PAPER)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
-	var sub := UiKit.label("选一张带走", 13, "body", Art.BRAND_SOFT)
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(sub)
+	var sub_row := HBoxContainer.new()
+	sub_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	sub_row.add_theme_constant_override("separation", 4)
+	sub_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if lucky:
+		sub_row.add_child(UiKit.icon("koi", 18))
+	sub_row.add_child(UiKit.label("运气好，多出一张！选一张带走" if lucky else "选一张带走", 13, "heavy" if lucky else "body", Art.BRAND if lucky else Art.BRAND_SOFT))
+	column.add_child(sub_row)
 	column.add_child(UiKit.gap(18 if portrait else 12))
 
 	var narrow := not portrait and choices.size() > 3
@@ -1155,21 +1171,30 @@ func _show_level_up(choices: Array) -> void:
 
 ## A level-up choice: a wide row in portrait, a tall card side by side in landscape (`narrow`
 ## when four or five share the row). A recommended card stands out the way the main button
-## does, on a hard shadow, with 推荐 on its corner.
+## does, on a hard shadow, with 推荐 on its corner. A card rarer than 普通 has a heavy outline in
+## its rarity's colour (Art.RARITY_EDGE), a tag with the rarity's name and a line saying what it
+## adds (Upgrades.rarity_line).
 func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, crowded: bool) -> Button:
 	var kind: String = choice["kind"]
 	var level: int = choice["level"]
 	var fresh := level == 1 and kind != "heal"
 	var recommended: bool = choice.get("recommended", false)
+	var rarity: int = choice.get("rarity", 0)
 	var inset := 10.0 if crowded else 14.0
 	var card := Button.new()
 	card.custom_minimum_size = Vector2(minf(328.0, _root.size.x - 32.0), 0.0) if portrait \
 		else Vector2(LEVEL_UP_CARD_MIN_WIDTH if narrow else 150.0, 0.0)
 	var padding := Vector4.ONE * inset
-	card.add_theme_stylebox_override("normal", UiKit.raised(Art.PAPER, UiKit.RADIUS_CARD, padding) if recommended \
-		else UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, padding))
-	card.add_theme_stylebox_override("hover", UiKit.raised(Art.PAPER_SOFT, UiKit.RADIUS_CARD, padding) if recommended \
-		else UiKit.box(Art.PAPER, Art.LINE_STRONG, UiKit.OUTLINE, UiKit.RADIUS_CARD, padding))
+	var normal := UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, padding)
+	var hover := UiKit.box(Art.PAPER, Art.LINE_STRONG, UiKit.OUTLINE, UiKit.RADIUS_CARD, padding)
+	if recommended:
+		normal = UiKit.raised(Art.PAPER, UiKit.RADIUS_CARD, padding)
+		hover = UiKit.raised(Art.PAPER_SOFT, UiKit.RADIUS_CARD, padding)
+	elif rarity > 0:
+		normal = UiKit.box(Art.PAPER, Art.RARITY_EDGE[rarity], UiKit.OUTLINE_HEAVY, UiKit.RADIUS_CARD, padding)
+		hover = UiKit.box(Art.PAPER_SOFT, Art.RARITY_EDGE[rarity], UiKit.OUTLINE_HEAVY, UiKit.RADIUS_CARD, padding)
+	card.add_theme_stylebox_override("normal", normal)
+	card.add_theme_stylebox_override("hover", hover)
 	card.add_theme_stylebox_override("pressed", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE_HEAVY, UiKit.RADIUS_CARD, padding))
 	card.add_theme_stylebox_override("focus", UiKit.focus_ring(UiKit.RADIUS_CARD))
 	card.pressed.connect(_pick.bind(index))
@@ -1196,7 +1221,8 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 	if fresh:
 		badge = UiKit.tag("新武器", Art.SKY_LIGHT, Art.LINK) if kind == "weapon" else UiKit.tag("被动", Art.MINT_LIGHT, Art.GREEN_INK)
 	elif kind != "heal":
-		badge = UiKit.level_dots(level - 1, choice["max"], true)
+		# A rarer table perk jumps several levels at once (Upgrades.RARITIES `extra_levels`).
+		badge = UiKit.level_dots(level - 1, choice["max"], true, choice.get("to_level", level) - level + 1)
 	# What type of weapon it is.
 	var type_tag: Control = null
 	if kind == "weapon":
@@ -1209,6 +1235,11 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 	if numbers_text != "":
 		numbers = UiKit.label(numbers_text, 12 if portrait else 10, "strong", Art.LINK)
 		numbers.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var rarity_text := Upgrades.rarity_line(choice)
+	var rarity_label: Label = null
+	if rarity_text != "":
+		rarity_label = UiKit.label(rarity_text, 12 if portrait else 10, "heavy", Art.RARITY_INK[rarity])
+		rarity_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	if portrait:
 		var row := HBoxContainer.new()
@@ -1234,6 +1265,8 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		text_column.add_child(description)
 		if numbers != null:
 			text_column.add_child(numbers)
+		if rarity_label != null:
+			text_column.add_child(rarity_label)
 	else:
 		var column := VBoxContainer.new()
 		column.add_theme_constant_override("separation", 4)
@@ -1257,6 +1290,16 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		if numbers != null:
 			numbers.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			column.add_child(numbers)
+		if rarity_label != null:
+			rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			column.add_child(rarity_label)
+
+	# The rarity's name on the top-left corner (推荐 takes the right one).
+	if rarity > 0:
+		var rarity_corner := UiKit.tag(Upgrades.RARITIES[rarity]["name"], Art.RARITY_FILL[rarity], Art.RARITY_INK[rarity], UiKit.OUTLINE, 12)
+		rarity_corner.offset_left = 12
+		rarity_corner.offset_top = -11
+		card.add_child(rarity_corner)
 
 	if recommended:
 		var corner := UiKit.tag("推荐", Art.BRAND, Art.INK, UiKit.OUTLINE, 12)
@@ -1297,11 +1340,13 @@ func _hover(card: Control, entered: bool) -> void:
 	tween.tween_property(card, "scale", Vector2.ONE * (1.03 if entered else 1.0), 0.15)
 
 
-# --- Funding bag ---------------------------------------------------------------------------
+# --- Year-end bonus ------------------------------------------------------------------------
 
-## A boss's funding bag: a reel runs through the rounds and lands on the one Game rolled, then
-## the upgrades it brought appear (Game has applied them already).
-func _show_chest(funding_round: Dictionary, items: Array) -> void:
+## A boss's year-end bonus (年终奖): the chest rocks, quicker and quicker, then flies open on the
+## rating Game rolled (绩效 B / A / S), with rays behind it and, for A and S, stars flying out;
+## then the upgrades it brought appear one by one (Game has applied them already). `odds` are
+## this chest's own chances, which luck and the boss's affixes move.
+func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) -> void:
 	_clear(_chest_holder)
 	_chest_revealed = false
 	_odds_chips.clear()
@@ -1318,56 +1363,45 @@ func _show_chest(funding_round: Dictionary, items: Array) -> void:
 	if portrait:
 		head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	else:
-		# Sideways the reel keeps a fixed width and the upgrades get the rest, for their names.
+		# Sideways the chest keeps a fixed width and the upgrades get the rest, for their names.
 		head.custom_minimum_size = Vector2(240, 0)
 	body.add_child(head)
-	# The bag sits on the dialog's top edge, on a white disc that hides the outline behind it.
-	var bag_anchor := Control.new()
-	bag_anchor.custom_minimum_size = Vector2(0, 14)
-	bag_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head.add_child(bag_anchor)
-	var disc := UiKit.panel(UiKit.box(Art.PAPER, Color.TRANSPARENT, 0, UiKit.PILL, Vector4(4, 4, 4, 4)))
-	disc.anchor_left = 0.5
-	disc.anchor_right = 0.5
-	disc.offset_left = -32
-	disc.offset_right = 32
-	disc.offset_top = -50
-	disc.offset_bottom = 14
-	disc.add_child(UiKit.icon("moneybag", 56))
-	bag_anchor.add_child(disc)
-	head.add_child(UiKit.kicker("FUNDING ROUND"))
-	var title := UiKit.label("融资开奖", 26, "heavy")
+	head.add_child(UiKit.kicker("YEAR-END BONUS"))
+	var title := UiKit.label("年终奖开箱", 26, "heavy")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head.add_child(title)
-	head.add_child(UiKit.gap(12))
 
-	# The reel: the round before and after the one in the window, greyed out.
-	var reel := UiKit.panel(UiKit.box(Art.PAPER_SOFT, Art.INK, UiKit.OUTLINE_HEAVY, 14, Vector4(8, 4, 8, 4)))
-	reel.clip_contents = true
-	var reel_stack := VBoxContainer.new()
-	reel_stack.add_theme_constant_override("separation", 0)
-	reel_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	reel.add_child(reel_stack)
-	_reel_prev = _reel_side_label()
-	reel_stack.add_child(_reel_prev)
-	var window := UiKit.panel(UiKit.box(Art.BRAND, Art.INK, UiKit.OUTLINE, 10))
-	window.custom_minimum_size = Vector2(0, 52)
-	_reel_label = UiKit.label("", 26, "heavy")
-	_reel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_reel_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	window.add_child(_reel_label)
-	reel_stack.add_child(window)
-	_reel_next = _reel_side_label()
-	reel_stack.add_child(_reel_next)
-	head.add_child(reel)
-	_set_reel(0)
+	# The stage: the chest in the middle, its rays (hidden until it opens) behind, clipped to it.
+	var landing := Game.FUNDING_ROUNDS.find(funding_round)
+	_chest_stage = Control.new()
+	_chest_stage.custom_minimum_size = Vector2(0, CHEST_STAGE_HEIGHT)
+	_chest_stage.clip_contents = true
+	_chest_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(_chest_stage)
+	_chest_burst = _burst(CHEST_GLOW[landing])
+	_chest_stage.add_child(_chest_burst)
+	var centre := CenterContainer.new()
+	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_chest_stage.add_child(centre)
+	_chest_art = UiKit.icon("chest", CHEST_ART_SIZE)
+	# It rocks on its base rather than spinning round its middle.
+	_chest_art.pivot_offset = Vector2(CHEST_ART_SIZE / 2.0, CHEST_ART_SIZE * 0.85)
+	centre.add_child(_chest_art)
+	# The rating, stamped on under the chest once it opens.
+	_chest_stamp = UiKit.tag(funding_round["name"], CHEST_GLOW[landing], Art.INK, UiKit.OUTLINE_HEAVY, 20)
+	_chest_stamp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_chest_stamp.modulate.a = 0.0
+	head.add_child(_chest_stamp)
 
-	# What each round gives and how often, the landed one marked once the reel stops.
-	var odds := GridContainer.new()
-	odds.columns = Game.FUNDING_ROUNDS.size()
-	odds.add_theme_constant_override("h_separation", 6)
-	odds.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for option: Dictionary in Game.FUNDING_ROUNDS:
+	# What each rating gives and how likely it was for this chest, the one it landed on marked once
+	# it opens.
+	var chips := GridContainer.new()
+	chips.columns = Game.FUNDING_ROUNDS.size()
+	chips.add_theme_constant_override("h_separation", 6)
+	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for index in Game.FUNDING_ROUNDS.size():
+		var option: Dictionary = Game.FUNDING_ROUNDS[index]
 		var chip := UiKit.panel(UiKit.box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, 10, Vector4(4, 5, 4, 5)))
 		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var chip_column := VBoxContainer.new()
@@ -1377,13 +1411,13 @@ func _show_chest(funding_round: Dictionary, items: Array) -> void:
 		var round_name := UiKit.label(option["name"], 13, "strong")
 		round_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		chip_column.add_child(round_name)
-		var chance := UiKit.label(tr("升 %d 样 · %d%%") % [option["items"], roundi(option["weight"])], 11, "muted")
+		var chance := UiKit.label(tr("升 %d 样 · %d%%") % [option["items"], roundi(odds[index])], 11, "muted")
 		chance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		chip_column.add_child(chance)
-		odds.add_child(chip)
+		chips.add_child(chip)
 		_odds_chips.append(chip)
 	head.add_child(UiKit.gap(10))
-	head.add_child(odds)
+	head.add_child(chips)
 
 	var tail := VBoxContainer.new()
 	tail.add_theme_constant_override("separation", 10)
@@ -1402,70 +1436,114 @@ func _show_chest(funding_round: Dictionary, items: Array) -> void:
 	_focus(take)
 	_pop_in(dialog, 0.0)
 	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
-	_fit_to_screen(_chest_holder, BAG_OVERHANG)
+	_fit_to_screen(_chest_holder)
 
-	# Laps of every round, slowing down, then the winning one.
-	var landing := Game.FUNDING_ROUNDS.find(funding_round)
-	var steps := float(CHEST_SPIN_LAPS * Game.FUNDING_ROUNDS.size() + landing)
+	# Swings each a little shorter and wider than the last, a tick on each, then it opens.
 	_chest_reveal = _reveal_chest.bind(landing, result, prize, funding_round, items)
-	_chest_spin = dialog.create_tween()
-	_chest_spin.tween_method(_spin_reel, 0.0, steps, CHEST_SPIN_SECONDS) \
-		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	_chest_spin.tween_callback(_chest_reveal)
+	_chest_shake = dialog.create_tween()
+	var swing_seconds := CHEST_SHAKE_SECONDS / CHEST_SHAKES
+	for i in CHEST_SHAKES:
+		var lean := CHEST_LEAN * (1.0 + i * 0.15) * (1.0 if i % 2 == 0 else -1.0)
+		_chest_shake.tween_property(_chest_art, "rotation", lean, swing_seconds * (1.5 - float(i) / CHEST_SHAKES)) \
+			.set_trans(Tween.TRANS_SINE)
+		_chest_shake.tween_callback(func() -> void: Sound.play("reel_tick"))
+	_chest_shake.tween_property(_chest_art, "rotation", 0.0, 0.06)
+	_chest_shake.tween_callback(_chest_reveal)
 
 
-func _reel_side_label() -> Label:
-	var side := UiKit.label("", 14, "strong", Art.LINE_STRONG)
-	side.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	side.custom_minimum_size = Vector2(0, 26)
-	side.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return side
-
-
-func _set_reel(index: int) -> void:
-	var rounds := Game.FUNDING_ROUNDS
-	var count := rounds.size()
-	_reel_prev.text = rounds[(index + count - 1) % count]["name"]
-	_reel_label.text = rounds[index % count]["name"]
-	_reel_next.text = rounds[(index + 1) % count]["name"]
-
-
-func _spin_reel(step: float) -> void:
-	var index := floori(step) % Game.FUNDING_ROUNDS.size()
-	if _reel_label.text != Game.FUNDING_ROUNDS[index]["name"]:
-		_set_reel(index)
-		Sound.play("reel_tick")
+## Rays and a glow in `color` round the chest, shown when it opens (turning slowly).
+func _burst(color: Color) -> Control:
+	var burst := Control.new()
+	burst.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	burst.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	burst.modulate.a = 0.0
+	burst.resized.connect(func() -> void: burst.pivot_offset = burst.size / 2.0)
+	burst.draw.connect(func() -> void:
+		var middle := burst.size / 2.0
+		# Ending inside the stage, so they make a round burst rather than a box cut off at its edges.
+		var reach := minf(burst.size.x, burst.size.y) * 0.62
+		var half_width := PI / CHEST_RAYS / 2.0
+		for i in CHEST_RAYS:
+			var angle := TAU * i / CHEST_RAYS
+			burst.draw_colored_polygon(PackedVector2Array([middle, middle + Vector2.from_angle(angle - half_width) * reach,
+				middle + Vector2.from_angle(angle + half_width) * reach]), Color(color, 0.45))
+		burst.draw_circle(middle, CHEST_ART_SIZE * 0.45, Color(color, 0.7))
+	)
+	return burst
 
 
 func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_round: Dictionary, items: Array) -> void:
 	if _chest_revealed:
 		return
 	_chest_revealed = true
-	if _chest_spin != null and _chest_spin.is_valid():
-		_chest_spin.kill()
-	_set_reel(landing)
+	if _chest_shake != null and _chest_shake.is_valid():
+		_chest_shake.kill()
+	# The lid flies open: the open chest pops, the rays come up behind it and turn.
+	_chest_art.rotation = 0.0
+	_chest_art.texture = Art.texture("chest_open")
+	_chest_art.scale = Vector2.ONE * 1.25
+	_chest_art.create_tween().tween_property(_chest_art, "scale", Vector2.ONE, 0.35) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_chest_burst.scale = Vector2.ONE * 0.5
+	var glow := _chest_burst.create_tween().set_parallel()
+	glow.tween_property(_chest_burst, "modulate:a", 1.0, 0.2)
+	glow.tween_property(_chest_burst, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_chest_burst.create_tween().set_loops().tween_property(_chest_burst, "rotation", TAU, CHEST_RAY_TURN_SECONDS).from(0.0)
+	for i in CHEST_STARS[landing]:
+		_throw_star(TAU * i / CHEST_STARS[landing] + randf() * 0.4)
+	_stamp_on(_chest_stamp)
 	_odds_chips[landing].add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, 10, Vector4(4, 5, 4, 5)))
-	result.text = tr("%s到账！白给 %d 样升级") % [tr(funding_round["name"]), items.size()]
+	result.text = tr("%s！白给 %d 样升级") % [tr(funding_round["name"]), items.size()]
 	Sound.play("win" if funding_round["id"] == "ipo" else "payout")
-	# The same upgrade twice in one bag is one row, from its first level to its last.
+	# The same upgrade twice in one chest is one row, from its first level to its last, in the
+	# rarer of its two rarities.
 	var rows: Array[Dictionary] = []
 	var row_of := {}
 	for item: Dictionary in items:
+		var reached: int = item.get("to_level", item["level"])
 		if row_of.has(item["id"]):
-			rows[row_of[item["id"]]]["level"] = item["level"]
+			var row_entry: Dictionary = rows[row_of[item["id"]]]
+			row_entry["level"] = reached
+			row_entry["rarity"] = maxi(row_entry.get("rarity", 0), item.get("rarity", 0))
 		else:
 			row_of[item["id"]] = rows.size()
 			var entry := item.duplicate()
 			entry["from"] = item["level"] - 1
+			entry["level"] = reached
 			rows.append(entry)
 	for i in rows.size():
 		var row := _prize_row(rows[i], _is_portrait())
 		prize.add_child(row)
-		_pop_in(row, 0.1 + i * 0.1)
-	_fit_to_screen(_chest_holder, BAG_OVERHANG)
+		# After the lid has come off.
+		_pop_in(row, 0.3 + i * 0.12)
+	_fit_to_screen(_chest_holder)
 
 
-## One upgrade out of the bag: its icon, name and the level it went to.
+## A gold star flying out of the open chest at `angle`, fading as it goes.
+func _throw_star(angle: float) -> void:
+	var star := UiKit.icon("star_gold", CHEST_STAR_SIZE)
+	var start := _chest_stage.size / 2.0 - Vector2.ONE * CHEST_STAR_SIZE / 2.0
+	star.position = start
+	_chest_stage.add_child(star)
+	var flight := star.create_tween().set_parallel()
+	flight.tween_property(star, "position", start + Vector2.from_angle(angle) * randf_range(60.0, 120.0), 0.6) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	flight.tween_property(star, "modulate:a", 0.0, 0.3).set_delay(0.35)
+	flight.chain().tween_callback(star.queue_free)
+
+
+## The rating coming down like a rubber stamp: big and faint, then pressed on at a slight tilt.
+func _stamp_on(stamp: Control) -> void:
+	stamp.pivot_offset = stamp.size / 2.0
+	stamp.scale = Vector2.ONE * 1.8
+	stamp.rotation = -0.15
+	var press := stamp.create_tween().set_parallel()
+	press.tween_property(stamp, "modulate:a", 1.0, 0.1)
+	press.tween_property(stamp, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	press.tween_property(stamp, "rotation", -0.05, 0.25)
+
+
+## One upgrade out of the chest: its icon, name, rarity and the level it went to.
 func _prize_row(item: Dictionary, roomy: bool) -> Control:
 	var row_panel := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
 	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1476,22 +1554,28 @@ func _prize_row(item: Dictionary, roomy: bool) -> Control:
 	row_panel.add_child(row)
 	var kind: String = item["kind"]
 	var level: int = item["level"]
+	var rarity: int = item.get("rarity", 0)
 	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.BRAND_SOFT if kind == "evolve" else Art.SKY_LIGHT
 	if kind == "evolve":
 		row_panel.add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
+	elif rarity > 0:
+		# Outlined in its rarity's colour, as a level-up card would be.
+		row_panel.add_theme_stylebox_override("panel", UiKit.box(Art.PAPER, Art.RARITY_EDGE[rarity], UiKit.OUTLINE_HEAVY, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
 	row.add_child(UiKit.well(item["art"], 34 if roomy else 28, fill, UiKit.RADIUS_SM))
 	var name_label := UiKit.label(_card_name(item), 14, "strong")
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.clip_text = true
 	name_label.custom_minimum_size = Vector2(60, 0)
 	row.add_child(name_label)
+	if rarity > 0:
+		row.add_child(UiKit.tag(Upgrades.RARITIES[rarity]["name"], Art.RARITY_FILL[rarity], Art.RARITY_INK[rarity]))
 	var from: int = item.get("from", level - 1)
 	var step := tr("回复 30") if kind == "heal" else tr("进化！") if kind == "evolve" else tr("新") if level == 1 else "Lv %d → %d" % [from, level]
 	row.add_child(UiKit.label(step, 12, "display", Art.LINK))
 	return row_panel
 
 
-## Mid-spin it shows the result at once; after that it closes the bag.
+## While the chest still rocks it opens it at once; after that it closes the dialog.
 func _on_chest_button() -> void:
 	if game.state != Game.State.CHEST or Time.get_ticks_msec() < _accept_picks_at:
 		return
@@ -1556,7 +1640,8 @@ func _show_pause() -> void:
 		["冷却", "×%.2f" % player.cooldown_scale],
 		["移速", str(roundi(player.move_speed))],
 		["拾取", str(roundi(player.pickup_radius))],
-		["护甲 · 回血", "%d · %s/s" % [roundi(player.armor), Upgrades._short_float(player.regen)]],
+		["护甲 · 回血", "%s · %s/s" % [Upgrades._amount_text(player.armor), Upgrades._amount_text(player.regen)]],
+		["运气", str(roundi(player.luck))],
 	]:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 0)
@@ -2036,9 +2121,10 @@ func _open_collection(tab: int = -1) -> void:
 	var stamped := 0
 	for map_id: String in Maps.ORDER:
 		stamped += Maps.stamps_on(map_id)
-	var earned := Progress.achievement_ids().size()
+	# Only the achievements in play (a switched-off feature's one is hidden even if earned).
+	var earned := Achievements.earned_count()
 	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
-		"%s %d/%d" % [tr("成就"), earned, Achievements.LIST.size()],
+		"%s %d/%d" % [tr("成就"), earned, Achievements.shown().size()],
 		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()]], _collection_tab, _open_collection, Art.PAPER_SUNK)
 	tabs.custom_minimum_size.x = 330.0
 	if portrait:
@@ -2109,7 +2195,7 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 		grid.add_theme_constant_override("v_separation", 8)
 		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		body.add_child(grid)
-		for entry: Dictionary in Achievements.LIST:
+		for entry: Dictionary in Achievements.shown():
 			if entry["group"] != group:
 				continue
 			var done := Progress.has_achievement(entry["id"])
@@ -2348,7 +2434,7 @@ func _page(margins: Vector4) -> MarginContainer:
 
 ## Shrinks a screen that comes out taller or wider than the view (a full build in English on a
 ## short landscape screen) until it fits, around the screen's centre; `overhang` is height drawn
-## outside the screen's own box (the funding bag). Wrapped text and fitted cards settle over a
+## outside the screen's own box (none does now; the old funding bag stuck up over its dialog). Wrapped text and fitted cards settle over a
 ## few frames, so it refits every time the screen's size changes.
 func _fit_to_screen(holder: Control, overhang: float = 0.0) -> void:
 	holder.scale = Vector2.ONE

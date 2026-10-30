@@ -1,7 +1,7 @@
 class_name Pickup
 extends Node2D
 ## Something on the ground for the player to collect: XP stars, bubble tea that heals, the
-## funding bag that grants a free level-up and the magnet that pulls in every star. Game drives
+## year-end bonus chest (a boss's drop, free upgrades) and the magnet that pulls in every star. Game drives
 ## tick() for all pickups at once, since late runs can have hundreds of stars.
 
 enum Kind { XP, HEAL, BONUS, MAGNET }
@@ -11,7 +11,7 @@ const PULL_ACCELERATION := 700.0
 ## Art and frame size per kind; XP picks its star by value instead (Art.star).
 const LOOKS := {
 	Kind.HEAL: ["boba", 18.0],
-	Kind.BONUS: ["moneybag", 20.0],
+	Kind.BONUS: ["chest", 22.0],
 	Kind.MAGNET: ["magnet", 16.0],
 }
 ## Big enough to spot on any ground at a glance: stars are the whole economy of a run.
@@ -32,8 +32,8 @@ static var _halo_texture: GradientTexture2D
 
 var kind := Kind.XP
 var value := 1
-## A funding bag's luck: how many affixes the boss that dropped it carried (Game._open_chest).
-var luck := 0
+## A chest's boss affix count: how many affixes the boss that dropped it carried (Game._open_chest).
+var affixes := 0
 
 var _attracted := false
 var _speed := 0.0

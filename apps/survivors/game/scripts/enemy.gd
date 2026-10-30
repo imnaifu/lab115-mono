@@ -15,7 +15,7 @@ extends Node2D
 ## - "quake": stops while a red circle fills in under it, then goes off: hurts and shoves the
 ##   player if inside, and shoves the crowd inside away too, so stepping out of it pays.
 ## - "countdown": a countdown over its head; it speeds up as it runs down, and still alive at
-##   zero it goes berserk. Killed in time, its funding bag is at least a Series A (Game).
+##   zero it goes berserk. Killed in time, its year-end bonus is at least a 绩效 A (Game).
 ## - "clones": flickers, then a see-through copy of it appears near the player; copies break at
 ##   any hit, hit half as hard, give nothing, and fade (or go with the original).
 ## - "aura": a gold ring round it in which ordinary enemies take half damage (Game); killed, it
@@ -406,7 +406,7 @@ func scale_hp(factor: float) -> void:
 	hp = max_hp
 
 
-## A Deadline killed before its countdown ran out (its bag is at least a Series A).
+## A Deadline killed before its countdown ran out (its chest is at least a 绩效 A).
 func met_deadline() -> bool:
 	return ability == "countdown" and not berserk
 

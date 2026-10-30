@@ -52,6 +52,9 @@ var armor := 0.0
 var regen := 0.0
 var might := 1.0
 var cooldown_scale := 1.0
+## 运气: makes rarer level-up cards and better year-end bonuses likelier (Upgrades.luck_factor).
+## From the 锦鲤 passive and some landmarks' stamps.
+var luck := 0.0
 var velocity := Vector2.ZERO
 var facing := Vector2.RIGHT
 ## Set by the smoke-test bot to steer without a keyboard; null means read real input.

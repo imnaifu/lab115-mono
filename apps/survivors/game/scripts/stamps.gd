@@ -12,8 +12,10 @@ const CHECK_IN_SECONDS := 1.0
 ## How each kind of bonus reads on the 打卡 page, given its amount.
 const BONUSES := {
 	"might": "伤害 +%d%%", "haste": "冷却 -%d%%", "speed": "移速 +%d%%",
-	"max_hp": "最大生命 +%d", "magnet": "拾取范围 +%d%%", "regen": "每秒回血 +%s",
+	"max_hp": "最大生命 +%d", "magnet": "拾取范围 +%d%%", "regen": "每秒回血 +%s", "luck": "运气 +%d",
 }
+## Kinds whose amount is a plain number rather than a fraction shown as a percent.
+const PLAIN_BONUSES := ["max_hp", "regen", "luck"]
 
 signal checked_in(id: String)
 
@@ -91,13 +93,15 @@ static func apply_bonus(player: Player, id: String) -> void:
 			player.pickup_radius *= 1.0 + amount
 		"regen":
 			player.regen += amount
+		"luck":
+			player.luck += amount
 
 
 ## The bonus as the 打卡 page shows it, e.g. 伤害 +2%.
 static func bonus_text(id: String) -> String:
 	var bonus: Array = Maps.stamp(id)["bonus"]
 	var amount: float = bonus[1]
-	var shown: Variant = amount if bonus[0] in ["max_hp", "regen"] else roundi(amount * 100.0)
+	var shown: Variant = amount if bonus[0] in PLAIN_BONUSES else roundi(amount * 100.0)
 	return TranslationServer.translate(BONUSES[bonus[0]]) % shown
 
 
@@ -112,6 +116,6 @@ static func total_text() -> PackedStringArray:
 	var lines := PackedStringArray()
 	for kind: String in BONUSES:
 		if totals.has(kind):
-			var shown: Variant = snappedf(totals[kind], 0.01) if kind in ["max_hp", "regen"] else roundi(totals[kind] * 100.0)
+			var shown: Variant = snappedf(totals[kind], 0.01) if kind in PLAIN_BONUSES else roundi(totals[kind] * 100.0)
 			lines.append(TranslationServer.translate(BONUSES[kind]) % shown)
 	return lines

@@ -18,7 +18,7 @@ const LIST := [
 	{"id": "untouched", "art": "firewall", "group": "生存", "name": "毫发无损", "text": "开局 3 分钟一滴血没掉"},
 	{"id": "thousand", "art": "skull", "group": "战斗", "name": "千人斩", "text": "一局打死 1000 个怪"},
 	{"id": "ten_thousand", "art": "skull", "group": "战斗", "name": "万人斩", "text": "累计打死 10000 个怪", "goal": 10000},
-	{"id": "first_boss", "art": "moneybag", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
+	{"id": "first_boss", "art": "chest", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
 	{"id": "all_bosses", "art": "ai_boss", "group": "战斗", "name": "boss 克星", "text": "打掉过 10 种 boss", "goal": 10},
 	{"id": "bestiary_all", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 27},
 	{"id": "first_evolve", "art": "star_gold", "group": "战斗", "name": "技术升级", "text": "第一次进化武器"},
@@ -80,6 +80,18 @@ static func data(id: String) -> Dictionary:
 		if entry["id"] == id:
 			return entry
 	return {}
+
+
+## The achievements in play, as the 成就 page lists and counts them: LIST without those for a
+## feature that is switched off (技术升级 while Upgrades.EVOLUTION_ON is false). One already
+## earned stays in the save, just out of the list and the count.
+static func shown() -> Array:
+	return LIST.filter(func(entry: Dictionary) -> bool: return Upgrades.EVOLUTION_ON or entry["id"] != "first_evolve")
+
+
+## How many of shown() this device has earned.
+static func earned_count() -> int:
+	return shown().filter(func(entry: Dictionary) -> bool: return Progress.has_achievement(entry["id"])).size()
 
 
 ## The share of players who have earned `id`, 0 to 1 (see ESTIMATED_RATES).

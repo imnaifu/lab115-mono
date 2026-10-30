@@ -164,10 +164,10 @@ const LAWN_LANDMARKS := {Vector2i(0, -1): "dino_skeleton", Vector2i(-1, -1): "th
 ## All of them together come to about one passive at level 2.
 const STAMPS := {
 	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-1, 0), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
-	"caltrain": {"art": "caltrain", "block": Vector2i(0, 1), "name": "Caltrain 帕罗奥图站", "note": "赶不上这班就等下一班，小心别被撞", "bonus": ["speed", 0.02]},
+	"caltrain": {"art": "caltrain", "block": Vector2i(0, 1), "name": "Caltrain 帕罗奥图站", "note": "赶不上这班就等下一班，小心别被撞", "bonus": ["luck", 10.0]},
 	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["might", 0.02]},
 	"beta": {"art": "thumbs_up_sign", "block": Vector2i(-1, -1), "name": "Beta 园区", "note": "门口立着巨大的点赞牌", "bonus": ["magnet", 0.05]},
-	"linkedout": {"art": "card", "block": Vector2i(1, -1), "name": "LinkedOut 园区", "note": "人人都在看下一份工作", "bonus": ["max_hp", 5.0]},
+	"linkedout": {"art": "card", "block": Vector2i(1, -1), "name": "LinkedOut 园区", "note": "人人都在看下一份工作", "bonus": ["luck", 10.0]},
 	"burger_shop": {"art": "burger_shop", "block": Vector2i(2, 0), "name": "Out-N-In 汉堡", "note": "加班到半夜的宵夜", "bonus": ["max_hp", 5.0]},
 	"pear_park": {"art": "pear_park", "block": Vector2i(1, 2), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["might", 0.02]},
 	"nutflix": {"art": "icon_nut", "block": Vector2i(-1, 3), "name": "Nutflix 园区", "note": "下班回家接着刷", "bonus": ["regen", 0.05]},

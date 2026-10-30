@@ -20,6 +20,9 @@ var branch_a := 0
 var branch_b := 0
 ## Set once it has evolved (Upgrades.EVOLUTIONS): each weapon reads it to attack its evolved way.
 var evolved := false
+## This weapon's own extra damage from rarer level-up cards (Upgrades.RARITIES `weapon_bonus`),
+## added up: 0.3 is +30%.
+var damage_bonus := 0.0
 
 var _cooldown_left := 0.3
 
@@ -65,9 +68,10 @@ func _on_evolved() -> void:
 	pass
 
 
-## What the damage in this weapon's tables is multiplied by: the player's damage bonus.
+## What the damage in this weapon's tables is multiplied by: the player's damage bonus and the
+## weapon's own.
 func damage_scale() -> float:
-	return player.might
+	return player.might * (1.0 + damage_bonus)
 
 
 ## Looks up the current level's value in a per-level stat table.

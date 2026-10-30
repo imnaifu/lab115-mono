@@ -86,7 +86,7 @@ static func label(text: String, font_size: int, style: String = "body", color: C
 	return line
 
 
-## The small spaced-out Latin line over a heading (LEVEL UP, FUNDING ROUND, GAME OVER).
+## The small spaced-out Latin line over a heading (LEVEL UP, YEAR-END BONUS, GAME OVER).
 static func kicker(text: String, color: Color = Art.INK_MUTED, font_size: int = 12) -> Label:
 	if _kicker_font == null:
 		_kicker_font = Art.display_font(900).duplicate() as FontVariation
@@ -243,9 +243,9 @@ static func tag(text: String, background: Color, color: Color, border_width: int
 	return pill
 
 
-## One pip per level: ink up to `filled`; with `next`, the one after is yellow (the level a card
-## gives); the rest hollow.
-static func level_dots(filled: int, total: int, next: bool = false) -> Control:
+## One pip per level: ink up to `filled`; with `next`, the `gained` after it are yellow (the
+## levels a card gives); the rest hollow.
+static func level_dots(filled: int, total: int, next: bool = false, gained: int = 1) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -257,7 +257,7 @@ static func level_dots(filled: int, total: int, next: bool = false) -> Control:
 		var style: StyleBoxFlat
 		if i < filled:
 			style = box(Art.INK, Art.INK, 0, PILL)
-		elif i == filled and next:
+		elif i < filled + gained and next:
 			style = box(Art.BRAND, Art.INK, 1, PILL)
 		else:
 			style = box(Color.TRANSPARENT, Art.LINE_STRONG, 1, PILL)

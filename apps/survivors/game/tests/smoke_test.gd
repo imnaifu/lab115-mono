@@ -29,7 +29,8 @@ extends SceneTree
 ## having checked in at the first N of the map's landmarks, or all of them), --fixed-bosses (the
 ## boss schedule as written, without .21's shuffles, jitter, extra moves and affixes),
 ## --collection=0|1 (with --shots, also screenshot the title's 打卡 · 成就 page on
-## that tab). Progress (打卡, 成就) is kept in memory only: a bot run never touches the save.
+## that tab), --luck=N (start with that much luck, to see rarer cards and better year-end bonuses).
+## Progress (打卡, 成就) is kept in memory only: a bot run never touches the save.
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -61,6 +62,7 @@ var _teleport: Variant = null
 var _all_weapons_level := 0
 var _perks := PackedStringArray()
 var _bosses := PackedStringArray()
+var _luck := 0.0
 var _chests := 0
 var _chest_frames := 0
 var _chest_shot_taken := false
@@ -138,6 +140,8 @@ func _initialize() -> void:
 			_stamps_before = 1000 if value == "all" else int(value)
 		elif arg.begins_with("--collection="):
 			_collection_tab = int(value)
+		elif arg.begins_with("--luck="):
+			_luck = float(value)
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):
@@ -185,6 +189,7 @@ func _process(_delta: float) -> bool:
 			_game.start_run()
 			if _teleport != null:
 				_game.player.position = _teleport
+			_game.player.luck += _luck
 			if _all_weapons_level > 0 or _evolve:
 				_grant_all_weapons()
 			for perk in _perks:
@@ -357,7 +362,7 @@ func _report() -> int:
 	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
 	print("[smoke] checked in=%s achievements=%s" % [",".join(_game.stamps.new_ids), ",".join(_game.achievements.new_ids)])
 	print("[smoke] boss rolls=%s" % _game.spawner.boss_rolls())
-	print("[smoke] bosses killed=%d of %d, funding bags opened=%d (%s)" % [
+	print("[smoke] bosses killed=%d of %d, year-end bonuses opened=%d (%s)" % [
 		_game.telemetry._bosses_killed, _game.telemetry._bosses_seen, _chests, ",".join(_game.telemetry._chests)])
 	var uncollected_xp := 0
 	for pickup in _game.pickups:

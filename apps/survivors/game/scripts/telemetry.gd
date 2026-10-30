@@ -20,7 +20,8 @@ extends RefCounted
 ## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
-##   rates), `chests` (the funding rounds bags landed on), `evolved` (weapons evolved), a
+##   rates), `chests` (the ratings year-end bonuses landed on: angel / series_a / ipo, from .27 shown
+##   as 绩效 B / A / S), `evolved` (weapons evolved), a
 ##   `timeline` of
 ##   "seconds:level/HP/enemies" every 30 s, bosses met and killed, the `district` the run ended
 ##   in, and frames per second (average and worst second). `dmg_<weapon>` is each weapon's share of
@@ -28,6 +29,9 @@ extends RefCounted
 ##   `new_stamps` and `new_achievements`: the ids checked in at and earned this run. From .21,
 ##   `boss_rolls`: the run's bosses as planned (Spawner.boss_rolls, e.g. 62:layoff+quake!996),
 ##   since which boss comes when, with which extra moves and affixes, now changes every run.
+##   From .27, `luck` (the player's at the end) and `rarities`: how many upgrades of each rarity
+##   (普通,优秀,稀有,史诗,传说, Upgrades.RARITIES) the run got, picked or out of a chest, and
+##   `lucky_cards`, how many level-ups luck added a card to.
 ## The page itself also reports script errors (js_error), see export_presets.cfg.
 ## A run still going when the page closes is saved as a snapshot every SNAPSHOT_SECONDS and
 ## sent as a "quit" by the page itself when it closes and again on the next visit (in-app
@@ -36,7 +40,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.26"
+const VERSION := "2026-10-28.27"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -53,6 +57,10 @@ var _picks := PackedStringArray()
 ## Times each card id was offered at a level-up.
 var _offered := {}
 var _chests := PackedStringArray()
+## Upgrades got by rarity tier (Upgrades.RARITIES), picked or from chests.
+var _rarities := PackedInt32Array([0, 0, 0, 0, 0])
+## Level-ups where luck added a card (Upgrades.lucky_card).
+var _lucky_cards := 0
 var _timeline := PackedStringArray()
 var _next_sample := TIMELINE_SECONDS
 var _snapshot_left := SNAPSHOT_SECONDS
@@ -151,6 +159,13 @@ func _save_snapshot() -> void:
 
 func on_pick(choice: Dictionary) -> void:
 	_picks.append(_card_id(choice))
+	_count_rarity(choice)
+
+
+## Weapon and passive upgrades only: the heal card and evolutions have no rarity.
+func _count_rarity(choice: Dictionary) -> void:
+	if choice["kind"] in ["weapon", "passive"]:
+		_rarities[choice.get("rarity", 0)] += 1
 
 
 ## A card's id in the data; a job weapon's direction card has its direction after it: "prd:b".
@@ -164,8 +179,14 @@ func on_offer(choices: Array) -> void:
 		_offered[card] = _offered.get(card, 0) + 1
 
 
-func on_chest(round_id: String) -> void:
+func on_lucky_card() -> void:
+	_lucky_cards += 1
+
+
+func on_chest(round_id: String, items: Array) -> void:
 	_chests.append(round_id)
+	for item: Dictionary in items:
+		_count_rarity(item)
 
 
 func on_enemy_spawned(enemy: Enemy) -> void:
@@ -219,6 +240,9 @@ func _summary(result: String) -> Dictionary:
 		"picks": ",".join(_picks).left(MAX_TEXT),
 		"offered": ",".join(offered).left(MAX_TEXT),
 		"chests": ",".join(_chests).left(MAX_TEXT),
+		"luck": roundi(player.luck),
+		"rarities": ",".join(Array(_rarities).map(func(count: int) -> String: return str(count))),
+		"lucky_cards": _lucky_cards,
 		"evolved": ",".join(evolved),
 		"district": Maps.current.district_of(Vector2i((player.position / City.BLOCK).floor())),
 		"timeline": ";".join(_timeline).left(MAX_TEXT),

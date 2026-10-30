@@ -8,12 +8,40 @@ const MAX_LEVEL := 5
 ## Passives a run can hold, like the six weapon slots: once six are picked, only those level up.
 const MAX_PASSIVES := 6
 const BASE_CHOICES := 3
+## Most cards a level-up shows, whatever adds them (猎头电话's two, luck's one): five narrow cards
+## still fit side by side.
+const MAX_CHOICES := 5
 ## New-weapon cards every run's first level-ups always include (two, then one). In the live data,
 ## first-time players who filled up on passives were left with one weapon and died at 2–4
 ## minutes, while those who took weapons early lived; the novel passives made that trap worse.
 const NEW_WEAPONS_GUARANTEED := [2, 1]
 ## New weapons are marked 推荐 (recommended) until the player carries this many.
 const RECOMMEND_UNTIL_WEAPONS := 3
+
+## Card rarity (白 / 绿 / 蓝 / 紫 / 橙): every weapon and passive card rolls one, and the rarer it is
+## the more its step gives, the level still going up by one. `scale` multiplies a stat passive's
+## step (stat_step: 冰美式 +10% common, +12% green); `weapon_bonus` adds to that weapon's own
+## damage for good (Weapon.damage_bonus); a table perk (Perks: 股票期权, 背锅侠…) reads its
+## numbers off per-level tables instead, so it jumps `extra_levels` more and only rolls 普通, 史诗
+## (+1) and 传说 (+2): whole levels can't be split finer, and that way a rarer card still always
+## gives more, about as much more on average as a stat passive's. `weight` is the chance in percent with no
+## luck (Player.luck, see luck_factor). Frequent and modest on purpose: more than half the cards
+## have a colour, none of them swings a run on its own.
+const RARITIES := [
+	{"id": "common", "name": "普通", "weight": 45.0, "scale": 1.0, "weapon_bonus": 0.0, "extra_levels": 0},
+	{"id": "uncommon", "name": "优秀", "weight": 32.0, "scale": 1.15, "weapon_bonus": 0.04, "extra_levels": 0},
+	{"id": "rare", "name": "稀有", "weight": 15.0, "scale": 1.3, "weapon_bonus": 0.08, "extra_levels": 0},
+	{"id": "epic", "name": "史诗", "weight": 6.0, "scale": 1.6, "weapon_bonus": 0.12, "extra_levels": 1},
+	{"id": "legendary", "name": "传说", "weight": 2.0, "scale": 2.0, "weapon_bonus": 0.2, "extra_levels": 2},
+]
+## The passives that add a number, by how much at common rarity (percent for the multipliers);
+## the card text has it as %s. The rest are table perks.
+const STAT_STEPS := {"might": 10.0, "armor": 1.0, "vitality": 20.0, "swiftness": 8.0, "haste": 8.0,
+	"magnet": 30.0, "regen": 0.3, "luck": 20.0}
+## What a scaled step is rounded to (1 unless listed), so cards show clean numbers and give exactly
+## what they show: 冰美式 ×1.15 is +12%, not +11.5%, and 工位绿植's 0.345 is 0.35, not a 0.3 that
+## reads the same as a common card.
+const STEP_SNAP := {"armor": 0.1, "regen": 0.05}
 
 ## `type` is the attack type (Jobs.TYPES); `job` marks a weapon only that job can carry (its
 ## starting weapon), which levels up by BRANCHES instead, so `levels` only describes it. Ordered
@@ -51,8 +79,13 @@ const WEAPONS := {
 		"levels": ["招 2 个外包站在你身边，附近的怪会先去打他们；被打倒几秒后重新招人", "多招 1 个", "更抗揍，伤害 +3", "多招 1 个", "多招 1 个，更抗揍，伤害 +3"]},
 }
 
-## A weapon at full level evolves at the next funding bag while the player carries its passive
-## (any level), Vampire Survivors style.
+## A weapon at full level evolves at the next year-end bonus while the player carries its passive
+## (any level), Vampire Survivors style, while EVOLUTION_ON.
+##
+## Switched off from .27, to be redesigned: no chest evolves a weapon, no card says 配「X」可进化,
+## and the achievement for one is hidden (Achievements.shown). The table and each weapon's evolved
+## form stay, for that redesign and the bot's --evolve.
+const EVOLUTION_ON := false
 const EVOLUTIONS := {
 	"enter": {"passive": "haste", "name": "Shift+Enter 批量提交", "text": "每轮朝屏幕里的敌人各敲一下"},
 	"copy": {"passive": "headhunter", "name": "Ctrl+A 全选粘贴", "text": "朝 8 个方向一起粘贴"},
@@ -79,13 +112,14 @@ const BRANCHES := {
 }
 
 const PASSIVES := {
-	"might": {"name": "冰美式", "art": "coffee", "text": "所有伤害 +10%"},
-	"armor": {"name": "降噪耳机", "art": "headphones", "text": "受到的伤害 -1"},
-	"vitality": {"name": "撸铁", "art": "dumbbell", "text": "最大生命 +20，并回复 20"},
-	"swiftness": {"name": "电动滑板", "art": "scooter", "text": "移动速度 +8%"},
-	"haste": {"name": "双屏显示器", "art": "monitors", "text": "武器冷却 -8%"},
-	"magnet": {"name": "人脉名片", "art": "card", "text": "拾取范围 +30%"},
-	"regen": {"name": "工位绿植", "art": "plant", "text": "每秒回复 0.3 生命"},
+	"might": {"name": "冰美式", "art": "coffee", "text": "所有伤害 +%s%%"},
+	"armor": {"name": "降噪耳机", "art": "headphones", "text": "受到的伤害 -%s"},
+	"vitality": {"name": "撸铁", "art": "dumbbell", "text": "最大生命 +%s，并回复 %s"},
+	"swiftness": {"name": "电动滑板", "art": "scooter", "text": "移动速度 +%s%%"},
+	"haste": {"name": "双屏显示器", "art": "monitors", "text": "武器冷却 -%s%%"},
+	"magnet": {"name": "人脉名片", "art": "card", "text": "拾取范围 +%s%%"},
+	"regen": {"name": "工位绿植", "art": "plant", "text": "每秒回复 %s 生命"},
+	"luck": {"name": "锦鲤", "art": "koi", "text": "运气 +%s：升级时可能多一张卡，卡和年终奖更容易出好的"},
 	# The rest act rather than add a number; Perks runs them. `max` caps one below MAX_LEVEL.
 	"stock": {"name": "股票期权", "art": "stock_options", "text": "每撑过 1 分钟，伤害再 +2%（越早拿越赚）"},
 	"scapegoat": {"name": "背锅侠", "art": "scapegoat", "text": "挨打时把锅甩出去，炸伤身边的怪"},
@@ -167,14 +201,77 @@ func roll_choices(count: int) -> Array:
 	for choice: Dictionary in picked:
 		if choice["kind"] == "weapon" and choice["level"] == 1 and carried < RECOMMEND_UNTIL_WEAPONS:
 			choice["recommended"] = true
+		if choice["kind"] in ["weapon", "passive"]:
+			_set_rarity(choice)
 	return picked
 
 
-## A funding bag's upgrades (Game.FUNDING_ROUNDS), applied at once. Like Vampire Survivors'
-## chests they level up what the player already carries; only once all of that is at its cap do
-## new things come out.
+## How much likelier `luck` makes a tier past the first: each point 1% per tier, compounding
+## (luck 50: green ×1.5, blue ×2.25, purple ×3.4, orange ×5.1), so it lifts the rare end most.
+## Card rarity (RARITIES) and the year-end bonus's 绩效 (Game.FUNDING_ROUNDS) both use it.
+static func luck_factor(luck: float, tier: int) -> float:
+	return pow(1.0 + maxf(luck, 0.0) / 100.0, tier)
+
+
+## Rolls `choice`'s rarity by the player's luck and words the card for it. A table perk only rolls
+## 普通 or tiers that add levels, and only those whose extra levels still fit under its cap, so a
+## rarer card always gives more.
+func _set_rarity(choice: Dictionary) -> void:
+	var table_perk := _is_table_perk(choice)
+	var room: int = choice["max"] - choice["level"] if table_perk else 99
+	var weights := PackedFloat32Array()
+	for tier in RARITIES.size():
+		var extra: int = RARITIES[tier]["extra_levels"]
+		var fits := extra <= room and (tier == 0 or extra > 0 or not table_perk)
+		weights.append(RARITIES[tier]["weight"] * luck_factor(_game.player.luck, tier) if fits else 0.0)
+	var rarity := _game.rng.rand_weighted(weights)
+	choice["rarity"] = rarity
+	if _is_table_perk(choice):
+		choice["to_level"] = choice["level"] + RARITIES[rarity]["extra_levels"]
+	elif choice["kind"] == "passive":
+		choice["text"] = passive_text(choice["id"], rarity)
+
+
+static func _is_table_perk(choice: Dictionary) -> bool:
+	return choice["kind"] == "passive" and not STAT_STEPS.has(choice["id"])
+
+
+## A stat passive's step at a rarity (STAT_STEPS times its `scale`, rounded by STEP_SNAP).
+static func stat_step(passive_id: String, rarity: int) -> float:
+	return snappedf(STAT_STEPS[passive_id] * RARITIES[rarity]["scale"], STEP_SNAP.get(passive_id, 1.0))
+
+
+## A stat passive's card text with its step at that rarity: 「所有伤害 +12%」. Translated.
+static func passive_text(passive_id: String, rarity: int) -> String:
+	var text := TranslationServer.translate(PASSIVES[passive_id]["text"])
+	var amount := _amount_text(stat_step(passive_id, rarity))
+	var amounts: Array = []
+	for i in text.count("%s"):
+		amounts.append(amount)
+	return text % amounts
+
+
+## A step or total as a card shows it: 12, 1.2, 0.35 (two decimals at most, no trailing zeros).
+static func _amount_text(value: float) -> String:
+	return str(roundi(value)) if is_equal_approx(value, roundf(value)) else String.num(value, 2)
+
+
+## What a card's rarity adds that its text doesn't say, translated: a weapon's own damage bonus,
+## a table perk's extra levels. Empty at common, and for stat passives (their text has it).
+static func rarity_line(choice: Dictionary) -> String:
+	var rarity: Dictionary = RARITIES[choice.get("rarity", 0)]
+	if choice["kind"] == "weapon" and rarity["weapon_bonus"] > 0.0:
+		return TranslationServer.translate("本武器伤害 +%d%%") % roundi(rarity["weapon_bonus"] * 100.0)
+	if _is_table_perk(choice) and rarity["extra_levels"] > 0:
+		return TranslationServer.translate("直接升到 Lv %d") % choice["to_level"]
+	return ""
+
+
+## A year-end bonus's upgrades (Game.FUNDING_ROUNDS), applied at once, each with a rarity rolled
+## like a card's. Like Vampire Survivors' chests they level up what the player already carries;
+## only once all of that is at its cap do new things come out.
 ##
-## A weapon ready to evolve (EVOLUTIONS) evolves first, as one of the bag's items.
+## A weapon ready to evolve (EVOLUTIONS) evolves first, as one of the chest's items.
 func open_chest(count: int) -> Array:
 	var items: Array = []
 	var ready := evolvable()
@@ -194,6 +291,8 @@ func open_chest(count: int) -> Array:
 			if passive_levels[passive_id] < max_level("passive", passive_id):
 				carried.append(_choice("passive", passive_id, passive_levels[passive_id] + 1))
 		var item: Dictionary = carried[_game.rng.randi() % carried.size()] if not carried.is_empty() else _roll(1, 0)[0]
+		if item["kind"] in ["weapon", "passive"]:
+			_set_rarity(item)
 		apply(item)
 		items.append(item)
 	return items
@@ -202,6 +301,8 @@ func open_chest(count: int) -> Array:
 ## Weapons at full level, not evolved yet, whose passive the player carries.
 func evolvable() -> Array[Weapon]:
 	var ready: Array[Weapon] = []
+	if not EVOLUTION_ON:
+		return ready
 	for weapon in _game.player.weapons:
 		if weapon.evolved or weapon.level < MAX_LEVEL or not EVOLUTIONS.has(weapon.id):
 			continue
@@ -318,9 +419,25 @@ func _shuffle(items: Array) -> void:
 		items[other] = held
 
 
-## How many cards a level-up offers: three, plus one per level of the headhunter perk.
-func choice_count() -> int:
-	return BASE_CHOICES + passive_levels.get("headhunter", 0)
+## How many cards a level-up offers: three, plus one per level of the headhunter perk, plus one
+## now and then from luck (`lucky`, see lucky_card), at most MAX_CHOICES.
+func choice_count(lucky: bool = false) -> int:
+	return mini(BASE_CHOICES + passive_levels.get("headhunter", 0) + (1 if lucky else 0), MAX_CHOICES)
+
+
+## Whether luck adds a card to this level-up (Vampire Survivors' fourth option): the one thing luck
+## does that shows at once, so 锦鲤 doesn't feel like a card spent on nothing. Never once the
+## headhunter perk already fills MAX_CHOICES.
+func lucky_card() -> bool:
+	if BASE_CHOICES + passive_levels.get("headhunter", 0) >= MAX_CHOICES:
+		return false
+	return _game.rng.randf() < extra_card_chance(_game.player.luck)
+
+
+## 1 - 1/(1 + luck/100), Vampire Survivors' formula: luck 10 gives 9%, 20 gives 17%, 50 gives 33%,
+## 100 gives 50%, never quite every time.
+static func extra_card_chance(luck: float) -> float:
+	return 1.0 - 1.0 / (1.0 + maxf(luck, 0.0) / 100.0)
 
 
 static func max_level(kind: String, choice_id: String) -> int:
@@ -331,44 +448,55 @@ static func max_level(kind: String, choice_id: String) -> int:
 
 func apply(choice: Dictionary) -> void:
 	var player := _game.player
+	var rarity: Dictionary = RARITIES[choice.get("rarity", 0)]
 	match choice["kind"]:
 		"weapon":
 			var weapon := player.get_weapon(choice["id"])
 			if weapon == null:
-				player.add_weapon(create_weapon(choice["id"]))
+				weapon = create_weapon(choice["id"])
+				player.add_weapon(weapon)
 			else:
 				weapon.level_up(choice.get("branch", ""))
+			weapon.damage_bonus += rarity["weapon_bonus"]
 		"passive":
-			passive_levels[choice["id"]] = passive_levels.get(choice["id"], 0) + 1
-			_apply_passive(choice["id"])
+			var current: int = passive_levels.get(choice["id"], 0)
+			if STAT_STEPS.has(choice["id"]):
+				passive_levels[choice["id"]] = current + 1
+				_apply_passive(choice["id"], choice.get("rarity", 0))
+			else:
+				passive_levels[choice["id"]] = mini(current + 1 + rarity["extra_levels"], max_level("passive", choice["id"]))
 		"heal":
 			player.heal(30.0)
 
 
-func _apply_passive(passive_id: String) -> void:
+## A stat passive's step at the card's rarity (stat_step).
+func _apply_passive(passive_id: String, rarity: int = 0) -> void:
 	var player := _game.player
+	var step := stat_step(passive_id, rarity)
 	match passive_id:
 		"might":
-			player.might += 0.1
+			player.might += step / 100.0
 		"armor":
-			player.armor += 1.0
+			player.armor += step
 		"vitality":
-			player.max_hp += 20.0
-			player.heal(20.0)
+			player.max_hp += step
+			player.heal(step)
 		"swiftness":
-			player.move_speed *= 1.08
+			player.move_speed *= 1.0 + step / 100.0
 		"haste":
-			player.cooldown_scale *= 0.92
+			player.cooldown_scale *= 1.0 - step / 100.0
 		"magnet":
-			player.pickup_radius *= 1.3
+			player.pickup_radius *= 1.0 + step / 100.0
 		"regen":
-			player.regen += 0.3
+			player.regen += step
+		"luck":
+			player.luck += step
 
 
 ## What a card changes, in numbers ("伤害 14 → 18 · 数量 1 → 2"), already translated: a weapon's
 ## stats that change at that level (just its damage for a new one), a passive's total before and
 ## after. Damage and gaps include the player's current bonuses, so they match the numbers that
-## pop up in play.
+## pop up in play; a weapon's damage also its own bonus from rarer cards, this one's included.
 func numbers(choice: Dictionary) -> String:
 	var next_level: int = choice["level"]
 	match choice["kind"]:
@@ -376,6 +504,9 @@ func numbers(choice: Dictionary) -> String:
 			var weapon_id: String = choice["id"]
 			var after: Dictionary
 			var before: Dictionary
+			var carried := _game.player.get_weapon(weapon_id)
+			var bonus_before := carried.damage_bonus if carried != null else 0.0
+			var bonus_after: float = bonus_before + RARITIES[choice.get("rarity", 0)]["weapon_bonus"]
 			if choice.has("branch"):
 				var weapon := _game.player.get_weapon(weapon_id)
 				var more_a := 1 if choice["branch"] == "a" else 0
@@ -386,19 +517,21 @@ func numbers(choice: Dictionary) -> String:
 				# is only ever a new card if it was taken away, as tests do).
 				after = branch_stats(weapon_id, 0, 0) if BRANCHES.has(weapon_id) else weapon_stats(weapon_id, next_level)
 				if next_level == 1:
-					return _step("伤害", "", _shown_stat("damage", after["damage"], weapon_id))
+					return _step("伤害", "", _shown_stat("damage", after["damage"], bonus_after))
 				before = weapon_stats(weapon_id, next_level - 1)
 			var parts := PackedStringArray()
 			for stat_key: String in WEAPON_STAT_NAMES:
-				if after.has(stat_key) and after[stat_key] != before[stat_key] and parts.size() < MAX_STATS_SHOWN:
-					parts.append(_step(WEAPON_STAT_NAMES[stat_key], _shown_stat(stat_key, before[stat_key], weapon_id), _shown_stat(stat_key, after[stat_key], weapon_id)))
+				# A rarer card raises the damage even at a level whose table damage stays put.
+				var changed: bool = after.has(stat_key) and (after[stat_key] != before[stat_key] or (stat_key == "damage" and bonus_after != bonus_before))
+				if changed and parts.size() < MAX_STATS_SHOWN:
+					parts.append(_step(WEAPON_STAT_NAMES[stat_key], _shown_stat(stat_key, before[stat_key], bonus_before), _shown_stat(stat_key, after[stat_key], bonus_after)))
 			# Where the weapon goes from full level, so players learn evolutions exist.
-			if next_level == MAX_LEVEL and EVOLUTIONS.has(weapon_id):
+			if EVOLUTION_ON and next_level == MAX_LEVEL and EVOLUTIONS.has(weapon_id):
 				var passive_name: String = PASSIVES[EVOLUTIONS[weapon_id]["passive"]]["name"]
 				parts.append(tr("配「%s」可进化") % tr(passive_name))
 			return " · ".join(parts)
 		"passive":
-			return _passive_numbers(choice["id"], next_level)
+			return _passive_numbers(choice["id"], choice.get("to_level", next_level), choice.get("rarity", 0))
 	return ""
 
 
@@ -446,11 +579,12 @@ static func branch_stats(weapon_id: String, a: int, b: int) -> Dictionary:
 	return {}
 
 
-func _shown_stat(stat_key: String, value: Variant, weapon_id: String) -> String:
+## A weapon stat as a card shows it; damage with the player's bonus and the weapon's own.
+func _shown_stat(stat_key: String, value: Variant, damage_bonus: float) -> String:
 	var player := _game.player
 	match stat_key:
 		"damage":
-			return str(roundi(value * player.might))
+			return str(roundi(value * player.might * (1.0 + damage_bonus)))
 		"cooldown":
 			return tr("%s 秒") % _short_float(value * player.cooldown_scale)
 		"size":
@@ -462,24 +596,29 @@ func _shown_stat(stat_key: String, value: Variant, weapon_id: String) -> String:
 	return str(roundi(value))
 
 
-func _passive_numbers(passive_id: String, next_level: int) -> String:
+## A passive's total before and after a card: a stat passive's step at the card's rarity, a table
+## perk from the level it is at to `next_level` (more than one up on a rarer card).
+func _passive_numbers(passive_id: String, next_level: int, rarity: int = 0) -> String:
 	var player := _game.player
-	var current := next_level - 1
+	var current: int = passive_levels.get(passive_id, 0)
+	var step := stat_step(passive_id, rarity) if STAT_STEPS.has(passive_id) else 0.0
 	match passive_id:
 		"might":
-			return _step("伤害", "+%d%%" % roundi((player.might - 1.0) * 100.0), "+%d%%" % roundi((player.might - 0.9) * 100.0))
+			return _step("伤害", "+%d%%" % roundi((player.might - 1.0) * 100.0), "+%d%%" % roundi((player.might - 1.0 + step / 100.0) * 100.0))
 		"armor":
-			return _step("护甲", str(roundi(player.armor)), str(roundi(player.armor + 1.0)))
+			return _step("护甲", _amount_text(player.armor), _amount_text(player.armor + step))
 		"vitality":
-			return _step("生命上限", str(roundi(player.max_hp)), str(roundi(player.max_hp + 20.0)))
+			return _step("生命上限", str(roundi(player.max_hp)), str(roundi(player.max_hp + step)))
 		"swiftness":
-			return _step("移速", _percent_over(player.move_speed / player.base_move_speed), _percent_over(player.move_speed * 1.08 / player.base_move_speed))
+			return _step("移速", _percent_over(player.move_speed / player.base_move_speed), _percent_over(player.move_speed * (1.0 + step / 100.0) / player.base_move_speed))
 		"haste":
-			return _step("冷却", "-%d%%" % roundi((1.0 - player.cooldown_scale) * 100.0), "-%d%%" % roundi((1.0 - player.cooldown_scale * 0.92) * 100.0))
+			return _step("冷却", "-%d%%" % roundi((1.0 - player.cooldown_scale) * 100.0), "-%d%%" % roundi((1.0 - player.cooldown_scale * (1.0 - step / 100.0)) * 100.0))
 		"magnet":
-			return _step("拾取", _percent_over(player.pickup_radius / Player.BASE_PICKUP_RADIUS), _percent_over(player.pickup_radius * 1.3 / Player.BASE_PICKUP_RADIUS))
+			return _step("拾取", _percent_over(player.pickup_radius / Player.BASE_PICKUP_RADIUS), _percent_over(player.pickup_radius * (1.0 + step / 100.0) / Player.BASE_PICKUP_RADIUS))
 		"regen":
-			return _step("回血", tr("%s/秒") % _short_float(player.regen), tr("%s/秒") % _short_float(player.regen + 0.3))
+			return _step("回血", tr("%s/秒") % _amount_text(player.regen), tr("%s/秒") % _amount_text(player.regen + step))
+		"luck":
+			return _step("运气", _amount_text(player.luck), _amount_text(player.luck + step))
 		"stock":
 			return _step("每分钟伤害", "+%d%%" % roundi(Perks.VESTING_MIGHT * current * 100.0), "+%d%%" % roundi(Perks.VESTING_MIGHT * next_level * 100.0))
 		"scapegoat":
@@ -537,7 +676,8 @@ func _branch_choice(weapon_id: String, branch: String) -> Dictionary:
 ## A card. Weapon cards also carry their `type` (the card's type tag).
 func _choice(kind: String, choice_id: String, next_level: int) -> Dictionary:
 	var table: Dictionary = WEAPONS[choice_id] if kind == "weapon" else PASSIVES[choice_id]
-	var text: String = table["levels"][mini(next_level, table["levels"].size()) - 1] if kind == "weapon" else table["text"]
+	var text: String = table["levels"][mini(next_level, table["levels"].size()) - 1] if kind == "weapon" \
+		else passive_text(choice_id, 0) if STAT_STEPS.has(choice_id) else table["text"]
 	var choice := {"kind": kind, "id": choice_id, "level": next_level, "max": max_level(kind, choice_id),
 		"name": table["name"], "art": table["art"], "text": text}
 	if kind == "weapon":

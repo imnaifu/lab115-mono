@@ -4,14 +4,15 @@ extends Node2D
 ## XP, level-ups and the win/lose state. Weapons and UI reach shared state through here.
 
 signal inventory_changed
-signal level_up_offered(choices: Array)
+## `lucky`: luck added a card to these (Upgrades.lucky_card).
+signal level_up_offered(choices: Array, lucky: bool)
 signal run_ended(victory: bool)
 signal announced(text: String)
-signal chest_opened(funding_round: Dictionary, items: Array)
+signal chest_opened(funding_round: Dictionary, items: Array, odds: Array[float])
 ## A boss is starting one of its moves (Enemy.ABILITIES); the HUD explains how to dodge it.
 signal boss_move(ability: String)
 
-## CHEST is a boss's funding bag being opened (the slot machine in Hud).
+## CHEST is a boss's year-end bonus being opened (the chest dialog in Hud).
 enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED }
 
 const RUN_SECONDS := 600.0
@@ -42,15 +43,16 @@ const PULL_OUT_STARS := 8
 const PULL_OUT_STAR_VALUE := 3
 ## An AI's clone appears this far from the player.
 const CLONE_DISTANCE := 110.0
-## A boss's funding bag opens as a slot machine landing on a round, which decides how many free
-## upgrades come out (Vampire Survivors' chests: 1, 3 or 5 items). Rare big rounds are the
-## jackpot moment.
-## Each affix on the boss that dropped a bag makes its A round and IPO this much likelier.
+## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how many
+## free upgrades come out (Vampire Survivors' chests: 1, 3 or 5 items). A rare 绩效 S is the
+## jackpot moment. The ids are the data's (Telemetry `chests`) from when these were funding rounds
+## (天使轮 / A 轮 / IPO), kept so runs before and after compare.
+## Each affix on the boss that dropped a chest makes its 绩效 A and S this much likelier.
 const AFFIX_LUCK := 1.5
 const FUNDING_ROUNDS := [
-	{"id": "angel", "name": "天使轮", "items": 1, "weight": 75.0},
-	{"id": "series_a", "name": "A 轮", "items": 3, "weight": 20.0},
-	{"id": "ipo", "name": "IPO", "items": 5, "weight": 5.0},
+	{"id": "angel", "name": "绩效 B", "items": 1, "weight": 75.0},
+	{"id": "series_a", "name": "绩效 A", "items": 3, "weight": 20.0},
+	{"id": "ipo", "name": "绩效 S", "items": 5, "weight": 5.0},
 ]
 ## Melee feel: a beat of hit-stop when a melee weapon lands on a boss (at most every
 ## HITSTOP_GAP), a small shake when one swing catches a crowd of SHAKE_CROWD or more.
@@ -84,8 +86,8 @@ var damage_by_source := {}
 var runs_before := 0
 ## Whether the player has moved yet this run; the HUD shows how to until they do.
 var has_moved := false
-## Funding bags picked up while another was open, opened once it closes: each one's lowest round
-## (an index into FUNDING_ROUNDS) and luck (see _open_chest).
+## Year-end bonuses picked up while another was open, opened once it closes: each one's lowest
+## rating (an index into FUNDING_ROUNDS) and its boss's affix count (see _open_chest).
 var _waiting_chests: Array[Vector2i] = []
 ## Investors out this frame, whose auras shield the crowd round them (Enemy "aura").
 var _aura_sources: Array[Enemy] = []
@@ -489,13 +491,13 @@ func _kill(enemy: Enemy) -> void:
 		# wasn't enough to send them to the star.
 		star.point_at()
 	if enemy.is_elite:
-		# A Deadline met in time pays: its bag is at least a Series A (按时交付).
+		# A Deadline met in time pays: its chest is at least a 绩效 A (按时交付).
 		var lowest_round := 0
 		if enemy.met_deadline():
 			lowest_round = 1
-			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("on_time_line", "按时交付！钱袋保底 A 轮"))
-		var bag := _drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
-		bag.luck = enemy.affixes.size()
+			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("on_time_line", "按时交付！年终奖保底绩效 A"))
+		var chest := _drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
+		chest.affixes = enemy.affixes.size()
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
 		_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(0, 12), 1)
 	else:
@@ -728,7 +730,7 @@ func _collect(pickup: Pickup) -> void:
 			player.heal(30.0)
 			announce("珍珠奶茶，回血 30！")
 		Pickup.Kind.BONUS:
-			_open_chest(pickup.value, pickup.luck)
+			_open_chest(pickup.value, pickup.affixes)
 		Pickup.Kind.MAGNET:
 			Sound.play("magnet")
 			for other in pickups:
@@ -755,12 +757,17 @@ func add_xp(amount: int) -> void:
 func _offer_level_up() -> void:
 	if state != State.PLAYING or queued_level_ups <= 0:
 		return
-	current_choices = upgrades.roll_choices(upgrades.choice_count())
+	var lucky := upgrades.lucky_card()
+	current_choices = upgrades.roll_choices(upgrades.choice_count(lucky))
+	# Only a card that really came out counts (a near-empty pool may not fill the extra slot).
+	lucky = lucky and current_choices.size() > upgrades.choice_count()
 	telemetry.on_offer(current_choices)
+	if lucky:
+		telemetry.on_lucky_card()
 	state = State.LEVEL_UP
 	get_tree().paused = true
 	Sound.play("level_up")
-	level_up_offered.emit(current_choices)
+	level_up_offered.emit(current_choices, lucky)
 
 
 func choose_upgrade(index: int) -> void:
@@ -777,27 +784,36 @@ func choose_upgrade(index: int) -> void:
 	_offer_level_up()
 
 
-# --- Funding bags ------------------------------------------------------------------------
+# --- Year-end bonuses (boss chests) ------------------------------------------------------
 
-## Rolls the round (at least `lowest_round`, an index into FUNDING_ROUNDS; every round past the
-## first AFFIX_LUCK times likelier for each of `luck`, the dropping boss's affixes), hands out its
-## upgrades straight away and pauses while the HUD plays the slot machine. A second bag picked
-## up meanwhile waits its turn.
-func _open_chest(lowest_round: int = 0, luck: int = 0) -> void:
+## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS; every rating past the
+## first AFFIX_LUCK times likelier for each of `affixes`, the dropping boss's, and likelier still
+## with the player's luck, as card rarity is), hands out its upgrades straight away and pauses
+## while the HUD opens the chest. A second chest picked up meanwhile waits its turn.
+func _open_chest(lowest_round: int = 0, affixes: int = 0) -> void:
 	if state != State.PLAYING:
-		_waiting_chests.append(Vector2i(lowest_round, luck))
+		_waiting_chests.append(Vector2i(lowest_round, affixes))
 		return
 	var weights := PackedFloat32Array()
 	for index in FUNDING_ROUNDS.size():
 		var weight: float = FUNDING_ROUNDS[index]["weight"]
-		weights.append(weight * pow(AFFIX_LUCK, luck) if index > 0 else weight)
+		weights.append(weight * pow(AFFIX_LUCK, affixes if index > 0 else 0) * Upgrades.luck_factor(player.luck, index))
 	var funding_round: Dictionary = FUNDING_ROUNDS[maxi(rng.rand_weighted(weights), lowest_round)]
+	# This chest's real odds for the dialog: ratings under the floor count as the floor.
+	var total := 0.0
+	for weight in weights:
+		total += weight
+	var odds: Array[float] = []
+	for index in FUNDING_ROUNDS.size():
+		odds.append(0.0 if index < lowest_round else weights[index] / total * 100.0)
+	for index in lowest_round:
+		odds[lowest_round] += weights[index] / total * 100.0
 	var items := upgrades.open_chest(funding_round["items"])
-	telemetry.on_chest(funding_round["id"])
+	telemetry.on_chest(funding_round["id"], items)
 	state = State.CHEST
 	get_tree().paused = true
 	inventory_changed.emit()
-	chest_opened.emit(funding_round, items)
+	chest_opened.emit(funding_round, items, odds)
 
 
 ## The HUD's "take it" button (and the smoke-test bot).
@@ -810,7 +826,7 @@ func close_chest() -> void:
 		var waiting: Vector2i = _waiting_chests.pop_front()
 		_open_chest(waiting.x, waiting.y)
 		return
-	# Level-ups earned while the bag was open (its stars, a kill landing as it opened).
+	# Level-ups earned while the chest was open (its stars, a kill landing as it opened).
 	_offer_level_up()
 
 
