@@ -32,6 +32,8 @@ static var _halo_texture: GradientTexture2D
 
 var kind := Kind.XP
 var value := 1
+## A funding bag's luck: how many affixes the boss that dropped it carried (Game._open_chest).
+var luck := 0
 
 var _attracted := false
 var _speed := 0.0

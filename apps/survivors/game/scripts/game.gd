@@ -45,6 +45,8 @@ const CLONE_DISTANCE := 110.0
 ## A boss's funding bag opens as a slot machine landing on a round, which decides how many free
 ## upgrades come out (Vampire Survivors' chests: 1, 3 or 5 items). Rare big rounds are the
 ## jackpot moment.
+## Each affix on the boss that dropped a bag makes its A round and IPO this much likelier.
+const AFFIX_LUCK := 1.5
 const FUNDING_ROUNDS := [
 	{"id": "angel", "name": "天使轮", "items": 1, "weight": 75.0},
 	{"id": "series_a", "name": "A 轮", "items": 3, "weight": 20.0},
@@ -83,8 +85,8 @@ var runs_before := 0
 ## Whether the player has moved yet this run; the HUD shows how to until they do.
 var has_moved := false
 ## Funding bags picked up while another was open, opened once it closes: each one's lowest round
-## (an index into FUNDING_ROUNDS; see _open_chest).
-var _waiting_chests: Array[int] = []
+## (an index into FUNDING_ROUNDS) and luck (see _open_chest).
+var _waiting_chests: Array[Vector2i] = []
 ## Investors out this frame, whose auras shield the crowd round them (Enemy "aura").
 var _aura_sources: Array[Enemy] = []
 
@@ -442,6 +444,8 @@ func _kill(enemy: Enemy) -> void:
 	Effects.death_pop(self, enemy.body_sprite(), enemy.position, enemy.is_elite)
 	if enemy.is_elite:
 		achievements.on_boss_killed(enemy.type_name)
+		if enemy.has_affix("blame"):
+			_fling_scapegoats(enemy)
 		Effects.ring(self, enemy.position, enemy.radius * 4.0, enemy.color)
 		player.shake(0.25, 3.0)
 		hitstop(BOSS_KILL_HITSTOP)
@@ -478,7 +482,8 @@ func _kill(enemy: Enemy) -> void:
 		if enemy.met_deadline():
 			lowest_round = 1
 			announce("按时交付！钱袋保底 A 轮")
-		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
+		var bag := _drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
+		bag.luck = enemy.affixes.size()
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
 		_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(0, 12), 1)
 	else:
@@ -505,6 +510,22 @@ func _rebuild_grid() -> void:
 			_enemy_grid[cell].append(enemy)
 		else:
 			_enemy_grid[cell] = [enemy]
+
+
+## 甩锅: a boss carrying it flings Enemy.BLAME_PIECES small copies of itself as it dies; they have
+## no moves and aren't bosses.
+func _fling_scapegoats(boss: Enemy) -> void:
+	for i in Enemy.BLAME_PIECES:
+		var heading := Vector2.from_angle(TAU * i / Enemy.BLAME_PIECES + rng.randf())
+		var piece := Enemy.new()
+		piece.setup(boss.type_name, Spawner.ENEMY_TYPES[boss.type_name], 1.0)
+		piece.game = self
+		piece.make_scapegoat(boss.max_hp * Enemy.BLAME_HP)
+		piece.position = city.resolve(boss.position + heading * boss.radius * 1.5, piece.radius)
+		entity_layer.add_child(piece)
+		enemies.append(piece)
+		piece.shove(heading * 160.0, true)
+	Effects.callout(self, boss.position, tr("甩锅！"), Art.BOSS_RED, 15)
 
 
 ## Takes an enemy off the field with nothing to show for it: a clone fading or going with its AI.
@@ -695,7 +716,7 @@ func _collect(pickup: Pickup) -> void:
 			player.heal(30.0)
 			announce("珍珠奶茶，回血 30！")
 		Pickup.Kind.BONUS:
-			_open_chest(pickup.value)
+			_open_chest(pickup.value, pickup.luck)
 		Pickup.Kind.MAGNET:
 			Sound.play("magnet")
 			for other in pickups:
@@ -746,16 +767,18 @@ func choose_upgrade(index: int) -> void:
 
 # --- Funding bags ------------------------------------------------------------------------
 
-## Rolls the round (at least `lowest_round`, an index into FUNDING_ROUNDS), hands out its
+## Rolls the round (at least `lowest_round`, an index into FUNDING_ROUNDS; every round past the
+## first AFFIX_LUCK times likelier for each of `luck`, the dropping boss's affixes), hands out its
 ## upgrades straight away and pauses while the HUD plays the slot machine. A second bag picked
 ## up meanwhile waits its turn.
-func _open_chest(lowest_round: int = 0) -> void:
+func _open_chest(lowest_round: int = 0, luck: int = 0) -> void:
 	if state != State.PLAYING:
-		_waiting_chests.append(lowest_round)
+		_waiting_chests.append(Vector2i(lowest_round, luck))
 		return
 	var weights := PackedFloat32Array()
-	for funding_round: Dictionary in FUNDING_ROUNDS:
-		weights.append(funding_round["weight"])
+	for index in FUNDING_ROUNDS.size():
+		var weight: float = FUNDING_ROUNDS[index]["weight"]
+		weights.append(weight * pow(AFFIX_LUCK, luck) if index > 0 else weight)
 	var funding_round: Dictionary = FUNDING_ROUNDS[maxi(rng.rand_weighted(weights), lowest_round)]
 	var items := upgrades.open_chest(funding_round["items"])
 	telemetry.on_chest(funding_round["id"])
@@ -772,7 +795,8 @@ func close_chest() -> void:
 	state = State.PLAYING
 	get_tree().paused = false
 	if not _waiting_chests.is_empty():
-		_open_chest(_waiting_chests.pop_front())
+		var waiting: Vector2i = _waiting_chests.pop_front()
+		_open_chest(waiting.x, waiting.y)
 		return
 	# Level-ups earned while the bag was open (its stars, a kill landing as it opened).
 	_offer_level_up()

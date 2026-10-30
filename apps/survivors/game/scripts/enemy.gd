@@ -22,6 +22,12 @@ extends Node2D
 ##   spills extra stars.
 ## Every wind-up is drawn (lane, landing circle, bracing ring, filling circle, flicker) so a move
 ## can always be dodged; the HUD says how the first time each comes up in a run.
+##
+## From .21 a boss can have more than one timed move (`moves`: its own, plus extras the Spawner
+## draws each run) and picks one at random each time its timer runs out, never the same twice in
+## a row when it has a choice; the gap between moves varies by MOVE_JITTER either way. Its own
+## always-on move (countdown, aura) keeps running alongside. It can also carry affixes
+## (AFFIXES, drawn by the Spawner): 996, 加厚, 急了, 自愈, 甩锅.
 
 const FLASH_SECONDS := 0.08
 ## Modulate above 1 pushes the sprite toward white for the hit flash.
@@ -37,6 +43,29 @@ const HIT_SQUASH_FULL_PUSH := 140.0
 ## Knocked off a lane by a car or a train: once round in this long.
 const SPIN_SECONDS := 0.45
 const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura"]
+## The moves that work on a timer; countdown and aura are always on.
+const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones"]
+## The gap between one boss's moves is its move's own, times a random factor this far either way.
+const MOVE_JITTER := 0.25
+## Affixes a boss can carry, by id, with what the HUD calls them: 996 (faster, moves more often),
+## 加厚 (more health, bigger), 急了 (under half health: red, faster, moves more often), 自愈 (heals
+## when left alone a while), 甩锅 (flings small copies of itself as it dies).
+const AFFIXES := {"996": "996", "thick": "加厚", "angry": "急了", "heal": "自愈", "blame": "甩锅"}
+const HASTY_SPEED := 1.3
+const HASTY_GAP := 0.8
+const THICK_HP := 1.5
+const THICK_SIZE := 1.2
+const ANGRY_AT := 0.5
+const ANGRY_SPEED := 1.4
+const ANGRY_GAP := 0.7
+const ANGRY_TINT := Color(1.0, 0.62, 0.62)
+const HEAL_AFTER := 3.0
+## Of its maximum health, per second.
+const HEAL_RATE := 0.03
+const BLAME_PIECES := 3
+## Each piece's health, as a share of the boss's maximum.
+const BLAME_HP := 0.15
+const BLAME_SIZE := 0.6
 const CHARGE_EVERY := 3.5
 const CHARGE_WINDUP := 0.8
 const CHARGE_SECONDS := 0.6
@@ -104,6 +133,9 @@ var dead := false
 ## Colour of the puff left behind on death.
 var color := Color.WHITE
 var ability := ""
+## The timed moves it picks from (its own first, if it has one), and its affixes (AFFIXES ids).
+var moves := PackedStringArray()
+var affixes := PackedStringArray()
 var game: Game
 ## Seconds left of following the flow field around a building, once it started to (Game).
 var detour_left := 0.0
@@ -149,6 +181,14 @@ var _base_speed := 0.0
 var _base_damage := 0.0
 ## Whether this boss's always-on move (countdown, aura) has been reported to the HUD yet.
 var _announced := false
+## The timed move under way (or last used), out of `moves`.
+var _move := ""
+## The gap between moves is multiplied by this (996, 急了).
+var _gap_scale := 1.0
+var _angry := false
+## Seconds since it was last hit (自愈), and until the next green puff while healing.
+var _since_hit := 0.0
+var _heal_puff_left := 0.0
 
 
 func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
@@ -166,10 +206,12 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 	knockback_resist = data.get("knockback_resist", 0.0)
 	_wobble = data.get("wobble", 0.0)
 	ability = data.get("ability", "")
+	if TIMED_MOVES.has(ability):
+		moves.append(ability)
 	_summon_type = data.get("summon_type", SUMMON_TYPE)
 	_summon_count = data.get("summon_count", SUMMON_COUNT)
 	# Half a cycle in, so a boss shows its move soon after it walks on screen.
-	_ability_left = _ability_every() * 0.5
+	_ability_left = (_move_every(moves[0]) if not moves.is_empty() else SUMMON_EVERY) * 0.5
 	_countdown_left = COUNTDOWN_SECONDS
 	_phase = randf() * TAU
 	if ghostly:
@@ -203,8 +245,10 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 		velocity = Vector2.ZERO
 		if stun_left <= 0.0 and _flash_left <= 0.0:
 			_sprite.modulate = _base_modulate
-	elif ability != "":
+	elif ability != "" or not moves.is_empty():
 		velocity = _use_ability(delta, direction, velocity)
+	if not affixes.is_empty():
+		_tick_affixes(delta)
 	position += (velocity + _knockback) * delta + separation * 0.3
 	_knockback = _knockback.lerp(Vector2.ZERO, minf(1.0, 10.0 * delta))
 
@@ -235,15 +279,15 @@ func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 ## The velocity to move with this frame once the boss move in progress has had its say: any
 ## wind-up stands still, a charge under way rushes along its locked lane.
 func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector2:
-	# The always-on moves, which have no wind-up.
+	# The always-on moves, which have no wind-up, alongside any timed ones.
 	match ability:
 		"countdown":
 			_tick_countdown(delta)
-			return velocity
 		"aura":
 			_announce()
 			queue_redraw()
-			return velocity
+	if moves.is_empty():
+		return velocity
 	if _charge_left > 0.0:
 		_charge_left -= delta
 		return _charge_direction * CHARGE_SPEED
@@ -258,9 +302,10 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 	_ability_left -= delta
 	if _ability_left > 0.0:
 		return velocity
-	_ability_left = _ability_every()
-	game.boss_move.emit(ability)
-	match ability:
+	_move = _next_move()
+	_ability_left = _move_every(_move) * _gap_scale * game.rng.randf_range(1.0 - MOVE_JITTER, 1.0 + MOVE_JITTER)
+	game.boss_move.emit(_move)
+	match _move:
 		"charge":
 			_windup_left = CHARGE_WINDUP
 			_charge_direction = direction
@@ -327,6 +372,91 @@ func expired() -> bool:
 	return life_left == 0.0
 
 
+## A boss in a slot of the run's schedule made as strong as that slot's original boss (Spawner):
+## its health, contact damage and stars, whichever boss it is.
+func take_strength(data: Dictionary, hp_scale: float) -> void:
+	max_hp = data["hp"] * hp_scale
+	hp = max_hp
+	damage = data["damage"]
+	_base_damage = damage
+	xp_value = data["xp"]
+
+
+## Extra timed moves for this run, on top of its own.
+func add_moves(extra: Array) -> void:
+	for move: String in extra:
+		if not moves.has(move):
+			moves.append(move)
+
+
+func add_affixes(list: Array) -> void:
+	for affix: String in list:
+		affixes.append(affix)
+		match affix:
+			"996":
+				speed *= HASTY_SPEED
+				_base_speed *= HASTY_SPEED
+				_gap_scale *= HASTY_GAP
+			"thick":
+				max_hp *= THICK_HP
+				hp = max_hp
+				_grow(THICK_SIZE)
+
+
+func has_affix(affix: String) -> bool:
+	return affixes.has(affix)
+
+
+## Its name with its affixes, for the HUD: 裁员通知 · 996 · 甩锅.
+func display_name() -> String:
+	var parts := PackedStringArray([tr(Spawner.ENEMY_TYPES[type_name]["name"])])
+	for affix in affixes:
+		parts.append(tr(AFFIXES[affix]))
+	return " · ".join(parts)
+
+
+## A piece flung off a boss with 甩锅: a small copy with `piece_hp`, no moves, no affixes, not a boss.
+func make_scapegoat(piece_hp: float) -> void:
+	is_elite = false
+	ability = ""
+	moves = PackedStringArray()
+	affixes = PackedStringArray()
+	max_hp = piece_hp
+	hp = piece_hp
+	xp_value = maxi(1, xp_value / 10)
+	damage *= 0.6
+	# Light enough to be knocked about like the crowd, which a boss isn't.
+	knockback_resist = 0.3
+	_grow(BLAME_SIZE)
+
+
+func _grow(factor: float) -> void:
+	_base_scale *= factor
+	_size *= factor
+	radius *= factor
+
+
+## 急了 at half health, 自愈 after HEAL_AFTER seconds unhit.
+func _tick_affixes(delta: float) -> void:
+	_since_hit += delta
+	if has_affix("angry") and not _angry and hp < max_hp * ANGRY_AT:
+		_angry = true
+		speed *= ANGRY_SPEED
+		_base_speed *= ANGRY_SPEED
+		_gap_scale *= ANGRY_GAP
+		_base_modulate = _base_modulate * ANGRY_TINT
+		if _flash_left <= 0.0:
+			_sprite.modulate = _rest_modulate()
+		Effects.callout(game, position, tr("急了！"), Art.BOSS_RED, 15)
+	if has_affix("heal") and _since_hit >= HEAL_AFTER and hp < max_hp:
+		hp = minf(max_hp, hp + max_hp * HEAL_RATE * delta)
+		queue_redraw()
+		_heal_puff_left -= delta
+		if _heal_puff_left <= 0.0:
+			_heal_puff_left = 0.5
+			Effects.poof(game, position, Art.GREEN)
+
+
 ## Thrown by something other than a hit: the quake, or a car or a train, which send it spinning
 ## (`spin`) unless it's too heavy to move much.
 func shove(push: Vector2, spin: bool = false) -> void:
@@ -355,8 +485,17 @@ func is_charging() -> bool:
 	return _charge_left > 0.0
 
 
-func _ability_every() -> float:
-	match ability:
+## One of its timed moves at random, not the last one again when it has another.
+func _next_move() -> String:
+	if moves.size() == 1:
+		return moves[0]
+	var choices := Array(moves)
+	choices.erase(_move)
+	return choices[game.rng.randi() % choices.size()]
+
+
+func _move_every(move: String) -> float:
+	match move:
 		"charge":
 			return CHARGE_EVERY
 		"blink":
@@ -373,7 +512,7 @@ func _ability_every() -> float:
 
 
 func _finish_windup() -> void:
-	match ability:
+	match _move:
 		"charge":
 			_charge_left = CHARGE_SECONDS
 		"blink":
@@ -458,6 +597,7 @@ func _rest_modulate() -> Color:
 
 func take_hit(amount: float, push: Vector2) -> void:
 	hp -= amount
+	_since_hit = 0.0
 	_knockback += push * (1.0 - knockback_resist)
 	_flash_left = FLASH_SECONDS
 	_sprite.modulate = FLASH_COLOR
@@ -491,7 +631,7 @@ func _draw() -> void:
 			var size_bump := 2 if urgent and fmod(_phase, 6.0) < 3.0 else 0
 			_draw_mark(text, Vector2(0.0, -_size / 2.0 - 12.0), 16 + size_bump, Art.BOSS_RED if urgent else Art.INK)
 	if _windup_left > 0.0:
-		match ability:
+		match _move:
 			"charge":
 				# The lane the charge will cover, so the player sees where not to stand.
 				draw_set_transform(Vector2.ZERO, _charge_direction.angle())

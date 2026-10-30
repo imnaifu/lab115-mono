@@ -558,7 +558,8 @@ func _update_boss_bar() -> void:
 	if boss == null:
 		return
 	_boss_progress.custom_minimum_size.x = BOSS_BAR_WIDTH_PORTRAIT if _is_portrait() else BOSS_BAR_WIDTH
-	_boss_name.text = Spawner.ENEMY_TYPES[boss.type_name]["name"]
+	# With its affixes, so the bar says what this one does differently: 裁员通知 · 996.
+	_boss_name.text = boss.display_name()
 	_boss_more.text = "+%d" % others if others > 0 else ""
 	_boss_more.visible = others > 0
 	_boss_progress.value = maxf(boss.hp, 0.0) / boss.max_hp

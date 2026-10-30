@@ -26,7 +26,9 @@ extends SceneTree
 ## starting weapon alone does), --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
 ## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
 ## to look at the evolutions), --map=sv|bj (play that map, locked or not), --stamps=N|all (start
-## having checked in at the first N of the map's landmarks, or all of them), --collection=0|1 (with --shots, also screenshot the title's 打卡 · 成就 page on
+## having checked in at the first N of the map's landmarks, or all of them), --fixed-bosses (the
+## boss schedule as written, without .21's shuffles, jitter, extra moves and affixes),
+## --collection=0|1 (with --shots, also screenshot the title's 打卡 · 成就 page on
 ## that tab). Progress (打卡, 成就) is kept in memory only: a bot run never touches the save.
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
@@ -127,6 +129,8 @@ func _initialize() -> void:
 			_hold_hp = clampf(float(value), 0.01, 1.0)
 		elif arg == "--evolve":
 			_evolve = true
+		elif arg == "--fixed-bosses":
+			Spawner.shake_bosses = false
 		elif arg.begins_with("--map="):
 			Settings.overrides["map"] = value
 			Maps.unlock_all = true
@@ -352,6 +356,7 @@ func _report() -> int:
 	print("[smoke] weapons=%s passives=%s (* evolved)" % [", ".join(weapon_levels), ", ".join(passive_levels)])
 	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
 	print("[smoke] checked in=%s achievements=%s" % [",".join(_game.stamps.new_ids), ",".join(_game.achievements.new_ids)])
+	print("[smoke] boss rolls=%s" % _game.spawner.boss_rolls())
 	print("[smoke] bosses killed=%d of %d, funding bags opened=%d (%s)" % [
 		_game.telemetry._bosses_killed, _game.telemetry._bosses_seen, _chests, ",".join(_game.telemetry._chests)])
 	var uncollected_xp := 0

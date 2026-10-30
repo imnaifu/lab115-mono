@@ -120,6 +120,28 @@ const EVENTS := [
 	{"at": 540.0, "kind": "elite", "type": "ai", "count": 1, "hp_scale": 0.85},
 ]
 
+## Each run's schedule is EVENTS shaken up (.21, so bosses can't be learned by heart): the bosses
+## of a tier swap slots, and one in another's slot comes as strong as the one written there (its
+## health, damage and stars), so the run still gets harder just as steadily; arrivals shift by up
+## to ARRIVAL_JITTER either way; and each boss draws extra moves and affixes (Enemy.AFFIXES) by
+## its tier's ROLLS. The finale (FINALE_AT) keeps its time and its two bosses; the boss of pies
+## draws like the last tier, the AI beside it nothing.
+const BOSS_TIERS := [[60.0, 120.0, 180.0], [240.0, 300.0, 360.0], [420.0, 450.0, 480.0]]
+const FINALE_AT := 540.0
+const ARRIVAL_JITTER := 10.0
+## Per tier, then for the finale's boss of pies: the moves extras are drawn from, the chances of a
+## first and a second extra move, and of a first and a second affix. The first boss of all
+## (BOSS_TIERS[0][0]) draws nothing: it's the first one a new player meets.
+const ROLLS := [
+	{"moves": ["charge", "quake", "summon"], "extra": [0.5, 0.0], "affix": [0.5, 0.0]},
+	{"moves": ["charge", "quake", "summon", "blink", "lob"], "extra": [1.0, 0.0], "affix": [1.0, 0.0]},
+	{"moves": ["charge", "quake", "summon", "blink", "lob", "volley"], "extra": [1.0, 0.5], "affix": [1.0, 0.5]},
+	{"moves": ["charge", "quake", "summon", "blink", "volley"], "extra": [1.0, 0.0], "affix": [1.0, 0.0]},
+]
+
+## False keeps the schedule as written, unshaken (the smoke test, to compare with builds before .21).
+static var shake_bosses := true
+
 var max_alive := MAX_ALIVE
 
 var _game: Game
@@ -127,12 +149,15 @@ var _spawn_budget := 0.0
 var _next_event := 0
 ## Events whose time has come but that haven't gone out yet (a boss held by MAX_BOSSES_OUT).
 var _due_events: Array[Dictionary] = []
+## This run's schedule: EVENTS shaken up, in time order.
+var _events: Array[Dictionary] = []
 
 
 func _init(game: Game) -> void:
 	_game = game
 	if OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios"):
 		max_alive = MAX_ALIVE_MOBILE
+	_events = _plan_events()
 
 
 ## Spawns per second: about 0.5 at the start (eased in, see EASE_IN_SECONDS), about 6.3 by the
@@ -149,8 +174,8 @@ func hp_scale() -> float:
 
 
 func tick(delta: float) -> void:
-	while _next_event < EVENTS.size() and _game.elapsed >= EVENTS[_next_event]["at"]:
-		_due_events.append(EVENTS[_next_event])
+	while _next_event < _events.size() and _game.elapsed >= _events[_next_event]["at"]:
+		_due_events.append(_events[_next_event])
 		_next_event += 1
 	_release_due_events()
 
@@ -166,10 +191,84 @@ func tick(delta: float) -> void:
 ## Seconds until the next boss is due, or -1 when none is left. A boss already due but held
 ## back by MAX_BOSSES_OUT doesn't count: there is no time to show for it.
 func seconds_to_next_boss() -> float:
-	for index in range(_next_event, EVENTS.size()):
-		if EVENTS[index]["kind"] == "elite":
-			return EVENTS[index]["at"] - _game.elapsed
+	for index in range(_next_event, _events.size()):
+		if _events[index]["kind"] == "elite":
+			return _events[index]["at"] - _game.elapsed
 	return -1.0
+
+
+## The run's bosses as planned, for the run's data: seconds, type, "+" each extra move, "!" each
+## affix, e.g. 62:layoff+quake!996!blame.
+func boss_rolls() -> String:
+	var parts := PackedStringArray()
+	for event in _events:
+		if event["kind"] != "elite":
+			continue
+		var roll := "%d:%s" % [roundi(event["at"]), event["type"]]
+		for move: String in event.get("moves", []):
+			roll += "+" + move
+		for affix: String in event.get("affixes", []):
+			roll += "!" + affix
+		parts.append(roll)
+	return ",".join(parts)
+
+
+func _plan_events() -> Array[Dictionary]:
+	var events: Array[Dictionary] = []
+	for event: Dictionary in EVENTS:
+		events.append(event.duplicate(true))
+	if not shake_bosses:
+		return events
+	var rng := _game.rng
+	# Each type's arrival line goes with it to its new slot.
+	var lines := {}
+	for event in events:
+		if event["kind"] == "elite" and event.has("text") and event["at"] != FINALE_AT:
+			lines[event["type"]] = event["text"]
+	for tier in BOSS_TIERS.size():
+		var slots: Array[Dictionary] = []
+		for event in events:
+			if event["kind"] == "elite" and (BOSS_TIERS[tier] as Array).has(event["at"]):
+				slots.append(event)
+		var types: Array = slots.map(func(slot: Dictionary) -> String: return slot["type"])
+		# Fisher-Yates with the run's own generator.
+		for i in range(types.size() - 1, 0, -1):
+			var j := rng.randi_range(0, i)
+			var held: String = types[i]
+			types[i] = types[j]
+			types[j] = held
+		for i in slots.size():
+			var slot := slots[i]
+			var first_of_all: bool = slot["at"] == BOSS_TIERS[0][0]
+			slot["strength"] = slot["type"]
+			slot["type"] = types[i]
+			slot["text"] = lines[types[i]]
+			slot["at"] += rng.randf_range(-ARRIVAL_JITTER, ARRIVAL_JITTER)
+			if not first_of_all:
+				_draw_rolls(slot, ROLLS[tier])
+	for event in events:
+		if event["kind"] == "elite" and event["at"] == FINALE_AT and event.has("text"):
+			_draw_rolls(event, ROLLS[-1])
+	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
+	return events
+
+
+## A boss's extra moves (none it already has) and affixes, by the chances in `roll`.
+func _draw_rolls(event: Dictionary, roll: Dictionary) -> void:
+	var rng := _game.rng
+	var moves: Array = (roll["moves"] as Array).duplicate()
+	moves.erase(ENEMY_TYPES[event["type"]].get("ability", ""))
+	var extras: Array[String] = []
+	for chance: float in roll["extra"]:
+		if not moves.is_empty() and rng.randf() < chance:
+			extras.append(moves.pop_at(rng.randi() % moves.size()))
+	var affix_pool: Array = Enemy.AFFIXES.keys()
+	var affixes: Array[String] = []
+	for chance: float in roll["affix"]:
+		if rng.randf() < chance:
+			affixes.append(affix_pool.pop_at(rng.randi() % affix_pool.size()))
+	event["moves"] = extras
+	event["affixes"] = affixes
 
 
 func _pick_type() -> String:
@@ -219,7 +318,16 @@ func _run_event(event: Dictionary) -> void:
 			_game.spawn_enemy(event["type"], _game.player.position + direction * RING_RADIUS)
 		else:
 			var boss := _game.spawn_enemy(event["type"], _game.offscreen_point(_game.random_direction()))
+			if event.has("strength"):
+				boss.take_strength(ENEMY_TYPES[event["strength"]], hp_scale())
 			boss.scale_hp(event.get("hp_scale", 1.0))
+			boss.add_moves(event.get("moves", []))
+			boss.add_affixes(event.get("affixes", []))
 	if event.has("text"):
 		Sound.play("alarm")
-		_game.announce(event["text"])
+		var line := tr(event["text"])
+		var affixes: Array = event.get("affixes", [])
+		if not affixes.is_empty():
+			# The affixes said with the arrival: 首领出现：裁员通知（996 · 甩锅）.
+			line += "（%s）" % " · ".join(affixes.map(func(affix: String) -> String: return tr(Enemy.AFFIXES[affix])))
+		_game.announce(line)

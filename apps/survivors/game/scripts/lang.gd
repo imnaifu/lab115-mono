@@ -355,6 +355,13 @@ const EN := {
 	"相关非因果": "Correlation, not causation",
 	"过拟合了": "Overfitted",
 	"看大盘": "Check the topline",
+	# Boss affixes (Enemy.AFFIXES) and what they shout
+	"加厚": "Thick",
+	"急了": "Rattled",
+	"自愈": "Self-healing",
+	"甩锅": "Blame-shifter",
+	"急了！": "Rattled!",
+	"甩锅！": "Not my fault!",
 	# A car or a train bumping into something (Traffic)
 	"砰！": "Bam!",
 	# 局外成长: landmarks to check in at (打卡, BayArea.STAMPS) and achievements (Achievements)
