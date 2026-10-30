@@ -34,6 +34,19 @@ const LIST := [
 	{"id": "train_hit", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
 ]
 const GROUPS := ["生存", "战斗", "职业", "打卡", "彩蛋"]
+## The 成就 page says how many players have each (rate()): from the live data (AchievementRates,
+## written by tools/achievement_rates.py at each release) once it holds MIN_PLAYERS players; until
+## then these estimates, in percent, judged from how hard each is (the user's call: hardcoded is
+## fine to start with). Under RARE it reads 稀有.
+const MIN_PLAYERS := 30
+const RARE := 0.1
+const ESTIMATED_RATES := {
+	"first_day": 100.0, "probation": 45.0, "ipo": 15.0, "win_beijing": 3.0, "close_call": 4.0, "untouched": 8.0,
+	"thousand": 20.0, "ten_thousand": 2.0, "first_boss": 80.0, "all_bosses": 10.0, "bestiary_all": 1.0,
+	"first_evolve": 25.0, "full_kit": 30.0,
+	"win_coder": 8.0, "win_pm": 6.0, "win_designer": 5.0, "win_ops": 5.0, "win_data_scientist": 4.0,
+	"stamps_5": 35.0, "stamps_all": 5.0, "bj_stamps_all": 1.0, "train_hit": 40.0,
+}
 const SURVIVE_SECONDS := 300.0
 const UNTOUCHED_SECONDS := 180.0
 const KILLS_IN_A_RUN := 1000
@@ -67,6 +80,21 @@ static func data(id: String) -> Dictionary:
 		if entry["id"] == id:
 			return entry
 	return {}
+
+
+## The share of players who have earned `id`, 0 to 1 (see ESTIMATED_RATES).
+static func rate(id: String) -> float:
+	if AchievementRates.PLAYERS >= MIN_PLAYERS:
+		return float(AchievementRates.UNLOCKS.get(id, 0)) / AchievementRates.PLAYERS
+	return ESTIMATED_RATES.get(id, 0.0) / 100.0
+
+
+## How it reads on the 成就 page: 12% 的玩家达成, 稀有 under RARE.
+static func rate_text(id: String) -> String:
+	var share := rate(id)
+	var line: String = TranslationServer.translate("不到 1% 的玩家达成") if share < 0.01 \
+		else TranslationServer.translate("%d%% 的玩家达成") % roundi(share * 100.0)
+	return TranslationServer.translate("稀有 · ") + line if share < RARE else line
 
 
 ## How far along a counted achievement is, as [done, goal], from what's saved (a run in progress

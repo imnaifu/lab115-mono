@@ -430,6 +430,10 @@ const EN := {
 	"到点了还没下班！它开始加班暴走": "Past home time! It's working overtime now",
 	"准点下班！钱袋保底 A 轮": "Home on time! Bag is at least a Series A",
 	"卷王倒了！掉了一地经验": "The Grind King is down! Stars everywhere",
+	# How many players have an achievement (Achievements.rate_text)
+	"不到 1% 的玩家达成": "Under 1% of players",
+	"%d%% 的玩家达成": "%d%% of players",
+	"稀有 · ": "Rare · ",
 	# A car or a train bumping into something (Traffic)
 	"砰！": "Bam!",
 	# 局外成长: landmarks to check in at (打卡, BayArea.STAMPS) and achievements (Achievements)

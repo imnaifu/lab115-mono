@@ -77,6 +77,8 @@ assets/audio/          # sfx/ 音效（按用途命名）、music/ 标题和战�
 assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录来源、可重新下载）
 ```
 
+**成就达成率**：每次发版前跑一次 `python3 tools/achievement_rates.py`，它经本机的只读查询脚本（`~/.claude/bin/umami-readonly-query`，走 SSH 读 Umami 的库）统计每个成就有多少玩家拿到，写进 `scripts/achievement_rates.gd`；玩家不满 30 人时游戏用 `achievements.gd` 的估计值。
+
 **换皮 / 加城市**：攻击方式的脚本按「怎么打」命名，名字和素材都在数据表里 —— 敌人在 `spawner.gd` 的 `ENEMY_TYPES`，武器和被动在 `upgrades.gd`，地图（分区、地标、街名、招牌）在 `bay_area.gd`。新加的中文文案要同步加进 `lang.gd` 的 `EN`；文案里有字体还没收的字时，重跑 `tools/subset_fonts.py`（CI 的 `check-project.mjs` 会查出漏掉的字）。
 
 **恶搞招牌**：故意不用任何真实 logo —— 名字和图标都是自己画的谐音梗，避免商标和版权问题。加新招牌改 `bay_area.gd` 的 `BRANDS`。

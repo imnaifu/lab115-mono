@@ -2112,7 +2112,9 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 				continue
 			var done := Progress.has_achievement(entry["id"])
 			var counted := Achievements.progress(entry["id"])
-			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), [tr(entry["text"])], done, counted if not done else [], portrait))
+			# With how many players have it, the way game stores show it.
+			var lines := [tr(entry["text"]), Achievements.rate_text(entry["id"])]
+			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), lines, done, counted if not done else [], portrait))
 
 
 ## The 怪物图鉴: each group's enemies, a silhouette until met; then what it is, its numbers (the
