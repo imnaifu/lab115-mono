@@ -13,6 +13,10 @@ extends RefCounted
 ## Bangalore, Shenzhen / Hangzhou's 大小周) go in between by their hours, ORDER kept in that order.
 
 const ORDER := ["sv", "bj"]
+## Open from the first run: 北京 too from .25, at the user's call (to play it straight away). A map
+## not listed here opens by the rule in unlocked(), which is what 北京 needed before (a win, or
+## BEIJING_STAMPS_TO_UNLOCK check-ins in 硅谷); kept for the maps to come.
+const OPEN_FROM_START := ["sv", "bj"]
 const BEIJING_STAMPS_TO_UNLOCK := 8
 
 static var current: GDScript = BayArea
@@ -38,7 +42,7 @@ static func saved() -> String:
 
 
 static func unlocked(id: String) -> bool:
-	if id == "sv" or unlock_all:
+	if OPEN_FROM_START.has(id) or unlock_all:
 		return true
 	return Progress.has_achievement("ipo") or stamps_on("sv") >= BEIJING_STAMPS_TO_UNLOCK
 
