@@ -25,6 +25,8 @@ const RANK_PREFIX := "L"
 ## Bosses and enemy rings swapped for local ones (see Beijing); none here, the schedule in
 ## Spawner.EVENTS is this map's own. FINALE_LINE "" keeps the finale's own line.
 const BOSS_SWAPS := {}
+## Regular enemies swapped for the map's own (Game.spawn_enemy, .36); 硅谷 keeps the originals.
+const MOB_SWAPS := {}
 const RING_SWAPS := {}
 const FINALE_LINE := ""
 ## The map's own (.26): a guest boss with a move no other boss has, on top of the schedule, and an

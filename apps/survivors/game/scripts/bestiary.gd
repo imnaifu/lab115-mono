@@ -5,14 +5,20 @@ extends RefCounted
 ## are kept in Progress ("seen", "kills_by_type", and the boss affixes met in "affixes_seen"),
 ## saved with the other totals when a run ends (Achievements.finish).
 ##
-## A clone or a piece (AI 幻觉, 小屎山, a 甩锅 copy) goes with the boss it comes from, not on its own.
+## A clone or a piece (AI 幻觉, 小屎山 / 小中台 / 微服务, a 甩锅 copy) goes with the boss it comes from,
+## not on its own.
 
+## By map from .36, when each map got its own crowd and the three bosses they all shared.
 const GROUPS := [
-	{"name": "小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server", "commuter", "parcel"]},
+	{"name": "硅谷小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server"]},
 	{"name": "硅谷 boss", "ids": ["techdebt_elite", "server_elite", "layoff", "deadline", "ai", "investor",
 		"spaghetti", "scope_change", "incident", "pie_boss", "rto"]},
-	{"name": "西雅图 boss", "ids": ["day1", "pip", "prime_day", "bar_raiser", "copilot", "reorg", "meeting_spam", "frugality"]},
-	{"name": "北京 boss", "ids": ["weekly_report", "midlife", "fubao", "juanwang", "baimo", "inspection", "ppt", "elimination"]},
+	{"name": "西雅图小怪", "ids": ["at_here", "sev3_ticket", "code_review", "one_on_one", "night_page", "six_pager", "cloud_bill", "parcel"]},
+	{"name": "西雅图 boss", "ids": ["day1", "us_east_1", "pip", "prime_day", "copilot", "bar_raiser",
+		"monolith", "reorg", "meeting_spam", "all_hands", "frugality"]},
+	{"name": "北京小怪", "ids": ["dingding", "small_req", "daily_report", "group_chat", "read_no_reply", "kpi", "traffic_flood", "commuter"]},
+	{"name": "北京 boss", "ids": ["weekly_report", "sale_618", "midlife", "fubao", "baimo", "juanwang",
+		"zhongtai", "inspection", "ppt", "annual_party", "elimination"]},
 ]
 ## A line about each.
 const NOTES := {
@@ -52,6 +58,26 @@ const NOTES := {
 	"reorg": "一觉醒来，汇报线又换了",
 	"meeting_spam": "一个会还没开完，下一个已经在响",
 	"frugality": "门板当桌子，连地上的星星都不放过",
+	"dingding": "已读未读，对面都看得见",
+	"small_req": "「就改一个小需求」，改了一整周",
+	"daily_report": "周报不够，还要日报",
+	"group_chat": "一言不合就拉群，群比人多",
+	"read_no_reply": "消息发出去，石沉大海，墙也挡不住它",
+	"kpi": "数字压在身上，推都推不动",
+	"traffic_flood": "大促零点，一波接一波",
+	"sale_618": "全年最大的一次促销，服务器先扛不住",
+	"zhongtai": "什么都往里塞，拆开全是小中台",
+	"annual_party": "年会上一讲就是一小时，明年一定上市",
+	"at_here": "一条消息，全频道一起响",
+	"sev3_ticket": "不急，但永远关不掉",
+	"code_review": "「帮忙看一下」，一看就是两千行",
+	"one_on_one": "「最近怎么样？」",
+	"night_page": "凌晨三点手机一震，墙挡不住它",
+	"six_pager": "开会前先默读二十分钟",
+	"cloud_bill": "月底一看，比工资还高",
+	"us_east_1": "一个区挂了，半个互联网跟着挂",
+	"monolith": "十年的代码都在一个仓库里，拆开全是微服务",
+	"all_hands": "全员大会，人人都要听领导画饼",
 }
 
 

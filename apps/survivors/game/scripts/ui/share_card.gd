@@ -26,6 +26,19 @@ const KILLER_ROASTS := {
 	"incident": "P0 事故，背锅下岗",
 	"server_elite": "主库一宕，人也跟着宕了",
 	"ai_clone": "输给了 AI 的幻觉",
+	# Each map's own versions of the ones above (.36).
+	"annual_party": "年会上被画的饼噎住了",
+	"all_hands": "全员大会开到一半，人先倒了",
+	"zhongtai": "被大中台压在了下面",
+	"zhongtai_small": "被大中台压在了下面",
+	"monolith": "被十年的巨石应用砸中",
+	"microservice": "被微服务围殴",
+	"group_chat": "被拉进第 99 个群，没出来",
+	"one_on_one": "1:1 聊着聊着，就聊没了",
+	"kpi": "被 KPI 压垮了",
+	"six_pager": "被六页纸淹没了",
+	"sale_618": "618 大促，人比服务器先宕",
+	"us_east_1": "us-east-1 一挂，人也挂了",
 }
 const WIN_ROASTS := ["上市敲钟，期权终于能卖了", "活过了 10 分钟，比大多数创业公司都久", "建议把这段写进简历"]
 const EARLY_ROASTS := ["试用期都没过", "入职第一天就被优化了"]

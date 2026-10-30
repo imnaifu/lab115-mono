@@ -18,15 +18,24 @@ const DIFFICULTY := {"hp": 1.3, "damage": 1.2, "spawn": 1.15}
 ## Job grades Alibaba-style, P1, P2…
 const RANK_PREFIX := "P"
 ## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
-## replaces; Spawner._plan_events): 周报, 35 岁危机, 福报 996, 卷王, 百模大战, 领导视察, 述职 PPT.
-## 主库宕机, 屎山代码 and 老板画饼 are the same everywhere.
+## replaces; Spawner._plan_events): 周报, 35 岁危机, 福报 996, 卷王, 百模大战, 领导视察, 述职 PPT,
+## and from .36 the three every map used to share too: 618 大促, 大中台 (falling apart into 小中台),
+## 年会讲话.
 const BOSS_SWAPS := {
 	"techdebt_elite": "weekly_report", "layoff": "midlife", "deadline": "fubao", "investor": "juanwang",
 	"ai": "baimo", "scope_change": "inspection", "incident": "ppt",
+	"server_elite": "sale_618", "spaghetti": "zhongtai", "pie_boss": "annual_party",
+}
+## The regular enemies, redrawn for Beijing (.36; Game.spawn_enemy swaps them in): 盯盯消息, 小需求,
+## 日报, 拉个群, 已读不回, KPI, 流量洪峰, each as strong as the one it replaces.
+const MOB_SWAPS := {
+	"ping": "dingding", "bug": "small_req", "mail": "daily_report", "meeting": "group_chat",
+	"ghost": "read_no_reply", "techdebt": "kpi", "server": "traffic_flood",
 }
 ## The Bug outbreak is 西二旗's rush hour here.
-const RING_SWAPS := {"bug": {"type": "commuter", "text": "西二旗早高峰！"}}
-const FINALE_LINE := "最后的考验：老板画饼 + 百模大战"
+const RING_SWAPS := {"bug": {"type": "commuter", "text": "西二旗早高峰！"},
+	"ping": {"type": "dingding", "text": "盯盯轰炸！"}, "ghost": {"type": "read_no_reply", "text": "已读不回合围！"}}
+const FINALE_LINE := "最后的考验：年会讲话 + 百模大战"
 ## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 末位淘汰 (a ring closing on
 ## you) and 沙尘暴 (a wind blowing everyone east).
 const GUEST_BOSS := {"type": "elimination", "at": 330.0}

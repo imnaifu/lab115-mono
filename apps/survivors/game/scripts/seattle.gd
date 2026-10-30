@@ -19,15 +19,24 @@ const DIFFICULTY := {"hp": 1.15, "damage": 1.1, "spawn": 1.07}
 ## Amazin's levels, like Silicon Valley's: L1, L2…
 const RANK_PREFIX := "L"
 ## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
-## replaces; Spawner._plan_events): Day 1, PIP, Prime Day, Bar Raiser, Copilot, 部门重组, 连环会.
-## 主库宕机, 屎山代码 and 老板画饼 are the same everywhere.
+## replaces; Spawner._plan_events): Day 1, PIP, Prime Day, Bar Raiser, Copilot, 部门重组, 连环会,
+## and from .36 the three every map used to share too: us-east-1 宕机, 巨石应用 (falling apart into
+## 微服务), 全员大会.
 const BOSS_SWAPS := {
 	"techdebt_elite": "day1", "layoff": "pip", "deadline": "prime_day", "investor": "bar_raiser",
 	"ai": "copilot", "scope_change": "reorg", "incident": "meeting_spam",
+	"server_elite": "us_east_1", "spaghetti": "monolith", "pie_boss": "all_hands",
+}
+## The regular enemies, redrawn for Seattle (.36; Game.spawn_enemy swaps them in): @here, Sev-3
+## 工单, CR 请求, 1:1, 半夜 Page, 六页纸, AWS 账单, each as strong as the one it replaces.
+const MOB_SWAPS := {
+	"ping": "at_here", "bug": "sev3_ticket", "mail": "code_review", "meeting": "one_on_one",
+	"ghost": "night_page", "techdebt": "six_pager", "server": "cloud_bill",
 }
 ## The Bug outbreak is a same-day delivery here: a ring of parcels.
-const RING_SWAPS := {"bug": {"type": "parcel", "text": "Prime 当日达！包裹把你围住了"}}
-const FINALE_LINE := "最后的考验：老板画饼 + Copilot"
+const RING_SWAPS := {"bug": {"type": "parcel", "text": "Prime 当日达！包裹把你围住了"},
+	"ping": {"type": "at_here", "text": "@here 轰炸！"}, "ghost": {"type": "night_page", "text": "半夜 Page 合围！"}}
+const FINALE_LINE := "最后的考验：全员大会 + Copilot"
 ## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 节俭 (Frugality, it hoovers
 ## up the stars lying round and keeps them until it is down) and 下雨 (puddles that slow everyone).
 const GUEST_BOSS := {"type": "frugality", "at": 330.0}

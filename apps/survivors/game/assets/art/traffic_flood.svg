@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<ellipse cx="32" cy="60" rx="27" ry="3.5" fill="#000" fill-opacity="0.13"/>
+<g stroke="#2f3542" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+<rect x="7" y="38" width="6" height="12" rx="1.2" fill="#fff" stroke-width="3"/>
+<rect x="14.5" y="32" width="6" height="18" rx="1.2" fill="#fff" stroke-width="3"/>
+<rect x="22" y="21" width="6" height="29" rx="1.2" fill="#ff5d5d" stroke-width="3"/>
+<path d="M60 57 Q62.5 44 60 30 Q56 8 40 6.5 Q20 5 11 14 Q5.5 20 9.5 25.5 Q13.5 29.5 17.5 25 Q21.5 20.5 27.5 21.5 Q33.5 23.5 33 33 Q32 44 22 47.5 Q11 50 3 50 L3 57 Z" fill="#5b9cff"/>
+</g>
+<g fill="none" stroke-linecap="round">
+<path d="M16 11.5 Q25 7 37 8" stroke="#fff" stroke-width="2.8"/>
+<path d="M11.5 20.5 Q12.5 17 17 16" stroke="#bcdcf2" stroke-width="2.4"/>
+<path d="M44 52 Q49 50 54 52" stroke="#bcdcf2" stroke-width="2.4"/>
+<path d="M50 11 Q55 13.5 57 18" stroke="#bcdcf2" stroke-width="2.4"/>
+</g>
+<g stroke="#2f3542" stroke-linecap="round" stroke-linejoin="round" fill="none">
+<path d="M38 26.5 L43 29 L38 31.5 M57 26.5 L52 29 L57 31.5" stroke-width="2.6"/>
+<path d="M41.5 40.5 Q41.5 35.5 47.5 35.5 Q53.5 35.5 53.5 40.5 Q50.5 39 47.5 40.5 Q44.5 42 41.5 40.5 Z" fill="#2f3542" stroke-width="2.2"/>
+</g>
+<path d="M36.5 34 Q34.5 37.2 36.5 38.4 Q38.5 37.2 36.5 34 Z" fill="#bcdcf2" stroke="#2f3542" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M58 35 Q56 38.2 58 39.4 Q60 38.2 58 35 Z" fill="#bcdcf2" stroke="#2f3542" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>

@@ -270,6 +270,9 @@ func apply_orientation() -> void:
 # --- Enemies -------------------------------------------------------------------------------
 
 func spawn_enemy(type_name: String, at: Vector2) -> Enemy:
+	# The map's own crowd in place of the regular enemies (the map's MOB_SWAPS, .36): one place, so
+	# waves, rings and bosses' summons all get them.
+	type_name = Maps.current.MOB_SWAPS.get(type_name, type_name)
 	var enemy := Enemy.new()
 	enemy.setup(type_name, Spawner.ENEMY_TYPES[type_name], spawner.hp_scale())
 	enemy.game = self

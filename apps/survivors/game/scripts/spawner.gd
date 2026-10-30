@@ -150,6 +150,64 @@ const ENEMY_TYPES := {
 	"frugality": {"name": "节俭", "art": "frugality", "size": 58.0, "color": Color("f6c6cf"),
 		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "hoard", "arrival": "特邀嘉宾：节俭！它会吸走地上的星星", "death_line": "节俭倒了！攒的经验全吐出来了"},
+	# Each map's own crowd (the map's MOB_SWAPS, .36, the user's call): the seven regular enemies
+	# redrawn for the map, built and as strong as the ones they stand in for (Game.spawn_enemy
+	# swaps them in, so waves, rings and summons all use them), and its own versions of the three
+	# bosses every map shared (BOSS_SWAPS, slot for slot like the rest).
+	# 北京.
+	"dingding": {"name": "盯盯消息", "art": "dingding", "size": 22.0, "color": Color("5b9cff"),
+		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+	"small_req": {"name": "小需求", "art": "small_req", "size": 24.0, "color": Color("ffd25e"),
+		"hp": 8.0, "speed": 38.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+	"daily_report": {"name": "日报", "art": "daily_report", "size": 24.0, "color": Color("fff7e0"),
+		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
+	"group_chat": {"name": "拉个群", "art": "group_chat", "size": 26.0, "color": Color("6cc25a"),
+		"hp": 26.0, "speed": 30.0, "damage": 9.0, "xp": 3, "radius": 6.0},
+	"read_no_reply": {"name": "已读不回", "art": "read_no_reply", "size": 26.0, "color": Color("eef1f6"),
+		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
+	"kpi": {"name": "KPI", "art": "kpi", "size": 28.0, "color": Color("ff5d5d"),
+		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
+	"traffic_flood": {"name": "流量洪峰", "art": "traffic_flood", "size": 38.0, "color": Color("5b9cff"),
+		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
+	"sale_618": {"name": "618 大促", "art": "sale_618", "size": 54.0, "color": Color("ff5d5d"),
+		"hp": 630.0, "speed": 24.0, "damage": 11.0, "xp": 30, "radius": 13.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "quake", "arrival": "精英怪：618 大促！"},
+	"zhongtai": {"name": "大中台", "art": "zhongtai", "size": 60.0, "color": Color("a9b3c4"),
+		"hp": 2200.0, "speed": 22.0, "damage": 26.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "summon", "summon_type": "bug", "summon_count": 6,
+		"splits_into": "zhongtai_small", "split_count": 3, "arrival": "首领出现：大中台"},
+	"zhongtai_small": {"name": "小中台", "art": "zhongtai_small", "size": 30.0, "color": Color("a9b3c4"),
+		"hp": 260.0, "speed": 34.0, "damage": 14.0, "xp": 8, "radius": 9.0, "knockback_resist": 0.6},
+	"annual_party": {"name": "年会讲话", "art": "annual_party", "size": 58.0, "color": Color("ff5d5d"),
+		"hp": 1900.0, "speed": 28.0, "damage": 24.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "lob", "arrival": "年会讲话！"},
+	# 西雅图.
+	"at_here": {"name": "@here", "art": "at_here", "size": 22.0, "color": Color("7b68d9"),
+		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+	"sev3_ticket": {"name": "Sev-3 工单", "art": "sev3_ticket", "size": 24.0, "color": Color("f7c948"),
+		"hp": 8.0, "speed": 38.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+	"code_review": {"name": "CR 请求", "art": "code_review", "size": 24.0, "color": Color("fff7e0"),
+		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
+	"one_on_one": {"name": "1:1", "art": "one_on_one", "size": 26.0, "color": Color("bcdcf2"),
+		"hp": 26.0, "speed": 30.0, "damage": 9.0, "xp": 3, "radius": 6.0},
+	"night_page": {"name": "半夜 Page", "art": "night_page", "size": 26.0, "color": Color("eef1f6"),
+		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
+	"six_pager": {"name": "六页纸", "art": "six_pager", "size": 28.0, "color": Color("faf7f0"),
+		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
+	"cloud_bill": {"name": "AWS 账单", "art": "cloud_bill", "size": 38.0, "color": Color("ffd25e"),
+		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
+	"us_east_1": {"name": "us-east-1 宕机", "art": "us_east_1", "size": 54.0, "color": Color("a9b3c4"),
+		"hp": 630.0, "speed": 24.0, "damage": 11.0, "xp": 30, "radius": 13.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "quake", "arrival": "精英怪：us-east-1 宕机！"},
+	"monolith": {"name": "巨石应用", "art": "monolith", "size": 60.0, "color": Color("8a909c"),
+		"hp": 2200.0, "speed": 22.0, "damage": 26.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "summon", "summon_type": "bug", "summon_count": 6,
+		"splits_into": "microservice", "split_count": 3, "arrival": "首领出现：巨石应用"},
+	"microservice": {"name": "微服务", "art": "microservice", "size": 30.0, "color": Color("bcdcf2"),
+		"hp": 260.0, "speed": 34.0, "damage": 14.0, "xp": 8, "radius": 9.0, "knockback_resist": 0.6},
+	"all_hands": {"name": "全员大会", "art": "all_hands", "size": 58.0, "color": Color("f2c46b"),
+		"hp": 1900.0, "speed": 28.0, "damage": 24.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "lob", "arrival": "全员大会！"},
 }
 ## A boss due while this many are still out waits until one is down. Players who keep up
 ## never see the wait; it stops a player who has fallen behind from being buried under bosses
@@ -383,7 +441,9 @@ func _localize(events: Array[Dictionary]) -> void:
 			if event.has("text") and event["at"] != FINALE_AT:
 				event["text"] = ENEMY_TYPES[event["type"]].get("arrival", event["text"])
 		elif event["kind"] == "ring" and rings.has(event["type"]):
-			event["text"] = rings[event["type"]]["text"]
+			# The 8:30 one repeats the 1:30 one twice over, and keeps saying so.
+			var twice: bool = event.get("text", "").contains("×2")
+			event["text"] = rings[event["type"]]["text"].trim_suffix("！") + " ×2！" if twice else rings[event["type"]]["text"]
 			event["type"] = rings[event["type"]]["type"]
 		if event["kind"] == "elite" and event["at"] == FINALE_AT and event.has("text") and finale_line != "":
 			event["text"] = finale_line
