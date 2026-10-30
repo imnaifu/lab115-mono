@@ -56,7 +56,8 @@ scripts/
 ├── art.gd             # 按名字取素材、楼的裁边、配色（界面用的 Sokosoko 色板）、字体
 ├── lang.gd            # 中→英翻译表（代码里的中文就是原文）与语言切换
 ├── settings.gd        # 存设置
-├── progress.gd        # 局外成长的存档（user://progress.cfg）：打卡、成就、累计数据；测试机器人只记在内存里
+├── progress.gd        # 局外成长的存档（user://progress.cfg）：打卡、成就、累计数据，两份存档的合并规则；测试机器人只记在内存里
+├── cloud.gd           # 云存档：每台设备一个匿名 Nakama 账号、开局合并、存档后上传、存档码、删除（见下文「云存档」）
 ├── stamps.gd          # 打卡：走到地标跟前站 1 秒，永久小加成
 ├── achievements.gd    # 成就：列表、跨局进度、什么时候算拿到；也记图鉴要的遇到过的怪、各类击杀、词条
 ├── bestiary.gd        # 怪物图鉴：分组、每种怪的吐槽、从存档读遇到过和累计击杀
@@ -65,11 +66,13 @@ scripts/
 ├── telemetry.gd       # 匿名对局数据，发到 stats.lab115.com 的 Umami（见下文「对局数据」）
 ├── boss_pointers.gd   # 屏幕边缘指向屏幕外 boss 的箭头
 ├── pickup.gd / projectile.gd / effects.gd
-├── ui/hud.gd          # HUD（顶栏、boss 条和倒计时、触屏摇杆、底部提示、打卡 / 成就弹条）和开始 / 打卡 · 成就 / 升级 / 年终奖开箱 / 暂停 / 结算 / 设置画面
+├── ui/hud.gd          # HUD（顶栏、boss 条和倒计时、触屏摇杆、底部提示、打卡 / 成就弹条）和开始 / 收藏（打卡、成就、图鉴、存档）/ 升级 / 年终奖开箱 / 暂停 / 结算 / 设置画面
 ├── ui/ui_kit.gd       # 界面控件：按钮、卡片、分段选择、开关、标签、等级点（照设计画布）
 ├── ui/share_card.gd   # 结算页的战绩图
 └── ui/minimap.gd      # 右上角小地图
 tests/smoke_test.gd    # 机器人自动玩一局的冒烟测试
+tests/cloud_test.gd    # 云存档对着 Nakama 服务器的测试：两台设备用存档码合并、换码、删除、连不上
+addons/com.heroiclabs.nakama/   # Nakama 的 Godot 客户端（Apache-2.0，固定在 heroiclabs/nakama-godot 的 6dc7b39，只留 api / client / socket / utils，去掉了 Satori、C# 工具和 autoload 辅助脚本）
 tools/                 # 导出 Web 版、下载 Web 导出模板、渲染启动图和 PWA 图标、重新下载 soco-st 素材、裁剪字体、生成战绩图的二维码
 assets/icons/          # PWA 图标（tools/render_icons.gd 从主角 SVG 生成；PWA 目前关着，留着以后用）
 assets/art/            # 自绘 SVG（主角、敌人、武器、道具、场景、图标）
@@ -90,11 +93,36 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 
 线上每一局都会匿名上报到自建的 Umami（stats.lab115.com，和 daily 共用一个实例），用来看难度和平衡：
 - `game_ready`：每次打开页面、开始画面出来时发一次，带 `load_ms`（从开始加载页面算起的毫秒数）。有浏览量没有它的，就是加载时流失的人。
-- `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）；`.19` 起带 `stamps`、`achievements`（这台设备打过几个卡、拿了几个成就：打卡有永久加成，比强度时要按它分开看），`.20` 起带 `map`（`sv` 硅谷 / `bj` 北京）。
+- `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）；`.19` 起带 `stamps`、`achievements`（这台设备打过几个卡、拿了几个成就：打卡有永久加成，比强度时要按它分开看），`.20` 起带 `map`（`sv` 硅谷 / `bj` 北京），`.28` 起带 `cloud`（这台设备云存档的状态：`synced` / `offline` / `connecting` / `disabled` / `off`，用来看微信等内置浏览器里连不连得上；不带账号）。
 - `run_end`：职业（`job`）、结局（`win` / `died` / `restart` 从暂停页重开或换职业 / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、进化了的武器（`evolved`）、各武器伤害占比（`dmg_*`，百分比，只有打出过伤害的才有）、选卡顺序（专属武器的方向卡记成 `prd:b` 这样）、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（年终奖开出的绩效：`angel` / `series_a` / `ipo` 是绩效 B / A / S，沿用钱袋时代的 id）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率；`.19` 起带 `new_stamps`、`new_achievements`（这局新打卡的地标和新拿的成就，逗号分隔），`.20` 起带 `map`，`.21` 起带 `boss_rolls`（这局的 boss 排期：出场秒数、种类、`+` 额外招式、`!` 词条，如 `62:layoff+quake!996`），`.27` 起带 `luck`（结束时的运气）、`rarities`（这局拿到的升级按稀有度计数，普通,优秀,稀有,史诗,传说，如 `14,5,2,1,0`）和 `lucky_cards`（运气多给了一张卡的升级次数）。每局带一个随机 id，用来去重。
 - `js_error`：网页和引擎的脚本错误（引擎的错误经 `console.error` 打出来），每次打开页面最多 5 条。
 
 不记录任何身份信息和位置。中途关页面的局：游戏每 10 秒把进度存进 localStorage，关页面或页面被切到后台时由网页发出去（Umami 用 keepalive 发送；手机常常先把页面切到后台、之后直接杀掉，不触发关页面事件）；App 内置浏览器常常来不及发，所以关页面时发完不删存档，下次打开时再补发一次才删 —— 同一局可能收到两条 `run_end`，查数据时按 `run` 去重、取 `seconds` 最大的那条。上报只在 survivors.lab115.com 上发生（Umami 脚本的 `data-domains`），编辑器、本地导出和冒烟测试都不会发。网页这边的代码在 `export_presets.cfg` 的 `html/head_include` 里。
+
+## 云存档
+
+规则和界面见 `DESIGN.md` 2.11，服务端部署见 `../README.md`。代码在 `scripts/cloud.gd`：
+
+- 挂在场景树根上（和 `Sound` 一样，重开一局时不重建），只在 survivors.lab115.com 上连 `https://nakama.lab115.com`；本地导出（`localhost`）连 `http://127.0.0.1:7350`；电脑版加 `--cloud=local` 或 `--cloud=<url>` 才连；冒烟测试不连。
+- 服务器上每个玩家一个存储对象（`progress` / `main`，只有本人能读写），内容是 `Progress.to_text()`（ConfigFile 自己的文本格式，整数和数组不会像 JSON 那样变形）。写入时带上读到的版本号，被别的设备抢先写了就重读再合并。
+- 存档码是账号上绑的 Nakama custom id，设备 id 是 device id。Nakama 的日志关掉了：网页会把引擎打出来的错误当成 `js_error` 上报，手机没网不算错误。
+- `Cloud.SERVER_KEY` 要和 `docker-compose.yml` 里的 `--socket.server_key` 一致（它会打进游戏包，本来就不是秘密）。
+
+本地测试要先起一个 Nakama（和线上同一份 `docker-compose.yml`，另加一个把 7350 端口映射出来、数据库放别处的 override 文件，再给一组随便的密钥）：
+
+```bash
+cd ../../..   # 仓库根目录
+docker compose -p survivors-cloud -f docker-compose.yml -f /path/to/override.yml --env-file /path/to/test.env up -d nakama nakama-db
+```
+
+override 文件里给 `nakama` 加 `ports: ["127.0.0.1:7350:7350"]`；`test.env` 里写一行 `NAKAMA_SECRET=…`（本地随便填，只用字母和数字）。然后：
+
+```bash
+godot --headless --path . -s tests/cloud_test.gd          # 两台设备合并、换码、删除、连不上，全部通过时退出码 0
+godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --window=405x720 --handheld --seconds=2 --collection=3 --cloud=local --shots=/tmp/shots   # 截「存档」页（连上、带存档码）
+```
+
+两个测试的进度和设备 id 都只在内存里，不会碰你本机的存档。网页版的复制和输入浮层要导出后在浏览器里试（`./tools/export_web.sh`，在 `localhost` 打开就会连本机的 Nakama）。
 
 ## 素材
 

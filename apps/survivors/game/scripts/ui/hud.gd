@@ -80,6 +80,24 @@ const TILT_HINTS := {
 	"denied": "没有权限：请在浏览器设置里允许动作与方向",
 	"unsupported": "这台设备不支持",
 }
+## The 收藏 page's 存档 view, after its tabs (it has a button of its own: a fourth tab doesn't fit
+## an upright phone).
+const SAVE_TAB := 3
+## The cloud save's state on the 存档 view, one per Cloud.Status.
+const CLOUD_STATUS_TEXT := [
+	"这个版本不连云端，进度只存在这台设备上",
+	"正在连接…",
+	"已同步",
+	"没连上，进度先存在这台设备上，之后会自动补传",
+	"已关闭，进度只存在这台设备上",
+]
+## What entering a 存档码 came to, one per Cloud.Redeem.
+const REDEEM_NOTES := [
+	"找回了，两边的进度已经合并",
+	"存档码是 12 位字母和数字，再核对一下",
+	"没找到这个存档码",
+	"没连上云端，稍后再试",
+]
 
 var game: Game
 
@@ -145,6 +163,21 @@ var _collection_overlay: Control
 var _collection_holder: Control
 var _collection_open := false
 var _collection_tab := 0
+## The page's scrolling list, whose position a redraw of the same tab keeps.
+var _collection_scroll: ScrollContainer
+## The 存档 view: what the last action on it came to (on a green or red strip at the top), whether
+## one is still running (its buttons wait), and whether deleting is being asked about.
+var _save_note := ""
+var _save_note_ok := true
+var _save_busy := false
+var _confirm_delete := false
+## A 存档码 is made the first time the view opens on a synced account; once per scene, so a failed
+## try isn't repeated on every redraw.
+var _code_requested := false
+## The page's callback for a typed 存档码 (survivorsCode.ask), held until the page calls it.
+var _code_callback: JavaScriptObject
+## Where a computer build takes a 存档码 (the web asks in a field of the page's own).
+var _code_field: LineEdit
 ## The banner for a landmark checked in at or an achievement earned, and the ones waiting.
 var _badge: PanelContainer
 var _badge_icon: TextureRect
@@ -209,6 +242,8 @@ func _ready() -> void:
 	game.boss_move.connect(_on_boss_move)
 	game.stamps.checked_in.connect(_on_checked_in)
 	game.achievements.unlocked.connect(_on_achievement)
+	if Cloud.shared() != null:
+		Cloud.shared().changed.connect(_on_cloud_changed)
 
 
 func _notification(what: int) -> void:
@@ -2095,9 +2130,19 @@ func _open_settings() -> void:
 	_fit_to_screen(_settings_holder)
 
 
-## The 打卡 · 成就 page: every landmark (checked in at or still to find, with where it is and what
-## it gives) and every achievement (with progress for the counted ones), on two tabs.
+## The 收藏 page: every landmark (checked in at or still to find, with where it is and what it
+## gives), every achievement (with progress for the counted ones) and the 图鉴 on three tabs, and
+## the 存档 view (SAVE_TAB) behind the button by the title.
 func _open_collection(tab: int = -1) -> void:
+	# Redrawn in place (the 存档 view after an action, or the cloud bringing progress) it stays
+	# scrolled where it was: the delete confirmation turns up at the bottom.
+	var kept_scroll := 0
+	if _collection_open and (tab < 0 or tab == _collection_tab) and is_instance_valid(_collection_scroll):
+		kept_scroll = _collection_scroll.scroll_vertical
+	elif not _collection_open or tab != _collection_tab:
+		# Opened afresh or on another tab: the 存档 view's last message and question are stale.
+		_save_note = ""
+		_confirm_delete = false
 	if tab >= 0:
 		_collection_tab = tab
 	_collection_open = true
@@ -2123,20 +2168,29 @@ func _open_collection(tab: int = -1) -> void:
 		stamped += Maps.stamps_on(map_id)
 	# Only the achievements in play (a switched-off feature's one is hidden even if earned).
 	var earned := Achievements.earned_count()
+	# On the 存档 view no tab is picked.
 	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
 		"%s %d/%d" % [tr("成就"), earned, Achievements.shown().size()],
-		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()]], _collection_tab, _open_collection, Art.PAPER_SUNK)
+		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()]], _collection_tab if _collection_tab < SAVE_TAB else -1, _open_collection, Art.PAPER_SUNK)
 	tabs.custom_minimum_size.x = 330.0
 	if portrait:
 		column.add_child(tabs)
 	else:
 		tabs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		header.add_child(tabs)
+	var save := UiKit.secondary_button("存档", _open_collection.bind(SAVE_TAB), 40.0)
+	save.icon = Art.texture("floppy")
+	save.add_theme_constant_override("icon_max_width", 18)
+	save.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(save)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
+	_collection_scroll = scroll
+	if kept_scroll > 0:
+		_scroll_after_layout(scroll, kept_scroll)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 10)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2146,6 +2200,8 @@ func _open_collection(tab: int = -1) -> void:
 			_fill_stamps(body, portrait)
 		1:
 			_fill_achievements(body, portrait)
+		SAVE_TAB:
+			_fill_save(body, portrait)
 		_:
 			_fill_bestiary(body, portrait)
 	_focus(back)
@@ -2243,6 +2299,194 @@ func _fill_bestiary(body: VBoxContainer, portrait: bool) -> void:
 		var met := Bestiary.affix_seen(affix)
 		affixes.add_child(_collection_card("star_gold", tr(Enemy.AFFIXES[affix]) if met else "？？？",
 			[tr(AFFIX_NOTES[affix]) if met else tr("还没遇到")], met, [], portrait))
+
+
+## The 存档 view (Cloud): whether the cloud save is on and synced, this account's 存档码 to copy,
+## entering a code from another device, and deleting the cloud save (asked twice).
+func _fill_save(body: VBoxContainer, portrait: bool) -> void:
+	var cloud := Cloud.shared()
+	var status: Cloud.Status = cloud.status if cloud != null else Cloud.Status.OFF
+	body.add_child(_collection_note(tr("进度会自动存到云端。记下存档码，换手机或清了浏览器数据，都能用它找回")))
+	if _save_note != "":
+		var strip := UiKit.panel(UiKit.box(Art.MINT_LIGHT if _save_note_ok else Art.PINK_LIGHT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
+		var message := UiKit.label(_save_note, 13, "strong", Art.GREEN_INK if _save_note_ok else Art.BOSS_RED)
+		message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		strip.add_child(message)
+		body.add_child(strip)
+	body.add_child(_collection_card("floppy", tr("云存档"), [tr(CLOUD_STATUS_TEXT[status])], status == Cloud.Status.SYNCED, [], portrait))
+	if status == Cloud.Status.OFF:
+		return
+	if status == Cloud.Status.DISABLED:
+		body.add_child(_save_buttons([_save_button("重新开启云存档", cloud.enable)]))
+
+	if status != Cloud.Status.DISABLED:
+		body.add_child(UiKit.label(tr("存档码"), 13, "strong", Art.INK_MUTED))
+		var code_card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(14, 12, 14, 12)))
+		var code_column := VBoxContainer.new()
+		code_column.add_theme_constant_override("separation", 10)
+		code_card.add_child(code_column)
+		body.add_child(code_card)
+		if cloud.code != "":
+			var shown := UiKit.label(Cloud.format_code(cloud.code), 26, "display")
+			shown.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+			shown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			code_column.add_child(shown)
+			code_column.add_child(_save_buttons([_save_button("复制", _copy_code)]))
+		else:
+			var waiting := status == Cloud.Status.SYNCED and not _code_requested
+			code_column.add_child(UiKit.label(tr("正在生成…") if waiting or _save_busy else tr("连上云端后才能拿到存档码"), 13, "muted"))
+			if waiting:
+				_make_code.call_deferred()
+
+	body.add_child(UiKit.label(tr("换设备"), 13, "strong", Art.INK_MUTED))
+	var redeem_card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(14, 12, 14, 12)))
+	var redeem_column := VBoxContainer.new()
+	redeem_column.add_theme_constant_override("separation", 10)
+	redeem_card.add_child(redeem_column)
+	body.add_child(redeem_card)
+	var redeem_text := UiKit.label(tr("在新设备上输入原来的存档码，两边的进度会合并到一起"), 13)
+	redeem_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	redeem_column.add_child(redeem_text)
+	if OS.has_feature("web"):
+		redeem_column.add_child(_save_buttons([_save_button("输入存档码", _ask_code)]))
+	else:
+		# A computer build has a keyboard and no page to ask in: the field is on the card.
+		_code_field = LineEdit.new()
+		_code_field.placeholder_text = "XXXX-XXXX-XXXX"
+		_code_field.custom_minimum_size = Vector2(200, 40)
+		_code_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_code_field.add_theme_stylebox_override("normal", UiKit.box(Art.PAPER_SUNK, Art.LINE_STRONG, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 0, 12, 0)))
+		_code_field.add_theme_stylebox_override("focus", UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 0, 12, 0)))
+		_code_field.add_theme_font_override("font", Art.display_font(900))
+		_code_field.add_theme_font_size_override("font_size", 16)
+		_code_field.add_theme_color_override("font_color", Art.INK)
+		_code_field.add_theme_color_override("font_placeholder_color", Art.LINE_STRONG)
+		_code_field.add_theme_color_override("caret_color", Art.INK)
+		_code_field.text_submitted.connect(_redeem_code)
+		var field_row := _save_buttons([_save_button("找回", func() -> void: _redeem_code(_code_field.text))])
+		field_row.add_child(_code_field)
+		field_row.move_child(_code_field, 0)
+		redeem_column.add_child(field_row)
+
+	if status == Cloud.Status.DISABLED:
+		return
+	if not _confirm_delete:
+		body.add_child(_save_buttons([_save_button("删除云存档", func() -> void:
+			_confirm_delete = true
+			_open_collection()
+			# The question goes where the button was, at the bottom: show all of it.
+			_scroll_after_layout(_collection_scroll, 1 << 20))]))
+		return
+	var confirm := UiKit.panel(UiKit.box(Art.PINK_LIGHT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
+	var confirm_column := VBoxContainer.new()
+	confirm_column.add_theme_constant_override("separation", 10)
+	confirm.add_child(confirm_column)
+	var warning := UiKit.label(tr("删除后，云端的存档和存档码都会作废，这台设备上的进度保留。确定吗？"), 13, "strong", Art.BOSS_RED)
+	warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	confirm_column.add_child(warning)
+	confirm_column.add_child(_save_buttons([_save_button("确定删除", _delete_cloud_save), _save_button("取消", func() -> void:
+		_confirm_delete = false
+		_open_collection())]))
+	body.add_child(confirm)
+
+
+## Scrolls once the new list has been laid out: before that it has no height to scroll into, and
+## wrapped text settles over a few frames, so it's set again on each of them.
+func _scroll_after_layout(scroll: ScrollContainer, scrolled_to: int) -> void:
+	for i in 4:
+		await get_tree().process_frame
+		if not is_instance_valid(scroll):
+			return
+		scroll.scroll_vertical = scrolled_to
+
+
+func _save_button(text: String, action: Callable) -> Button:
+	var button := UiKit.secondary_button(text, action, 40.0)
+	button.disabled = _save_busy
+	return button
+
+
+func _save_buttons(buttons: Array) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	for button: Button in buttons:
+		row.add_child(button)
+	return row
+
+
+## Status changes, and progress another device added (the counts on the tabs, the title screen's
+## map lock).
+func _on_cloud_changed(progress_merged: bool) -> void:
+	if progress_merged and game.state == Game.State.TITLE:
+		_show_title()
+	if _collection_open:
+		_open_collection()
+
+
+## Runs one of the 存档 view's actions (a Cloud coroutine) with the view's buttons waiting, and
+## hands back what it returned.
+func _save_action(action: Callable) -> Variant:
+	_save_busy = true
+	_open_collection()
+	var result: Variant = await action.call()
+	_save_busy = false
+	return result
+
+
+func _set_save_note(text: String, ok: bool) -> void:
+	_save_note = text
+	_save_note_ok = ok
+	if _collection_open:
+		_open_collection()
+
+
+func _make_code() -> void:
+	if _code_requested or _save_busy:
+		return
+	_code_requested = true
+	var made: String = await _save_action(Cloud.shared().ensure_code)
+	if made.is_empty():
+		_set_save_note(tr("没连上云端，稍后再试"), false)
+	elif _collection_open:
+		_open_collection()
+
+
+## On the web the page shows the code in a field of its own with a copy button: copying needs the
+## tap itself, which the game only sees a frame later; and a long press on the field still copies
+## where the browser won't (WeChat's).
+func _copy_code() -> void:
+	var shown := Cloud.format_code(Cloud.shared().code)
+	if OS.has_feature("web"):
+		var page := JavaScriptBridge.get_interface("survivorsCode")
+		if page != null:
+			page.show(shown, tr("存档码"), tr("记在备忘录里，或者截个图。换设备时输入它就能找回进度"), tr("复制"), tr("已复制"), tr("长按上面的码就能复制"), tr("关闭"))
+			return
+	DisplayServer.clipboard_set(shown)
+	_set_save_note(tr("已复制存档码"), true)
+
+
+## The page asks for the code in a field of its own: the game's text fields don't bring up a
+## phone's keyboard on the web.
+func _ask_code() -> void:
+	var page := JavaScriptBridge.get_interface("survivorsCode")
+	if page == null:
+		return
+	_code_callback = JavaScriptBridge.create_callback(func(args: Array) -> void: _redeem_code(str(args[0])))
+	page.ask(tr("输入存档码"), tr("另一台设备上「收藏 → 存档」里的 12 位码"), "XXXX-XXXX-XXXX", tr("找回"), tr("取消"), _code_callback)
+
+
+func _redeem_code(text: String) -> void:
+	if _save_busy:
+		return
+	var result: Cloud.Redeem = await _save_action(Cloud.shared().redeem.bind(text))
+	_set_save_note(tr(REDEEM_NOTES[result]), result == Cloud.Redeem.OK)
+
+
+func _delete_cloud_save() -> void:
+	_confirm_delete = false
+	var deleted: bool = await _save_action(Cloud.shared().delete_account)
+	_set_save_note(tr("云存档已删除，这台设备上的进度还在") if deleted else tr("没连上云端，稍后再试"), deleted)
 
 
 ## A line of explanation on a soft blue panel at the top of a tab.

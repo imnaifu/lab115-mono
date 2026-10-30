@@ -16,7 +16,9 @@ extends RefCounted
 ##   first run `page_ms`, how long after the page opened it started; from .19, `stamps` and
 ##   `achievements`, how many landmarks this device has checked in at and achievements earned
 ##   (局外成长: the stamps' bonuses make a player stronger, so compare runs with the same count);
-##   from .20 both events carry `map` (sv 硅谷, bj 北京).
+##   from .20 both events carry `map` (sv 硅谷, bj 北京); from .28, `cloud`, how the cloud save
+##   stands on this device (Cloud.STATUS_NAMES: off / connecting / synced / offline / disabled),
+##   to see whether it gets through in-app browsers. The cloud account itself never goes out.
 ## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
@@ -40,7 +42,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.27"
+const VERSION := "2026-10-28.28"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -120,6 +122,7 @@ func start() -> void:
 		"from": _link_source(),
 		"stamps": Progress.stamp_ids().size(),
 		"achievements": Progress.achievement_ids().size(),
+		"cloud": Cloud.status_name(),
 	}
 	if _runs_on_page == 1:
 		data["page_ms"] = _page_ms()

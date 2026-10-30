@@ -134,6 +134,7 @@ func _ready() -> void:
 	Engine.time_scale = 1.0
 	Lang.setup()
 	Tilt.setup()
+	Cloud.setup()
 	_star_hint_done = Settings.get_value("star_hint_shown", false)
 	runs_before = Settings.get_value("runs_played", 0)
 	rng.randomize()

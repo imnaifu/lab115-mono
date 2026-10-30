@@ -204,6 +204,93 @@ services:
       # nginx listens on 80 inside the container
       - traefik.http.services.survivors.loadbalancer.server.port=80
 
+  # The game's backend at nakama.lab115.com: Nakama (open-source game server, Heroic Labs) keeps
+  # each player's 云存档 — an anonymous account per device, a 存档码 to bring it to another — and
+  # is where the App's sign-ins and purchases will go (apps/survivors/game/scripts/cloud.gd,
+  # apps/survivors/README.md). The game talks to it straight from the browser: Nakama answers
+  # any origin (CORS) and the session is a bearer token, not a cookie.
+  nakama:
+    # Pinned, like umami: starting a newer version migrates the database, which should come with
+    # a version bump here rather than by surprise.
+    image: heroiclabs/nakama:3.41.0
+    restart: unless-stopped
+    depends_on:
+      nakama-db:
+        condition: service_healthy
+    environment:
+      # The one secret (`openssl rand -hex 24`: hex, so it fits a database address as is).
+      - NAKAMA_SECRET=${NAKAMA_SECRET:-}
+    # Nakama takes its settings as flags. `$$` leaves each `$` to the container's shell, so they
+    # are worked out from the secret when it starts: it is the database's and the admin console's
+    # password, and each signing key (players' sessions and refresh tokens, server-to-server calls,
+    # console logins) is a hash of it with what the key is for, so they all differ and nobody has
+    # to keep them. `:?` stops it there, loudly, when the secret is missing, instead of running
+    # with Nakama's documented defaults, with which anyone could sign in as any player. The server
+    # key ships in the game (Cloud.SERVER_KEY) and is no secret. A session lasts two hours; a
+    # device signs in again with its id whenever it needs a new one.
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        : "$${NAKAMA_SECRET:?}"
+        key() { printf '%s' "$${NAKAMA_SECRET}:$$1" | sha256sum | cut -d ' ' -f 1; }
+        database="nakama:$${NAKAMA_SECRET}@nakama-db:5432/nakama"
+        /nakama/nakama migrate up --database.address "$$database"
+        exec /nakama/nakama --name nakama1 \
+          --database.address "$$database" \
+          --logger.level INFO \
+          --socket.server_key survivors-lab115 \
+          --session.token_expiry_sec 7200 \
+          --session.encryption_key "$$(key session)" \
+          --session.refresh_encryption_key "$$(key refresh)" \
+          --runtime.http_key "$$(key http)" \
+          --console.username chopper \
+          --console.password "$${NAKAMA_SECRET}" \
+          --console.signing_key "$$(key console)"
+    healthcheck:
+      test: ["CMD", "/nakama/nakama", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # The admin console (7351) stays off the internet: only the server itself reaches it, through
+    # `ssh -L 7351:127.0.0.1:7351 mydev` and then http://127.0.0.1:7351.
+    ports:
+      - "127.0.0.1:7351:7351"
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.nakama-http.entryPoints=http
+      - traefik.http.routers.nakama-http.rule=Host(`nakama.lab115.com`)
+      - traefik.http.routers.nakama-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.nakama-https.entryPoints=https
+      - traefik.http.routers.nakama-https.rule=Host(`nakama.lab115.com`)
+      - traefik.http.routers.nakama-https.tls=true
+      - traefik.http.routers.nakama-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.nakama-https.middlewares=gzip
+      # The game's API (HTTP and WebSocket); 7351 is the console, above
+      - traefik.http.services.nakama.loadbalancer.server.port=7350
+
+  nakama-db:
+    # Its own database rather than a second one in umami-db: either can then be upgraded, backed
+    # up or dropped alone. No ports and no Traefik labels; only nakama talks to it.
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=nakama
+      - POSTGRES_USER=nakama
+      # Empty, the postgres image refuses to initialise: the loud failure wanted, as with umami-db.
+      - POSTGRES_PASSWORD=${NAKAMA_SECRET:-}
+    volumes:
+      - ./data/nakama-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nakama -d nakama"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # Simulation Lab (apps/simulation-lab): the interactive preview of the simulation videos, a
   # static Vite build behind nginx with the published narration clips. Rendering stays local.
   video:

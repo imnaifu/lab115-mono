@@ -28,9 +28,11 @@ extends SceneTree
 ## to look at the evolutions), --map=sv|bj (play that map, locked or not), --stamps=N|all (start
 ## having checked in at the first N of the map's landmarks, or all of them), --fixed-bosses (the
 ## boss schedule as written, without .21's shuffles, jitter, extra moves and affixes),
-## --collection=0|1 (with --shots, also screenshot the title's 打卡 · 成就 page on
-## that tab), --luck=N (start with that much luck, to see rarer cards and better year-end bonuses).
-## Progress (打卡, 成就) is kept in memory only: a bot run never touches the save.
+## --collection=0|1|2|3 (with --shots, also screenshot the title's 收藏 page on that tab; 3 is
+## the 存档 view), --luck=N (start with that much luck, to see rarer cards and better year-end
+## bonuses), --cloud=local|<url> (connect the cloud save to that Nakama server, as the web build
+## does, to look at the 存档 view synced and with a 存档码). Progress (打卡, 成就) is kept in
+## memory only, and so is the cloud save's device id: a bot run never touches the save.
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -142,6 +144,8 @@ func _initialize() -> void:
 			_collection_tab = int(value)
 		elif arg.begins_with("--luck="):
 			_luck = float(value)
+		elif arg.begins_with("--cloud="):
+			Cloud.server_override = Cloud.LOCAL if value == "local" else value
 		elif arg.begins_with("--teleport="):
 			_teleport = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 		elif arg.begins_with("--window="):
@@ -182,6 +186,13 @@ func _process(_delta: float) -> bool:
 						_game.hud._open_collection(_collection_tab)
 					_collection_frames += 1
 					if _collection_frames < OVERLAY_SETTLE_FRAMES:
+						return false
+					# The 存档 view waits for the server (connecting, then making a 存档码), up to
+					# about 10 seconds.
+					var cloud := Cloud.shared()
+					if _collection_tab == Hud.SAVE_TAB and cloud != null and _collection_frames < 600 \
+							and (cloud.status == Cloud.Status.CONNECTING or _game.hud._save_busy \
+							or (cloud.status == Cloud.Status.SYNCED and cloud.code.is_empty())):
 						return false
 					_save_shot("collection")
 					_game.hud._collection_open = false
