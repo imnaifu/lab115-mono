@@ -8,7 +8,8 @@ extends Weapon
 ##
 ## The data scientist's own weapon, so it levels up along two directions (Upgrades.BRANCHES):
 ## 更多网格线 adds one more line each way, 更粗更久 makes every line wider, longer-lasting and
-## harder-hitting.
+## harder-hitting. A new set always replaces the last, so lasting longer only fills the gap
+## until the next set (from 2 levels of 更粗更久 the lines are always up) and never stacks.
 
 ## 2.0, down from 2.4, so the lines are up three quarters of the time: data scientist bots ended
 ## their first three minutes anywhere from level 5 to 11, one at a third of its health.
@@ -67,8 +68,10 @@ func cooldown() -> float:
 
 func fire() -> bool:
 	var stats := branch_stats(branch_a, branch_b)
-	if evolved:
-		_guides.clear()
+	# One set at a time (.32): with 更粗更久 a set outlives the cooldown, and overlapping sets all
+	# ticked on whatever stood next to the player, so nothing got close (bots as the data
+	# scientist lasted the full 10 minutes 28% of the time, 8% with this).
+	_guides.clear()
 	for i in stats["count"]:
 		for horizontal in [true, false]:
 			var guide := Guide.new()
