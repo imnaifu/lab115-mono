@@ -43,6 +43,8 @@ const BOSS_MOVE_HINTS := {
 	"countdown": "头顶倒计时归零前没打死，它就暴走",
 	"clones": "半透明的是幻觉分身，一碰就碎",
 	"aura": "金圈里的小怪减伤一半，先打中间那个",
+	"pull": "箭头往里吸的时候逆着走，别被拖到它身边",
+	"squeeze": "脚下的红圈收紧之前走出去",
 }
 ## What each boss affix (Enemy.AFFIXES) does, for the 图鉴.
 const AFFIX_NOTES := {

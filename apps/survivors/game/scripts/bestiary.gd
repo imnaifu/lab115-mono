@@ -10,8 +10,8 @@ extends RefCounted
 const GROUPS := [
 	{"name": "小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server", "commuter"]},
 	{"name": "硅谷 boss", "ids": ["techdebt_elite", "server_elite", "layoff", "deadline", "ai", "investor",
-		"spaghetti", "scope_change", "incident", "pie_boss"]},
-	{"name": "北京 boss", "ids": ["weekly_report", "midlife", "fubao", "juanwang", "baimo", "inspection", "ppt"]},
+		"spaghetti", "scope_change", "incident", "pie_boss", "rto"]},
+	{"name": "北京 boss", "ids": ["weekly_report", "midlife", "fubao", "juanwang", "baimo", "inspection", "ppt", "elimination"]},
 ]
 ## A line about each.
 const NOTES := {
@@ -40,6 +40,8 @@ const NOTES := {
 	"baimo": "每周都有一个新模型发布",
 	"inspection": "一回头，他就站在你身后",
 	"ppt": "做 PPT 的时间比干活还多",
+	"rto": "周一到周五都得回工位刷卡",
+	"elimination": "每次考核都得有人走",
 }
 
 
@@ -76,7 +78,7 @@ static func maps_of(id: String) -> PackedStringArray:
 	for map_id: String in Maps.ORDER:
 		var map := Maps.script_of(map_id)
 		var swaps: Dictionary = map.BOSS_SWAPS
-		var own: bool = swaps.values().has(id)
+		var own: bool = swaps.values().has(id) or map.GUEST_BOSS["type"] == id
 		var standard: bool = Spawner.EVENTS.any(func(event: Dictionary) -> bool: return event["type"] == id)
 		if own or (standard and not swaps.has(id)):
 			names.append(TranslationServer.translate(map.NAME))

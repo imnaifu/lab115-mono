@@ -27,6 +27,10 @@ const RANKS := ["L3", "L4", "L5", "L6", "L7", "L8"]
 const BOSS_SWAPS := {}
 const RING_SWAPS := {}
 const FINALE_LINE := ""
+## The map's own (.26): a guest boss with a move no other boss has, on top of the schedule, and an
+## event (MapEvents): 硅谷's are RTO 返岗令 (it pulls you in) and 湾区地震 (debris crashing down).
+const GUEST_BOSS := {"type": "rto", "at": 330.0}
+const MAP_EVENT := {"id": "quake", "at": 270.0, "seconds": 20.0, "text": "湾区地震！小心头顶掉下来的碎块"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"
 ## The named part of the world for the minimap, in world pixels: from the Pacific to across the

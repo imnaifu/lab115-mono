@@ -75,6 +75,9 @@ var _napping := false
 var _low_hp_clock := 0.0
 ## A push from traffic, added to the walk and dying away; no damage comes with it.
 var _shove := Vector2.ZERO
+## Carried along this frame by something outside the player (a boss's pull, the sandstorm's wind),
+## pixels per second; used up by the next move.
+var _drift := Vector2.ZERO
 var _shove_cooldown := 0.0
 var _hurt_left := 0.0
 var _tilt_left := 0.0
@@ -117,7 +120,8 @@ func _process(delta: float) -> void:
 		var keys := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 		direction = (keys + touch_direction + Tilt.direction()).limit_length(1.0)
 	velocity = direction * move_speed
-	position = game.city.resolve(position + (velocity + _shove) * delta, BODY_RADIUS)
+	position = game.city.resolve(position + (velocity + _shove + _drift) * delta, BODY_RADIUS)
+	_drift = Vector2.ZERO
 	_shove = _shove.lerp(Vector2.ZERO, minf(1.0, SHOVE_DECAY * delta))
 	_shove_cooldown = maxf(0.0, _shove_cooldown - delta)
 
@@ -249,6 +253,12 @@ func take_damage(amount: float) -> void:
 	game.perks.on_hurt(lost)
 	if hp <= 0.0:
 		died.emit()
+
+
+## Carried along at `carried` (pixels per second) for this frame, on top of walking: a boss's pull,
+## the sandstorm's wind. Several add up.
+func drift(carried: Vector2) -> void:
+	_drift += carried
 
 
 ## Knocked aside by a car or a train: pushed, never hurt. Whether it took (not within

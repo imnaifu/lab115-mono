@@ -20,6 +20,10 @@ extends Node2D
 ##   any hit, hit half as hard, give nothing, and fade (or go with the original).
 ## - "aura": a gold ring round it in which ordinary enemies take half damage (Game); killed, it
 ##   spills extra stars.
+## - "pull" (硅谷's RTO 返岗令, .26): stops, rings itself with arrows pointing in, then for a while
+##   drags the player and the crowd round it towards itself; walking away still gets away.
+## - "squeeze" (北京's 末位淘汰, .26): rings the spot the player stands on and closes the ring over a
+##   couple of seconds; still inside when it closes, the player is hit.
 ## Every wind-up is drawn (lane, landing circle, bracing ring, filling circle, flicker) so a move
 ## can always be dodged; the HUD says how the first time each comes up in a run.
 ##
@@ -44,7 +48,7 @@ const HIT_SQUASH_FULL_PUSH := 140.0
 const SPIN_SECONDS := 0.45
 const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura"]
 ## The moves that work on a timer; countdown and aura are always on.
-const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones"]
+const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones", "pull", "squeeze"]
 ## The gap between one boss's moves is its move's own, times a random factor this far either way.
 const MOVE_JITTER := 0.25
 ## Affixes a boss can carry, by id, with what the HUD calls them: 996 (faster, moves more often),
@@ -98,6 +102,17 @@ const QUAKE_DAMAGE := 8.0
 ## How far the quake shoves the player, and how hard it throws the crowd inside outward.
 const QUAKE_SHOVE := 40.0
 const QUAKE_CROWD_PUSH := 220.0
+const PULL_EVERY := 5.0
+const PULL_WINDUP := 0.6
+const PULL_SECONDS := 1.5
+const PULL_RADIUS := 150.0
+## Towards the boss, pixels per second: less than the player walks (56-71), so walking away wins.
+const PULL_PLAYER_SPEED := 40.0
+const PULL_CROWD_SPEED := 60.0
+const SQUEEZE_EVERY := 5.5
+const SQUEEZE_SECONDS := 2.0
+const SQUEEZE_RADIUS := 64.0
+const SQUEEZE_DAMAGE := 20.0
 const COUNTDOWN_SECONDS := 25.0
 ## Speed at the end of the countdown, then berserk speed and damage, as multiples of its own.
 ## Berserk it is still slower than the player (62), so kiting gets away.
@@ -174,6 +189,9 @@ var _charge_direction := Vector2.ZERO
 var _summon_type := SUMMON_TYPE
 var _summon_count := SUMMON_COUNT
 var _blink_target := Vector2.ZERO
+var _pull_left := 0.0
+## Where the closing ring of a squeeze is, in the world (it stays put while the player moves).
+var _squeeze_at := Vector2.ZERO
 ## Turns each volley half a gap, so standing in a gap only works once.
 var _volley_turn := 0.0
 var _countdown_left := 0.0
@@ -292,6 +310,11 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 	if _charge_left > 0.0:
 		_charge_left -= delta
 		return _charge_direction * CHARGE_SPEED
+	if _pull_left > 0.0:
+		_pull_left -= delta
+		_drag_in(delta)
+		queue_redraw()
+		return Vector2.ZERO
 	if _windup_left > 0.0:
 		_windup_left -= delta
 		# Redrawn every frame: the boss can still be shoved while it winds up, and the landing
@@ -332,7 +355,27 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 			if game.clones_of(self) < MAX_CLONES:
 				_windup_left = CLONES_WINDUP
 				return Vector2.ZERO
+		"pull":
+			_windup_left = PULL_WINDUP
+			return Vector2.ZERO
+		"squeeze":
+			_squeeze_at = game.player.position
+			_windup_left = SQUEEZE_SECONDS
+			return Vector2.ZERO
 	return velocity
+
+
+## A pull under way: the player and the crowd within PULL_RADIUS drift towards it this frame.
+## Bosses aren't dragged, nor the crowd right on top of it.
+func _drag_in(delta: float) -> void:
+	var player := game.player
+	var to_me := position - player.position
+	if to_me.length() < PULL_RADIUS and to_me.length() > radius:
+		player.drift(to_me.normalized() * PULL_PLAYER_SPEED)
+	for enemy in game.query_enemies(position, PULL_RADIUS):
+		var offset := position - enemy.position
+		if enemy != self and not enemy.is_elite and offset.length() > radius + enemy.radius:
+			enemy.position += offset.normalized() * PULL_CROWD_SPEED * delta
 
 
 ## Tells the HUD about an always-on move once, when the boss first acts.
@@ -509,6 +552,10 @@ func _move_every(move: String) -> float:
 			return QUAKE_EVERY
 		"clones":
 			return CLONES_EVERY
+		"pull":
+			return PULL_EVERY
+		"squeeze":
+			return SQUEEZE_EVERY
 	return SUMMON_EVERY
 
 
@@ -530,6 +577,12 @@ func _finish_windup() -> void:
 			_quake()
 		"clones":
 			game.spawn_clone(self)
+		"pull":
+			_pull_left = PULL_SECONDS
+		"squeeze":
+			Effects.ring(game, _squeeze_at, SQUEEZE_RADIUS, Art.BOSS_RED)
+			if game.player.position.distance_to(_squeeze_at) <= SQUEEZE_RADIUS:
+				game.hurt_player(_hits(SQUEEZE_DAMAGE), type_name, "squeeze")
 	queue_redraw()
 
 
@@ -636,8 +689,18 @@ func _draw() -> void:
 			var text := "!" if berserk else str(ceili(maxf(_countdown_left, 0.0)))
 			var size_bump := 2 if urgent and fmod(_phase, 6.0) < 3.0 else 0
 			_draw_mark(text, Vector2(0.0, -_size / 2.0 - 12.0), 16 + size_bump, Art.BOSS_RED if urgent else Art.INK)
+	# The pull's ring of arrows, faint while it braces, solid while it drags.
+	if _move == "pull" and (_pull_left > 0.0 or _windup_left > 0.0):
+		_draw_pull(_pull_left > 0.0)
 	if _windup_left > 0.0:
 		match _move:
+			"squeeze":
+				# The ring round where the player stood, and inside it the one closing in: it
+				# goes off when that reaches the middle.
+				var spot := _squeeze_at - position
+				draw_circle(spot, SQUEEZE_RADIUS, Color(Art.BOSS_RED, 0.12))
+				draw_arc(spot, SQUEEZE_RADIUS, 0.0, TAU, 48, Color(Art.BOSS_RED, 0.8), 2.0, true)
+				draw_arc(spot, SQUEEZE_RADIUS * _windup_left / SQUEEZE_SECONDS, 0.0, TAU, 48, Color(Art.BOSS_RED, 0.9), 3.0, true)
 			"charge":
 				# The lane the charge will cover, so the player sees where not to stand.
 				draw_set_transform(Vector2.ZERO, _charge_direction.angle())
@@ -672,6 +735,20 @@ func _draw() -> void:
 	draw_rect(bar.grow(1.0), Art.INK)
 	draw_rect(bar, Color.WHITE)
 	draw_rect(Rect2(bar.position, Vector2(width * maxf(0.0, hp) / max_hp, bar.size.y)), Art.RED)
+
+
+## Arrows round it pointing in, creeping inwards, inside a ring the size of the pull.
+func _draw_pull(dragging: bool) -> void:
+	var alpha := 0.85 if dragging else 0.4
+	draw_arc(Vector2.ZERO, PULL_RADIUS, 0.0, TAU, 64, Color(Art.LINK, alpha * 0.6), 2.0, true)
+	var creep := fmod(_phase * 0.6, 1.0)
+	for i in 10:
+		var heading := Vector2.from_angle(TAU * i / 10.0 + 0.3)
+		for step in 2:
+			var reach := PULL_RADIUS * (0.9 - 0.35 * fmod(creep + step * 0.5, 1.0))
+			var tip := heading * (reach - 10.0)
+			var side := heading.orthogonal() * 6.0
+			draw_polyline(PackedVector2Array([heading * reach + side, tip, heading * reach - side]), Color(Art.LINK, alpha), 2.5, true)
 
 
 ## A short line of text with a white edge, centred on `at` (the countdown, a clone's mark).

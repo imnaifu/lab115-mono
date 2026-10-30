@@ -122,6 +122,8 @@ var decoys: Array[Vector2] = []
 ## What this run adds to 局外成长: landmarks checked in at, achievements earned.
 var stamps: Stamps
 var achievements: Achievements
+## The map's own event while it runs (湾区地震, 沙尘暴; the Spawner starts it).
+var map_events: MapEvents
 
 
 func _ready() -> void:
@@ -159,6 +161,9 @@ func _ready() -> void:
 	entity_layer.y_sort_enabled = true
 	effect_layer = _add_layer(10)
 	number_layer = _add_layer(20)
+	map_events = MapEvents.new()
+	map_events.game = self
+	add_child(map_events)
 	entity_layer.add_child(player)
 	add_child(city)
 	var boss_pointers := BossPointers.new()
@@ -426,6 +431,11 @@ func random_direction() -> Vector2:
 	if player.velocity.length_squared() > 1.0 and rng.randf() < 0.4:
 		return Vector2.from_angle(player.velocity.angle() + rng.randf_range(-0.8, 0.8))
 	return Vector2.from_angle(rng.randf() * TAU)
+
+
+## The map's event coming on (the Spawner, at the map's MAP_EVENT time): it runs, and says so.
+func start_map_event(event: Dictionary) -> void:
+	map_events.start(event["id"], event["seconds"])
 
 
 func announce(text: String) -> void:

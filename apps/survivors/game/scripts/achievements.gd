@@ -20,7 +20,7 @@ const LIST := [
 	{"id": "ten_thousand", "art": "skull", "group": "战斗", "name": "万人斩", "text": "累计打死 10000 个怪", "goal": 10000},
 	{"id": "first_boss", "art": "moneybag", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
 	{"id": "all_bosses", "art": "ai_boss", "group": "战斗", "name": "boss 克星", "text": "打掉过 10 种 boss", "goal": 10},
-	{"id": "bestiary_all", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 25},
+	{"id": "bestiary_all", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 27},
 	{"id": "first_evolve", "art": "star_gold", "group": "战斗", "name": "技术升级", "text": "第一次进化武器"},
 	{"id": "full_kit", "art": "keyboard", "group": "战斗", "name": "全栈", "text": "一局带满 6 把武器"},
 	{"id": "win_coder", "art": "coder", "group": "职业", "name": "程序员敲钟", "text": "用程序员通关", "job": "coder"},

@@ -110,6 +110,14 @@ const ENEMY_TYPES := {
 	# a little quicker than bugs and as frail.
 	"commuter": {"name": "早高峰打工人", "art": "commuter", "size": 24.0, "color": Color("9aa5b8"),
 		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+	# Each map's guest boss (the map's GUEST_BOSS, .26), on top of the schedule at 5:30, with a move
+	# of its own (Enemy "pull", "squeeze"); built and as strong as the 6:00 boss.
+	"rto": {"name": "RTO 返岗令", "art": "rto", "size": 58.0, "color": Color("5b9cff"),
+		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "pull", "arrival": "特邀嘉宾：RTO 返岗令！"},
+	"elimination": {"name": "末位淘汰", "art": "elimination", "size": 58.0, "color": Color("d64545"),
+		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "squeeze", "arrival": "特邀嘉宾：末位淘汰！"},
 }
 ## A boss due while this many are still out waits until one is down. Players who keep up
 ## never see the wait; it stops a player who has fallen behind from being buried under bosses
@@ -251,6 +259,7 @@ func _plan_events() -> Array[Dictionary]:
 	for event: Dictionary in EVENTS:
 		events.append(event.duplicate(true))
 	_localize(events)
+	_add_map_own(events)
 	if not shake_bosses:
 		return events
 	var rng := _game.rng
@@ -286,6 +295,21 @@ func _plan_events() -> Array[Dictionary]:
 			_draw_rolls(event, ROLLS[-1])
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
 	return events
+
+
+## The map's guest boss and its event (the map's GUEST_BOSS, MAP_EVENT), off the tiers that get
+## shuffled; the guest draws its extras like the middle tier's bosses (_plan_events).
+func _add_map_own(events: Array[Dictionary]) -> void:
+	var guest: Dictionary = Maps.current.GUEST_BOSS
+	var type_id: String = guest["type"]
+	var boss := {"at": guest["at"], "kind": "elite", "type": type_id, "count": 1, "text": ENEMY_TYPES[type_id]["arrival"], "guest": true}
+	if shake_bosses:
+		_draw_rolls(boss, ROLLS[1])
+	events.append(boss)
+	var map_event: Dictionary = Maps.current.MAP_EVENT
+	events.append({"at": map_event["at"], "kind": "map_event", "id": map_event["id"], "seconds": map_event["seconds"],
+		"count": 0, "text": map_event["text"]})
+	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
 
 
 ## The map's own bosses and rings in place of Silicon Valley's (the map's BOSS_SWAPS, RING_SWAPS,
@@ -366,6 +390,8 @@ func _bosses_out() -> int:
 
 
 func _run_event(event: Dictionary) -> void:
+	if event["kind"] == "map_event":
+		_game.start_map_event(event)
 	var count: int = event["count"]
 	for i in count:
 		if event["kind"] == "ring":

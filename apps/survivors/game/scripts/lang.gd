@@ -434,6 +434,17 @@ const EN := {
 	"不到 1% 的玩家达成": "Under 1% of players",
 	"%d%% 的玩家达成": "%d%% of players",
 	"稀有 · ": "Rare · ",
+	# Each map's guest boss and event (.26)
+	"RTO 返岗令": "Return-to-Office Order",
+	"末位淘汰": "Bottom-Rank Cut",
+	"特邀嘉宾：RTO 返岗令！": "Special guest: the Return-to-Office Order!",
+	"特邀嘉宾：末位淘汰！": "Special guest: the Bottom-Rank Cut!",
+	"湾区地震！小心头顶掉下来的碎块": "Bay Area earthquake! Watch for falling debris",
+	"沙尘暴来了！风往东刮，站稳了": "Sandstorm! The wind blows east, hold steady",
+	"箭头往里吸的时候逆着走，别被拖到它身边": "When the arrows pull in, walk against them",
+	"脚下的红圈收紧之前走出去": "Get out of the red ring before it closes",
+	"周一到周五都得回工位刷卡": "Badge in at your desk, Monday to Friday",
+	"每次考核都得有人走": "Every review, someone has to go",
 	# A car or a train bumping into something (Traffic)
 	"砰！": "Bam!",
 	# 局外成长: landmarks to check in at (打卡, BayArea.STAMPS) and achievements (Achievements)

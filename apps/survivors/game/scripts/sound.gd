@@ -93,6 +93,9 @@ const MOVE_SOUNDS := {
 	"clones": "clones",
 	"summon": "summon",
 	"lob": "lob",
+	# The maps' guest bosses (.26) brace like the others before their moves.
+	"pull": "windup",
+	"squeeze": "windup",
 }
 
 static var _instance: Sound

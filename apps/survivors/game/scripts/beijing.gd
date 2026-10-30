@@ -27,6 +27,10 @@ const BOSS_SWAPS := {
 ## The Bug outbreak is 西二旗's rush hour here.
 const RING_SWAPS := {"bug": {"type": "commuter", "text": "西二旗早高峰！"}}
 const FINALE_LINE := "最后的考验：老板画饼 + 百模大战"
+## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 末位淘汰 (a ring closing on
+## you) and 沙尘暴 (a wind blowing everyone east).
+const GUEST_BOSS := {"type": "elimination", "at": 330.0}
+const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "沙尘暴来了！风往东刮，站稳了"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "houchang"
 ## The named part of the world for the minimap, in world pixels.
