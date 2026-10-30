@@ -69,6 +69,11 @@ func point_at() -> void:
 	queue_redraw()
 
 
+## Already flying to the player (a hoarder leaves those alone).
+func attracted() -> bool:
+	return _attracted
+
+
 func attract() -> void:
 	if _attracted:
 		return

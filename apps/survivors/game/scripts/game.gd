@@ -46,6 +46,9 @@ const MAGNET_FROM_LEVEL := 10
 ## for getting through its aura.
 const PULL_OUT_STARS := 8
 const PULL_OUT_STAR_VALUE := 3
+## A hoarder killed spills what it took as stars of about this value, at most this many.
+const HOARD_SPILL_VALUE := 6
+const HOARD_SPILL_MAX := 14
 ## An AI's clone appears this far from the player.
 const CLONE_DISTANCE := 110.0
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how many
@@ -137,6 +140,7 @@ func _ready() -> void:
 	_register_input_actions()
 	# A hit-stop cut short by the scene reloading would leave the game in slow motion.
 	Engine.time_scale = 1.0
+	TestMode.check()
 	Lang.setup()
 	Tilt.setup()
 	Cloud.setup()
@@ -305,6 +309,9 @@ func lob_pie(from: Vector2, to: Vector2, seconds: float, damage: float, thrower:
 ## as what last hurt them (Telemetry's killer), and `how` the way it landed: "contact",
 ## "charge", "bullet" or "pie" (the result screen's cause of death).
 func hurt_player(amount: float, by: String, how: String = "contact") -> void:
+	# 测试模式's invincibility.
+	if TestMode.god:
+		return
 	telemetry.last_hurt_by = by
 	telemetry.last_hurt_how = how
 	var hp_before := player.hp
@@ -483,6 +490,14 @@ func _kill(enemy: Enemy) -> void:
 			for i in PULL_OUT_STARS:
 				_drop_xp(enemy.position + Vector2.from_angle(TAU * i / PULL_OUT_STARS) * 28.0, PULL_OUT_STAR_VALUE)
 			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("death_line", "撤资了！掉了一地经验"))
+		"hoard":
+			# Everything it took, back on the ground in a ring of stars.
+			if enemy.hoarded > 0:
+				var count := clampi(enemy.hoarded / HOARD_SPILL_VALUE, 1, HOARD_SPILL_MAX)
+				var each := ceili(float(enemy.hoarded) / count)
+				for i in count:
+					_drop_xp(enemy.position + Vector2.from_angle(TAU * i / count) * 30.0, each)
+			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("death_line", "攒的经验全吐出来了！"))
 	var data: Dictionary = Spawner.ENEMY_TYPES[enemy.type_name]
 	# Splits regardless of the crowd cap: the pieces are the rest of the boss fight.
 	if data.has("splits_into"):
@@ -717,12 +732,40 @@ func _drop(kind: Pickup.Kind, at: Vector2, value: int) -> Pickup:
 
 
 func _tick_pickups(delta: float) -> void:
+	_hoard(delta)
 	for i in range(pickups.size() - 1, -1, -1):
 		var pickup := pickups[i]
 		if pickup.tick(delta, player):
 			pickups.remove_at(i)
 			_collect(pickup)
 			pickup.queue_free()
+
+
+## Hoarders (Enemy "hoard", 西雅图's 节俭) draw in the stars lying inside their reach, the ones
+## not already flying to the player, and keep what reaches them until they die.
+func _hoard(delta: float) -> void:
+	var hoarders: Array[Enemy] = []
+	for enemy in enemies:
+		if enemy.ability == "hoard" and not enemy.dead:
+			hoarders.append(enemy)
+	if hoarders.is_empty():
+		return
+	var reach_sq := Enemy.HOARD_RADIUS * Enemy.HOARD_RADIUS
+	for i in range(pickups.size() - 1, -1, -1):
+		var pickup := pickups[i]
+		if pickup.kind != Pickup.Kind.XP or pickup.attracted():
+			continue
+		for hoarder in hoarders:
+			var offset := hoarder.position - pickup.position
+			if offset.length_squared() > reach_sq:
+				continue
+			if offset.length() <= hoarder.radius + 6.0:
+				hoarder.hoarded += pickup.value
+				pickups.remove_at(i)
+				pickup.queue_free()
+			else:
+				pickup.position += offset.normalized() * Enemy.HOARD_PULL * delta
+			break
 
 
 func _collect(pickup: Pickup) -> void:
@@ -857,9 +900,12 @@ func set_job(job_id: String) -> void:
 
 ## The title screen's map picker: the city is built from the map, so the scene starts over on it
 ## (behind the title, which stays up).
-func change_map(map_id: String) -> void:
+## Switches to the map `map_id` (the scene is rebuilt for it); `start` goes straight into a run
+## there, as the world map's 出发 does, instead of back to the title screen.
+func change_map(map_id: String, start: bool = false) -> void:
 	Settings.set_value("map", map_id)
-	skip_title = false
+	skip_title = start
+	get_tree().paused = false
 	get_tree().reload_current_scene()
 
 
@@ -887,11 +933,46 @@ func _on_run_started() -> void:
 	# Every landmark checked in at in earlier runs: after the job's own build, before the run's
 	# data notes the player's numbers.
 	Stamps.apply_all(player)
-	telemetry.start()
+	# A test run (TestMode) isn't reported: it would skew the live numbers.
+	if not TestMode.on:
+		telemetry.start()
+	elif TestMode.start_minute > 0:
+		_fast_forward(TestMode.start_minute)
 	Sound.music("battle")
 	Tilt.calibrate()
 	if Tilt.enabled():
 		announce("倾斜手机就能移动，前后以现在的角度为准")
+
+
+## 测试模式: the run as if played up to `minute`: the clock there, the bosses before it skipped,
+## and the level a player who picks up every star would have, each level-up a random card, plus
+## the upgrades those bosses' year-end bonuses would have given.
+func _fast_forward(minute: int) -> void:
+	elapsed = minute * 60.0
+	var bosses := spawner.skip_to(elapsed)
+	var picks := TestMode.level_at(minute) - 1 + roundi(bosses * TestMode.CHEST_UPGRADES)
+	for i in picks:
+		if level < TestMode.level_at(minute):
+			level += 1
+		var choices := upgrades.roll_choices(upgrades.choice_count(), level)
+		if not choices.is_empty():
+			upgrades.apply(choices[rng.randi() % choices.size()])
+	xp = 0
+	player.hp = player.max_hp
+	inventory_changed.emit()
+	announce(tr("测试模式：从 %d:00 开始，职级已升到 %s") % [minute, Maps.rank_of(level)])
+
+
+## 测试模式 (the pause screen's buttons): the map's weather now.
+func test_weather() -> void:
+	var map_event: Dictionary = Maps.current.MAP_EVENT
+	start_map_event(map_event)
+	announce(map_event["text"])
+
+
+## 测试模式: straight to the next level-up.
+func test_level_up() -> void:
+	add_xp(xp_to_next() - xp)
 
 
 func set_paused(value: bool) -> void:

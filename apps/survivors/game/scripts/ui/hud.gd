@@ -45,6 +45,7 @@ const BOSS_MOVE_HINTS := {
 	"aura": "金圈里的小怪减伤一半，先打中间那个",
 	"pull": "箭头往里吸的时候逆着走，别被拖到它身边",
 	"squeeze": "脚下的红圈收紧之前走出去",
+	"hoard": "金圈里的星星会被它吸走，先去捡，打掉它全吐出来",
 }
 ## What each boss affix (Enemy.AFFIXES) does, for the 图鉴.
 const AFFIX_NOTES := {
@@ -108,6 +109,9 @@ var _time_label: Label
 var _center_column: VBoxContainer
 var _next_boss_pill: Control
 var _next_boss_time: Label
+## The map's weather while it lasts (the map's MAP_EVENT, .34): its name, seconds left, what to do.
+var _weather_pill: Control
+var _weather_time: Label
 var _boss_bar: Control
 var _boss_name: Label
 var _boss_more: Label
@@ -164,6 +168,12 @@ var _collection_open := false
 var _collection_tab := 0
 ## The page's scrolling list, whose position a redraw of the same tab keeps.
 var _collection_scroll: ScrollContainer
+## The world map page (from the title screen, .34) and the card for the city picked on it.
+var _world_overlay: Control
+var _world_holder: Control
+var _world_open := false
+var _world_card: Control
+var _world_map: WorldMap
 ## The 云存档 page (from the settings), and its scrolling list.
 var _save_overlay: Control
 var _save_holder: Control
@@ -231,6 +241,8 @@ func _ready() -> void:
 	_add_corner_version(_end_overlay)
 	_collection_overlay = _overlay(Art.PAPER_SOFT)
 	_collection_holder = _full(_collection_overlay)
+	_world_overlay = _overlay(Art.PAPER_SOFT)
+	_world_holder = _full(_world_overlay)
 	# Last, so it opens on top of the title or pause screen it was opened from.
 	_settings_overlay = _overlay(Art.PAPER_SOFT)
 	_settings_holder = _full(_settings_overlay)
@@ -275,6 +287,7 @@ func _process(delta: float) -> void:
 	_time_label.text = _clock_text(game.elapsed)
 	_kills_label.text = str(game.kills)
 	_update_next_boss()
+	_update_weather()
 	_update_boss_bar()
 	# The announcements drop in under whatever the centre column shows right now.
 	_toast.offset_top = _center_column.position.y + _center_column.size.y + 6.0
@@ -317,7 +330,9 @@ func _process(delta: float) -> void:
 		_save_open = false
 	if state != Game.State.TITLE:
 		_collection_open = false
+		_world_open = false
 	_collection_overlay.visible = _collection_open
+	_world_overlay.visible = _world_open
 	_settings_overlay.visible = _settings_open
 	_save_overlay.visible = _save_open
 	if _settings_open and _tilt_hint != null:
@@ -358,6 +373,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if key == KEY_ESCAPE:
 			_collection_open = false
 		return
+	if _world_open:
+		if key == KEY_ESCAPE:
+			_world_open = false
+		return
 	match game.state:
 		Game.State.TITLE:
 			if key == KEY_ENTER or key == KEY_KP_ENTER or key == KEY_SPACE:
@@ -393,8 +412,10 @@ func fit_screen(turned: bool) -> void:
 	else:
 		transform = Transform2D.IDENTITY
 		_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The title has a portrait and a landscape arrangement.
+	# The title has a portrait and a landscape arrangement, and so has the world map.
 	_show_title.call_deferred()
+	if _world_open:
+		_open_world_map.call_deferred()
 
 
 # --- Touch joystick ------------------------------------------------------------------------
@@ -535,6 +556,22 @@ func _build_top_bar() -> void:
 	countdown.add_child(_next_boss_time)
 	_center_column.add_child(_next_boss_pill)
 
+	# 湾区地震 12 秒 · 躲开地上的红圈, for as long as the weather lasts (the user wanted it said on
+	# screen, not only in the toast as it starts).
+	_weather_pill = UiKit.panel(UiKit.box(Art.SKY_LIGHT, Art.LINK, UiKit.OUTLINE, UiKit.PILL, Vector4(8, 1, 8, 2)))
+	_weather_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_weather_pill.visible = false
+	var weather_row := HBoxContainer.new()
+	weather_row.add_theme_constant_override("separation", 4)
+	weather_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_weather_pill.add_child(weather_row)
+	var map_event: Dictionary = Maps.current.MAP_EVENT
+	weather_row.add_child(UiKit.label(map_event.get("name", ""), 10, "strong", Art.LINK))
+	_weather_time = UiKit.label("", 10, "display", Art.LINK)
+	weather_row.add_child(_weather_time)
+	weather_row.add_child(UiKit.label("· " + tr(map_event.get("hint", "")), 10, "body", Art.INK_MUTED))
+	_center_column.add_child(_weather_pill)
+
 	# The boss out the longest: name, health, how many more are out.
 	_boss_bar = UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.PILL, Vector4(8, 3, 8, 3)))
 	_boss_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -604,6 +641,13 @@ func _progress(bar_size: Vector2, track: Color, fill: Color) -> ProgressBar:
 	bar.add_theme_stylebox_override("background", UiKit.box(track, Color.TRANSPARENT, 0, UiKit.PILL))
 	bar.add_theme_stylebox_override("fill", UiKit.box(fill, Color.TRANSPARENT, 0, UiKit.PILL))
 	return bar
+
+
+func _update_weather() -> void:
+	var seconds_left := game.map_events.weather_left()
+	_weather_pill.visible = seconds_left > 0.0
+	if _weather_pill.visible:
+		_weather_time.text = tr("%d 秒") % ceili(seconds_left)
 
 
 func _update_next_boss() -> void:
@@ -879,7 +923,10 @@ func _show_title() -> void:
 	column.add_child(UiKit.gap(16 if portrait else 8))
 	column.add_child(_job_picker(portrait))
 	column.add_child(UiKit.gap(14 if portrait else 8))
-	column.add_child(_map_picker())
+	column.add_child(_map_button(portrait))
+	if TestMode.on:
+		column.add_child(UiKit.gap(8 if portrait else 4))
+		column.add_child(_test_row())
 	column.add_child(UiKit.gap(20 if portrait else 10))
 
 	var start := UiKit.primary_button("开始搬砖", game.start_run, 56.0 if portrait else 48.0, 20)
@@ -930,48 +977,161 @@ func _show_title() -> void:
 	_fit_title()
 
 
-## Which map to play, side by side; a locked one is marked so, with what opens it underneath.
-func _map_picker() -> Control:
-	var names := []
-	var hint := ""
-	for map_id: String in Maps.ORDER:
-		# With its working week, which is how hard it is: 北京 · 996.
-		var map_name := Maps.label_of(map_id)
-		if Maps.unlocked(map_id):
-			names.append(map_name)
-		else:
-			names.append(map_name + tr("（未解锁）"))
-			hint = Maps.unlock_hint(map_id)
-	var holder := VBoxContainer.new()
-	holder.add_theme_constant_override("separation", 4)
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+## The map in use, with its working week (how hard it is: 北京 · 996), on a button that opens the
+## world map to pick another (.34; it was a row of map tabs).
+func _map_button(portrait: bool) -> Control:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(row)
 	var label := UiKit.label("地图", 13, "strong", Art.INK_MUTED)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
-	var picker := UiKit.segmented(names, Maps.ORDER.find(Maps.current_id), _pick_map, Art.PAPER_SUNK, 32.0)
-	picker.custom_minimum_size.x = 240.0
+	var button := UiKit.secondary_button("%s  ›" % Maps.label_of(Maps.current_id), _open_world_map, 36.0, 14)
+	button.icon = Art.texture("world_map")
+	button.add_theme_constant_override("icon_max_width", 28)
+	button.custom_minimum_size.x = 240.0 if portrait else 220.0
+	row.add_child(button)
+	return row
+
+
+## 测试模式 (TestMode, ?debug=1): which minute the run starts at, and invincibility.
+func _test_row() -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var label := UiKit.label("测试", 13, "strong", Art.BOSS_RED)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(label)
+	var minutes := []
+	for minute: int in TestMode.START_MINUTES:
+		minutes.append("%d:00" % minute)
+	var picker := UiKit.segmented(minutes, TestMode.START_MINUTES.find(TestMode.start_minute), func(index: int) -> void:
+		TestMode.start_minute = TestMode.START_MINUTES[index]
+		_show_title.call_deferred(), Art.PAPER_SUNK, 30.0)
+	picker.custom_minimum_size.x = 220.0
 	row.add_child(picker)
-	if hint != "":
-		var hint_label := UiKit.label(hint, 11, "muted")
-		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		holder.add_child(hint_label)
-	return holder
+	row.add_child(UiKit.secondary_button(_god_text(), func() -> void:
+		TestMode.god = not TestMode.god
+		_show_title.call_deferred(), 30.0, 12))
+	return row
 
 
-func _pick_map(index: int) -> void:
-	var map_id: String = Maps.ORDER[index]
-	if map_id == Maps.current_id:
+func _god_text() -> String:
+	return tr("无敌：开") if TestMode.god else tr("无敌：关")
+
+
+## 测试模式's buttons on the pause screen: each resumes the run and then does its thing.
+func _test_buttons() -> Control:
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	var actions := [
+		["天气", game.test_weather],
+		["特邀 boss", game.spawner.bring_boss.bind(true)],
+		["下个 boss", game.spawner.bring_boss.bind(false)],
+		["升一级", game.test_level_up],
+	]
+	for entry: Array in actions:
+		var action: Callable = entry[1]
+		flow.add_child(UiKit.secondary_button(entry[0], func() -> void:
+			game.set_paused(false)
+			action.call(), 30.0, 12))
+	flow.add_child(UiKit.secondary_button(_god_text(), func() -> void:
+		TestMode.god = not TestMode.god
+		_show_pause(), 30.0, 12))
+	return flow
+
+
+## The world map page: the route of cities with the one picked (to begin with, the map in use)
+## described beside or under it, and 出发 to play there.
+func _open_world_map() -> void:
+	_world_open = true
+	_clear(_world_holder)
+	var portrait := _is_portrait()
+	var page := _page(Vector4(16, 20, 16, 16) if portrait else Vector4(24, 14, 24, 12))
+	_world_holder.add_child(page)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10 if portrait else 8)
+	page.add_child(column)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	column.add_child(header)
+	header.add_child(UiKit.round_button("ui_back", func() -> void: _world_open = false, 44.0, Art.INK))
+	var titles := VBoxContainer.new()
+	titles.add_theme_constant_override("separation", 0)
+	titles.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(titles)
+	titles.add_child(UiKit.label("世界地图", 22, "heavy"))
+	titles.add_child(UiKit.label("按工时排，越往后越卷；通关一座城市，下一座就开放", 11, "muted"))
+
+	var body: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(body)
+	# Padded by the outline's width so the map doesn't paint over it.
+	var frame := UiKit.panel(UiKit.box(Color("cfe6f5"), Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4.ONE * UiKit.OUTLINE))
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(frame)
+	_world_map = WorldMap.new()
+	_world_map.custom_minimum_size = Vector2(0.0, 170.0) if portrait else Vector2(0.0, 0.0)
+	_world_map.city_picked.connect(_show_world_city)
+	frame.add_child(_world_map)
+	_world_card = VBoxContainer.new()
+	_world_card.add_theme_constant_override("separation", 6)
+	_world_card.custom_minimum_size.x = 0.0 if portrait else 176.0
+	body.add_child(_world_card)
+	_show_world_city(Maps.current_id)
+
+
+## The card for the city picked on the world map: what it is, how far along the player is there,
+## and 出发 if it is open (or what opens it, or that it is still to come).
+func _show_world_city(id: String) -> void:
+	if not is_instance_valid(_world_card):
 		return
-	if not Maps.unlocked(map_id):
-		# Back onto the map in use; the line under the picker says what opens this one.
-		_show_title.call_deferred()
+	_clear(_world_card)
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_world_card.add_child(card)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 4)
+	card.add_child(lines)
+	if not Maps.ORDER.has(id):
+		lines.add_child(UiKit.label(WorldMap.CITIES[id]["name"], 18, "heavy"))
+		lines.add_child(UiKit.tag(tr("即将开放"), Art.PAPER_SUNK, Art.INK_MUTED, 1, 11))
+		var later := UiKit.label("还在装修，下个版本见", 12, "muted")
+		later.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lines.add_child(later)
 		return
-	game.change_map(map_id)
+	var map := Maps.script_of(id)
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 6)
+	lines.add_child(title_row)
+	title_row.add_child(UiKit.label(map.NAME, 18, "heavy"))
+	var hours := UiKit.tag(map.HOURS, Art.BRAND_SOFT, Art.INK, 1, 11)
+	hours.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	title_row.add_child(hours)
+	var difficulty: Dictionary = map.DIFFICULTY
+	var hard := tr("基准难度") if difficulty["hp"] <= 1.0 else tr("怪物生命 ×%s · 伤害 ×%s") % [difficulty["hp"], difficulty["damage"]]
+	lines.add_child(UiKit.label(hard, 12, "muted"))
+	var progress := tr("打卡 %d/%d") % [Maps.stamps_on(id), map.STAMPS.size()]
+	var wins := int((Progress.stat("map_wins", {}) as Dictionary).get(id, 0))
+	if wins > 0:
+		progress += " · " + tr("通关 %d 次") % wins
+	lines.add_child(UiKit.label(progress, 12, "body"))
+	lines.add_child(UiKit.filler())
+	if not Maps.unlocked(id):
+		var hint := UiKit.label(Maps.unlock_hint(id), 12, "strong", Art.BOSS_RED)
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lines.add_child(hint)
+		return
+	var go := UiKit.primary_button("出发", func() -> void: game.change_map(id, true), 44.0, 17)
+	lines.add_child(go)
+	if id != Maps.current_id:
+		lines.add_child(UiKit.secondary_button("只换地图", func() -> void: game.change_map(id), 36.0, 13))
 
 
 ## A soft disc of `color` peeking in from the left (or right) edge.
@@ -1728,6 +1888,8 @@ func _show_pause() -> void:
 	var settings := _settings_button()
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	second_row.add_child(settings)
+	if TestMode.on:
+		actions.add_child(_test_buttons())
 
 	var recalibrate: Label = null
 	if Tilt.enabled():

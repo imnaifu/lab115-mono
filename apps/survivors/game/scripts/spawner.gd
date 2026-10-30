@@ -111,14 +111,45 @@ const ENEMY_TYPES := {
 	# a little quicker than bugs and as frail.
 	"commuter": {"name": "早高峰打工人", "art": "commuter", "size": 24.0, "color": Color("9aa5b8"),
 		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+	# 西雅图's own (Seattle.BOSS_SWAPS, .34), slot for slot as 北京's are.
+	"day1": {"name": "Day 1", "art": "day1", "size": 46.0, "color": Color("ffd36b"),
+		"hp": 360.0, "speed": 28.0, "damage": 9.0, "xp": 20, "radius": 11.0, "knockback_resist": 0.9, "elite": true,
+		"arrival": "精英怪：Day 1！永远是第一天"},
+	"pip": {"name": "PIP 绩效改进", "art": "pip", "size": 54.0, "color": Color("ffc2cf"),
+		"hp": 1400.0, "speed": 32.0, "damage": 22.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "charge", "arrival": "首领出现：PIP 绩效改进计划"},
+	"prime_day": {"name": "Prime Day", "art": "prime_day", "size": 50.0, "color": Color("ff5d5d"),
+		"hp": 1260.0, "speed": 36.0, "damage": 31.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "countdown", "arrival": "Prime Day 大促来了！",
+		"berserk_line": "大促零点到了！它开始暴走", "on_time_line": "大促前搞定！年终奖保底绩效 A"},
+	"bar_raiser": {"name": "Bar Raiser", "art": "bar_raiser", "size": 58.0, "color": Color("bcdcf2"),
+		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "aura", "arrival": "首领出现：Bar Raiser 面试官", "death_line": "Bar Raiser 放水了！掉了一地经验"},
+	"copilot": {"name": "Copilot", "art": "copilot", "size": 64.0, "color": Color("5fb3d6"),
+		"hp": 2240.0, "speed": 40.0, "damage": 38.0, "xp": 100, "radius": 16.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "clones", "clone_type": "copilot_clone", "arrival": "首领出现：Copilot"},
+	"copilot_clone": {"name": "又一个 Copilot", "art": "copilot", "size": 54.0, "color": Color("5fb3d6"),
+		"hp": 1.0, "speed": 40.0, "damage": 19.0, "xp": 0, "radius": 13.0, "knockback_resist": 0.6, "phantom": true},
+	"reorg": {"name": "部门重组", "art": "reorg", "size": 52.0, "color": Color("d9d1f2"),
+		"hp": 1700.0, "speed": 34.0, "damage": 28.0, "xp": 70, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "blink", "arrival": "部门重组！"},
+	"meeting_spam": {"name": "连环会", "art": "meeting_spam", "size": 54.0, "color": Color("b8a8f0"),
+		"hp": 1600.0, "speed": 30.0, "damage": 26.0, "xp": 70, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "volley", "arrival": "连环会邀请轰炸！"},
+	# Same-day delivery (Seattle.RING_SWAPS): a ring of parcels in place of the Bug outbreak, as frail.
+	"parcel": {"name": "Prime 包裹", "art": "parcel", "size": 24.0, "color": Color("d4b483"),
+		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	# Each map's guest boss (the map's GUEST_BOSS, .26), on top of the schedule at 5:30, with a move
-	# of its own (Enemy "pull", "squeeze"); built and as strong as the 6:00 boss.
+	# of its own (Enemy "pull", "squeeze", "hoard"); built and as strong as the 6:00 boss.
 	"rto": {"name": "RTO 返岗令", "art": "rto", "size": 58.0, "color": Color("5b9cff"),
 		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "pull", "arrival": "特邀嘉宾：RTO 返岗令！"},
 	"elimination": {"name": "末位淘汰", "art": "elimination", "size": 58.0, "color": Color("d64545"),
 		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "squeeze", "arrival": "特邀嘉宾：末位淘汰！"},
+	"frugality": {"name": "节俭", "art": "frugality", "size": 58.0, "color": Color("f6c6cf"),
+		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "hoard", "arrival": "特邀嘉宾：节俭！它会吸走地上的星星", "death_line": "节俭倒了！攒的经验全吐出来了"},
 }
 ## A boss due while this many are still out waits until one is down. Players who keep up
 ## never see the wait; it stops a player who has fallen behind from being buried under bosses
@@ -228,6 +259,31 @@ func tick(delta: float) -> void:
 			_spawn_budget = 0.0
 			break
 		_game.spawn_enemy(_pick_type(), _game.offscreen_point(_game.random_direction()))
+
+
+## 测试模式 (TestMode): a run started at `seconds` skips everything planned before then (those
+## bosses would have come and gone). Returns how many bosses that skipped, for their chests.
+func skip_to(seconds: float) -> int:
+	var bosses := 0
+	while _next_event < _events.size() and _events[_next_event]["at"] < seconds:
+		if _events[_next_event]["kind"] == "elite":
+			bosses += 1
+		_next_event += 1
+	return bosses
+
+
+## 测试模式: the next planned boss, now; or, with `guest`, the map's guest boss (the planned one if
+## it is still to come, else a fresh one).
+func bring_boss(guest: bool = false) -> void:
+	for index in range(_next_event, _events.size()):
+		var event: Dictionary = _events[index]
+		if event["kind"] == "elite" and event.get("guest", false) == guest:
+			_events.remove_at(index)
+			_run_event(event)
+			return
+	if guest:
+		var type_id: String = Maps.current.GUEST_BOSS["type"]
+		_run_event({"kind": "elite", "type": type_id, "count": 1, "text": ENEMY_TYPES[type_id]["arrival"]})
 
 
 ## Seconds until the next boss is due, or -1 when none is left. A boss already due but held

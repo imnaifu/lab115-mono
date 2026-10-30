@@ -24,13 +24,15 @@ extends Node2D
 ##   drags the player and the crowd round it towards itself; walking away still gets away.
 ## - "squeeze" (北京's 末位淘汰, .26): rings the spot the player stands on and closes the ring over a
 ##   couple of seconds; still inside when it closes, the player is hit.
+## - "hoard" (西雅图's 节俭, .34): always on, a gold ring round it; stars lying inside drift into it
+##   and it keeps them (the count over its head, Game moves them); killed, it spills them all.
 ## Every wind-up is drawn (lane, landing circle, bracing ring, filling circle, flicker) so a move
 ## can always be dodged; the HUD says how the first time each comes up in a run.
 ##
 ## From .21 a boss can have more than one timed move (`moves`: its own, plus extras the Spawner
 ## draws each run) and picks one at random each time its timer runs out, never the same twice in
 ## a row when it has a choice; the gap between moves varies by MOVE_JITTER either way. Its own
-## always-on move (countdown, aura) keeps running alongside. It can also carry affixes
+## always-on move (countdown, aura, hoard) keeps running alongside. It can also carry affixes
 ## (AFFIXES, drawn by the Spawner): 996, 加厚, 急了, 自愈, 甩锅.
 
 const FLASH_SECONDS := 0.08
@@ -46,8 +48,8 @@ const HIT_SQUASH_SECONDS := 0.16
 const HIT_SQUASH_FULL_PUSH := 140.0
 ## Knocked off a lane by a car or a train: once round in this long.
 const SPIN_SECONDS := 0.45
-const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura"]
-## The moves that work on a timer; countdown and aura are always on.
+const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura", "hoard"]
+## The moves that work on a timer; countdown, aura and hoard are always on.
 const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones", "pull", "squeeze"]
 ## The gap between one boss's moves is its move's own, times a random factor this far either way.
 const MOVE_JITTER := 0.25
@@ -128,6 +130,10 @@ const AURA_RADIUS := 90.0
 ## Damage taken by an ordinary enemy inside an aura, as a fraction.
 const AURA_SHIELD := 0.5
 const AURA_TINT := Color(1.0, 0.9, 0.5)
+## A hoarder's reach and how fast the stars inside it drift in (slower than the player walks, so
+## grabbing them first is a race the player can win).
+const HOARD_RADIUS := 110.0
+const HOARD_PULL := 60.0
 const PHANTOM_ALPHA := 0.55
 ## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
 const BOSS_STUN_SCALE := 0.5
@@ -197,8 +203,10 @@ var _volley_turn := 0.0
 var _countdown_left := 0.0
 var _base_speed := 0.0
 var _base_damage := 0.0
-## Whether this boss's always-on move (countdown, aura) has been reported to the HUD yet.
+## Whether this boss's always-on move (countdown, aura, hoard) has been reported to the HUD yet.
 var _announced := false
+## The XP a hoarder has taken in so far (Game adds to it and spills it when it dies).
+var hoarded := 0
 ## The timed move under way (or last used), out of `moves`.
 var _move := ""
 ## The gap between moves is multiplied by this (996, 急了).
@@ -302,7 +310,7 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 	match ability:
 		"countdown":
 			_tick_countdown(delta)
-		"aura":
+		"aura", "hoard":
 			_announce()
 			queue_redraw()
 	if moves.is_empty():
@@ -681,6 +689,13 @@ func _draw() -> void:
 			var glow := 0.08 + 0.04 * sin(_phase * 0.4)
 			draw_circle(Vector2.ZERO, AURA_RADIUS, Color(Art.BRAND, glow))
 			draw_arc(Vector2.ZERO, AURA_RADIUS, 0.0, TAU, 48, Color(Art.BRAND_DEEP, 0.7), 2.0, true)
+		"hoard":
+			# Its reach, turning slowly like a vacuum's, and the stars it has taken so far.
+			for i in 12:
+				var from := _phase * 0.05 + TAU * i / 12.0
+				draw_arc(Vector2.ZERO, HOARD_RADIUS, from, from + TAU / 24.0, 6, Color(Art.BRAND_DEEP, 0.75), 2.0, true)
+			if hoarded > 0:
+				_draw_mark("★%d" % hoarded, Vector2(0.0, -_size / 2.0 - 12.0), 14, Art.BRAND_DEEP)
 		"countdown":
 			if berserk:
 				var pulse := 0.5 + 0.5 * sin(_phase * 1.2)

@@ -8,9 +8,10 @@ extends RefCounted
 ## A clone or a piece (AI 幻觉, 小屎山, a 甩锅 copy) goes with the boss it comes from, not on its own.
 
 const GROUPS := [
-	{"name": "小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server", "commuter"]},
+	{"name": "小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server", "commuter", "parcel"]},
 	{"name": "硅谷 boss", "ids": ["techdebt_elite", "server_elite", "layoff", "deadline", "ai", "investor",
 		"spaghetti", "scope_change", "incident", "pie_boss", "rto"]},
+	{"name": "西雅图 boss", "ids": ["day1", "pip", "prime_day", "bar_raiser", "copilot", "reorg", "meeting_spam", "frugality"]},
 	{"name": "北京 boss", "ids": ["weekly_report", "midlife", "fubao", "juanwang", "baimo", "inspection", "ppt", "elimination"]},
 ]
 ## A line about each.
@@ -23,6 +24,7 @@ const NOTES := {
 	"techdebt": "欠下的总要还，皮厚推不动",
 	"server": "一倒就是一片，又慢又厚",
 	"commuter": "西二旗站外排到马路上，只在北京的早高峰出现",
+	"parcel": "当日达，一来就是一圈，只在西雅图出现",
 	"techdebt_elite": "前人留下的，谁也不敢动",
 	"server_elite": "全公司的报警一起响",
 	"layoff": "邮件标题：组织架构调整",
@@ -42,6 +44,14 @@ const NOTES := {
 	"ppt": "做 PPT 的时间比干活还多",
 	"rto": "周一到周五都得回工位刷卡",
 	"elimination": "每次考核都得有人走",
+	"day1": "永远是第一天，所以永远不能下班",
+	"pip": "六十天，要么改进，要么走人",
+	"prime_day": "大促前一晚，全组通宵",
+	"bar_raiser": "专门来把面试的标准再拔高一点",
+	"copilot": "帮你写了一半，另一半你来修",
+	"reorg": "一觉醒来，汇报线又换了",
+	"meeting_spam": "一个会还没开完，下一个已经在响",
+	"frugality": "门板当桌子，连地上的星星都不放过",
 }
 
 

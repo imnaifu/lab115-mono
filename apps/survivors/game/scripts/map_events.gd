@@ -1,12 +1,17 @@
 class_name MapEvents
 extends Node2D
 ## Each map's own event (the map's MAP_EVENT, which the Spawner starts at its time, .26):
-## - "quake" (硅谷 湾区地震): for a while the screen shakes and debris crashes down round the player,
+## - "quake" (硅谷 湾区地震): for a while debris crashes down round the player (the screen shook all
+##   the while until .34; the user found it hard on the eyes, so it no longer does),
 ##   each piece marked by a red circle a moment before it lands; it hurts whatever it lands on,
 ##   the crowd included, so dodging it can clear the way.
 ## - "sandstorm" (北京 沙尘暴): for a while a wind blows everyone east (the crowd harder than the
 ##   player) and the screen turns sandy.
-## Drawn in the world over the enemies (the debris, the sand), under the HUD.
+## - "rain" (西雅图 下雨, .34): for a while it rains, and puddles open up round the player; anyone
+##   standing in one is slowed (the crowd more than the player), so leading the crowd through
+##   them pays. They dry up a few seconds after the rain stops.
+## Drawn in the world over the enemies (the debris, the sand, the rain), under the HUD; puddles
+## on the ground under everyone.
 
 const QUAKE_STRIKE_GAP := 0.35
 const QUAKE_WARNING := 1.0
@@ -21,6 +26,20 @@ const SAND_WIND := Vector2(0.99, 0.14)
 const SAND_PLAYER_SPEED := 28.0
 const SAND_CROWD_SPEED := 40.0
 const SAND_TINT := Color(0.86, 0.72, 0.42, 0.3)
+const RAIN_PUDDLE_GAP := 0.45
+## Puddles open within this of the player, at most RAIN_MAX_PUDDLES at once (the oldest goes).
+const RAIN_REACH := 230.0
+const RAIN_PUDDLE_RADIUS := [26.0, 42.0]
+const RAIN_MAX_PUDDLES := 18
+## Seconds a new puddle takes to spread, and puddles take to dry once the rain stops.
+const RAIN_SPREAD := 0.6
+const RAIN_DRY := 3.0
+## In a puddle: the player loses this share of their walking speed; the crowd walks at this
+## share of theirs (bosses shrug off half of it, Enemy.slow).
+const RAIN_PLAYER_SLOW := 0.35
+const RAIN_CROWD_SLOW := 0.5
+const RAIN_TINT := Color(0.32, 0.42, 0.58, 0.22)
+const PUDDLE := Color("7fa8c9")
 const DEBRIS := Color("8a909c")
 
 var game: Game
@@ -32,13 +51,24 @@ var _seconds := 0.0
 var _strikes: Array[Vector2] = []
 var _strike_left := PackedFloat32Array()
 var _next_strike := 0.0
-var _shake_left := 0.0
 var _clock := 0.0
+## Puddles: where, full size, and age (negative once drying: seconds left).
+var _puddles: Array[Vector2] = []
+var _puddle_radius := PackedFloat32Array()
+var _puddle_age := PackedFloat32Array()
+var _next_puddle := 0.0
+## The puddles are drawn on the ground, under the crowd, unlike the rest of this node.
+var _ground: Node2D
 
 
 func _init() -> void:
 	# Over the entities and the hit effects, under the damage numbers.
 	z_index = 15
+	_ground = Node2D.new()
+	# Relative to this node's 15: -4 overall, on the ground like a meeting room.
+	_ground.z_index = -19
+	_ground.draw.connect(_draw_puddles)
+	add_child(_ground)
 
 
 ## Starts the map's event `id`, lasting `seconds`.
@@ -49,14 +79,22 @@ func start(id: String, seconds: float) -> void:
 	_next_strike = 0.0
 
 
+## Seconds the weather itself has left (0 once over, even while debris or puddles linger): the
+## HUD keeps the event's name on screen this long.
+func weather_left() -> float:
+	return maxf(_left, 0.0)
+
+
 func active() -> bool:
-	return _left > 0.0 or not _strikes.is_empty()
+	return _left > 0.0 or not _strikes.is_empty() or not _puddles.is_empty()
 
 
 func _process(delta: float) -> void:
 	if game.state != Game.State.PLAYING or not active():
 		if not active():
 			queue_redraw()
+			# Clears the last puddles off the ground once the event is over.
+			_ground.queue_redraw()
 		return
 	_clock += delta
 	_left -= delta
@@ -66,15 +104,14 @@ func _process(delta: float) -> void:
 		"sandstorm":
 			if _left > 0.0:
 				_blow(delta)
+		"rain":
+			_tick_rain(delta)
+			_ground.queue_redraw()
 	queue_redraw()
 
 
 func _tick_quake(delta: float) -> void:
 	if _left > 0.0:
-		_shake_left -= delta
-		if _shake_left <= 0.0:
-			_shake_left = 0.2
-			game.player.shake(0.25, 1.5)
 		_next_strike -= delta
 		if _next_strike <= 0.0:
 			_next_strike = QUAKE_STRIKE_GAP
@@ -98,6 +135,61 @@ func _land(at: Vector2) -> void:
 		game.hurt_player(QUAKE_DAMAGE * Maps.current.DIFFICULTY["damage"], "quake_debris", "debris")
 	for enemy in game.query_enemies(at, QUAKE_RADIUS):
 		game.damage_enemy(enemy, QUAKE_CROWD_DAMAGE, (enemy.position - at).normalized() * 60.0, "quake_debris", true)
+
+
+func _tick_rain(delta: float) -> void:
+	if _left > 0.0:
+		_next_puddle -= delta
+		if _next_puddle <= 0.0:
+			_next_puddle = RAIN_PUDDLE_GAP
+			var at := game.player.position + Vector2.from_angle(game.rng.randf() * TAU) * sqrt(game.rng.randf()) * RAIN_REACH
+			if not game.city.is_water(at):
+				if _puddles.size() >= RAIN_MAX_PUDDLES:
+					_puddles.remove_at(0)
+					_puddle_radius.remove_at(0)
+					_puddle_age.remove_at(0)
+				_puddles.append(at)
+				_puddle_radius.append(game.rng.randf_range(RAIN_PUDDLE_RADIUS[0], RAIN_PUDDLE_RADIUS[1]))
+				_puddle_age.append(0.0)
+	for i in range(_puddles.size() - 1, -1, -1):
+		if _left > 0.0:
+			_puddle_age[i] += delta
+		else:
+			# Rain over: each starts drying (a countdown, kept negative), then goes.
+			_puddle_age[i] = -RAIN_DRY if _puddle_age[i] >= 0.0 else _puddle_age[i] + delta
+			if _puddle_age[i] >= 0.0:
+				_puddles.remove_at(i)
+				_puddle_radius.remove_at(i)
+				_puddle_age.remove_at(i)
+				continue
+		var reach := _puddle_reach(i)
+		if game.player.position.distance_to(_puddles[i]) <= reach:
+			game.player.drift(-game.player.velocity * RAIN_PLAYER_SLOW)
+		for enemy in game.query_enemies(_puddles[i], reach):
+			enemy.slow(RAIN_CROWD_SLOW, 0.2)
+
+
+## A puddle's size now: spreading when new, shrinking as it dries.
+func _puddle_reach(index: int) -> float:
+	var age := _puddle_age[index]
+	var scale := clampf(age / RAIN_SPREAD, 0.0, 1.0) if age >= 0.0 else clampf(-age / RAIN_DRY, 0.0, 1.0)
+	return _puddle_radius[index] * scale
+
+
+func _draw_puddles() -> void:
+	for i in _puddles.size():
+		var reach := _puddle_reach(i)
+		if reach <= 1.0:
+			continue
+		var at := _puddles[i]
+		_ground.draw_set_transform(at, 0.0, Vector2(1.0, 0.62))
+		_ground.draw_circle(Vector2.ZERO, reach, Color(PUDDLE, 0.55))
+		_ground.draw_arc(Vector2.ZERO, reach, 0.0, TAU, 32, Color(PUDDLE.darkened(0.25), 0.8), 1.5, true)
+		# Rings spreading where drops land.
+		if _left > 0.0:
+			var ripple := fposmod(_clock * 0.8 + float(i) * 0.37, 1.0)
+			_ground.draw_arc(Vector2(reach * 0.3, 0.0), reach * 0.5 * ripple, 0.0, TAU, 20, Color(1, 1, 1, 0.6 * (1.0 - ripple)), 1.2, true)
+	_ground.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## The wind: the player carried a little, the crowd more (bosses half as much).
@@ -143,3 +235,18 @@ func _draw() -> void:
 				var y := fposmod(scatter * 91.3 + _clock * 30.0, view.size.y)
 				var from := view.position + Vector2(x, y)
 				draw_line(from, from + wind * 18.0, Color(0.95, 0.85, 0.6, 0.6 * strength), 1.5, true)
+		"rain":
+			if _left <= 0.0:
+				return
+			var strength := clampf(minf(_left, _seconds - _left), 0.0, 1.0)
+			var half := game.view_half() * 1.6
+			var view := Rect2(game.player.position - half, half * 2.0)
+			draw_rect(view, Color(RAIN_TINT, RAIN_TINT.a * strength))
+			# Rain slanting down.
+			var fall := Vector2(-0.25, 1.0).normalized()
+			for i in 70:
+				var scatter := float(i) * 29.71
+				var x := fposmod(scatter * 61.3 - _clock * 90.0, view.size.x)
+				var y := fposmod(scatter * 83.9 + _clock * 520.0, view.size.y)
+				var from := view.position + Vector2(x, y)
+				draw_line(from, from + fall * 12.0, Color(0.85, 0.92, 1.0, 0.55 * strength), 1.2, true)

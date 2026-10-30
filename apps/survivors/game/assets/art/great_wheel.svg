@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 130">
+<ellipse cx="60" cy="126" rx="56" ry="3" fill="#000" fill-opacity="0.13"/>
+<g stroke="#2f3542" stroke-width="2.4" stroke-linejoin="round">
+<rect x="11" y="110" width="5" height="14" fill="#6b4f3a"/>
+<rect x="33" y="110" width="5" height="14" fill="#6b4f3a"/>
+<rect x="57.5" y="110" width="5" height="14" fill="#6b4f3a"/>
+<rect x="82" y="110" width="5" height="14" fill="#6b4f3a"/>
+<rect x="104" y="110" width="5" height="14" fill="#6b4f3a"/>
+</g>
+<path d="M103 50 L17 50 M99.7 66.5 L20.3 33.5 M90.4 80.4 L29.6 19.6 M76.5 89.7 L43.5 10.3 M60 93 L60 7 M43.5 89.7 L76.5 10.3 M29.6 80.4 L90.4 19.6 M20.3 66.5 L99.7 33.5" stroke="#a9b3c4" stroke-width="1.4"/>
+<circle cx="60" cy="50" r="38" fill="none" stroke="#c9cdd4" stroke-width="1.6"/>
+<circle cx="60" cy="50" r="43" fill="none" stroke="#2f3542" stroke-width="6.5"/>
+<circle cx="60" cy="50" r="43" fill="none" stroke="#ffffff" stroke-width="3"/>
+<g fill="none" stroke-linecap="round">
+<path d="M60 50 L36 103 M60 50 L84 103 M47 79 L73 79" stroke="#2f3542" stroke-width="7"/>
+<path d="M60 50 L36 103 M60 50 L84 103 M47 79 L73 79" stroke="#ffffff" stroke-width="3.4"/>
+</g>
+<g stroke="#2f3542" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+<rect x="4" y="102" width="112" height="6" rx="1" fill="#d4b483"/>
+<rect x="4" y="108" width="112" height="5" rx="1" fill="#6b4f3a"/>
+<circle cx="60" cy="50" r="6" fill="#d6d9de"/>
+</g>
+<path d="M16 103.5 L16 106.5 M30 103.5 L30 106.5 M44 103.5 L44 106.5 M58 103.5 L58 106.5 M72 103.5 L72 106.5 M86 103.5 L86 106.5 M100 103.5 L100 106.5" stroke="#a88a5c" stroke-width="1.4" stroke-linecap="round"/>
+<circle cx="60" cy="50" r="2" fill="#2f3542"/>
+<g stroke="#2f3542" stroke-width="2" stroke-linejoin="round" fill="#ffffff">
+<rect x="98.5" y="46.5" width="9" height="9" rx="3"/>
+<rect x="92.7" y="68" width="9" height="9" rx="3"/>
+<rect x="77" y="83.7" width="9" height="9" rx="3"/>
+<rect x="55.5" y="89.5" width="9" height="9" rx="3" fill="#ff5d5d"/>
+<rect x="34" y="83.7" width="9" height="9" rx="3"/>
+<rect x="18.3" y="68" width="9" height="9" rx="3"/>
+<rect x="12.5" y="46.5" width="9" height="9" rx="3"/>
+<rect x="18.3" y="25" width="9" height="9" rx="3"/>
+<rect x="34" y="9.3" width="9" height="9" rx="3"/>
+<rect x="55.5" y="3.5" width="9" height="9" rx="3"/>
+<rect x="77" y="9.3" width="9" height="9" rx="3"/>
+<rect x="92.7" y="25" width="9" height="9" rx="3"/>
+</g>
+<g fill="#bcdcf2">
+<rect x="100" y="48.3" width="6" height="3.2" rx="1"/>
+<rect x="94.2" y="69.8" width="6" height="3.2" rx="1"/>
+<rect x="78.5" y="85.5" width="6" height="3.2" rx="1"/>
+<rect x="57" y="91.3" width="6" height="3.2" rx="1"/>
+<rect x="35.5" y="85.5" width="6" height="3.2" rx="1"/>
+<rect x="19.8" y="69.8" width="6" height="3.2" rx="1"/>
+<rect x="14" y="48.3" width="6" height="3.2" rx="1"/>
+<rect x="19.8" y="26.8" width="6" height="3.2" rx="1"/>
+<rect x="35.5" y="11.1" width="6" height="3.2" rx="1"/>
+<rect x="57" y="5.3" width="6" height="3.2" rx="1"/>
+<rect x="78.5" y="11.1" width="6" height="3.2" rx="1"/>
+<rect x="94.2" y="26.8" width="6" height="3.2" rx="1"/>
+</g>
+</svg>

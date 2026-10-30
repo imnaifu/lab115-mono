@@ -135,6 +135,9 @@ static func _keys(section: String) -> PackedStringArray:
 
 ## `upload` false for a save that came from the cloud in the first place.
 static func _save(upload: bool = true) -> void:
+	# A test run (TestMode) keeps nothing: what it earns lasts only until the page closes.
+	if TestMode.on:
+		return
 	if to_disk:
 		_config.save(PATH)
 	if upload:

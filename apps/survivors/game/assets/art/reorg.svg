@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<ellipse cx="32" cy="60" rx="24" ry="3.5" fill="#000" fill-opacity="0.13"/>
+<path d="M32 27 L32 34 M12.5 34 L51.5 34 M12.5 34 L12.5 40 M32 34 L32 41 M51.5 34 L51.5 40" fill="none" stroke="#2f3542" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<g stroke="#2f3542" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<rect x="4" y="40" width="17" height="14" rx="3.5" fill="#bcdcf2" transform="rotate(-12 12.5 47)"/>
+<rect x="23.5" y="41" width="17" height="14" rx="3.5" fill="#bfe3cf" transform="rotate(9 32 48)"/>
+<rect x="43" y="40" width="17" height="14" rx="3.5" fill="#f6c6cf" transform="rotate(-7 51.5 47)"/>
+</g>
+<g fill="#ffffff" stroke="#2f3542" stroke-width="1.6" stroke-linejoin="round">
+<g transform="rotate(-12 12.5 47)"><circle cx="12.5" cy="45" r="2.3"/><path d="M8.5 51.5 Q8.5 48 12.5 48 Q16.5 48 16.5 51.5 Z"/></g>
+<g transform="rotate(9 32 48)"><circle cx="32" cy="46" r="2.3"/><path d="M28 52.5 Q28 49 32 49 Q36 49 36 52.5 Z"/></g>
+<g transform="rotate(-7 51.5 47)"><circle cx="51.5" cy="45" r="2.3"/><path d="M47.5 51.5 Q47.5 48 51.5 48 Q55.5 48 55.5 51.5 Z"/></g>
+</g>
+<g fill="none" stroke-linecap="round">
+<path d="M15.5 9.5 Q7 12 6.5 24" stroke="#2f3542" stroke-width="8"/>
+<path d="M15.5 9.5 Q7 12 6.5 24" stroke="#5b9cff" stroke-width="3.8"/>
+<path d="M57.5 30 Q57 18 48.5 15" stroke="#2f3542" stroke-width="8"/>
+<path d="M57.5 30 Q57 18 48.5 15" stroke="#5b9cff" stroke-width="3.8"/>
+</g>
+<path d="M2 23 L11 23 L6.5 30 Z" fill="#5b9cff" stroke="#2f3542" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M51 10 L49.5 20.5 L43 13 Z" fill="#5b9cff" stroke="#2f3542" stroke-width="2.4" stroke-linejoin="round"/>
+<g stroke="#2f3542" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+<rect x="18" y="4" width="28" height="23" rx="5" fill="#ffd25e"/>
+</g>
+<g stroke="#2f3542" stroke-linecap="round" stroke-linejoin="round" fill="none">
+<path d="M22 10.5 L28 13 M42 10.5 L36 13" stroke-width="2.4"/>
+<path d="M23 16.5 L29 16.5 M35 16.5 L41 16.5" stroke-width="2"/>
+<path d="M26.5 22 Q32 24.5 38.5 20" stroke-width="2.2"/>
+</g>
+<circle cx="27.5" cy="17.8" r="1.7" fill="#2f3542"/>
+<circle cx="39.5" cy="17.8" r="1.7" fill="#2f3542"/>
+</svg>

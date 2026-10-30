@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80">
+<ellipse cx="60" cy="76" rx="56" ry="3" fill="#000" fill-opacity="0.13"/>
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<path d="M7 16 L16 16 L17 74 L6 74 Z" fill="#c9cdd4"/>
+<rect x="3" y="3" width="114" height="10" rx="1.5" fill="#d6d9de"/>
+<rect x="8" y="13" width="104" height="4" fill="#a9b3c4" stroke-width="2.4"/>
+<path d="M21 74 Q17 46 29 32 Q42 19 58 20 Q76 22 81 42 Q84 58 80 74 Z" fill="#a9b3c4"/>
+<path d="M19 70 Q13 42 27 28 Q42 16 60 18 Q76 21 82 38 L77 34 L75 42 L70 31 L65 39 L60 29 L55 37 L49 28 L45 39 L39 31 L36 44 L31 37 L30 52 L26 46 L25 62 Z" fill="#8a909c"/>
+<circle cx="62" cy="47" r="7" fill="#ffffff" stroke-width="2.6"/>
+<ellipse cx="50" cy="57" rx="8" ry="7" fill="#b9c2d0"/>
+</g>
+<circle cx="63" cy="48" r="3.4" fill="#2f3542"/>
+<circle cx="61.8" cy="46.6" r="1.2" fill="#ffffff"/>
+<path d="M55 39.5 Q62 35 70 39.5" fill="none" stroke="#2f3542" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M36 67 Q48 71 63 67" fill="none" stroke="#2f3542" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M40 70 L39 73 M48 71 L48 74 M56 70 L57 73" stroke="#8a909c" stroke-width="1.6" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+<path d="M95 74 L96 65 L112 65 L113 74 Z" fill="#a9b3c4"/>
+<path d="M81 60 Q81 52 87 50 Q90 41 99 41 Q108 41 111 50 Q116 52 116 60 Z" fill="#ff5d5d"/>
+<path d="M90 50 Q92 44.5 99 44.5 Q106 44.5 108 50 Z" fill="#bcdcf2" stroke-width="2"/>
+<path d="M99 45 L99 50" stroke-width="1.6"/>
+<circle cx="88" cy="60" r="4" fill="#2f3542"/>
+<circle cx="109" cy="60" r="4" fill="#2f3542"/>
+<path d="M80 61 Q81 68 88 68 L112 68 Q118 68 118.5 61 Z" fill="#a9b3c4"/>
+<rect x="106" y="45" width="12" height="5.4" rx="2.7" fill="#a9b3c4"/>
+<rect x="106" y="50.4" width="12" height="5.4" rx="2.7" fill="#a9b3c4"/>
+<rect x="106" y="55.8" width="12" height="5.4" rx="2.7" fill="#a9b3c4"/>
+<rect x="80" y="51" width="5.4" height="13" rx="2.7" fill="#a9b3c4" transform="rotate(28 82.7 62)"/>
+</g>
+</svg>

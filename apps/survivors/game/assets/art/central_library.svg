@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 130">
+<ellipse cx="56" cy="126" rx="50" ry="3" fill="#000" fill-opacity="0.13"/>
+<defs><clipPath id="central-library-glass"><path d="M24 124 L84 124 L86 100 L98 88 L96 68 L84 58 L86 40 L102 26 L98 8 L30 6 L20 24 L32 40 L30 58 L10 74 L14 94 L26 102 Z"/></clipPath></defs>
+<path d="M24 124 L84 124 L86 100 L26 102 Z" fill="#bcdcf2"/>
+<path d="M26 102 L86 100 L98 88 L14 94 Z" fill="#9fb8cf"/>
+<path d="M14 94 L98 88 L96 68 L10 74 Z" fill="#bcdcf2"/>
+<path d="M10 74 L96 68 L84 58 L30 58 Z" fill="#dbeaf6"/>
+<path d="M30 58 L84 58 L86 40 L32 40 Z" fill="#bcdcf2"/>
+<path d="M32 40 L86 40 L102 26 L20 24 Z" fill="#9fb8cf"/>
+<path d="M20 24 L102 26 L98 8 L30 6 Z" fill="#bcdcf2"/>
+<g clip-path="url(#central-library-glass)" fill="none" stroke="#7f8ea3" stroke-width="1.2">
+<path d="M-78 0 L0 130 M-65 0 L13 130 M-52 0 L26 130 M-39 0 L39 130 M-26 0 L52 130 M-13 0 L65 130 M0 0 L78 130 M13 0 L91 130 M26 0 L104 130 M39 0 L117 130 M52 0 L130 130 M65 0 L143 130 M78 0 L156 130 M91 0 L169 130 M104 0 L182 130"/>
+<path d="M188 0 L110 130 M175 0 L97 130 M162 0 L84 130 M149 0 L71 130 M136 0 L58 130 M123 0 L45 130 M110 0 L32 130 M97 0 L19 130 M84 0 L6 130 M71 0 L-7 130 M58 0 L-20 130 M45 0 L-33 130 M32 0 L-46 130 M19 0 L-59 130 M6 0 L-72 130"/>
+</g>
+<g fill="none" stroke="#2f3542" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+<path d="M26 102 L86 100 M14 94 L98 88 M10 74 L96 68 M30 58 L84 58 M32 40 L86 40 M20 24 L102 26"/>
+</g>
+<path d="M24 124 L84 124 L86 100 L98 88 L96 68 L84 58 L86 40 L102 26 L98 8 L30 6 L20 24 L32 40 L30 58 L10 74 L14 94 L26 102 Z" fill="none" stroke="#2f3542" stroke-width="3" stroke-linejoin="round"/>
+<rect x="46" y="111" width="16" height="13" fill="#666b7a" stroke="#2f3542" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M54 112.5 L54 122.5" stroke="#2f3542" stroke-width="1.4"/>
+<path d="M36 14 L42 10 M38 50 L43 46" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -26,7 +26,8 @@ extends RefCounted
 ##   first run `page_ms`, how long after the page opened it started; from .19, `stamps` and
 ##   `achievements`, how many landmarks this device has checked in at and achievements earned
 ##   (局外成长: the stamps' bonuses make a player stronger, so compare runs with the same count);
-##   from .20 both events carry `map` (sv 硅谷, bj 北京); from .28, `cloud`, how the cloud save
+##   from .20 both events carry `map` (sv 硅谷, bj 北京, from .34 sea 西雅图); a 测试模式 run (TestMode)
+##   sends neither; from .28, `cloud`, how the cloud save
 ##   stands on this device (Cloud.STATUS_NAMES: off / connecting / synced / offline / disabled),
 ##   to see whether it gets through in-app browsers.
 ##   From .30, `page_run`: the run's number on this page (2 and up are 再来一局).
@@ -63,7 +64,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.33"
+const VERSION := "2026-10-28.34"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.

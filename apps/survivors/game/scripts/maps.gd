@@ -1,23 +1,23 @@
 class_name Maps
 extends RefCounted
-## The maps a run can be played on: 硅谷 (BayArea) and, from .20, 北京 (Beijing). Each is a
-## script of constants and static functions under the same names; `current` is the one this run
-## is on, and City, Traffic, the minimap and the rest ask it rather than a map by name. (Calling
-## through a script held in a variable costs no more than calling it by name.)
-##
-## 硅谷 is open from the start. 北京 opens once any run has been won, or once enough of Silicon
-## Valley's landmarks have been checked in at: the achievements and check-ins are the keys.
+## The maps a run can be played on: 硅谷 (BayArea), from .20 北京 (Beijing), from .34 西雅图
+## (Seattle). Each is a script of constants and static functions under the same names; `current`
+## is the one this run is on, and City, Traffic, the minimap and the rest ask it rather than a map
+## by name. (Calling through a script held in a variable costs no more than calling it by name.)
 ##
 ## Maps get harder the longer their working week (each map's HOURS and DIFFICULTY, at the user's
-## call): 硅谷 965 first and easiest, 北京 996 the hardest; those to come (Singapore, Seattle,
+## call): 硅谷 965 first and easiest, 西雅图 975, 北京 996 the hardest; those to come (Singapore,
 ## Bangalore, Shenzhen / Hangzhou's 大小周) go in between by their hours, ORDER kept in that order.
+## The title screen's world map (ui/world_map.gd) draws them as a route in that order and opens
+## them one by one, like Kingdom Rush's campaign: a map opens once the one before it has been won.
 
-const ORDER := ["sv", "bj"]
-## Open from the first run: 北京 too from .25, at the user's call (to play it straight away). A map
-## not listed here opens by the rule in unlocked(), which is what 北京 needed before (a win, or
-## BEIJING_STAMPS_TO_UNLOCK check-ins in 硅谷); kept for the maps to come.
-const OPEN_FROM_START := ["sv", "bj"]
-const BEIJING_STAMPS_TO_UNLOCK := 8
+const ORDER := ["sv", "sea", "bj"]
+## Open from the first run, whatever unlocked() says: all of them for now (.34), at the user's call
+## (the one-by-one rule is in, but every map stays open while they are being tested). 北京 has
+## been open from the start since .25.
+const OPEN_FROM_START := ["sv", "sea", "bj"]
+## Cities still to come, drawn on the world map as "coming soon" pins (WorldMap.CITIES places them).
+const COMING_SOON := ["sz", "sg", "blr"]
 
 static var current: GDScript = BayArea
 static var current_id := "sv"
@@ -26,7 +26,12 @@ static var unlock_all := false
 
 
 static func script_of(id: String) -> GDScript:
-	return Beijing if id == "bj" else BayArea
+	match id:
+		"bj":
+			return Beijing
+		"sea":
+			return Seattle
+	return BayArea
 
 
 ## Makes `id` the map the world is built from (before City is).
@@ -41,17 +46,37 @@ static func saved() -> String:
 	return id if ORDER.has(id) and unlocked(id) else "sv"
 
 
+## Open: listed in OPEN_FROM_START, or the map before it in ORDER has been won (the first map is
+## always open).
 static func unlocked(id: String) -> bool:
-	if OPEN_FROM_START.has(id) or unlock_all:
+	var index := ORDER.find(id)
+	if index < 0:
+		return false
+	if index == 0 or OPEN_FROM_START.has(id) or unlock_all:
 		return true
-	return Progress.has_achievement("ipo") or stamps_on("sv") >= BEIJING_STAMPS_TO_UNLOCK
+	return cleared(ORDER[index - 1])
 
 
-## What opens a locked map, for the title screen and the 打卡 page.
+## Won at least once on the map `id`. Wins are counted per map from .34 (`map_wins`, merged per
+## map with the cloud save); before that only "any win" (the ipo achievement, so 硅谷, the only map
+## then open to everyone) and 北京's own win achievement were kept, so those count too.
+static func cleared(id: String) -> bool:
+	if int((Progress.stat("map_wins", {}) as Dictionary).get(id, 0)) > 0:
+		return true
+	match id:
+		"sv":
+			return Progress.has_achievement("ipo")
+		"bj":
+			return Progress.has_achievement("win_beijing")
+	return false
+
+
+## What opens a locked map, for the world map and the 打卡 page.
 static func unlock_hint(id: String) -> String:
-	if id == "bj":
-		return TranslationServer.translate("通关一次，或在硅谷打卡 %d 个地标，解锁北京") % BEIJING_STAMPS_TO_UNLOCK
-	return ""
+	var index := ORDER.find(id)
+	if index <= 0:
+		return ""
+	return TranslationServer.translate("在%s通关一次解锁") % TranslationServer.translate(script_of(ORDER[index - 1]).NAME)
 
 
 ## Landmarks checked in at on the map `id`.

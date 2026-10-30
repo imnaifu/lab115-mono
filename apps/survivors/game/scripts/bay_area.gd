@@ -30,18 +30,22 @@ const FINALE_LINE := ""
 ## The map's own (.26): a guest boss with a move no other boss has, on top of the schedule, and an
 ## event (MapEvents): 硅谷's are RTO 返岗令 (it pulls you in) and 湾区地震 (debris crashing down).
 const GUEST_BOSS := {"type": "rto", "at": 330.0}
-const MAP_EVENT := {"id": "quake", "at": 270.0, "seconds": 20.0, "text": "湾区地震！小心头顶掉下来的碎块"}
+## `name` and `hint` stay on screen while it lasts (.34, the user's ask: say what the weather is).
+const MAP_EVENT := {"id": "quake", "at": 270.0, "seconds": 20.0, "text": "湾区地震！小心头顶掉下来的碎块",
+	"name": "湾区地震", "hint": "躲开地上的红圈"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"
 ## The named part of the world for the minimap, in world pixels: from the Pacific to across the
-## Bay, and from the Golden Gate's water to south of San Jose.
-const OVERVIEW := Rect2(-2800.0, -3300.0, 5600.0, 6300.0)
+## Bay, and from the Golden Gate's water to south of San Jose. Pulled in to about half in .34 (it
+## was 5600 x 6300), at the user's ask after Vampire Survivors: every landmark is now within about
+## 30 seconds' walk of the start, the furthest (the Golden Gate) used to take about a minute.
+const OVERVIEW := Rect2(-2400.0, -2100.0, 4800.0, 3900.0)
 
 ## Block rows at or above / below these are San Francisco / San Jose; columns at or before
 ## HILLS_COLUMN are the hills. (560 x 400 below is City.BLOCK, spelled out to keep the two
 ## classes' constants acyclic.)
-const SF_ROW := -3
-const SJ_ROW := 3
+const SF_ROW := -2
+const SJ_ROW := 2
 const HILLS_COLUMN := -3
 const BLOCK_SIZE := Vector2(560.0, 400.0)
 ## The coast, row by row (west_shore_column / east_shore_column): land runs from the west shore
@@ -50,7 +54,7 @@ const BLOCK_SIZE := Vector2(560.0, 400.0)
 const SHORE_STRIP := 200.0
 ## North of San Francisco's north shore road (Lombard St), past a strip of shore, is the water
 ## of the Golden Gate.
-const NORTH_SHORE_ROW := -7
+const NORTH_SHORE_ROW := -4
 const NORTH_WATER_Y := NORTH_SHORE_ROW * 400.0 - SHORE_STRIP
 ## Rows within this of a road are the road (with its sidewalks and a margin): a row's own
 ## coast applies only between them, and a road is water only where both rows it divides are,
@@ -59,9 +63,9 @@ const ROAD_BAND := 40.0
 ## The freeways and the railway, by block column, and the first row they run from; `north` /
 ## `south` are where the green signs point.
 const FREEWAYS := {2: {"number": "101", "shield": "shield_us", "from_row": -1, "north": "San Francisco", "south": "San Jose"},
-	-2: {"number": "280", "shield": "shield_interstate", "from_row": -2, "north": "San Francisco", "south": "San Jose"}}
+	-2: {"number": "280", "shield": "shield_interstate", "from_row": -1, "north": "San Francisco", "south": "San Jose"}}
 const RAILWAY_COLUMN := -1
-const RAILWAY_FROM_ROW := -6
+const RAILWAY_FROM_ROW := -4
 ## Salt ponds line the shore from this row south (further north is a waterfront).
 const SALT_POND_FROM_ROW := -1
 ## Blocks given over to SFO's runway (City draws it; a parked plane stands on it).
@@ -145,16 +149,16 @@ const LANDMARKS := {
 	Vector2i(0, 1): "art:caltrain",
 	Vector2i(-1, -1): "brand_row:beta",
 	Vector2i(0, -1): "brand_row:goggle",
-	Vector2i(1, 2): "art:pear_park",
+	Vector2i(1, 1): "art:pear_park",
 	Vector2i(1, -1): "brand_row:linkedout",
-	Vector2i(0, 4): "brand_row:envy",
-	Vector2i(-1, 3): "brand_row:nutflix",
+	Vector2i(0, 3): "brand_row:envy",
+	Vector2i(-1, 2): "brand_row:nutflix",
 	Vector2i(2, 0): "art:burger_shop",
-	Vector2i(2, 3): "art:stadium",
-	Vector2i(0, -4): "art:transamerica",
-	Vector2i(-1, -5): "art:sailsforce_tower",
+	Vector2i(2, 2): "art:stadium",
+	Vector2i(0, -3): "art:transamerica",
+	Vector2i(-1, -4): "art:sailsforce_tower",
 	# On the north shore, looking out over the Golden Gate's water.
-	Vector2i(-2, -8): "art:golden_gate",
+	Vector2i(-1, -5): "art:golden_gate",
 }
 ## Landmarks standing on a block's lawn, in front of its row of buildings: the campus mascots.
 const LAWN_LANDMARKS := {Vector2i(0, -1): "dino_skeleton", Vector2i(-1, -1): "thumbs_up_sign"}
@@ -169,13 +173,13 @@ const STAMPS := {
 	"beta": {"art": "thumbs_up_sign", "block": Vector2i(-1, -1), "name": "Beta 园区", "note": "门口立着巨大的点赞牌", "bonus": ["magnet", 0.05]},
 	"linkedout": {"art": "card", "block": Vector2i(1, -1), "name": "LinkedOut 园区", "note": "人人都在看下一份工作", "bonus": ["luck", 10.0]},
 	"burger_shop": {"art": "burger_shop", "block": Vector2i(2, 0), "name": "Out-N-In 汉堡", "note": "加班到半夜的宵夜", "bonus": ["max_hp", 5.0]},
-	"pear_park": {"art": "pear_park", "block": Vector2i(1, 2), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["might", 0.02]},
-	"nutflix": {"art": "icon_nut", "block": Vector2i(-1, 3), "name": "Nutflix 园区", "note": "下班回家接着刷", "bonus": ["regen", 0.05]},
-	"envy": {"art": "icon_eye", "block": Vector2i(0, 4), "name": "Envy 园区", "note": "显卡又卖断货了", "bonus": ["haste", 0.02]},
-	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["speed", 0.02]},
-	"transamerica": {"art": "transamerica", "block": Vector2i(0, -4), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["magnet", 0.05]},
-	"sailsforce_tower": {"art": "sailsforce_tower", "block": Vector2i(-1, -5), "name": "Sailsforce 大厦", "note": "旧金山最高的楼", "bonus": ["max_hp", 5.0]},
-	"golden_gate": {"art": "golden_gate", "block": Vector2i(-2, -8), "name": "金门大桥", "note": "一路往北，走到陆地尽头", "bonus": ["might", 0.03]},
+	"pear_park": {"art": "pear_park", "block": Vector2i(1, 1), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["might", 0.02]},
+	"nutflix": {"art": "icon_nut", "block": Vector2i(-1, 2), "name": "Nutflix 园区", "note": "下班回家接着刷", "bonus": ["regen", 0.05]},
+	"envy": {"art": "icon_eye", "block": Vector2i(0, 3), "name": "Envy 园区", "note": "显卡又卖断货了", "bonus": ["haste", 0.02]},
+	"stadium": {"art": "stadium", "block": Vector2i(2, 2), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["speed", 0.02]},
+	"transamerica": {"art": "transamerica", "block": Vector2i(0, -3), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["magnet", 0.05]},
+	"sailsforce_tower": {"art": "sailsforce_tower", "block": Vector2i(-1, -4), "name": "Sailsforce 大厦", "note": "旧金山最高的楼", "bonus": ["max_hp", 5.0]},
+	"golden_gate": {"art": "golden_gate", "block": Vector2i(-1, -5), "name": "金门大桥", "note": "一路往北，走到陆地尽头", "bonus": ["might", 0.03]},
 }
 ## Signs that belong to a landmark drawing.
 const LANDMARK_BRANDS := {"pear_park": "pear", "sailsforce_tower": "sailsforce", "caltrain": "station",
@@ -203,15 +207,14 @@ const BRANDS := {
 ## Real street names, roughly where they run. North-south roads by block column, east-west
 ## roads by block row; anything off the table gets a numbered avenue.
 const NORTH_SOUTH := {
-	-4: "Skyline Blvd", -3: "Foothill Expy", -2: "I-280", -1: "Alma St", 0: "El Camino Real",
+	-3: "Skyline Blvd", -2: "I-280", -1: "Alma St", 0: "El Camino Real",
 	1: "Middlefield Rd", 2: "US-101", 3: "Shoreline Blvd",
 }
 ## San Francisco's own north-south streets (the peninsula's roads don't run up there).
 const NORTH_SOUTH_SF := {-2: "Sunset Blvd", -1: "Divisadero St", 0: "Van Ness Ave", 1: "Embarcadero"}
 const EAST_WEST := {
-	-7: "Lombard St", -6: "Marina Blvd", -5: "Haight St", -4: "Market St", -3: "Geary Blvd",
-	-2: "Woodside Rd", -1: "Sand Hill Rd", 0: "University Ave", 1: "California Ave",
-	2: "Castro St", 3: "Stevens Creek Blvd", 4: "Santa Clara St", 5: "Story Rd",
+	-4: "Lombard St", -3: "Market St", -2: "Geary Blvd", -1: "Sand Hill Rd", 0: "University Ave",
+	1: "California Ave", 2: "Castro St", 3: "Santa Clara St", 4: "Story Rd",
 }
 
 
@@ -256,9 +259,9 @@ static func east_shore_column(row: int) -> Variant:
 		return 1
 	if row == -1:
 		return 2
-	if row <= 1:
+	if row == 0:
 		return 3
-	if row == 2:
+	if row == 1:
 		return 4
 	return null
 
@@ -266,7 +269,7 @@ static func east_shore_column(row: int) -> Variant:
 ## The block column whose road is the row's last before the Pacific: San Francisco's Ocean
 ## Beach, then past the hills further south.
 static func west_shore_column(row: int) -> int:
-	return -2 if row <= SF_ROW else -4
+	return -2 if row <= SF_ROW else -3
 
 
 ## Where the row's water starts, east and west (INF / -INF: none that way).

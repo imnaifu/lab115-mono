@@ -30,22 +30,25 @@ const FINALE_LINE := "最后的考验：老板画饼 + 百模大战"
 ## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 末位淘汰 (a ring closing on
 ## you) and 沙尘暴 (a wind blowing everyone east).
 const GUEST_BOSS := {"type": "elimination", "at": 330.0}
-const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "沙尘暴来了！风往东刮，站稳了"}
+const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "沙尘暴来了！风往东刮，站稳了",
+	"name": "沙尘暴", "hint": "风往东刮，逆风走慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "houchang"
-## The named part of the world for the minimap, in world pixels.
-const OVERVIEW := Rect2(-3920.0, -2800.0, 8400.0, 6400.0)
+## The named part of the world for the minimap, in world pixels. Pulled in to about half in .34
+## (it was 8400 x 6400), at the user's ask after Vampire Survivors: every landmark is within about
+## 30 seconds' walk of the start.
+const OVERVIEW := Rect2(-2800.0, -2000.0, 5600.0, 4400.0)
 ## Spelled out rather than City.BLOCK, to keep the classes' constants acyclic (as in BayArea).
 const BLOCK_SIZE := Vector2(560.0, 400.0)
 ## Block rows at or above / below these are 回龙观 / the universities; columns at or before
 ## WEST_HILLS_COLUMN are the Western Hills.
 const HUILONGGUAN_ROW := -2
-const HAIDIAN_ROW := 3
-const WEST_HILLS_COLUMN := -6
+const HAIDIAN_ROW := 2
+const WEST_HILLS_COLUMN := -4
 ## 昆明湖: the blocks it fills (their district is the lake) and the water itself, a margin short of
 ## the roads round it, so a lakeside road runs all the way round.
-const LAKE_BLOCKS: Array[Vector2i] = [Vector2i(-4, 4), Vector2i(-3, 4), Vector2i(-4, 5), Vector2i(-3, 5)]
-const LAKES: Array[Rect2] = [Rect2(-2180.0, 1670.0, 1000.0, 660.0)]
+const LAKE_BLOCKS: Array[Vector2i] = [Vector2i(-3, 3), Vector2i(-2, 3), Vector2i(-3, 4), Vector2i(-2, 4)]
+const LAKES: Array[Rect2] = [Rect2(-1620.0, 1270.0, 1000.0, 660.0)]
 ## The expressways and Line 13 by block column, from far north on; `north` / `south` are where the
 ## green signs point.
 const FREEWAYS := {
@@ -129,14 +132,14 @@ const LANDMARKS := {
 	Vector2i(-2, -1): "brand_row:didi",
 	Vector2i(-1, -1): "brand_row:netease",
 	Vector2i(0, -3): "art:tower_block",
-	Vector2i(2, 3): "brand_row:wudaokou",
-	Vector2i(1, 4): "art:tsinghua_gate",
-	Vector2i(-1, 5): "art:boya_pagoda",
-	Vector2i(0, 6): "brand_row:zgc",
-	Vector2i(1, 7): "brand_row:bytedance",
+	Vector2i(1, 2): "brand_row:wudaokou",
+	Vector2i(0, 3): "art:tsinghua_gate",
+	Vector2i(-1, 3): "art:boya_pagoda",
+	Vector2i(0, 4): "brand_row:zgc",
+	Vector2i(1, 4): "brand_row:bytedance",
 	# On the lake's north shore, looking out over 昆明湖, as 佛香阁 does from 万寿山.
-	Vector2i(-4, 3): "art:summer_palace",
-	Vector2i(5, 6): "art:birds_nest",
+	Vector2i(-3, 2): "art:summer_palace",
+	Vector2i(2, 3): "art:birds_nest",
 }
 const LAWN_LANDMARKS := {}
 ## Signs that belong to a landmark drawing.
@@ -152,13 +155,13 @@ const STAMPS := {
 	"bj_xiaomi": {"art": "icon_rice", "block": Vector2i(2, -1), "name": "大米科技园", "note": "为加班而生", "bonus": ["magnet", 0.05]},
 	"bj_didi": {"art": "robotaxi", "block": Vector2i(-2, -1), "name": "嘀嘀总部", "note": "下班叫车排第 200 位", "bonus": ["luck", 10.0]},
 	"bj_huilongguan": {"art": "tower_block", "block": Vector2i(0, -3), "name": "回龙观", "note": "睡城：通勤两小时，睡觉六小时", "bonus": ["regen", 0.05]},
-	"bj_wudaokou": {"art": "boba", "block": Vector2i(2, 3), "name": "五道口", "note": "宇宙中心，奶茶店比人多", "bonus": ["haste", 0.02]},
-	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(1, 4), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["might", 0.02]},
-	"bj_peking": {"art": "boya_pagoda", "block": Vector2i(-1, 5), "name": "博雅塔", "note": "北大未名湖边的塔", "bonus": ["haste", 0.02]},
-	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(0, 6), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
-	"bj_bytedance": {"art": "icon_note", "block": Vector2i(1, 7), "name": "字节跳跳", "note": "大力出奇迹", "bonus": ["max_hp", 5.0]},
-	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-4, 3), "name": "颐和园", "note": "佛香阁下就是昆明湖", "bonus": ["luck", 10.0]},
-	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(5, 6), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.03]},
+	"bj_wudaokou": {"art": "boba", "block": Vector2i(1, 2), "name": "五道口", "note": "宇宙中心，奶茶店比人多", "bonus": ["haste", 0.02]},
+	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(0, 3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["might", 0.02]},
+	"bj_peking": {"art": "boya_pagoda", "block": Vector2i(-1, 3), "name": "博雅塔", "note": "北大未名湖边的塔", "bonus": ["haste", 0.02]},
+	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(0, 4), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
+	"bj_bytedance": {"art": "icon_note", "block": Vector2i(1, 4), "name": "字节跳跳", "note": "大力出奇迹", "bonus": ["max_hp", 5.0]},
+	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, 2), "name": "颐和园", "note": "佛香阁下就是昆明湖", "bonus": ["luck", 10.0]},
+	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.03]},
 }
 
 ## Parody companies, as in BayArea.BRANDS; most are their name alone.
@@ -179,13 +182,13 @@ const BRANDS := {
 ## Real road names, roughly where they run, as in BayArea; anything off the table is a 规划路
 ## (the planned roads Beijing's maps still number).
 const NORTH_SOUTH := {
-	-6: "香山路", -5: "西山路", -4: "颐和园路", -3: "圆明园西路", -2: "京新高速", -1: "软件园路",
+	-5: "香山路", -4: "西山路", -3: "颐和园路", -2: "京新高速", -1: "软件园路",
 	0: "开拓路", 1: "上地东路", 2: "安宁庄路", 3: "京藏高速", 4: "学院路", 5: "北辰西路", 6: "北辰东路",
 }
 const EAST_WEST := {
 	-6: "回龙观东大街", -5: "龙域北街", -4: "育知路", -3: "北清路", -2: "西北旺东路", -1: "后厂村路",
-	0: "西二旗大街", 1: "上地十街", 2: "信息路", 3: "北五环", 4: "清华西路", 5: "成府路", 6: "北四环",
-	7: "知春路", 8: "北三环",
+	0: "西二旗大街", 1: "上地十街", 2: "北五环", 3: "清华西路", 4: "成府路", 5: "北四环", 6: "知春路",
+	7: "北三环",
 }
 
 ## Height in logical pixels of each drawing used here, as in BayArea.HEIGHTS.
@@ -202,9 +205,9 @@ static func district_of(block: Vector2i) -> String:
 		return "lake"
 	if block.x <= WEST_HILLS_COLUMN:
 		return "xishan"
-	if block.x <= -3 and block.y >= HAIDIAN_ROW:
+	if block.x <= -2 and block.y >= HAIDIAN_ROW:
 		return "yiheyuan"
-	if block.x >= 3 and block.y >= HAIDIAN_ROW + 1:
+	if block.x >= 2 and block.y >= HAIDIAN_ROW + 1:
 		return "aoyun"
 	if block.y <= HUILONGGUAN_ROW:
 		return "huilongguan"

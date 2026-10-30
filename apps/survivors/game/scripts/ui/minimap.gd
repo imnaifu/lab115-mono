@@ -19,6 +19,9 @@ const DISTRICT_COLORS := {
 	# 北京 (Beijing.DISTRICTS)
 	"houchang": Art.FILL_MINT, "huilongguan": Art.FILL_PINK, "haidian": Art.FILL_LILAC,
 	"yiheyuan": Color("cfe6b0"), "xishan": Color("f0dc9a"), "aoyun": Art.BRAND_SOFT, "lake": City.SAND,
+	# 西雅图 (Seattle.DISTRICTS; its lakes' blocks are "lake" too)
+	"slu": Art.FILL_MINT, "downtown": Art.FILL_LILAC, "sodo": Art.BRAND_SOFT, "north": Art.FILL_PINK,
+	"eastside": Art.FILL_SKY, "sound": City.SAND,
 }
 const FREEWAY_COLOR := Color("f2c230")
 const INSET := 3.0
