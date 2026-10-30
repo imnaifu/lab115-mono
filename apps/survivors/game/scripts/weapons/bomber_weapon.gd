@@ -1,15 +1,20 @@
 class_name BomberWeapon
 extends Weapon
 ## Drones that fly out over the thickest crowd on screen, drop a bomb on it (its shadow shows where
-## it lands) and fly on to the next; they never ram anything. (Silicon Valley: 无人机.) Vampire
+## it lands) and fly on to the next; they never ram anything. Since .35 a drone follows the enemy
+## in the middle of that crowd rather than flying to where it stood, and drops where it will be
+## when the bomb lands (the user: by the time a bomb went off the crowd had walked on). (Silicon Valley: 无人机.) Vampire
 ## Survivors' Peachone and Ebony Wings, birds dropping bombs. They used to chase enemies and ram
 ## them, which the ops' guard wall and the outsourced workers did too. 集束轰炸 (evolved with
 ## 降本增效): every bomb throws out three smaller ones round where it lands.
 
 const COUNT := [1, 2, 2, 3, 4]
-const DAMAGE := [16.0, 16.0, 22.0, 22.0, 28.0]
+## A quarter down in .35 (was 16, 16, 22, 22, 28) once the bombs started landing: in bot runs its
+## share of the damage went from about 7% to 24%, the user asked for it a little weaker.
+const DAMAGE := [12.0, 12.0, 16.0, 16.0, 21.0]
 const BLAST_RADIUS := [26.0, 26.0, 30.0, 30.0, 36.0]
-const SPEED := 180.0
+## Was 180 until .35, slow enough for the crowd to walk out from under the bomb.
+const SPEED := 260.0
 ## Seconds between one drone's bombs, before the player's cooldown multiplier.
 const RELOAD := 1.6
 const FALL_SECONDS := 0.35
@@ -29,6 +34,8 @@ class Drone:
 	var position := Vector2.ZERO
 	## Where it is flying to drop its bomb, or null while it reloads by the player.
 	var goal: Variant = null
+	## The enemy it is after (the middle of the crowd it picked), followed until the drop.
+	var target: Enemy = null
 	var reload_left := 0.0
 
 
@@ -82,13 +89,21 @@ func _process(delta: float) -> void:
 		var drone := _drones[i]
 		drone.reload_left -= delta
 		if drone.goal == null and drone.reload_left <= 0.0:
-			drone.goal = _busiest_spot(radius)
+			drone.target = _busiest_enemy(radius)
+		elif drone.goal != null and not _alive(drone.target):
+			# Its enemy died on the way: the next crowd instead, or the spot it was heading for.
+			var other := _busiest_enemy(radius)
+			if other != null:
+				drone.target = other
+		if _alive(drone.target):
+			drone.goal = _landing_spot(drone.target)
 		var hover := player.position + Vector2.from_angle(_clock * 1.5 + TAU * i / _drones.size()) * HOVER_RADIUS + Vector2(0, -6)
 		var heading: Vector2 = hover if drone.goal == null else drone.goal
 		drone.position = drone.position.move_toward(heading, SPEED * delta)
 		if drone.goal != null and drone.position.distance_to(drone.goal as Vector2) < 2.0:
 			_drop(drone.goal, stat(DAMAGE) * damage_scale(), radius, false)
 			drone.goal = null
+			drone.target = null
 			drone.reload_left = RELOAD * player.cooldown_scale
 		drone.sprite.position = drone.position + Vector2(0, sin(_clock * 8.0 + i) * 1.5)
 	for i in range(_bombs.size() - 1, -1, -1):
@@ -120,15 +135,15 @@ func _blast(bomb: Bomb) -> void:
 			_drop(bomb.at + offset, bomb.damage * BOMBLET_SHARE, bomb.radius * 0.7, true)
 
 
-## The on-screen spot with the most enemies within `radius`, clear of where the other drones are
-## headed; null with nobody on screen.
-func _busiest_spot(radius: float) -> Variant:
-	var best: Variant = null
+## The on-screen enemy with the most others within `radius` of it, clear of where the other
+## drones are headed; null with nobody on screen.
+func _busiest_enemy(radius: float) -> Enemy:
+	var best: Enemy = null
 	var best_count := 0
 	for enemy in game.random_visible_enemies(CANDIDATES):
 		var taken := false
 		for other in _drones:
-			if other.goal != null and (other.goal as Vector2).distance_to(enemy.position) < radius * 1.5:
+			if (_alive(other.target) and other.target == enemy) or (other.goal != null and (other.goal as Vector2).distance_to(enemy.position) < radius * 1.5):
 				taken = true
 				break
 		if taken:
@@ -136,8 +151,21 @@ func _busiest_spot(radius: float) -> Variant:
 		var count := game.query_enemies(enemy.position, radius).size()
 		if count > best_count:
 			best_count = count
-			best = enemy.position
+			best = enemy
 	return best
+
+
+## Untyped: a drone's target may have been freed since, which a typed argument rejects.
+func _alive(enemy: Variant) -> bool:
+	return is_instance_valid(enemy) and not (enemy as Enemy).dead
+
+
+## Where `enemy` will be when a bomb dropped now lands: the crowd walks at the player, so ahead of
+## it along that line by FALL_SECONDS of its walking.
+func _landing_spot(enemy: Enemy) -> Vector2:
+	var toward := player.position - enemy.position
+	var lead := minf(enemy.speed * FALL_SECONDS, toward.length())
+	return enemy.position + toward.normalized() * lead
 
 
 ## Each falling bomb's shadow, growing and darkening until it lands.

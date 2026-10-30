@@ -8,9 +8,9 @@ const MAX_LEVEL := 5
 ## Passives a run can hold, like the six weapon slots: once six are picked, only those level up.
 const MAX_PASSIVES := 6
 const BASE_CHOICES := 3
-## Most cards a level-up shows, whatever adds them (猎头电话's two, luck's one): five narrow cards
-## still fit side by side.
-const MAX_CHOICES := 5
+## Most cards a level-up shows: the three, plus luck's one now and then. (猎头电话 added up to two
+## more until .35, when the user had it taken out: few took it, it did little.)
+const MAX_CHOICES := 4
 ## New-weapon cards every run's first level-ups always include (two, then one). In the live data,
 ## first-time players who filled up on passives were left with one weapon and died at 2–4
 ## minutes, while those who took weapons early lived; the novel passives made that trap worse.
@@ -20,8 +20,9 @@ const RECOMMEND_UNTIL_WEAPONS := 3
 ## The level-ups at which the job's own weapon always comes up, its pair of direction cards plus
 ## the rest rolled as usual (Hades' hammer, Deep Rock's overclocks): left to the weighted pool it
 ## came up at 7% of level-ups in the live data, 2-4 times in a whole run, and was taken every
-## time. Four, as many as it has upgrades; it can still come up in between.
-const JOB_WEAPON_LEVELS := [3, 6, 10, 15]
+## time. Four to begin with, as many as it had upgrades; .35 added 20 and 25 when each direction
+## got its own four (eight in all; the rest come up in between, as before).
+const JOB_WEAPON_LEVELS := [3, 6, 10, 15, 20, 25]
 
 ## Card rarity (白 / 绿 / 蓝 / 紫 / 橙): every weapon and passive card rolls one, and the rarer it is
 ## the more its step gives, the level still going up by one. `scale` multiplies a stat passive's
@@ -80,7 +81,7 @@ const WEAPONS := {
 	"firewall": {"name": "防火墙", "art": "firewall", "behavior": "orbit", "type": "summon", "job": "ops",
 		"levels": ["一面墙护着你：身边有怪就飞过去撞开，先打离你最近的"]},
 	"drone": {"name": "无人机", "art": "drone", "behavior": "bomber", "type": "summon",
-		"levels": ["飞到怪最多的地方扔炸弹，炸一片", "多一架无人机", "伤害 +6，炸得更大", "多一架无人机", "多一架，伤害 +6，炸得更大"]},
+		"levels": ["飞到怪最多的地方扔炸弹，炸一片", "多一架无人机", "伤害 +4，炸得更大", "多一架无人机", "多一架，伤害 +5，炸得更大"]},
 	"outsource": {"name": "外包团队", "art": "outsourcing", "behavior": "squad", "type": "summon",
 		"levels": ["招 2 个外包站在你身边，附近的怪会先去打他们；被打倒几秒后重新招人", "多招 1 个", "更抗揍，伤害 +3", "多招 1 个", "多招 1 个，更抗揍，伤害 +3"]},
 }
@@ -94,6 +95,7 @@ const WEAPONS := {
 const EVOLUTION_ON := false
 const EVOLUTIONS := {
 	"enter": {"passive": "haste", "name": "Shift+Enter 批量提交", "text": "每轮朝屏幕里的敌人各敲一下"},
+	# Its partner 猎头电话 is gone (.35); give it another when evolutions come back.
 	"copy": {"passive": "headhunter", "name": "Ctrl+A 全选粘贴", "text": "朝 8 个方向一起粘贴"},
 	"screensaver": {"passive": "armor", "name": "动态壁纸", "text": "每次碰到屏幕边缘都炸一圈"},
 	"prd": {"passive": "standup", "name": "需求评审会", "text": "每次都抡满一圈，范围更大，定得更久"},
@@ -108,10 +110,12 @@ const EVOLUTIONS := {
 
 ## A job's own weapon levels up along one of two directions each time, the player's pick: its
 ## level-up comes as a pair of cards, one per direction. `a` and `b` count up the weapon's
-## branch_a / branch_b; four upgrades in all, in any mix, still take it to MAX_LEVEL.
+## branch_a / branch_b, each on its own up to BRANCH_MAX (.35, the user's call: until then four
+## upgrades in all, in any mix, took it to MAX_LEVEL, so going all one way shut the other).
+const BRANCH_MAX := 4
 const BRANCHES := {
 	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +6，穿透 +1"}},
-	"prd": {"a": {"name": "更长", "text": "抡得更远，伤害 +6，出手更快"}, "b": {"name": "更宽", "text": "扇形更宽（四次就是一整圈），伤害 +6，出手更快"}},
+	"prd": {"a": {"name": "更长", "text": "抡得更远，伤害 +6，出手更快"}, "b": {"name": "更宽", "text": "扇形更宽（四次到 180°），伤害 +6，出手更快"}},
 	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +7，推得更远"}},
 	"guides": {"a": {"name": "更多网格线", "text": "横竖各多一条网格线"}, "b": {"name": "更粗更久", "text": "线更粗、留得更久，伤害 +2"}},
 	"poke": {"a": {"name": "更多方向", "text": "多戳几个方向（前 → 前后 → 四向 → 六向 → 八向），伤害 +3"}, "b": {"name": "更多次数", "text": "一轮多戳一下，伤害 +3"}},
@@ -133,7 +137,6 @@ const PASSIVES := {
 	"open_source": {"name": "开源项目", "art": "turret", "text": "打死怪有几率留下小炮台，自动打怪 8 秒"},
 	"standup": {"name": "站会", "art": "standup", "text": "每隔一阵开站会，震开并定住身边的怪"},
 	"nap": {"name": "午休", "art": "nap", "text": "站着不动 1 秒后，快速回血"},
-	"headhunter": {"name": "猎头电话", "art": "headhunter", "text": "升级时多 1 个选项", "max": 2},
 }
 
 ## The names the weapon stats go by on cards, most telling first; a card shows at most
@@ -223,9 +226,12 @@ func _job_pair_due(for_level: int) -> Array:
 		return []
 	var weapon_id: String = Jobs.data(_game.player.job)["weapon"]
 	var weapon := _game.player.get_weapon(weapon_id)
-	if weapon == null or weapon.level >= MAX_LEVEL or not BRANCHES.has(weapon_id):
+	if weapon == null or not BRANCHES.has(weapon_id) or weapon_maxed(weapon):
 		return []
-	var pair := [_branch_choice(weapon_id, "a"), _branch_choice(weapon_id, "b")]
+	# Both directions, or the one still open once the other is full.
+	var pair := []
+	for branch: String in open_branches(weapon):
+		pair.append(_branch_choice(weapon_id, branch))
 	for card: Dictionary in pair:
 		card["milestone"] = true
 	return pair
@@ -308,9 +314,10 @@ func open_chest(count: int) -> Array:
 	for i in count:
 		var carried: Array = []
 		for weapon in _game.player.weapons:
-			if weapon.level < MAX_LEVEL:
-				# A job's own weapon goes up one of its two directions, picked at random.
-				carried.append(_branch_choice(weapon.id, "a" if _game.rng.randf() < 0.5 else "b") if BRANCHES.has(weapon.id) \
+			if not weapon_maxed(weapon):
+				# A job's own weapon goes up one of its open directions, picked at random.
+				var open := open_branches(weapon) if BRANCHES.has(weapon.id) else []
+				carried.append(_branch_choice(weapon.id, open[_game.rng.randi() % open.size()]) if BRANCHES.has(weapon.id) \
 					else _choice("weapon", weapon.id, weapon.level + 1))
 		for passive_id: String in passive_levels:
 			if passive_levels[passive_id] < max_level("passive", passive_id):
@@ -329,7 +336,7 @@ func evolvable() -> Array[Weapon]:
 	if not EVOLUTION_ON:
 		return ready
 	for weapon in _game.player.weapons:
-		if weapon.evolved or weapon.level < MAX_LEVEL or not EVOLUTIONS.has(weapon.id):
+		if weapon.evolved or not weapon_maxed(weapon) or not EVOLUTIONS.has(weapon.id):
 			continue
 		if passive_levels.has(EVOLUTIONS[weapon.id]["passive"]):
 			ready.append(weapon)
@@ -377,7 +384,7 @@ func _roll(count: int, new_weapons: int, skip_pair: String = "") -> Array:
 			if slots_left:
 				pool.append(_choice("weapon", weapon_id, 1))
 				weights.append(2.0)
-		elif weapon.level < MAX_LEVEL and weapon_id != skip_pair:
+		elif not weapon_maxed(weapon) and weapon_id != skip_pair:
 			# Upgrading what you already carry is favoured so builds come together. The job's own
 			# weapon stands in as one entry and comes out as its pair of direction cards.
 			pool.append({"kind": "pair", "id": weapon_id} if BRANCHES.has(weapon_id) else _choice("weapon", weapon_id, weapon.level + 1))
@@ -417,12 +424,14 @@ func _roll(count: int, new_weapons: int, skip_pair: String = "") -> Array:
 			picked.append(entry)
 			continue
 		# Drawn for the last card, a pair takes the place of the last drawn card instead of being
-		# left out (half of one would be no choice; leaving it out made it rarer still).
-		if picked.size() + 2 > count and picked.size() > forced:
+		# left out (half of one would be no choice; leaving it out made it rarer still). With one
+		# direction full, it is a single card.
+		var open := open_branches(_game.player.get_weapon(entry["id"]))
+		if picked.size() + open.size() > count and picked.size() > forced:
 			picked.pop_back()
-		if picked.size() + 2 <= count:
-			picked.append(_branch_choice(entry["id"], "a"))
-			picked.append(_branch_choice(entry["id"], "b"))
+		if picked.size() + open.size() <= count:
+			for branch: String in open:
+				picked.append(_branch_choice(entry["id"], branch))
 	if picked.is_empty():
 		picked.append(FALLBACK)
 	# The guaranteed weapons shouldn't always sit in the first slots; a pair stays side by side.
@@ -452,18 +461,15 @@ func _shuffle(items: Array) -> void:
 		items[other] = held
 
 
-## How many cards a level-up offers: three, plus one per level of the headhunter perk, plus one
-## now and then from luck (`lucky`, see lucky_card), at most MAX_CHOICES.
+## How many cards a level-up offers: three, plus one now and then from luck (`lucky`, see
+## lucky_card), at most MAX_CHOICES.
 func choice_count(lucky: bool = false) -> int:
-	return mini(BASE_CHOICES + passive_levels.get("headhunter", 0) + (1 if lucky else 0), MAX_CHOICES)
+	return mini(BASE_CHOICES + (1 if lucky else 0), MAX_CHOICES)
 
 
 ## Whether luck adds a card to this level-up (Vampire Survivors' fourth option): the one thing luck
-## does that shows at once, so 锦鲤 doesn't feel like a card spent on nothing. Never once the
-## headhunter perk already fills MAX_CHOICES.
+## does that shows at once, so 锦鲤 doesn't feel like a card spent on nothing.
 func lucky_card() -> bool:
-	if BASE_CHOICES + passive_levels.get("headhunter", 0) >= MAX_CHOICES:
-		return false
 	return _game.rng.randf() < extra_card_chance(_game.player.luck)
 
 
@@ -664,8 +670,6 @@ func _passive_numbers(passive_id: String, next_level: int, rarity: int = 0) -> S
 			return _perk_step("站会间隔", Perks.STANDUP_EVERY, current, next_level, tr("%s 秒"))
 		"nap":
 			return _perk_step("午休回血", Perks.NAP_REGEN, current, next_level, tr("%s/秒"))
-		"headhunter":
-			return _step("选项", str(BASE_CHOICES + current), str(BASE_CHOICES + next_level))
 	return ""
 
 
@@ -695,15 +699,46 @@ static func _short_float(value: float) -> String:
 	return str(roundi(rounded)) if is_equal_approx(rounded, roundf(rounded)) else "%.1f" % rounded
 
 
-## A job weapon's card for one direction: its name and text, `branch` for apply().
+## A job weapon's card for one direction: its name and text, `branch` for apply(), and
+## `branch_level`, the level that direction goes to (the card's dots and the chest's "Lv").
 func _branch_choice(weapon_id: String, branch: String) -> Dictionary:
 	var weapon := _game.player.get_weapon(weapon_id)
 	var direction: Dictionary = BRANCHES[weapon_id][branch]
 	var choice := _choice("weapon", weapon_id, weapon.level + 1)
 	choice["branch"] = branch
+	choice["branch_level"] = branch_level(weapon, branch) + 1
 	choice["branch_name"] = direction["name"]
 	choice["text"] = direction["text"]
 	return choice
+
+
+## A job weapon's upgrades so far one way (`branch` "a" or "b").
+static func branch_level(weapon: Weapon, branch: String) -> int:
+	return weapon.branch_a if branch == "a" else weapon.branch_b
+
+
+## A job weapon's directions with upgrades still to go.
+static func open_branches(weapon: Weapon) -> Array:
+	var open := []
+	for branch: String in ["a", "b"]:
+		if branch_level(weapon, branch) < BRANCH_MAX:
+			open.append(branch)
+	return open
+
+
+## Nothing left to level up: a job weapon full both ways, any other at MAX_LEVEL.
+static func weapon_maxed(weapon: Weapon) -> bool:
+	if BRANCHES.has(weapon.id):
+		return open_branches(weapon).is_empty()
+	return weapon.level >= MAX_LEVEL
+
+
+## A weapon's level as the slots and the pause screen write it: "Lv 3", or a job weapon's two
+## directions, "Lv 2 · 3" (`compact` for the slot's badge: "2|3").
+static func level_text(weapon: Weapon, compact: bool = false) -> String:
+	if BRANCHES.has(weapon.id):
+		return ("%d|%d" if compact else "Lv %d · %d") % [weapon.branch_a, weapon.branch_b]
+	return str(weapon.level) if compact else "Lv %d" % weapon.level
 
 
 ## A card. Weapon cards also carry their `type` (the card's type tag).

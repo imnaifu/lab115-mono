@@ -117,9 +117,18 @@ const SQUEEZE_RADIUS := 64.0
 const SQUEEZE_DAMAGE := 20.0
 const COUNTDOWN_SECONDS := 25.0
 ## Speed at the end of the countdown, then berserk speed and damage, as multiples of its own.
-## Berserk it is still slower than the player (62), so kiting gets away.
+## Berserk it is still slower than the player: BOSS_MAX_SPEED caps it, so kiting gets away.
 const COUNTDOWN_SPEEDUP := 1.25
 const BERSERK_SPEED := 1.4
+## Bosses walk a little faster than the crowd (.35, the user's call: they hung back behind it, so
+## the weapons only ever hit the small fry). A boss's own speed (22-40) maps onto
+## BOSS_SPEED_FLOOR and up, BOSS_SPEED_SPREAD of each point over SLOWEST_BOSS_SPEED, so the slow
+## ones are still the slower bosses: 46-50.5, against the crowd's 26-44. However much it speeds up
+## (996, 急了, a countdown), it walks no faster than BOSS_MAX_SPEED, under the slowest job's 56.
+const BOSS_SPEED_FLOOR := 46.0
+const SLOWEST_BOSS_SPEED := 22.0
+const BOSS_SPEED_SPREAD := 0.25
+const BOSS_MAX_SPEED := 54.0
 const BERSERK_DAMAGE := 1.5
 const COUNTDOWN_URGENT := 5.0
 const CLONES_EVERY := 7.0
@@ -221,8 +230,14 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 	type_name = type_id
 	max_hp = data["hp"] * hp_scale
 	hp = max_hp
-	# Small per-enemy speed jitter keeps a crowd from marching in lockstep.
-	speed = data["speed"] * randf_range(0.9, 1.1)
+	# Small per-enemy speed jitter keeps a crowd from marching in lockstep; a boss's is smaller, so
+	# it never drops back to the crowd's pace.
+	var own_speed: float = data["speed"]
+	if data.get("elite", false):
+		own_speed = BOSS_SPEED_FLOOR + (own_speed - SLOWEST_BOSS_SPEED) * BOSS_SPEED_SPREAD
+		speed = own_speed * randf_range(0.97, 1.03)
+	else:
+		speed = own_speed * randf_range(0.9, 1.1)
 	# Harder maps hit harder (Maps.current.DIFFICULTY), its moves too (_hits).
 	damage = data["damage"] * Maps.current.DIFFICULTY["damage"]
 	xp_value = data["xp"]
@@ -260,7 +275,7 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 	if life_left > 0.0:
 		life_left = maxf(0.0, life_left - delta)
-	var velocity := direction * speed
+	var velocity := direction * (minf(speed, BOSS_MAX_SPEED) if is_elite else speed)
 	if _wobble > 0.0:
 		velocity += direction.orthogonal() * sin(_phase * 0.7) * _wobble
 	if slow_left > 0.0:

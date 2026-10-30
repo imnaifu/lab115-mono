@@ -25,7 +25,7 @@ const XP_BAR_SIZE := Vector2(96, 18)
 ## The boss bar sits under the clock; on an upright phone it must clear the minimap.
 const BOSS_BAR_WIDTH := 110.0
 const BOSS_BAR_WIDTH_PORTRAIT := 80.0
-## Level-up cards side by side when there are more than three of them (the headhunter perk).
+## Level-up cards side by side when there are more than three of them (luck's extra card).
 const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 ## The next-boss countdown under the clock shows this many seconds ahead.
 const NEXT_BOSS_WARNING := 20.0
@@ -687,7 +687,8 @@ func _refresh_inventory() -> void:
 	var weapons := game.player.weapons
 	for i in SLOT_COUNT:
 		var weapon: Weapon = weapons[i] if i < weapons.size() else null
-		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0, Art.SKY_LIGHT, weapon != null and weapon.evolved)
+		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0, Art.SKY_LIGHT, weapon != null and weapon.evolved,
+			Upgrades.level_text(weapon, true) if weapon else "")
 	var passive_ids := game.upgrades.passive_levels.keys()
 	for i in SLOT_COUNT:
 		var passive_id: String = passive_ids[i] if i < passive_ids.size() else ""
@@ -697,7 +698,8 @@ func _refresh_inventory() -> void:
 
 ## A slot: the item's icon on its tint with the level on a small ink badge (a star once evolved,
 ## on yellow); empty, a faint square.
-func _fill_slot(slot: Panel, art: String, item_level: int, fill: Color, evolved: bool = false) -> void:
+## `level_text` in place of the number when there is one: a job weapon's two directions, "2|3".
+func _fill_slot(slot: Panel, art: String, item_level: int, fill: Color, evolved: bool = false, level_text: String = "") -> void:
 	for child in slot.get_children():
 		child.queue_free()
 	var filled := art != ""
@@ -712,10 +714,13 @@ func _fill_slot(slot: Panel, art: String, item_level: int, fill: Color, evolved:
 	var badge := Panel.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.add_theme_stylebox_override("panel", UiKit.box(Art.BRAND if evolved else Art.INK, Art.INK, 1 if evolved else 0, UiKit.PILL))
-	badge.position = Vector2(SLOT_SIZE - 7.0, SLOT_SIZE - 6.0)
-	badge.size = Vector2(10, 10)
+	var text := "★" if evolved else (level_text if level_text != "" else str(item_level))
+	# Wider for a job weapon's "2|3".
+	var badge_width := 10.0 if text.length() <= 1 else 16.0
+	badge.position = Vector2(SLOT_SIZE - badge_width + 3.0, SLOT_SIZE - 6.0)
+	badge.size = Vector2(badge_width, 10)
 	slot.add_child(badge)
-	var number := UiKit.label("★" if evolved else str(item_level), 7, "display", Art.INK if evolved else Art.PAPER)
+	var number := UiKit.label(text, 7, "display", Art.INK if evolved else Art.PAPER)
 	number.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1438,6 +1443,9 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 	var badge: Control = null
 	if fresh:
 		badge = UiKit.tag("新武器", Art.SKY_LIGHT, Art.LINK) if kind == "weapon" else UiKit.tag("被动", Art.MINT_LIGHT, Art.GREEN_INK)
+	elif choice.has("branch_level"):
+		# A job weapon's direction card: that direction's own level (.35).
+		badge = UiKit.level_dots(choice["branch_level"] - 1, Upgrades.BRANCH_MAX, true, 1)
 	elif kind != "heal":
 		# A rarer table perk jumps several levels at once (Upgrades.RARITIES `extra_levels`).
 		badge = UiKit.level_dots(level - 1, choice["max"], true, choice.get("to_level", level) - level + 1)
@@ -1718,15 +1726,17 @@ func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_ro
 	var rows: Array[Dictionary] = []
 	var row_of := {}
 	for item: Dictionary in items:
-		var reached: int = item.get("to_level", item["level"])
-		if row_of.has(item["id"]):
-			var row_entry: Dictionary = rows[row_of[item["id"]]]
+		# A job weapon's directions level up apart (.35): one row each, with that direction's level.
+		var key: String = item["id"] + ":" + item.get("branch", "")
+		var reached: int = item.get("branch_level", item.get("to_level", item["level"]))
+		if row_of.has(key):
+			var row_entry: Dictionary = rows[row_of[key]]
 			row_entry["level"] = reached
 			row_entry["rarity"] = maxi(row_entry.get("rarity", 0), item.get("rarity", 0))
 		else:
-			row_of[item["id"]] = rows.size()
+			row_of[key] = rows.size()
 			var entry := item.duplicate()
-			entry["from"] = item["level"] - 1
+			entry["from"] = item.get("branch_level", item["level"]) - 1
 			entry["level"] = reached
 			rows.append(entry)
 	for i in rows.size():
@@ -1788,7 +1798,7 @@ func _prize_row(item: Dictionary, roomy: bool) -> Control:
 	if rarity > 0:
 		row.add_child(UiKit.tag(Upgrades.RARITIES[rarity]["name"], Art.RARITY_FILL[rarity], Art.RARITY_INK[rarity]))
 	var from: int = item.get("from", level - 1)
-	var step := tr("回复 30") if kind == "heal" else tr("进化！") if kind == "evolve" else tr("新") if level == 1 else "Lv %d → %d" % [from, level]
+	var step := tr("回复 30") if kind == "heal" else tr("进化！") if kind == "evolve" else tr("新") if level == 1 and not item.has("branch") else "Lv %d → %d" % [from, level]
 	row.add_child(UiKit.label(step, 12, "display", Art.LINK))
 	return row_panel
 
@@ -1832,7 +1842,7 @@ func _show_pause() -> void:
 	build.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var weapon_chips: Array = []
 	for weapon in game.player.weapons:
-		weapon_chips.append([Upgrades.weapon_name(weapon.id, weapon.evolved), weapon.level, weapon.art, weapon.evolved])
+		weapon_chips.append([Upgrades.weapon_name(weapon.id, weapon.evolved), Upgrades.level_text(weapon), weapon.art, weapon.evolved])
 	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), Jobs.MAX_WEAPONS], 12, "strong", Art.INK_MUTED))
 	build.add_child(_chip_grid(weapon_chips, Art.SKY_LIGHT))
 	var passive_chips: Array = []
@@ -1946,7 +1956,8 @@ func _chip_grid(entries: Array, fill: Color) -> Control:
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
 		row.add_child(name_label)
-		var level_text := "★" if entry[3] else "Lv %d" % entry[1]
+		# A level, or a job weapon's two directions already written out ("Lv 2 · 3").
+		var level_text: String = "★" if entry[3] else (entry[1] if entry[1] is String else "Lv %d" % entry[1])
 		var level_label := UiKit.label(level_text, 11, "display")
 		level_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		row.add_child(level_label)

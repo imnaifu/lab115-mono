@@ -10,7 +10,6 @@ extends RefCounted
 ## - open_source (开源项目): a killed enemy may leave a turret behind for a few seconds.
 ## - standup (站会): every so often knocks back and stuns everything close.
 ## - nap (午休): standing still for a moment heals quickly.
-## (headhunter, 猎头电话, adds level-up choices; Upgrades.choice_count reads it.)
 
 const VESTING_SECONDS := 60.0
 ## Damage vested per minute, per level.
@@ -26,7 +25,9 @@ const MAX_BLASTS_PER_FRAME := 6
 const TURRET_CHANCE := [0.02, 0.03, 0.04, 0.05, 0.06]
 const TURRET_SECONDS := 8.0
 const MAX_TURRETS := 4
-const STANDUP_EVERY := [14.0, 12.0, 10.0, 9.0, 8.0]
+## Every 10 s to start with since .35 (it was 14, 12, 10, 9, 8: the user found 14 s far too long
+## to wait for).
+const STANDUP_EVERY := [10.0, 9.0, 8.0, 7.0, 6.0]
 const STANDUP_RADIUS := 100.0
 const STANDUP_DAMAGE := [10.0, 15.0, 20.0, 25.0, 30.0]
 const STANDUP_STUN := 1.0

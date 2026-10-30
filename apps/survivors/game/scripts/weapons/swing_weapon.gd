@@ -6,7 +6,7 @@ extends Weapon
 ## 站会): every swing a full circle, at least EVOLVED_RADIUS wide, that stuns longer.
 ##
 ## The product manager's own weapon, so it levels up along two directions (Upgrades.BRANCHES):
-## 更长 reaches further, 更宽 widens the arc (four of those go all the way round). Either way each
+## 更长 reaches further, 更宽 widens the arc (four of those make a half circle). Either way each
 ## upgrade also hits harder and swings a little sooner.
 ##
 ## The swing is drawn as the roll itself sweeping through the arc (a bare white flash read as
@@ -17,7 +17,10 @@ const BASE_DAMAGE := 20.0
 const DAMAGE_PER_UPGRADE := 6.0
 ## 90° to start with (narrowed from 120° at the user's request, so a swing reads as aimed).
 const BASE_ARC_DEGREES := 90.0
-const ARC_PER_WIDER := 67.5
+## Four 更宽 reach MAX_ARC_DEGREES, a half circle: the user's call in .35 (it went all the way
+## round, 67.5° a time, which left nothing to aim).
+const ARC_PER_WIDER := 22.5
+const MAX_ARC_DEGREES := 180.0
 const BASE_RADIUS := 50.0
 const RADIUS_PER_LONGER := 8.0
 const BASE_COOLDOWN := 1.0
@@ -38,7 +41,7 @@ const SCRAPS_PER_SWING := 4
 static func branch_stats(longer: int, wider: int) -> Dictionary:
 	var upgrades := longer + wider
 	return {"damage": BASE_DAMAGE + DAMAGE_PER_UPGRADE * upgrades, "radius": BASE_RADIUS + RADIUS_PER_LONGER * longer,
-		"arc": minf(360.0, BASE_ARC_DEGREES + ARC_PER_WIDER * wider), "cooldown": BASE_COOLDOWN - COOLDOWN_PER_UPGRADE * upgrades}
+		"arc": minf(MAX_ARC_DEGREES, BASE_ARC_DEGREES + ARC_PER_WIDER * wider), "cooldown": BASE_COOLDOWN - COOLDOWN_PER_UPGRADE * upgrades}
 
 
 func cooldown() -> float:
