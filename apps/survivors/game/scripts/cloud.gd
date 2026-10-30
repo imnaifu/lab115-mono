@@ -3,8 +3,8 @@ extends Node
 ## 云存档: the player's 局外成长 (Progress) kept on the game's own Nakama server as well, so that
 ## clearing the browser's data (WeChat's in-app browser does it on its own), a new phone or, later,
 ## the App don't lose it. Nobody signs up: the first launch makes an anonymous account for this
-## device (a random device id), and a 存档码, a second key to the same account shown on the 收藏
-## page's 存档 tab, brings that account to another device, where both sides' progress is merged.
+## device (a random device id), and a 存档码, a second key to the same account shown on the 云存档
+## page (from the settings), brings that account to another device, where both sides' progress is merged.
 ##
 ## One instance hangs off the scene tree's root (like Sound), because the game scene is rebuilt
 ## for every run. It connects when the title screen first comes up, merges the server's copy into
@@ -34,6 +34,13 @@ const PATH := "user://cloud.cfg"
 const COLLECTION := "progress"
 const KEY := "main"
 const OWNER_ONLY := 1
+## Nothing is ever deleted on the server (the user's choice, 2026-10-29): an account given up is
+## marked in an object of its own, {"deleted": unix time, "reason": "player" or "redeemed", and for
+## "redeemed" "into": the account the device moved to}. Other devices on a marked account leave it
+## when they next connect (_start). The App will need real deletion, or marking and clearing out
+## later, before it's published (App Store 5.1.1(v): deactivating alone isn't enough).
+const STATE_COLLECTION := "account"
+const STATE_KEY := "state"
 ## A 存档码 is 12 characters out of 32, 0 / O and 1 / I left out so nothing gets misread when
 ## it's copied by hand: 60 bits, far too many to guess. Shown in groups of four.
 const CODE_ALPHABET := "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
@@ -52,6 +59,8 @@ signal changed(progress_merged: bool)
 ## A server that wins over the usual choice (the cloud test).
 static var server_override := ""
 static var _instance: Cloud
+## Whether this page load has reported how its first connection went (cloud_action "connect").
+static var _connect_reported := false
 
 var status := Status.OFF
 ## This account's 存档码 as last seen, "" while it has none.
@@ -63,6 +72,8 @@ var _timer: Timer
 var _syncing := false
 ## A save came in while a sync was running: another one follows.
 var _pending := false
+## Whether the last sync brought progress from the cloud.
+var _last_merged := false
 
 
 ## Starts the cloud save, once per page load (the game scene calls it every time it's built).
@@ -75,7 +86,7 @@ static func setup() -> void:
 	(Engine.get_main_loop() as SceneTree).root.add_child.call_deferred(_instance)
 
 
-## The instance for the 存档 tab; null before setup (scripts run without the game scene).
+## The instance for the 云存档 page; null before setup (scripts run without the game scene).
 static func shared() -> Cloud:
 	return _instance
 
@@ -151,8 +162,8 @@ func ensure_code() -> String:
 
 
 ## Moves this device onto the account a 存档码 (`text`) belongs to and merges this device's
-## progress into it. The account the device had before is deleted unless its own 存档码 was
-## ever made (the player may have that written down for another device).
+## progress into it. The account the device had before is marked deleted (merged into that one)
+## unless its own 存档码 was ever made (the player may have that written down for another device).
 func redeem(text: String) -> Redeem:
 	var entered := normalize_code(text)
 	if entered.length() != CODE_LENGTH:
@@ -168,10 +179,9 @@ func redeem(text: String) -> Redeem:
 		if (await _client.link_device_async(session, device_id)).is_exception():
 			return Redeem.OFFLINE
 		if _session != null and code.is_empty():
-			# Waited for, so it's gone by the time the player sees the result; a failure only
-			# leaves an empty account behind.
-			await _client.delete_account_async(_session)
-		_session = session
+			# A failure only leaves the old account unmarked.
+			await _mark_deleted(_session, {"reason": "redeemed", "into": session.user_id})
+		_set_session(session)
 		_config.set_value("cloud", "device_id", device_id)
 	# Entering a code turns the cloud save back on if it was off.
 	_config.set_value("cloud", "disabled", null)
@@ -180,15 +190,19 @@ func redeem(text: String) -> Redeem:
 	return Redeem.OK
 
 
-## Deletes this device's account on the server, with its copy of the save and its 存档码, and
-## stops syncing on this device until the player turns it on again. The local save stays. Other
-## devices that were on the account get a fresh one of their own when they next connect (_start).
+## 删除云存档: marks this device's account deleted (see STATE_COLLECTION; its save stays on the
+## server), takes its 存档码 off it so the code stops working, and stops syncing on this device
+## until the player turns it on again. The local save stays. Other devices that were on the
+## account get a fresh one of their own when they next connect (_start).
 func delete_account() -> bool:
 	if not await _sign_in():
 		return false
-	if (await _client.delete_account_async(_session)).is_exception():
+	# Marked first: should taking the code off fail, trying again marks it again and goes on.
+	if not await _mark_deleted(_session, {"reason": "player"}):
 		return false
-	_session = null
+	if not code.is_empty() and (await _client.unlink_custom_async(_session, code)).is_exception():
+		return false
+	_set_session(null)
 	code = ""
 	# A fresh anonymous account if it's turned on again.
 	_config.set_value("cloud", "device_id", null)
@@ -228,16 +242,24 @@ static func _server_url() -> String:
 
 
 func _start() -> void:
+	var started_msec := Time.get_ticks_msec()
 	_set_status(Status.CONNECTING)
-	if not await _sign_in():
+	_last_merged = false
+	if await _sign_in() and await _leave_if_deleted():
+		# The code this device remembers may be gone: another device on the account deleted it,
+		# and this device has a fresh account now, with no code yet.
+		var account: NakamaAPI.ApiAccount = await _client.get_account_async(_session)
+		if not account.is_exception() and account.custom_id != code:
+			_remember_code(account.custom_id)
+		await _sync()
+	else:
 		_set_status(Status.OFFLINE)
-		return
-	# The code this device remembers may be gone: when another device on the account deleted it,
-	# signing in with this device's id made a fresh account, with no code yet.
-	var account: NakamaAPI.ApiAccount = await _client.get_account_async(_session)
-	if not account.is_exception() and account.custom_id != code:
-		_remember_code(account.custom_id)
-	await _sync()
+	# Whether the cloud save gets through at all (in-app browsers), even for players who never
+	# start a run or open the 云存档 page.
+	if not _connect_reported:
+		_connect_reported = true
+		Telemetry.send_event("cloud_action", {"action": "connect", "result": STATUS_NAMES[status],
+			"ms": Time.get_ticks_msec() - started_msec, "merged": _last_merged})
 
 
 ## A session for this device's account, signing in again when the last one is about to run out.
@@ -254,8 +276,42 @@ func _sign_in() -> bool:
 	var session := await _client.authenticate_device_async(device_id)
 	if session.is_exception():
 		return false
-	_session = session
+	_set_session(session)
 	return true
+
+
+## The account this device is signed in to, "" when none.
+func account_id() -> String:
+	return _session.user_id if _session != null else ""
+
+
+## The session in use. Every event from now on carries its account (Telemetry.set_account), so
+## play data can be followed onto the cloud save and across the devices sharing it.
+func _set_session(session: NakamaSession) -> void:
+	_session = session
+	Telemetry.set_account(session.user_id if session != null else "")
+
+
+func _mark_deleted(session: NakamaSession, details: Dictionary) -> bool:
+	details["deleted"] = int(Time.get_unix_time_from_system())
+	var write: NakamaAPI.ApiStorageObjectAcks = await _client.write_storage_objects_async(session,
+		[NakamaWriteStorageObject.new(STATE_COLLECTION, STATE_KEY, OWNER_ONLY, OWNER_ONLY, JSON.stringify(details), "")])
+	return not write.is_exception()
+
+
+## When another device deleted this device's account (it is marked), this device leaves it for a
+## fresh account of its own, as if it had never synced. False when the server couldn't be asked.
+func _leave_if_deleted() -> bool:
+	var read: NakamaAPI.ApiStorageObjects = await _client.read_storage_objects_async(_session,
+		[NakamaStorageObjectId.new(STATE_COLLECTION, STATE_KEY, _session.user_id)])
+	if read.is_exception():
+		return false
+	if read.objects.is_empty():
+		return true
+	_config.set_value("cloud", "device_id", null)
+	_remember_code("")
+	_set_session(null)
+	return await _sign_in()
 
 
 func _schedule_upload() -> void:
@@ -307,6 +363,7 @@ func _sync() -> void:
 				break
 			# Most likely the version check: read what the other device wrote and merge again.
 	_syncing = false
+	_last_merged = merged
 	_set_status(Status.SYNCED if done else Status.OFFLINE, merged)
 	if _pending:
 		_schedule_upload()

@@ -92,12 +92,15 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 ## 对局数据
 
 线上每一局都会匿名上报到自建的 Umami（stats.lab115.com，和 daily 共用一个实例），用来看难度和平衡：
-- `game_ready`：每次打开页面、开始画面出来时发一次，带 `load_ms`（从开始加载页面算起的毫秒数）。有浏览量没有它的，就是加载时流失的人。
-- `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）；`.19` 起带 `stamps`、`achievements`（这台设备打过几个卡、拿了几个成就：打卡有永久加成，比强度时要按它分开看），`.20` 起带 `map`（`sv` 硅谷 / `bj` 北京），`.28` 起带 `cloud`（这台设备云存档的状态：`synced` / `offline` / `connecting` / `disabled` / `off`，用来看微信等内置浏览器里连不连得上；不带账号）。
+- `game_ready`：每次打开页面、开始画面出来时发一次，带 `load_ms`（从开始加载页面算起的毫秒数）。有浏览量没有它的，就是加载时流失的人；`.30` 起还带 `from`、`runs_before`、`lang`，好按来源和新老玩家看谁在开始画面就走了。
+- `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）；`.19` 起带 `stamps`、`achievements`（这台设备打过几个卡、拿了几个成就：打卡有永久加成，比强度时要按它分开看），`.20` 起带 `map`（`sv` 硅谷 / `bj` 北京），`.28` 起带 `cloud`（这台设备云存档的状态：`synced` / `offline` / `connecting` / `disabled` / `off`，用来看微信等内置浏览器里连不连得上；不带账号），`.30` 起带 `page_run`（这一局是这次打开页面的第几局，2 以上就是「再来一局」）。
 - `run_end`：职业（`job`）、结局（`win` / `died` / `restart` 从暂停页重开或换职业 / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、进化了的武器（`evolved`）、各武器伤害占比（`dmg_*`，百分比，只有打出过伤害的才有）、选卡顺序（专属武器的方向卡记成 `prd:b` 这样）、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（年终奖开出的绩效：`angel` / `series_a` / `ipo` 是绩效 B / A / S，沿用钱袋时代的 id）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率；`.19` 起带 `new_stamps`、`new_achievements`（这局新打卡的地标和新拿的成就，逗号分隔），`.20` 起带 `map`，`.21` 起带 `boss_rolls`（这局的 boss 排期：出场秒数、种类、`+` 额外招式、`!` 词条，如 `62:layoff+quake!996`），`.27` 起带 `luck`（结束时的运气）、`rarities`（这局拿到的升级按稀有度计数，普通,优秀,稀有,史诗,传说，如 `14,5,2,1,0`）和 `lucky_cards`（运气多给了一张卡的升级次数）。每局带一个随机 id，用来去重。
+- `load_abandoned`（`.30`，网页发）：游戏还没加载出来（没到 `game_ready`）页面就被切走或关掉，带 `ms`（等了多久）和 `progress`（下载到百分之几，不知道时是 -1）。手机只是临时切到别的 App 也会发，同一个 `page` 后面有 `game_ready` 的就是回来了。连统计脚本都还没加载好时存进 localStorage，下次打开再补发。
+- `cloud_action`（`.30`）：云存档和「设置 → 云存档」页，`action` 加 `result`：`connect`（每次打开页面第一次同步完时一条：`synced` / `offline`，带 `ms`、`merged` 云端有没有带来进度）、`open`（打开「存档」页，带 `status`）、`code`（生成存档码：`ok` / `offline`）、`copy`（点了「复制」）、`copied`（网页浮层里的复制按钮：`ok` / `hold`，`hold` 是只能长按复制）、`redeem`（输入存档码：`ok` / `invalid` / `not_found` / `offline`，`previous` 是换之前的账号）、`redeem_cancelled`（输入框点了取消）、`delete`（`ok` / `offline`，`account` 是被删的那个）、`enable`。
+- `share`（`.30`）：战绩图。`open` 由游戏发，带 `where`（`end` 结算页 / `pause` 暂停页）；之后网页浮层发 `share`（点了分享）、`shared` / `share_cancelled`（系统分享面板的结果）、`save`、`close`。微信里长按图片保存看不到。
 - `js_error`：网页和引擎的脚本错误（引擎的错误经 `console.error` 打出来），每次打开页面最多 5 条。
 
-不记录任何身份信息和位置。中途关页面的局：游戏每 10 秒把进度存进 localStorage，关页面或页面被切到后台时由网页发出去（Umami 用 keepalive 发送；手机常常先把页面切到后台、之后直接杀掉，不触发关页面事件）；App 内置浏览器常常来不及发，所以关页面时发完不删存档，下次打开时再补发一次才删 —— 同一局可能收到两条 `run_end`，查数据时按 `run` 去重、取 `seconds` 最大的那条。上报只在 survivors.lab115.com 上发生（Umami 脚本的 `data-domains`），编辑器、本地导出和冒烟测试都不会发。网页这边的代码在 `export_presets.cfg` 的 `html/head_include` 里。
+不记录任何身份信息和位置。`.30` 起网页给每条事件加上 `install`（这个浏览器的随机安装 id，存在 localStorage 的 `survivors-install`，清网站数据就换一个）、`page`（每次打开页面一个，存下来的中途退出的局保留它原来那次的），以及云存档登录后的 `account`（Nakama 的账号 id，用存档码换设备的人几台设备是同一个；它不是登录凭证，能登录的设备 id 和存档码不会发出去），用来数玩家、看回访、把同一次打开和同一个账号的事件串起来。中途关页面的局：游戏每 10 秒把进度存进 localStorage，关页面或页面被切到后台时由网页发出去（Umami 用 keepalive 发送；手机常常先把页面切到后台、之后直接杀掉，不触发关页面事件）；App 内置浏览器常常来不及发，所以关页面时发完不删存档，下次打开时再补发一次才删 —— 同一局可能收到两条 `run_end`，查数据时按 `run` 去重、取 `seconds` 最大的那条。上报只在 survivors.lab115.com 上发生（Umami 脚本的 `data-domains`），编辑器、本地导出和冒烟测试都不会发。网页这边的代码在 `export_presets.cfg` 的 `html/head_include` 里。
 
 ## 云存档
 
@@ -119,7 +122,7 @@ override 文件里给 `nakama` 加 `ports: ["127.0.0.1:7350:7350"]`；`test.env`
 
 ```bash
 godot --headless --path . -s tests/cloud_test.gd          # 两台设备合并、换码、删除、连不上，全部通过时退出码 0
-godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --window=405x720 --handheld --seconds=2 --collection=3 --cloud=local --shots=/tmp/shots   # 截「存档」页（连上、带存档码）
+godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --window=405x720 --handheld --seconds=2 --save-page --cloud=local --shots=/tmp/shots   # 截「设置」和「云存档」页（连上、带存档码）
 ```
 
 两个测试的进度和设备 id 都只在内存里，不会碰你本机的存档。网页版的复制和输入浮层要导出后在浏览器里试（`./tools/export_web.sh`，在 `localhost` 打开就会连本机的 Nakama）。

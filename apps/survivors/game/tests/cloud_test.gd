@@ -103,14 +103,21 @@ func _check_two_devices(url: String) -> void:
 	_check(Progress.stat("bosses", []).size() == 2, "device B has both devices' bosses")
 	var cloud_text := await _read_cloud(device_a)
 	_check(cloud_text.contains("bj_nest"), "the merged save is in the cloud for device A too")
-	_check(not (await _device_exists(device_b, old_device_id)), "device B's own codeless account was deleted")
+	# Nothing is deleted on the server: the account B had on its own is kept, marked as merged.
+	var left_behind := await _state_of(device_b, old_device_id)
+	_check(left_behind.get("reason") == "redeemed" and left_behind.get("into") == device_b._session.user_id,
+		"device B's own codeless account is kept, marked as merged into A's (%s)" % left_behind)
 
+	var shared_device_id: String = device_a._config.get_value("cloud", "device_id", "")
 	_check(await device_b.delete_account(), "device B deletes the cloud save")
 	_check(device_b.status == Cloud.Status.DISABLED and device_b.code.is_empty(), "the cloud save is off after deleting, with no code")
 	_check((await device_b.redeem(code_a)) == Cloud.Redeem.NOT_FOUND, "the deleted account's code is gone")
 	_check(Progress.has_stamp("bj_nest") and Progress.has_stamp("golden_gate"), "deleting keeps the progress on the device")
+	var deleted := await _state_of(device_b, shared_device_id)
+	_check(deleted.get("reason") == "player" and deleted.has("deleted"), "the deleted account is kept on the server, marked (%s)" % deleted)
+	_check((await _read_cloud(device_a)).contains("bj_nest"), "the deleted account's save is still on the server")
 	var deleted_user := device_a._session.user_id
-	device_a._session = null
+	device_a._set_session(null)
 	await device_a._start()
 	_check(device_a.status == Cloud.Status.SYNCED and device_a._session.user_id != deleted_user, "device A, on the deleted account, gets a fresh one when it next connects")
 	_check(device_a.code.is_empty(), "device A forgets the deleted account's code")
@@ -156,6 +163,14 @@ func _read_cloud(device: Cloud) -> String:
 	return "" if read.is_exception() or read.objects.is_empty() else (read.objects[0] as NakamaAPI.ApiStorageObject).value
 
 
-func _device_exists(device: Cloud, device_id: String) -> bool:
+## The deletion mark (Cloud.STATE_COLLECTION) of the account a device id signs in to, {} if none.
+func _state_of(device: Cloud, device_id: String) -> Dictionary:
 	var session := await device._client.authenticate_device_async(device_id, null, false)
-	return not session.is_exception()
+	if session.is_exception():
+		return {}
+	var read: NakamaAPI.ApiStorageObjects = await device._client.read_storage_objects_async(session,
+		[NakamaStorageObjectId.new(Cloud.STATE_COLLECTION, Cloud.STATE_KEY, session.user_id)])
+	if read.is_exception() or read.objects.is_empty():
+		return {}
+	var value: Variant = JSON.parse_string((read.objects[0] as NakamaAPI.ApiStorageObject).value)
+	return value if value is Dictionary else {}

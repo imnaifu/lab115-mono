@@ -638,8 +638,8 @@ const EN := {
 	"每颗炸弹落地再炸出 3 颗小炸弹": "Every bomb throws out 3 smaller ones as it lands",
 	"摸鱼一会儿": "Slack Off",
 	"回复 30 生命": "Heal 30 HP",
-	# The 收藏 page's 存档 view (Cloud), and the page's own 存档码 dialogs (export_presets.cfg)
-	"存档": "Cloud Save",
+	# The settings' 云存档 row and page (Cloud), and the page's own 存档码 dialogs (export_presets.cfg)
+	"管理存档": "Manage",
 	"进度会自动存到云端。记下存档码，换手机或清了浏览器数据，都能用它找回": "Your progress is saved to the cloud by itself. Keep your save code: it brings everything back on a new phone or after the browser's data is cleared.",
 	"云存档": "Cloud save",
 	"这个版本不连云端，进度只存在这台设备上": "This build doesn't use the cloud: progress stays on this device",
@@ -656,10 +656,9 @@ const EN := {
 	"已复制存档码": "Save code copied",
 	"记在备忘录里，或者截个图。换设备时输入它就能找回进度": "Note it down or take a screenshot. Enter it on another device to bring your progress there.",
 	"长按上面的码就能复制": "Press and hold the code to copy it",
-	"换设备": "New device",
-	"在新设备上输入原来的存档码，两边的进度会合并到一起": "Enter your save code on the new device: the progress on both is merged",
+	"换了设备？输入原来的存档码，两边的进度会合并到一起": "New device? Enter the save code from your old one and the progress on both is merged",
 	"输入存档码": "Enter Save Code",
-	"另一台设备上「收藏 → 存档」里的 12 位码": "The 12-character code under Collection → Cloud Save on your other device",
+	"另一台设备上「设置 → 云存档」里的 12 位码": "The 12-character code under Settings → Cloud save on your other device",
 	"找回": "Restore",
 	"取消": "Cancel",
 	"找回了，两边的进度已经合并": "Restored: progress from both devices is merged",

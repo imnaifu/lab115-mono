@@ -28,11 +28,12 @@ extends SceneTree
 ## to look at the evolutions), --map=sv|bj (play that map, locked or not), --stamps=N|all (start
 ## having checked in at the first N of the map's landmarks, or all of them), --fixed-bosses (the
 ## boss schedule as written, without .21's shuffles, jitter, extra moves and affixes),
-## --collection=0|1|2|3 (with --shots, also screenshot the title's 收藏 page on that tab; 3 is
-## the 存档 view), --luck=N (start with that much luck, to see rarer cards and better year-end
-## bonuses), --cloud=local|<url> (connect the cloud save to that Nakama server, as the web build
-## does, to look at the 存档 view synced and with a 存档码). Progress (打卡, 成就) is kept in
-## memory only, and so is the cloud save's device id: a bot run never touches the save.
+## --collection=0|1|2 (with --shots, also screenshot the title's 收藏 page on that tab), --luck=N
+## (start with that much luck, to see rarer cards and better year-end bonuses), --cloud=local|<url>
+## (connect the cloud save to that Nakama server, as the web build does), --save-page (with
+## --shots, also screenshot the settings and the 云存档 page; with --cloud, synced and with a
+## 存档码). Progress (打卡, 成就) is kept in memory only, and so is the cloud save's device id: a
+## bot run never touches the save.
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -80,6 +81,8 @@ var _stamps_before := 0
 ## The 打卡 · 成就 tab to screenshot at the title, or -1; and frames it has been open.
 var _collection_tab := -1
 var _collection_frames := 0
+var _save_page := false
+var _save_page_frames := 0
 ## Player level when each REPORT_TIMES second was reached, for comparing pacing between builds.
 var _levels_at := {}
 var _worst_frame_ms := 0.0
@@ -142,6 +145,8 @@ func _initialize() -> void:
 			_stamps_before = 1000 if value == "all" else int(value)
 		elif arg.begins_with("--collection="):
 			_collection_tab = int(value)
+		elif arg == "--save-page":
+			_save_page = true
 		elif arg.begins_with("--luck="):
 			_luck = float(value)
 		elif arg.begins_with("--cloud="):
@@ -187,16 +192,29 @@ func _process(_delta: float) -> bool:
 					_collection_frames += 1
 					if _collection_frames < OVERLAY_SETTLE_FRAMES:
 						return false
-					# The 存档 view waits for the server (connecting, then making a 存档码), up to
-					# about 10 seconds.
-					var cloud := Cloud.shared()
-					if _collection_tab == Hud.SAVE_TAB and cloud != null and _collection_frames < 600 \
-							and (cloud.status == Cloud.Status.CONNECTING or _game.hud._save_busy \
-							or (cloud.status == Cloud.Status.SYNCED and cloud.code.is_empty())):
-						return false
 					_save_shot("collection")
 					_game.hud._collection_open = false
 					_collection_tab = -1
+				if _save_page:
+					_save_page_frames += 1
+					if _save_page_frames == 1:
+						_game.hud._open_settings()
+					# The settings wait for the cloud save to connect; the page after them for its
+					# 存档码 to be made. Up to about 10 seconds each.
+					var cloud := Cloud.shared()
+					var waiting := cloud != null and (cloud.status == Cloud.Status.CONNECTING or _game.hud._save_busy \
+						or (_game.hud._save_open and cloud.status == Cloud.Status.SYNCED and cloud.code.is_empty()))
+					if _save_page_frames < OVERLAY_SETTLE_FRAMES or (waiting and _save_page_frames < 600):
+						return false
+					if not _game.hud._save_open:
+						_save_shot("settings")
+						_game.hud._open_save_page()
+						_save_page_frames = 1
+						return false
+					_save_shot("save")
+					_game.hud._close_save_page()
+					_game.hud._close_settings()
+					_save_page = false
 			_game.start_run()
 			if _teleport != null:
 				_game.player.position = _teleport

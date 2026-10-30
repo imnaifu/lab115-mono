@@ -27,13 +27,15 @@ CI 跑不了 Godot，`npm run build` 只做 `check-project.mjs` 里的静态检�
 
 `--socket.server_key`（`survivors-lab115`）写死在 compose 和 `Cloud.SERVER_KEY` 里，它会打进游戏包，本来就不是秘密。
 
-**管理后台**（看玩家、存档、删号）不上公网，只映射到服务器本机的 `127.0.0.1:7351`：
+**管理后台**（看玩家、存档）不上公网，只映射到服务器本机的 `127.0.0.1:7351`：
 
 ```bash
 ssh -L 7351:127.0.0.1:7351 mydev
 ```
 
 然后浏览器打开 <http://127.0.0.1:7351>，用户名 `chopper`，密码是 `NAKAMA_SECRET`。
+
+**删除只做标记**：玩家在游戏里「删除云存档」时账号和存档都留着，只多一个 `account` / `state` 存储对象（`deleted` 时间、`reason`：`player` 玩家删的，`redeemed` 换设备时被并掉的旧账号，带 `into`），存档码会被摘掉。要真删就在管理后台删那个账号。App 上架前要改成真删除（见 `game/DESIGN.md` 2.11）。
 
 **升级 Nakama**：改 compose 里的镜像版本号再部署；启动时会先跑 `nakama migrate up`。升之前先备份 `./data/nakama-db`。
 

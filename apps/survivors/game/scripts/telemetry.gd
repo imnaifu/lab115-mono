@@ -5,12 +5,22 @@ extends RefCounted
 ## instance daily.lab115.com reports to), through a small helper the web page defines
 ## (window.survivorsTelemetry, in export_presets.cfg's html/head_include). Umami's script only
 ## runs on survivors.lab115.com, so the editor, local builds and the smoke test send nothing.
-## Nothing personal goes out: no account, name or position, just a random id per run (to tell
-## duplicates apart), the run's numbers, the kind of device and its screen size.
+## Nothing personal goes out: no name or position. From .30 the page stamps every event with
+## `install`, a random id this browser keeps (to count players and see who comes back), `page`,
+## one per page load (to tie a load's events together; Umami's own session changes with the
+## network), and once the cloud save has signed in `account`, its Nakama user id (to follow a
+## player onto the cloud save and across devices sharing it; it isn't a credential, the device id
+## and the 存档码 that sign in never go out). Besides, a random id per run (to tell duplicates
+## apart), the run's numbers, the kind of device and its screen size.
 ##
 ## Events:
 ## - game_ready: once per page load, when the title screen is up: `load_ms` since the page
-##   started loading (pageviews without it are visitors lost while the game loaded).
+##   started loading (pageviews without it are visitors lost while the game loaded); from .30
+##   also `from`, `runs_before` and `lang`, so who leaves at the title can be told apart by where
+##   they came from and whether they played before.
+## - load_abandoned (sent by the page, .30): a page hidden or closed before game_ready, with `ms`
+##   waited and the download's `progress` in percent (-1 unknown). A phone that only switched
+##   apps for a moment sends it too: the same `page`'s game_ready shows it came back.
 ## - run_start: `job` (Jobs), device, screen, orientation, language, tilt, sound and music, runs played before,
 ##   `from` (the link's ?from=, e.g. "share" for the result image's QR code), and for a page's
 ##   first run `page_ms`, how long after the page opened it started; from .19, `stamps` and
@@ -18,7 +28,8 @@ extends RefCounted
 ##   (局外成长: the stamps' bonuses make a player stronger, so compare runs with the same count);
 ##   from .20 both events carry `map` (sv 硅谷, bj 北京); from .28, `cloud`, how the cloud save
 ##   stands on this device (Cloud.STATUS_NAMES: off / connecting / synced / offline / disabled),
-##   to see whether it gets through in-app browsers. The cloud account itself never goes out.
+##   to see whether it gets through in-app browsers.
+##   From .30, `page_run`: the run's number on this page (2 and up are 再来一局).
 ## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
@@ -34,6 +45,16 @@ extends RefCounted
 ##   From .27, `luck` (the player's at the end) and `rarities`: how many upgrades of each rarity
 ##   (普通,优秀,稀有,史诗,传说, Upgrades.RARITIES) the run got, picked or out of a chest, and
 ##   `lucky_cards`, how many level-ups luck added a card to.
+## - cloud_action (.30): the cloud save and its page (设置 → 云存档), `action` with a `result`: connect
+##   (once per page when the first sync settles: synced / offline, `ms`, `merged` when the cloud
+##   brought progress), open (the 云存档 page, with its `status`), code (a 存档码 made: ok /
+##   offline), copy (复制 tapped), copied (the page's copy button: ok / hold, when only a long
+##   press can copy), redeem (a code entered: ok / invalid / not_found / offline, with the
+##   `previous` account), redeem_cancelled (the page's field closed), delete (ok / offline, with
+##   the deleted `account`), enable.
+## - share (.30): the result image. `open` from the game with `where` (end / pause); then from
+##   the page's dialog share, shared / share_cancelled (the system share sheet's outcome), save,
+##   close. A long press on the image (how WeChat saves) can't be seen.
 ## The page itself also reports script errors (js_error), see export_presets.cfg.
 ## A run still going when the page closes is saved as a snapshot every SNAPSHOT_SECONDS and
 ## sent as a "quit" by the page itself when it closes and again on the next visit (in-app
@@ -42,7 +63,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.29"
+const VERSION := "2026-10-28.30"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -96,6 +117,9 @@ func on_title_shown() -> void:
 		"version": VERSION,
 		"device": "phone" if Device.is_handheld() else "desktop",
 		"load_ms": _page_ms(),
+		"from": _link_source(),
+		"runs_before": Settings.get_value("runs_played", 0),
+		"lang": Lang.current(),
 	})
 
 
@@ -123,6 +147,7 @@ func start() -> void:
 		"stamps": Progress.stamp_ids().size(),
 		"achievements": Progress.achievement_ids().size(),
 		"cloud": Cloud.status_name(),
+		"page_run": _runs_on_page,
 	}
 	if _runs_on_page == 1:
 		data["page_ms"] = _page_ms()
@@ -292,6 +317,19 @@ static func _link_source() -> String:
 
 
 func _send(event: String, data: Dictionary) -> void:
+	_call("track(%s, %s)" % [JSON.stringify(event), JSON.stringify(data)])
+
+
+## The cloud save's account (Cloud), stamped on every event from now on; "" when there's none.
+static func set_account(account: String) -> void:
+	_call("setAccount(%s)" % JSON.stringify(account))
+
+
+## An event from outside a run (the 云存档 page, the cloud save, sharing), with the version and the
+## kind of device added.
+static func send_event(event: String, data: Dictionary) -> void:
+	data["version"] = VERSION
+	data["device"] = "phone" if Device.is_handheld() else "desktop"
 	_call("track(%s, %s)" % [JSON.stringify(event), JSON.stringify(data)])
 
 
