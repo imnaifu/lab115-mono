@@ -27,7 +27,7 @@ CI 跑不了 Godot，`npm run build` 只做 `check-project.mjs` 里的静态检�
 
 `--socket.server_key`（`survivors-lab115`）写死在 compose 和 `Cloud.SERVER_KEY` 里，它会打进游戏包，本来就不是秘密。
 
-**管理后台**（看玩家、存档）在 <https://nakama-admin.lab115.com>，前面有一道 Cloudflare Access：Zero Trust 里的应用「Nakama admin (survivors)」只放行 `xnaifu@gmail.com`，登录方式是发到这个邮箱的一次性验证码，登录一次管 24 小时；过了这道才是 Nakama 自己的登录，用户名 `chopper`，密码是 `NAKAMA_CONSOLE_PASSWORD`。Access 只拦得住经过 Cloudflare 的访问，所以这个路由还只接受 Cloudflare 的 IP 段（compose 里的 `cloudflare-only`，取自 cloudflare.com/ips，Cloudflare 改了 IP 段要跟着改），直接连服务器 IP 带这个域名会被拒。要加人或换邮箱，改 Zero Trust 里那个应用的策略（API token 在 `~/.config/secrets/cloudflare.env`）。
+**管理后台**（看玩家、存档）在 <https://nakama-admin.lab115.com>，前面有一道 Cloudflare Access：Zero Trust 里的应用「Nakama admin (survivors)」只放行 `xnaifu@gmail.com`，登录方式是发到这个邮箱的一次性验证码，登录一次管 24 小时；过了这道才是 Nakama 自己的登录，用户名 `chopper`，密码是 `NAKAMA_CONSOLE_PASSWORD`。Access 只拦得住经过 Cloudflare 的访问，所以这个路由还只接受 Cloudflare 的 IP 段（compose 里的 `cloudflare-only`，取自 cloudflare.com/ips，Cloudflare 改了 IP 段要跟着改），直接连服务器 IP 带这个域名会被拒。要加人或换邮箱，改 Zero Trust 里那个应用的策略（API token 在 `~/.config/secrets/cloudflare.env`）。Zero Trust 里还有一个「Nakama admin (survivors): ACME challenge」应用，只让 `/.well-known/acme-challenge` 不用登录：Let's Encrypt 签证书时要访问这个路径，被 Access 拦住就签不出来，Cloudflare 回源时报 526（第一次上线就是这样）；HTTPS 上这个路径不进后台（compose 里的 `!PathPrefix`）。别删它。
 
 Cloudflare 出问题时，也可以绕过它，经 SSH 直接连服务器本机的 `127.0.0.1:7351`：
 

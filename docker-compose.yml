@@ -290,7 +290,10 @@ services:
       - traefik.http.routers.nakama-admin-http.middlewares=redirect-to-https
       - traefik.http.routers.nakama-admin-http.service=nakama-admin
       - traefik.http.routers.nakama-admin-https.entryPoints=https
-      - traefik.http.routers.nakama-admin-https.rule=Host(`nakama-admin.lab115.com`)
+      # Let's Encrypt's HTTP-01 check has to get past Access, so Access lets
+      # /.well-known/acme-challenge through without a login (a second Zero Trust app, "...: ACME
+      # challenge"); over HTTPS that path is kept off the console.
+      - traefik.http.routers.nakama-admin-https.rule=Host(`nakama-admin.lab115.com`) && !PathPrefix(`/.well-known/acme-challenge`)
       - traefik.http.routers.nakama-admin-https.tls=true
       - traefik.http.routers.nakama-admin-https.tls.certresolver=letsencrypt
       - traefik.http.routers.nakama-admin-https.middlewares=cloudflare-only,gzip
