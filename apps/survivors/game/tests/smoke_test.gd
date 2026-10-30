@@ -20,15 +20,17 @@ extends SceneTree
 ## compare the weapons' damage share in the report), --perks=id:level,... (start with those
 ## passives, e.g. --perks=standup:5,cost_cut:5), --boss=type,... (bring those enemy types in
 ## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves),
+## --weather (start the map's weather as the run starts, as 测试模式's 天气 button does),
 ## --share (with --shots, also render the end screen's result image into the shots directory, or
 ## with --pause-at the pause screen's run-so-far image),
 ## --only-perks (at level-ups take a passive whenever one is offered, so the run shows what the
 ## starting weapon alone does), --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
 ## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
-## to look at the evolutions), --map=sv|bj (play that map, locked or not), --stamps=N|all (start
+## to look at the evolutions), --map=sv|ldn|sea|bj (play that map, locked or not), --stamps=N|all (start
 ## having checked in at the first N of the map's landmarks, or all of them), --fixed-bosses (the
 ## boss schedule as written, without .21's shuffles, jitter, extra moves and affixes),
-## --collection=0|1|2 (with --shots, also screenshot the title's 收藏 page on that tab), --luck=N
+## --collection=0|1|2 (with --shots, also screenshot the title's 收藏 page on that tab),
+## --world-map (with --shots, also screenshot the title's world map page), --luck=N
 ## (start with that much luck, to see rarer cards and better year-end bonuses), --cloud=local|<url>
 ## (connect the cloud save to that Nakama server, as the web build does), --save-page (with
 ## --shots, also screenshot the settings and the 云存档 page; with --cloud, synced and with a
@@ -65,6 +67,7 @@ var _teleport: Variant = null
 var _all_weapons_level := 0
 var _perks := PackedStringArray()
 var _bosses := PackedStringArray()
+var _weather := false
 var _luck := 0.0
 var _chests := 0
 var _chest_frames := 0
@@ -81,6 +84,8 @@ var _stamps_before := 0
 ## The 打卡 · 成就 tab to screenshot at the title, or -1; and frames it has been open.
 var _collection_tab := -1
 var _collection_frames := 0
+var _world_map := false
+var _world_map_frames := 0
 var _save_page := false
 var _save_page_frames := 0
 ## Player level when each REPORT_TIMES second was reached, for comparing pacing between builds.
@@ -124,6 +129,8 @@ func _initialize() -> void:
 			_perks = value.split(",")
 		elif arg.begins_with("--boss="):
 			_bosses = value.split(",")
+		elif arg == "--weather":
+			_weather = true
 		elif arg == "--share":
 			_share = true
 		elif arg.begins_with("--job="):
@@ -145,6 +152,8 @@ func _initialize() -> void:
 			_stamps_before = 1000 if value == "all" else int(value)
 		elif arg.begins_with("--collection="):
 			_collection_tab = int(value)
+		elif arg == "--world-map":
+			_world_map = true
 		elif arg == "--save-page":
 			_save_page = true
 		elif arg.begins_with("--luck="):
@@ -195,6 +204,15 @@ func _process(_delta: float) -> bool:
 					_save_shot("collection")
 					_game.hud._collection_open = false
 					_collection_tab = -1
+				if _world_map:
+					if _world_map_frames == 0:
+						_game.hud._open_world_map()
+					_world_map_frames += 1
+					if _world_map_frames < OVERLAY_SETTLE_FRAMES:
+						return false
+					_save_shot("world_map")
+					_game.hud._world_open = false
+					_world_map = false
 				if _save_page:
 					_save_page_frames += 1
 					if _save_page_frames == 1:
@@ -229,6 +247,8 @@ func _process(_delta: float) -> bool:
 			for i in _bosses.size():
 				var side := Vector2.from_angle(TAU * i / _bosses.size()) * 110.0
 				_game.spawn_enemy(_bosses[i], _game.player.position + side)
+			if _weather:
+				_game.test_weather()
 		Game.State.PAUSED:
 			if _pause_at >= 0.0 and not _pause_shot_taken and _shot_dir != "":
 				_pause_frames += 1

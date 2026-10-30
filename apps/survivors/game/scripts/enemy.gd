@@ -26,6 +26,10 @@ extends Node2D
 ##   couple of seconds; still inside when it closes, the player is hit.
 ## - "hoard" (西雅图's 节俭, .34): always on, a gold ring round it; stars lying inside drift into it
 ##   and it keeps them (the count over its head, Game moves them); killed, it spills them all.
+## - "sweep" (伦敦's 监控探头, .37): stops and shows where its camera beam starts and which way it
+##   will turn, then swings the beam (a cone) past the player; staying in the beam for a moment
+##   gets the player snapped (hit once per sweep). Stepping out across it, or out of its reach,
+##   is safe.
 ## Every wind-up is drawn (lane, landing circle, bracing ring, filling circle, flicker) so a move
 ## can always be dodged; the HUD says how the first time each comes up in a run.
 ##
@@ -50,7 +54,7 @@ const HIT_SQUASH_FULL_PUSH := 140.0
 const SPIN_SECONDS := 0.45
 const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura", "hoard"]
 ## The moves that work on a timer; countdown, aura and hoard are always on.
-const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones", "pull", "squeeze"]
+const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones", "pull", "squeeze", "sweep"]
 ## The gap between one boss's moves is its move's own, times a random factor this far either way.
 const MOVE_JITTER := 0.25
 ## Affixes a boss can carry, by id, with what the HUD calls them: 996 (faster, moves more often),
@@ -143,6 +147,21 @@ const AURA_TINT := Color(1.0, 0.9, 0.5)
 ## grabbing them first is a race the player can win).
 const HOARD_RADIUS := 110.0
 const HOARD_PULL := 60.0
+## The camera's sweep: it braces for SWEEP_WINDUP showing the beam's first heading, then turns it
+## through SWEEP_TURN over SWEEP_SECONDS, centred on where the player stood. The beam is a cone
+## SWEEP_WIDTH wide out to SWEEP_RANGE; SWEEP_EXPOSE seconds in it without a break and the player
+## is snapped for SWEEP_DAMAGE. The beam crosses a standing player in about 0.41 s (34° at
+## 82.5°/s), longer than SWEEP_EXPOSE, so standing still is caught; walking across it against its
+## turn gets through in under 0.33 s anywhere in its reach, walking along with it doesn't.
+const SWEEP_EVERY := 5.5
+const SWEEP_WINDUP := 0.7
+const SWEEP_SECONDS := 2.0
+const SWEEP_TURN := 165.0 * PI / 180.0
+const SWEEP_WIDTH := 34.0 * PI / 180.0
+const SWEEP_RANGE := 170.0
+const SWEEP_EXPOSE := 0.33
+const SWEEP_DAMAGE := 20.0
+const SWEEP_BEAM := Color(1.0, 0.93, 0.55)
 const PHANTOM_ALPHA := 0.55
 ## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
 const BOSS_STUN_SCALE := 0.5
@@ -205,6 +224,13 @@ var _summon_type := SUMMON_TYPE
 var _summon_count := SUMMON_COUNT
 var _blink_target := Vector2.ZERO
 var _pull_left := 0.0
+## A sweep: seconds of it left, the beam's first heading and which way it turns (1 or -1), how
+## long the player has been in the beam without a break, and whether this sweep has snapped them.
+var _sweep_left := 0.0
+var _sweep_from := 0.0
+var _sweep_way := 1.0
+var _exposed := 0.0
+var _snapped := false
 ## Where the closing ring of a squeeze is, in the world (it stays put while the player moves).
 var _squeeze_at := Vector2.ZERO
 ## Turns each volley half a gap, so standing in a gap only works once.
@@ -338,6 +364,11 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 		_drag_in(delta)
 		queue_redraw()
 		return Vector2.ZERO
+	if _sweep_left > 0.0:
+		_sweep_left -= delta
+		_watch(delta)
+		queue_redraw()
+		return Vector2.ZERO
 	if _windup_left > 0.0:
 		_windup_left -= delta
 		# Redrawn every frame: the boss can still be shoved while it winds up, and the landing
@@ -385,6 +416,12 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 			_squeeze_at = game.player.position
 			_windup_left = SQUEEZE_SECONDS
 			return Vector2.ZERO
+		"sweep":
+			# Starts off to one side of the player and turns through them.
+			_sweep_way = 1.0 if game.rng.randf() < 0.5 else -1.0
+			_sweep_from = (game.player.position - position).angle() - _sweep_way * SWEEP_TURN / 2.0
+			_windup_left = SWEEP_WINDUP
+			return Vector2.ZERO
 	return velocity
 
 
@@ -399,6 +436,28 @@ func _drag_in(delta: float) -> void:
 		var offset := position - enemy.position
 		if enemy != self and not enemy.is_elite and offset.length() > radius + enemy.radius:
 			enemy.position += offset.normalized() * PULL_CROWD_SPEED * delta
+
+
+## A sweep under way: the player in the beam for SWEEP_EXPOSE without a break is snapped, once.
+func _watch(delta: float) -> void:
+	if _snapped:
+		return
+	var offset := game.player.position - position
+	var beam := _sweep_heading()
+	var inside := offset.length() <= SWEEP_RANGE + Player.HURT_RADIUS \
+		and absf(angle_difference(beam, offset.angle())) <= SWEEP_WIDTH / 2.0
+	_exposed = _exposed + delta if inside else 0.0
+	if _exposed >= SWEEP_EXPOSE:
+		_snapped = true
+		Effects.ring(game, game.player.position, 24.0, SWEEP_BEAM)
+		Effects.callout(game, game.player.position + Vector2(0.0, -20.0), tr("咔嚓！"), Art.BOSS_RED, 15)
+		game.hurt_player(_hits(SWEEP_DAMAGE), type_name, "sweep")
+
+
+## Where the beam points now: its first heading while bracing, then turning through the sweep.
+func _sweep_heading() -> float:
+	var turned := 1.0 - _sweep_left / SWEEP_SECONDS if _sweep_left > 0.0 else 0.0
+	return _sweep_from + _sweep_way * SWEEP_TURN * turned
 
 
 ## Tells the HUD about an always-on move once, when the boss first acts.
@@ -579,6 +638,8 @@ func _move_every(move: String) -> float:
 			return PULL_EVERY
 		"squeeze":
 			return SQUEEZE_EVERY
+		"sweep":
+			return SWEEP_EVERY
 	return SUMMON_EVERY
 
 
@@ -606,6 +667,10 @@ func _finish_windup() -> void:
 			Effects.ring(game, _squeeze_at, SQUEEZE_RADIUS, Art.BOSS_RED)
 			if game.player.position.distance_to(_squeeze_at) <= SQUEEZE_RADIUS:
 				game.hurt_player(_hits(SQUEEZE_DAMAGE), type_name, "squeeze")
+		"sweep":
+			_sweep_left = SWEEP_SECONDS
+			_exposed = 0.0
+			_snapped = false
 	queue_redraw()
 
 
@@ -722,6 +787,8 @@ func _draw() -> void:
 	# The pull's ring of arrows, faint while it braces, solid while it drags.
 	if _move == "pull" and (_pull_left > 0.0 or _windup_left > 0.0):
 		_draw_pull(_pull_left > 0.0)
+	if _move == "sweep" and (_sweep_left > 0.0 or _windup_left > 0.0):
+		_draw_sweep(_sweep_left > 0.0)
 	if _windup_left > 0.0:
 		match _move:
 			"squeeze":
@@ -779,6 +846,28 @@ func _draw_pull(dragging: bool) -> void:
 			var tip := heading * (reach - 10.0)
 			var side := heading.orthogonal() * 6.0
 			draw_polyline(PackedVector2Array([heading * reach + side, tip, heading * reach - side]), Color(Art.LINK, alpha), 2.5, true)
+
+
+## The camera's beam: while it braces, a faint cone where it starts and a red arc with an arrowhead
+## the way it will turn; while it sweeps, the cone lit up (red once it has snapped someone).
+func _draw_sweep(sweeping: bool) -> void:
+	var heading := _sweep_heading()
+	var cone := PackedVector2Array([Vector2.ZERO])
+	for step in 9:
+		cone.append(Vector2.from_angle(heading - SWEEP_WIDTH / 2.0 + SWEEP_WIDTH * step / 8.0) * SWEEP_RANGE)
+	var color := Art.BOSS_RED if _snapped else SWEEP_BEAM
+	draw_colored_polygon(cone, Color(color, 0.32 if sweeping else 0.14))
+	cone.append(Vector2.ZERO)
+	draw_polyline(cone, Color(Art.BOSS_RED if _snapped else Art.BRAND_DEEP, 0.85 if sweeping else 0.5), 1.5, true)
+	if not sweeping:
+		# The way it will turn: an arc just outside its reach with an arrowhead at the far end.
+		var from := _sweep_from
+		var to := _sweep_from + _sweep_way * SWEEP_TURN
+		draw_arc(Vector2.ZERO, SWEEP_RANGE + 8.0, minf(from, to), maxf(from, to), 32, Color(Art.BOSS_RED, 0.6), 2.0, true)
+		var tip := Vector2.from_angle(to) * (SWEEP_RANGE + 8.0)
+		var back := Vector2.from_angle(to - _sweep_way * 0.12) * (SWEEP_RANGE + 8.0)
+		var side := (tip - back).orthogonal().normalized() * 5.0
+		draw_colored_polygon(PackedVector2Array([tip + (tip - back).normalized() * 4.0, back + side, back - side]), Color(Art.BOSS_RED, 0.75))
 
 
 ## A short line of text with a white edge, centred on `at` (the countdown, a clone's mark).

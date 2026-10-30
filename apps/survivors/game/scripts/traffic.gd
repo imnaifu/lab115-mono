@@ -1,6 +1,7 @@
 class_name Traffic
 extends RefCounted
-## Robotaxis driving both ways down the freeways and Caltrain running north up its track.
+## Robotaxis driving both ways down the freeways and Caltrain running north up its track (each
+## map's own since .37, its VEHICLES and TRAIN: London's black cabs, buses and the Tube).
 ## Positions are a pure function of time (vehicle k of a lane is at k * spacing, plus its own
 ## fixed jitter, moved on by speed * time), so there is no state to keep beyond a pool of
 ## sprites reused for whatever is on screen.
@@ -19,6 +20,9 @@ const CAR_SPEED := 95.0
 const CAR_SPACING := 520.0
 const CAR_JITTER := 180.0
 const CAR_SIZE := 26.0
+## Vehicles longer than a car (their art's height, drawn at a car's scale); their footprint grows
+## along the lane to match.
+const VEHICLE_LENGTHS := {"bus_top": 37.0}
 ## The car's footprint either side of its centre: across the lane and along it.
 const CAR_HALF := Vector2(8.0, 13.0)
 const TRAIN_HALF_WIDTH := 10.0
@@ -49,7 +53,8 @@ const MARGIN := 120.0
 var _city: City
 var _layer: Node2D
 var _time := 0.0
-var _cars: Array[Sprite2D] = []
+## A pool of sprites per kind of vehicle (art name -> Array[Sprite2D]).
+var _cars := {}
 var _trains: Array[Sprite2D] = []
 ## Enemy instance id -> when traffic last shoved it.
 var _shoved_at := {}
@@ -72,6 +77,7 @@ func tick(delta: float, view: Rect2) -> void:
 	_time += delta
 	var area := view.grow(MARGIN)
 	var car_spots: Array = []
+	var vehicles: Array = Maps.current.VEHICLES
 	for column: int in Maps.current.FREEWAYS:
 		var x := column * City.BLOCK.x
 		if x < area.position.x - City.FREEWAY_HALF or x > area.end.x + City.FREEWAY_HALF:
@@ -83,9 +89,15 @@ func tick(delta: float, view: Rect2) -> void:
 			for at_y in _along(start_y, area.end.y, CAR_SPACING, shift, CAR_JITTER, column * 2 + (1 if northbound else 0)):
 				var spot := Vector2(x + (LANE_OFFSET if northbound else -LANE_OFFSET), at_y)
 				if not Maps.current.is_water(spot):
-					# Where it sits along the lane with the drive taken out names the car for good.
-					car_spots.append([spot, northbound, Vector2i(column * 2 + (1 if northbound else 0), roundi(at_y - shift))])
-	_show(_cars, car_spots, "car_top", CAR_SIZE)
+					# Where it sits along the lane with the drive taken out names the car for good,
+					# and so which kind of vehicle it is.
+					var car := Vector2i(column * 2 + (1 if northbound else 0), roundi(at_y - shift))
+					var art: String = vehicles[floori(_city.noise(car.x, car.y, 23) * vehicles.size())]
+					car_spots.append([spot, northbound, car, art])
+	for art: String in vehicles:
+		if not _cars.has(art):
+			_cars[art] = [] as Array[Sprite2D]
+		_show(_cars[art], car_spots.filter(func(spot: Array) -> bool: return spot[3] == art), art, _length(art))
 
 	var train_spots: Array = []
 	var track_x: float = Maps.current.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
@@ -98,13 +110,13 @@ func tick(delta: float, view: Rect2) -> void:
 		var due_reach := view.end.y + TRAIN_LENGTH / 2.0 + TRAIN_SPEED * TRAIN_WARNING_SECONDS
 		for at_y in _along(view.end.y, due_reach, TRAIN_SPACING, -_time * TRAIN_SPEED, 0.0, 99):
 			warn = warn or at_y - TRAIN_LENGTH / 2.0 > view.end.y
-	_show(_trains, train_spots, "train_top", TRAIN_LENGTH)
+	_show(_trains, train_spots, Maps.current.TRAIN, TRAIN_LENGTH)
 	_warning.show_on(warn, track_x, view, _time)
 
 	var game := _city.game
 	if game != null and game.state == Game.State.PLAYING:
 		for spot: Array in car_spots:
-			if _bump(game, spot[0], CAR_HALF, CAR_PUSH_ENEMY, CAR_PUSH_PLAYER, false):
+			if _bump(game, spot[0], Vector2(CAR_HALF.x, _length(spot[3]) / 2.0), CAR_PUSH_ENEMY, CAR_PUSH_PLAYER, false):
 				_hit_at[spot[2]] = _time
 		for spot: Array in train_spots:
 			_bump(game, spot[0], Vector2(TRAIN_HALF_WIDTH, TRAIN_LENGTH / 2.0), TRAIN_PUSH_ENEMY, TRAIN_PUSH_PLAYER, true)
@@ -118,6 +130,11 @@ func tick(delta: float, view: Rect2) -> void:
 			for key in _hit_at.keys():
 				if _time - _hit_at[key] > WOBBLE_SECONDS:
 					_hit_at.erase(key)
+
+
+## How long a kind of vehicle is drawn, front to back.
+static func _length(art: String) -> float:
+	return VEHICLE_LENGTHS.get(art, CAR_SIZE)
 
 
 ## Pushes the player and enemies overlapping a vehicle centred at `at` (its footprint `half`

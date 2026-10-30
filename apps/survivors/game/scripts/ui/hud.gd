@@ -46,6 +46,7 @@ const BOSS_MOVE_HINTS := {
 	"pull": "箭头往里吸的时候逆着走，别被拖到它身边",
 	"squeeze": "脚下的红圈收紧之前走出去",
 	"hoard": "金圈里的星星会被它吸走，先去捡，打掉它全吐出来",
+	"sweep": "镜头扫过来时逆着它横穿过去，站着不动会被拍到",
 }
 ## What each boss affix (Enemy.AFFIXES) does, for the 图鉴.
 const AFFIX_NOTES := {
@@ -73,7 +74,7 @@ const CHEST_STARS := [0, 6, 14]
 const FIT_MARGIN := 8.0
 const RANKING_ROWS := 6
 ## How the last hit landed (Telemetry.last_hurt_how), for the result's 凶手 line.
-const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中", "quake": "被宕机震飞"}
+const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中", "quake": "被宕机震飞", "sweep": "被监控抓拍"}
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
 	"asking": "请在弹窗里允许访问动作与方向",
@@ -119,6 +120,8 @@ var _boss_progress: ProgressBar
 var _kills_label: Label
 var _minimap: Minimap
 var _district_label: Label
+## The district's own icon beside its name (the map's DISTRICTS `icon`, .37).
+var _district_icon: TextureRect
 var _district := ""
 var _pause_button: Button
 var _recalibrate_button: Button
@@ -296,6 +299,7 @@ func _process(delta: float) -> void:
 	if district != _district:
 		_district = district
 		_district_label.text = Maps.current.DISTRICTS[district]["name"]
+		_district_icon.texture = Art.texture(Maps.current.DISTRICTS[district]["icon"])
 
 	var hp_ratio := game.player.hp / game.player.max_hp
 	var danger := clampf((LOW_HP_RATIO - hp_ratio) / LOW_HP_RATIO, 0.0, 1.0)
@@ -566,6 +570,8 @@ func _build_top_bar() -> void:
 	weather_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_weather_pill.add_child(weather_row)
 	var map_event: Dictionary = Maps.current.MAP_EVENT
+	# The weather's own icon (.37): a quake's rock, rain, sand, fog.
+	weather_row.add_child(UiKit.icon("event_" + map_event["id"], 13))
 	weather_row.add_child(UiKit.label(map_event.get("name", ""), 10, "strong", Art.LINK))
 	_weather_time = UiKit.label("", 10, "display", Art.LINK)
 	weather_row.add_child(_weather_time)
@@ -624,10 +630,17 @@ func _build_top_bar() -> void:
 	_minimap.game = game
 	_minimap.size_flags_horizontal = Control.SIZE_SHRINK_END
 	right.add_child(_minimap)
-	var district := UiKit.panel(UiKit.box(Art.PAPER, Color.TRANSPARENT, 0, UiKit.PILL, Vector4(8, 1, 8, 1)))
+	var district := UiKit.panel(UiKit.box(Art.PAPER, Color.TRANSPARENT, 0, UiKit.PILL, Vector4(6, 1, 8, 1)))
 	district.size_flags_horizontal = Control.SIZE_SHRINK_END
+	var district_row := HBoxContainer.new()
+	district_row.add_theme_constant_override("separation", 3)
+	district_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	district.add_child(district_row)
+	# The texture is set with the name, as the player walks from district to district.
+	_district_icon = UiKit.icon("ui_info", 14)
+	district_row.add_child(_district_icon)
 	_district_label = UiKit.label("", 10, "strong")
-	district.add_child(_district_label)
+	district_row.add_child(_district_label)
 	right.add_child(district)
 
 

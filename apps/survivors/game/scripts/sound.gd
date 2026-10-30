@@ -96,6 +96,7 @@ const MOVE_SOUNDS := {
 	# The maps' guest bosses (.26) brace like the others before their moves.
 	"pull": "windup",
 	"squeeze": "windup",
+	"sweep": "windup",
 }
 
 static var _instance: Sound

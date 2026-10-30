@@ -1,21 +1,23 @@
 class_name Maps
 extends RefCounted
 ## The maps a run can be played on: 硅谷 (BayArea), from .20 北京 (Beijing), from .34 西雅图
-## (Seattle). Each is a script of constants and static functions under the same names; `current`
+## (Seattle), from .37 伦敦 (London). Each is a script of constants and static functions under the same names; `current`
 ## is the one this run is on, and City, Traffic, the minimap and the rest ask it rather than a map
 ## by name. (Calling through a script held in a variable costs no more than calling it by name.)
 ##
 ## Maps get harder the longer their working week (each map's HOURS and DIFFICULTY, at the user's
-## call): 硅谷 965 first and easiest, 西雅图 975, 北京 996 the hardest; those to come (Singapore,
-## Bangalore, Shenzhen / Hangzhou's 大小周) go in between by their hours, ORDER kept in that order.
+## call): 硅谷 965 first and easiest, 西雅图 975, 北京 996 the hardest; those to come (新加坡 985,
+## 深圳's 大小周, 班加罗尔's 70h) go in between by their hours, ORDER kept in that order. 伦敦 is the
+## one exception (.37, the user's call): a 955 week, but second, after 硅谷 and as hard as it, so
+## 硅谷 stays the first map new players see.
 ## The title screen's world map (ui/world_map.gd) draws them as a route in that order and opens
 ## them one by one, like Kingdom Rush's campaign: a map opens once the one before it has been won.
 
-const ORDER := ["sv", "sea", "bj"]
+const ORDER := ["sv", "ldn", "sea", "bj"]
 ## Open from the first run, whatever unlocked() says: all of them for now (.34), at the user's call
 ## (the one-by-one rule is in, but every map stays open while they are being tested). 北京 has
 ## been open from the start since .25.
-const OPEN_FROM_START := ["sv", "sea", "bj"]
+const OPEN_FROM_START := ["sv", "ldn", "sea", "bj"]
 ## Cities still to come, drawn on the world map as "coming soon" pins (WorldMap.CITIES places them).
 const COMING_SOON := ["sz", "sg", "blr"]
 
@@ -31,6 +33,8 @@ static func script_of(id: String) -> GDScript:
 			return Beijing
 		"sea":
 			return Seattle
+		"ldn":
+			return London
 	return BayArea
 
 

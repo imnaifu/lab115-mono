@@ -72,6 +72,9 @@ const RAILWAY_FROM_ROW := -4
 const SALT_POND_FROM_ROW := -1
 ## Blocks given over to SFO's runway (City draws it; a parked plane stands on it).
 const RUNWAYS: Array[Vector2i] = [Vector2i(0, -2)]
+## What drives the freeways and the railway (Traffic, .37): robotaxis and Caltrain.
+const VEHICLES := ["car_top"]
+const TRAIN := "train_top"
 
 ## Per district: the `name` the minimap shows; ground colour; `structures` to line the streets with ("soco:<file>" for a
 ## soco-st building, "art:<svg>" for one of ours); the gap between them (at least 36, so the
@@ -80,17 +83,17 @@ const RUNWAYS: Array[Vector2i] = [Vector2i(0, -2)]
 ## bushes and trees dot the lawn; how often a block is a park; and the flat `decor`.
 const DISTRICTS := {
 	"peninsula": {
-		"name": "硅谷",
+		"name": "硅谷", "icon": "pear_park",
 		"ground": Color("dcefc6"),
 		"structures": ["soco:office", "soco:midrise_bands", "soco:midrise_grid", "soco:commercial",
 			"soco:small_1", "soco:small_2", "soco:small_3", "soco:small_4", "soco:office_block"],
 		"gap": [36.0, 70.0], "brands": ["pear", "goggle", "beta", "envy", "linkedout", "nutflix"],
-		"brand_chance": 0.85, "tree": "palm", "props": ["bike", "bike_campus", "cone"],
+		"brand_chance": 0.85, "tree": "palm", "props": ["bike", "bike_campus", "scooter", "cone"],
 		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.2,
 		"decor": [["flower", 11.0], ["poppy", 11.0], ["tuft", 12.0], ["tuft", 12.0]],
 	},
 	"sf": {
-		"name": "旧金山",
+		"name": "旧金山", "icon": "cable_car",
 		"ground": Color("e3e8da"),
 		"structures": ["art:victorian_blue", "art:victorian_pink", "art:victorian_yellow",
 			"art:victorian_mint", "art:victorian_blue", "art:victorian_pink", "soco:midrise_grid", "soco:small_3"],
@@ -100,16 +103,16 @@ const DISTRICTS := {
 		"decor": [["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"sj": {
-		"name": "圣何塞",
+		"name": "圣何塞", "icon": "mission_house",
 		"ground": Color("e6eec6"),
 		"structures": ["art:mission_house", "art:mission_house", "art:mission_house", "soco:supermarket",
 			"soco:convenience_store", "soco:shop_1", "soco:shop_2"],
 		"gap": [36.0, 64.0], "brands": ["envy", "nutflix", "pear"], "brand_chance": 0.4, "tree": "palm",
-		"props": ["cone", "bike"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.15,
+		"props": ["cone", "bike", "scooter"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.15,
 		"decor": [["poppy", 11.0], ["tuft", 12.0], ["flower", 11.0]],
 	},
 	"hills": {
-		"name": "山区",
+		"name": "山区", "icon": "redwood",
 		"ground": Color("f0dc9a"),
 		"structures": ["soco:small_1", "soco:small_2", "soco:small_4"],
 		"gap": [120.0, 220.0], "brands": ["sandhill"], "brand_chance": 1.0, "tree": "redwood",
@@ -118,14 +121,14 @@ const DISTRICTS := {
 	},
 	# The sand between the roads and the Pacific, and north of San Francisco's north shore.
 	"beach": {
-		"name": "海滩",
+		"name": "海滩", "icon": "palm",
 		"ground": Color("f3e5b5"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
 		"decor": [["tuft", 12.0]],
 	},
 	"bay": {
-		"name": "海湾",
+		"name": "海湾", "icon": "plane",
 		"ground": Color("e9e4c6"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
@@ -140,7 +143,7 @@ const HEIGHTS := {
 	"mission_house": 50.0, "transamerica": 180.0, "sailsforce_tower": 196.0, "golden_gate": 170.0,
 	"stanford_tower": 140.0, "pear_park": 62.0, "caltrain": 46.0,
 	"palm": 58.0, "redwood": 92.0, "bush": 23.0,
-	"bike": 22.0, "bike_campus": 22.0, "cone": 14.0, "robotaxi": 24.0, "cable_car": 30.0,
+	"bike": 22.0, "bike_campus": 22.0, "cone": 14.0, "robotaxi": 24.0, "cable_car": 30.0, "scooter": 24.0,
 	"dino_skeleton": 64.0, "thumbs_up_sign": 58.0, "burger_shop": 58.0, "stadium": 150.0, "plane": 96.0,
 }
 

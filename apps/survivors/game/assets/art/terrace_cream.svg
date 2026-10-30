@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 96">
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<rect x="10" y="6" width="14" height="12" fill="#e6e0d4"/>
+<rect x="12" y="1.5" width="4" height="6" fill="#d98b5f" stroke-width="2.4"/>
+<rect x="18" y="1.5" width="4" height="6" fill="#d98b5f" stroke-width="2.4"/>
+<rect x="6" y="18" width="52" height="74" fill="#f3efe6"/>
+<rect x="4" y="15" width="56" height="5" fill="#ffffff"/>
+<rect x="11" y="25" width="15" height="22" fill="#bcdcf2"/>
+<rect x="38" y="25" width="15" height="22" fill="#bcdcf2"/>
+<rect x="39" y="60" width="14" height="17" fill="#bcdcf2"/>
+<rect x="5" y="58" width="28" height="6" fill="#ffffff"/>
+<rect x="8" y="64" width="5" height="26" fill="#ffffff"/>
+<rect x="25" y="64" width="5" height="26" fill="#ffffff"/>
+<rect x="14.5" y="69" width="9" height="21" fill="#2f6fb0" stroke-width="2.4"/>
+<rect x="6" y="89" width="26" height="4" fill="#d6d9de" stroke-width="2.6"/>
+</g>
+<path d="M18.5 25 L18.5 47 M11 36 L26 36 M45.5 25 L45.5 47 M38 36 L53 36 M46 60 L46 77 M39 68.5 L53 68.5" stroke="#2f3542" stroke-width="1.6"/>
+<path d="M9 47 L28 47 M36 47 L55 47 M9 51 L28 51 M36 51 L55 51 M11 47 L11 51 M14 47 L14 51 M17 47 L17 51 M20 47 L20 51 M23 47 L23 51 M26 47 L26 51 M38 47 L38 51 M41 47 L41 51 M44 47 L44 51 M47 47 L47 51 M50 47 L50 51 M53 47 L53 51" stroke="#2f3542" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M34 57 L58 57 M34 80 L58 80 M7 54 L57 54" stroke="#d6d9de" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M17 73 L17 78 M21 73 L21 78 M17 82 L17 87 M21 82 L21 87" stroke="#24578a" stroke-width="1.4" stroke-linecap="round"/>
+<circle cx="22" cy="80" r="1" fill="#f7c948"/>
+<path d="M36 81 L58 81 M36 91 L58 91" stroke="#2f3542" stroke-width="1.8" stroke-linecap="round"/>
+<path d="M37 81 L37 91 M40 81 L40 91 M43 81 L43 91 M46 81 L46 91 M49 81 L49 91 M52 81 L52 91 M55 81 L55 91 M58 81 L58 91" stroke="#2f3542" stroke-width="1.4"/>
+<path d="M11 66 L11 88 M27.5 66 L27.5 88" stroke="#e6e0d4" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

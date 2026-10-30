@@ -39,6 +39,16 @@ const KILLER_ROASTS := {
 	"six_pager": "被六页纸淹没了",
 	"sale_618": "618 大促，人比服务器先宕",
 	"us_east_1": "us-east-1 一挂，人也挂了",
+	# 伦敦's (.37).
+	"scone_boss": "老板递来的司康，噎住了",
+	"committee": "被委员会讨论没了",
+	"subcommittee": "被委员会讨论没了",
+	"pub_invite": "下班那杯酒喝多了",
+	"compliance": "被合规流程压垮了",
+	"signal_failure": "地铁信号故障，人也故障了",
+	"redundancy": "被冗余了，遣散费都没谈",
+	"eu_fine": "被欧盟罚到破产",
+	"cctv": "被监控拍下了最后一刻",
 }
 const WIN_ROASTS := ["上市敲钟，期权终于能卖了", "活过了 10 分钟，比大多数创业公司都久", "建议把这段写进简历"]
 const EARLY_ROASTS := ["试用期都没过", "入职第一天就被优化了"]

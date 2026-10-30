@@ -10,14 +10,23 @@ const problems = [];
 for (const file of ["project.godot", "export_presets.cfg", "tools/export_web.sh", "tools/fetch_web_templates.py", "tools/service_worker_removal.js"]) {
   if (!existsSync(new URL(file, game))) problems.push(`missing game/${file}`);
 }
-// Every map (scripts/maps.gd lists them), and the achievements' pictures.
-const maps = ["bay_area.gd", "beijing.gd"].map((file) => readFileSync(new URL(`scripts/${file}`, game), "utf8")).join("\n");
+// Every map (scripts/maps.gd lists them; .37 added the two left out, 西雅图 and 伦敦), and the
+// achievements' pictures.
+const maps = ["bay_area.gd", "london.gd", "seattle.gd", "beijing.gd"].map((file) => readFileSync(new URL(`scripts/${file}`, game), "utf8")).join("\n");
 const buildings = [...new Set([...maps.matchAll(/"soco:([a-z0-9_]+)"/g)].map((match) => match[1]))];
 for (const name of buildings) {
   if (!existsSync(new URL(`assets/soco-st/${name}.png`, game))) problems.push(`missing game/assets/soco-st/${name}.png`);
 }
 const achievements = readFileSync(new URL("scripts/achievements.gd", game), "utf8");
-const drawings = new Set([...(maps + achievements).matchAll(/"art:([a-z0-9_]+)"|"(?:art|icon|tree)": "([a-z0-9_]+)"/g)].map((match) => match[1] ?? match[2]));
+const enemies = readFileSync(new URL("scripts/spawner.gd", game), "utf8");
+const drawings = new Set([...(maps + achievements + enemies).matchAll(/"art:([a-z0-9_]+)"|"(?:art|icon|tree)": "([a-z0-9_]+)"/g)].map((match) => match[1] ?? match[2]));
+// Each map's street props and vehicles (lists of names), and its weather's icon (event_<id>).
+for (const list of maps.matchAll(/"props": \[([^\]]*)\]|const VEHICLES := \[([^\]]*)\]/g)) {
+  for (const name of (list[1] ?? list[2]).matchAll(/"([a-z0-9_]+)"/g)) drawings.add(name[1]);
+}
+for (const match of maps.matchAll(/const TRAIN := "([a-z0-9_]+)"|const MAP_EVENT := \{"id": "([a-z0-9_]+)"/g)) {
+  drawings.add(match[1] ?? `event_${match[2]}`);
+}
 for (const name of drawings) {
   if (!existsSync(new URL(`assets/art/${name}.svg`, game))) problems.push(`missing game/assets/art/${name}.svg`);
 }

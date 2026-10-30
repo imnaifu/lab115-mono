@@ -10,6 +10,9 @@ extends Node2D
 ## - "rain" (西雅图 下雨, .34): for a while it rains, and puddles open up round the player; anyone
 ##   standing in one is slowed (the crowd more than the player), so leading the crowd through
 ##   them pays. They dry up a few seconds after the rain stops.
+## - "fog" (伦敦 大雾, .37): for a while a fog rolls in; only a ring round the player stays clear
+##   (and the fog thins rather than hides, so a boss's warnings still show through), and the
+##   crowd, as lost in it as the player, walks slower.
 ## Drawn in the world over the enemies (the debris, the sand, the rain), under the HUD; puddles
 ## on the ground under everyone.
 
@@ -39,6 +42,15 @@ const RAIN_DRY := 3.0
 const RAIN_PLAYER_SLOW := 0.35
 const RAIN_CROWD_SLOW := 0.5
 const RAIN_TINT := Color(0.32, 0.42, 0.58, 0.22)
+## The fog: clear within FOG_CLEAR of the player, thickening over FOG_SOFT to FOG_ALPHA beyond;
+## the crowd walks at FOG_CROWD_SLOW of its speed while it lasts (bosses shrug off half, Enemy.slow).
+const FOG_CLEAR := 100.0
+const FOG_SOFT := 80.0
+const FOG_ALPHA := 0.82
+const FOG_COLOR := Color(0.8, 0.82, 0.85)
+const FOG_CROWD_SLOW := 0.75
+## Seconds the fog takes to roll in and to lift.
+const FOG_FADE := 1.5
 const PUDDLE := Color("7fa8c9")
 const DEBRIS := Color("8a909c")
 
@@ -107,6 +119,11 @@ func _process(delta: float) -> void:
 		"rain":
 			_tick_rain(delta)
 			_ground.queue_redraw()
+		"fog":
+			if _left > 0.0:
+				for enemy in game.enemies:
+					if not enemy.dead:
+						enemy.slow(FOG_CROWD_SLOW, 0.2)
 	queue_redraw()
 
 
@@ -235,6 +252,10 @@ func _draw() -> void:
 				var y := fposmod(scatter * 91.3 + _clock * 30.0, view.size.y)
 				var from := view.position + Vector2(x, y)
 				draw_line(from, from + wind * 18.0, Color(0.95, 0.85, 0.6, 0.6 * strength), 1.5, true)
+		"fog":
+			if _left <= 0.0:
+				return
+			_draw_fog(clampf(minf(_left, _seconds - _left) / FOG_FADE, 0.0, 1.0))
 		"rain":
 			if _left <= 0.0:
 				return
@@ -250,3 +271,33 @@ func _draw() -> void:
 				var y := fposmod(scatter * 83.9 + _clock * 520.0, view.size.y)
 				var from := view.position + Vector2(x, y)
 				draw_line(from, from + fall * 12.0, Color(0.85, 0.92, 1.0, 0.55 * strength), 1.2, true)
+
+
+## The fog over everything but a ring round the player: clear inside FOG_CLEAR, thickening across
+## FOG_SOFT, then even out past the edges of the screen; a few slow wisps drifting through it.
+## `strength` fades it in and out.
+func _draw_fog(strength: float) -> void:
+	var center := game.player.position
+	var far := game.view_half().length() * 1.3
+	var clear := Color(FOG_COLOR, 0.0)
+	var thick := Color(FOG_COLOR, FOG_ALPHA * strength)
+	var steps := 48
+	for i in steps:
+		var from := Vector2.from_angle(TAU * i / steps)
+		var to := Vector2.from_angle(TAU * (i + 1) / steps)
+		var inner := FOG_CLEAR
+		var middle := FOG_CLEAR + FOG_SOFT
+		draw_polygon(PackedVector2Array([center + from * inner, center + to * inner, center + to * middle, center + from * middle]),
+			PackedColorArray([clear, clear, thick, thick]))
+		draw_colored_polygon(PackedVector2Array([center + from * middle, center + to * middle, center + to * far, center + from * far]), thick)
+	# Wisps: long pale strokes drifting east, in the thick of it.
+	var half := game.view_half() * 1.2
+	var view := Rect2(center - half, half * 2.0)
+	for i in 14:
+		var scatter := float(i) * 41.7
+		var x := fposmod(scatter * 37.3 + _clock * 18.0, view.size.x)
+		var y := fposmod(scatter * 71.9, view.size.y)
+		var from := view.position + Vector2(x, y)
+		if from.distance_to(center) < FOG_CLEAR + FOG_SOFT * 0.5:
+			continue
+		draw_line(from, from + Vector2(46.0, 0.0), Color(1, 1, 1, 0.45 * strength), 5.0, true)

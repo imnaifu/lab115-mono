@@ -3,8 +3,9 @@ extends Control
 ## The map at a glance, top right of the HUD: on 硅谷 San Francisco up north at its tip, San
 ## Jose down south, the hills and the Pacific to the west, the Bay to the east; on 北京 回龙观 up
 ## north, the universities down south, the lake to the south-west. The freeways and the railway,
-## the player, what the screen shows, any bosses on it, and the landmarks to check in at (打卡): a
-## hollow pin until checked in at, then a gold one.
+## the player, what the screen shows, any bosses on it, and the landmarks to check in at (打卡):
+## each its own little picture (.37; plain pins before), faded in a red ring until checked in at,
+## then in full colour in a gold one.
 ##
 ## It always shows the whole of the named map (the map's OVERVIEW). The city goes on past that; a
 ## player who walks off its edge makes the map zoom out to take them in too, rather than slide
@@ -22,7 +23,14 @@ const DISTRICT_COLORS := {
 	# 西雅图 (Seattle.DISTRICTS; its lakes' blocks are "lake" too)
 	"slu": Art.FILL_MINT, "downtown": Art.FILL_LILAC, "sodo": Art.BRAND_SOFT, "north": Art.FILL_PINK,
 	"eastside": Art.FILL_SKY, "sound": City.SAND,
+	# 伦敦 (London.DISTRICTS; the river's row is "thames")
+	"kx": Art.FILL_MINT, "camden": Art.FILL_PINK, "westend": Art.FILL_LILAC, "city": Art.FILL_SKY,
+	"thames": City.SAND, "southbank": Art.BRAND_SOFT, "greenwich": Color("cfe6b0"),
 }
+## A landmark's picture on the map, and the ring round it: about a block across at the usual zoom,
+## so neighbouring landmarks don't cover each other.
+const LANDMARK_ICON := 7.0
+const LANDMARK_RING := 4.6
 const FREEWAY_COLOR := Color("f2c230")
 const INSET := 3.0
 ## Room kept around a player outside the overview, as a fraction of its size.
@@ -90,11 +98,12 @@ func _draw() -> void:
 		var pin := _to_map(map, window, game.stamps.spot(id))
 		if not map.has_point(pin):
 			continue
-		if Progress.has_stamp(id):
-			draw_circle(pin, 2.2, Art.BRAND)
-			draw_arc(pin, 2.2, 0.0, TAU, 12, Art.INK, 1.0, true)
-		else:
-			draw_arc(pin, 2.0, 0.0, TAU, 12, Art.HP_RED, 1.2, true)
+		var stamped := Progress.has_stamp(id)
+		draw_circle(pin, LANDMARK_RING, Art.PAPER)
+		var picture := Art.texture(Maps.current.STAMPS[id]["art"])
+		var fit := picture.get_size() * (LANDMARK_ICON / maxf(picture.get_width(), picture.get_height()))
+		draw_texture_rect(picture, Rect2(pin - fit / 2.0, fit), false, Color.WHITE if stamped else Color(1, 1, 1, 0.55))
+		draw_arc(pin, LANDMARK_RING, 0.0, TAU, 16, Art.BRAND_DEEP if stamped else Art.HP_RED, 1.2, true)
 
 	# Bosses, then the player on top: what the screen shows, and a dot where they stand.
 	for enemy in game.enemies:

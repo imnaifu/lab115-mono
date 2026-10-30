@@ -85,61 +85,64 @@ const RAILWAY_FROM_ROW := -12
 ## No salt ponds and no airport here.
 const SALT_POND_FROM_ROW := 1000
 const RUNWAYS: Array[Vector2i] = []
+## What drives the freeways and the railway (Traffic, .37): cars, and the light rail.
+const VEHICLES := ["car_top"]
+const TRAIN := "train_top"
 
 ## Per district, as in BayArea.DISTRICTS. Firs and rain-green lawns everywhere.
 const DISTRICTS := {
 	"slu": {
-		"name": "南联合湖",
+		"name": "南联合湖", "icon": "spheres",
 		"ground": Color("dceccf"),
 		"structures": ["soco:office", "soco:midrise_bands", "soco:midrise_grid", "soco:office_block", "soco:commercial"],
 		"gap": [36.0, 70.0], "brands": ["amazin", "zillo", "expedio", "starbacks"],
-		"brand_chance": 0.85, "tree": "redwood", "props": ["bike", "cone", "robotaxi"],
+		"brand_chance": 0.85, "tree": "redwood", "props": ["coffee_cart", "bike", "scooter", "cone"],
 		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.15,
 		"decor": [["tuft", 12.0], ["flower", 11.0], ["tuft", 12.0]],
 	},
 	"downtown": {
-		"name": "市中心",
+		"name": "市中心", "icon": "pike_place",
 		"ground": Color("e2e7da"),
 		"structures": ["soco:midrise_grid", "soco:office_block", "soco:midrise_bands", "soco:commercial",
 			"soco:shop_1", "soco:shop_2"],
 		"gap": [36.0, 56.0], "brands": ["starbacks", "zillo", "amazin"], "brand_chance": 0.4, "tree": "redwood",
-		"props": ["bike", "cone", "robotaxi"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.1,
+		"props": ["coffee_cart", "bike", "robotaxi"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.1,
 		"decor": [["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"sodo": {
-		"name": "SoDo",
+		"name": "SoDo", "icon": "stadium",
 		"ground": Color("e6e4d6"),
 		"structures": ["soco:supermarket", "soco:commercial", "soco:convenience_store", "soco:shop_1"],
 		"gap": [36.0, 70.0], "brands": ["starbacks", "costgo"], "brand_chance": 0.35, "tree": "poplar",
-		"props": ["cone", "bike"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.15,
+		"props": ["cone", "coffee_cart"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["tuft", 12.0], ["flower", 11.0]],
 	},
 	"north": {
-		"name": "弗里蒙特",
+		"name": "弗里蒙特", "icon": "fremont_troll",
 		"ground": Color("d9ebcb"),
 		"structures": ["soco:small_1", "soco:small_2", "soco:small_3", "soco:small_4", "soco:shop_2"],
 		"gap": [40.0, 72.0], "brands": [], "brand_chance": 0.0, "tree": "redwood",
-		"props": ["bike", "bike", "cone"], "bushes": [2, 4], "lawn_trees": [1, 3], "park_chance": 0.25,
+		"props": ["bike", "bike", "coffee_cart"], "bushes": [2, 4], "lawn_trees": [1, 3], "park_chance": 0.25,
 		"decor": [["flower", 11.0], ["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"eastside": {
-		"name": "贝尔维尤",
+		"name": "贝尔维尤", "icon": "icon_window",
 		"ground": Color("dfeccf"),
 		"structures": ["soco:office", "soco:office_block", "soco:midrise_grid", "soco:midrise_bands", "soco:commercial"],
 		"gap": [36.0, 70.0], "brands": ["microhard", "tmobble", "valv", "costgo"], "brand_chance": 0.8,
-		"tree": "redwood", "props": ["bike", "cone", "robotaxi"], "bushes": [2, 4], "lawn_trees": [1, 2],
+		"tree": "redwood", "props": ["robotaxi", "bike", "coffee_cart"], "bushes": [2, 4], "lawn_trees": [1, 2],
 		"park_chance": 0.15, "decor": [["tuft", 12.0], ["flower", 11.0]],
 	},
 	# The waterfront strip between the shore road and Elliott Bay, and the lakes' blocks.
 	"sound": {
-		"name": "艾略特湾",
+		"name": "艾略特湾", "icon": "great_wheel",
 		"ground": Color("e9e4c6"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
 		"decor": [["tuft", 12.0]],
 	},
 	"lake": {
-		"name": "湖边",
+		"name": "湖边", "icon": "gas_works",
 		"ground": Color("dceccf"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
@@ -228,7 +231,7 @@ const HEIGHTS := {
 	"great_wheel": 124.0, "central_library": 124.0, "fremont_troll": 76.0, "gas_works": 104.0,
 	"uw_library": 104.0, "mt_rainier": 104.0, "caltrain": 46.0, "stadium": 150.0,
 	"redwood": 92.0, "poplar": 66.0, "bush": 23.0,
-	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0,
+	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0, "scooter": 24.0, "coffee_cart": 28.0,
 }
 
 

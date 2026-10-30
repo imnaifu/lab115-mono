@@ -43,6 +43,11 @@ const SAND_EDGE := 12.0
 ## The campus signs on the lawn are the rooftop signs this much bigger.
 const CAMPUS_SIGN_SCALE := 1.9
 
+## How likely a row of buildings is to have a prop on the sidewalk in front of its west half,
+## and its east half (.37: more of them, the user wanted each map's character to show on its
+## streets; it was one prop, half the time).
+const PROP_CHANCES := [0.75, 0.4]
+
 const DECOR_CELL := 32.0
 const DECOR_CHANCE := 0.07
 
@@ -307,7 +312,13 @@ func _draw_shield(center: Vector2, freeway: Dictionary) -> void:
 	var text: String = freeway["number"]
 	var font_size := 9
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	var color := Art.INK if freeway["shield"] == "shield_us" else Color.WHITE
+	# Longer numbers (London's A100) shrink to fit inside the shield.
+	while width > SHIELD_SIZE - 4.0 and font_size > 6:
+		font_size -= 1
+		width = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	# Black on the US route shield, yellow on the UK's green primary-route one (as the real
+	# signs have it), white on the rest.
+	var color: Color = {"shield_us": Art.INK, "shield_uk": FREEWAY_YELLOW}.get(freeway["shield"], Color.WHITE)
 	draw_string(font, center + Vector2(-width / 2.0, 5.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 
@@ -534,10 +545,14 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 			_place_tree(content, district["tree"], Vector2(cursor + size.x + gap / 2.0, street_y + 1.0), false)
 		cursor += size.x + gap
 	var props: Array = district["props"]
-	if not props.is_empty() and rng.randf() < 0.5:
-		var prop: String = props[rng.randi() % props.size()]
-		var spot := Vector2(rng.randf_range(left, right), street_y + SIDEWALK + 2.0)
-		content["nodes"].append(_place_art(prop, Maps.current.HEIGHTS[prop], spot, true))
+	if not props.is_empty():
+		var middle := (left + right) / 2.0
+		for half in PROP_CHANCES.size():
+			if rng.randf() >= PROP_CHANCES[half]:
+				continue
+			var prop: String = props[rng.randi() % props.size()]
+			var spot := Vector2(rng.randf_range(left, middle) if half == 0 else rng.randf_range(middle, right), street_y + SIDEWALK + 2.0)
+			content["nodes"].append(_place_art(prop, Maps.current.HEIGHTS[prop], spot, true))
 	return tallest
 
 

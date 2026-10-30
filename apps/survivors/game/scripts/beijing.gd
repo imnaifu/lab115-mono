@@ -69,38 +69,41 @@ const RAILWAY_FROM_ROW := -12
 ## No salt ponds and no airport here.
 const SALT_POND_FROM_ROW := 1000
 const RUNWAYS: Array[Vector2i] = []
+## What drives the freeways and the railway (Traffic, .37): cars, and Line 13.
+const VEHICLES := ["car_top"]
+const TRAIN := "train_top"
 
 ## Per district, as in BayArea.DISTRICTS.
 const DISTRICTS := {
 	"houchang": {
-		"name": "后厂村",
+		"name": "后厂村", "icon": "icon_paw",
 		"ground": Color("e2edcc"),
 		"structures": ["soco:office", "soco:midrise_bands", "soco:midrise_grid", "soco:office_block", "soco:commercial"],
 		"gap": [36.0, 70.0], "brands": ["baidu", "xiaomi", "netease", "didi", "kuaishou"],
-		"brand_chance": 0.85, "tree": "poplar", "props": ["bike", "bike", "cone", "robotaxi"],
+		"brand_chance": 0.85, "tree": "poplar", "props": ["shared_bike", "shared_bike", "delivery_ebike", "robotaxi"],
 		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.15,
 		"decor": [["flower", 11.0], ["tuft", 12.0], ["tuft", 12.0]],
 	},
 	"huilongguan": {
-		"name": "回龙观",
+		"name": "回龙观", "icon": "tower_block",
 		"ground": Color("e6e6d6"),
 		"structures": ["art:tower_block", "soco:midrise_grid", "art:tower_block", "soco:midrise_bands",
 			"soco:convenience_store", "soco:supermarket"],
 		"gap": [36.0, 56.0], "brands": [], "brand_chance": 0.0, "tree": "poplar",
-		"props": ["bike", "bike", "cone"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.1,
+		"props": ["shared_bike", "jianbing_cart", "delivery_ebike"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.1,
 		"decor": [["tuft", 12.0], ["flower", 11.0]],
 	},
 	"haidian": {
-		"name": "海淀",
+		"name": "海淀", "icon": "tsinghua_gate",
 		"ground": Color("e3ecd0"),
 		"structures": ["soco:small_1", "soco:small_2", "soco:small_3", "soco:shop_1", "soco:shop_2",
 			"soco:commercial", "soco:convenience_store"],
 		"gap": [36.0, 64.0], "brands": ["bytedance", "jd"], "brand_chance": 0.3, "tree": "poplar",
-		"props": ["bike", "bike", "cone"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.2,
+		"props": ["shared_bike", "jianbing_cart", "delivery_ebike", "bike"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.2,
 		"decor": [["flower", 11.0], ["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"yiheyuan": {
-		"name": "颐和园",
+		"name": "颐和园", "icon": "summer_palace",
 		"ground": Color("d8ecc0"),
 		"structures": ["soco:small_1", "soco:small_3"],
 		"gap": [90.0, 160.0], "brands": [], "brand_chance": 0.0, "tree": "poplar",
@@ -108,7 +111,7 @@ const DISTRICTS := {
 		"decor": [["flower", 11.0], ["flower_pink", 11.0], ["tuft", 12.0]],
 	},
 	"xishan": {
-		"name": "西山",
+		"name": "西山", "icon": "redwood",
 		"ground": Color("f0dc9a"),
 		"structures": ["soco:small_1", "soco:small_4"],
 		"gap": [120.0, 220.0], "brands": [], "brand_chance": 0.0, "tree": "redwood",
@@ -116,14 +119,14 @@ const DISTRICTS := {
 		"decor": [["poppy", 11.0], ["tuft", 12.0]],
 	},
 	"aoyun": {
-		"name": "奥林匹克公园",
+		"name": "奥林匹克公园", "icon": "birds_nest",
 		"ground": Color("d6eec0"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "poplar",
 		"props": [], "bushes": [2, 4], "lawn_trees": [1, 3], "park_chance": 1.0,
 		"decor": [["flower", 11.0], ["tuft", 12.0]],
 	},
 	"lake": {
-		"name": "昆明湖",
+		"name": "昆明湖", "icon": "koi",
 		"ground": Color("e9e4c6"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
@@ -205,7 +208,7 @@ const HEIGHTS := {
 	"subway_13": 46.0, "tower_block": 170.0, "tsinghua_gate": 70.0, "boya_pagoda": 150.0,
 	"summer_palace": 140.0, "birds_nest": 96.0,
 	"poplar": 66.0, "redwood": 92.0, "bush": 23.0,
-	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0,
+	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0, "shared_bike": 22.0, "jianbing_cart": 30.0, "delivery_ebike": 26.0,
 }
 
 
