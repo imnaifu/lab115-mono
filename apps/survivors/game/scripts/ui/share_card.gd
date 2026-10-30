@@ -12,9 +12,7 @@ const SIZE := Vector2i(720, 1280)
 ## The design board is 360x640; everything below is its sizes doubled.
 const SCALE := 2
 ## Job grade by level, the result's headline number: the live data's lost runs ended around
-## level 10-13 (L4), the wins at 45-56 (L7-L8).
-const GRADES := [[50, "L8"], [40, "L7"], [30, "L6"], [20, "L5"], [10, "L4"]]
-const FIRST_GRADE := "L3"
+## level 10-13 (L4), the wins at 45-56 (L7-L8). The map names the grades (Maps.rank_of).
 ## Roasts by what ended the run, then by how it went.
 const KILLER_ROASTS := {
 	"deadline": "死于 Deadline。经典。",
@@ -158,10 +156,7 @@ func capture() -> Image:
 
 
 static func grade(level: int) -> String:
-	for step: Array in GRADES:
-		if level >= step[0]:
-			return step[1]
-	return FIRST_GRADE
+	return Maps.rank_of(level)
 
 
 ## The weapon that dealt the most damage this run, or "".

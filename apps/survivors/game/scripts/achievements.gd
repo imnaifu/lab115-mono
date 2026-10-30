@@ -19,7 +19,8 @@ const LIST := [
 	{"id": "thousand", "art": "skull", "group": "战斗", "name": "千人斩", "text": "一局打死 1000 个怪"},
 	{"id": "ten_thousand", "art": "skull", "group": "战斗", "name": "万人斩", "text": "累计打死 10000 个怪", "goal": 10000},
 	{"id": "first_boss", "art": "moneybag", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
-	{"id": "all_bosses", "art": "ai_boss", "group": "战斗", "name": "boss 图鉴", "text": "10 种 boss 全都打掉过", "goal": 10},
+	{"id": "all_bosses", "art": "ai_boss", "group": "战斗", "name": "boss 克星", "text": "打掉过 10 种 boss", "goal": 10},
+	{"id": "bestiary_all", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 25},
 	{"id": "first_evolve", "art": "star_gold", "group": "战斗", "name": "技术升级", "text": "第一次进化武器"},
 	{"id": "full_kit", "art": "keyboard", "group": "战斗", "name": "全栈", "text": "一局带满 6 把武器"},
 	{"id": "win_coder", "art": "coder", "group": "职业", "name": "程序员敲钟", "text": "用程序员通关", "job": "coder"},
@@ -50,6 +51,10 @@ var _check_left := 0.0
 var _hurt := false
 ## Boss types killed this run, added to the saved set when it ends.
 var _bosses := {}
+## For the 怪物图鉴 (Bestiary): types met and killed this run, boss affixes met.
+var _seen := {}
+var _kills_by_type := {}
+var _affixes_seen := {}
 var _finished := false
 
 
@@ -64,15 +69,6 @@ static func data(id: String) -> Dictionary:
 	return {}
 
 
-## The enemy types that count as bosses for the 图鉴.
-static func boss_types() -> PackedStringArray:
-	var types := PackedStringArray()
-	for type_id: String in Spawner.ENEMY_TYPES:
-		if Spawner.ENEMY_TYPES[type_id].get("elite", false):
-			types.append(type_id)
-	return types
-
-
 ## How far along a counted achievement is, as [done, goal], from what's saved (a run in progress
 ## adds its share when it ends). [0, 0] for the others.
 static func progress(id: String) -> Array:
@@ -85,6 +81,8 @@ static func progress(id: String) -> Array:
 			done = Progress.stat("kills", 0)
 		"all_bosses":
 			done = (Progress.stat("bosses", []) as Array).size()
+		"bestiary_all":
+			done = Bestiary.seen_count()
 		"stamps_5":
 			done = _stamps_done()
 		"stamps_all":
@@ -128,6 +126,8 @@ func tick(delta: float) -> void:
 		_unlock("stamps_all")
 	if Maps.stamps_on("bj") >= Beijing.STAMPS.size():
 		_unlock("bj_stamps_all")
+	if _all_seen().size() >= Bestiary.ids().size():
+		_unlock("bestiary_all")
 
 
 ## The player lost health (not just touched while still flashing from the last hit).
@@ -138,8 +138,22 @@ func on_hurt() -> void:
 func on_boss_killed(type_id: String) -> void:
 	_bosses[type_id] = true
 	_unlock("first_boss")
-	if _all_bosses().size() >= boss_types().size():
+	if _all_bosses().size() >= data("all_bosses")["goal"]:
 		_unlock("all_bosses")
+
+
+## An enemy turned up (Game.spawn_enemy): it goes in the 图鉴.
+func on_spawned(type_id: String) -> void:
+	_seen[type_id] = true
+
+
+func on_killed(type_id: String) -> void:
+	_kills_by_type[type_id] = _kills_by_type.get(type_id, 0) + 1
+
+
+func on_affixes(affixes: Array) -> void:
+	for affix: String in affixes:
+		_affixes_seen[affix] = true
 
 
 func on_train_hit() -> void:
@@ -163,11 +177,30 @@ func finish(victory: bool) -> void:
 	Progress.set_stat("runs", Progress.stat("runs", 0) + 1)
 	Progress.set_stat("kills", Progress.stat("kills", 0) + _game.kills)
 	Progress.set_stat("bosses", Array(_all_bosses()))
+	Progress.set_stat("seen", Array(_all_seen()))
+	var kills_by_type: Dictionary = Progress.stat("kills_by_type", {})
+	for type_id: String in _kills_by_type:
+		kills_by_type[type_id] = kills_by_type.get(type_id, 0) + _kills_by_type[type_id]
+	Progress.set_stat("kills_by_type", kills_by_type)
+	var affixes_seen := PackedStringArray(Progress.stat("affixes_seen", []))
+	for affix: String in _affixes_seen:
+		if not affixes_seen.has(affix):
+			affixes_seen.append(affix)
+	Progress.set_stat("affixes_seen", Array(affixes_seen))
 	if victory:
 		var wins: Dictionary = Progress.stat("wins", {})
 		wins[_game.player.job] = wins.get(_game.player.job, 0) + 1
 		Progress.set_stat("wins", wins)
 	Progress.save()
+
+
+## Enemy types met in any run so far, this one included.
+func _all_seen() -> PackedStringArray:
+	var all := PackedStringArray(Progress.stat("seen", []))
+	for type_id: String in _seen:
+		if not all.has(type_id):
+			all.append(type_id)
+	return all
 
 
 ## Boss types killed in any run so far, this one included.

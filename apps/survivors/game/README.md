@@ -57,7 +57,8 @@ scripts/
 ├── settings.gd        # 存设置
 ├── progress.gd        # 局外成长的存档（user://progress.cfg）：打卡、成就、累计数据；测试机器人只记在内存里
 ├── stamps.gd          # 打卡：走到地标跟前站 1 秒，永久小加成
-├── achievements.gd    # 成就：列表、跨局进度、什么时候算拿到
+├── achievements.gd    # 成就：列表、跨局进度、什么时候算拿到；也记图鉴要的遇到过的怪、各类击杀、词条
+├── bestiary.gd        # 怪物图鉴：分组、每种怪的吐槽、从存档读遇到过和累计击杀
 ├── tilt.gd            # 陀螺仪：经 JavaScriptBridge 读浏览器的 deviceorientation
 ├── sound.gd           # 音效和音乐：挂在场景树根上（重开一局音乐不断），常见音效限频，连续捡星星音调递增；音乐和音效分两条 bus，HUD 每帧报告界面 / 血量 / 时间，音乐据此让位或提速，低血量响心跳
 ├── telemetry.gd       # 匿名对局数据，发到 stats.lab115.com 的 Umami（见下文「对局数据」）

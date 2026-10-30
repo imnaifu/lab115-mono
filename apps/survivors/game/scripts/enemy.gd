@@ -197,7 +197,8 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 	hp = max_hp
 	# Small per-enemy speed jitter keeps a crowd from marching in lockstep.
 	speed = data["speed"] * randf_range(0.9, 1.1)
-	damage = data["damage"]
+	# Harder maps hit harder (Maps.current.DIFFICULTY), its moves too (_hits).
+	damage = data["damage"] * Maps.current.DIFFICULTY["damage"]
 	xp_value = data["xp"]
 	radius = data["radius"]
 	color = data["color"]
@@ -353,7 +354,7 @@ func _tick_countdown(delta: float) -> void:
 		speed = _base_speed * BERSERK_SPEED
 		damage = _base_damage * BERSERK_DAMAGE
 		Sound.play("alarm")
-		game.announce("Deadline 到了！它暴走了")
+		game.announce(Spawner.ENEMY_TYPES[type_name].get("berserk_line", "Deadline 到了！它暴走了"))
 
 
 ## Scales its health, full: a boss coming back later in a run a little weaker (Spawner EVENTS).
@@ -377,7 +378,7 @@ func expired() -> bool:
 func take_strength(data: Dictionary, hp_scale: float) -> void:
 	max_hp = data["hp"] * hp_scale
 	hp = max_hp
-	damage = data["damage"]
+	damage = data["damage"] * Maps.current.DIFFICULTY["damage"]
 	_base_damage = damage
 	xp_value = data["xp"]
 
@@ -523,7 +524,7 @@ func _finish_windup() -> void:
 			_volley_turn = 0.5 - _volley_turn
 			for i in VOLLEY_SHOTS:
 				var heading := Vector2.from_angle(TAU * (i + _volley_turn) / VOLLEY_SHOTS)
-				game.fire_bullet(position + heading * radius, heading * VOLLEY_SPEED, VOLLEY_DAMAGE, type_name)
+				game.fire_bullet(position + heading * radius, heading * VOLLEY_SPEED, _hits(VOLLEY_DAMAGE), type_name)
 			Sound.play("boss_fire")
 		"quake":
 			_quake()
@@ -538,7 +539,7 @@ func _quake() -> void:
 	var player := game.player
 	var offset := player.position - position
 	if offset.length() <= QUAKE_RADIUS + Player.HURT_RADIUS:
-		game.hurt_player(QUAKE_DAMAGE, type_name, "quake")
+		game.hurt_player(_hits(QUAKE_DAMAGE), type_name, "quake")
 		player.position = game.city.resolve(player.position + offset.normalized() * QUAKE_SHOVE, Player.BODY_RADIUS)
 	for enemy in game.query_enemies(position, QUAKE_RADIUS):
 		if enemy != self and not enemy.is_elite:
@@ -552,7 +553,7 @@ func _throw_pies() -> void:
 	var side := (aim - position).normalized().orthogonal()
 	for i in LOB_PIES:
 		var offset := side * (i - (LOB_PIES - 1) / 2.0) * LOB_SPREAD
-		game.lob_pie(position + Vector2(0, -radius), aim + offset, LOB_FLIGHT_SECONDS, LOB_DAMAGE, type_name)
+		game.lob_pie(position + Vector2(0, -radius), aim + offset, LOB_FLIGHT_SECONDS, _hits(LOB_DAMAGE), type_name)
 
 
 ## Stops it in place for a while (bosses for less), tinted so it reads as frozen.
@@ -588,6 +589,11 @@ func _spin_angle(delta: float) -> float:
 	_spin_left = maxf(0.0, _spin_left - delta)
 	var progress := 1.0 - _spin_left / SPIN_SECONDS
 	return _spin_way * TAU * (1.0 - pow(1.0 - progress, 2.0))
+
+
+## A move's damage on this map (Maps.current.DIFFICULTY).
+static func _hits(amount: float) -> float:
+	return amount * Maps.current.DIFFICULTY["damage"]
 
 
 func _rest_modulate() -> Color:

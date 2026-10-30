@@ -78,6 +78,38 @@ const ENEMY_TYPES := {
 	"pie_boss": {"name": "老板画饼", "art": "pie_boss", "size": 58.0, "color": Color("f2c46b"),
 		"hp": 1900.0, "speed": 28.0, "damage": 24.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "lob"},
+	# 北京's own (Beijing.BOSS_SWAPS), each in the slot of the Silicon Valley boss it replaces,
+	# built like it and as strong (the health, damage and stars below are its; Spawner takes them
+	# from the slot anyway). `arrival` is its line when it comes on; `berserk_line`, `on_time_line`
+	# and `death_line` stand in for Deadline's and the investor's.
+	"weekly_report": {"name": "周报", "art": "weekly_report", "size": 46.0, "color": Color("bcdcf2"),
+		"hp": 360.0, "speed": 28.0, "damage": 9.0, "xp": 20, "radius": 11.0, "knockback_resist": 0.9, "elite": true,
+		"arrival": "精英怪：周报！"},
+	"midlife": {"name": "35 岁危机", "art": "midlife", "size": 54.0, "color": Color("ffd9b8"),
+		"hp": 1400.0, "speed": 32.0, "damage": 22.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "charge", "arrival": "首领出现：35 岁危机"},
+	"fubao": {"name": "福报 996", "art": "fubao", "size": 50.0, "color": Color("ff5d5d"),
+		"hp": 1260.0, "speed": 36.0, "damage": 31.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "countdown", "arrival": "福报 996 来了！",
+		"berserk_line": "到点了还没下班！它开始加班暴走", "on_time_line": "准点下班！钱袋保底 A 轮"},
+	"juanwang": {"name": "卷王", "art": "juanwang", "size": 58.0, "color": Color("ffd36b"),
+		"hp": 1666.0, "speed": 30.0, "damage": 30.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "aura", "arrival": "首领出现：卷王", "death_line": "卷王倒了！掉了一地经验"},
+	"baimo": {"name": "百模大战", "art": "baimo", "size": 64.0, "color": Color("5fb3a8"),
+		"hp": 2240.0, "speed": 40.0, "damage": 38.0, "xp": 100, "radius": 16.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "clones", "clone_type": "baimo_clone", "arrival": "首领出现：百模大战"},
+	"baimo_clone": {"name": "又一个大模型", "art": "baimo", "size": 54.0, "color": Color("5fb3a8"),
+		"hp": 1.0, "speed": 40.0, "damage": 19.0, "xp": 0, "radius": 13.0, "knockback_resist": 0.6, "phantom": true},
+	"inspection": {"name": "领导视察", "art": "inspection", "size": 52.0, "color": Color("3b4a6b"),
+		"hp": 1700.0, "speed": 34.0, "damage": 28.0, "xp": 70, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "blink", "arrival": "领导视察！"},
+	"ppt": {"name": "述职 PPT", "art": "ppt", "size": 54.0, "color": Color("f0a35e"),
+		"hp": 1600.0, "speed": 30.0, "damage": 26.0, "xp": 70, "radius": 14.0, "knockback_resist": 1.0, "elite": true,
+		"ability": "volley", "arrival": "述职 PPT！"},
+	# 西二旗's rush hour (Beijing.RING_SWAPS): a crowd of commuters in place of the Bug outbreak,
+	# a little quicker than bugs and as frail.
+	"commuter": {"name": "早高峰打工人", "art": "commuter", "size": 24.0, "color": Color("9aa5b8"),
+		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 }
 ## A boss due while this many are still out waits until one is down. Players who keep up
 ## never see the wait; it stops a player who has fallen behind from being buried under bosses
@@ -165,12 +197,13 @@ func _init(game: Game) -> void:
 ## the bosses now carry more of the pressure.
 func spawn_rate() -> float:
 	var ease_in := lerpf(EASE_IN_START, 1.0, minf(_game.elapsed / EASE_IN_SECONDS, 1.0))
-	return (0.8 + _game.elapsed / 60.0 * 0.55) * ease_in
+	return (0.8 + _game.elapsed / 60.0 * 0.55) * ease_in * Maps.current.DIFFICULTY["spawn"]
 
 
-## Enemy HP multiplier so late enemies keep up with upgraded weapons: 3x by the ten-minute mark.
+## Enemy HP multiplier so late enemies keep up with upgraded weapons: 3x by the ten-minute mark,
+## times the map's (Maps: longer working weeks are harder).
 func hp_scale() -> float:
-	return 1.0 + _game.elapsed / 60.0 * 0.2
+	return (1.0 + _game.elapsed / 60.0 * 0.2) * Maps.current.DIFFICULTY["hp"]
 
 
 func tick(delta: float) -> void:
@@ -217,6 +250,7 @@ func _plan_events() -> Array[Dictionary]:
 	var events: Array[Dictionary] = []
 	for event: Dictionary in EVENTS:
 		events.append(event.duplicate(true))
+	_localize(events)
 	if not shake_bosses:
 		return events
 	var rng := _game.rng
@@ -240,7 +274,8 @@ func _plan_events() -> Array[Dictionary]:
 		for i in slots.size():
 			var slot := slots[i]
 			var first_of_all: bool = slot["at"] == BOSS_TIERS[0][0]
-			slot["strength"] = slot["type"]
+			# A local boss is already as strong as the slot's own (_localize).
+			slot["strength"] = slot.get("strength", slot["type"])
 			slot["type"] = types[i]
 			slot["text"] = lines[types[i]]
 			slot["at"] += rng.randf_range(-ARRIVAL_JITTER, ARRIVAL_JITTER)
@@ -251,6 +286,26 @@ func _plan_events() -> Array[Dictionary]:
 			_draw_rolls(event, ROLLS[-1])
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
 	return events
+
+
+## The map's own bosses and rings in place of Silicon Valley's (the map's BOSS_SWAPS, RING_SWAPS,
+## FINALE_LINE): a local boss takes the slot, the strength of the boss it replaces and its own
+## arrival line.
+func _localize(events: Array[Dictionary]) -> void:
+	var swaps: Dictionary = Maps.current.BOSS_SWAPS
+	var rings: Dictionary = Maps.current.RING_SWAPS
+	var finale_line: String = Maps.current.FINALE_LINE
+	for event in events:
+		if event["kind"] == "elite" and swaps.has(event["type"]):
+			event["strength"] = event["type"]
+			event["type"] = swaps[event["type"]]
+			if event.has("text") and event["at"] != FINALE_AT:
+				event["text"] = ENEMY_TYPES[event["type"]].get("arrival", event["text"])
+		elif event["kind"] == "ring" and rings.has(event["type"]):
+			event["text"] = rings[event["type"]]["text"]
+			event["type"] = rings[event["type"]]["type"]
+		if event["kind"] == "elite" and event["at"] == FINALE_AT and event.has("text") and finale_line != "":
+			event["text"] = finale_line
 
 
 ## A boss's extra moves (none it already has) and affixes, by the chances in `roll`.
@@ -323,6 +378,7 @@ func _run_event(event: Dictionary) -> void:
 			boss.scale_hp(event.get("hp_scale", 1.0))
 			boss.add_moves(event.get("moves", []))
 			boss.add_affixes(event.get("affixes", []))
+			_game.achievements.on_affixes(event.get("affixes", []))
 	if event.has("text"):
 		Sound.play("alarm")
 		var line := tr(event["text"])

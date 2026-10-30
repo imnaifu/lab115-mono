@@ -42,7 +42,15 @@ const BOSS_MOVE_HINTS := {
 	"quake": "红圈填满就会炸开，先退到圈外",
 	"countdown": "头顶倒计时归零前没打死，它就暴走",
 	"clones": "半透明的是幻觉分身，一碰就碎",
-	"aura": "金圈里的小怪减伤一半，先打投资人",
+	"aura": "金圈里的小怪减伤一半，先打中间那个",
+}
+## What each boss affix (Enemy.AFFIXES) does, for the 图鉴.
+const AFFIX_NOTES := {
+	"996": "移速 +30%，出招更勤",
+	"thick": "血量 +50%，个头更大",
+	"angry": "掉到一半血以下变红，更快、出招更勤",
+	"heal": "3 秒没挨打就开始回血，别停手",
+	"blame": "被打死时甩出 3 个小号的自己",
 }
 const WARNING_SECONDS := 3.5
 ## The funding bag's slot machine: laps of all the rounds before landing, and how long it spins.
@@ -133,6 +141,8 @@ var _badge_kicker: Label
 var _badge_title: Label
 var _badge_tween: Tween
 var _badge_queue: Array = []
+## The job grade last shown (Maps.rank_of), to tell a promotion.
+var _shown_rank := ""
 var _tilt_hint: Label
 var _shown_state := -1
 ## Brightens the XP bar for a moment whenever XP comes in, so picking up a star registers.
@@ -208,7 +218,15 @@ func _process(delta: float) -> void:
 		_xp_flash = 1.0
 	_xp_flash = maxf(0.0, _xp_flash - delta * 4.0)
 	_xp_bar.modulate = Color.WHITE.lerp(Color(1.4, 1.4, 1.4), _xp_flash)
-	_level_label.text = "Lv %d" % game.level
+	# The level as a job grade and the level within it: L4 · 12 (P6 · 12 on 北京).
+	var rank := Maps.rank_of(game.level)
+	_level_label.text = "%s · %d" % [rank, game.level]
+	if rank != _shown_rank:
+		# A promotion every 10 levels gets a banner of its own; the first grade is just where a
+		# run starts.
+		if _shown_rank != "":
+			_queue_badge(["stock_options", tr("晋升"), rank, Art.LINK, false])
+		_shown_rank = rank
 	_time_label.text = _clock_text(game.elapsed)
 	_kills_label.text = str(game.kills)
 	_update_next_boss()
@@ -817,7 +835,7 @@ func _show_title() -> void:
 	var settings := _settings_button()
 	settings.custom_minimum_size.x = 140.0 if portrait else 120.0
 	settings.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var collection := UiKit.secondary_button("打卡 · 成就", _open_collection)
+	var collection := UiKit.secondary_button("收藏", _open_collection)
 	collection.icon = Art.texture("star_gold")
 	collection.add_theme_constant_override("icon_max_width", 18)
 	collection.custom_minimum_size.x = 150.0 if portrait else 140.0
@@ -864,7 +882,8 @@ func _map_picker() -> Control:
 	var names := []
 	var hint := ""
 	for map_id: String in Maps.ORDER:
-		var map_name := tr(Maps.script_of(map_id).NAME)
+		# With its working week, which is how hard it is: 北京 · 996.
+		var map_name := Maps.label_of(map_id)
 		if Maps.unlocked(map_id):
 			names.append(map_name)
 		else:
@@ -1089,7 +1108,7 @@ func _show_level_up(choices: Array) -> void:
 	_cards_holder.add_child(column)
 
 	column.add_child(UiKit.kicker("LEVEL UP", Art.BRAND_SOFT))
-	var title := UiKit.label(tr("升级！Lv %d") % game.level, 28, "display", Art.PAPER)
+	var title := UiKit.label(tr("升级！%s · %d") % [Maps.rank_of(game.level), game.level], 28, "display", Art.PAPER)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
 	var sub := UiKit.label("选一张带走", 13, "body", Art.BRAND_SOFT)
@@ -1663,7 +1682,7 @@ func _show_end(victory: bool) -> void:
 	var stats := HBoxContainer.new()
 	stats.add_theme_constant_override("separation", 8)
 	left.add_child(stats)
-	for stat: Array in [["存活", _clock_text(game.elapsed)], ["等级", "Lv %d" % game.level], ["击杀", str(game.kills)]]:
+	for stat: Array in [["存活", _clock_text(game.elapsed)], ["职级", "%s · %d" % [Maps.rank_of(game.level), game.level]], ["击杀", str(game.kills)]]:
 		var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(4, 6, 4, 6)))
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var card_column := VBoxContainer.new()
@@ -2008,7 +2027,7 @@ func _open_collection(tab: int = -1) -> void:
 	column.add_child(header)
 	var back := UiKit.round_button("ui_back", func() -> void: _collection_open = false, 44.0, Art.INK)
 	header.add_child(back)
-	var title := UiKit.label("打卡 · 成就", 22, "heavy")
+	var title := UiKit.label("收藏", 22, "heavy")
 	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
@@ -2017,8 +2036,9 @@ func _open_collection(tab: int = -1) -> void:
 		stamped += Maps.stamps_on(map_id)
 	var earned := Progress.achievement_ids().size()
 	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
-		"%s %d/%d" % [tr("成就"), earned, Achievements.LIST.size()]], _collection_tab, _open_collection, Art.PAPER_SUNK)
-	tabs.custom_minimum_size.x = 260.0
+		"%s %d/%d" % [tr("成就"), earned, Achievements.LIST.size()],
+		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()]], _collection_tab, _open_collection, Art.PAPER_SUNK)
+	tabs.custom_minimum_size.x = 330.0
 	if portrait:
 		column.add_child(tabs)
 	else:
@@ -2033,10 +2053,13 @@ func _open_collection(tab: int = -1) -> void:
 	body.add_theme_constant_override("separation", 10)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(body)
-	if _collection_tab == 0:
-		_fill_stamps(body, portrait)
-	else:
-		_fill_achievements(body, portrait)
+	match _collection_tab:
+		0:
+			_fill_stamps(body, portrait)
+		1:
+			_fill_achievements(body, portrait)
+		_:
+			_fill_bestiary(body, portrait)
 	_focus(back)
 
 
@@ -2090,6 +2113,46 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 			var done := Progress.has_achievement(entry["id"])
 			var counted := Achievements.progress(entry["id"])
 			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), [tr(entry["text"])], done, counted if not done else [], portrait))
+
+
+## The 怪物图鉴: each group's enemies, a silhouette until met; then what it is, its numbers (the
+## regular ones; a boss's depend on when it comes), its move and how to dodge it, the maps it
+## turns up on, and how many have been killed. Then the boss affixes, each once met.
+func _fill_bestiary(body: VBoxContainer, portrait: bool) -> void:
+	body.add_child(_collection_note(tr("遇到过的怪会收进图鉴；boss 每局可能多带招式和词条")))
+	for group: Dictionary in Bestiary.GROUPS:
+		body.add_child(UiKit.label(group["name"], 13, "strong", Art.INK_MUTED))
+		var grid := GridContainer.new()
+		grid.columns = 1 if portrait else 2
+		grid.add_theme_constant_override("h_separation", 8)
+		grid.add_theme_constant_override("v_separation", 8)
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		body.add_child(grid)
+		for id: String in group["ids"]:
+			var data: Dictionary = Spawner.ENEMY_TYPES[id]
+			if not Bestiary.seen(id):
+				grid.add_child(_collection_card(data["art"], "？？？", [tr("还没遇到")], false, [], portrait))
+				continue
+			var lines := [tr(Bestiary.NOTES[id])]
+			if data.get("elite", false):
+				var move: String = data.get("ability", "")
+				lines.append(tr("招式：") + (tr(BOSS_MOVE_HINTS[move]) if BOSS_MOVE_HINTS.has(move) else tr("没有招式，只是血厚")))
+				lines.append(tr("出现在：") + "、".join(Bestiary.maps_of(id)))
+			else:
+				lines.append(tr("生命 %d · 速度 %d · 伤害 %d") % [data["hp"], data["speed"], data["damage"]])
+			lines.append(tr("累计击杀 %d") % Bestiary.kills(id))
+			grid.add_child(_collection_card(data["art"], tr(data["name"]), lines, true, [], portrait))
+	body.add_child(UiKit.label("boss 词条", 13, "strong", Art.INK_MUTED))
+	var affixes := GridContainer.new()
+	affixes.columns = 1 if portrait else 2
+	affixes.add_theme_constant_override("h_separation", 8)
+	affixes.add_theme_constant_override("v_separation", 8)
+	affixes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(affixes)
+	for affix: String in Enemy.AFFIXES:
+		var met := Bestiary.affix_seen(affix)
+		affixes.add_child(_collection_card("star_gold", tr(Enemy.AFFIXES[affix]) if met else "？？？",
+			[tr(AFFIX_NOTES[affix]) if met else tr("还没遇到")], met, [], portrait))
 
 
 ## A line of explanation on a soft blue panel at the top of a tab.

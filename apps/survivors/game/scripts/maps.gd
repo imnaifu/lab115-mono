@@ -7,6 +7,10 @@ extends RefCounted
 ##
 ## 硅谷 is open from the start. 北京 opens once any run has been won, or once enough of Silicon
 ## Valley's landmarks have been checked in at: the achievements and check-ins are the keys.
+##
+## Maps get harder the longer their working week (each map's HOURS and DIFFICULTY, at the user's
+## call): 硅谷 965 first and easiest, 北京 996 the hardest; those to come (Singapore, Seattle,
+## Bangalore, Shenzhen / Hangzhou's 大小周) go in between by their hours, ORDER kept in that order.
 
 const ORDER := ["sv", "bj"]
 const BEIJING_STAMPS_TO_UNLOCK := 8
@@ -64,6 +68,19 @@ static func stamp(id: String) -> Dictionary:
 		if stamps.has(id):
 			return stamps[id]
 	return {}
+
+
+## The job grade a run's level reads as on the current map (L3-L8 on 硅谷, P5-P10 on 北京): the
+## first under level 10, then a grade every 10 levels, the last from 50 on.
+static func rank_of(level: int) -> String:
+	var ranks: Array = current.RANKS
+	return ranks[clampi(level / 10, 0, ranks.size() - 1)]
+
+
+## The map's name with its working week, for the map picker: 北京 · 996.
+static func label_of(id: String) -> String:
+	var map := script_of(id)
+	return "%s · %s" % [TranslationServer.translate(map.NAME), map.HOURS]
 
 
 ## Every map's landmarks, all told.

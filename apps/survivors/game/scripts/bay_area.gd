@@ -15,6 +15,18 @@ extends RefCounted
 ## either.
 
 const NAME := "硅谷"
+## The working week the map is known for; maps get harder the longer it is (Maps.ORDER), and
+## DIFFICULTY says how much: enemy health, contact and move damage, and the spawn rate, as
+## multiples. 硅谷 is the 965 baseline.
+const HOURS := "965"
+const DIFFICULTY := {"hp": 1.0, "damage": 1.0, "spawn": 1.0}
+## The job grades the run's level reads as (Maps.rank_of): Google-style here.
+const RANKS := ["L3", "L4", "L5", "L6", "L7", "L8"]
+## Bosses and enemy rings swapped for local ones (see Beijing); none here, the schedule in
+## Spawner.EVENTS is this map's own. FINALE_LINE "" keeps the finale's own line.
+const BOSS_SWAPS := {}
+const RING_SWAPS := {}
+const FINALE_LINE := ""
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"
 ## The named part of the world for the minimap, in world pixels: from the Pacific to across the

@@ -260,6 +260,7 @@ func spawn_enemy(type_name: String, at: Vector2) -> Enemy:
 	entity_layer.add_child(enemy)
 	enemies.append(enemy)
 	telemetry.on_enemy_spawned(enemy)
+	achievements.on_spawned(type_name)
 	return enemy
 
 
@@ -434,6 +435,7 @@ func announce(text: String) -> void:
 func _kill(enemy: Enemy) -> void:
 	enemy.dead = true
 	kills += 1
+	achievements.on_killed(enemy.type_name)
 	enemies.erase(enemy)
 	telemetry.on_enemy_killed(enemy)
 	if enemy.is_elite:
@@ -462,7 +464,7 @@ func _kill(enemy: Enemy) -> void:
 		"aura":
 			for i in PULL_OUT_STARS:
 				_drop_xp(enemy.position + Vector2.from_angle(TAU * i / PULL_OUT_STARS) * 28.0, PULL_OUT_STAR_VALUE)
-			announce("撤资了！掉了一地经验")
+			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("death_line", "撤资了！掉了一地经验"))
 	var data: Dictionary = Spawner.ENEMY_TYPES[enemy.type_name]
 	# Splits regardless of the crowd cap: the pieces are the rest of the boss fight.
 	if data.has("splits_into"):
@@ -481,7 +483,7 @@ func _kill(enemy: Enemy) -> void:
 		var lowest_round := 0
 		if enemy.met_deadline():
 			lowest_round = 1
-			announce("按时交付！钱袋保底 A 轮")
+			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("on_time_line", "按时交付！钱袋保底 A 轮"))
 		var bag := _drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
 		bag.luck = enemy.affixes.size()
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
@@ -544,7 +546,7 @@ func spawn_clone(boss: Enemy) -> void:
 	if clones_of(boss) >= Enemy.MAX_CLONES:
 		return
 	var spot := player.position + Vector2.from_angle(rng.randf() * TAU) * CLONE_DISTANCE
-	var clone := spawn_enemy("ai_clone", spot)
+	var clone := spawn_enemy(Spawner.ENEMY_TYPES[boss.type_name].get("clone_type", "ai_clone"), spot)
 	clone.clone_of = boss
 	Effects.poof(self, clone.position, clone.color)
 

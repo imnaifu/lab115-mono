@@ -12,6 +12,21 @@ extends RefCounted
 ## goes on every way, and the only water is the lake.
 
 const NAME := "北京"
+## 996: the longest week of the maps, so the hardest (BayArea.HOURS says how this works).
+const HOURS := "996"
+const DIFFICULTY := {"hp": 1.3, "damage": 1.2, "spawn": 1.15}
+## Job grades Alibaba-style.
+const RANKS := ["P5", "P6", "P7", "P8", "P9", "P10"]
+## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
+## replaces; Spawner._plan_events): 周报, 35 岁危机, 福报 996, 卷王, 百模大战, 领导视察, 述职 PPT.
+## 主库宕机, 屎山代码 and 老板画饼 are the same everywhere.
+const BOSS_SWAPS := {
+	"techdebt_elite": "weekly_report", "layoff": "midlife", "deadline": "fubao", "investor": "juanwang",
+	"ai": "baimo", "scope_change": "inspection", "incident": "ppt",
+}
+## The Bug outbreak is 西二旗's rush hour here.
+const RING_SWAPS := {"bug": {"type": "commuter", "text": "西二旗早高峰！"}}
+const FINALE_LINE := "最后的考验：老板画饼 + 百模大战"
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "houchang"
 ## The named part of the world for the minimap, in world pixels.
