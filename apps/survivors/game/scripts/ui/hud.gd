@@ -47,6 +47,7 @@ const BOSS_MOVE_HINTS := {
 	"squeeze": "脚下的红圈收紧之前走出去",
 	"hoard": "金圈里的星星会被它吸走，先去捡，打掉它全吐出来",
 	"sweep": "镜头扫过来时逆着它横穿过去，站着不动会被拍到",
+	"redlight": "头顶亮黄灯就松手，红灯时动了要罚款",
 }
 ## What each boss affix (Enemy.AFFIXES) does, for the 图鉴.
 const AFFIX_NOTES := {
@@ -74,7 +75,7 @@ const CHEST_STARS := [0, 6, 14]
 const FIT_MARGIN := 8.0
 const RANKING_ROWS := 6
 ## How the last hit landed (Telemetry.last_hurt_how), for the result's 凶手 line.
-const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中", "quake": "被宕机震飞", "sweep": "被监控抓拍"}
+const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中", "quake": "被宕机震飞", "sweep": "被监控抓拍", "redlight": "被罚款罚倒了", "heat": "被热晕了"}
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
 	"asking": "请在弹窗里允许访问动作与方向",
@@ -176,7 +177,7 @@ var _world_overlay: Control
 var _world_holder: Control
 var _world_open := false
 var _world_card: Control
-var _world_map: WorldMap
+var _departures: Departures
 ## The 云存档 page (from the settings), and its scrolling list.
 var _save_overlay: Control
 var _save_holder: Control
@@ -416,10 +417,10 @@ func fit_screen(turned: bool) -> void:
 	else:
 		transform = Transform2D.IDENTITY
 		_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The title has a portrait and a landscape arrangement, and so has the world map.
+	# The title has a portrait and a landscape arrangement, and so have the departures.
 	_show_title.call_deferred()
 	if _world_open:
-		_open_world_map.call_deferred()
+		_open_departures.call_deferred()
 
 
 # --- Touch joystick ------------------------------------------------------------------------
@@ -996,17 +997,17 @@ func _show_title() -> void:
 
 
 ## The map in use, with its working week (how hard it is: 北京 · 996), on a button that opens the
-## world map to pick another (.34; it was a row of map tabs).
+## departures board to pick another (.38; .34–.37 a world map, before that a row of map tabs).
 func _map_button(portrait: bool) -> Control:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var label := UiKit.label("地图", 13, "strong", Art.INK_MUTED)
+	var label := UiKit.label("目的地", 13, "strong", Art.INK_MUTED)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
-	var button := UiKit.secondary_button("%s  ›" % Maps.label_of(Maps.current_id), _open_world_map, 36.0, 14)
-	button.icon = Art.texture("world_map")
+	var button := UiKit.secondary_button("%s  ›" % Maps.label_of(Maps.current_id), _open_departures, 36.0, 14)
+	button.icon = Art.texture("plane")
 	button.add_theme_constant_override("icon_max_width", 28)
 	button.custom_minimum_size.x = 240.0 if portrait else 220.0
 	row.add_child(button)
@@ -1062,94 +1063,197 @@ func _test_buttons() -> Control:
 	return flow
 
 
-## The world map page: the route of cities with the one picked (to begin with, the map in use)
-## described beside or under it, and 出发 to play there.
-func _open_world_map() -> void:
+## The map picker (.38, the user's pick: an airport's departures board): the board listing every
+## city by working week, and under it (beside it, held sideways) the boarding pass for the one
+## picked, to begin with the map in use.
+func _open_departures() -> void:
 	_world_open = true
 	_clear(_world_holder)
 	var portrait := _is_portrait()
-	var page := _page(Vector4(16, 20, 16, 16) if portrait else Vector4(24, 14, 24, 12))
+	var page := _page(Vector4(14, 16, 14, 14) if portrait else Vector4(20, 10, 20, 10))
 	_world_holder.add_child(page)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10 if portrait else 8)
+	column.add_theme_constant_override("separation", 8 if portrait else 6)
 	page.add_child(column)
 
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	column.add_child(header)
-	header.add_child(UiKit.round_button("ui_back", func() -> void: _world_open = false, 44.0, Art.INK))
+	header.add_child(UiKit.round_button("ui_back", func() -> void: _world_open = false, 40.0, Art.INK))
 	var titles := VBoxContainer.new()
 	titles.add_theme_constant_override("separation", 0)
 	titles.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(titles)
-	titles.add_child(UiKit.label("世界地图", 22, "heavy"))
-	titles.add_child(UiKit.label("按工时排，越往后越卷；通关一座城市，下一座就开放", 11, "muted"))
+	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	titles.add_child(UiKit.label("选目的地", 20, "heavy"))
+	# Wrapped, so the longer English line doesn't widen the page (which then shrinks to fit).
+	var note := UiKit.label("按工时排，越往下越卷；通关一座城，下一座就能登机", 11, "muted")
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	titles.add_child(note)
 
 	var body: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
-	body.add_theme_constant_override("separation", 10)
+	body.add_theme_constant_override("separation", 8 if portrait else 10)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(body)
-	# Padded by the outline's width so the map doesn't paint over it.
-	var frame := UiKit.panel(UiKit.box(Color("cfe6f5"), Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4.ONE * UiKit.OUTLINE))
-	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(frame)
-	_world_map = WorldMap.new()
-	_world_map.custom_minimum_size = Vector2(0.0, 170.0) if portrait else Vector2(0.0, 0.0)
-	_world_map.city_picked.connect(_show_world_city)
-	frame.add_child(_world_map)
+	_departures = Departures.new()
+	_departures.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_departures.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_departures.city_picked.connect(_show_boarding_pass)
+	body.add_child(_departures)
 	_world_card = VBoxContainer.new()
 	_world_card.add_theme_constant_override("separation", 6)
-	_world_card.custom_minimum_size.x = 0.0 if portrait else 176.0
+	_world_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_world_card.custom_minimum_size.x = 0.0 if portrait else 250.0
 	body.add_child(_world_card)
-	_show_world_city(Maps.current_id)
+	_show_boarding_pass(Maps.current_id)
+	_fit_to_screen(_world_holder)
 
 
-## The card for the city picked on the world map: what it is, how far along the player is there,
-## and 出发 if it is open (or what opens it, or that it is still to come).
-func _show_world_city(id: String) -> void:
+## The boarding pass for the city picked on the departures board: the leg of the route into it
+## (from the city before it), its working week, grade and difficulty, its weather and guest boss,
+## its ten bosses, how far along the player is there, and 登机 if it is open (or what opens it, or
+## that it is still to come).
+func _show_boarding_pass(id: String) -> void:
 	if not is_instance_valid(_world_card):
 		return
 	_clear(_world_card)
-	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
+	var playable := Maps.ORDER.has(id)
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 8, 12, 10)))
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_world_card.add_child(card)
 	var lines := VBoxContainer.new()
-	lines.add_theme_constant_override("separation", 4)
+	lines.add_theme_constant_override("separation", 6)
 	card.add_child(lines)
-	if not Maps.ORDER.has(id):
-		lines.add_child(UiKit.label(WorldMap.CITIES[id]["name"], 18, "heavy"))
-		lines.add_child(UiKit.tag(tr("即将开放"), Art.PAPER_SUNK, Art.INK_MUTED, 1, 11))
+
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 5)
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lines.add_child(head)
+	head.add_child(UiKit.icon("plane", 14))
+	var kicker := UiKit.kicker("BOARDING PASS", Art.INK_MUTED, 10)
+	kicker.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(kicker)
+	head.add_child(UiKit.label("登机牌", 11, "strong", Art.INK_MUTED))
+
+	# From the city before it on the route to this one, over the map between them.
+	var index := Maps.ROUTE.find(id)
+	var from: String = Maps.ROUTE[index - 1] if index > 0 else ""
+	var route := HBoxContainer.new()
+	route.add_theme_constant_override("separation", 8)
+	route.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lines.add_child(route)
+	route.add_child(_airport(from))
+	var frame := UiKit.panel(UiKit.box(WorldMap.SEA, Art.INK, 2, 8, Vector4.ONE * 2.0))
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	route.add_child(frame)
+	var strip := WorldMap.new()
+	strip.from = from
+	strip.to = id
+	strip.custom_minimum_size = Vector2(0.0, 60.0)
+	frame.add_child(strip)
+	route.add_child(_airport(id))
+
+	var facts := HFlowContainer.new()
+	facts.add_theme_constant_override("h_separation", 10)
+	facts.add_theme_constant_override("v_separation", 4)
+	facts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lines.add_child(facts)
+	facts.add_child(_pass_fact("", "工时", Departures.hours_of(id)))
+	facts.add_child(_pass_fact("", "职级", "%s1" % Departures.rank_of(id)))
+	if not playable:
 		var later := UiKit.label("还在装修，下个版本见", 12, "muted")
 		later.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lines.add_child(later)
 		return
 	var map := Maps.script_of(id)
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 6)
-	lines.add_child(title_row)
-	title_row.add_child(UiKit.label(map.NAME, 18, "heavy"))
-	var hours := UiKit.tag(map.HOURS, Art.BRAND_SOFT, Art.INK, 1, 11)
-	hours.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	title_row.add_child(hours)
 	var difficulty: Dictionary = map.DIFFICULTY
-	var hard := tr("基准难度") if difficulty["hp"] <= 1.0 else tr("怪物生命 ×%s · 伤害 ×%s") % [difficulty["hp"], difficulty["damage"]]
-	lines.add_child(UiKit.label(hard, 12, "muted"))
+	facts.add_child(_pass_fact("", "难度", tr("基准") if difficulty["hp"] <= 1.0 else tr("生命 ×%s · 伤害 ×%s") % [difficulty["hp"], difficulty["damage"]]))
+	var map_event: Dictionary = map.MAP_EVENT
+	facts.add_child(_pass_fact("event_" + map_event["id"], "天气", tr(map_event["name"])))
+	var guest: Dictionary = Spawner.ENEMY_TYPES[map.GUEST_BOSS["type"]]
+	facts.add_child(_pass_fact(guest["art"], "特邀嘉宾", tr(guest["name"])))
+
+	# The ten bosses it brings, each in its slot's place on the schedule.
+	var bosses := HFlowContainer.new()
+	bosses.add_theme_constant_override("h_separation", 2)
+	bosses.add_theme_constant_override("v_separation", 2)
+	bosses.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lines.add_child(bosses)
+	var caption := UiKit.label("boss", 10, "strong", Art.INK_MUTED)
+	caption.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bosses.add_child(caption)
+	var shown := []
+	for event: Dictionary in Spawner.EVENTS:
+		if event["kind"] != "elite" or shown.has(event["type"]):
+			continue
+		shown.append(event["type"])
+		var boss: String = map.BOSS_SWAPS.get(event["type"], event["type"])
+		bosses.add_child(UiKit.icon(Spawner.ENEMY_TYPES[boss]["art"], 20))
+
 	var progress := tr("打卡 %d/%d") % [Maps.stamps_on(id), map.STAMPS.size()]
 	var wins := int((Progress.stat("map_wins", {}) as Dictionary).get(id, 0))
 	if wins > 0:
 		progress += " · " + tr("通关 %d 次") % wins
 	lines.add_child(UiKit.label(progress, 12, "body"))
 	lines.add_child(UiKit.filler())
+	lines.add_child(_perforation())
 	if not Maps.unlocked(id):
 		var hint := UiKit.label(Maps.unlock_hint(id), 12, "strong", Art.BOSS_RED)
 		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lines.add_child(hint)
 		return
-	var go := UiKit.primary_button("出发", func() -> void: game.change_map(id, true), 44.0, 17)
-	lines.add_child(go)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	lines.add_child(actions)
+	var board := UiKit.primary_button("登机", func() -> void: game.change_map(id, true), 44.0, 17)
+	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(board)
 	if id != Maps.current_id:
-		lines.add_child(UiKit.secondary_button("只换地图", func() -> void: game.change_map(id), 36.0, 13))
+		var switch := UiKit.secondary_button("只换地图", func() -> void: game.change_map(id), 44.0, 13)
+		actions.add_child(switch)
+
+
+## One end of the boarding pass's flight: the city's code over its name ("首站" with no code for
+## the start of the route).
+func _airport(id: String) -> Control:
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", -2)
+	block.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	block.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var code := UiKit.label(WorldMap.CITIES[id]["code"] if id != "" else "—", 20, "display")
+	code.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	code.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	block.add_child(code)
+	var name := UiKit.label(WorldMap.CITIES[id]["name"] if id != "" else "首站", 10, "muted")
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	block.add_child(name)
+	return block
+
+
+## A line of the boarding pass: an optional icon, a grey caption and its value.
+func _pass_fact(art: String, caption: String, value: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 3)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(UiKit.label(caption, 10, "body", Art.INK_MUTED))
+	if art != "":
+		row.add_child(UiKit.icon(art, 16))
+	row.add_child(UiKit.label(value, 11, "strong"))
+	return row
+
+
+## The dashed tear-off line above the boarding pass's stub.
+func _perforation() -> Control:
+	var line := Control.new()
+	line.custom_minimum_size = Vector2(0.0, 6.0)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.draw.connect(func() -> void:
+		var y := line.size.y / 2.0
+		var x := 0.0
+		while x < line.size.x:
+			line.draw_line(Vector2(x, y), Vector2(minf(x + 5.0, line.size.x), y), Art.LINE_STRONG, 1.5)
+			x += 9.0)
+	return line
 
 
 ## A soft disc of `color` peeking in from the left (or right) edge.

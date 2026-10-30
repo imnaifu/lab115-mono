@@ -16,6 +16,7 @@ const LIST := [
 	{"id": "ipo", "tier": "silver", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑满 10 分钟通关"},
 	{"id": "win_london", "tier": "gold", "art": "big_ben", "group": "生存", "name": "大本钟敲钟", "text": "在伦敦地图通关"},
 	{"id": "win_seattle", "tier": "gold", "art": "space_needle", "group": "生存", "name": "太空针敲钟", "text": "在西雅图地图通关"},
+	{"id": "win_singapore", "tier": "gold", "art": "merlion", "group": "生存", "name": "鱼尾狮敲钟", "text": "在新加坡地图通关"},
 	{"id": "win_beijing", "tier": "gold", "art": "subway_13", "group": "生存", "name": "后厂村敲钟", "text": "在北京地图通关"},
 	{"id": "close_call", "tier": "gold", "art": "heart", "group": "生存", "name": "极限上市", "text": "剩不到 10 点血通关"},
 	{"id": "untouched", "tier": "silver", "art": "firewall", "group": "生存", "name": "毫发无损", "text": "开局 3 分钟一滴血没掉"},
@@ -23,7 +24,7 @@ const LIST := [
 	{"id": "ten_thousand", "tier": "platinum", "art": "skull", "group": "战斗", "name": "万人斩", "text": "累计打死 10000 个怪", "goal": 10000},
 	{"id": "first_boss", "tier": "bronze", "art": "chest", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
 	{"id": "all_bosses", "tier": "silver", "art": "ai_boss", "group": "战斗", "name": "boss 克星", "text": "打掉过 10 种 boss", "goal": 10},
-	{"id": "bestiary_all", "tier": "platinum", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 75},
+	{"id": "bestiary_all", "tier": "platinum", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 94},
 	{"id": "first_evolve", "tier": "bronze", "art": "star_gold", "group": "战斗", "name": "技术升级", "text": "第一次进化武器"},
 	{"id": "full_kit", "tier": "silver", "art": "keyboard", "group": "战斗", "name": "全栈", "text": "一局带满 6 把武器"},
 	{"id": "win_coder", "tier": "gold", "art": "coder", "group": "职业", "name": "程序员敲钟", "text": "用程序员通关", "job": "coder"},
@@ -35,6 +36,7 @@ const LIST := [
 	{"id": "stamps_all", "tier": "gold", "art": "golden_gate", "group": "打卡", "name": "湾区通", "text": "硅谷 13 个地标全部打卡", "goal": 13},
 	{"id": "ldn_stamps_all", "tier": "gold", "art": "london_eye", "group": "打卡", "name": "伦敦通", "text": "伦敦 13 个地标全部打卡", "goal": 13},
 	{"id": "sea_stamps_all", "tier": "gold", "art": "great_wheel", "group": "打卡", "name": "西雅图通", "text": "西雅图 13 个地标全部打卡", "goal": 13},
+	{"id": "sg_stamps_all", "tier": "gold", "art": "mbs", "group": "打卡", "name": "新加坡通", "text": "新加坡 13 个地标全部打卡", "goal": 13},
 	{"id": "bj_stamps_all", "tier": "platinum", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 13 个地标全部打卡", "goal": 13},
 	{"id": "train_hit", "tier": "bronze", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
 ]
@@ -53,11 +55,11 @@ const TIERS := {
 const MIN_PLAYERS := 30
 const RARE := 0.1
 const ESTIMATED_RATES := {
-	"first_day": 100.0, "probation": 45.0, "ipo": 15.0, "win_london": 6.0, "win_seattle": 5.0, "win_beijing": 3.0, "close_call": 4.0, "untouched": 8.0,
+	"first_day": 100.0, "probation": 45.0, "ipo": 15.0, "win_london": 6.0, "win_seattle": 5.0, "win_singapore": 4.0, "win_beijing": 3.0, "close_call": 4.0, "untouched": 8.0,
 	"thousand": 20.0, "ten_thousand": 2.0, "first_boss": 80.0, "all_bosses": 10.0, "bestiary_all": 1.0,
 	"first_evolve": 25.0, "full_kit": 30.0,
 	"win_coder": 8.0, "win_pm": 6.0, "win_designer": 5.0, "win_ops": 5.0, "win_data_scientist": 4.0,
-	"stamps_5": 35.0, "stamps_all": 5.0, "ldn_stamps_all": 3.0, "sea_stamps_all": 2.0, "bj_stamps_all": 1.0, "train_hit": 40.0,
+	"stamps_5": 35.0, "stamps_all": 5.0, "ldn_stamps_all": 3.0, "sea_stamps_all": 2.0, "sg_stamps_all": 1.5, "bj_stamps_all": 1.0, "train_hit": 40.0,
 }
 const SURVIVE_SECONDS := 300.0
 const UNTOUCHED_SECONDS := 180.0
@@ -158,6 +160,8 @@ static func progress(id: String) -> Array:
 			done = Maps.stamps_on("ldn")
 		"sea_stamps_all":
 			done = Maps.stamps_on("sea")
+		"sg_stamps_all":
+			done = Maps.stamps_on("sg")
 		"bj_stamps_all":
 			done = Maps.stamps_on("bj")
 	return [mini(done, entry["goal"]), entry["goal"]]
@@ -199,6 +203,8 @@ func tick(delta: float) -> void:
 		_unlock("ldn_stamps_all")
 	if Maps.stamps_on("sea") >= Seattle.STAMPS.size():
 		_unlock("sea_stamps_all")
+	if Maps.stamps_on("sg") >= Singapore.STAMPS.size():
+		_unlock("sg_stamps_all")
 	if Maps.stamps_on("bj") >= Beijing.STAMPS.size():
 		_unlock("bj_stamps_all")
 	if _all_seen().size() >= Bestiary.ids().size():
@@ -253,6 +259,8 @@ func finish(victory: bool) -> void:
 			_unlock("win_seattle")
 		elif Maps.current_id == "ldn":
 			_unlock("win_london")
+		elif Maps.current_id == "sg":
+			_unlock("win_singapore")
 	Progress.set_stat("runs", Progress.stat("runs", 0) + 1)
 	Progress.set_stat("kills", Progress.stat("kills", 0) + _game.kills)
 	Progress.set_stat("bosses", Array(_all_bosses()))

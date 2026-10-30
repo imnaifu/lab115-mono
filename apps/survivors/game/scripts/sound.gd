@@ -97,6 +97,7 @@ const MOVE_SOUNDS := {
 	"pull": "windup",
 	"squeeze": "windup",
 	"sweep": "windup",
+	"redlight": "windup",
 }
 
 static var _instance: Sound

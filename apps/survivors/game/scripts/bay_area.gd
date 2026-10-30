@@ -68,6 +68,8 @@ const FREEWAYS := {2: {"number": "101", "shield": "shield_us", "from_row": -1, "
 	-2: {"number": "280", "shield": "shield_interstate", "from_row": -1, "north": "San Francisco", "south": "San Jose"}}
 const RAILWAY_COLUMN := -1
 const RAILWAY_FROM_ROW := -4
+## The railway runs on south for ever (Singapore's ends on Sentosa).
+const RAILWAY_TO_ROW := 1000
 ## Salt ponds line the shore from this row south (further north is a waterfront).
 const SALT_POND_FROM_ROW := -1
 ## Blocks given over to SFO's runway (City draws it; a parked plane stands on it).

@@ -26,6 +26,9 @@ const DISTRICT_COLORS := {
 	# 伦敦 (London.DISTRICTS; the river's row is "thames")
 	"kx": Art.FILL_MINT, "camden": Art.FILL_PINK, "westend": Art.FILL_LILAC, "city": Art.FILL_SKY,
 	"thames": City.SAND, "southbank": Art.BRAND_SOFT, "greenwich": Color("cfe6b0"),
+	# 新加坡 (Singapore.DISTRICTS; Marina Bay's column is "marina", the beach and sea "coast")
+	"onenorth": Art.FILL_MINT, "hdb": Art.FILL_PINK, "heritage": Art.BRAND_SOFT, "cbd": Art.FILL_LILAC,
+	"east": Color("cfe6b0"), "marina": City.SAND, "coast": City.SAND, "sentosa": Color("f3e5b5"),
 }
 ## A landmark's picture on the map, and the ring round it: about a block across at the usual zoom,
 ## so neighbouring landmarks don't cover each other.
@@ -89,7 +92,8 @@ func _draw() -> void:
 		var from_y: float = Maps.current.FREEWAYS[column]["from_row"] * City.BLOCK.y
 		_line(map, window, Vector2(column * City.BLOCK.x, from_y), Vector2(column * City.BLOCK.x, window.end.y), FREEWAY_COLOR, 2.0)
 	var track_x: float = Maps.current.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
-	_line(map, window, Vector2(track_x, Maps.current.RAILWAY_FROM_ROW * City.BLOCK.y), Vector2(track_x, window.end.y), Color(Art.INK, 0.6), 1.0)
+	var track_end := minf(window.end.y, (Maps.current.RAILWAY_TO_ROW + 1) * City.BLOCK.y)
+	_line(map, window, Vector2(track_x, Maps.current.RAILWAY_FROM_ROW * City.BLOCK.y), Vector2(track_x, track_end), Color(Art.INK, 0.6), 1.0)
 	# The water, which is what "the end of the map" is.
 	for water: Rect2 in Maps.current.water_rects(window):
 		_fill(map, window, water, City.WATER)

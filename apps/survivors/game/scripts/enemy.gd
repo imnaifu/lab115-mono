@@ -30,6 +30,9 @@ extends Node2D
 ##   will turn, then swings the beam (a cone) past the player; staying in the beam for a moment
 ##   gets the player snapped (hit once per sweep). Stepping out across it, or out of its reach,
 ##   is safe.
+## - "redlight" (新加坡's 罚款执法官, .38): a pedestrian light over the player's head turns amber,
+##   then red for a moment; still walking (by their own steering, not pushed) while it's red, the
+##   player is fined (hit once). Letting go and standing still is safe.
 ## Every wind-up is drawn (lane, landing circle, bracing ring, filling circle, flicker) so a move
 ## can always be dodged; the HUD says how the first time each comes up in a run.
 ##
@@ -54,7 +57,7 @@ const HIT_SQUASH_FULL_PUSH := 140.0
 const SPIN_SECONDS := 0.45
 const ABILITIES := ["charge", "summon", "blink", "volley", "lob", "quake", "countdown", "clones", "aura", "hoard"]
 ## The moves that work on a timer; countdown, aura and hoard are always on.
-const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones", "pull", "squeeze", "sweep"]
+const TIMED_MOVES := ["charge", "summon", "blink", "volley", "lob", "quake", "clones", "pull", "squeeze", "sweep", "redlight"]
 ## The gap between one boss's moves is its move's own, times a random factor this far either way.
 const MOVE_JITTER := 0.25
 ## Affixes a boss can carry, by id, with what the HUD calls them: 996 (faster, moves more often),
@@ -162,6 +165,14 @@ const SWEEP_RANGE := 170.0
 const SWEEP_EXPOSE := 0.33
 const SWEEP_DAMAGE := 20.0
 const SWEEP_BEAM := Color(1.0, 0.93, 0.55)
+## The red light: amber for REDLIGHT_WINDUP (time to let go), then red for REDLIGHT_SECONDS; the
+## player steering faster than REDLIGHT_MOVE while it's red is fined REDLIGHT_DAMAGE, once.
+const REDLIGHT_EVERY := 6.0
+const REDLIGHT_WINDUP := 1.0
+const REDLIGHT_SECONDS := 1.2
+const REDLIGHT_MOVE := 6.0
+const REDLIGHT_DAMAGE := 16.0
+const AMBER := Color("f0a35e")
 const PHANTOM_ALPHA := 0.55
 ## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
 const BOSS_STUN_SCALE := 0.5
@@ -231,6 +242,9 @@ var _sweep_from := 0.0
 var _sweep_way := 1.0
 var _exposed := 0.0
 var _snapped := false
+## A red light: seconds of red left, and whether it has fined the player yet.
+var _red_left := 0.0
+var _fined := false
 ## Where the closing ring of a squeeze is, in the world (it stays put while the player moves).
 var _squeeze_at := Vector2.ZERO
 ## Turns each volley half a gap, so standing in a gap only works once.
@@ -369,6 +383,11 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 		_watch(delta)
 		queue_redraw()
 		return Vector2.ZERO
+	if _red_left > 0.0:
+		_red_left -= delta
+		_check_red()
+		queue_redraw()
+		return Vector2.ZERO
 	if _windup_left > 0.0:
 		_windup_left -= delta
 		# Redrawn every frame: the boss can still be shoved while it winds up, and the landing
@@ -422,6 +441,9 @@ func _use_ability(delta: float, direction: Vector2, velocity: Vector2) -> Vector
 			_sweep_from = (game.player.position - position).angle() - _sweep_way * SWEEP_TURN / 2.0
 			_windup_left = SWEEP_WINDUP
 			return Vector2.ZERO
+		"redlight":
+			_windup_left = REDLIGHT_WINDUP
+			return Vector2.ZERO
 	return velocity
 
 
@@ -452,6 +474,15 @@ func _watch(delta: float) -> void:
 		Effects.ring(game, game.player.position, 24.0, SWEEP_BEAM)
 		Effects.callout(game, game.player.position + Vector2(0.0, -20.0), tr("咔嚓！"), Art.BOSS_RED, 15)
 		game.hurt_player(_hits(SWEEP_DAMAGE), type_name, "sweep")
+
+
+## The light is red: the player still walking (their own steering) is fined, once.
+func _check_red() -> void:
+	if _fined or game.player.velocity.length() <= REDLIGHT_MOVE:
+		return
+	_fined = true
+	Effects.callout(game, game.player.position + Vector2(0.0, -20.0), tr("罚款！"), Art.BOSS_RED, 15)
+	game.hurt_player(_hits(REDLIGHT_DAMAGE), type_name, "redlight")
 
 
 ## Where the beam points now: its first heading while bracing, then turning through the sweep.
@@ -640,6 +671,8 @@ func _move_every(move: String) -> float:
 			return SQUEEZE_EVERY
 		"sweep":
 			return SWEEP_EVERY
+		"redlight":
+			return REDLIGHT_EVERY
 	return SUMMON_EVERY
 
 
@@ -671,6 +704,9 @@ func _finish_windup() -> void:
 			_sweep_left = SWEEP_SECONDS
 			_exposed = 0.0
 			_snapped = false
+		"redlight":
+			_red_left = REDLIGHT_SECONDS
+			_fined = false
 	queue_redraw()
 
 
@@ -789,6 +825,8 @@ func _draw() -> void:
 		_draw_pull(_pull_left > 0.0)
 	if _move == "sweep" and (_sweep_left > 0.0 or _windup_left > 0.0):
 		_draw_sweep(_sweep_left > 0.0)
+	if _move == "redlight" and (_red_left > 0.0 or _windup_left > 0.0):
+		_draw_light(_red_left > 0.0)
 	if _windup_left > 0.0:
 		match _move:
 			"squeeze":
@@ -868,6 +906,24 @@ func _draw_sweep(sweeping: bool) -> void:
 		var back := Vector2.from_angle(to - _sweep_way * 0.12) * (SWEEP_RANGE + 8.0)
 		var side := (tip - back).orthogonal().normalized() * 5.0
 		draw_colored_polygon(PackedVector2Array([tip + (tip - back).normalized() * 4.0, back + side, back - side]), Color(Art.BOSS_RED, 0.75))
+
+
+## The pedestrian light over the player's head: amber, blinking faster as red comes, then red with
+## 别动 under it (a red ring round the player too), crossed out once it has fined them.
+func _draw_light(red: bool) -> void:
+	var over := game.player.position - position + Vector2(0.0, -46.0)
+	var housing := Rect2(over - Vector2(9.0, 16.0), Vector2(18.0, 32.0))
+	draw_rect(housing.grow(2.0), Art.INK)
+	draw_rect(housing, Color("3b4a6b"))
+	var blink := red or fmod(_phase * (1.0 + 2.0 * (1.0 - _windup_left / REDLIGHT_WINDUP)), 2.0) < 1.2
+	draw_circle(over + Vector2(0.0, -7.0), 6.0, Art.BOSS_RED if red else Color(Art.BOSS_RED, 0.25))
+	draw_circle(over + Vector2(0.0, 7.0), 6.0, AMBER if (not red and blink) else Color(AMBER, 0.25))
+	if red:
+		var feet := game.player.position - position
+		draw_arc(feet, 22.0, 0.0, TAU, 32, Color(Art.BOSS_RED, 0.85), 2.5, true)
+		_draw_mark(tr("别动"), over + Vector2(0.0, 30.0), 13, Art.BOSS_RED)
+		if _fined:
+			draw_line(housing.position, housing.end, Art.PAPER, 2.0, true)
 
 
 ## A short line of text with a white edge, centred on `at` (the countdown, a clone's mark).

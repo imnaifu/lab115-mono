@@ -75,6 +75,8 @@ const FREEWAYS := {
 ## The Tube, beside City Rd and over London Bridge.
 const RAILWAY_COLUMN := 1
 const RAILWAY_FROM_ROW := -12
+## The railway runs on south for ever (Singapore's ends on Sentosa).
+const RAILWAY_TO_ROW := 1000
 ## What drives the A-roads and the railway (Traffic): black cabs and buses, and the Tube.
 const VEHICLES := ["cab_top", "bus_top"]
 const TRAIN := "tube_top"

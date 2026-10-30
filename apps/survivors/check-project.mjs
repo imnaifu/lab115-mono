@@ -12,7 +12,7 @@ for (const file of ["project.godot", "export_presets.cfg", "tools/export_web.sh"
 }
 // Every map (scripts/maps.gd lists them; .37 added the two left out, 西雅图 and 伦敦), and the
 // achievements' pictures.
-const maps = ["bay_area.gd", "london.gd", "seattle.gd", "beijing.gd"].map((file) => readFileSync(new URL(`scripts/${file}`, game), "utf8")).join("\n");
+const maps = ["bay_area.gd", "london.gd", "seattle.gd", "singapore.gd", "beijing.gd"].map((file) => readFileSync(new URL(`scripts/${file}`, game), "utf8")).join("\n");
 const buildings = [...new Set([...maps.matchAll(/"soco:([a-z0-9_]+)"/g)].map((match) => match[1]))];
 for (const name of buildings) {
   if (!existsSync(new URL(`assets/soco-st/${name}.png`, game))) problems.push(`missing game/assets/soco-st/${name}.png`);

@@ -49,6 +49,16 @@ const KILLER_ROASTS := {
 	"redundancy": "被冗余了，遣散费都没谈",
 	"eu_fine": "被欧盟罚到破产",
 	"cctv": "被监控拍下了最后一刻",
+	# 新加坡's (.38).
+	"kaya_boss": "咖椰吐司画得太香，噎住了",
+	"forms": "表格还没填完，人先没了",
+	"form_small": "表格还没填完，人先没了",
+	"durian": "被一颗榴莲砸倒了",
+	"fine_notice": "被罚到破产",
+	"fine_officer": "红灯时动了一下，罚没了",
+	"ep_expiry": "准证到期，人也到期了",
+	"apac_cut": "被亚太区优化了",
+	"thunderstorm": "被午后雷暴劈中",
 }
 const WIN_ROASTS := ["上市敲钟，期权终于能卖了", "活过了 10 分钟，比大多数创业公司都久", "建议把这段写进简历"]
 const EARLY_ROASTS := ["试用期都没过", "入职第一天就被优化了"]

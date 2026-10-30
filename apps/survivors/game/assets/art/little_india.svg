@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 100">
+<ellipse cx="45" cy="97" rx="42" ry="3" fill="#000" fill-opacity="0.13"/>
+<g stroke="#2f3542" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<path d="M3 29 L17 10 L73 10 L87 29 Z" fill="#c9472f"/>
+</g>
+<path d="M22 13 L19.2 26 M28 13 L26.0 26 M34 13 L32.7 26 M40 13 L39.4 26 M46 13 L46.1 26 M52 13 L52.8 26 M58 13 L59.6 26 M64 13 L66.3 26 M70 13 L73.0 26" fill="none" stroke="#a33a26" stroke-width="1.4" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<rect x="8" y="30" width="74" height="32" fill="#ffffff"/>
+</g>
+<g stroke="#2f3542" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
+<rect x="14" y="30" width="16" height="32" fill="#4fb3a9" stroke="none"/>
+<path d="M16 42 Q22.0 31 28 42 Z" fill="#bcdcf2"/>
+<rect x="16" y="42" width="6" height="16" fill="#ffd25e"/>
+<rect x="22" y="42" width="6" height="16" fill="#ffd25e"/>
+<rect x="36" y="30" width="18" height="32" fill="#ffd25e" stroke="none"/>
+<path d="M38 42 Q45.0 31 52 42 Z" fill="#bcdcf2"/>
+<rect x="38" y="42" width="7" height="16" fill="#5b9cff"/>
+<rect x="45" y="42" width="7" height="16" fill="#5b9cff"/>
+<rect x="60" y="30" width="16" height="32" fill="#f6c6cf" stroke="none"/>
+<path d="M62 42 Q68.0 31 74 42 Z" fill="#bcdcf2"/>
+<rect x="62" y="42" width="6" height="16" fill="#86bd6c"/>
+<rect x="68" y="42" width="6" height="16" fill="#86bd6c"/>
+</g>
+<path d="M18 46.5 L20.0 46.5 M24.0 46.5 L26 46.5 M18 50.5 L20.0 50.5 M24.0 50.5 L26 50.5 M18 54.5 L20.0 54.5 M24.0 54.5 L26 54.5 M40 46.5 L43.0 46.5 M47.0 46.5 L50 46.5 M40 50.5 L43.0 50.5 M47.0 50.5 L50 50.5 M40 54.5 L43.0 54.5 M47.0 54.5 L50 54.5 M64 46.5 L66.0 46.5 M70.0 46.5 L72 46.5 M64 50.5 L66.0 50.5 M70.0 50.5 L72 50.5 M64 54.5 L66.0 54.5 M70.0 54.5 L72 54.5" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-opacity="0.7" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<rect x="8" y="30" width="6" height="32" fill="#d94b5c"/>
+<rect x="30" y="30" width="6" height="32" fill="#9b72cf"/>
+<rect x="54" y="30" width="6" height="32" fill="#f0a35e"/>
+<rect x="76" y="30" width="6" height="32" fill="#5b9cff"/>
+</g>
+<g stroke="#2f3542" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<rect x="8" y="62" width="74" height="30" fill="#ffffff"/>
+</g>
+<g stroke="#2f3542" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
+<rect x="14" y="62" width="16" height="30" fill="#f0a35e" stroke="none"/>
+<path d="M15.5 92 L15.5 74 Q22.0 64 28.5 74 L28.5 92 Z" fill="#a9b3c4"/>
+<rect x="18" y="78" width="8" height="14" fill="#5b9cff"/>
+<rect x="36" y="62" width="18" height="30" fill="#86bd6c" stroke="none"/>
+<path d="M37.5 92 L37.5 74 Q45.0 64 52.5 74 L52.5 92 Z" fill="#a9b3c4"/>
+<rect x="41" y="78" width="8" height="14" fill="#d94b5c"/>
+<rect x="60" y="62" width="16" height="30" fill="#9b72cf" stroke="none"/>
+<path d="M61.5 92 L61.5 74 Q68.0 64 74.5 74 L74.5 92 Z" fill="#a9b3c4"/>
+<rect x="64" y="78" width="8" height="14" fill="#ffd25e"/>
+</g>
+<g stroke="#2f3542" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<rect x="8" y="62" width="6" height="30" fill="#ffd25e"/>
+<rect x="30" y="62" width="6" height="30" fill="#d94b5c"/>
+<rect x="54" y="62" width="6" height="30" fill="#4fb3a9"/>
+<rect x="76" y="62" width="6" height="30" fill="#f6c6cf"/>
+</g>
+<g stroke="#2f3542" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<rect x="7" y="30" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="29" y="30" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="53" y="30" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="75" y="30" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="7" y="62" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="29" y="62" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="53" y="62" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="75" y="62" width="8" height="3" fill="#ffffff" stroke-width="1.8"/>
+<rect x="4" y="27" width="82" height="5" fill="#ffffff" rx="1"/>
+<rect x="4" y="59" width="82" height="5" fill="#ffffff" rx="1"/>
+<rect x="2" y="91" width="86" height="5" fill="#d6d9de" rx="1"/>
+</g>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 64">
+<ellipse cx="16" cy="60.5" rx="9" ry="3" fill="#000" fill-opacity="0.12"/>
+<g stroke="#2f3542" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<path d="M10 60 L22 60 L20.5 54.5 L11.5 54.5 Z" fill="#8a909c"/>
+<rect x="14" y="24" width="4" height="31" fill="#a9b3c4"/>
+<circle cx="16" cy="15" r="13" fill="#d94b5c"/>
+<circle cx="16" cy="15" r="8.6" fill="#fff" stroke-width="1.6"/>
+</g>
+<path d="M16 9.4 L16.6 7.8" stroke="#2f3542" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M16 8.8 L17.02 10.38 L18.56 9.45 L18.87 11.38 L20.61 11.28 L20.15 13.17 L21.75 13.93 L20.6 15.4 L21.75 16.87 L20.15 17.63 L20.61 19.52 L18.87 19.42 L18.56 21.35 L17.02 20.42 L16 22 L14.98 20.42 L13.44 21.35 L13.13 19.42 L11.39 19.52 L11.85 17.63 L10.25 16.87 L11.4 15.4 L10.25 13.93 L11.85 13.17 L11.39 11.28 L13.13 11.38 L13.44 9.45 L14.98 10.38 Z" fill="#c6d94a" stroke="#2f3542" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M13.4 13.6 L14.6 14.8 M17.4 12.4 L18.6 13.6 M15 17.6 L16.2 18.8 M18.2 16.8 L19.2 17.8" stroke="#8a9a2c" stroke-width="1.1" stroke-linecap="round"/>
+<path d="M10 9 L22 21" stroke="#d94b5c" stroke-width="3.6"/>
+<path d="M7.4 10.6 Q9.4 6.6 13.4 5.2" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M15.2 28 L15.2 52" stroke="#fff" stroke-opacity="0.5" stroke-width="1" stroke-linecap="round"/>
+</svg>

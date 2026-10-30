@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90">
+<ellipse cx="80" cy="87" rx="77" ry="3" fill="#000" fill-opacity="0.13"/>
+<g stroke="#2f3542" stroke-width="3.1" stroke-linejoin="round" stroke-linecap="round">
+<path d="M8 38 L16 29 L50 29 L58 38 Z" fill="#c9472f"/>
+<rect x="10" y="37" width="46" height="37" fill="#f08aaa"/>
+<rect x="16" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="17.8" y="43.8" width="4.4" height="6.4" fill="#4fb3a9" stroke="none"/>
+<rect x="29" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="30.8" y="43.8" width="4.4" height="6.4" fill="#4fb3a9" stroke="none"/>
+<rect x="42" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="43.8" y="43.8" width="4.4" height="6.4" fill="#4fb3a9" stroke="none"/>
+<rect x="9" y="55" width="48" height="4" fill="#ffffff"/>
+<path d="M16 74 L16 66 Q23 60 30 66 L30 74 Z" fill="#8a909c"/>
+<path d="M36 74 L36 66 Q43 60 50 66 L50 74 Z" fill="#8a909c"/>
+</g>
+<path d="M19 31 L18 36 M25 31 L24 36 M31 31 L30 36 M37 31 L36 36 M43 31 L42 36 M49 31 L48 36" fill="none" stroke="#a33a26" stroke-width="1.4" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="3.1" stroke-linejoin="round" stroke-linecap="round">
+<path d="M54 38 L62 29 L96 29 L104 38 Z" fill="#c9472f"/>
+<rect x="56" y="37" width="46" height="37" fill="#ffd25e"/>
+<rect x="62" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="63.8" y="43.8" width="4.4" height="6.4" fill="#5b9cff" stroke="none"/>
+<rect x="75" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="76.8" y="43.8" width="4.4" height="6.4" fill="#5b9cff" stroke="none"/>
+<rect x="88" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="89.8" y="43.8" width="4.4" height="6.4" fill="#5b9cff" stroke="none"/>
+<rect x="55" y="55" width="48" height="4" fill="#ffffff"/>
+<path d="M62 74 L62 66 Q69 60 76 66 L76 74 Z" fill="#8a909c"/>
+<path d="M82 74 L82 66 Q89 60 96 66 L96 74 Z" fill="#8a909c"/>
+</g>
+<path d="M65 31 L64 36 M71 31 L70 36 M77 31 L76 36 M83 31 L82 36 M89 31 L88 36 M95 31 L94 36" fill="none" stroke="#a33a26" stroke-width="1.4" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="3.1" stroke-linejoin="round" stroke-linecap="round">
+<path d="M100 38 L108 29 L142 29 L150 38 Z" fill="#c9472f"/>
+<rect x="102" y="37" width="46" height="37" fill="#4fb3a9"/>
+<rect x="108" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="109.8" y="43.8" width="4.4" height="6.4" fill="#ffd25e" stroke="none"/>
+<rect x="121" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="122.8" y="43.8" width="4.4" height="6.4" fill="#ffd25e" stroke="none"/>
+<rect x="134" y="42" width="8" height="10" fill="#ffffff" stroke-width="2.2"/>
+<rect x="135.8" y="43.8" width="4.4" height="6.4" fill="#ffd25e" stroke="none"/>
+<rect x="101" y="55" width="48" height="4" fill="#ffffff"/>
+<path d="M108 74 L108 66 Q115 60 122 66 L122 74 Z" fill="#8a909c"/>
+<path d="M128 74 L128 66 Q135 60 142 66 L142 74 Z" fill="#8a909c"/>
+</g>
+<path d="M111 31 L110 36 M117 31 L116 36 M123 31 L122 36 M129 31 L128 36 M135 31 L134 36 M141 31 L140 36" fill="none" stroke="#a33a26" stroke-width="1.4" stroke-linecap="round"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M56 20 L56 73 M102 20 L102 73" stroke="#2f3542" stroke-width="5.2"/>
+<path d="M56 20 L56 73 M102 20 L102 73" stroke="#f3efe6" stroke-width="2.2"/>
+</g>
+<defs>
+<clipPath id="clarke-canopy"><path d="M4 18 Q80 -4 156 18 Q146.5 26 137 18 Q127.5 26 118 18 Q108.5 26 99 18 Q89.5 26 80 18 Q70.5 26 61 18 Q51.5 26 42 18 Q32.5 26 23 18 Q13.5 26 4 18 Z"/></clipPath>
+</defs>
+<path d="M4 18 Q80 -4 156 18 Q146.5 26 137 18 Q127.5 26 118 18 Q108.5 26 99 18 Q89.5 26 80 18 Q70.5 26 61 18 Q51.5 26 42 18 Q32.5 26 23 18 Q13.5 26 4 18 Z" fill="#dcecf8" fill-opacity="0.92"/>
+<g clip-path="url(#clarke-canopy)">
+<path d="M56 20 L19.2 12.04 M56 20 L40.48 7.97 M56 20 L61.76 5.63 M102 20 L98.24 5.63 M102 20 L119.52 7.97 M102 20 L140.8 12.04 M102 20 L137 19 M102 20 L118 19 M102 20 L99 19 M102 20 L80 19 M56 20 L61 19 M56 20 L42 19 M56 20 L23 19" fill="none" stroke="#9ec6e8" stroke-width="1.4" stroke-linecap="round"/>
+</g>
+<g stroke="#2f3542" stroke-width="3.1" stroke-linejoin="round" stroke-linecap="round">
+<path d="M4 18 Q80 -4 156 18 Q146.5 26 137 18 Q127.5 26 118 18 Q108.5 26 99 18 Q89.5 26 80 18 Q70.5 26 61 18 Q51.5 26 42 18 Q32.5 26 23 18 Q13.5 26 4 18 Z" fill="none"/>
+</g>
+<path d="M20 15.5 Q32 11 44 9.5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="3.1" stroke-linejoin="round" stroke-linecap="round">
+<rect x="3" y="72" width="154" height="6" fill="#d6d9de" rx="1"/>
+<rect x="3" y="77" width="154" height="10" fill="#9ec6e8" rx="3"/>
+</g>
+<path d="M12 83 Q15 81 18 83 Q21 85 24 83 M112 82 Q115 80 118 82 Q121 84 124 82 M136 84 Q139 82 142 84" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+<rect x="50" y="65" width="40" height="10" fill="#f3efe6"/>
+<rect x="55" y="67.5" width="8" height="5" fill="#bcdcf2" stroke-width="1.8"/>
+<rect x="66" y="67.5" width="8" height="5" fill="#bcdcf2" stroke-width="1.8"/>
+<rect x="77" y="67.5" width="8" height="5" fill="#bcdcf2" stroke-width="1.8"/>
+</g>
+<g stroke="#2f3542" stroke-width="3.1" stroke-linejoin="round" stroke-linecap="round">
+<path d="M46 61 L94 61 L92 66 L48 66 Z" fill="#d94b5c"/>
+<path d="M32 72 L40 74.5 L102 74.5 Q100 86 89 86 L50 86 Q40 85 32 72 Z" fill="#c98a4b"/>
+</g>
+<path d="M39 78 L101 78" fill="none" stroke="#ffd25e" stroke-width="2" stroke-linecap="round"/>
+<path d="M52 82 L90 82" fill="none" stroke="#a9703c" stroke-width="1.6" stroke-linecap="round"/>
+<g stroke="#2f3542" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+<ellipse cx="45" cy="80.5" rx="2.8" ry="2" fill="#ffffff"/>
+</g>
+<circle cx="44.4" cy="80.5" r="1" fill="#2f3542"/>
+</svg>

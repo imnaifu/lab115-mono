@@ -82,6 +82,8 @@ const FREEWAYS := {
 ## The light rail, along the waterfront road.
 const RAILWAY_COLUMN := -1
 const RAILWAY_FROM_ROW := -12
+## The railway runs on south for ever (Singapore's ends on Sentosa).
+const RAILWAY_TO_ROW := 1000
 ## No salt ponds and no airport here.
 const SALT_POND_FROM_ROW := 1000
 const RUNWAYS: Array[Vector2i] = []

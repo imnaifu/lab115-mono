@@ -101,15 +101,20 @@ func tick(delta: float, view: Rect2) -> void:
 
 	var train_spots: Array = []
 	var track_x: float = Maps.current.RAILWAY_COLUMN * City.BLOCK.x + City.RAILWAY_OFFSET
+	# Where the line ends to the south (Singapore's on Sentosa): trains come out of there.
+	var track_end: float = (Maps.current.RAILWAY_TO_ROW + 1) * City.BLOCK.y
 	var warn := false
 	if track_x > area.position.x and track_x < area.end.x:
 		var start_y := maxf(area.position.y, Maps.current.RAILWAY_FROM_ROW * City.BLOCK.y)
-		for at_y in _along(start_y - TRAIN_LENGTH, area.end.y + TRAIN_LENGTH, TRAIN_SPACING, -_time * TRAIN_SPEED, 0.0, 99):
+		var end_y := minf(area.end.y + TRAIN_LENGTH, track_end - TRAIN_LENGTH / 2.0)
+		for at_y in _along(start_y - TRAIN_LENGTH, end_y, TRAIN_SPACING, -_time * TRAIN_SPEED, 0.0, 99):
 			train_spots.append([Vector2(track_x, at_y), true])
-		# A train still below the screen (they run north) and due within the warning time.
-		var due_reach := view.end.y + TRAIN_LENGTH / 2.0 + TRAIN_SPEED * TRAIN_WARNING_SECONDS
-		for at_y in _along(view.end.y, due_reach, TRAIN_SPACING, -_time * TRAIN_SPEED, 0.0, 99):
-			warn = warn or at_y - TRAIN_LENGTH / 2.0 > view.end.y
+		# A train still below the screen (they run north), or still past the line's end, and due
+		# within the warning time.
+		var bottom := minf(view.end.y, track_end - TRAIN_LENGTH / 2.0)
+		var due_reach := bottom + TRAIN_LENGTH / 2.0 + TRAIN_SPEED * TRAIN_WARNING_SECONDS
+		for at_y in _along(bottom, due_reach, TRAIN_SPACING, -_time * TRAIN_SPEED, 0.0, 99):
+			warn = warn or at_y - TRAIN_LENGTH / 2.0 > bottom
 	_show(_trains, train_spots, Maps.current.TRAIN, TRAIN_LENGTH)
 	_warning.show_on(warn, track_x, view, _time)
 
