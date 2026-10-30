@@ -7,33 +7,41 @@ extends RefCounted
 ## kills, weapons carried, landmarks checked in at), the on_* calls what happens at a moment, and
 ## finish() what only the end tells (a win) and adds the run to the running totals.
 
-## Shown in this order on the 成就 page, grouped, each with its picture. `goal` marks the ones
-## counted up across runs (progress() says how far along).
+## Shown in this order on the 成就 page, grouped, each with its picture and its tier (TIERS, set
+## by hand from how hard it is, not from the live rates, so a tier doesn't shift as they come in).
+## `goal` marks the ones counted up across runs (progress() says how far along).
 const LIST := [
-	{"id": "first_day", "art": "coffee", "group": "生存", "name": "第一天上班", "text": "打完第一局"},
-	{"id": "probation", "art": "stock_options", "group": "生存", "name": "转正", "text": "一局撑过 5 分钟"},
-	{"id": "ipo", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑满 10 分钟通关"},
-	{"id": "win_beijing", "art": "subway_13", "group": "生存", "name": "后厂村敲钟", "text": "在北京地图通关"},
-	{"id": "close_call", "art": "heart", "group": "生存", "name": "极限上市", "text": "剩不到 10 点血通关"},
-	{"id": "untouched", "art": "firewall", "group": "生存", "name": "毫发无损", "text": "开局 3 分钟一滴血没掉"},
-	{"id": "thousand", "art": "skull", "group": "战斗", "name": "千人斩", "text": "一局打死 1000 个怪"},
-	{"id": "ten_thousand", "art": "skull", "group": "战斗", "name": "万人斩", "text": "累计打死 10000 个怪", "goal": 10000},
-	{"id": "first_boss", "art": "chest", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
-	{"id": "all_bosses", "art": "ai_boss", "group": "战斗", "name": "boss 克星", "text": "打掉过 10 种 boss", "goal": 10},
-	{"id": "bestiary_all", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 27},
-	{"id": "first_evolve", "art": "star_gold", "group": "战斗", "name": "技术升级", "text": "第一次进化武器"},
-	{"id": "full_kit", "art": "keyboard", "group": "战斗", "name": "全栈", "text": "一局带满 6 把武器"},
-	{"id": "win_coder", "art": "coder", "group": "职业", "name": "程序员敲钟", "text": "用程序员通关", "job": "coder"},
-	{"id": "win_pm", "art": "pm", "group": "职业", "name": "产品经理敲钟", "text": "用产品经理通关", "job": "pm"},
-	{"id": "win_designer", "art": "designer", "group": "职业", "name": "设计师敲钟", "text": "用设计师通关", "job": "designer"},
-	{"id": "win_ops", "art": "ops", "group": "职业", "name": "运维敲钟", "text": "用运维通关", "job": "ops"},
-	{"id": "win_data_scientist", "art": "data_scientist", "group": "职业", "name": "数据科学家敲钟", "text": "用数据科学家通关", "job": "data_scientist"},
-	{"id": "stamps_5", "art": "stanford_tower", "group": "打卡", "name": "网红打卡", "text": "打卡 5 个地标", "goal": 5},
-	{"id": "stamps_all", "art": "golden_gate", "group": "打卡", "name": "湾区通", "text": "硅谷 13 个地标全部打卡", "goal": 13},
-	{"id": "bj_stamps_all", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 13 个地标全部打卡", "goal": 13},
-	{"id": "train_hit", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
+	{"id": "first_day", "tier": "bronze", "art": "coffee", "group": "生存", "name": "第一天上班", "text": "打完第一局"},
+	{"id": "probation", "tier": "bronze", "art": "stock_options", "group": "生存", "name": "转正", "text": "一局撑过 5 分钟"},
+	{"id": "ipo", "tier": "silver", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑满 10 分钟通关"},
+	{"id": "win_beijing", "tier": "gold", "art": "subway_13", "group": "生存", "name": "后厂村敲钟", "text": "在北京地图通关"},
+	{"id": "close_call", "tier": "gold", "art": "heart", "group": "生存", "name": "极限上市", "text": "剩不到 10 点血通关"},
+	{"id": "untouched", "tier": "silver", "art": "firewall", "group": "生存", "name": "毫发无损", "text": "开局 3 分钟一滴血没掉"},
+	{"id": "thousand", "tier": "silver", "art": "skull", "group": "战斗", "name": "千人斩", "text": "一局打死 1000 个怪"},
+	{"id": "ten_thousand", "tier": "platinum", "art": "skull", "group": "战斗", "name": "万人斩", "text": "累计打死 10000 个怪", "goal": 10000},
+	{"id": "first_boss", "tier": "bronze", "art": "chest", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
+	{"id": "all_bosses", "tier": "silver", "art": "ai_boss", "group": "战斗", "name": "boss 克星", "text": "打掉过 10 种 boss", "goal": 10},
+	{"id": "bestiary_all", "tier": "platinum", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 27},
+	{"id": "first_evolve", "tier": "bronze", "art": "star_gold", "group": "战斗", "name": "技术升级", "text": "第一次进化武器"},
+	{"id": "full_kit", "tier": "silver", "art": "keyboard", "group": "战斗", "name": "全栈", "text": "一局带满 6 把武器"},
+	{"id": "win_coder", "tier": "gold", "art": "coder", "group": "职业", "name": "程序员敲钟", "text": "用程序员通关", "job": "coder"},
+	{"id": "win_pm", "tier": "gold", "art": "pm", "group": "职业", "name": "产品经理敲钟", "text": "用产品经理通关", "job": "pm"},
+	{"id": "win_designer", "tier": "gold", "art": "designer", "group": "职业", "name": "设计师敲钟", "text": "用设计师通关", "job": "designer"},
+	{"id": "win_ops", "tier": "gold", "art": "ops", "group": "职业", "name": "运维敲钟", "text": "用运维通关", "job": "ops"},
+	{"id": "win_data_scientist", "tier": "gold", "art": "data_scientist", "group": "职业", "name": "数据科学家敲钟", "text": "用数据科学家通关", "job": "data_scientist"},
+	{"id": "stamps_5", "tier": "bronze", "art": "stanford_tower", "group": "打卡", "name": "网红打卡", "text": "打卡 5 个地标", "goal": 5},
+	{"id": "stamps_all", "tier": "gold", "art": "golden_gate", "group": "打卡", "name": "湾区通", "text": "硅谷 13 个地标全部打卡", "goal": 13},
+	{"id": "bj_stamps_all", "tier": "platinum", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 13 个地标全部打卡", "goal": 13},
+	{"id": "train_hit", "tier": "bronze", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
 ]
 const GROUPS := ["生存", "战斗", "职业", "打卡", "彩蛋"]
+## Achievement tiers (.31, the user's call: like trophies), hardest first, with their colours.
+const TIERS := {
+	"platinum": {"name": "白金", "color": Color("6c8ebf")},
+	"gold": {"name": "黄金", "color": Color("d49a12")},
+	"silver": {"name": "白银", "color": Color("8a909c")},
+	"bronze": {"name": "青铜", "color": Color("b8733a")},
+}
 ## The 成就 page says how many players have each (rate()): from the live data (AchievementRates,
 ## written by tools/achievement_rates.py at each release) once it holds MIN_PLAYERS players; until
 ## then these estimates, in percent, judged from how hard each is (the user's call: hardcoded is
@@ -92,6 +100,21 @@ static func shown() -> Array:
 ## How many of shown() this device has earned.
 static func earned_count() -> int:
 	return shown().filter(func(entry: Dictionary) -> bool: return Progress.has_achievement(entry["id"])).size()
+
+
+## The tier's name and colour for `id`.
+static func tier_of(id: String) -> Dictionary:
+	return TIERS[data(id)["tier"]]
+
+
+## Per tier, hardest first: [tier id, earned, shown] (the 成就 page's line at the top).
+static func tier_counts() -> Array:
+	var counts := []
+	for tier: String in TIERS:
+		var of_tier := shown().filter(func(entry: Dictionary) -> bool: return entry["tier"] == tier)
+		var earned := of_tier.filter(func(entry: Dictionary) -> bool: return Progress.has_achievement(entry["id"])).size()
+		counts.append([tier, earned, of_tier.size()])
+	return counts
 
 
 ## The share of players who have earned `id`, 0 to 1 (see ESTIMATED_RATES).

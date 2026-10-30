@@ -460,6 +460,11 @@ const EN := {
 	"脚下的红圈收紧之前走出去": "Get out of the red ring before it closes",
 	"周一到周五都得回工位刷卡": "Badge in at your desk, Monday to Friday",
 	"每次考核都得有人走": "Every review, someone has to go",
+	# Achievement tiers (Achievements.TIERS, .31)
+	"白金": "Platinum",
+	"黄金": "Gold",
+	"白银": "Silver",
+	"青铜": "Bronze",
 	# A car or a train bumping into something (Traffic)
 	"砰！": "Bam!",
 	# 局外成长: landmarks to check in at (打卡, BayArea.STAMPS) and achievements (Achievements)

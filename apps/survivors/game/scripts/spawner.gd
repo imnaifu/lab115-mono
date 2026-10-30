@@ -34,13 +34,14 @@ const ENEMY_TYPES := {
 		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
 	"server": {"name": "宕机服务器", "art": "server", "size": 38.0, "color": Color("a9b3c4"),
 		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
-	# The early bosses: bigger, tougher versions of regular enemies, for the first minutes. They
+	# The early bosses: bigger, tougher versions of regular enemies, for the first minutes, drawn
+	# apart from them since .31 (they shared the 技术债 / 宕机服务器 pictures, the user said not to). They
 	# hit no harder than the regular enemies of their time and walk slower than the player:
 	# hitting harder, they killed the test bot at 2:00 more often than anything else. Every boss
 	# but the first has a move of its own (Enemy.ABILITIES); the first is only big.
-	"techdebt_elite": {"name": "祖传技术债", "art": "techdebt", "size": 46.0, "color": Color("ffd36b"),
+	"techdebt_elite": {"name": "祖传技术债", "art": "techdebt_boss", "size": 46.0, "color": Color("ffd36b"),
 		"hp": 360.0, "speed": 28.0, "damage": 9.0, "xp": 20, "radius": 11.0, "knockback_resist": 0.9, "elite": true},
-	"server_elite": {"name": "主库宕机", "art": "server", "size": 54.0, "color": Color("a9b3c4"),
+	"server_elite": {"name": "主库宕机", "art": "db_down", "size": 54.0, "color": Color("a9b3c4"),
 		"hp": 630.0, "speed": 24.0, "damage": 11.0, "xp": 30, "radius": 13.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "quake"},
 	# Boss health and damage were raised by 40% / 25% after the first full run on the live site
@@ -67,7 +68,7 @@ const ENEMY_TYPES := {
 		"hp": 2200.0, "speed": 22.0, "damage": 26.0, "xp": 80, "radius": 15.0, "knockback_resist": 1.0, "elite": true,
 		"ability": "summon", "summon_type": "bug", "summon_count": 6,
 		"splits_into": "spaghetti_small", "split_count": 3},
-	"spaghetti_small": {"name": "小屎山", "art": "spaghetti", "size": 30.0, "color": Color("c98d5a"),
+	"spaghetti_small": {"name": "小屎山", "art": "spaghetti_small", "size": 30.0, "color": Color("c98d5a"),
 		"hp": 260.0, "speed": 34.0, "damage": 14.0, "xp": 8, "radius": 9.0, "knockback_resist": 0.6},
 	"scope_change": {"name": "需求变更", "art": "scope_change", "size": 52.0, "color": Color("d9d1f2"),
 		"hp": 1700.0, "speed": 34.0, "damage": 28.0, "xp": 70, "radius": 14.0, "knockback_resist": 1.0, "elite": true,

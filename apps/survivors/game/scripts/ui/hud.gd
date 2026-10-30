@@ -749,7 +749,9 @@ func _on_checked_in(id: String) -> void:
 
 func _on_achievement(id: String) -> void:
 	var entry := Achievements.data(id)
-	_queue_badge([entry["art"], tr("成就达成"), tr(entry["name"]), Art.BRAND_DEEP, false])
+	# With its tier, in the tier's colour: 成就达成 · 黄金.
+	var tier := Achievements.tier_of(id)
+	_queue_badge([entry["art"], tr("成就达成") + " · " + tr(tier["name"]), tr(entry["name"]), tier["color"], false])
 
 
 ## `badge` is [art, line, name, colour, whether it's a stamp].
@@ -2266,6 +2268,11 @@ func _fill_stamps(body: VBoxContainer, portrait: bool) -> void:
 
 
 func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
+	# The tiers at a glance, hardest first: 白金 0/3 · 黄金 1/8 · ...
+	var tallies := PackedStringArray()
+	for count: Array in Achievements.tier_counts():
+		tallies.append("%s %d/%d" % [tr(Achievements.TIERS[count[0]]["name"]), count[1], count[2]])
+	body.add_child(_collection_note(" · ".join(tallies)))
 	for group: String in Achievements.GROUPS:
 		# A plain label rather than a kicker: kickers stay Latin and untranslated, these are words.
 		body.add_child(UiKit.label(group, 13, "strong", Art.INK_MUTED))
@@ -2282,7 +2289,9 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 			var counted := Achievements.progress(entry["id"])
 			# With how many players have it, the way game stores show it.
 			var lines := [tr(entry["text"]), Achievements.rate_text(entry["id"])]
-			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), lines, done, counted if not done else [], portrait))
+			var tier := Achievements.tier_of(entry["id"])
+			var badge := [tr(tier["name"]), tier["color"]]
+			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), lines, done, counted if not done else [], portrait, badge))
 
 
 ## The 怪物图鉴: each group's enemies, a silhouette until met; then what it is, its numbers (the
@@ -2596,7 +2605,7 @@ func _collection_note(text: String) -> Control:
 
 ## One landmark or achievement: its picture in a well (a grey silhouette until earned), the
 ## name, a line or two, and a bar for counted progress ([done, goal], or empty).
-func _collection_card(art: String, title: String, lines: Array, done: bool, counted: Array, portrait: bool) -> Control:
+func _collection_card(art: String, title: String, lines: Array, done: bool, counted: Array, portrait: bool, badge: Array = []) -> Control:
 	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK if done else Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(10, 8, 10, 8)))
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
@@ -2616,7 +2625,18 @@ func _collection_card(art: String, title: String, lines: Array, done: bool, coun
 	var name_label := UiKit.label(title, 14, "strong", Art.INK if done else Art.INK_MUTED)
 	# Wrapping, so a long name never makes the page wider than the screen.
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.add_child(name_label)
+	if badge.is_empty():
+		text.add_child(name_label)
+	else:
+		# The name with a small tag after it: an achievement's tier, in its colour (faded until earned).
+		var name_row := HBoxContainer.new()
+		name_row.add_theme_constant_override("separation", 6)
+		name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_row.add_child(name_label)
+		var colour: Color = badge[1]
+		name_row.add_child(UiKit.tag(badge[0], colour if done else Color(colour, 0.35), Art.PAPER))
+		text.add_child(name_row)
 	for line: String in lines:
 		var label := UiKit.label(line, 11, "muted")
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
