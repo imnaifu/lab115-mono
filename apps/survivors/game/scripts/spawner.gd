@@ -12,6 +12,9 @@ const RING_RADIUS := 210.0
 ## rate by 3:00), so the lone starting weapon isn't swamped before the first upgrades land.
 const EASE_IN_SECONDS := 180.0
 const EASE_IN_START := 0.6
+## How much tougher every enemy gets a minute (.40: 0.2 until then; the user wanted it harder
+## after .39 made it much easier). The first minute's Bug still takes two of a job weapon's 7s.
+const HP_PER_MINUTE := 0.25
 
 ## `size` is the art's frame height in logical pixels, `radius` the body used for hits and
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on
@@ -415,10 +418,10 @@ func spawn_rate() -> float:
 	return (0.8 + _game.elapsed / 60.0 * 0.55) * ease_in * Maps.current.DIFFICULTY["spawn"]
 
 
-## Enemy HP multiplier so late enemies keep up with upgraded weapons: 3x by the ten-minute mark,
-## times the map's (Maps: longer working weeks are harder).
+## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
+## (3.5x by the ten-minute mark), times the map's (Maps: longer working weeks are harder).
 func hp_scale() -> float:
-	return (1.0 + _game.elapsed / 60.0 * 0.2) * Maps.current.DIFFICULTY["hp"]
+	return (1.0 + _game.elapsed / 60.0 * HP_PER_MINUTE) * Maps.current.DIFFICULTY["hp"]
 
 
 func tick(delta: float) -> void:

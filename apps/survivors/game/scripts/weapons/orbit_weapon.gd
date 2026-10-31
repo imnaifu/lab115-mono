@@ -20,7 +20,7 @@ extends Weapon
 
 ## One wall to start with, the user's call.
 const BASE_WALLS := 1
-## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 12.5
+## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
 const DAMAGE_PER_HARDER := 14.0
@@ -37,11 +37,12 @@ const WALL_RADIUS_PER_HARDER := 3.0
 ## An enemy is hurt at most once every HIT_GAP seconds by the walls.
 ## Per wall since .39, so a wall touching an enemy always hurts it unless that wall itself just
 ## did; walls no longer queue for one shared gap, which made a five-wall build several times as
-## strong, so the gap went from 0.56 to what the balance fit asked for.
-const HIT_GAP := 1.35
+## strong, so the gap went from 0.56 to what the balance fit asked for (1.35 in .39, 1.8 from .40,
+## where the ops still came out the strongest job).
+const HIT_GAP := 1.8
 ## After hitting its target a wall drifts back this long before going again, so it doesn't grind
 ## one enemy down every frame.
-const RECOVER_SECONDS := 0.32
+const RECOVER_SECONDS := 0.43
 const SIZE := 18.0
 const EVOLVED_COUNT := 6
 const EVOLVED_STUN := 0.4

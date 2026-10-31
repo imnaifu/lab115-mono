@@ -8,8 +8,9 @@ extends RefCounted
 ## players learn the game on the simplest weapon.
 ##
 ## The build follows one rule (.39, the user's call): every job starts with 100 health, the
-## close-range ones (PRD 卷筒, 数位笔, 防火墙 guarding within 70) get armor 2 and speed 60, the
-## far-reaching ones (回车键, 坐标轴) armor 0 and speed 66. Luck starts at 0 for everyone.
+## close-range ones (PRD 卷筒, 数位笔) get armor 2 and speed 60, the far-reaching ones (回车键, 坐标轴)
+## armor 0 and speed 66, and the ops, whose walls guard round them but fly out to hit, half of
+## each: armor 1, speed 63 (.40). Luck starts at 0 for everyone.
 ##
 ## `lines` is the job's trash talk, said over the player when its own weapon lands a hit
 ## (Game._taunt). The product manager's came first (.9), the rest followed at the user's ask.
@@ -32,7 +33,7 @@ const JOBS := {
 		"pitch": "数位笔朝前一路戳，越升戳得越多越密",
 		"lines": ["再大一点", "五彩斑斓的黑", "留白懂吗", "还是第一版好", "像素没对齐", "要有呼吸感"]},
 	"ops": {"name": "运维", "art": "ops", "weapon": "firewall",
-		"hp": 100.0, "armor": 2.0, "speed": 60.0,
+		"hp": 100.0, "armor": 1.0, "speed": 63.0,
 		"pitch": "站得住：墙护着身边，召唤物替你打",
 		"lines": ["拒绝访问", "403", "已拉黑", "别碰生产", "限流了", "谁动了配置"]},
 	"data_scientist": {"name": "数据科学家", "art": "data_scientist", "weapon": "guides",

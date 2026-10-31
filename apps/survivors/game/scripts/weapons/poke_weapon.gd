@@ -20,7 +20,7 @@ extends Weapon
 
 const COOLDOWN := 0.68
 const POKE_GAP := 0.09
-## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 12.5
+## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
 const DAMAGE_PER_UPGRADE := 1.0

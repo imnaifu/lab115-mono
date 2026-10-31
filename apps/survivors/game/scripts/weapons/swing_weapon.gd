@@ -16,7 +16,7 @@ extends Weapon
 ## nothing in particular), what it hits sheds scraps of paper, and now and then the product
 ## manager says one of their lines.
 
-## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 12.5
+## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
 const DAMAGE_PER_UPGRADE := 13.0
