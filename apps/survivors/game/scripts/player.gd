@@ -277,6 +277,15 @@ func shove(push: Vector2) -> bool:
 	return true
 
 
+## Knocked away by a boss whose touch just hurt them (.39, the user's call: a boss walking into
+## the player stayed on them, hurting them every INVULN_SECONDS until they died). Unlike a shove
+## it comes with every such hit, never held back by SHOVE_COOLDOWN.
+func knock_back(push: Vector2) -> void:
+	_shove += push
+	_tilt_left = TILT_SECONDS
+	_tilt_way = -1.0 if push.x < 0.0 else 1.0
+
+
 ## How strongly the screen's edges flash red for a hit just taken: 1 right after it, down to 0.
 func hurt_glow() -> float:
 	return clampf(_hurt_left / HURT_GLOW_SECONDS, 0.0, 1.0)

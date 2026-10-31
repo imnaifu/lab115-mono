@@ -11,6 +11,9 @@ const COUNT := [1, 1, 2, 2, 3]
 const DAMAGE := [3.0, 4.0, 4.0, 5.0, 7.0]
 const RADIUS := [36.0, 40.0, 44.0, 48.0, 54.0]
 const LIFETIME := 3.0
+## A room fades in over this long, and starts working once it has (.39: it used to slow and hurt
+## from the first frame, while still almost invisible).
+const FADE_IN := 1.0 / 6.0
 const TICK := 0.5
 ## Speed left to an enemy inside (40% slower).
 const SLOW := 0.6
@@ -74,6 +77,8 @@ func _process(delta: float) -> void:
 		if room.life <= 0.0:
 			_rooms.remove_at(i)
 			continue
+		if LIFETIME - room.life < FADE_IN:
+			continue
 		room.tick_left -= delta
 		var tick := room.tick_left <= 0.0
 		if tick:
@@ -110,7 +115,7 @@ func _draw_rooms() -> void:
 	var icon := Art.texture(art)
 	for room in _rooms:
 		# Fades in quickly and out over its last half second.
-		var alpha := clampf(minf((LIFETIME - room.life) * 6.0, room.life * 2.0), 0.0, 1.0)
+		var alpha := clampf(minf((LIFETIME - room.life) / FADE_IN, room.life * 2.0), 0.0, 1.0)
 		_floor.draw_circle(room.center, radius, Color(COLOR, 0.16 * alpha))
 		_floor.draw_arc(room.center, radius, 0.0, TAU, 48, Color(Art.INK, 0.6 * alpha), 2.0, true)
 		var icon_rect := Rect2(room.center - Vector2(ICON_SIZE, ICON_SIZE) / 2.0, Vector2(ICON_SIZE, ICON_SIZE))

@@ -2,10 +2,18 @@
 
 `survivors.lab115.com` —— 大厂幸存者（Big Tech Survivors，原名「硅谷幸存者」），一个 Godot 4.7 做的割草游戏。
 
+**`.39` 起根路径是官网，游戏在 `/play/`**：官网是一页（玩法、职业、武器、被动、地图、打卡点、怪物图鉴、成就），构建镜像时由 `game/tools/dump_compendium.gd` 从游戏数据导出、`game/tools/build_site.py` 拼成一个图片全部内嵌的 HTML，所以内容永远和线上游戏一致，存下来离线也能看。以前的游戏链接都带参数（战绩图二维码 `?from=share`、测试模式 `?debug=1`），nginx 把带参数的根路径 302 到 `/play/` 并保留参数，印出去的二维码不用换。存档在浏览器 IndexedDB 的 `/userfs` 库和 localStorage 里，按域名不按路径，挪路径不丢。清老 PWA 缓存的 `index.service.worker.js` 和分享预览图 `index.png` 在根路径各留一份。
+
+本地预览官网：
+
+```bash
+cd game && godot --headless --path . -s tools/dump_compendium.gd -- /tmp/compendium.json && python3 tools/build_site.py /tmp/compendium.json assets/art /tmp/site/index.html && open /tmp/site/index.html
+```
+
 ```
 game/              # Godot 工程（玩法、素材、测试都在这里，见 game/README.md）
-Dockerfile         # 第一阶段装 Godot、从 game/ 导出 Web 版；第二阶段 nginx:alpine 提供，wasm / pck / js 预先 gzip
-nginx.conf         # gzip_static + no-cache（大多数文件名每次导出都一样，必须按 ETag 重新校验）；带哈希的游戏包 index-<哈希>.pck 永久缓存
+Dockerfile         # 第一阶段装 Godot、从 game/ 导出 Web 版并生成官网；第二阶段 nginx:alpine 提供（官网在根路径、游戏在 /play/），wasm / pck / js 和官网页面预先 gzip
+nginx.conf         # gzip_static + no-cache（大多数文件名每次导出都一样，必须按 ETag 重新校验）；带哈希的游戏包 /play/index-<哈希>.pck 永久缓存；带参数的根路径 302 到 /play/
 check-project.mjs  # CI 的 "build"：检查工程文件齐全、地图用到的 soco-st 楼图和 sound.gd 用到的音效都已入库、裁剪过的字体收了脚本里的所有字
 ```
 

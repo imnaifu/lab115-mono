@@ -210,7 +210,7 @@ func _tick_rain(delta: float) -> void:
 		var reach := _puddle_reach(i)
 		if game.player.position.distance_to(_puddles[i]) <= reach:
 			game.player.drift(-game.player.velocity * RAIN_PLAYER_SLOW)
-		for enemy in game.query_enemies(_puddles[i], reach):
+		for enemy in game.query_enemies(_puddles[i], reach, false):
 			enemy.slow(RAIN_CROWD_SLOW, 0.2)
 
 

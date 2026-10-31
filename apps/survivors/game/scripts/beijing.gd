@@ -178,15 +178,16 @@ const STAMPS := {
 	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.03]},
 }
 
-## Parody companies, as in BayArea.BRANDS; most are their name alone.
+## Parody companies, as in BayArea.BRANDS, each with an icon of its own (.39: 嘀嘀 a taxi, 网异 a
+## netted globe, 慢手 a snail, 京西 a shopping cart; they were names alone); the places are names.
 const BRANDS := {
 	"baidu": {"text": "白度", "icon": "icon_paw", "color": Color("2f5fe0")},
 	"xiaomi": {"text": "大米", "icon": "icon_rice", "color": Color("ff6a00")},
-	"didi": {"text": "嘀嘀", "color": Color("f08a4b")},
-	"netease": {"text": "网异", "color": Color("d63a2f")},
-	"kuaishou": {"text": "慢手", "color": Color("ff5000")},
+	"didi": {"text": "嘀嘀", "icon": "icon_taxi", "color": Color("f08a4b")},
+	"netease": {"text": "网异", "icon": "icon_web", "color": Color("d63a2f")},
+	"kuaishou": {"text": "慢手", "icon": "icon_snail", "color": Color("ff5000")},
 	"bytedance": {"text": "字节跳跳", "icon": "icon_note", "color": Color("1f2a44")},
-	"jd": {"text": "京西", "color": Color("e1251b")},
+	"jd": {"text": "京西", "icon": "icon_cart", "color": Color("e1251b")},
 	"wudaokou": {"text": "宇宙中心", "color": Color("8c7cf0")},
 	"zgc": {"text": "中关村", "color": Color("2f6fb5")},
 	"station": {"text": "西二旗", "color": Color("2f3542")},

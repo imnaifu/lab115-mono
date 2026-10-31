@@ -24,12 +24,22 @@ RUN python3 /tmp/fetch_web_templates.py "$GODOT_VERSION" "/root/.local/share/god
 # Everything above is cached between deploys; only the game itself is re-exported.
 COPY game /game
 RUN /game/tools/export_web.sh /web
+# The 官网, made from the same game data (tools/dump_compendium.gd, tools/build_site.py), so what it
+# says is what's live.
+RUN cd /game && godot --headless --path . -s tools/dump_compendium.gd -- /tmp/compendium.json \
+	&& python3 tools/build_site.py /tmp/compendium.json assets/art /site/index.html
 
 # --- Stage 2: serve ------------------------------------------------------------------------
 FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=export /web /usr/share/nginx/html
+# The 官网 at the root, the game under /play/ (.39; the game was the root before, see nginx.conf
+# for the old links).
+COPY --from=export /site /usr/share/nginx/html
+COPY --from=export /web /usr/share/nginx/html/play
+# Two of the game's files stay at the root as well: the service worker that clears out the old PWA
+# (browsers that installed it look for it where it was) and the link preview picture.
 # The engine is ~40 MB of WebAssembly: compress it once here, and nginx's gzip_static hands
-# the .gz to every browser instead of recompressing per request.
-RUN gzip -k -9 /usr/share/nginx/html/*.wasm /usr/share/nginx/html/*.pck /usr/share/nginx/html/*.js
+# the .gz to every browser instead of recompressing per request; the 官网 is one big page too.
+RUN cp /usr/share/nginx/html/play/index.service.worker.js /usr/share/nginx/html/play/index.png /usr/share/nginx/html/ \
+	&& gzip -k -9 /usr/share/nginx/html/play/*.wasm /usr/share/nginx/html/play/*.pck /usr/share/nginx/html/play/*.js /usr/share/nginx/html/index.html
 EXPOSE 80

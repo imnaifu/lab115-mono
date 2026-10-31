@@ -25,6 +25,11 @@ const GRID_CELL := 32.0
 ## Query rects are padded by this so large enemies whose centre sits in a neighbouring cell
 ## are still found.
 const MAX_ENEMY_RADIUS := 16.0
+## How hard a boss's touch knocks the player away, pixels per second at first (Player.knock_back).
+const BOSS_KNOCKBACK := 320.0
+## The most an enemy's hit_radius gets (a 64-tall boss with 加厚: 64 × 0.36 × 1.2), for the grid
+## lookup in query_enemies.
+const MAX_HIT_RADIUS := 28.0
 ## Enemies left this far behind are moved back in front of the player so pressure never drops.
 const RELOCATE_DISTANCE := 560.0
 ## An enemy that starts going round a building keeps to the flow field this long. "Straight is
@@ -323,10 +328,12 @@ func hurt_player(amount: float, by: String, how: String = "contact") -> void:
 		achievements.on_hurt()
 
 
-## All living enemies whose body overlaps the circle.
-func query_enemies(center: Vector2, radius: float) -> Array[Enemy]:
+## All living enemies whose body overlaps the circle. For an attack (`attack`, the default) a
+## boss's body is its hit_radius, the size it is drawn; touching the player, pushing and pulling
+## go by its body (`radius`).
+func query_enemies(center: Vector2, radius: float, attack := true) -> Array[Enemy]:
 	var found: Array[Enemy] = []
-	var reach := radius + MAX_ENEMY_RADIUS
+	var reach := radius + MAX_HIT_RADIUS
 	var min_cell := _cell_of(center - Vector2(reach, reach))
 	var max_cell := _cell_of(center + Vector2(reach, reach))
 	for cell_x in range(min_cell.x, max_cell.x + 1):
@@ -337,7 +344,7 @@ func query_enemies(center: Vector2, radius: float) -> Array[Enemy]:
 			for enemy: Enemy in bucket:
 				if enemy.dead:
 					continue
-				var hit_distance := radius + enemy.radius
+				var hit_distance := radius + (enemy.hit_radius if attack else enemy.radius)
 				if enemy.position.distance_squared_to(center) <= hit_distance * hit_distance:
 					found.append(enemy)
 	return found
@@ -700,11 +707,21 @@ func _tick_hostile_shots(delta: float) -> void:
 
 func _check_player_contact() -> void:
 	var strongest: Enemy = null
-	for enemy in query_enemies(player.position, Player.HURT_RADIUS):
+	var nearest_boss: Enemy = null
+	for enemy in query_enemies(player.position, Player.HURT_RADIUS, false):
 		if strongest == null or enemy.damage > strongest.damage:
 			strongest = enemy
-	if strongest != null:
-		hurt_player(strongest.damage, strongest.type_name, "charge" if strongest.is_charging() else "contact")
+		if enemy.is_elite and (nearest_boss == null or enemy.position.distance_squared_to(player.position) < nearest_boss.position.distance_squared_to(player.position)):
+			nearest_boss = enemy
+	if strongest == null:
+		return
+	var hp_before := player.hp
+	hurt_player(strongest.damage, strongest.type_name, "charge" if strongest.is_charging() else "contact")
+	# A hit that landed with a boss touching knocks the player off it (about BOSS_KNOCKBACK / 8
+	# pixels, Player.SHOVE_DECAY), clear of its body, which near the player walks slower than they do.
+	if nearest_boss != null and player.hp < hp_before:
+		var away := player.position - nearest_boss.position
+		player.knock_back((away.normalized() if away.length_squared() > 0.01 else -player.facing) * BOSS_KNOCKBACK)
 
 
 func _cell_of(point: Vector2) -> Vector2i:
@@ -912,7 +929,8 @@ func change_map(map_id: String, start: bool = false) -> void:
 	get_tree().reload_current_scene()
 
 
-## The result screen's 换职业: back to the title screen to pick another job.
+## The result screen's 换职业 and the pause screen's 下班: back to the title screen (to pick another
+## job or map), a run still going counted as given up.
 func change_job() -> void:
 	achievements.finish(false)
 	telemetry.finish("restart")

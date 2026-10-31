@@ -1,6 +1,6 @@
 class_name BounceWeapon
 extends Weapon
-## Logos bouncing round the screen for good, off its edges (and off buildings) like an old
+## Logos bouncing round the screen for good, off its edges like an old
 ## screensaver, going through everything they touch; the same enemy can be hit again every REHIT
 ## seconds. A logo that bounces right into a corner of the screen blasts everything round it.
 ## (Silicon Valley: 屏保.) Vampire Survivors' Runetracer, made permanent: it used to fly a couple
@@ -47,12 +47,10 @@ func _process(delta: float) -> void:
 		# Levels speed them up as they go.
 		logo.velocity = logo.velocity.normalized() * speed
 		logo.position += logo.velocity * delta
+		# Only off the screen's edges (.39): it bounced off buildings too, but only their solid
+		# footing counted (and water), while the logo is drawn over the whole building, so it went
+		# through what showed and turned at lines nobody could see.
 		var bounced := _bounce_off_screen(logo, half)
-		# Off buildings too: the push out of a wall is the surface's normal.
-		var clear := game.city.resolve(logo.position, HIT_RADIUS * 0.5)
-		if clear != logo.position:
-			logo.velocity = logo.velocity.bounce((clear - logo.position).normalized())
-			logo.position = clear
 		logo.sprite.position = logo.position
 		logo.sprite.rotation = sin(_clock * 3.0) * 0.15
 		if bounced:

@@ -8,9 +8,11 @@ extends Weapon
 ## 多云多活 (evolved with 冰美式): twice the strikes, twice the splash.
 
 const COUNT := [1, 2, 2, 3, 4]
-const DAMAGE := [16.0, 16.0, 22.0, 22.0, 28.0]
+const DAMAGE := [16.0, 16.0, 24.0, 24.0, 36.0]
 const SPLASH_RADIUS := [12.0, 12.0, 12.0, 16.0, 18.0]
-const COOLDOWN := [2.6, 2.6, 2.4, 2.4, 2.0]
+## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
+## the speed-ups gave went into damage instead, the same damage a second at every level.
+const COOLDOWN := [2.6, 2.6, 2.6, 2.6, 2.6]
 ## Only enemies this close to the player (most of the screen's short side): when it struck anywhere
 ## on screen, kills far off went by unnoticed (the user's call).
 const RANGE := 150.0
@@ -33,6 +35,8 @@ func fire() -> bool:
 		# Copy the position first: the strike may kill the target.
 		var strike_at := target.position
 		Effects.lightning(game, strike_at, art)
+		# The splash drawn too: neighbours hurt by it used to lose health with nothing shown (.39).
+		Effects.ring(game, strike_at, splash, Art.YELLOW)
 		for enemy in game.query_enemies(strike_at, splash):
 			game.damage_enemy(enemy, damage, Vector2.ZERO, id)
 	return true

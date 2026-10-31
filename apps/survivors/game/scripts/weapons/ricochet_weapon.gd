@@ -6,9 +6,11 @@ extends Weapon
 ## Enemies each email reaches, the first included.
 ## Toned down from 8 bounces of 18 at full level, a third of a product manager's damage.
 const BOUNCES := [3, 4, 4, 5, 6]
-const DAMAGE := [10.0, 10.0, 13.0, 13.0, 16.0]
+const DAMAGE := [10.0, 10.0, 15.0, 15.0, 21.0]
 const COUNT := [1, 1, 1, 2, 2]
-const COOLDOWN := [1.6, 1.6, 1.4, 1.4, 1.2]
+## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
+## the speed-ups gave went into damage instead, the same damage a second at every level.
+const COOLDOWN := [1.6, 1.6, 1.6, 1.6, 1.6]
 const SPEED := 260.0
 const RANGE := 180.0
 const JUMP_RANGE := 90.0
@@ -61,7 +63,7 @@ func _process(delta: float) -> void:
 			continue
 		var to_target := mail.target.position - mail.position
 		var step := SPEED * delta
-		if to_target.length() <= mail.target.radius + step:
+		if to_target.length() <= mail.target.hit_radius + step:
 			mail.position = mail.target.position
 			mail.hit[mail.target.get_instance_id()] = true
 			mail.hits_left -= 1
@@ -70,7 +72,13 @@ func _process(delta: float) -> void:
 			game.damage_enemy(landed_on, damage, to_target.normalized() * 40.0, id)
 		else:
 			mail.position += to_target.normalized() * step
-			mail.sprite.rotation = to_target.angle() * 0.2
+			# Turned to where it flies, mirrored when that is leftward so its arrow leads and it
+			# stays the right way up (.39: tilted a fifth of the way, flying left with the arrow
+			# pointing right).
+			var heading := to_target.angle()
+			var leftward := absf(heading) > PI / 2.0
+			mail.sprite.flip_h = leftward
+			mail.sprite.rotation = wrapf(heading - PI, -PI, PI) if leftward else heading
 		mail.sprite.position = mail.position
 
 

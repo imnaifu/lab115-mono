@@ -27,6 +27,10 @@ const EVOLVED_BOMBLETS := 3
 const BOMBLET_SPREAD := 34.0
 const BOMBLET_SHARE := 0.5
 const SHADOW := Color(0.18, 0.2, 0.26)
+## The falling bomb: how far above its landing spot it is let go (drawn up the screen, like the
+## drone's height), and its size.
+const DROP_HEIGHT := 16.0
+const BOMB_RADIUS := 3.5
 
 
 class Drone:
@@ -52,6 +56,9 @@ var _drones: Array[Drone] = []
 var _bombs: Array[Bomb] = []
 var _clock := 0.0
 var _floor: Node2D
+## The falling bombs and where they will land, over the crowd so it can't hide them (.39: only the
+## shadow under the crowd showed, its red outline lost in a thick one).
+var _sky: Node2D
 
 
 func _init() -> void:
@@ -65,12 +72,18 @@ func _ready() -> void:
 	_floor.z_index = -3
 	_floor.draw.connect(_draw_shadows)
 	game.add_child(_floor)
+	_sky = Node2D.new()
+	_sky.z_index = z_index - 1
+	_sky.draw.connect(_draw_falling)
+	game.add_child(_sky)
 
 
 ## The shadows live on the game, not under the weapon: they go with it.
 func _exit_tree() -> void:
 	if is_instance_valid(_floor):
 		_floor.queue_free()
+	if is_instance_valid(_sky):
+		_sky.queue_free()
 
 
 func _process(delta: float) -> void:
@@ -113,6 +126,7 @@ func _process(delta: float) -> void:
 			_bombs.remove_at(i)
 			_blast(bomb)
 	_floor.queue_redraw()
+	_sky.queue_redraw()
 
 
 func _drop(at: Vector2, damage: float, radius: float, small: bool) -> void:
@@ -173,4 +187,15 @@ func _draw_shadows() -> void:
 	for bomb in _bombs:
 		var progress := 1.0 - bomb.fall_left / FALL_SECONDS
 		_floor.draw_circle(bomb.at, bomb.radius * (0.4 + 0.6 * progress), Color(SHADOW, 0.12 + 0.18 * progress))
-		_floor.draw_arc(bomb.at, bomb.radius, 0.0, TAU, 32, Color(Art.RED, 0.5 * progress), 1.5, true)
+
+
+## Each falling bomb, dropping faster and faster onto its spot, and the reach of its blast.
+func _draw_falling() -> void:
+	for bomb in _bombs:
+		var progress := 1.0 - bomb.fall_left / FALL_SECONDS
+		_sky.draw_arc(bomb.at, bomb.radius, 0.0, TAU, 32, Color(Art.RED, 0.5 * progress), 1.5, true)
+		var size := BOMB_RADIUS * (0.7 if bomb.small else 1.0)
+		var at := bomb.at - Vector2(0.0, DROP_HEIGHT * (1.0 - progress * progress))
+		_sky.draw_circle(at, size + 1.0, Art.INK)
+		_sky.draw_circle(at, size, SHADOW)
+		_sky.draw_circle(at + Vector2(-size * 0.35, -size * 0.35), size * 0.3, Color(1, 1, 1, 0.7))

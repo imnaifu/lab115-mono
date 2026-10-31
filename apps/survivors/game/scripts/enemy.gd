@@ -127,15 +127,23 @@ const COUNTDOWN_SECONDS := 25.0
 ## Berserk it is still slower than the player: BOSS_MAX_SPEED caps it, so kiting gets away.
 const COUNTDOWN_SPEEDUP := 1.25
 const BERSERK_SPEED := 1.4
-## Bosses walk a little faster than the crowd (.35, the user's call: they hung back behind it, so
+## Bosses catch up faster than the crowd walks (.35, the user's call: they hung back behind it, so
 ## the weapons only ever hit the small fry). A boss's own speed (22-40) maps onto
 ## BOSS_SPEED_FLOOR and up, BOSS_SPEED_SPREAD of each point over SLOWEST_BOSS_SPEED, so the slow
-## ones are still the slower bosses: 46-50.5, against the crowd's 26-44. However much it speeds up
-## (996, 急了, a countdown), it walks no faster than BOSS_MAX_SPEED, under the slowest job's 56.
+## ones are still the slower bosses: 46-50.5, against the crowd's 26-44. From .39 that is only its
+## catch-up speed: within CATCH_UP_NEAR of the player it walks at its own speed again (what .35
+## had everywhere cost the test bot about a minute of each run, as a boss on its heels could hardly
+## be shaken off), blending into the catch-up speed by CATCH_UP_FAR. However much it speeds up
+## (996, 急了, a countdown), it walks no faster than BOSS_MAX_SPEED, under the slowest job's 60.
 const BOSS_SPEED_FLOOR := 46.0
 const SLOWEST_BOSS_SPEED := 22.0
 const BOSS_SPEED_SPREAD := 0.25
 const BOSS_MAX_SPEED := 54.0
+## See hit_radius.
+const BIG_ART := 40.0
+const HIT_SHARE := 0.36
+const CATCH_UP_NEAR := 130.0
+const CATCH_UP_FAR := 170.0
 const BERSERK_DAMAGE := 1.5
 const COUNTDOWN_URGENT := 5.0
 const CLONES_EVERY := 7.0
@@ -185,6 +193,11 @@ var speed := 40.0
 var damage := 5.0
 var xp_value := 1
 var radius := 6.0
+## How far from its centre the player's attacks reach it. The crowd's is its body (`radius`); a
+## drawing BIG_ART tall or more (bosses, their clones and splits) is much bigger than its body, so
+## its reach is HIT_SHARE of the drawing (.39: a paper or a keyboard crossing a boss's top half
+## went through without hitting). The body still decides touching the player and the crowd.
+var hit_radius := 6.0
 var is_elite := false
 ## Ghosts drift through the crowd instead of being pushed apart by it.
 var ghostly := false
@@ -250,6 +263,8 @@ var _squeeze_at := Vector2.ZERO
 ## Turns each volley half a gap, so standing in a gap only works once.
 var _volley_turn := 0.0
 var _countdown_left := 0.0
+## A boss's speed when far from the player (BOSS_SPEED_FLOOR); 0 for everything else.
+var _catch_up_speed := 0.0
 var _base_speed := 0.0
 var _base_damage := 0.0
 ## Whether this boss's always-on move (countdown, aura, hoard) has been reported to the HUD yet.
@@ -271,11 +286,12 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 	max_hp = data["hp"] * hp_scale
 	hp = max_hp
 	# Small per-enemy speed jitter keeps a crowd from marching in lockstep; a boss's is smaller, so
-	# it never drops back to the crowd's pace.
+	# its catch-up speed never drops back to the crowd's pace.
 	var own_speed: float = data["speed"]
 	if data.get("elite", false):
-		own_speed = BOSS_SPEED_FLOOR + (own_speed - SLOWEST_BOSS_SPEED) * BOSS_SPEED_SPREAD
-		speed = own_speed * randf_range(0.97, 1.03)
+		var jitter := randf_range(0.97, 1.03)
+		speed = own_speed * jitter
+		_catch_up_speed = (BOSS_SPEED_FLOOR + (own_speed - SLOWEST_BOSS_SPEED) * BOSS_SPEED_SPREAD) * jitter
 	else:
 		speed = own_speed * randf_range(0.9, 1.1)
 	# Harder maps hit harder (Maps.current.DIFFICULTY), its moves too (_hits).
@@ -305,17 +321,27 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 	_base_speed = speed
 	_base_damage = damage
 	_size = data["size"]
+	hit_radius = maxf(radius, _size * HIT_SHARE) if _size >= BIG_ART else radius
 	_sprite = Art.sprite(data["art"], _size)
 	_base_scale = _sprite.scale.x
 	_sprite.modulate = _base_modulate
 	add_child(_sprite)
 
 
+## A boss's walking speed this frame: its own (with whatever sped it up) close to the player, at
+## least its catch-up speed far away, never over BOSS_MAX_SPEED.
+func _boss_walk_speed() -> float:
+	var far := 0.0
+	if game != null:
+		far = smoothstep(CATCH_UP_NEAR, CATCH_UP_FAR, position.distance_to(game.player.position))
+	return minf(lerpf(speed, maxf(speed, _catch_up_speed), far), BOSS_MAX_SPEED)
+
+
 ## `direction` is the unit vector to walk along this frame (Game._heading).
 func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
 	if life_left > 0.0:
 		life_left = maxf(0.0, life_left - delta)
-	var velocity := direction * (minf(speed, BOSS_MAX_SPEED) if is_elite else speed)
+	var velocity := direction * (_boss_walk_speed() if is_elite else speed)
 	if _wobble > 0.0:
 		velocity += direction.orthogonal() * sin(_phase * 0.7) * _wobble
 	if slow_left > 0.0:
@@ -454,7 +480,7 @@ func _drag_in(delta: float) -> void:
 	var to_me := position - player.position
 	if to_me.length() < PULL_RADIUS and to_me.length() > radius:
 		player.drift(to_me.normalized() * PULL_PLAYER_SPEED)
-	for enemy in game.query_enemies(position, PULL_RADIUS):
+	for enemy in game.query_enemies(position, PULL_RADIUS, false):
 		var offset := position - enemy.position
 		if enemy != self and not enemy.is_elite and offset.length() > radius + enemy.radius:
 			enemy.position += offset.normalized() * PULL_CROWD_SPEED * delta
@@ -591,6 +617,7 @@ func _grow(factor: float) -> void:
 	_base_scale *= factor
 	_size *= factor
 	radius *= factor
+	hit_radius *= factor
 
 
 ## 急了 at half health, 自愈 after HEAL_AFTER seconds unhit.
@@ -718,7 +745,7 @@ func _quake() -> void:
 	if offset.length() <= QUAKE_RADIUS + Player.HURT_RADIUS:
 		game.hurt_player(_hits(QUAKE_DAMAGE), type_name, "quake")
 		player.position = game.city.resolve(player.position + offset.normalized() * QUAKE_SHOVE, Player.BODY_RADIUS)
-	for enemy in game.query_enemies(position, QUAKE_RADIUS):
+	for enemy in game.query_enemies(position, QUAKE_RADIUS, false):
 		if enemy != self and not enemy.is_elite:
 			enemy.shove((enemy.position - position).normalized() * QUAKE_CROWD_PUSH)
 

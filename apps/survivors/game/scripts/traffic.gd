@@ -155,7 +155,7 @@ func _bump(game: Game, at: Vector2, half: Vector2, enemy_push: float, player_pus
 			_impact(game, player.position, push, train)
 			if train:
 				game.achievements.on_train_hit()
-	for enemy in game.query_enemies(at, half.length()):
+	for enemy in game.query_enemies(at, half.length(), false):
 		if not _overlaps(enemy.position, enemy.radius, at, half):
 			continue
 		var key := enemy.get_instance_id()

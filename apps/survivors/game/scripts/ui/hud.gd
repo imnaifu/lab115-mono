@@ -153,6 +153,10 @@ var _chest_revealed := false
 var _chest_reveal := Callable()
 var _chest_stage: Control
 var _chest_art: TextureRect
+## The chest's 收下 button: there from the start so the dialog doesn't jump, but see-through and
+## off until the opening has played out (.39, the user's call: it used to be live at once, and a
+## tap mid-shake skipped straight to the end).
+var _chest_take: Button
 var _chest_burst: Control
 var _chest_stamp: Control
 var _odds_chips: Array[PanelContainer] = []
@@ -1775,8 +1779,10 @@ func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) ->
 	prize.add_theme_constant_override("separation", 8)
 	tail.add_child(prize)
 	var take := UiKit.primary_button("收下", _on_chest_button)
+	take.modulate.a = 0.0
+	take.disabled = true
+	_chest_take = take
 	tail.add_child(take)
-	_focus(take)
 	_pop_in(dialog, 0.0)
 	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
 	_fit_to_screen(_chest_holder)
@@ -1862,6 +1868,15 @@ func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_ro
 		# After the lid has come off.
 		_pop_in(row, 0.3 + i * 0.12)
 	_fit_to_screen(_chest_holder)
+	# 收下 comes up once the last row has popped in (0.22 s each) and the stars have flown (0.6 s).
+	var settled := maxf(0.6, 0.3 + (rows.size() - 1) * 0.12 + 0.22)
+	var take := _chest_take
+	var show_take := take.create_tween()
+	show_take.tween_interval(settled)
+	show_take.tween_property(take, "modulate:a", 1.0, 0.15)
+	show_take.tween_callback(func() -> void:
+		take.disabled = false
+		_focus(take))
 
 
 ## A gold star flying out of the open chest at `angle`, fading as it goes.
@@ -1920,12 +1935,11 @@ func _prize_row(item: Dictionary, roomy: bool) -> Control:
 	return row_panel
 
 
-## While the chest still rocks it opens it at once; after that it closes the dialog.
+## Closes the dialog once the opening has played out (_chest_take is on); before that, nothing.
 func _on_chest_button() -> void:
 	if game.state != Game.State.CHEST or Time.get_ticks_msec() < _accept_picks_at:
 		return
-	if not _chest_revealed:
-		_chest_reveal.call()
+	if not _chest_revealed or _chest_take == null or _chest_take.disabled:
 		return
 	game.close_chest()
 
@@ -2008,13 +2022,21 @@ func _show_pause() -> void:
 	var restart := UiKit.secondary_button("重新开始", game.restart)
 	restart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	second_row.add_child(restart)
+	# Back to the title screen, giving the run up (.39, the user asked for a way back to the first
+	# page; named for the title's 开始搬砖), as the result screen's 换职业 does.
+	var clock_out := UiKit.secondary_button("下班", game.change_job)
+	clock_out.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	second_row.add_child(clock_out)
+	var third_row := HBoxContainer.new()
+	third_row.add_theme_constant_override("separation", 8)
+	actions.add_child(third_row)
 	# The run so far as a result image, to show off (or ask for help) mid-run.
 	var share := UiKit.secondary_button("分享", _make_share_image)
 	share.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	second_row.add_child(share)
+	third_row.add_child(share)
 	var settings := _settings_button()
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	second_row.add_child(settings)
+	third_row.add_child(settings)
 	if TestMode.on:
 		actions.add_child(_test_buttons())
 

@@ -7,11 +7,18 @@ extends Weapon
 ## key at each enemy on screen instead, nearest first.
 ##
 ## The programmer's own weapon, so it levels up along two directions (Upgrades.BRANCHES): 更多
-## adds a press to every burst, 更大 makes each key bigger, harder-hitting and piercing further.
-## Two of each lands where the old level 5 was (3 keys of 24, piercing 3).
+## adds a press to every burst, 更大 makes each key bigger and harder-hitting. It starts at two
+## presses a burst, a burst every 0.48 s: a key no longer one-shots a Bug, and a key a second
+## left the programmer far behind the other jobs.
+##
+## Every key hits one enemy and pushes nothing (.39, the user's call for every job's own weapon:
+## no piercing, knockback or stun, so the jobs differ only in how they deal damage). 更大 added a
+## pierce each before.
 
-const BASE_DAMAGE := 12.0
-const DAMAGE_PER_SIZE := 6.0
+## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 12.5
+## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
+const BASE_DAMAGE := 7.0
+const DAMAGE_PER_SIZE := 4.0
 const SIZE_GROWTH := 0.25
 const SPEED := 230.0
 ## Kept short so most kills, and their stars, land within walking distance.
@@ -28,12 +35,11 @@ var _burst_timer := 0.0
 
 ## What the weapon does with `more` upgrades to 更多 and `bigger` to 更大 (the cards' numbers too).
 static func branch_stats(more: int, bigger: int) -> Dictionary:
-	return {"count": 1 + more, "damage": BASE_DAMAGE + DAMAGE_PER_SIZE * bigger, "pierce": 1 + bigger,
-		"size": 1.0 + SIZE_GROWTH * bigger}
+	return {"count": 2 + more, "damage": BASE_DAMAGE + DAMAGE_PER_SIZE * bigger, "size": 1.0 + SIZE_GROWTH * bigger}
 
 
 func cooldown() -> float:
-	return 1.1
+	return 0.48
 
 
 func _process(delta: float) -> void:
@@ -69,12 +75,16 @@ func _fire_batch() -> bool:
 	targets.sort_custom(func(a: Enemy, b: Enemy) -> bool:
 		return a.position.distance_squared_to(player.position) < b.position.distance_squared_to(player.position))
 	for target: Enemy in targets.slice(0, BATCH_MAX):
-		_key((target.position - player.position).normalized(), 1.6)
+		# Long enough to get there: on a tall phone screen an enemy can be farther than 1.6 s of
+		# flight, and the key used to vanish short of it.
+		var offset := target.position - player.position
+		_key(offset.normalized(), maxf(1.6, offset.length() / SPEED + 0.3))
 	return true
 
 
 func _key(direction: Vector2, seconds: float) -> void:
 	var stats := branch_stats(branch_a, branch_b)
 	var size: float = stats["size"]
-	var key := spawn_projectile(SIZE * size, direction * SPEED, stats["damage"], stats["pierce"], seconds)
+	var key := spawn_projectile(SIZE * size, direction * SPEED, stats["damage"], 1, seconds)
 	key.hit_radius = HIT_RADIUS * size
+	key.knockback = 0.0

@@ -15,9 +15,11 @@ extends Weapon
 ## their first three minutes anywhere from level 5 to 11, one at a third of its health.
 const COOLDOWN := 2.0
 ## Per tick, every TICK seconds, to everything on a line.
-const BASE_DAMAGE := 5.0
-const DAMAGE_PER_THICKER := 2.0
-const TICK := 0.3
+## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 12.5
+## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
+const BASE_DAMAGE := 7.0
+const DAMAGE_PER_THICKER := 1.5
+const TICK := 0.43
 const BASE_WIDTH := 8.0
 const WIDTH_PER_THICKER := 4.0
 const BASE_SECONDS := 1.5
@@ -101,7 +103,7 @@ func _process(delta: float) -> void:
 		guide.tick_left = TICK * player.cooldown_scale
 		for enemy in on_screen:
 			var across := enemy.position.y if guide.horizontal else enemy.position.x
-			if absf(across - guide.at) <= half_width + enemy.radius:
+			if absf(across - guide.at) <= half_width + enemy.hit_radius:
 				game.damage_enemy(enemy, damage, Vector2.ZERO, id, true)
 	_floor.queue_redraw()
 

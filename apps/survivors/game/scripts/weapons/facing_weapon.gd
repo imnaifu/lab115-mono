@@ -6,11 +6,13 @@ extends Weapon
 
 const COUNT := [1, 1, 2, 2, 3]
 ## Raised after the live runs had it at 1-7% of all damage even at full level.
-const DAMAGE := [10.0, 14.0, 14.0, 18.0, 18.0]
+const DAMAGE := [10.0, 14.0, 14.0, 18.0, 25.0]
 ## Enemies each file passes through. Players walk away from a crowd as often as into it, so a
 ## file that reaches the crowd has to count for more than one hit.
 const PIERCE := [2, 2, 2, 2, 3]
-const COOLDOWN := [0.7, 0.7, 0.7, 0.7, 0.5]
+## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
+## the speed-ups gave went into damage instead, the same damage a second at every level.
+const COOLDOWN := [0.7, 0.7, 0.7, 0.7, 0.7]
 const SPEED := 300.0
 const SPACING := 8.0
 const SIZE := 13.0

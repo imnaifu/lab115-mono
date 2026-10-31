@@ -19,6 +19,9 @@ const LOOP_DAMAGE := 60.0
 const LOOP_SNAP := 10.0
 const LOOP_MIN_POINTS := 14
 const COLOR := Color("ff8fa0")
+## The line fades out over its last this many seconds (.39: over its last third, so it went on
+## hurting at full strength while hardly visible).
+const FADE_SECONDS := 0.25
 
 var _points := PackedVector2Array()
 var _born := PackedFloat32Array()
@@ -39,6 +42,14 @@ func _process(delta: float) -> void:
 		_born.remove_at(0)
 	var moving := player.velocity.length_squared() > 1.0
 	if moving and (_points.is_empty() or player.position.distance_to(_points[_points.size() - 1]) >= SPACING):
+		# A jump (pushed by a car, the quake) is filled in every SPACING, so the stretch drawn
+		# between the two points hurts too.
+		if not _points.is_empty():
+			var last := _points[_points.size() - 1]
+			var gaps := floori(last.distance_to(player.position) / SPACING)
+			for step in range(1, gaps):
+				_points.append(last.lerp(player.position, float(step) / gaps))
+				_born.append(_clock)
 		_points.append(player.position)
 		_born.append(_clock)
 		if evolved:
@@ -78,9 +89,13 @@ func _close_loop() -> void:
 		for enemy in game.query_enemies(bounds.get_center(), bounds.size.length() / 2.0):
 			if Geometry2D.is_point_in_polygon(enemy.position, outline):
 				game.damage_enemy(enemy, damage, Vector2.ZERO, id)
-		Effects.ring(game, bounds.get_center(), maxf(bounds.size.x, bounds.size.y) / 2.0, COLOR)
-		_points = _points.slice(_points.size() - 1)
-		_born = _born.slice(_born.size() - 1)
+		# The loop itself flashes (it was a circle round its bounds, much of which a long thin loop
+		# doesn't cover), and only the loop's stretch of line is used up.
+		var flash := LoopFlash.new()
+		flash.outline = outline
+		game.effect_layer.add_child(flash)
+		_points = _points.slice(0, i) + PackedVector2Array([newest])
+		_born = _born.slice(0, i) + PackedFloat32Array([_clock])
 		return
 
 
@@ -94,9 +109,33 @@ func _draw() -> void:
 	var edge := PackedColorArray()
 	for i in _points.size():
 		line.append(_points[i] - global_position)
-		# Fades out over its last third.
-		var fade := clampf((life - (_clock - _born[i])) / (life / 3.0), 0.0, 1.0)
+		var fade := clampf((life - (_clock - _born[i])) / FADE_SECONDS, 0.0, 1.0)
 		fill.append(Color(COLOR, 0.6 * fade))
 		edge.append(Color(Art.INK, 0.5 * fade))
 	draw_polyline_colors(line, edge, width + 3.0, true)
 	draw_polyline_colors(line, fill, width, true)
+
+
+## A closed loop's flash (evolved): the shape it enclosed, filled and fading, so what was hit is
+## what lights up.
+class LoopFlash:
+	extends Node2D
+
+	const SECONDS := 0.3
+
+	var outline := PackedVector2Array()
+	var _age := 0.0
+
+	func _process(delta: float) -> void:
+		_age += delta
+		if _age >= SECONDS:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var fade := 1.0 - _age / SECONDS
+		# A loop that crosses itself won't triangulate; its outline still shows.
+		if not Geometry2D.triangulate_polygon(outline).is_empty():
+			draw_colored_polygon(outline, Color(COLOR, 0.45 * fade))
+		draw_polyline(outline + PackedVector2Array([outline[0]]), Color(Art.INK, 0.8 * fade), 2.5, true)

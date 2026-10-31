@@ -166,8 +166,10 @@ static func lightning(game: Game, target: Vector2, cloud_art: String) -> void:
 	poof(game, target, Art.YELLOW)
 
 
-## A ring spreading out to `radius` and fading: the perks' blasts (stand-up, scapegoat, a
-## cost-cut explosion), so the player sees how far one reached.
+## A blast's reach: a ring at `radius` from the first frame, fading, with a fainter wave running
+## out to it, so the player sees how far one reached the moment it hits (the perks' blasts, bombs,
+## the screensaver's corner, boss shockwaves). Until .39 the ring grew out from a third of the
+## radius as it faded, so a blast that hurt everything at once showed only its middle when it hit.
 static func ring(game: Game, at: Vector2, radius: float, color: Color) -> void:
 	var blast := BlastRing.new()
 	blast.position = at
@@ -384,9 +386,13 @@ class BlastRing:
 
 	func _draw() -> void:
 		var progress := _age / SECONDS
-		var reach := radius * (0.35 + 0.65 * progress)
-		draw_circle(Vector2.ZERO, reach, Color(color, 0.22 * (1.0 - progress)))
-		draw_arc(Vector2.ZERO, reach, 0.0, TAU, 40, Color(color, 0.9 * (1.0 - progress)), 2.5, true)
+		var fade := 1.0 - progress
+		draw_circle(Vector2.ZERO, radius, Color(color, 0.22 * fade))
+		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, Color(color, 0.9 * fade), 2.5, true)
+		# The wave reaches the ring in the first 40% of the time, never past it.
+		var wave := minf(progress / 0.4, 1.0)
+		if wave < 1.0:
+			draw_arc(Vector2.ZERO, radius * (0.4 + 0.6 * wave), 0.0, TAU, 40, Color(color, 0.5 * (1.0 - wave)), 2.0, true)
 
 
 static func _bolt_line(points: PackedVector2Array, width: float, color: Color) -> Line2D:

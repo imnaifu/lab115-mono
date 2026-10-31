@@ -66,6 +66,19 @@ const FOOTPRINT_DEPTH := 24.0
 const SOLID_CELL := 64.0
 const SOLID_PAD := 20.0
 const TRUNK := Vector2(8.0, 7.0)
+## Buildings bunch up round the check-in landmarks and thin out away from them (.39, the user's
+## call): a block's density is 1 on a landmark's block and the ring round it, DENSITY_FALLOFF of
+## that on the next ring, 0 farther out. A dense block is rarely a park and its buildings stand
+## close; a sparse one is often a park and they stand wide apart. Districts that are all open
+## ground (water, beach: park_chance 1) stay as they are.
+const DENSITY_FALLOFF := 0.5
+const DENSE_PARK_SHARE := 0.3
+const SPARSE_PARK_EXTRA := 0.4
+const SPARSE_PARK_MAX := 0.9
+const DENSE_GAP_SCALE := 0.6
+const SPARSE_GAP_SCALE := 2.2
+## The narrowest gap left between two buildings: the biggest boss still squeezes through.
+const MIN_GAP := 36.0
 
 var game: Game
 var follow: Node2D
@@ -80,6 +93,8 @@ var _fading: Array = []
 var _solid_cells := {}
 var _missing_warned := false
 var _traffic: Traffic
+## The current map's check-in landmark blocks (Maps.current.STAMPS), for _density.
+var _stamp_blocks: Array[Vector2i] = []
 
 
 func _process(delta: float) -> void:
@@ -454,6 +469,27 @@ func stamp_spot(block: Vector2i) -> Vector2:
 	return Vector2(origin.x + BLOCK.x / 2.0, origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0)
 
 
+## How built up `block` is, 0 to 1, by how near it is to a check-in landmark (see DENSITY_FALLOFF).
+func _density(block: Vector2i) -> float:
+	if _stamp_blocks.is_empty():
+		for id: String in Maps.current.STAMPS:
+			_stamp_blocks.append(Maps.current.STAMPS[id]["block"])
+	var nearest := 1 << 30
+	for stamp in _stamp_blocks:
+		nearest = mini(nearest, maxi(absi(block.x - stamp.x), absi(block.y - stamp.y)))
+	if nearest <= 1:
+		return 1.0
+	return DENSITY_FALLOFF if nearest == 2 else 0.0
+
+
+## A block's chance of being a park with no buildings, its district's moved by its density.
+func _park_chance(district: Dictionary, density: float) -> float:
+	var chance: float = district["park_chance"]
+	if chance >= 1.0:
+		return chance
+	return lerpf(minf(SPARSE_PARK_MAX, chance + SPARSE_PARK_EXTRA), chance * DENSE_PARK_SHARE, density)
+
+
 ## Builds one block: a street sign at its corner, a row of buildings (or a landmark) along its
 ## bottom road with trees in the gaps and props on the sidewalk, and bushes and trees dotted
 ## over the lawn behind. Some blocks are parks with no buildings.
@@ -470,7 +506,8 @@ func _populate(block: Vector2i) -> Dictionary:
 	var street_y := origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0
 	var lawn_top := origin.y + ROAD_HALF + SIDEWALK + 50.0
 	var tallest := 0.0
-	var is_park: bool = rng.randf() < district["park_chance"] or Maps.current.RUNWAYS.has(block)
+	var density := _density(block)
+	var is_park: bool = rng.randf() < _park_chance(district, density) or Maps.current.RUNWAYS.has(block)
 
 	var corner := origin + Vector2(_road_reach_at(block.x, block.y) + 6.0, ROAD_HALF + SIDEWALK + 34.0)
 	if not Maps.current.is_water(corner):
@@ -484,10 +521,10 @@ func _populate(block: Vector2i) -> Dictionary:
 	if landmark.begins_with("art:"):
 		tallest = _place_landmark(content, landmark.trim_prefix("art:"), Vector2(origin.x + BLOCK.x / 2.0, street_y))
 	elif landmark.begins_with("brand_row:"):
-		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, landmark.trim_prefix("brand_row:"))
+		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, landmark.trim_prefix("brand_row:"), density)
 		_place_campus_sign(content, landmark.trim_prefix("brand_row:"), Vector2(inner_left + 70.0, lawn_top + 40.0))
 	elif not is_park and inner_right > inner_left:
-		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, "")
+		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, "", density)
 	var lawn_landmark: String = Maps.current.LAWN_LANDMARKS.get(block, "")
 	if lawn_landmark != "":
 		_place_landmark(content, lawn_landmark, Vector2(origin.x + BLOCK.x * 0.62, lawn_top + 90.0))
@@ -515,7 +552,7 @@ func _populate(block: Vector2i) -> Dictionary:
 ## A row of structures along the street, gaps between them, the district's tree in wide gaps,
 ## and a prop on the sidewalk now and then. Returns the tallest height, so the lawn behind
 ## knows where it ends.
-func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dictionary, left: float, right: float, street_y: float, forced_brand: String) -> float:
+func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dictionary, left: float, right: float, street_y: float, forced_brand: String, density: float) -> float:
 	var structures: Array = district["structures"]
 	# A company campus is office blocks wherever it is, not a row of branded family homes.
 	if forced_brand != "":
@@ -538,7 +575,7 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 			brand = brands[rng.randi() % brands.size()]
 		_place_structure(content, spec, texture, size, Vector2(cursor + size.x / 2.0, street_y), brand, [])
 		tallest = maxf(tallest, size.y)
-		var gap: float = rng.randf_range(district["gap"][0], district["gap"][1])
+		var gap: float = maxf(MIN_GAP, rng.randf_range(district["gap"][0], district["gap"][1]) * lerpf(SPARSE_GAP_SCALE, DENSE_GAP_SCALE, density))
 		if district["tree"] != "" and gap > 24.0 and rng.randf() < 0.7:
 			# Not solid: a trunk in the middle of a gap split it into two slits nobody fit
 			# through, walling off the whole row. You pass in front of or behind it instead.
