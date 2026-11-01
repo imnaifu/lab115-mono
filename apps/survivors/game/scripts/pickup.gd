@@ -32,8 +32,6 @@ static var _halo_texture: GradientTexture2D
 
 var kind := Kind.XP
 var value := 1
-## A chest's boss affix count: how many affixes the boss that dropped it carried (Game._open_chest).
-var affixes := 0
 
 var _attracted := false
 var _speed := 0.0

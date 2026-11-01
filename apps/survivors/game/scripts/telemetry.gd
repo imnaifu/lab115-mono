@@ -46,6 +46,9 @@ extends RefCounted
 ##   From .27, `luck` (the player's at the end) and `rarities`: how many upgrades of each rarity
 ##   (普通,优秀,稀有,史诗,传说, Upgrades.RARITIES) the run got, picked or out of a chest, and
 ##   `lucky_cards`, how many level-ups luck added a card to.
+##   From .43 (绩效 S gives a 返聘, a revive saved across runs): run_start's `revives`, how many the
+##   player had saved; run_end's `revive` when they died holding one, `used` or `declined` (the
+##   revive dialog's 下班), at `revive_at` seconds.
 ## - cloud_action (.30): the cloud save and its page (设置 → 云存档), `action` with a `result`: connect
 ##   (once per page when the first sync settles: synced / offline, `ms`, `merged` when the cloud
 ##   brought progress), open (the 云存档 page, with its `status`), code (a 存档码 made: ok /
@@ -64,7 +67,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.42"
+const VERSION := "2026-10-28.43"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -85,6 +88,9 @@ var _chests := PackedStringArray()
 var _rarities := PackedInt32Array([0, 0, 0, 0, 0])
 ## Level-ups where luck added a card (Upgrades.lucky_card).
 var _lucky_cards := 0
+## The revive dialog's outcome ("used" / "declined") and when, if the player got to it.
+var _revive := ""
+var _revive_at := 0
 var _timeline := PackedStringArray()
 var _next_sample := TIMELINE_SECONDS
 var _snapshot_left := SNAPSHOT_SECONDS
@@ -126,7 +132,8 @@ func on_title_shown() -> void:
 
 func start() -> void:
 	_started = true
-	_run_id = "%08x" % randi()
+	# The game's, which also keys this run's 返聘 in the save.
+	_run_id = _game.run_id
 	_runs_on_page += 1
 	var runs_before: int = Settings.get_value("runs_played", 0)
 	Settings.set_value("runs_played", runs_before + 1)
@@ -147,6 +154,7 @@ func start() -> void:
 		"from": _link_source(),
 		"stamps": Progress.stamp_ids().size(),
 		"achievements": Progress.achievement_ids().size(),
+		"revives": Progress.revives_left(),
 		"cloud": Cloud.status_name(),
 		"page_run": _runs_on_page,
 	}
@@ -218,6 +226,11 @@ func on_chest(round_id: String, items: Array) -> void:
 		_count_rarity(item)
 
 
+func on_revive(used: bool) -> void:
+	_revive = "used" if used else "declined"
+	_revive_at = roundi(_game.elapsed)
+
+
 func on_enemy_spawned(enemy: Enemy) -> void:
 	if enemy.is_elite:
 		_bosses_seen += 1
@@ -285,6 +298,9 @@ func _summary(result: String) -> Dictionary:
 		"new_achievements": ",".join(_game.achievements.new_ids),
 		"boss_rolls": _game.spawner.boss_rolls().left(MAX_TEXT),
 	}
+	if _revive != "":
+		data["revive"] = _revive
+		data["revive_at"] = _revive_at
 	# Each source's share of all damage dealt, in percent (the end screen's ranking): only those
 	# that dealt some, now that there are fifteen weapons and a run carries six of them.
 	var total := 0.0

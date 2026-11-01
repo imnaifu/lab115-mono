@@ -11,9 +11,12 @@ signal announced(text: String)
 signal chest_opened(funding_round: Dictionary, items: Array, odds: Array[float])
 ## A boss is starting one of its moves (Enemy.ABILITIES); the HUD explains how to dodge it.
 signal boss_move(ability: String)
+## The player died holding a 返聘 (Progress.revives_left, `left` of them) they may spend.
+signal revive_offered(left: int)
 
-## CHEST is a boss's year-end bonus being opened (the chest dialog in Hud).
-enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED }
+## CHEST is a boss's year-end bonus being opened (the chest dialog in Hud). REVIVE is the player
+## dead, asked whether to spend a 返聘 (the revive dialog in Hud).
+enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED, REVIVE }
 
 const RUN_SECONDS := 600.0
 ## Logical view sizes; project.godot's viewport size is the landscape one.
@@ -58,17 +61,24 @@ const HOARD_SPILL_VALUE := 6
 const HOARD_SPILL_MAX := 14
 ## An AI's clone appears this far from the player.
 const CLONE_DISTANCE := 110.0
-## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how many
-## free upgrades come out (Vampire Survivors' chests: 1, 3 or 5 items). A rare 绩效 S is the
-## jackpot moment. The ids are the data's (Telemetry `chests`) from when these were funding rounds
-## (天使轮 / A 轮 / IPO), kept so runs before and after compare.
-## Each affix on the boss that dropped a chest makes its 绩效 A and S this much likelier.
-const AFFIX_LUCK := 1.5
+## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides what
+## comes out: free upgrades for 绩效 B and A, for a rare 绩效 S no upgrades but a 返聘 (`revive`),
+## a revive kept in the save for a later death (Progress.add_revive). The odds are fixed since .43,
+## the user's call: neither luck nor the boss's affixes move them any more. The ids are the data's
+## (Telemetry `chests`) from when these were funding rounds (天使轮 / A 轮 / IPO), kept so runs
+## before and after compare.
 const FUNDING_ROUNDS := [
-	{"id": "angel", "name": "绩效 B", "items": 1, "weight": 75.0},
-	{"id": "series_a", "name": "绩效 A", "items": 3, "weight": 20.0},
-	{"id": "ipo", "name": "绩效 S", "items": 5, "weight": 5.0},
+	{"id": "angel", "name": "绩效 B", "items": 1, "weight": 90.0},
+	{"id": "series_a", "name": "绩效 A", "items": 3, "weight": 9.0},
+	{"id": "ipo", "name": "绩效 S", "items": 0, "weight": 1.0, "revive": true},
 ]
+## A 返聘 brings the player back on this share of their health, untouchable for REVIVE_INVULN
+## seconds, with everything within REVIVE_RADIUS pushed off and stunned (like a 站会's, no damage).
+const REVIVE_HP := 0.5
+const REVIVE_INVULN := 2.0
+const REVIVE_RADIUS := 140.0
+const REVIVE_PUSH := 260.0
+const REVIVE_STUN := 1.5
 ## Melee feel: a beat of hit-stop when a melee weapon lands on a boss (at most every
 ## HITSTOP_GAP), a small shake when one swing catches a crowd of SHAKE_CROWD or more.
 const HITSTOP_SECONDS := 0.04
@@ -101,9 +111,15 @@ var damage_by_source := {}
 var runs_before := 0
 ## Whether the player has moved yet this run; the HUD shows how to until they do.
 var has_moved := false
+## This run's id: Telemetry's `run`, and in the save the key of a 返聘 spent or earned in it.
+var run_id := "%08x" % randi()
+## Whether this run has spent its 返聘: one a run at most, however many are saved up.
+var revived := false
 ## Year-end bonuses picked up while another was open, opened once it closes: each one's lowest
-## rating (an index into FUNDING_ROUNDS) and its boss's affix count (see _open_chest).
-var _waiting_chests: Array[Vector2i] = []
+## rating (an index into FUNDING_ROUNDS).
+var _waiting_chests: Array[int] = []
+## Year-end bonuses opened this run, numbering the 返聘 they give (their ids in the save).
+var _chests_opened := 0
 ## Investors out this frame, whose auras shield the crowd round them (Enemy "aura").
 var _aura_sources: Array[Enemy] = []
 
@@ -529,8 +545,7 @@ func _kill(enemy: Enemy) -> void:
 		if enemy.met_deadline():
 			lowest_round = 1
 			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("on_time_line", "按时交付！年终奖保底绩效 A"))
-		var chest := _drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
-		chest.affixes = enemy.affixes.size()
+		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
 	else:
 		var roll := rng.randf()
@@ -800,7 +815,7 @@ func _collect(pickup: Pickup) -> void:
 			player.heal(HEAL_AMOUNT)
 			announce("珍珠奶茶，回血 30！")
 		Pickup.Kind.BONUS:
-			_open_chest(pickup.value, pickup.affixes)
+			_open_chest(pickup.value)
 		Pickup.Kind.MAGNET:
 			Sound.play("magnet")
 			for other in pickups:
@@ -865,19 +880,21 @@ func choose_upgrade(index: int) -> void:
 
 # --- Year-end bonuses (boss chests) ------------------------------------------------------
 
-## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS; every rating past the
-## first AFFIX_LUCK times likelier for each of `affixes`, the dropping boss's, and likelier still
-## with the player's luck, as card rarity is), hands out its upgrades straight away and pauses
-## while the HUD opens the chest. A second chest picked up meanwhile waits its turn.
-func _open_chest(lowest_round: int = 0, affixes: int = 0) -> void:
+## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS), hands out what it
+## gives straight away (its upgrades, or a 返聘 into the save) and pauses while the HUD opens the
+## chest. A second chest picked up meanwhile waits its turn.
+func _open_chest(lowest_round: int = 0) -> void:
 	if state != State.PLAYING:
-		_waiting_chests.append(Vector2i(lowest_round, affixes))
+		_waiting_chests.append(lowest_round)
 		return
 	var weights := PackedFloat32Array()
-	for index in FUNDING_ROUNDS.size():
-		var weight: float = FUNDING_ROUNDS[index]["weight"]
-		weights.append(weight * pow(AFFIX_LUCK, affixes if index > 0 else 0) * Upgrades.luck_factor(player.luck, index))
+	for option: Dictionary in FUNDING_ROUNDS:
+		weights.append(option["weight"])
 	var funding_round: Dictionary = FUNDING_ROUNDS[maxi(rng.rand_weighted(weights), lowest_round)]
+	_chests_opened += 1
+	if funding_round.get("revive", false):
+		# Saved at once, like a stamp: closing the page mid-run keeps it.
+		Progress.add_revive("%s-%d" % [run_id, _chests_opened])
 	# This chest's real odds for the dialog: ratings under the floor count as the floor.
 	var total := 0.0
 	for weight in weights:
@@ -887,7 +904,8 @@ func _open_chest(lowest_round: int = 0, affixes: int = 0) -> void:
 		odds.append(0.0 if index < lowest_round else weights[index] / total * 100.0)
 	for index in lowest_round:
 		odds[lowest_round] += weights[index] / total * 100.0
-	var items := upgrades.open_chest(funding_round["items"])
+	# 绩效 S has none: open_chest would still evolve a ready weapon first.
+	var items: Array = upgrades.open_chest(funding_round["items"]) if funding_round["items"] > 0 else []
 	telemetry.on_chest(funding_round["id"], items)
 	state = State.CHEST
 	get_tree().paused = true
@@ -902,8 +920,7 @@ func close_chest() -> void:
 	state = State.PLAYING
 	get_tree().paused = false
 	if not _waiting_chests.is_empty():
-		var waiting: Vector2i = _waiting_chests.pop_front()
-		_open_chest(waiting.x, waiting.y)
+		_open_chest(_waiting_chests.pop_front())
 		return
 	# Level-ups earned while the chest was open (its stars, a kill landing as it opened).
 	_offer_level_up()
@@ -1023,7 +1040,43 @@ func restart() -> void:
 	get_tree().reload_current_scene()
 
 
+## With a 返聘 saved and none spent this run, the player chooses (the HUD's revive dialog, paused);
+## otherwise the run is over.
 func _on_player_died() -> void:
+	if state == State.PLAYING and not revived and Progress.revives_left() > 0:
+		state = State.REVIVE
+		get_tree().paused = true
+		revive_offered.emit(Progress.revives_left())
+		return
+	_end_run(false)
+
+
+## The revive dialog's 返聘: one spent from the save, the player back on REVIVE_HP of their health
+## with room round them, and the run goes on.
+func accept_revive() -> void:
+	if state != State.REVIVE:
+		return
+	revived = true
+	Progress.use_revive(run_id)
+	telemetry.on_revive(true)
+	player.revive(player.max_hp * REVIVE_HP, REVIVE_INVULN)
+	Effects.ring(self, player.position, REVIVE_RADIUS, Art.GREEN)
+	for enemy in query_enemies(player.position, REVIVE_RADIUS, false):
+		enemy.stun(REVIVE_STUN)
+		# A pushing hit for nothing: not damage_enemy, which would count it and float a 0.
+		enemy.take_hit(0.0, (enemy.position - player.position).normalized() * REVIVE_PUSH)
+	state = State.PLAYING
+	get_tree().paused = false
+	Sound.play("heal")
+	announce("返聘成功，回来上班！")
+
+
+## The revive dialog's 下班: the 返聘 stays saved for another run, this one is over.
+func decline_revive() -> void:
+	if state != State.REVIVE:
+		return
+	telemetry.on_revive(false)
+	state = State.PLAYING
 	_end_run(false)
 
 

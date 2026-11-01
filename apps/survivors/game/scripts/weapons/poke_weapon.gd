@@ -107,9 +107,14 @@ func _poke_all_ways() -> void:
 		add_child(jab)
 
 
-## The ink of a poke got to `enemy`: it is hurt now, if still there.
-func _land(enemy: Enemy, damage: float) -> void:
-	if not is_instance_valid(enemy) or enemy.dead:
+## The ink of a poke got to `target` (an Enemy): it is hurt now, if still there. Untyped because
+## an enemy freed while the ink flew arrives as a freed Object, which an `Enemy` parameter rejected
+## before this check could run: an engine error each time, thousands a run (.43).
+func _land(target: Variant, damage: float) -> void:
+	if not is_instance_valid(target):
+		return
+	var enemy: Enemy = target
+	if enemy.dead:
 		return
 	game.damage_enemy(enemy, damage, Vector2.ZERO, id)
 	_landed += 1

@@ -91,7 +91,7 @@ STAT_ROWS = [
     ("armor", "护甲", "armor", None, None, "每点让每次受到的伤害 -1，但每次至少扣 1 点。"),
     ("regen", "每秒回血", "regen", "regen", lambda start, stamped: f"+{number(round(stamped - start, 2))}", "每秒自动回这么多生命。"),
     ("luck", "运气", "luck", "luck", lambda start, stamped: f"+{number(stamped - start)}",
-     '升级卡更容易出稀有的，有几率多出一张卡，年终奖更容易开出绩效 A、S（见<a href="#upgrades">升级</a>）。'),
+     '升级卡和年终奖里的卡更容易出稀有的，升级时有几率多出一张卡（见<a href="#upgrades">升级</a>）。年终奖开出哪档绩效和运气无关。'),
 ]
 
 
@@ -221,25 +221,29 @@ def upgrades_section(data: dict) -> str:
     luck = data["luck"]
     head = "".join(f"<th>{rarity_tag(rarity)}</th>" for rarity in rarities)
     card_rows = "".join(f"<tr><td><b>{number(row['luck'])}</b></td>" + "".join(f"<td>{percent(share)}</td>" for share in row["cards"]) + "</tr>" for row in luck)
-    chests = data["drops"]["chests"]
-    chest_head = "".join(f"<th>{esc(chest['name'])}</th>" for chest in chests)
-    more_rows = "".join(f"<tr><td><b>{number(row['luck'])}</b></td><td>{percent(row['extra_card'])}</td>"
-                        + "".join(f"<td>{percent(share)}</td>" for share in row["chest"]) + "</tr>" for row in luck)
+    more_rows = "".join(f"<tr><td><b>{number(row['luck'])}</b></td><td>{percent(row['extra_card'])}</td></tr>" for row in luck)
     luck_card = f"""<article class="card"><h3>运气</h3>
-<p class="muted">运气来自被动「锦鲤」和打卡。每点让优秀及以上每一档的几率多 1%，逐档复利，越稀有的涨得越多。</p>
+<p class="muted">运气来自被动「锦鲤」和打卡。每点让优秀及以上每一档的几率多 1%，逐档复利，越稀有的涨得越多；年终奖里的卡也一样。年终奖开出哪档绩效和运气无关。</p>
 <div class="scroll"><table class="nums"><tr><th>运气</th>{head}</tr>{card_rows}</table></div>
-<div class="scroll"><table class="nums"><tr><th>运气</th><th>多一张卡</th>{chest_head}</tr>{more_rows}</table></div></article>"""
+<div class="scroll"><table class="nums"><tr><th>运气</th><th>升级时多一张卡</th></tr>{more_rows}</table></div></article>"""
 
     drops = data["drops"]
-    chest_lines = "".join(f"<li><b>{esc(chest['name'])}</b>：{percent(share)}，白给 {chest['items']} 样升级</li>"
-                          for chest, share in zip(chests, luck[0]["chest"]))
+    chests = drops["chests"]
+    revive = drops["revive"]
+    total_weight = sum(chest["weight"] for chest in chests)
+    # 绩效 S gives a 返聘 (a revive kept across runs) rather than upgrades.
+    chest_lines = "".join(f"<li><b>{esc(chest['name'])}</b>：{percent(chest['weight'] / total_weight)}，"
+                          + ("一次<b>返聘</b>，不给升级" if chest.get("revive") else f"白给 {chest['items']} 样升级") + "</li>"
+                          for chest in chests)
     drops_card = f"""<article class="card"><h3>掉落</h3><ul>
 <li><b>经验星星</b>：每只怪都掉，走近才会吸过来；地上超过 {drops['max_pickups']} 个时，新的经验并进已有的星星</li>
 <li><b>珍珠奶茶</b>：普通怪 {percent(drops['heal_chance'])} 掉，boss 必掉，回 {number(drops['heal_amount'])} 生命</li>
 <li><b>磁铁</b>：{drops['magnet_from_level']} 级以后普通怪 {percent(drops['magnet_chance'])} 掉，全图的星星一起飞过来</li>
 <li><b>年终奖</b>：每个 boss 必掉的红色宝箱</li></ul>
 <h3>年终奖开出什么</h3><ul>{chest_lines}</ul>
-<p class="muted">白给的是身上已有的武器和被动随机升一级，每样也抽稀有度。boss 每带一个词条，绩效 A、S 的几率各 ×{number(drops['affix_luck'])}；运气也会提高（见上表）；Deadline 按时打掉保底绩效 A。</p></article>"""
+<p class="muted">几率每个年终奖都一样，和运气、boss 词条都无关；只有 Deadline 按时打掉保底绩效 A。白给的是身上已有的武器和被动随机升一级，每样也抽稀有度。</p>
+<h3>返聘</h3>
+<p>存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用：用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。</p></article>"""
     return section("upgrades", "升级", "打怪捡星星升级，升级时选卡；boss 掉的年终奖再白给几样。", f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}{drops_card}</div>')
 
 
@@ -336,8 +340,7 @@ def bestiary_section(data: dict) -> str:
     total = sum(len(group["enemies"]) for group in groups)
     return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪每张地图都一样；boss 是每张地图自己的，每局打乱出场顺序（强度跟着出场时间走），还会随机多会一两招、带上词条。",
                    f'<h3 class="sub">小怪</h3><div class="grid">{mobs}</div><h3 class="sub">boss</h3><div class="tabs">{"".join(tabs)}</div>{"".join(panels)}'
-                   f'<h3 class="sub">boss 词条</h3><ul class="affixes">{affixes}</ul>'
-                   '<p class="muted">带词条的 boss 掉的年终奖更容易开出绩效 A、S。</p>')
+                   f'<h3 class="sub">boss 词条</h3><ul class="affixes">{affixes}</ul>')
 
 
 def _mob_card(enemy: dict) -> str:
@@ -391,7 +394,7 @@ def how_section(data: dict) -> str:
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
-<li>每分钟来一个 boss，打掉必掉「年终奖」，按绩效白给升级</li>
+<li>每分钟来一个 boss，打掉必掉「年终奖」，按绩效白给升级；难得开出绩效 S 给一次「返聘」，被裁时可以选择回来</li>
 <li>撑满 10:00 就能敲钟上市</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
 <article class="card"><h3>一局的节奏</h3><p class="muted">boss 每局打乱、前后浮动 10 秒，这是写在代码里的排期：</p><ol class="timeline">{rows}</ol></article>

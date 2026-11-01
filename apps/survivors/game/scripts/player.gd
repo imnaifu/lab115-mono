@@ -258,6 +258,14 @@ func take_damage(amount: float) -> void:
 		died.emit()
 
 
+## Back from the dead on a 返聘 (Game.accept_revive): `health` and `untouchable` seconds of
+## invulnerability to get clear.
+func revive(health: float, untouchable: float) -> void:
+	hp = minf(health, max_hp)
+	_invuln_left = untouchable
+	queue_redraw()
+
+
 ## Carried along at `carried` (pixels per second) for this frame, on top of walking: a boss's pull,
 ## the sandstorm's wind. Several add up.
 func drift(carried: Vector2) -> void:

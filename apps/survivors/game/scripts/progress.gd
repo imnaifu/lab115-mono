@@ -14,10 +14,15 @@ extends RefCounted
 ## ever goes down: a stamp or achievement keeps its earliest time, a set only gains members, a
 ## count only grows. Anything added later must follow the same rule. Counts from two devices
 ## merge to the larger, not the sum (counting per device is more than they're worth).
+##
+## 返聘 (revives, .43) do get spent, so they're kept as two sets that only grow: each one earned
+## (its own id) and each run that spent one (the run's id); what's left is the difference. A count
+## of what's left would merge wrong (the larger of two devices' counts brings a spent one back),
+## and a count of earned ones would lose one earned on each of two devices at once.
 
 const PATH := "user://progress.cfg"
 ## Sections whose keys are ids with the time they were earned: merged by keeping the earliest.
-const EARNED := ["stamps", "achievements"]
+const EARNED := ["stamps", "achievements", "revives", "revives_used"]
 
 ## False keeps everything in memory only: the smoke test's runs mustn't fill the player's save.
 static var to_disk := true
@@ -48,6 +53,23 @@ static func achievement_ids() -> PackedStringArray:
 
 static func add_achievement(id: String) -> void:
 	_load().set_value("achievements", id, int(Time.get_unix_time_from_system()))
+	_save()
+
+
+## 返聘 saved up and not spent yet. Two devices spending the same one offline count as two spent.
+static func revives_left() -> int:
+	return maxi(0, _keys("revives").size() - _keys("revives_used").size())
+
+
+## A 返聘 from a 绩效 S year-end bonus, `id` its own (the run's id and the chest's number).
+static func add_revive(id: String) -> void:
+	_load().set_value("revives", id, int(Time.get_unix_time_from_system()))
+	_save()
+
+
+## One spent in the run `run_id` (a run spends one at most).
+static func use_revive(run_id: String) -> void:
+	_load().set_value("revives_used", run_id, int(Time.get_unix_time_from_system()))
 	_save()
 
 

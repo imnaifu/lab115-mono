@@ -41,7 +41,8 @@ func _initialize() -> void:
 		"luck": _luck(),
 		"drops": {"heal_chance": Game.HEAL_DROP_CHANCE, "heal_amount": Game.HEAL_AMOUNT,
 			"magnet_chance": Game.MAGNET_DROP_CHANCE, "magnet_from_level": Game.MAGNET_FROM_LEVEL,
-			"max_pickups": Game.MAX_PICKUPS, "affix_luck": Game.AFFIX_LUCK, "chests": Game.FUNDING_ROUNDS},
+			"max_pickups": Game.MAX_PICKUPS, "chests": Game.FUNDING_ROUNDS,
+			"revive": {"hp": Game.REVIVE_HP, "invuln": Game.REVIVE_INVULN}},
 		"xp": _xp(),
 		"job_weapon_levels": Upgrades.JOB_WEAPON_LEVELS,
 		"pacing": _pacing(),
@@ -233,19 +234,15 @@ func _rarities() -> Array:
 	return rarities
 
 
-## What luck does at each of LUCK_SHOWN: the chance of each card rarity, of an extra card, and of
-## each year-end bonus rating from a boss without affixes, by the game's own luck_factor.
+## What luck does at each of LUCK_SHOWN: the chance of each card rarity and of an extra card, by
+## the game's own luck_factor. (Year-end bonus ratings don't move with it since .43.)
 func _luck() -> Array:
 	var rows := []
 	for luck: float in LUCK_SHOWN:
 		var card_weights := []
 		for tier in Upgrades.RARITIES.size():
 			card_weights.append(Upgrades.RARITIES[tier]["weight"] * Upgrades.luck_factor(luck, tier))
-		var chest_weights := []
-		for index in Game.FUNDING_ROUNDS.size():
-			chest_weights.append(Game.FUNDING_ROUNDS[index]["weight"] * Upgrades.luck_factor(luck, index))
-		rows.append({"luck": luck, "cards": _shares(card_weights), "chest": _shares(chest_weights),
-			"extra_card": Upgrades.extra_card_chance(luck)})
+		rows.append({"luck": luck, "cards": _shares(card_weights), "extra_card": Upgrades.extra_card_chance(luck)})
 	return rows
 
 

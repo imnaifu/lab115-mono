@@ -32,11 +32,12 @@ extends SceneTree
 ## --collection=0|1|2 (with --shots, also screenshot the title's 收藏 page on that tab),
 ## --departures[=city] (with --shots, also screenshot the title's departures board, with that
 ## city's boarding pass if given), --luck=N
-## (start with that much luck, to see rarer cards and better year-end bonuses), --cloud=local|<url>
+## (start with that much luck, to see rarer cards), --cloud=local|<url>
 ## (connect the cloud save to that Nakama server, as the web build does), --save-page (with
 ## --shots, also screenshot the settings and the 云存档 page; with --cloud, synced and with a
-## 存档码). Progress (打卡, 成就) is kept in memory only, and so is the cloud save's device id: a
-## bot run never touches the save.
+## 存档码), --revives=N (start with N 返聘 saved; at a death the bot spends one, or with
+## --decline-revive goes home instead). Progress (打卡, 成就) is kept in memory only, and so is
+## the cloud save's device id: a bot run never touches the save.
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -90,6 +91,10 @@ var _departures_city := ""
 var _departures_frames := 0
 var _save_page := false
 var _save_page_frames := 0
+var _revives_before := 0
+var _decline_revive := false
+var _revive_frames := 0
+var _revive_shot_taken := false
 ## Player level when each REPORT_TIMES second was reached, for comparing pacing between builds.
 var _levels_at := {}
 var _worst_frame_ms := 0.0
@@ -161,6 +166,10 @@ func _initialize() -> void:
 			_save_page = true
 		elif arg.begins_with("--luck="):
 			_luck = float(value)
+		elif arg.begins_with("--revives="):
+			_revives_before = int(value)
+		elif arg == "--decline-revive":
+			_decline_revive = true
 		elif arg.begins_with("--cloud="):
 			Cloud.server_override = Cloud.LOCAL if value == "local" else value
 		elif arg.begins_with("--teleport="):
@@ -192,6 +201,9 @@ func _process(_delta: float) -> bool:
 			if _title_frames == 0:
 				for id: String in Maps.current.STAMPS.keys().slice(0, _stamps_before):
 					Progress.add_stamp(id)
+				for i in _revives_before:
+					Progress.add_revive("smoke-%d" % i)
+				_revives_before = 0
 			if _shot_dir != "":
 				_title_frames += 1
 				if _title_frames < OVERLAY_SETTLE_FRAMES:
@@ -293,6 +305,19 @@ func _process(_delta: float) -> bool:
 				_chest_shot_taken = true
 			_chests += 1
 			_game.close_chest()
+		Game.State.REVIVE:
+			if _shot_dir != "" and not _revive_shot_taken:
+				_revive_frames += 1
+				if _revive_frames < OVERLAY_SETTLE_FRAMES:
+					return false
+				_save_shot("revive")
+				_revive_shot_taken = true
+			print("[smoke] died at %.1fs holding %d 返聘: %s" % [_game.elapsed, Progress.revives_left(),
+				"going home" if _decline_revive else "spending one"])
+			if _decline_revive:
+				_game.decline_revive()
+			else:
+				_game.accept_revive()
 		Game.State.PLAYING:
 			_game.player.input_override = _steer()
 			if _god:

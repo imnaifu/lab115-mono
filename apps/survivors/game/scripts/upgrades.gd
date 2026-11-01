@@ -129,7 +129,7 @@ const PASSIVES := {
 	"haste": {"name": "双屏显示器", "art": "monitors", "text": "武器冷却 -%s%%"},
 	"magnet": {"name": "人脉名片", "art": "card", "text": "拾取范围 +%s%%"},
 	"regen": {"name": "工位绿植", "art": "plant", "text": "每秒回复 %s 生命"},
-	"luck": {"name": "锦鲤", "art": "koi", "text": "运气 +%s：升级时可能多一张卡，卡和年终奖更容易出好的"},
+	"luck": {"name": "锦鲤", "art": "koi", "text": "运气 +%s：升级时可能多一张卡，卡更容易出稀有的"},
 	# The rest act rather than add a number; Perks runs them. `max` caps one below MAX_LEVEL.
 	"stock": {"name": "股票期权", "art": "stock_options", "text": "每撑过 1 分钟，伤害再 +2%（越早拿越赚）"},
 	"scapegoat": {"name": "背锅侠", "art": "scapegoat", "text": "挨打时把锅甩出去，炸伤身边的怪"},
@@ -239,7 +239,8 @@ func _job_pair_due(for_level: int) -> Array:
 
 ## How much likelier `luck` makes a tier past the first: each point 1% per tier, compounding
 ## (luck 50: green ×1.5, blue ×2.25, purple ×3.4, orange ×5.1), so it lifts the rare end most.
-## Card rarity (RARITIES) and the year-end bonus's 绩效 (Game.FUNDING_ROUNDS) both use it.
+## Card rarity (RARITIES) uses it, in a year-end bonus too; the bonus's 绩效 (Game.FUNDING_ROUNDS)
+## did until .43, when its odds were fixed.
 static func luck_factor(luck: float, tier: int) -> float:
 	return pow(1.0 + maxf(luck, 0.0) / 100.0, tier)
 

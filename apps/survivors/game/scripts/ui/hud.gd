@@ -162,6 +162,10 @@ var _chest_stamp: Control
 var _odds_chips: Array[PanelContainer] = []
 var _pause_overlay: Control
 var _pause_holder: CenterContainer
+## The revive dialog (Game.State.REVIVE), and the top bar's sign that this run has a 返聘 to spend.
+var _revive_overlay: Control
+var _revive_holder: CenterContainer
+var _revive_pill: Control
 var _end_overlay: Control
 var _end_holder: Control
 var _victory := false
@@ -244,6 +248,8 @@ func _ready() -> void:
 	_pause_overlay = _overlay(Art.SCRIM)
 	_pause_holder = _centered(_pause_overlay)
 	_add_corner_version(_pause_overlay)
+	_revive_overlay = _overlay(Art.SCRIM)
+	_revive_holder = _centered(_revive_overlay)
 	_end_overlay = _overlay(Art.PAPER_SOFT)
 	_end_holder = _full(_end_overlay)
 	_add_corner_version(_end_overlay)
@@ -264,6 +270,7 @@ func _ready() -> void:
 	game.run_ended.connect(_show_end)
 	game.announced.connect(_show_toast)
 	game.chest_opened.connect(_show_chest)
+	game.revive_offered.connect(_show_revive)
 	game.boss_move.connect(_on_boss_move)
 	game.stamps.checked_in.connect(_on_checked_in)
 	game.achievements.unlocked.connect(_on_achievement)
@@ -315,7 +322,7 @@ func _process(delta: float) -> void:
 	# vignette, and the last minute plays faster (dialogs included, so it doesn't slow and
 	# speed up again around every level-up).
 	var playing := game.state == Game.State.PLAYING
-	var dialog := game.state in [Game.State.PAUSED, Game.State.LEVEL_UP, Game.State.CHEST]
+	var dialog := game.state in [Game.State.PAUSED, Game.State.LEVEL_UP, Game.State.CHEST, Game.State.REVIVE]
 	var last_minute := (playing or dialog) and game.elapsed >= Game.RUN_SECONDS - 60.0
 	Sound.set_mix(dialog, danger if playing else 0.0, last_minute)
 
@@ -329,6 +336,7 @@ func _process(delta: float) -> void:
 	_pause_overlay.visible = state == Game.State.PAUSED
 	_end_overlay.visible = state == Game.State.ENDED
 	_chest_overlay.visible = state == Game.State.CHEST
+	_revive_overlay.visible = state == Game.State.REVIVE
 	_warning.visible = _warning.visible and state == Game.State.PLAYING
 	_move_hint.visible = state == Game.State.PLAYING and not game.has_moved and game.elapsed > MOVE_HINT_AFTER \
 		and game.runs_before < MOVE_HINT_RUNS and not Tilt.enabled() and not _warning.visible
@@ -351,6 +359,8 @@ func _process(delta: float) -> void:
 		_tilt_hint.text = TILT_HINTS.get(tilt_state, "")
 	if state != _shown_state:
 		_shown_state = state
+		# A 返聘 is earned in a chest and spent in the revive dialog, both left back into play.
+		_revive_pill.visible = not game.revived and Progress.revives_left() > 0
 		if state != Game.State.PLAYING:
 			_release_touch()
 		if state == Game.State.PAUSED:
@@ -404,6 +414,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.State.CHEST:
 			if key == KEY_ENTER or key == KEY_KP_ENTER or key == KEY_SPACE:
 				_on_chest_button()
+		Game.State.REVIVE:
+			# After PICK_DELAY_MS, like a level-up: keys pressed for dodging as the player died
+			# mustn't decide for them.
+			if Time.get_ticks_msec() < _accept_picks_at:
+				return
+			if key == KEY_ENTER or key == KEY_KP_ENTER or key == KEY_SPACE:
+				game.accept_revive()
+			elif key == KEY_ESCAPE:
+				game.decline_revive()
 		Game.State.ENDED:
 			if key == KEY_R or key == KEY_ENTER or key == KEY_KP_ENTER:
 				game.restart()
@@ -625,6 +644,17 @@ func _build_top_bar() -> void:
 	kills_row.add_child(UiKit.icon("skull", 12))
 	_kills_label = UiKit.label("0", 11, "display")
 	kills_row.add_child(_kills_label)
+	# A 返聘 this run can still spend: the badge says a death won't end it outright.
+	_revive_pill = UiKit.panel(UiKit.box(Art.MINT_LIGHT, Art.INK, UiKit.OUTLINE, UiKit.PILL, Vector4(5, 2, 8, 2)))
+	_revive_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_revive_pill.visible = false
+	var rehire_row := HBoxContainer.new()
+	rehire_row.add_theme_constant_override("separation", 2)
+	rehire_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_revive_pill.add_child(rehire_row)
+	rehire_row.add_child(UiKit.icon("rehire", 14))
+	rehire_row.add_child(UiKit.label("返聘", 10, "strong", Art.GREEN_INK))
+	buttons.add_child(_revive_pill)
 	buttons.add_child(kills)
 	# Re-zeroes tilt steering mid-run, without pausing (resuming re-zeroes it anyway).
 	_recalibrate_button = UiKit.round_button("phone_tilt", _recalibrate_tilt)
@@ -947,6 +977,17 @@ func _show_title() -> void:
 	column.add_child(_job_picker(portrait))
 	column.add_child(UiKit.gap(14 if portrait else 8))
 	column.add_child(_map_button(portrait))
+	# 返聘 saved from 绩效 S year-end bonuses (.43): said here, since they carry from run to run.
+	var revives := Progress.revives_left()
+	if revives > 0:
+		var rehire := HBoxContainer.new()
+		rehire.alignment = BoxContainer.ALIGNMENT_CENTER
+		rehire.add_theme_constant_override("separation", 6)
+		rehire.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rehire.add_child(UiKit.icon("rehire", 18))
+		rehire.add_child(UiKit.label(tr("返聘 ×%d · 被裁时可以选择回来，每局一次") % revives, 12, "strong", Art.GREEN_INK))
+		column.add_child(UiKit.gap(8 if portrait else 4))
+		column.add_child(rehire)
 	if TestMode.on:
 		column.add_child(UiKit.gap(8 if portrait else 4))
 		column.add_child(_test_row())
@@ -1691,8 +1732,9 @@ func _hover(card: Control, entered: bool) -> void:
 
 ## A boss's year-end bonus (年终奖): the chest rocks, quicker and quicker, then flies open on the
 ## rating Game rolled (绩效 B / A / S), with rays behind it and, for A and S, stars flying out;
-## then the upgrades it brought appear one by one (Game has applied them already). `odds` are
-## this chest's own chances, which luck and the boss's affixes move.
+## then the upgrades it brought appear one by one (Game has applied them already), or for 绩效 S
+## the 返聘 it saved. `odds` are this chest's own chances: the same for every chest since .43, but
+## for a Deadline met in time, which has no 绩效 B.
 func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) -> void:
 	_clear(_chest_holder)
 	_chest_revealed = false
@@ -1758,7 +1800,8 @@ func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) ->
 		var round_name := UiKit.label(option["name"], 13, "strong")
 		round_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		chip_column.add_child(round_name)
-		var chance := UiKit.label(tr("升 %d 样 · %d%%") % [option["items"], roundi(odds[index])], 11, "muted")
+		var gives := tr("返聘") if option.get("revive", false) else tr("升 %d 样") % option["items"]
+		var chance := UiKit.label("%s · %d%%" % [gives, roundi(odds[index])], 11, "muted")
 		chance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		chip_column.add_child(chance)
 		chips.add_child(chip)
@@ -1842,8 +1885,16 @@ func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_ro
 		_throw_star(TAU * i / CHEST_STARS[landing] + randf() * 0.4)
 	_stamp_on(_chest_stamp)
 	_odds_chips[landing].add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, 10, Vector4(4, 5, 4, 5)))
-	result.text = tr("%s！白给 %d 样升级") % [tr(funding_round["name"]), items.size()]
 	Sound.play("win" if funding_round["id"] == "ipo" else "payout")
+	if funding_round.get("revive", false):
+		result.text = tr("%s！拿到一次返聘") % tr(funding_round["name"])
+		var rehire_row := _rehire_row()
+		prize.add_child(rehire_row)
+		_pop_in(rehire_row, 0.3)
+		_fit_to_screen(_chest_holder)
+		_show_chest_take(0.6)
+		return
+	result.text = tr("%s！白给 %d 样升级") % [tr(funding_round["name"]), items.size()]
 	# The same upgrade twice in one chest is one row, from its first level to its last, in the
 	# rarer of its two rarities.
 	var rows: Array[Dictionary] = []
@@ -1869,7 +1920,11 @@ func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_ro
 		_pop_in(row, 0.3 + i * 0.12)
 	_fit_to_screen(_chest_holder)
 	# 收下 comes up once the last row has popped in (0.22 s each) and the stars have flown (0.6 s).
-	var settled := maxf(0.6, 0.3 + (rows.size() - 1) * 0.12 + 0.22)
+	_show_chest_take(maxf(0.6, 0.3 + (rows.size() - 1) * 0.12 + 0.22))
+
+
+## The chest's 收下, faded in after `settled` seconds (once what it gave is all on screen).
+func _show_chest_take(settled: float) -> void:
 	var take := _chest_take
 	var show_take := take.create_tween()
 	show_take.tween_interval(settled)
@@ -1877,6 +1932,29 @@ func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_ro
 	show_take.tween_callback(func() -> void:
 		take.disabled = false
 		_focus(take))
+
+
+## 绩效 S's prize (.43): a 返聘, saved for a death in any run, one spent a run at most.
+func _rehire_row() -> Control:
+	var row_panel := UiKit.panel(UiKit.box(Art.MINT_LIGHT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_panel.resized.connect(func() -> void: row_panel.pivot_offset = row_panel.size / 2.0)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_panel.add_child(row)
+	row.add_child(UiKit.icon("rehire", 36))
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 0)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	text.add_child(UiKit.label(tr("返聘 ×%d") % Progress.revives_left(), 15, "heavy"))
+	var note := UiKit.label("被裁时可以选择回来上班（回半血），每局最多用一次，存着下局也能用", 11, "muted")
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.custom_minimum_size.x = 180.0
+	text.add_child(note)
+	return row_panel
 
 
 ## A gold star flying out of the open chest at `angle`, fading as it goes.
@@ -1944,6 +2022,56 @@ func _on_chest_button() -> void:
 	game.close_chest()
 
 
+# --- Revive --------------------------------------------------------------------------------
+
+## The player died holding `left` 返聘 (Game.revive_offered): spend one and carry on, or go home
+## (the result screen) and keep it for another run. The player's call (.43), not automatic.
+func _show_revive(left: int) -> void:
+	_clear(_revive_holder)
+	var dialog := UiKit.panel(UiKit.dialog_box(Vector4(18, 18, 18, 18)))
+	dialog.custom_minimum_size = Vector2(minf(320.0, _root.size.x - 40.0), 0.0)
+	_revive_holder.add_child(dialog)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	dialog.add_child(column)
+	column.add_child(UiKit.kicker("REHIRE"))
+	var title := UiKit.label("项目黄了…", 26, "heavy")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	var art := UiKit.icon("rehire", 72)
+	art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(art)
+	var question := UiKit.label("用一次返聘回来接着干？", 16, "strong")
+	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(question)
+	var note := UiKit.label(tr("回到一半生命，%d 秒无敌，身边的怪会被震开。还剩 %d 次返聘，每局最多用一次。") \
+		% [roundi(Game.REVIVE_INVULN), left], 12, "muted")
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.custom_minimum_size.x = dialog.custom_minimum_size.x - 36.0
+	column.add_child(note)
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons.add_theme_constant_override("separation", 10)
+	column.add_child(buttons)
+	# Ignored for PICK_DELAY_MS, like the level-up cards: a tap meant for dodging as the player
+	# died mustn't decide for them.
+	var home := UiKit.secondary_button("下班", func() -> void:
+		if Time.get_ticks_msec() >= _accept_picks_at:
+			game.decline_revive(), 46.0, 15)
+	home.custom_minimum_size.x = 110.0
+	buttons.add_child(home)
+	var rehire := UiKit.primary_button("返聘", func() -> void:
+		if Time.get_ticks_msec() >= _accept_picks_at:
+			game.accept_revive(), 46.0, 17)
+	rehire.custom_minimum_size.x = 150.0
+	buttons.add_child(rehire)
+	_pop_in(dialog, 0.0)
+	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
+	_fit_to_screen(_revive_holder)
+	_focus(rehire)
+
+
 # --- Pause ---------------------------------------------------------------------------------
 
 func _show_pause() -> void:
@@ -2001,6 +2129,7 @@ func _show_pause() -> void:
 		["拾取", str(roundi(player.pickup_radius))],
 		["护甲 · 回血", "%s · %s/s" % [Upgrades._amount_text(player.armor), Upgrades._amount_text(player.regen)]],
 		["运气", str(roundi(player.luck))],
+		["返聘（本局已用）" if game.revived else "返聘", str(Progress.revives_left())],
 	]:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 0)
