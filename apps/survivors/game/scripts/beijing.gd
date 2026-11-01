@@ -28,13 +28,12 @@ const BOSS_SWAPS := {
 }
 ## The regular enemies, redrawn for Beijing (.36; Game.spawn_enemy swaps them in): 盯盯消息, 小需求,
 ## 日报, 拉个群, 已读不回, KPI, 流量洪峰, each as strong as the one it replaces.
-const MOB_SWAPS := {
-	"ping": "dingding", "bug": "small_req", "mail": "daily_report", "meeting": "group_chat",
-	"ghost": "read_no_reply", "techdebt": "kpi", "server": "traffic_flood",
-}
+## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
+## bosses are the map's own; .36-.40 swapped the seven regular enemies and the rings for local
+## ones, whose types stay in Spawner.ENEMY_TYPES unused).
+const MOB_SWAPS := {}
 ## The Bug outbreak is 西二旗's rush hour here.
-const RING_SWAPS := {"bug": {"type": "commuter", "text": "西二旗早高峰！"},
-	"ping": {"type": "dingding", "text": "盯盯轰炸！"}, "ghost": {"type": "read_no_reply", "text": "已读不回合围！"}}
+const RING_SWAPS := {}
 const FINALE_LINE := "最后的考验：年会讲话 + 百模大战"
 ## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 末位淘汰 (a ring closing on
 ## you) and 沙尘暴 (a wind blowing everyone east).

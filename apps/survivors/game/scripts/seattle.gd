@@ -29,13 +29,12 @@ const BOSS_SWAPS := {
 }
 ## The regular enemies, redrawn for Seattle (.36; Game.spawn_enemy swaps them in): @here, Sev-3
 ## 工单, CR 请求, 1:1, 半夜 Page, 六页纸, AWS 账单, each as strong as the one it replaces.
-const MOB_SWAPS := {
-	"ping": "at_here", "bug": "sev3_ticket", "mail": "code_review", "meeting": "one_on_one",
-	"ghost": "night_page", "techdebt": "six_pager", "server": "cloud_bill",
-}
+## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
+## bosses are the map's own; .36-.40 swapped the seven regular enemies and the rings for local
+## ones, whose types stay in Spawner.ENEMY_TYPES unused).
+const MOB_SWAPS := {}
 ## The Bug outbreak is a same-day delivery here: a ring of parcels.
-const RING_SWAPS := {"bug": {"type": "parcel", "text": "Prime 当日达！包裹把你围住了"},
-	"ping": {"type": "at_here", "text": "@here 轰炸！"}, "ghost": {"type": "night_page", "text": "半夜 Page 合围！"}}
+const RING_SWAPS := {}
 const FINALE_LINE := "最后的考验：全员大会 + Copilot"
 ## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 节俭 (Frugality, it hoovers
 ## up the stars lying round and keeps them until it is down) and 下雨 (puddles that slow everyone).

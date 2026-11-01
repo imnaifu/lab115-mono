@@ -33,13 +33,12 @@ const BOSS_SWAPS := {
 }
 ## The regular enemies, redrawn for London (Game.spawn_enemy swaps them in): 鸽子, 茶包, 签证材料,
 ## Pub 社交局, 伦敦塔幽灵, 合规流程, 双层巴士, each as strong as the one it replaces.
-const MOB_SWAPS := {
-	"ping": "pigeon", "bug": "teabag", "mail": "visa_form", "meeting": "pub_invite",
-	"ghost": "tower_ghost", "techdebt": "compliance", "server": "double_decker",
-}
+## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
+## bosses are the map's own; .36-.40 swapped the seven regular enemies and the rings for local
+## ones, whose types stay in Spawner.ENEMY_TYPES unused).
+const MOB_SWAPS := {}
 ## The Bug outbreak is a queue here: a ring of patient Britons.
-const RING_SWAPS := {"bug": {"type": "queue_brit", "text": "排队！英国人把你围成了一圈"},
-	"ping": {"type": "pigeon", "text": "鸽子群来了！"}, "ghost": {"type": "tower_ghost", "text": "伦敦塔幽灵合围！"}}
+const RING_SWAPS := {}
 const FINALE_LINE := "最后的考验：老板递司康 + Cookie 弹窗"
 ## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 监控探头 (a camera beam sweeps
 ## round it; stay in it a moment and it snaps you) and 伦敦大雾 (you only see round yourself, and

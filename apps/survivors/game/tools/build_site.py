@@ -124,19 +124,18 @@ def stamps_section(data: dict) -> str:
 def bestiary_section(data: dict) -> str:
     # One tab a map: its crowd and its bosses (the bestiary's groups come in pairs).
     groups = data["enemy_groups"]
+    crowd, boss_groups = groups[0], groups[1:]
+    mobs = "".join(_mob_card(enemy) for enemy in crowd["enemies"])
     tabs, panels = [], []
-    for index in range(0, len(groups), 2):
-        crowd, bosses = groups[index], groups[index + 1]
-        name = crowd["name"].replace("小怪", "")
-        tabs.append(f'<button class="tab" data-tab="{index // 2}">{esc(name)}</button>')
-        mobs = "".join(_mob_card(enemy) for enemy in crowd["enemies"])
+    for index, bosses in enumerate(boss_groups):
+        name = bosses["name"].replace(" boss", "")
+        tabs.append(f'<button class="tab" data-tab="{index}">{esc(name)}</button>')
         elites = "".join(_boss_card(enemy) for enemy in bosses["enemies"])
-        panels.append(f'<div class="panel" data-panel="{index // 2}"><h3 class="sub">小怪</h3><div class="grid">{mobs}</div>'
-                      f'<h3 class="sub">boss</h3><div class="grid">{elites}</div></div>')
+        panels.append(f'<div class="panel" data-panel="{index}"><div class="grid">{elites}</div></div>')
     affixes = "".join(f'<li><b>{esc(a["name"])}</b>：{esc(a["note"])}</li>' for a in data["affixes"])
     total = sum(len(group["enemies"]) for group in groups)
-    return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪各地图一一对应、数值一样，只是换了本地的样子；boss 每局打乱出场顺序（强度跟着出场时间走），还会随机多会一两招、带上词条。",
-                   f'<div class="tabs">{"".join(tabs)}</div>{"".join(panels)}'
+    return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪每张地图都一样；boss 是每张地图自己的，每局打乱出场顺序（强度跟着出场时间走），还会随机多会一两招、带上词条。",
+                   f'<h3 class="sub">小怪</h3><div class="grid">{mobs}</div><h3 class="sub">boss</h3><div class="tabs">{"".join(tabs)}</div>{"".join(panels)}'
                    f'<h3 class="sub">boss 词条</h3><ul class="affixes">{affixes}</ul>'
                    '<p class="muted">带词条的 boss 掉的年终奖更容易开出绩效 A、S。</p>')
 

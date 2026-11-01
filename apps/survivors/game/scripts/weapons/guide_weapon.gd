@@ -10,6 +10,10 @@ extends Weapon
 ## 更多网格线 adds one more line each way, 更粗更久 makes every line wider, longer-lasting and
 ## harder-hitting. A new set always replaces the last, so lasting longer only fills the gap
 ## until the next set (from 2 levels of 更粗更久 the lines are always up) and never stacks.
+##
+## A set lives at most one cycle (the cooldown, sped up as it is) and fades in and out, so the next
+## takes over as the last has faded (.41, the user's report: a set that outlived the cycle was
+## still at full strength when the next one replaced it, a flash every two seconds).
 
 ## 2.0, down from 2.4, so the lines are up three quarters of the time: data scientist bots ended
 ## their first three minutes anywhere from level 5 to 11, one at a third of its health.
@@ -24,8 +28,14 @@ const BASE_WIDTH := 8.0
 const WIDTH_PER_THICKER := 4.0
 const BASE_SECONDS := 1.5
 const SECONDS_PER_THICKER := 0.4
+## A set fades in over FADE_IN and out over its last FADE_OUT seconds.
+const FADE_IN := 0.15
+const FADE_OUT := 0.3
 ## How far from the player each line of a set runs, the first through the player.
-const OFFSETS := [0.0, 40.0, -40.0, 80.0, -80.0]
+## Where each axis's lines go, out from the player. 更多网格线 adds one line a time, across then down
+## in turn, three each way at most (.41, the user's call: it added one each way a time, up to five
+## each way, and made the data scientist the strongest job).
+const OFFSETS := [0.0, 40.0, -40.0]
 ## The data scientist's purple.
 const COLOR := Color("8c7cf0")
 
@@ -35,6 +45,7 @@ class Guide:
 	## The line's y if horizontal, its x if vertical.
 	var at := 0.0
 	var life := 0.0
+	var age := 0.0
 	var tick_left := 0.0
 
 
@@ -45,7 +56,7 @@ var _floor: Node2D
 ## The lines with `more` upgrades to 更多网格线 and `thicker` to 更粗更久 (the cards' numbers too):
 ## `count` lines each way.
 static func branch_stats(more: int, thicker: int) -> Dictionary:
-	return {"count": 1 + more, "damage": BASE_DAMAGE + DAMAGE_PER_THICKER * thicker,
+	return {"rows": 1 + ceili(more / 2.0), "columns": 1 + floori(more / 2.0), "damage": BASE_DAMAGE + DAMAGE_PER_THICKER * thicker,
 		"size": (BASE_WIDTH + WIDTH_PER_THICKER * thicker) / BASE_WIDTH, "duration": BASE_SECONDS + SECONDS_PER_THICKER * thicker}
 
 
@@ -74,13 +85,14 @@ func fire() -> bool:
 	# ticked on whatever stood next to the player, so nothing got close (bots as the data
 	# scientist lasted the full 10 minutes 28% of the time, 8% with this).
 	_guides.clear()
-	for i in stats["count"]:
-		for horizontal in [true, false]:
+	for horizontal in [true, false]:
+		for i in mini(stats["rows"] if horizontal else stats["columns"], OFFSETS.size()):
 			var guide := Guide.new()
 			guide.horizontal = horizontal
 			guide.at = (player.position.y if horizontal else player.position.x) + OFFSETS[i]
-			# Evolved, a set lasts until the next replaces it.
-			guide.life = INF if evolved else stats["duration"]
+			# Never past the next set (evolved, it lasts until then).
+			var cycle := COOLDOWN * player.cooldown_scale
+			guide.life = cycle if evolved else minf(stats["duration"], cycle)
 			_guides.append(guide)
 	return true
 
@@ -94,6 +106,7 @@ func _process(delta: float) -> void:
 	for i in range(_guides.size() - 1, -1, -1):
 		var guide := _guides[i]
 		guide.life -= delta
+		guide.age += delta
 		if guide.life <= 0.0:
 			_guides.remove_at(i)
 			continue
@@ -109,14 +122,14 @@ func _process(delta: float) -> void:
 
 
 ## Each guide across the visible screen: a soft band as wide as it hits, with a crisp line down
-## its middle, fading out at the end.
+## its middle, fading in at the start and out at the end.
 func _draw_guides() -> void:
 	var stats := branch_stats(branch_a, branch_b)
 	var width: float = BASE_WIDTH * stats["size"]
 	var half := game.view_half() + Vector2(20.0, 20.0)
 	var centre := player.position
 	for guide in _guides:
-		var alpha := clampf(guide.life * 4.0, 0.0, 1.0)
+		var alpha := clampf(minf(guide.age / FADE_IN, guide.life / FADE_OUT), 0.0, 1.0)
 		var from := Vector2(centre.x - half.x, guide.at) if guide.horizontal else Vector2(guide.at, centre.y - half.y)
 		var to := Vector2(centre.x + half.x, guide.at) if guide.horizontal else Vector2(guide.at, centre.y + half.y)
 		_floor.draw_line(from, to, Color(COLOR, 0.22 * alpha), width)

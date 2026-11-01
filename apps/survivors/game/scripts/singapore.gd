@@ -29,13 +29,12 @@ const BOSS_SWAPS := {
 }
 ## The regular enemies, redrawn for Singapore (Game.spawn_enemy swaps them in): 蚊子, 壁虎, Grub
 ## 外卖单, 跨时区对齐会, 中元节饿鬼, COE 拥车证, 榴莲, each as strong as the one it replaces.
-const MOB_SWAPS := {
-	"ping": "mosquito", "bug": "gecko", "mail": "grub_order", "meeting": "align_call",
-	"ghost": "hungry_ghost", "techdebt": "coe", "server": "durian",
-}
+## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
+## bosses are the map's own; .36-.40 swapped the seven regular enemies and the rings for local
+## ones, whose types stay in Spawner.ENEMY_TYPES unused).
+const MOB_SWAPS := {}
 ## The Bug outbreak is the hawker centre at lunch: every seat round you reserved with tissues.
-const RING_SWAPS := {"bug": {"type": "tissue_chope", "text": "纸巾占座！一圈座位全被占了"},
-	"ping": {"type": "mosquito", "text": "蚊子群来了！"}, "ghost": {"type": "hungry_ghost", "text": "中元节饿鬼合围！"}}
+const RING_SWAPS := {}
 const FINALE_LINE := "最后的考验：老板画咖椰吐司 + 出海公司"
 ## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 罚款执法官 (a red light over
 ## the player: still walking when it's lit gets you fined) and 热浪 (out in the heat you lose

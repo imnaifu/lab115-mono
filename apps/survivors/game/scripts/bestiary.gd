@@ -8,21 +8,17 @@ extends RefCounted
 ## A clone or a piece (AI 幻觉, 小屎山 / 小中台 / 微服务, a 甩锅 copy) goes with the boss it comes from,
 ## not on its own.
 
-## By map from .36, when each map got its own crowd and the three bosses they all shared.
+## The crowd, the same everywhere (.41; .36-.40 each map had its own), then each map's bosses.
 const GROUPS := [
-	{"name": "硅谷小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server"]},
+	{"name": "小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server"]},
 	{"name": "硅谷 boss", "ids": ["techdebt_elite", "server_elite", "layoff", "deadline", "ai", "investor",
 		"spaghetti", "scope_change", "incident", "pie_boss", "rto"]},
-	{"name": "西雅图小怪", "ids": ["at_here", "sev3_ticket", "code_review", "one_on_one", "night_page", "six_pager", "cloud_bill", "parcel"]},
 	{"name": "西雅图 boss", "ids": ["day1", "us_east_1", "pip", "prime_day", "copilot", "bar_raiser",
 		"monolith", "reorg", "meeting_spam", "all_hands", "frugality"]},
-	{"name": "伦敦小怪", "ids": ["pigeon", "teabag", "visa_form", "pub_invite", "tower_ghost", "compliance", "double_decker", "queue_brit"]},
 	{"name": "伦敦 boss", "ids": ["tea_time", "signal_failure", "redundancy", "pub_time", "cookie_popup", "gdpr",
 		"committee", "timezone_call", "eu_fine", "scone_boss", "cctv"]},
-	{"name": "新加坡小怪", "ids": ["mosquito", "gecko", "grub_order", "align_call", "hungry_ghost", "coe", "durian", "tissue_chope"]},
 	{"name": "新加坡 boss", "ids": ["rent", "thunderstorm", "apac_cut", "ep_expiry", "going_overseas", "family_office",
 		"forms", "parachute_boss", "fine_notice", "kaya_boss", "fine_officer"]},
-	{"name": "北京小怪", "ids": ["dingding", "small_req", "daily_report", "group_chat", "read_no_reply", "kpi", "traffic_flood", "commuter"]},
 	{"name": "北京 boss", "ids": ["weekly_report", "sale_618", "midlife", "fubao", "baimo", "juanwang",
 		"zhongtai", "inspection", "ppt", "annual_party", "elimination"]},
 ]

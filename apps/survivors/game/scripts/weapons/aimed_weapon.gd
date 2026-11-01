@@ -7,9 +7,9 @@ extends Weapon
 ## key at each enemy on screen instead, nearest first.
 ##
 ## The programmer's own weapon, so it levels up along two directions (Upgrades.BRANCHES): 更多
-## adds a press to every burst, 更大 makes each key bigger and harder-hitting. It starts at two
-## presses a burst, a burst every 0.48 s: a key no longer one-shots a Bug, and a key a second
-## left the programmer far behind the other jobs.
+## adds a press to every burst, 更大 makes each key bigger and harder-hitting. It starts at one
+## press every 0.3 s (.41; .39 started at two presses every 0.48 s, the user asked why it opened
+## with two): a key no longer one-shots a Bug, and a key a second left the programmer far behind.
 ##
 ## Every key hits one enemy and pushes nothing (.39, the user's call for every job's own weapon:
 ## no piercing, knockback or stun, so the jobs differ only in how they deal damage). 更大 added a
@@ -23,7 +23,8 @@ const SIZE_GROWTH := 0.25
 const SPEED := 230.0
 ## Kept short so most kills, and their stars, land within walking distance.
 const RANGE := 200.0
-const BURST_GAP := 0.08
+## A full burst (five presses) is over before the next one starts.
+const BURST_GAP := 0.05
 const SIZE := 14.0
 const HIT_RADIUS := 5.0
 ## The most keys one evolved round sends.
@@ -35,11 +36,11 @@ var _burst_timer := 0.0
 
 ## What the weapon does with `more` upgrades to 更多 and `bigger` to 更大 (the cards' numbers too).
 static func branch_stats(more: int, bigger: int) -> Dictionary:
-	return {"count": 2 + more, "damage": BASE_DAMAGE + DAMAGE_PER_SIZE * bigger, "size": 1.0 + SIZE_GROWTH * bigger}
+	return {"count": 1 + more, "damage": BASE_DAMAGE + DAMAGE_PER_SIZE * bigger, "size": 1.0 + SIZE_GROWTH * bigger}
 
 
 func cooldown() -> float:
-	return 0.48
+	return 0.3
 
 
 func _process(delta: float) -> void:
