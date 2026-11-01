@@ -14,19 +14,13 @@ extends RefCounted
 
 const NAME := "新加坡"
 ## 985: nine to eight, five days, and the late calls with headquarters on top. Between 西雅图's
-## 975 and 北京's 996 (Maps.ORDER), with 深圳 and 班加罗尔 still to come between it and 北京.
+## 975 and 北京's 996 (Maps.ORDER), with 班加罗尔 still to come between it and 北京.
 const HOURS := "985"
 const DIFFICULTY := {"hp": 1.19, "damage": 1.13, "spawn": 1.09}
 ## The American giants' Asia-Pacific offices' levels: L1, L2…
 const RANK_PREFIX := "L"
-## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
-## replaces; Spawner._plan_events): 房租, 午后雷暴, 亚太区优化, EP 到期, 出海公司, 家族办公室, 表格
-## (falling apart into 小表格), 空降老板, 罚款通知, 老板画咖椰吐司.
-const BOSS_SWAPS := {
-	"techdebt_elite": "rent", "layoff": "apac_cut", "deadline": "ep_expiry", "investor": "family_office",
-	"ai": "going_overseas", "scope_change": "parachute_boss", "incident": "fine_notice",
-	"server_elite": "thunderstorm", "spaghetti": "forms", "pie_boss": "kaya_boss",
-}
+## Its four bosses, at 2:00, 4:00, 6:00 and 8:00 (.45, BossKits): 表格（定点）、亚太区优化（远程）、空降老板（近战）、老板画咖椰吐司（定点 + 远程）.
+const BOSSES := ["forms", "apac_cut", "parachute_boss", "kaya_boss"]
 ## The regular enemies, redrawn for Singapore (Game.spawn_enemy swaps them in): 蚊子, 壁虎, Grub
 ## 外卖单, 跨时区对齐会, 中元节饿鬼, COE 拥车证, 榴莲, each as strong as the one it replaces.
 ## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
@@ -35,11 +29,7 @@ const BOSS_SWAPS := {
 const MOB_SWAPS := {}
 ## The Bug outbreak is the hawker centre at lunch: every seat round you reserved with tissues.
 const RING_SWAPS := {}
-const FINALE_LINE := "最后的考验：老板画咖椰吐司 + 出海公司"
-## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 罚款执法官 (a red light over
-## the player: still walking when it's lit gets you fined) and 热浪 (out in the heat you lose
-## health; cool air-conditioned spots appear round you).
-const GUEST_BOSS := {"type": "fine_officer", "at": 330.0}
+## The map's weather (MapEvents): 热浪 (out in the heat you lose health; cool air-conditioned spots appear round you).
 const MAP_EVENT := {"id": "heat", "at": 290.0, "seconds": 20.0, "text": "热浪来了！外面待着会掉血，躲进冷气里",
 	"name": "热浪", "hint": "躲进蓝色冷气圈，外面会掉血"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).

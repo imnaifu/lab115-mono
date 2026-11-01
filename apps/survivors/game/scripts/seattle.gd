@@ -18,15 +18,8 @@ const HOURS := "975"
 const DIFFICULTY := {"hp": 1.15, "damage": 1.1, "spawn": 1.07}
 ## Amazin's levels, like Silicon Valley's: L1, L2…
 const RANK_PREFIX := "L"
-## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
-## replaces; Spawner._plan_events): Day 1, PIP, Prime Day, Bar Raiser, Copilot, 部门重组, 连环会,
-## and from .36 the three every map used to share too: us-east-1 宕机, 巨石应用 (falling apart into
-## 微服务), 全员大会.
-const BOSS_SWAPS := {
-	"techdebt_elite": "day1", "layoff": "pip", "deadline": "prime_day", "investor": "bar_raiser",
-	"ai": "copilot", "scope_change": "reorg", "incident": "meeting_spam",
-	"server_elite": "us_east_1", "spaghetti": "monolith", "pie_boss": "all_hands",
-}
+## Its four bosses, at 2:00, 4:00, 6:00 and 8:00 (.45, BossKits): 巨石应用（近战）、连环会（远程）、PIP 绩效改进（定点）、全员大会（近战 + 远程）.
+const BOSSES := ["monolith", "meeting_spam", "pip", "all_hands"]
 ## The regular enemies, redrawn for Seattle (.36; Game.spawn_enemy swaps them in): @here, Sev-3
 ## 工单, CR 请求, 1:1, 半夜 Page, 六页纸, AWS 账单, each as strong as the one it replaces.
 ## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
@@ -35,10 +28,7 @@ const BOSS_SWAPS := {
 const MOB_SWAPS := {}
 ## The Bug outbreak is a same-day delivery here: a ring of parcels.
 const RING_SWAPS := {}
-const FINALE_LINE := "最后的考验：全员大会 + Copilot"
-## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 节俭 (Frugality, it hoovers
-## up the stars lying round and keeps them until it is down) and 下雨 (puddles that slow everyone).
-const GUEST_BOSS := {"type": "frugality", "at": 330.0}
+## The map's weather (MapEvents): 下雨 (puddles that slow everyone).
 const MAP_EVENT := {"id": "rain", "at": 285.0, "seconds": 20.0, "text": "西雅图又下雨了！水坑里走不快",
 	"name": "下雨", "hint": "水坑里走不快，把怪引进去"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).

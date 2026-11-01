@@ -22,15 +22,8 @@ const HOURS := "955"
 const DIFFICULTY := {"hp": 1.0, "damage": 1.0, "spawn": 1.0}
 ## The civil service's grades: G1, G2…
 const RANK_PREFIX := "G"
-## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
-## replaces; Spawner._plan_events): 下午茶, 冗余通知, 周五 Pub 时间, GDPR 合规官, Cookie 弹窗,
-## 跨时区会议, 欧盟罚单, and the three every map has its own of since .36: 地铁信号故障, 委员会
-## (falling apart into 小委员会), 老板递司康.
-const BOSS_SWAPS := {
-	"techdebt_elite": "tea_time", "layoff": "redundancy", "deadline": "pub_time", "investor": "gdpr",
-	"ai": "cookie_popup", "scope_change": "timezone_call", "incident": "eu_fine",
-	"server_elite": "signal_failure", "spaghetti": "committee", "pie_boss": "scone_boss",
-}
+## Its four bosses, at 2:00, 4:00, 6:00 and 8:00 (.45, BossKits): 委员会（定点）、冗余通知（近战）、GDPR 合规官（远程）、老板递司康（近战 + 定点）.
+const BOSSES := ["committee", "redundancy", "gdpr", "scone_boss"]
 ## The regular enemies, redrawn for London (Game.spawn_enemy swaps them in): 鸽子, 茶包, 签证材料,
 ## Pub 社交局, 伦敦塔幽灵, 合规流程, 双层巴士, each as strong as the one it replaces.
 ## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
@@ -39,11 +32,7 @@ const BOSS_SWAPS := {
 const MOB_SWAPS := {}
 ## The Bug outbreak is a queue here: a ring of patient Britons.
 const RING_SWAPS := {}
-const FINALE_LINE := "最后的考验：老板递司康 + Cookie 弹窗"
-## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 监控探头 (a camera beam sweeps
-## round it; stay in it a moment and it snaps you) and 伦敦大雾 (you only see round yourself, and
-## the crowd slows down in it).
-const GUEST_BOSS := {"type": "cctv", "at": 330.0}
+## The map's weather (MapEvents): 伦敦大雾 (you only see round yourself, and the crowd slows down in it).
 const MAP_EVENT := {"id": "fog", "at": 280.0, "seconds": 20.0, "text": "伦敦起大雾了！看不远，怪也走得慢",
 	"name": "伦敦大雾", "hint": "只看得清身边，怪也走得慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).

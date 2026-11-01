@@ -17,15 +17,8 @@ const HOURS := "996"
 const DIFFICULTY := {"hp": 1.3, "damage": 1.2, "spawn": 1.15}
 ## Job grades Alibaba-style, P1, P2…
 const RANK_PREFIX := "P"
-## Local bosses in place of Silicon Valley's, slot for slot (each as strong as the one it
-## replaces; Spawner._plan_events): 周报, 35 岁危机, 福报 996, 卷王, 百模大战, 领导视察, 述职 PPT,
-## and from .36 the three every map used to share too: 618 大促, 大中台 (falling apart into 小中台),
-## 年会讲话.
-const BOSS_SWAPS := {
-	"techdebt_elite": "weekly_report", "layoff": "midlife", "deadline": "fubao", "investor": "juanwang",
-	"ai": "baimo", "scope_change": "inspection", "incident": "ppt",
-	"server_elite": "sale_618", "spaghetti": "zhongtai", "pie_boss": "annual_party",
-}
+## Its four bosses, at 2:00, 4:00, 6:00 and 8:00 (.45, BossKits): 卷王（远程）、述职 PPT（定点）、末位淘汰（近战）、年会讲话（近战 + 定点）.
+const BOSSES := ["juanwang", "ppt", "elimination", "annual_party"]
 ## The regular enemies, redrawn for Beijing (.36; Game.spawn_enemy swaps them in): 盯盯消息, 小需求,
 ## 日报, 拉个群, 已读不回, KPI, 流量洪峰, each as strong as the one it replaces.
 ## The crowd and its rings are Silicon Valley's on every map (.41, the user's call: only the
@@ -34,10 +27,7 @@ const BOSS_SWAPS := {
 const MOB_SWAPS := {}
 ## The Bug outbreak is 西二旗's rush hour here.
 const RING_SWAPS := {}
-const FINALE_LINE := "最后的考验：年会讲话 + 百模大战"
-## The map's own guest boss and event (BayArea.GUEST_BOSS says how): 末位淘汰 (a ring closing on
-## you) and 沙尘暴 (a wind blowing everyone east).
-const GUEST_BOSS := {"type": "elimination", "at": 330.0}
+## The map's weather (MapEvents): 沙尘暴 (a wind blowing everyone east).
 const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "沙尘暴来了！风往东刮，站稳了",
 	"name": "沙尘暴", "hint": "风往东刮，逆风走慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).

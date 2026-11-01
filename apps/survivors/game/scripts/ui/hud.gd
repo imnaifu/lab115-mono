@@ -33,31 +33,6 @@ const NEXT_BOSS_WARNING := 20.0
 ## A first few runs show how to move until the player does, after this long standing still.
 const MOVE_HINT_AFTER := 2.0
 const MOVE_HINT_RUNS := 3
-## How a boss move is dodged, shown at the bottom the first time it comes up in a run.
-const BOSS_MOVE_HINTS := {
-	"charge": "红色通道要冲过来了，横着躲开",
-	"summon": "它在召唤小怪，别被围住",
-	"blink": "红圈是它要闪现到的地方，别站进去",
-	"volley": "蓄力完会朝四周发弹，躲到楼后面",
-	"lob": "地上的阴影是饼的落点，快离开",
-	"quake": "红圈填满就会炸开，先退到圈外",
-	"countdown": "头顶倒计时归零前没打死，它就暴走",
-	"clones": "半透明的是幻觉分身，一碰就碎",
-	"aura": "金圈里的小怪减伤一半，先打中间那个",
-	"pull": "箭头往里吸的时候逆着走，别被拖到它身边",
-	"squeeze": "脚下的红圈收紧之前走出去",
-	"hoard": "金圈里的星星会被它吸走，先去捡，打掉它全吐出来",
-	"sweep": "镜头扫过来时逆着它横穿过去，站着不动会被拍到",
-	"redlight": "头顶亮黄灯就松手，红灯时动了要罚款",
-}
-## What each boss affix (Enemy.AFFIXES) does, for the 图鉴.
-const AFFIX_NOTES := {
-	"996": "移速 +30%，出招更勤",
-	"thick": "血量 +50%，个头更大",
-	"angry": "掉到一半血以下变红，更快、出招更勤",
-	"heal": "3 秒没挨打就开始回血，别停手",
-	"blame": "被打死时甩出 3 个小号的自己",
-}
 const WARNING_SECONDS := 3.5
 ## The year-end bonus chest rocks CHEST_SHAKES times (leaning CHEST_LEAN radians, a little more
 ## each swing) over about CHEST_SHAKE_SECONDS before it opens. By rating (绩效 B / A / S): the
@@ -77,8 +52,9 @@ const LUCKY_SALARIES := {666: "六六六！", 888: "发发发！"}
 ## Space kept around a screen that has to shrink to fit.
 const FIT_MARGIN := 8.0
 const RANKING_ROWS := 6
-## How the last hit landed (Telemetry.last_hurt_how), for the result's 凶手 line.
-const KILL_CAUSES := {"charge": "冲锋撞死", "bullet": "告警弹命中", "pie": "被饼砸中", "quake": "被宕机震飞", "sweep": "被监控抓拍", "redlight": "被罚款罚倒了", "heat": "被热晕了"}
+## How the last hit landed (Telemetry.last_hurt_how), for the result's 凶手 line when the killer has
+## no line of its own to say (a boss says its BossKits "kill" line instead).
+const KILL_CAUSES := {"charge": "被冲过来撞倒", "bullet": "被子弹命中", "heat": "被热晕了"}
 ## Settings-screen hint for each Tilt.state().
 const TILT_HINTS := {
 	"asking": "请在弹窗里允许访问动作与方向",
@@ -733,7 +709,6 @@ func _update_boss_bar() -> void:
 	if boss == null:
 		return
 	_boss_progress.custom_minimum_size.x = BOSS_BAR_WIDTH_PORTRAIT if _is_portrait() else BOSS_BAR_WIDTH
-	# With its affixes, so the bar says what this one does differently: 裁员通知 · 996.
 	_boss_name.text = boss.display_name()
 	_boss_more.text = "+%d" % others if others > 0 else ""
 	_boss_more.visible = others > 0
@@ -926,10 +901,10 @@ func _bottom_pill(color: Color, art: String, text: String) -> Control:
 
 func _on_boss_move(ability: String) -> void:
 	Sound.boss_move(ability)
-	if _warned.has(ability) or not BOSS_MOVE_HINTS.has(ability):
+	if _warned.has(ability) or not BossKits.HINTS.has(ability):
 		return
 	_warned[ability] = true
-	_warning_label.text = BOSS_MOVE_HINTS[ability]
+	_warning_label.text = BossKits.HINTS[ability]
 	_warning.offset_left = 0
 	_warning.offset_right = 0
 	_warning.visible = true
@@ -1114,8 +1089,7 @@ func _test_buttons() -> Control:
 	flow.add_theme_constant_override("v_separation", 6)
 	var actions := [
 		["天气", game.test_weather],
-		["特邀 boss", game.spawner.bring_boss.bind(true)],
-		["下个 boss", game.spawner.bring_boss.bind(false)],
+		["下个 boss", game.spawner.bring_boss],
 		["升一级", game.test_level_up],
 	]
 	for entry: Array in actions:
@@ -1176,8 +1150,8 @@ func _open_departures() -> void:
 
 
 ## The boarding pass for the city picked on the departures board: the leg of the route into it
-## (from the city before it), its working week, grade and difficulty, its weather and guest boss,
-## its ten bosses, how far along the player is there, and 登机 if it is open (or what opens it, or
+## (from the city before it), its working week, grade and difficulty, its weather, its four
+## bosses, how far along the player is there, and 登机 if it is open (or what opens it, or
 ## that it is still to come).
 func _show_boarding_pass(id: String) -> void:
 	if not is_instance_valid(_world_card):
@@ -1236,10 +1210,8 @@ func _show_boarding_pass(id: String) -> void:
 	facts.add_child(_pass_fact("", "难度", tr("基准") if difficulty["hp"] <= 1.0 else tr("生命 ×%s · 伤害 ×%s") % [difficulty["hp"], difficulty["damage"]]))
 	var map_event: Dictionary = map.MAP_EVENT
 	facts.add_child(_pass_fact("event_" + map_event["id"], "天气", tr(map_event["name"])))
-	var guest: Dictionary = Spawner.ENEMY_TYPES[map.GUEST_BOSS["type"]]
-	facts.add_child(_pass_fact(guest["art"], "特邀嘉宾", tr(guest["name"])))
 
-	# The ten bosses it brings, each in its slot's place on the schedule.
+	# The four bosses it brings, in the order they come.
 	var bosses := HFlowContainer.new()
 	bosses.add_theme_constant_override("h_separation", 2)
 	bosses.add_theme_constant_override("v_separation", 2)
@@ -1248,12 +1220,7 @@ func _show_boarding_pass(id: String) -> void:
 	var caption := UiKit.label("boss", 10, "strong", Art.INK_MUTED)
 	caption.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bosses.add_child(caption)
-	var shown := []
-	for event: Dictionary in Spawner.EVENTS:
-		if event["kind"] != "elite" or shown.has(event["type"]):
-			continue
-		shown.append(event["type"])
-		var boss: String = map.BOSS_SWAPS.get(event["type"], event["type"])
+	for boss: String in map.BOSSES:
 		bosses.add_child(UiKit.icon(Spawner.ENEMY_TYPES[boss]["art"], 20))
 
 	var progress := tr("打卡 %d/%d") % [Maps.stamps_on(id), map.STAMPS.size()]
@@ -2505,8 +2472,11 @@ func _culprit_row(victory: bool) -> Control:
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(name_label)
 	if not victory:
+		# A boss has the last word (BossKits): 「项目延期，责任在你」.
+		var last_word: String = BossKits.KITS[killer]["lines"].get("kill", "") if BossKits.has(killer) else ""
 		var how := game.telemetry.last_hurt_how
-		var cause: String = KILL_CAUSES.get(how, "被 boss 撞倒" if data.get("elite", false) else "被围殴")
+		var cause: String = tr("「%s」") % tr(last_word) if last_word != "" \
+			else tr(KILL_CAUSES.get(how, "被 boss 撞倒" if data.get("elite", false) else "被围殴"))
 		row.add_child(UiKit.label(cause, 12, "strong", Art.BOSS_RED))
 	return row_panel
 
@@ -2866,10 +2836,10 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 
 
 ## The 怪物图鉴: each group's enemies, a silhouette until met; then what it is, its numbers (the
-## regular ones; a boss's depend on when it comes), its move and how to dodge it, the maps it
-## turns up on, and how many have been killed. Then the boss affixes, each once met.
+## regular ones; a boss's depend on when it comes), its attacks and how to dodge them, the maps it
+## turns up on, and how many have been killed.
 func _fill_bestiary(body: VBoxContainer, portrait: bool) -> void:
-	body.add_child(_collection_note(tr("遇到过的怪会收进图鉴；boss 每局可能多带招式和词条")))
+	body.add_child(_collection_note(tr("遇到过的怪会收进图鉴；每张图 4 个 boss，招式固定")))
 	for group: Dictionary in Bestiary.GROUPS:
 		body.add_child(UiKit.label(group["name"], 13, "strong", Art.INK_MUTED))
 		var grid := GridContainer.new()
@@ -2884,25 +2854,15 @@ func _fill_bestiary(body: VBoxContainer, portrait: bool) -> void:
 				grid.add_child(_collection_card(data["art"], "？？？", [tr("还没遇到")], false, [], portrait))
 				continue
 			var lines := [tr(Bestiary.NOTES[id])]
-			if data.get("elite", false):
-				var move: String = data.get("ability", "")
-				lines.append(tr("招式：") + (tr(BOSS_MOVE_HINTS[move]) if BOSS_MOVE_HINTS.has(move) else tr("没有招式，只是血厚")))
+			if BossKits.has(id):
+				# 招式：冲刺（近战）· 红带是它要冲的路线，横着躲开
+				for attack: Dictionary in BossKits.describe(id):
+					lines.append(tr("招式：") + "%s（%s）· %s" % [tr(attack["name"]), tr(attack["kind"]), tr(attack["hint"])])
 				lines.append(tr("出现在：") + "、".join(Bestiary.maps_of(id)))
 			else:
 				lines.append(tr("生命 %d · 速度 %d · 伤害 %d") % [data["hp"], data["speed"], data["damage"]])
 			lines.append(tr("累计击杀 %d") % Bestiary.kills(id))
 			grid.add_child(_collection_card(data["art"], tr(data["name"]), lines, true, [], portrait))
-	body.add_child(UiKit.label("boss 词条", 13, "strong", Art.INK_MUTED))
-	var affixes := GridContainer.new()
-	affixes.columns = 1 if portrait else 2
-	affixes.add_theme_constant_override("h_separation", 8)
-	affixes.add_theme_constant_override("v_separation", 8)
-	affixes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_child(affixes)
-	for affix: String in Enemy.AFFIXES:
-		var met := Bestiary.affix_seen(affix)
-		affixes.add_child(_collection_card("star_gold", tr(Enemy.AFFIXES[affix]) if met else "？？？",
-			[tr(AFFIX_NOTES[affix]) if met else tr("还没遇到")], met, [], portrait))
 
 
 ## The 云存档 page (Cloud), opened from the settings: whether the cloud save is on and synced, this

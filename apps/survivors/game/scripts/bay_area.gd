@@ -22,16 +22,12 @@ const HOURS := "965"
 const DIFFICULTY := {"hp": 1.0, "damage": 1.0, "spawn": 1.0}
 ## The job grades the run's level reads as (Maps.rank_of): Google-style here, L1, L2…
 const RANK_PREFIX := "L"
-## Bosses and enemy rings swapped for local ones (see Beijing); none here, the schedule in
-## Spawner.EVENTS is this map's own. FINALE_LINE "" keeps the finale's own line.
-const BOSS_SWAPS := {}
+## Its four bosses, at 2:00, 4:00, 6:00 and 8:00 (.45, BossKits): Deadline（近战）、主库宕机（定点）、AI 大模型（远程）、老板画饼（定点 + 远程）.
+const BOSSES := ["deadline", "server_elite", "ai", "pie_boss"]
 ## Regular enemies swapped for the map's own (Game.spawn_enemy, .36); 硅谷 keeps the originals.
 const MOB_SWAPS := {}
 const RING_SWAPS := {}
-const FINALE_LINE := ""
-## The map's own (.26): a guest boss with a move no other boss has, on top of the schedule, and an
-## event (MapEvents): 硅谷's are RTO 返岗令 (it pulls you in) and 湾区地震 (debris crashing down).
-const GUEST_BOSS := {"type": "rto", "at": 330.0}
+## The map's weather (MapEvents): 湾区地震 (debris crashing down).
 ## `name` and `hint` stay on screen while it lasts (.34, the user's ask: say what the weather is).
 const MAP_EVENT := {"id": "quake", "at": 270.0, "seconds": 20.0, "text": "湾区地震！小心头顶掉下来的碎块",
 	"name": "湾区地震", "hint": "躲开地上的红圈"}

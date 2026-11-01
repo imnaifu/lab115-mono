@@ -6,8 +6,9 @@ extends RefCounted
 ## by name. (Calling through a script held in a variable costs no more than calling it by name.)
 ##
 ## Maps get harder the longer their working week (each map's HOURS and DIFFICULTY, at the user's
-## call): 硅谷 965 first and easiest, 西雅图 975, 新加坡 985, 北京 996 the hardest; those to come
-## (深圳's 大小周, 班加罗尔's 70h) go in between by their hours, ORDER kept in that order. 伦敦 is the
+## call): 硅谷 965 first and easiest, 西雅图 975, 新加坡 985, 北京 996 the hardest; the one to come
+## (班加罗尔's 70h) goes in between by its hours, ORDER kept in that order. (深圳 was planned too;
+## the user took it off the route in .45.) 伦敦 is the
 ## one exception (.37, the user's call): a 955 week, but second, after 硅谷 and as hard as it, so
 ## 硅谷 stays the first map new players see.
 ## The title screen's departures board (ui/departures.gd; .34–.37 a world map like Kingdom Rush's
@@ -21,11 +22,11 @@ const ORDER := ["sv", "ldn", "sea", "sg", "bj"]
 const OPEN_FROM_START := ["sv", "ldn", "sea", "sg", "bj"]
 ## Cities still to come, listed on the departures board as 即将开放 (WorldMap.CITIES has their
 ## codes, hours and grades).
-const COMING_SOON := ["sz", "blr"]
+const COMING_SOON := ["blr"]
 ## The whole route by working week, easiest first (.38, for the departures board, Departures): the
 ## playable maps (ORDER, 伦敦 second as there) with the cities still to come in the places their
 ## hours will give them.
-const ROUTE := ["sv", "ldn", "sea", "sg", "sz", "blr", "bj"]
+const ROUTE := ["sv", "ldn", "sea", "sg", "blr", "bj"]
 
 static var current: GDScript = BayArea
 static var current_id := "sv"

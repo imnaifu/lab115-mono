@@ -10,8 +10,8 @@ signal run_ended(victory: bool)
 signal announced(text: String)
 ## `salary`: the 工资 this one paid, one of the rating's amounts.
 signal chest_opened(funding_round: Dictionary, salary: int, odds: Array[float])
-## A boss is starting one of its moves (Enemy.ABILITIES); the HUD explains how to dodge it.
-signal boss_move(ability: String)
+## A boss is starting one of its attacks (its form, BossKits.HINTS); the HUD explains how to dodge it.
+signal boss_move(form: String)
 ## The player died holding a 返聘 (Progress.revives_left, `left` of them) they may spend.
 signal revive_offered(left: int)
 
@@ -53,21 +53,12 @@ const EARLY_LEVEL_XP := [3, 7, 13, 20]
 ## Vacuum only drops from level 12), about 4-5 a run.
 const MAGNET_DROP_CHANCE := 0.002
 const MAGNET_FROM_LEVEL := 10
-## An investor killed spills this many extra stars of this value round it: 撤资, the reward
-## for getting through its aura.
-const PULL_OUT_STARS := 8
-const PULL_OUT_STAR_VALUE := 3
-## A hoarder killed spills what it took as stars of about this value, at most this many.
-const HOARD_SPILL_VALUE := 6
-const HOARD_SPILL_MAX := 14
-## An AI's clone appears this far from the player.
-const CLONE_DISTANCE := 110.0
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
 ## 工资 it pays: one of its `salary` amounts at random (the user's lucky numbers, ending in 66 or
 ## 88), kept in the save for 培训 (Training). Since .44 it pays nothing in the run (the user's call:
 ## 年终奖改成给工资; it gave 1 / 3 / 5 free upgrades before), and 绩效 S no longer gives a 返聘
-## (.43's prize, bought in 培训 now). The odds are fixed since .43: neither luck nor the boss's
-## affixes move them. The ids are the data's (Telemetry `chests`) from when these were funding
+## (.43's prize, bought in 培训 now). The odds are fixed since .43: neither luck nor anything about
+## the boss moves them. The ids are the data's (Telemetry `chests`) from when these were funding
 ## rounds (天使轮 / A 轮 / IPO), kept so runs before and after compare.
 const FUNDING_ROUNDS := [
 	{"id": "angel", "name": "绩效 B", "salary": [66, 88, 166, 188, 266, 288], "weight": 86.0},
@@ -124,8 +115,6 @@ var _waiting_chests: Array[int] = []
 var _chests_opened := 0
 ## 工资 this run's year-end bonuses paid (the result screen, Telemetry).
 var salary_earned := 0
-## Investors out this frame, whose auras shield the crowd round them (Enemy "aura").
-var _aura_sources: Array[Enemy] = []
 
 var rng := RandomNumberGenerator.new()
 var player: Player
@@ -311,33 +300,20 @@ func spawn_enemy(type_name: String, at: Vector2) -> Enemy:
 	return enemy
 
 
-## A boss calling minions: `count` of `type_name` in a ring around it, as far as the crowd cap
-## allows.
-func summon_around(boss: Enemy, type_name: String, count: int, radius: float) -> void:
-	for i in mini(count, spawner.max_alive - enemies.size()):
-		spawn_enemy(type_name, boss.position + Vector2.from_angle(TAU * i / count) * radius)
-	Effects.poof(self, boss.position, boss.color)
-
-
-## A boss's bullet (Enemy "volley").
-func fire_bullet(at: Vector2, velocity: Vector2, damage: float, thrower: String) -> void:
+## A boss's bullet (RangedAttack): `how` it lands for the result screen, `turn` for a homing one
+## (radians a second), `seconds` before it runs out.
+func fire_bullet(at: Vector2, velocity: Vector2, damage: float, thrower: String, how := "bullet", turn := 0.0,
+		seconds := HostileShot.BULLET_SECONDS) -> void:
 	var shot := HostileShot.new()
-	shot.setup_bullet(at, velocity, damage, thrower)
+	shot.setup_bullet(at, velocity, damage, thrower, how, turn, seconds)
 	effect_layer.add_child(shot)
 	hostile_shots.append(shot)
 
 
-## A boss's pie, thrown from `from` to land on `to` (Enemy "lob").
-func lob_pie(from: Vector2, to: Vector2, seconds: float, damage: float, thrower: String) -> void:
-	var shot := HostileShot.new()
-	shot.setup_lob(from, city.resolve(to, 1.0), seconds, damage, thrower)
-	effect_layer.add_child(shot)
-	hostile_shots.append(shot)
-
-
-## Damage to the player from anything: contact, a bullet, a pie. `by` is the enemy type, kept
-## as what last hurt them (Telemetry's killer), and `how` the way it landed: "contact",
-## "charge", "bullet" or "pie" (the result screen's cause of death).
+## Damage to the player from anything: contact, a boss's attack. `by` is the enemy type, kept
+## as what last hurt them (Telemetry's killer), and `how` the way it landed: "contact", "charge"
+## (a boss rushing down its lane) or the attack's form (BossKits; the result screen's cause of
+## death).
 func hurt_player(amount: float, by: String, how: String = "contact") -> void:
 	# 测试模式's invincibility.
 	if TestMode.god:
@@ -425,8 +401,9 @@ func hitstop(seconds: float) -> void:
 func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, source: String = "", silent: bool = false) -> void:
 	if enemy.dead:
 		return
-	if enemy.shielded:
-		amount *= Enemy.AURA_SHIELD
+	# A boss bracing for its second phase can't be hurt.
+	if enemy.guarded():
+		return
 	enemy.take_hit(amount, push)
 	damage_by_source[source] = damage_by_source.get(source, 0.0) + amount
 	Effects.damage_number(self, enemy.position, amount)
@@ -503,39 +480,18 @@ func _kill(enemy: Enemy) -> void:
 	Effects.death_pop(self, enemy.body_sprite(), enemy.position, enemy.is_elite)
 	if enemy.is_elite:
 		achievements.on_boss_killed(enemy.type_name)
-		if enemy.has_affix("blame"):
-			_fling_scapegoats(enemy)
+		# Its last word, and whatever it left on the ground goes with it.
+		var last_word: String = BossKits.KITS[enemy.type_name]["lines"].get("death", "") if BossKits.has(enemy.type_name) else ""
+		if last_word != "":
+			Effects.callout(self, enemy.position + Vector2(0.0, -20.0), tr(last_word), Art.PAPER, 13)
+		enemy.release()
 		Effects.ring(self, enemy.position, enemy.radius * 4.0, enemy.color)
 		player.shake(0.25, 3.0)
 		hitstop(BOSS_KILL_HITSTOP)
-	# An AI's clones go with it; clones themselves give nothing.
 	var star: Pickup = null
 	if enemy.xp_value > 0:
 		star = _drop_xp(enemy.position, enemy.xp_value)
 	perks.on_kill(enemy)
-	match enemy.ability:
-		"clones":
-			for clone in enemies.duplicate():
-				if clone.clone_of == enemy:
-					_remove_quietly(clone)
-		"aura":
-			for i in PULL_OUT_STARS:
-				_drop_xp(enemy.position + Vector2.from_angle(TAU * i / PULL_OUT_STARS) * 28.0, PULL_OUT_STAR_VALUE)
-			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("death_line", "撤资了！掉了一地经验"))
-		"hoard":
-			# Everything it took, back on the ground in a ring of stars.
-			if enemy.hoarded > 0:
-				var count := clampi(enemy.hoarded / HOARD_SPILL_VALUE, 1, HOARD_SPILL_MAX)
-				var each := ceili(float(enemy.hoarded) / count)
-				for i in count:
-					_drop_xp(enemy.position + Vector2.from_angle(TAU * i / count) * 30.0, each)
-			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("death_line", "攒的经验全吐出来了！"))
-	var data: Dictionary = Spawner.ENEMY_TYPES[enemy.type_name]
-	# Splits regardless of the crowd cap: the pieces are the rest of the boss fight.
-	if data.has("splits_into"):
-		var pieces: int = data["split_count"]
-		for i in pieces:
-			spawn_enemy(data["splits_into"], enemy.position + Vector2.from_angle(TAU * i / pieces) * enemy.radius)
 	if not _star_hint_done and star != null:
 		_star_hint_done = true
 		Settings.set_value("star_hint_shown", true)
@@ -544,12 +500,7 @@ func _kill(enemy: Enemy) -> void:
 		# wasn't enough to send them to the star.
 		star.point_at()
 	if enemy.is_elite:
-		# A Deadline met in time pays: its chest is at least a 绩效 A (按时交付).
-		var lowest_round := 0
-		if enemy.met_deadline():
-			lowest_round = 1
-			announce(Spawner.ENEMY_TYPES[enemy.type_name].get("on_time_line", "按时交付！年终奖保底绩效 A"))
-		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), lowest_round)
+		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), 0)
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
 	else:
 		var roll := rng.randf()
@@ -577,68 +528,10 @@ func _rebuild_grid() -> void:
 			_enemy_grid[cell] = [enemy]
 
 
-## 甩锅: a boss carrying it flings Enemy.BLAME_PIECES small copies of itself as it dies; they have
-## no moves and aren't bosses.
-func _fling_scapegoats(boss: Enemy) -> void:
-	for i in Enemy.BLAME_PIECES:
-		var heading := Vector2.from_angle(TAU * i / Enemy.BLAME_PIECES + rng.randf())
-		var piece := Enemy.new()
-		piece.setup(boss.type_name, Spawner.ENEMY_TYPES[boss.type_name], 1.0)
-		piece.game = self
-		piece.make_scapegoat(boss.max_hp * Enemy.BLAME_HP)
-		piece.position = city.resolve(boss.position + heading * boss.radius * 1.5, piece.radius)
-		entity_layer.add_child(piece)
-		enemies.append(piece)
-		piece.shove(heading * 160.0, true)
-	Effects.callout(self, boss.position, tr("甩锅！"), Art.BOSS_RED, 15)
-
-
-## Takes an enemy off the field with nothing to show for it: a clone fading or going with its AI.
-func _remove_quietly(enemy: Enemy) -> void:
-	if enemy.dead:
-		return
-	enemy.dead = true
-	enemies.erase(enemy)
-	Effects.poof(self, enemy.position, enemy.color)
-	enemy.visible = false
-	_corpses.append(enemy)
-
-
-## A see-through copy of an AI near the player (Enemy "clones").
-func spawn_clone(boss: Enemy) -> void:
-	if clones_of(boss) >= Enemy.MAX_CLONES:
-		return
-	var spot := player.position + Vector2.from_angle(rng.randf() * TAU) * CLONE_DISTANCE
-	var clone := spawn_enemy(Spawner.ENEMY_TYPES[boss.type_name].get("clone_type", "ai_clone"), spot)
-	clone.clone_of = boss
-	Effects.poof(self, clone.position, clone.color)
-
-
-func clones_of(boss: Enemy) -> int:
-	var count := 0
-	for enemy in enemies:
-		if enemy.clone_of == boss and not enemy.dead:
-			count += 1
-	return count
-
-
 func _tick_enemies(delta: float) -> void:
 	var target := player.position
 	var relocate_sq := RELOCATE_DISTANCE * RELOCATE_DISTANCE
-	_aura_sources.clear()
 	for enemy in enemies:
-		if enemy.ability == "aura" and not enemy.dead:
-			_aura_sources.append(enemy)
-	var aura_reach := Enemy.AURA_RADIUS * Enemy.AURA_RADIUS
-	var expired: Array[Enemy] = []
-	for enemy in enemies:
-		if not enemy.is_elite:
-			var inside := false
-			for source in _aura_sources:
-				if source.position.distance_squared_to(enemy.position) <= aura_reach:
-					inside = true
-					break
-			enemy.set_shielded(inside)
 		var separation := Vector2.ZERO if enemy.ghostly else _separation(enemy)
 		# Ghosts drift through walls; everyone else takes the way round when one is in the way.
 		var around := Vector2.ZERO
@@ -661,10 +554,6 @@ func _tick_enemies(delta: float) -> void:
 		if enemy.position.distance_squared_to(target) > relocate_sq:
 			var fresh_spot := offscreen_point(random_direction())
 			enemy.position = fresh_spot if enemy.ghostly else city.resolve(fresh_spot, enemy.radius)
-		if enemy.expired():
-			expired.append(enemy)
-	for enemy in expired:
-		_remove_quietly(enemy)
 
 
 ## The closest decoy within SquadWeapon.LURE_RADIUS of the enemy, or null; bosses ignore them.
@@ -730,6 +619,9 @@ func _check_player_contact() -> void:
 	var strongest: Enemy = null
 	var nearest_boss: Enemy = null
 	for enemy in query_enemies(player.position, Player.HURT_RADIUS, false):
+		# A leaping boss is up in the air (MeleeAttack): it only lands.
+		if enemy.lift > 0.0:
+			continue
 		if strongest == null or enemy.damage > strongest.damage:
 			strongest = enemy
 		if enemy.is_elite and (nearest_boss == null or enemy.position.distance_squared_to(player.position) < nearest_boss.position.distance_squared_to(player.position)):
@@ -773,40 +665,12 @@ func _drop(kind: Pickup.Kind, at: Vector2, value: int) -> Pickup:
 
 
 func _tick_pickups(delta: float) -> void:
-	_hoard(delta)
 	for i in range(pickups.size() - 1, -1, -1):
 		var pickup := pickups[i]
 		if pickup.tick(delta, player):
 			pickups.remove_at(i)
 			_collect(pickup)
 			pickup.queue_free()
-
-
-## Hoarders (Enemy "hoard", 西雅图's 节俭) draw in the stars lying inside their reach, the ones
-## not already flying to the player, and keep what reaches them until they die.
-func _hoard(delta: float) -> void:
-	var hoarders: Array[Enemy] = []
-	for enemy in enemies:
-		if enemy.ability == "hoard" and not enemy.dead:
-			hoarders.append(enemy)
-	if hoarders.is_empty():
-		return
-	var reach_sq := Enemy.HOARD_RADIUS * Enemy.HOARD_RADIUS
-	for i in range(pickups.size() - 1, -1, -1):
-		var pickup := pickups[i]
-		if pickup.kind != Pickup.Kind.XP or pickup.attracted():
-			continue
-		for hoarder in hoarders:
-			var offset := hoarder.position - pickup.position
-			if offset.length_squared() > reach_sq:
-				continue
-			if offset.length() <= hoarder.radius + 6.0:
-				hoarder.hoarded += pickup.value
-				pickups.remove_at(i)
-				pickup.queue_free()
-			else:
-				pickup.position += offset.normalized() * Enemy.HOARD_PULL * delta
-			break
 
 
 func _collect(pickup: Pickup) -> void:

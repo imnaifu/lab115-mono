@@ -1,14 +1,13 @@
 extends SceneTree
 ## Writes everything the 官网 shows (tools/build_site.py) as JSON: the jobs, weapons, passives,
-## every enemy by the bestiary's groups, the boss affixes, the maps and their landmarks, the
-## achievements and a run's schedule; the player's stats, card rarity, luck, drops and the
-## year-end bonus and 培训, the XP curve and how a run gets harder; read straight from the game's own tables
+## every enemy by the bestiary's groups (a boss with its attacks and lines), the maps and their
+## landmarks, the achievements and a run's schedule; the player's stats, card rarity, luck, drops,
+## the year-end bonus and 培训, the XP curve and how a run gets harder; read straight from the game's own tables
 ## and formulas, so the site says what the game does. Art is named, not included: build_site.py
 ## reads assets/art/ itself.
 ##
 ##   godot --headless --path . -s tools/dump_compendium.gd -- /tmp/compendium.json
 
-const HUD_SCRIPT := "res://scripts/ui/hud.gd"
 ## The luck values the site's luck table shows: none, one 锦鲤, and on up to about what a run can
 ## reach (锦鲤 maxed and every luck landmark checked in at).
 const LUCK_SHOWN := [0.0, 20.0, 50.0, 100.0, 200.0]
@@ -26,7 +25,6 @@ func _initialize() -> void:
 	# and nothing here should read or write whoever's save is on this machine.
 	Progress.to_disk = false
 	Progress.reset()
-	var hud: GDScript = load(HUD_SCRIPT)
 	var data := {
 		"version": Telemetry.VERSION,
 		"run_seconds": Game.RUN_SECONDS,
@@ -34,8 +32,7 @@ func _initialize() -> void:
 		"weapon_types": _weapon_types(),
 		"weapons": _weapons(),
 		"passives": _passives(),
-		"enemy_groups": _enemy_groups(hud),
-		"affixes": _affixes(hud),
+		"enemy_groups": _enemy_groups(),
 		"maps": _maps(),
 		"coming_soon": Maps.COMING_SOON,
 		"achievements": _achievements(),
@@ -110,39 +107,22 @@ func _passives() -> Array:
 	return passives
 
 
-func _enemy_groups(hud: GDScript) -> Array:
-	var hints: Dictionary = hud.BOSS_MOVE_HINTS
-	# Which Silicon Valley enemy each map's own one stands in for (Maps' MOB_SWAPS, BOSS_SWAPS).
-	var stands_for := {}
-	for map_id: String in Maps.ORDER:
-		var map := Maps.script_of(map_id)
-		for from: String in map.MOB_SWAPS:
-			stands_for[map.MOB_SWAPS[from]] = from
-		for from: String in map.BOSS_SWAPS:
-			stands_for[map.BOSS_SWAPS[from]] = from
+func _enemy_groups() -> Array:
 	var groups := []
 	for group: Dictionary in Bestiary.GROUPS:
 		var enemies := []
 		for id: String in group["ids"]:
 			var type: Dictionary = Spawner.ENEMY_TYPES[id]
-			var moves := []
-			var ability: String = type.get("ability", "")
-			if ability != "":
-				moves.append({"id": ability, "hint": hints.get(ability, "")})
+			# A boss's attacks (BossKits): kind, name and how to dodge.
+			var moves := BossKits.describe(id) if BossKits.has(id) else []
+			var slot := BossKits.slot_of(id)
 			enemies.append({"id": id, "name": type["name"], "art": type["art"], "elite": type.get("elite", false),
 				"hp": type["hp"], "speed": type["speed"], "damage": type["damage"], "xp": type["xp"],
 				"ghostly": type.get("ghostly", false), "note": Bestiary.NOTES.get(id, ""),
-				"maps": Array(Bestiary.maps_of(id)), "moves": moves,
-				"stands_for": Spawner.ENEMY_TYPES[stands_for[id]]["name"] if stands_for.has(id) else ""})
+				"maps": Array(Bestiary.maps_of(id)), "moves": moves, "at": BossKits.SLOT_AT[slot] if slot >= 0 else -1.0,
+				"lines": BossKits.KITS[id]["lines"] if BossKits.has(id) else {}})
 		groups.append({"name": group["name"], "enemies": enemies})
 	return groups
-
-
-func _affixes(hud: GDScript) -> Array:
-	var affixes := []
-	for id: String in Enemy.AFFIXES:
-		affixes.append({"id": id, "name": Enemy.AFFIXES[id], "note": hud.AFFIX_NOTES.get(id, "")})
-	return affixes
 
 
 func _maps() -> Array:
@@ -158,22 +138,16 @@ func _maps() -> Array:
 			var stamp: Dictionary = map.STAMPS[stamp_id]
 			stamps.append({"id": stamp_id, "name": stamp["name"], "art": stamp["art"], "note": stamp.get("note", ""),
 				"bonus": _bonus_text(stamp["bonus"]), "kind": stamp["bonus"][0]})
-		var guest: String = map.GUEST_BOSS["type"]
+		var bosses := []
+		for slot in (map.BOSSES as Array).size():
+			var boss_id: String = map.BOSSES[slot]
+			bosses.append({"id": boss_id, "name": Spawner.ENEMY_TYPES[boss_id]["name"], "art": Spawner.ENEMY_TYPES[boss_id]["art"],
+				"at": BossKits.SLOT_AT[slot]})
 		maps.append({"id": id, "name": map.NAME, "hours": map.HOURS, "difficulty": map.DIFFICULTY,
 			"rank_prefix": map.RANK_PREFIX, "districts": districts, "stamps": stamps,
 			"event": {"name": map.MAP_EVENT.get("name", ""), "text": map.MAP_EVENT.get("text", ""), "hint": map.MAP_EVENT.get("hint", "")},
-			"guest_boss": {"id": guest, "name": Spawner.ENEMY_TYPES[guest]["name"]},
-			# "" keeps the written schedule's own finale line (硅谷's).
-			"finale": map.FINALE_LINE if map.FINALE_LINE != "" else _finale_line()})
+			"bosses": bosses, "finale": bosses[-1]["name"]})
 	return maps
-
-
-## The finale's line in Spawner.EVENTS, as written.
-func _finale_line() -> String:
-	for event: Dictionary in Spawner.EVENTS:
-		if event["at"] == Spawner.FINALE_AT and event.has("text"):
-			return event["text"]
-	return ""
 
 
 ## A landmark's bonus as the 打卡 page words it (Stamps.BONUSES).
@@ -186,12 +160,15 @@ func _bonus_text(bonus: Array) -> String:
 	return Stamps.BONUSES[kind] % shown
 
 
-## The run's written schedule (Spawner.EVENTS): bosses and rings by time, before each run's shuffle.
+## A run's schedule: the rings (Spawner.EVENTS) and the four bosses' times (each map's own bosses).
 func _events() -> Array:
 	var events := []
 	for event: Dictionary in Spawner.EVENTS:
 		if event.has("text"):
 			events.append({"at": event["at"], "kind": event["kind"], "text": event["text"]})
+	for slot in BossKits.SLOT_AT.size():
+		events.append({"at": BossKits.SLOT_AT[slot], "kind": "elite", "text": "最后一战" if slot == BossKits.SLOT_AT.size() - 1 else "boss"})
+	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
 	return events
 
 
@@ -301,8 +278,8 @@ func _xp() -> Array:
 
 
 ## How a run gets harder, on the base map (each map then multiplies by its DIFFICULTY): spawns a
-## second and enemy health by the minute, the trickle's mix (Spawner.WAVES), the bosses' slots as
-## written (each slot's strength, whichever boss the shuffle puts there) and how they are shaken up.
+## second and enemy health by the minute, the trickle's mix (Spawner.WAVES), and each boss slot's
+## strength (BossKits.SLOT_STATS, whichever map's boss it is) and rhythm.
 func _pacing() -> Dictionary:
 	var minutes := []
 	for minute in range(0, int(Game.RUN_SECONDS / 60.0) + 1):
@@ -314,14 +291,12 @@ func _pacing() -> Dictionary:
 			mix.append({"id": id, "name": Spawner.ENEMY_TYPES[id]["name"], "art": Spawner.ENEMY_TYPES[id]["art"], "weight": wave["mix"][id]})
 		waves.append({"until": wave["until"], "mix": mix})
 	var slots := []
-	for event: Dictionary in Spawner.EVENTS:
-		if event["kind"] != "elite":
-			continue
-		var type: Dictionary = Spawner.ENEMY_TYPES[event["type"]]
-		var hp: float = type["hp"] * event.get("hp_scale", 1.0)
-		slots.append({"at": event["at"], "id": event["type"], "name": type["name"], "art": type["art"], "hp": hp,
-			"hp_then": hp * Spawner.hp_scale_at(event["at"], 1.0), "damage": type["damage"], "xp": type["xp"]})
-	return {"minutes": minutes, "waves": waves, "boss_slots": slots, "boss_tiers": Spawner.BOSS_TIERS,
-		"rolls": Spawner.ROLLS, "finale_at": Spawner.FINALE_AT, "jitter": Spawner.ARRIVAL_JITTER,
+	for slot in BossKits.SLOT_AT.size():
+		var at: float = BossKits.SLOT_AT[slot]
+		var stats: Dictionary = BossKits.SLOT_STATS[slot]
+		slots.append({"at": at, "hp": stats["hp"], "hp_then": stats["hp"] * Spawner.hp_scale_at(at, 1.0),
+			"damage": stats["damage"], "xp": stats["xp"]})
+	return {"minutes": minutes, "waves": waves, "boss_slots": slots, "walk_seconds": BossKits.WALK_SECONDS,
+		"phase_two_at": BossKits.PHASE_TWO_AT,
 		"hp_per_minute": Spawner.HP_PER_MINUTE, "max_alive": Spawner.MAX_ALIVE, "max_alive_mobile": Spawner.MAX_ALIVE_MOBILE,
 		"max_bosses_out": Spawner.MAX_BOSSES_OUT}

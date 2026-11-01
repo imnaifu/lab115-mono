@@ -19,7 +19,9 @@ extends SceneTree
 ## --all-weapons=N (start with every weapon at level N and take only perks at level-ups, to
 ## compare the weapons' damage share in the report), --perks=id:level,... (start with those
 ## passives, e.g. --perks=standup:5,cost_cut:5), --boss=type,... (bring those enemy types in
-## next to the player at the start, e.g. --boss=incident,pie_boss to watch their moves),
+## next to the player at the start, e.g. --boss=deadline,pie_boss to watch their attacks),
+## --from=M (start the run at minute M, as 测试模式 does: e.g. --from=8 --boss=pie_boss to see a
+## last boss reach its second phase at 9:00; --seconds still counts from the start),
 ## --weather (start the map's weather as the run starts, as 测试模式's 天气 button does),
 ## --share (with --shots, also render the end screen's result image into the shots directory, or
 ## with --pause-at the pause screen's run-so-far image),
@@ -27,8 +29,7 @@ extends SceneTree
 ## starting weapon alone does), --hold-hp=R (keep the player's health at that share of the maximum, e.g. 0.2 to look at the
 ## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
 ## to look at the evolutions), --map=sv|ldn|sea|sg|bj (play that map, locked or not), --stamps=N|all (start
-## having checked in at the first N of the map's landmarks, or all of them), --fixed-bosses (the
-## boss schedule as written, without .21's shuffles, jitter, extra moves and affixes),
+## having checked in at the first N of the map's landmarks, or all of them),
 ## --collection=0|1|2 (with --shots, also screenshot the title's 收藏 page on that tab),
 ## --departures[=city] (with --shots, also screenshot the title's departures board, with that
 ## city's boarding pass if given), --luck=N
@@ -71,6 +72,7 @@ var _teleport: Variant = null
 var _all_weapons_level := 0
 var _perks := PackedStringArray()
 var _bosses := PackedStringArray()
+var _from_minute := 0
 var _weather := false
 var _luck := 0.0
 var _chests := 0
@@ -140,6 +142,8 @@ func _initialize() -> void:
 			_perks = value.split(",")
 		elif arg.begins_with("--boss="):
 			_bosses = value.split(",")
+		elif arg.begins_with("--from="):
+			_from_minute = int(value)
 		elif arg == "--weather":
 			_weather = true
 		elif arg == "--share":
@@ -154,8 +158,6 @@ func _initialize() -> void:
 			_hold_hp = clampf(float(value), 0.01, 1.0)
 		elif arg == "--evolve":
 			_evolve = true
-		elif arg == "--fixed-bosses":
-			Spawner.shake_bosses = false
 		elif arg.begins_with("--map="):
 			Settings.overrides["map"] = value
 			Maps.unlock_all = true
@@ -281,6 +283,8 @@ func _process(_delta: float) -> bool:
 					_game.upgrades.apply({"kind": "passive", "id": perk.get_slice(":", 0)})
 			if not _perks.is_empty():
 				_game.inventory_changed.emit()
+			if _from_minute > 0:
+				_game._fast_forward(_from_minute)
 			for i in _bosses.size():
 				var side := Vector2.from_angle(TAU * i / _bosses.size()) * 110.0
 				_game.spawn_enemy(_bosses[i], _game.player.position + side)

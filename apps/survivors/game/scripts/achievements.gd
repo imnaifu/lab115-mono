@@ -25,7 +25,7 @@ const LIST := [
 	{"id": "ten_thousand", "tier": "gold", "art": "skull", "group": "战斗", "name": "万人斩", "text": "累计打死 10000 个怪", "goal": 10000},
 	{"id": "first_boss", "tier": "bronze", "art": "chest", "group": "战斗", "name": "初战告捷", "text": "打掉第一个 boss"},
 	{"id": "all_bosses", "tier": "silver", "art": "ai_boss", "group": "战斗", "name": "boss 克星", "text": "打掉过 10 种 boss", "goal": 10},
-	{"id": "bestiary_all", "tier": "gold", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 62},
+	{"id": "bestiary_all", "tier": "gold", "art": "bug", "group": "战斗", "name": "全图鉴", "text": "图鉴里的怪全都遇到过", "goal": 27},
 	{"id": "first_evolve", "tier": "bronze", "art": "star_gold", "group": "战斗", "name": "技术升级", "text": "第一次进化武器"},
 	{"id": "full_kit", "tier": "silver", "art": "keyboard", "group": "战斗", "name": "全栈", "text": "一局带满 6 把武器"},
 	{"id": "win_coder", "tier": "gold", "art": "coder", "group": "职业", "name": "程序员敲钟", "text": "用程序员通关", "job": "coder"},
@@ -81,10 +81,9 @@ var _check_left := 0.0
 var _hurt := false
 ## Boss types killed this run, added to the saved set when it ends.
 var _bosses := {}
-## For the 怪物图鉴 (Bestiary): types met and killed this run, boss affixes met.
+## For the 怪物图鉴 (Bestiary): types met and killed this run.
 var _seen := {}
 var _kills_by_type := {}
-var _affixes_seen := {}
 var _finished := false
 
 
@@ -210,7 +209,7 @@ func tick(delta: float) -> void:
 		_unlock("sg_stamps_all")
 	if Maps.stamps_on("bj") >= Beijing.STAMPS.size():
 		_unlock("bj_stamps_all")
-	if _all_seen().size() >= Bestiary.ids().size():
+	if _seen_listed() >= Bestiary.ids().size():
 		_unlock("bestiary_all")
 	_check_all_clear()
 
@@ -234,11 +233,6 @@ func on_spawned(type_id: String) -> void:
 
 func on_killed(type_id: String) -> void:
 	_kills_by_type[type_id] = _kills_by_type.get(type_id, 0) + 1
-
-
-func on_affixes(affixes: Array) -> void:
-	for affix: String in affixes:
-		_affixes_seen[affix] = true
 
 
 func on_train_hit() -> void:
@@ -273,11 +267,6 @@ func finish(victory: bool) -> void:
 	for type_id: String in _kills_by_type:
 		kills_by_type[type_id] = kills_by_type.get(type_id, 0) + _kills_by_type[type_id]
 	Progress.set_stat("kills_by_type", kills_by_type)
-	var affixes_seen := PackedStringArray(Progress.stat("affixes_seen", []))
-	for affix: String in _affixes_seen:
-		if not affixes_seen.has(affix):
-			affixes_seen.append(affix)
-	Progress.set_stat("affixes_seen", Array(affixes_seen))
 	if victory:
 		var wins: Dictionary = Progress.stat("wins", {})
 		wins[_game.player.job] = wins.get(_game.player.job, 0) + 1
@@ -303,7 +292,7 @@ func _check_all_clear() -> void:
 	for map_id: String in Maps.ORDER:
 		if not Maps.cleared(map_id) or Maps.stamps_on(map_id) < Maps.script_of(map_id).STAMPS.size():
 			return
-	if _all_seen().size() < Bestiary.ids().size():
+	if _seen_listed() < Bestiary.ids().size():
 		return
 	_unlock("all_clear")
 
@@ -315,6 +304,17 @@ func _all_seen() -> PackedStringArray:
 		if not all.has(type_id):
 			all.append(type_id)
 	return all
+
+
+## How many of the 图鉴's enemies have been met: the save also remembers ones it no longer lists
+## (the bosses before .45), which don't count.
+func _seen_listed() -> int:
+	var all := _all_seen()
+	var count := 0
+	for type_id in Bestiary.ids():
+		if all.has(type_id):
+			count += 1
+	return count
 
 
 ## Boss types killed in any run so far, this one included.

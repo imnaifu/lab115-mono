@@ -41,8 +41,9 @@ extends RefCounted
 ##   in, and frames per second (average and worst second). `dmg_<weapon>` is each weapon's share of
 ##   all damage in percent, for the weapons (and damaging perks) that dealt any. From .19,
 ##   `new_stamps` and `new_achievements`: the ids checked in at and earned this run. From .21,
-##   `boss_rolls`: the run's bosses as planned (Spawner.boss_rolls, e.g. 62:layoff+quake!996),
-##   since which boss comes when, with which extra moves and affixes, now changes every run.
+##   `boss_rolls`: the run's bosses as planned (Spawner.boss_rolls, e.g. 120:deadline,240:server_elite);
+##   from .21 to .44 which boss came when, with which extra moves and affixes, changed every run,
+##   since .45 it is the map's fixed four.
 ##   From .27, `luck` (the player's at the end) and `rarities`: how many upgrades of each rarity
 ##   (普通,优秀,稀有,史诗,传说, Upgrades.RARITIES) the run got, picked or (until .44) out of a chest, and
 ##   `lucky_cards`, how many level-ups luck added a card to.
@@ -70,7 +71,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.44"
+const VERSION := "2026-10-28.45"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.

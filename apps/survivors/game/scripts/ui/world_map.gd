@@ -17,7 +17,6 @@ const CITIES := {
 	"ldn": {"lat": 51.5, "lon": 359.9, "name": "伦敦", "code": "LON", "icon": "big_ben", "arc": 36.0},
 	"sea": {"lat": 47.6, "lon": 237.7, "name": "西雅图", "code": "SEA", "icon": "space_needle", "arc": 100.0},
 	"sg": {"lat": 1.3, "lon": 103.8, "name": "新加坡", "code": "SIN", "icon": "merlion"},
-	"sz": {"lat": 22.5, "lon": 114.1, "name": "深圳", "code": "SZX", "icon": "", "hours": "大小周", "rank": "T"},
 	"blr": {"lat": 13.0, "lon": 77.6, "name": "班加罗尔", "code": "BLR", "icon": "", "hours": "70h", "rank": "SDE"},
 	"bj": {"lat": 39.9, "lon": 116.4, "name": "北京", "code": "PEK", "icon": "summer_palace"},
 }

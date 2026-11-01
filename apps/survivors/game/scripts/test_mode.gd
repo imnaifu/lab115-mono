@@ -9,7 +9,9 @@ extends RefCounted
 
 ## Starting minutes on offer, and the level a player who picks up every star has reached at each
 ## minute (bots on .33's curve), which a run started late is levelled up to with random cards.
-const START_MINUTES := [0, 3, 5, 7, 9]
+## Each boss's minute (.45, BossKits.SLOT_AT: started there, it walks on at once; the last boss's
+## second phase is a minute after 8:00); .34-.44 had 0 / 3 / 5 / 7 / 9. Six won't fit a phone's row.
+const START_MINUTES := [0, 2, 4, 6, 8]
 const LEVEL_AT_MINUTE := [1, 4, 8, 11, 15, 19, 23, 27, 31, 35]
 
 static var on := false

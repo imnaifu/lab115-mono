@@ -17,7 +17,7 @@ import sys
 
 PLAY_URL = "https://survivors.lab115.com/play/"
 # Cities on the departures board that have no map yet (Maps.COMING_SOON ids).
-COMING_SOON_NAMES = {"sz": "深圳", "blr": "班加罗尔"}
+COMING_SOON_NAMES = {"blr": "班加罗尔"}
 TIERS = {"platinum": ("白金", "#8ec5d6"), "gold": ("黄金", "#f7c948"), "silver": ("白银", "#c9cdd4"), "bronze": ("青铜", "#d9a066")}
 
 
@@ -249,7 +249,7 @@ def upgrades_section(data: dict) -> str:
 <li><b>磁铁</b>：{drops['magnet_from_level']} 级以后普通怪 {percent(drops['magnet_chance'])} 掉，全图的星星一起飞过来</li>
 <li><b>年终奖</b>：每个 boss 必掉的红色宝箱</li></ul>
 <h3>年终奖开出什么</h3><ul>{chest_lines}</ul>
-<p class="muted">几率每个年终奖都一样，和运气、boss 词条都无关；只有 Deadline 按时打掉保底绩效 A。年终奖不给局内升级，工资存进存档，在<a href="#training">培训</a>里花。</p>
+<p class="muted">几率每个年终奖都一样，和运气无关。年终奖不给局内升级，工资存进存档，在<a href="#training">培训</a>里花。</p>
 <h3>返聘</h3>
 <p>在<a href="#training">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用：用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。</p></article>"""
     return section("upgrades", "升级", "打怪捡星星升级，升级时选卡；boss 掉的年终奖发工资。", f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}{drops_card}</div>')
@@ -275,18 +275,6 @@ def training_section(data: dict) -> str:
                    f'<div class="grid wide">{card}{how}</div>')
 
 
-# Boss moves by the names the design uses (Enemy.ABILITIES ids); the extras a boss may draw.
-MOVE_NAMES = {"charge": "冲锋", "quake": "宕机冲击", "summon": "召唤", "blink": "闪现", "lob": "扔饼", "volley": "弹幕"}
-
-
-def chances(first: float, second: float, thing: str) -> str:
-    """How many extra moves or affixes a tier draws: 多 1 个, 50% 再多 1 个."""
-    if first <= 0:
-        return "不加" + thing.replace("个", "")
-    text = f"多 1 {thing}" if first >= 1 else f"{percent(first)} 多 1 {thing}"
-    return text + (f"，{percent(second)} 再多 1 {thing}" if second > 0 else "")
-
-
 def difficulty_section(data: dict) -> str:
     pacing = data["pacing"]
     minute_rows = "".join(f"<tr><td>{minute['minute']}:00</td><td>{number(round(minute['rate'], 1))}</td><td>×{number(round(minute['hp'], 2))}</td></tr>"
@@ -305,22 +293,15 @@ def difficulty_section(data: dict) -> str:
     waves_card = f"""<article class="card"><h3>什么时候出什么小怪</h3><ol class="timeline">{"".join(wave_rows)}</ol>
 <p class="muted">另外还有包围圈：{rings}。</p></article>"""
 
-    slot_rows = "".join(f"<tr><td>{clock(slot['at'])}</td><td><span class=\"who\">{art(slot['art'], 24, slot['name'])}{esc(slot['name'])}</span></td><td>{number(round(slot['hp_then']))}</td>"
-                        f"<td>{number(slot['damage'])}</td><td>{slot['xp']}</td></tr>" for slot in pacing["boss_slots"])
-    tiers = pacing["boss_tiers"]
-    tier_names = [f"{clock(tier[0])}–{clock(tier[-1])}" for tier in tiers] + [f"{clock(pacing['finale_at'])} 最后一战"]
-    roll_rows = "".join(f"<li><b>{esc(name)}</b>：{chances(roll['extra'][0], roll['extra'][1], '招')}；{chances(roll['affix'][0], roll['affix'][1], '个词条')}。"
-                        f"<span class=\"muted\">加的招从{esc('、'.join(MOVE_NAMES.get(move, move) for move in roll['moves']))}里抽</span></li>"
-                        for name, roll in zip(tier_names, pacing["rolls"]))
+    slot_rows = "".join(f"<tr><td>{clock(slot['at'])}{' 最后一战' if index == len(pacing['boss_slots']) - 1 else ''}</td><td>{number(round(slot['hp_then']))}</td>"
+                        f"<td>{number(slot['damage'])}</td><td>{slot['xp']}</td></tr>" for index, slot in enumerate(pacing["boss_slots"]))
     bosses_card = f"""<article class="card"><h3>boss 排期</h3>
-<p class="muted">每分钟来一个 boss。这是写在代码里的排期；每局在同一档（{"、".join(tier_names[:-1])}）里打乱顺序，强度跟着位置走：
-不管哪个 boss 排到这一格，生命、伤害、经验都用这一格的数。出场时间前后浮动最多 {number(pacing['jitter'])} 秒，最后一战不动。场上已经有 {pacing['max_bosses_out']} 个 boss 时，下一个等有 boss 倒下才来。</p>
-<div class="scroll"><table class="nums"><tr><th>时间</th><th>boss</th><th>出场生命</th><th>伤害</th><th>经验</th></tr>{slot_rows}</table></div>
-<p class="muted">出场生命已经乘上那一刻的生命倍率，是硅谷的数；别的地图再乘上<a href="#maps">地图</a>的倍率。</p>
-<h3>随机加招和词条</h3>
-<ul>{roll_rows}</ul>
-<p class="muted">第一个 boss 什么都不加，它是新手遇到的第一个 boss；最后一战里一起来的那只 AI 大模型也不加。词条是什么见<a href="#bestiary">怪物图鉴</a>最下面。</p></article>"""
-    return section("difficulty", "难度", "一局越往后越难：怪越刷越多、越来越抗打，每分钟来一个 boss。下面是硅谷的数，别的地图按地图卡上的倍率再乘。",
+<p class="muted">每张地图 4 个 boss，2:00、4:00、6:00、8:00 各来一个，是这张地图自己的（见<a href="#maps">地图</a>）。出场顺序、招式、节奏每局都一样，没有随机：
+boss 朝你走 {number(pacing['walk_seconds'])} 秒（在屏幕里才算），出一招，再走，一直循环。攻击只有三类：近战（它自己冲、扫、跳、砸）、定点（地上出红色区域，到时间炸）、远程（发子弹）。
+前三个各是一类；最后一战两类两招轮流出，{clock(pacing['phase_two_at'])} 进二阶段：近战更宽更远、定点范围更大、远程更密。场上已经有 {pacing['max_bosses_out']} 个 boss 时，下一个等有 boss 倒下才来。</p>
+<div class="scroll"><table class="nums"><tr><th>时间</th><th>出场生命</th><th>伤害</th><th>经验</th></tr>{slot_rows}</table></div>
+<p class="muted">出场生命已经乘上那一刻的生命倍率，是硅谷的数；别的地图再乘上<a href="#maps">地图</a>的倍率。伤害是碰到它的伤害，招式的伤害见<a href="#bestiary">怪物图鉴</a>。</p></article>"""
+    return section("difficulty", "难度", "一局越往后越难：怪越刷越多、越来越抗打，每两分钟来一个 boss。下面是硅谷的数，别的地图按地图卡上的倍率再乘。",
                    f'<div class="grid wide">{curve_card}{waves_card}{bosses_card}</div>')
 
 
@@ -335,10 +316,10 @@ def maps_section(data: dict) -> str:
 <p class="muted">{esc(hard)} · 职级 {esc(game_map['rank_prefix'])}1、{esc(game_map['rank_prefix'])}2…</p>
 <p><b>分区</b>：{esc('、'.join(game_map['districts']))}</p>
 <p><b>地图事件 · {esc(event['name'])}</b>：{esc(event['text'])}<br><span class="muted">{esc(event['hint'])}</span></p>
-<p><b>特邀 boss</b>：{esc(game_map['guest_boss']['name'])}　<b>最后一战</b>：{esc(game_map['finale'].replace('最后的考验：', ''))}</p>
+<p><b>boss</b>：{esc(' → '.join(boss['name'] for boss in game_map['bosses'][:-1]))}　<b>最后一战</b>：{esc(game_map['finale'])}</p>
 <p><a href="#stamps-{esc(game_map['id'])}">{len(game_map['stamps'])} 个打卡点 ›</a>　<a href="#bestiary" data-tab="{index}">本地怪物 ›</a></p></article>""")
     soon = "、".join(COMING_SOON_NAMES.get(city, city) for city in data["coming_soon"])
-    return section("maps", "地图", "按工时排，越卷越难：通关一张开下一张。每张地图有自己的街区、地标、boss、天气事件，5:30 还有一位特邀 boss。"
+    return section("maps", "地图", "按工时排，越卷越难：通关一张开下一张。每张地图有自己的街区、地标、4 个 boss 和天气事件。"
                    "路上的车和火车（地铁）不扣血，只会把人和怪推到路边；火车来之前铁轨会先闪。",
                    f'<div class="grid wide">{"".join(cards)}</div><p class="muted soon">还在装修：{esc(soon)}</p>')
 
@@ -364,27 +345,26 @@ def bestiary_section(data: dict) -> str:
         tabs.append(f'<button class="tab" data-tab="{index}">{esc(name)}</button>')
         elites = "".join(_boss_card(enemy) for enemy in bosses["enemies"])
         panels.append(f'<div class="panel" data-panel="{index}"><div class="grid">{elites}</div></div>')
-    affixes = "".join(f'<li><b>{esc(a["name"])}</b>：{esc(a["note"])}</li>' for a in data["affixes"])
     total = sum(len(group["enemies"]) for group in groups)
-    return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪每张地图都一样；boss 是每张地图自己的，每局打乱出场顺序（强度跟着出场时间走），还会随机多会一两招、带上词条。",
-                   f'<h3 class="sub">小怪</h3><div class="grid">{mobs}</div><h3 class="sub">boss</h3><div class="tabs">{"".join(tabs)}</div>{"".join(panels)}'
-                   f'<h3 class="sub">boss 词条</h3><ul class="affixes">{affixes}</ul>')
+    return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪每张地图都一样；boss 每张地图 4 个，2:00、4:00、6:00、8:00 各一个，招式固定、没有随机。",
+                   f'<h3 class="sub">小怪</h3><div class="grid">{mobs}</div><h3 class="sub">boss</h3><div class="tabs">{"".join(tabs)}</div>{"".join(panels)}')
 
 
 def _mob_card(enemy: dict) -> str:
-    instead = f'<p class="muted">对应硅谷的「{esc(enemy["stands_for"])}」</p>' if enemy["stands_for"] else ""
     trait = " · 穿墙" if enemy["ghostly"] else ""
     return f"""<article class="card small">{art(enemy['art'], 56, enemy['name'])}<h4>{esc(enemy['name'])}</h4>
 <p>{esc(enemy['note'])}</p><p class="stats"><span>生命 <b>{number(enemy['hp'])}</b></span><span>速度 <b>{number(enemy['speed'])}</b></span><span>伤害 <b>{number(enemy['damage'])}</b></span></p>
-<p class="muted">经验 {enemy['xp']}{trait}</p>{instead}</article>"""
+<p class="muted">经验 {enemy['xp']}{trait}</p></article>"""
 
 
 def _boss_card(enemy: dict) -> str:
-    moves = "".join(f'<p class="move">{esc(m["hint"])}</p>' for m in enemy["moves"] if m["hint"]) or '<p class="move">没有招式，只是血厚</p>'
-    instead = f'<p class="muted">对应硅谷的「{esc(enemy["stands_for"])}」</p>' if enemy["stands_for"] else ""
-    where = f'<p class="muted">出没：{esc("、".join(enemy["maps"]))}</p>' if enemy["maps"] else ""
+    # Each attack: its name and kind, then how to dodge it (BossKits).
+    moves = "".join(f'<p class="move"><b>{esc(m["name"])}</b>（{esc(m["kind"])}）：{esc(m["hint"])}</p>' for m in enemy["moves"])
+    arrive = enemy["lines"].get("arrive", "")
+    line = f'<p class="muted">「{esc(arrive)}」</p>' if arrive else ""
+    where = f'<p class="muted">{clock(enemy["at"])} 出场 · {esc("、".join(enemy["maps"]))}</p>' if enemy["maps"] else ""
     return f"""<article class="card small boss">{art(enemy['art'], 64, enemy['name'])}<h4>{esc(enemy['name'])}</h4>
-<p>{esc(enemy['note'])}</p>{moves}{instead}{where}</article>"""
+<p>{esc(enemy['note'])}</p>{line}{moves}{where}</article>"""
 
 
 def achievements_section(data: dict) -> str:
@@ -422,10 +402,10 @@ def how_section(data: dict) -> str:
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
-<li>每分钟来一个 boss，打掉必掉「年终奖」，按绩效发工资，攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
+<li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉必掉「年终奖」，按绩效发工资，攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
 <li>撑满 10:00 就能敲钟上市</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
-<article class="card"><h3>一局的节奏</h3><p class="muted">boss 每局打乱、前后浮动 10 秒，这是写在代码里的排期：</p><ol class="timeline">{rows}</ol></article>
+<article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（boss 是每张地图自己的，见<a href="#maps">地图</a>）：</p><ol class="timeline">{rows}</ol></article>
 </div>""")
 
 
@@ -486,7 +466,6 @@ ol li .lv{margin-left:-4px}
 .tab{font:inherit;font-weight:800;border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:4px 16px;cursor:pointer;color:var(--ink)}
 .tab[aria-selected=true]{background:var(--brand)}
 .panel[hidden]{display:none}
-.affixes{background:var(--paper);border:2px solid var(--line);border-radius:16px;padding:12px 12px 12px 32px}
 .timeline{list-style:none;padding:0}.timeline li{display:flex;gap:10px;border-bottom:1px dashed var(--line);padding:4px 0}
 .at{font-weight:800;min-width:40px;white-space:nowrap;flex:none}
 .how ul{padding-left:20px}

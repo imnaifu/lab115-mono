@@ -83,21 +83,26 @@ const HEARTBEAT_FAST := 0.55
 ## speed-up, so it also goes up in pitch a little, like an old cartridge's hurry-up.
 const HURRY_SPEED := 1.05
 const HURRY_RAMP_SECONDS := 2.0
-## The cue for a boss move as it starts, by Enemy ability. The always-on ones (countdown, aura)
-## have none: the alarm already marked the boss's arrival.
+## The cue for a boss attack as it starts, by its form (BossKits): a melee or ranged one braces,
+## a leap jumps, a placed one throws its shapes down. Going off and firing have their own
+## (BossAttack and its kinds).
 const MOVE_SOUNDS := {
-	"charge": "windup",
-	"volley": "windup",
-	"quake": "windup",
-	"blink": "blink",
-	"clones": "clones",
-	"summon": "summon",
-	"lob": "lob",
-	# The maps' guest bosses (.26) brace like the others before their moves.
-	"pull": "windup",
-	"squeeze": "windup",
+	"dash": "windup",
 	"sweep": "windup",
-	"redlight": "windup",
+	"leap": "blink",
+	"slam": "windup",
+	"chain": "lob",
+	"bigcircle": "lob",
+	"bigsquare": "lob",
+	"lead": "lob",
+	"cross": "lob",
+	"plus": "lob",
+	"checker": "lob",
+	"aimed": "windup",
+	"spread": "windup",
+	"ring": "windup",
+	"spiral": "windup",
+	"homing": "windup",
 }
 
 static var _instance: Sound
@@ -156,9 +161,9 @@ static func stop_music() -> void:
 
 
 ## A boss starts a move: its cue, so a move made off screen can still be heard coming.
-static func boss_move(ability: String) -> void:
-	if MOVE_SOUNDS.has(ability):
-		play(MOVE_SOUNDS[ability])
+static func boss_move(form: String) -> void:
+	if MOVE_SOUNDS.has(form):
+		play(MOVE_SOUNDS[form])
 
 
 ## A boss went down: a bang of its own, which the kill pop's gap can't swallow, and the music
