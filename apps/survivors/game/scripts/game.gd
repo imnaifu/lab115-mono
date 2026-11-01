@@ -38,6 +38,8 @@ const RELOCATE_DISTANCE := 560.0
 const DETOUR_HOLD_SECONDS := 0.6
 const MAX_PICKUPS := 400
 const HEAL_DROP_CHANCE := 0.012
+## What a 珍珠奶茶 heals (dropped by HEAL_DROP_CHANCE of regular kills and by every boss).
+const HEAL_AMOUNT := 30.0
 ## XP for the first level-ups, cheaper than the curve in xp_to_next() (5, 11, 17, 23) so a new run
 ## gets its first upgrades quickly; from level 5 on the curve applies.
 const EARLY_LEVEL_XP := [3, 7, 13, 20]
@@ -795,7 +797,7 @@ func _collect(pickup: Pickup) -> void:
 			add_xp(pickup.value)
 		Pickup.Kind.HEAL:
 			Sound.play("heal")
-			player.heal(30.0)
+			player.heal(HEAL_AMOUNT)
 			announce("珍珠奶茶，回血 30！")
 		Pickup.Kind.BONUS:
 			_open_chest(pickup.value, pickup.affixes)
@@ -811,9 +813,14 @@ func _collect(pickup: Pickup) -> void:
 ## too frequent. Bots that pick up every star now reach about 39 by 10:00 instead of 49, and have
 ## every weapon and passive maxed at 9:00-9:40, some never (before, 7:30-8:30).
 func xp_to_next() -> int:
-	if level <= EARLY_LEVEL_XP.size():
-		return EARLY_LEVEL_XP[level - 1]
-	return 5 + (level - 1) * 6 + maxi(0, level - 10) * 10
+	return xp_needed(level)
+
+
+## XP from `at_level` to the next, as xp_to_next() (static so the 官网 can list the curve).
+static func xp_needed(at_level: int) -> int:
+	if at_level <= EARLY_LEVEL_XP.size():
+		return EARLY_LEVEL_XP[at_level - 1]
+	return 5 + (at_level - 1) * 6 + maxi(0, at_level - 10) * 10
 
 
 func add_xp(amount: int) -> void:

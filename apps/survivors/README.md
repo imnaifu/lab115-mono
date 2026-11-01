@@ -2,7 +2,7 @@
 
 `survivors.lab115.com` —— 大厂幸存者（Big Tech Survivors，原名「硅谷幸存者」），一个 Godot 4.7 做的割草游戏。
 
-**`.39` 起根路径是官网，游戏在 `/play/`**：官网是一页（玩法、职业、武器、被动、地图、打卡点、怪物图鉴、成就），构建镜像时由 `game/tools/dump_compendium.gd` 从游戏数据导出、`game/tools/build_site.py` 拼成一个图片全部内嵌的 HTML，所以内容永远和线上游戏一致，存下来离线也能看。以前的游戏链接都带参数（战绩图二维码 `?from=share`、测试模式 `?debug=1`），nginx 把带参数的根路径 302 到 `/play/` 并保留参数，印出去的二维码不用换。存档在浏览器 IndexedDB 的 `/userfs` 库和 localStorage 里，按域名不按路径，挪路径不丢。清老 PWA 缓存的 `index.service.worker.js` 和分享预览图 `index.png` 在根路径各留一份。
+**`.39` 起根路径是官网，游戏在 `/play/`**：官网是一页（玩法、职业、属性、武器、被动、升级、地图、难度、打卡点、怪物图鉴、成就、问答），构建镜像时由 `game/tools/dump_compendium.gd` 从游戏数据导出、`game/tools/build_site.py` 拼成一个图片全部内嵌的 HTML，所以内容永远和线上游戏一致，存下来离线也能看。以前的游戏链接都带参数（战绩图二维码 `?from=share`、测试模式 `?debug=1`），nginx 把带参数的根路径 302 到 `/play/` 并保留参数，印出去的二维码不用换。存档在浏览器 IndexedDB 的 `/userfs` 库和 localStorage 里，按域名不按路径，挪路径不丢。清老 PWA 缓存的 `index.service.worker.js` 和分享预览图 `index.png` 在根路径各留一份。
 
 本地预览官网：
 

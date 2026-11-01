@@ -516,6 +516,8 @@ const EN := {
 	"战斗": "Combat",
 	"职业": "Jobs",
 	"彩蛋": "Easter eggs",
+	"财务自由": "Financial Freedom",
+	"全职业、全地图通关，地标全打卡，图鉴收齐": "Win with every job and on every map, check in at every landmark, complete the bestiary",
 	"第一天上班": "First Day",
 	"打完第一局": "Finish your first run",
 	"转正": "Passed Probation",

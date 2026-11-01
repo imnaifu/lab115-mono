@@ -414,14 +414,25 @@ func _init(game: Game) -> void:
 ## ten-minute mark. Kept lower than the crowd the game first had (9 a second by the end), since
 ## the bosses now carry more of the pressure.
 func spawn_rate() -> float:
-	var ease_in := lerpf(EASE_IN_START, 1.0, minf(_game.elapsed / EASE_IN_SECONDS, 1.0))
-	return (0.8 + _game.elapsed / 60.0 * 0.55) * ease_in * Maps.current.DIFFICULTY["spawn"]
+	return rate_at(_game.elapsed, Maps.current.DIFFICULTY["spawn"])
+
+
+## spawn_rate() `seconds` into a run on a map spawning `map_spawn` times as many (static so the
+## 官网 can chart it).
+static func rate_at(seconds: float, map_spawn: float) -> float:
+	var ease_in := lerpf(EASE_IN_START, 1.0, minf(seconds / EASE_IN_SECONDS, 1.0))
+	return (0.8 + seconds / 60.0 * 0.55) * ease_in * map_spawn
 
 
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
 ## (3.5x by the ten-minute mark), times the map's (Maps: longer working weeks are harder).
 func hp_scale() -> float:
-	return (1.0 + _game.elapsed / 60.0 * HP_PER_MINUTE) * Maps.current.DIFFICULTY["hp"]
+	return hp_scale_at(_game.elapsed, Maps.current.DIFFICULTY["hp"])
+
+
+## hp_scale() `seconds` into a run on a map whose enemies have `map_hp` times the health.
+static func hp_scale_at(seconds: float, map_hp: float) -> float:
+	return (1.0 + seconds / 60.0 * HP_PER_MINUTE) * map_hp
 
 
 func tick(delta: float) -> void:
