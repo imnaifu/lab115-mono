@@ -11,9 +11,6 @@ extends RefCounted
 ## minute (bots on .33's curve), which a run started late is levelled up to with random cards.
 const START_MINUTES := [0, 3, 5, 7, 9]
 const LEVEL_AT_MINUTE := [1, 4, 8, 11, 15, 19, 23, 27, 31, 35]
-## Upgrades a boss's year-end bonus gives on average (绩效 B / A / S: 1 / 3 / 0 at 90 / 9 / 1%,
-## since .43; 1.6 before).
-const CHEST_UPGRADES := 1.17
 
 static var on := false
 static var start_minute := 0

@@ -19,6 +19,10 @@ extends RefCounted
 ## (its own id) and each run that spent one (the run's id); what's left is the difference. A count
 ## of what's left would merge wrong (the larger of two devices' counts brings a spent one back),
 ## and a count of earned ones would lose one earned on each of two devices at once.
+##
+## 工资 and 培训 (.44) the same way: `salary` has an entry per year-end bonus that paid (its own id,
+## the amount), `training` one per purchase or refund (Training plays them back). Neither entry
+## ever changes once written, so merging is just gaining the other side's.
 
 const PATH := "user://progress.cfg"
 ## Sections whose keys are ids with the time they were earned: merged by keeping the earliest.
@@ -61,7 +65,7 @@ static func revives_left() -> int:
 	return maxi(0, _keys("revives").size() - _keys("revives_used").size())
 
 
-## A 返聘 from a 绩效 S year-end bonus, `id` its own (the run's id and the chest's number).
+## A 返聘, `id` its own: bought in 培训 since .44 (Training.buy_revive), from a 绩效 S year-end bonus in .43.
 static func add_revive(id: String) -> void:
 	_load().set_value("revives", id, int(Time.get_unix_time_from_system()))
 	_save()
@@ -71,6 +75,41 @@ static func add_revive(id: String) -> void:
 static func use_revive(run_id: String) -> void:
 	_load().set_value("revives_used", run_id, int(Time.get_unix_time_from_system()))
 	_save()
+
+
+## Every bit of 工资 ever paid (Training takes what's been spent off it).
+static func salary_total() -> int:
+	var total := 0
+	for id in _keys("salary"):
+		total += int(_load().get_value("salary", id))
+	return total
+
+
+## 工资 from a year-end bonus, `id` its own (the run's id and the chest's number), saved at once.
+static func add_salary(id: String, amount: int) -> void:
+	_load().set_value("salary", id, amount)
+	_save()
+
+
+## Every 培训 purchase and refund: id -> [unix msec, "buy" / "refund", stat id, cost].
+static func training_events() -> Dictionary:
+	var events := {}
+	for id in _keys("training"):
+		events[id] = _load().get_value("training", id)
+	return events
+
+
+## A purchase or refund (`event` without its time, which is added), saved at once; returns its id.
+## Its time is after every event already there, even within the same millisecond, so this device's
+## events always play back in the order they happened (a refund then a purchase, not the other way).
+static func add_training_event(event: Array) -> String:
+	var now := int(Time.get_unix_time_from_system() * 1000.0)
+	for earlier: Array in training_events().values():
+		now = maxi(now, int(earlier[0]) + 1)
+	var id := "%d-%08x" % [now, randi()]
+	_load().set_value("training", id, [now] + event)
+	_save()
+	return id
 
 
 ## A running total or set (`kills`, `runs`, `bosses`, `wins`), or `default` before the first.

@@ -91,7 +91,8 @@ const WEAPONS := {
 ##
 ## Switched off from .27, to be redesigned: no chest evolves a weapon, no card says 配「X」可进化,
 ## and the achievement for one is hidden (Achievements.shown). The table and each weapon's evolved
-## form stay, for that redesign and the bot's --evolve.
+## form stay, for that redesign and the bot's --evolve. Since .44 year-end bonuses pay 工资 and no
+## upgrades, so the redesign needs another moment to evolve at (the chest code went with them).
 const EVOLUTION_ON := false
 const EVOLUTIONS := {
 	"enter": {"passive": "haste", "name": "Shift+Enter 批量提交", "text": "每轮朝屏幕里的敌人各敲一下"},
@@ -297,57 +298,6 @@ static func rarity_line(choice: Dictionary) -> String:
 	if _is_table_perk(choice) and rarity["extra_levels"] > 0:
 		return TranslationServer.translate("直接升到 Lv %d") % choice["to_level"]
 	return ""
-
-
-## A year-end bonus's upgrades (Game.FUNDING_ROUNDS), applied at once, each with a rarity rolled
-## like a card's. Like Vampire Survivors' chests they level up what the player already carries;
-## only once all of that is at its cap do new things come out.
-##
-## A weapon ready to evolve (EVOLUTIONS) evolves first, as one of the chest's items.
-func open_chest(count: int) -> Array:
-	var items: Array = []
-	var ready := evolvable()
-	if not ready.is_empty():
-		var weapon: Weapon = ready[0]
-		weapon.evolve()
-		items.append(_evolution_item(weapon.id))
-		count -= 1
-	for i in count:
-		var carried: Array = []
-		for weapon in _game.player.weapons:
-			if not weapon_maxed(weapon):
-				# A job's own weapon goes up one of its open directions, picked at random.
-				var open := open_branches(weapon) if BRANCHES.has(weapon.id) else []
-				carried.append(_branch_choice(weapon.id, open[_game.rng.randi() % open.size()]) if BRANCHES.has(weapon.id) \
-					else _choice("weapon", weapon.id, weapon.level + 1))
-		for passive_id: String in passive_levels:
-			if passive_levels[passive_id] < max_level("passive", passive_id):
-				carried.append(_choice("passive", passive_id, passive_levels[passive_id] + 1))
-		var item: Dictionary = carried[_game.rng.randi() % carried.size()] if not carried.is_empty() else _roll(1, 0)[0]
-		if item["kind"] in ["weapon", "passive"]:
-			_set_rarity(item)
-		apply(item)
-		items.append(item)
-	return items
-
-
-## Weapons at full level, not evolved yet, whose passive the player carries.
-func evolvable() -> Array[Weapon]:
-	var ready: Array[Weapon] = []
-	if not EVOLUTION_ON:
-		return ready
-	for weapon in _game.player.weapons:
-		if weapon.evolved or not weapon_maxed(weapon) or not EVOLUTIONS.has(weapon.id):
-			continue
-		if passive_levels.has(EVOLUTIONS[weapon.id]["passive"]):
-			ready.append(weapon)
-	return ready
-
-
-func _evolution_item(weapon_id: String) -> Dictionary:
-	var evolution: Dictionary = EVOLUTIONS[weapon_id]
-	return {"kind": "evolve", "id": weapon_id, "level": MAX_LEVEL, "max": MAX_LEVEL,
-		"name": evolution["name"], "art": WEAPONS[weapon_id]["art"], "text": evolution["text"]}
 
 
 ## The weapons a job can ever carry: every shared one plus its own.

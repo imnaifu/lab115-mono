@@ -2,7 +2,7 @@ class_name Maps
 extends RefCounted
 ## The maps a run can be played on: 硅谷 (BayArea), from .20 北京 (Beijing), from .34 西雅图
 ## (Seattle), from .37 伦敦 (London), from .38 新加坡 (Singapore). Each is a script of constants and static functions under the same names; `current`
-## is the one this run is on, and City, Traffic, the minimap and the rest ask it rather than a map
+## is the one this run is on, and City, Traffic and the rest ask it rather than a map
 ## by name. (Calling through a script held in a variable costs no more than calling it by name.)
 ##
 ## Maps get harder the longer their working week (each map's HOURS and DIFFICULTY, at the user's

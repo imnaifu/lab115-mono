@@ -1,7 +1,7 @@
 class_name London
 extends RefCounted
 ## The London stage (伦敦, .37) as data, under the same names as BayArea, Seattle and Beijing so
-## City, Traffic, the minimap and the rest draw and move through it the same way. Nothing here
+## City, Traffic and the rest draw and move through it the same way. Nothing here
 ## draws.
 ##
 ## Squeezed onto the grid at the size the maps have had since .34 (every landmark within about 30
@@ -48,7 +48,7 @@ const MAP_EVENT := {"id": "fog", "at": 280.0, "seconds": 20.0, "text": "伦敦�
 	"name": "伦敦大雾", "hint": "只看得清身边，怪也走得慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "kx"
-## The named part of the world for the minimap, in world pixels: from Baker Street to Canary
+## The named part of the world (the minimap showed it until .44), in world pixels: from Baker Street to Canary
 ## Wharf, from Camden to Greenwich.
 const OVERVIEW := Rect2(-1500.0, -1000.0, 4100.0, 3000.0)
 ## Spelled out rather than City.BLOCK, to keep the classes' constants acyclic (as in BayArea).
@@ -84,7 +84,7 @@ const SALT_POND_FROM_ROW := 1000
 const RUNWAYS: Array[Vector2i] = []
 
 ## Per district, as in BayArea.DISTRICTS. Plane trees everywhere; red phone boxes, pillar boxes
-## and gas lamps on the pavements. `icon` is drawn by the district's name under the minimap.
+## and gas lamps on the pavements. `icon` is drawn by the district's name in the HUD.
 const DISTRICTS := {
 	"kx": {
 		"name": "国王十字", "icon": "kings_cross",
@@ -150,46 +150,29 @@ const LANDMARKS := {
 	# Where a run starts: the AI lab's campus round the first screen, a bank's beside it.
 	Vector2i(0, 0): "brand_row:deepmine",
 	Vector2i(-1, 0): "brand_row:monzzo",
-	Vector2i(0, -1): "art:landscraper",
 	Vector2i(1, 0): "art:kings_cross",
 	Vector2i(1, -1): "brand_row:revolout",
-	Vector2i(-1, -1): "art:camden_lock",
-	Vector2i(-2, -1): "art:baker_street",
 	Vector2i(0, 1): "art:british_museum",
 	# On the north bank, looking out over the Thames.
 	Vector2i(-1, 1): "art:big_ben",
-	Vector2i(-2, 1): "art:buckingham",
-	Vector2i(1, 1): "art:gherkin",
 	Vector2i(2, 1): "brand_row:barcleys",
 	Vector2i(3, 1): "art:canary_wharf",
-	# On the south bank, the river behind them.
-	Vector2i(-1, 2): "art:london_eye",
-	Vector2i(1, 2): "art:shard",
 	Vector2i(2, 2): "art:tower_bridge",
-	Vector2i(2, 3): "art:greenwich",
 }
 const LAWN_LANDMARKS := {}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"kings_cross": "station", "camden_lock": "camden", "baker_street": "baker"}
+const LANDMARK_BRANDS := {"kings_cross": "station"}
 ## Tower Bridge's towers block, the deck between them is walked under (as the Golden Gate's).
 const SOLID_SPANS := {"tower_bridge": [[0.22, 0.28], [0.72, 0.78]]}
 
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start ldn_ so they never clash with
 ## another map's in the save. Their bonuses add up the same as the other maps'.
 const STAMPS := {
-	"ldn_kings_cross": {"art": "kings_cross", "block": Vector2i(1, 0), "name": "国王十字站", "note": "站台上有辆推车一半卡进了墙里", "bonus": ["speed", 0.02]},
-	"ldn_landscraper": {"art": "landscraper", "block": Vector2i(0, -1), "name": "Goggle 躺楼", "note": "比摩天楼躺平了还长，楼顶是花园", "bonus": ["might", 0.02]},
-	"ldn_museum": {"art": "british_museum", "block": Vector2i(0, 1), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.05]},
-	"ldn_camden": {"art": "camden_lock", "block": Vector2i(-1, -1), "name": "卡姆登市场", "note": "屋顶上蹲着一只巨大的靴子", "bonus": ["luck", 10.0]},
-	"ldn_baker": {"art": "baker_street", "block": Vector2i(-2, -1), "name": "贝克街 221B", "note": "大侦探的家，线索一个不漏", "bonus": ["magnet", 0.05]},
-	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-1, 1), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.02]},
-	"ldn_eye": {"art": "london_eye", "block": Vector2i(-1, 2), "name": "伦敦眼", "note": "转一圈半小时，正好摸个鱼", "bonus": ["luck", 10.0]},
-	"ldn_palace": {"art": "buckingham", "block": Vector2i(-2, 1), "name": "白金汉宫", "note": "卫兵的帽子比人还高", "bonus": ["max_hp", 5.0]},
-	"ldn_shard": {"art": "shard", "block": Vector2i(1, 2), "name": "碎片大厦", "note": "一块块玻璃拼出来的尖塔", "bonus": ["might", 0.02]},
-	"ldn_gherkin": {"art": "gherkin", "block": Vector2i(1, 1), "name": "小黄瓜", "note": "金融城里最健康的一栋楼", "bonus": ["regen", 0.05]},
-	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(2, 2), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 5.0]},
+	"ldn_kings_cross": {"art": "kings_cross", "block": Vector2i(1, 0), "name": "国王十字站", "note": "站台上有辆推车一半卡进了墙里", "bonus": ["luck", 20.0]},
+	"ldn_museum": {"art": "british_museum", "block": Vector2i(0, 1), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.10]},
+	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-1, 1), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.03]},
+	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(2, 2), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 10.0]},
 	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(3, 1), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.03]},
-	"ldn_greenwich": {"art": "greenwich", "block": Vector2i(2, 3), "name": "格林尼治天文台", "note": "一脚东半球，一脚西半球", "bonus": ["haste", 0.02]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

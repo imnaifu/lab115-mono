@@ -455,7 +455,7 @@ func _clear_block(content: Dictionary) -> void:
 
 ## Where to stand to check in at the landmark on `block` (Stamps): at the foot of a landmark
 ## drawing, by a campus's mascot on the lawn, or else by its sign. Worked out the way _populate
-## places them, without building the block (the minimap wants every one, near or not).
+## places them, without building the block (Stamps checks every one, built yet or not).
 func stamp_spot(block: Vector2i) -> Vector2:
 	var origin := Vector2(block) * BLOCK
 	var lawn_top := origin.y + ROAD_HALF + SIDEWALK + 50.0

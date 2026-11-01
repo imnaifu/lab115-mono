@@ -1,7 +1,7 @@
 class_name Beijing
 extends RefCounted
 ## The Beijing stage (北京西二旗) as data, under the same names as BayArea so City, Traffic, the
-## minimap and the rest draw and move through it the same way (Maps.current is one or the other).
+## the HUD and the rest draw and move through it the same way (Maps.current is one or the other).
 ## Nothing here draws.
 ##
 ## Haidian's tech belt, squeezed onto the grid: the run starts at 西二旗 among the campuses of
@@ -42,7 +42,7 @@ const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "�
 	"name": "沙尘暴", "hint": "风往东刮，逆风走慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "houchang"
-## The named part of the world for the minimap, in world pixels. Pulled in to about half in .34
+## The named part of the world (the minimap showed it until .44), in world pixels. Pulled in to about half in .34
 ## (it was 8400 x 6400), at the user's ask after Vampire Survivors: every landmark is within about
 ## 30 seconds' walk of the start.
 const OVERVIEW := Rect2(-2800.0, -2000.0, 5600.0, 4400.0)
@@ -140,16 +140,8 @@ const LANDMARKS := {
 	# Where a run starts: a campus round the first screen, not a park that happened to roll.
 	Vector2i(0, 0): "brand_row:kuaishou",
 	Vector2i(1, 0): "art:subway_13",
-	Vector2i(-1, 0): "brand_row:baidu",
-	Vector2i(2, -1): "brand_row:xiaomi",
-	Vector2i(-2, -1): "brand_row:didi",
-	Vector2i(-1, -1): "brand_row:netease",
-	Vector2i(0, -3): "art:tower_block",
-	Vector2i(1, 2): "brand_row:wudaokou",
 	Vector2i(0, 3): "art:tsinghua_gate",
-	Vector2i(-1, 3): "art:boya_pagoda",
 	Vector2i(0, 4): "brand_row:zgc",
-	Vector2i(1, 4): "brand_row:bytedance",
 	# On the lake's north shore, looking out over 昆明湖, as 佛香阁 does from 万寿山.
 	Vector2i(-3, 2): "art:summer_palace",
 	Vector2i(2, 3): "art:birds_nest",
@@ -162,19 +154,11 @@ const SOLID_SPANS := {}
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start bj_ so they never clash with
 ## another map's in the save.
 const STAMPS := {
-	"bj_xierqi": {"art": "subway_13", "block": Vector2i(1, 0), "name": "西二旗地铁站", "note": "早高峰进站要排半小时", "bonus": ["speed", 0.02]},
-	"bj_baidu": {"art": "icon_paw", "block": Vector2i(-1, 0), "name": "白度科技园", "note": "门口的熊掌老远就看得见", "bonus": ["might", 0.02]},
-	"bj_netease": {"art": "mail", "block": Vector2i(-1, -1), "name": "网异大厦", "note": "猪厂，食堂出了名的好吃", "bonus": ["max_hp", 5.0]},
-	"bj_xiaomi": {"art": "icon_rice", "block": Vector2i(2, -1), "name": "大米科技园", "note": "为加班而生", "bonus": ["magnet", 0.05]},
-	"bj_didi": {"art": "robotaxi", "block": Vector2i(-2, -1), "name": "嘀嘀总部", "note": "下班叫车排第 200 位", "bonus": ["luck", 10.0]},
-	"bj_huilongguan": {"art": "tower_block", "block": Vector2i(0, -3), "name": "回龙观", "note": "睡城：通勤两小时，睡觉六小时", "bonus": ["regen", 0.05]},
-	"bj_wudaokou": {"art": "boba", "block": Vector2i(1, 2), "name": "五道口", "note": "宇宙中心，奶茶店比人多", "bonus": ["haste", 0.02]},
-	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(0, 3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["might", 0.02]},
-	"bj_peking": {"art": "boya_pagoda", "block": Vector2i(-1, 3), "name": "博雅塔", "note": "北大未名湖边的塔", "bonus": ["haste", 0.02]},
-	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(0, 4), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
-	"bj_bytedance": {"art": "icon_note", "block": Vector2i(1, 4), "name": "字节跳跳", "note": "大力出奇迹", "bonus": ["max_hp", 5.0]},
-	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, 2), "name": "颐和园", "note": "佛香阁下就是昆明湖", "bonus": ["luck", 10.0]},
+	"bj_xierqi": {"art": "subway_13", "block": Vector2i(1, 0), "name": "西二旗地铁站", "note": "早高峰进站要排半小时", "bonus": ["luck", 20.0]},
+	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(0, 3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.03]},
+	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, 2), "name": "颐和园", "note": "佛香阁下就是昆明湖", "bonus": ["max_hp", 10.0]},
 	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.03]},
+	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(0, 4), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.10]},
 }
 
 ## Parody companies, as in BayArea.BRANDS, each with an icon of its own (.39: 嘀嘀 a taxi, 网异 a

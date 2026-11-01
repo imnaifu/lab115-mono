@@ -36,8 +36,10 @@ extends SceneTree
 ## (connect the cloud save to that Nakama server, as the web build does), --save-page (with
 ## --shots, also screenshot the settings and the 云存档 page; with --cloud, synced and with a
 ## 存档码), --revives=N (start with N 返聘 saved; at a death the bot spends one, or with
-## --decline-revive goes home instead). Progress (打卡, 成就) is kept in memory only, and so is
-## the cloud save's device id: a bot run never touches the save.
+## --decline-revive goes home instead), --salary=N (start with ¥N of 工资 to spend on 培训),
+## --meta=full (a veteran: every map's landmarks checked in at and every 培训 rank bought).
+## Progress (打卡, 成就) is kept in memory only, and so is the cloud save's device id: a bot run
+## never touches the save.
 
 ## Overlays pop in with a short animation; screenshots wait this many frames for it to settle.
 const OVERLAY_SETTLE_FRAMES := 20
@@ -92,6 +94,8 @@ var _departures_frames := 0
 var _save_page := false
 var _save_page_frames := 0
 var _revives_before := 0
+var _salary_before := 0
+var _meta_full := false
 var _decline_revive := false
 var _revive_frames := 0
 var _revive_shot_taken := false
@@ -170,6 +174,10 @@ func _initialize() -> void:
 			_revives_before = int(value)
 		elif arg == "--decline-revive":
 			_decline_revive = true
+		elif arg.begins_with("--salary="):
+			_salary_before = int(value)
+		elif arg == "--meta=full":
+			_meta_full = true
 		elif arg.begins_with("--cloud="):
 			Cloud.server_override = Cloud.LOCAL if value == "local" else value
 		elif arg.begins_with("--teleport="):
@@ -204,6 +212,18 @@ func _process(_delta: float) -> bool:
 				for i in _revives_before:
 					Progress.add_revive("smoke-%d" % i)
 				_revives_before = 0
+				if _salary_before > 0:
+					Progress.add_salary("smoke", _salary_before)
+					_salary_before = 0
+				if _meta_full:
+					_meta_full = false
+					for map_id: String in Maps.ORDER:
+						for id: String in Maps.script_of(map_id).STAMPS:
+							Progress.add_stamp(id)
+					Progress.add_salary("smoke-meta", 1000000)
+					for entry: Dictionary in Training.STATS:
+						while Training.buy(entry["id"]):
+							pass
 			if _shot_dir != "":
 				_title_frames += 1
 				if _title_frames < OVERLAY_SETTLE_FRAMES:

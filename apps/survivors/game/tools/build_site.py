@@ -91,14 +91,18 @@ STAT_ROWS = [
     ("armor", "护甲", "armor", None, None, "每点让每次受到的伤害 -1，但每次至少扣 1 点。"),
     ("regen", "每秒回血", "regen", "regen", lambda start, stamped: f"+{number(round(stamped - start, 2))}", "每秒自动回这么多生命。"),
     ("luck", "运气", "luck", "luck", lambda start, stamped: f"+{number(stamped - start)}",
-     '升级卡和年终奖里的卡更容易出稀有的，升级时有几率多出一张卡（见<a href="#upgrades">升级</a>）。年终奖开出哪档绩效和运气无关。'),
+     '升级卡更容易出稀有的，升级时有几率多出一张卡（见<a href="#upgrades">升级</a>）。年终奖开出哪档绩效和运气无关。'),
 ]
+# Each STAT_ROWS key's 培训 stat (Training.STATS ids).
+TRAINING_OF = {"max_hp": "max_hp", "might": "might", "cooldown_scale": "haste", "move_speed": "speed",
+               "pickup_radius": "magnet", "armor": "armor", "regen": "regen", "luck": "luck"}
 
 
 def stats_section(data: dict) -> str:
     stats, jobs = data["stats"], data["jobs"]
     passives = {p["id"]: p for p in data["passives"]}
     stamps = [stamp for game_map in data["maps"] for stamp in game_map["stamps"]]
+    training = {entry["id"]: entry for entry in data["training"]["stats"]}
     # What the jobs set for themselves; the rest start the same for everyone.
     by_job = {"max_hp": "hp", "armor": "armor", "move_speed": "speed"}
     cards = []
@@ -113,23 +117,27 @@ def stats_section(data: dict) -> str:
             opening = number(start)
         passive = passives[passive_id]
         lines = [f'<p class="row">{art(passive["art"], 24, passive["name"])}<span><b>{esc(passive["name"])}</b>：{esc(passive["text"])}（每级）</span></p>']
-        if stamp_kind:
-            # Each landmark's bonus of this kind, with how many give it.
-            counts = {}
-            for stamp in stamps:
-                if stamp["kind"] == stamp_kind:
-                    counts[stamp["bonus"]] = counts.get(stamp["bonus"], 0) + 1
+        # Each landmark's bonus of this kind, with how many give it (none for some since .44).
+        counts = {}
+        for stamp in stamps:
+            if stamp_kind and stamp["kind"] == stamp_kind:
+                counts[stamp["bonus"]] = counts.get(stamp["bonus"], 0) + 1
+        if counts:
             given = "、".join(f"{esc(text)}（{count} 个）" for text, count in counts.items())
             lines.append(f'<p class="row"><span class="pin">打卡</span><span>{given}，全部打满 '
                          f'<b>{esc(total(start, stats["all_stamps"][key]))}</b></span></p>')
         else:
             lines.append('<p class="row"><span class="pin">打卡</span><span class="muted">没有地标加这一项</span></p>')
+        trained = training[TRAINING_OF[key]]
+        lines.append(f'<p class="row"><span class="pin">培训</span><span>每级 {esc(trained["step_text"])}，'
+                     f'最多 {trained["ranks"]} 级，练满 <b>{esc(trained["max_text"])}</b></span></p>')
         cards.append(f"""<article class="card stat"><h3>{esc(name)} <span class="start">开局 {esc(opening)}</span></h3>
 <p class="muted">{note}</p>{"".join(lines)}</article>""")
     cards.append(f"""<article class="card stat"><h3>受击无敌 <span class="start">{number(stats['invuln_seconds'])} 秒</span></h3>
 <p class="muted">挨一下之后这么久不再扣血，被一群怪围住也不会一下掉光。不能升级。</p></article>""")
     return section("stats", "属性", "主角就这几项属性，局里按暂停能看到当前的数。开局的生命、护甲、移速看职业；之后靠被动往上加（卡越稀有加得越多，见"
-                   '<a href="#upgrades">升级</a>），再加上打卡：每个地标给一点，永久生效，哪张地图打的卡在所有地图都算。',
+                   '<a href="#upgrades">升级</a>）。局外还有两样永久加成，哪张地图拿的在所有地图都算：打卡，每个地标给一项；'
+                   '<a href="#training">培训</a>，用年终奖发的工资练。',
                    f'<div class="grid wide">{"".join(cards)}</div>')
 
 
@@ -223,7 +231,7 @@ def upgrades_section(data: dict) -> str:
     card_rows = "".join(f"<tr><td><b>{number(row['luck'])}</b></td>" + "".join(f"<td>{percent(share)}</td>" for share in row["cards"]) + "</tr>" for row in luck)
     more_rows = "".join(f"<tr><td><b>{number(row['luck'])}</b></td><td>{percent(row['extra_card'])}</td></tr>" for row in luck)
     luck_card = f"""<article class="card"><h3>运气</h3>
-<p class="muted">运气来自被动「锦鲤」和打卡。每点让优秀及以上每一档的几率多 1%，逐档复利，越稀有的涨得越多；年终奖里的卡也一样。年终奖开出哪档绩效和运气无关。</p>
+<p class="muted">运气来自被动「锦鲤」、打卡和培训。每点让优秀及以上每一档的几率多 1%，逐档复利，越稀有的涨得越多。年终奖开出哪档绩效和运气无关。</p>
 <div class="scroll"><table class="nums"><tr><th>运气</th>{head}</tr>{card_rows}</table></div>
 <div class="scroll"><table class="nums"><tr><th>运气</th><th>升级时多一张卡</th></tr>{more_rows}</table></div></article>"""
 
@@ -231,9 +239,9 @@ def upgrades_section(data: dict) -> str:
     chests = drops["chests"]
     revive = drops["revive"]
     total_weight = sum(chest["weight"] for chest in chests)
-    # 绩效 S gives a 返聘 (a revive kept across runs) rather than upgrades.
-    chest_lines = "".join(f"<li><b>{esc(chest['name'])}</b>：{percent(chest['weight'] / total_weight)}，"
-                          + ("一次<b>返聘</b>，不给升级" if chest.get("revive") else f"白给 {chest['items']} 样升级") + "</li>"
+    # Every rating pays one of its 工资 amounts (for 培训) at random.
+    chest_lines = "".join(f"<li><b>{esc(chest['name'])}</b>：{percent(chest['weight'] / total_weight)}，工资 "
+                          + " / ".join(f"¥{amount}" for amount in chest["salary"]) + " 里随机一个</li>"
                           for chest in chests)
     drops_card = f"""<article class="card"><h3>掉落</h3><ul>
 <li><b>经验星星</b>：每只怪都掉，走近才会吸过来；地上超过 {drops['max_pickups']} 个时，新的经验并进已有的星星</li>
@@ -241,10 +249,30 @@ def upgrades_section(data: dict) -> str:
 <li><b>磁铁</b>：{drops['magnet_from_level']} 级以后普通怪 {percent(drops['magnet_chance'])} 掉，全图的星星一起飞过来</li>
 <li><b>年终奖</b>：每个 boss 必掉的红色宝箱</li></ul>
 <h3>年终奖开出什么</h3><ul>{chest_lines}</ul>
-<p class="muted">几率每个年终奖都一样，和运气、boss 词条都无关；只有 Deadline 按时打掉保底绩效 A。白给的是身上已有的武器和被动随机升一级，每样也抽稀有度。</p>
+<p class="muted">几率每个年终奖都一样，和运气、boss 词条都无关；只有 Deadline 按时打掉保底绩效 A。年终奖不给局内升级，工资存进存档，在<a href="#training">培训</a>里花。</p>
 <h3>返聘</h3>
-<p>存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用：用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。</p></article>"""
-    return section("upgrades", "升级", "打怪捡星星升级，升级时选卡；boss 掉的年终奖再白给几样。", f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}{drops_card}</div>')
+<p>在<a href="#training">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用：用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。</p></article>"""
+    return section("upgrades", "升级", "打怪捡星星升级，升级时选卡；boss 掉的年终奖发工资。", f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}{drops_card}</div>')
+
+
+def training_section(data: dict) -> str:
+    training = data["training"]
+    salaries = " / ".join(f"¥{min(chest['salary'])}–{max(chest['salary'])}" for chest in data["drops"]["chests"])
+    rows = "".join(
+        f"<tr><td>{art(entry['art'], 24, entry['name'])}<b>{esc(entry['name'])}</b></td><td>{esc(entry['step_text'])}</td>"
+        f"<td>{entry['ranks']}</td><td>{' / '.join(f'¥{price}' for price in entry['prices'])}</td><td>{esc(entry['max_text'])}</td></tr>"
+        for entry in training["stats"])
+    card = f"""<article class="card"><h3>能练什么</h3>
+<div class="scroll"><table class="nums"><tr><th>属性</th><th>每级</th><th>级数</th><th>每级价格（不算涨价）</th><th>练满</th></tr>{rows}</table></div>
+<p class="muted">每练一级（不管哪项），所有价格再涨 {percent(training['tax'])}。一级一级轮着练满全部，一共大约 ¥{training['full_cost']:,}。</p></article>"""
+    how = f"""<article class="card"><h3>工资和退款</h3><ul>
+<li>工资只从年终奖来：绩效 B / A / S 分别发 {salaries}（都是 66、88 结尾的吉利数），boss 打得越多挣得越多</li>
+<li>工资存进存档，一局结束也不清零，在开始画面的「培训」里花</li>
+<li>练的等级每局开局都带着，在所有地图都算，和打卡的加成叠加</li>
+<li>「全部退款」把练等级花掉的工资全部退回，可以重新分配</li>
+<li>这里还卖<b>返聘</b>：¥{training['revive_price']} 一个，被裁时可以选择回来（见<a href="#upgrades">升级</a>），用掉就没了，退款不退</li></ul></article>"""
+    return section("training", "培训", "参考吸血鬼幸存者的局外商店：年终奖发的工资攒下来，用来永久升级基础属性。",
+                   f'<div class="grid wide">{card}{how}</div>')
 
 
 # Boss moves by the names the design uses (Enemy.ABILITIES ids); the extras a boss may draw.
@@ -377,7 +405,7 @@ def faq_section(data: dict) -> str:
     # The save and the cloud save as DESIGN.md 2.10 / 2.11 describe them.
     items = [
         ("要注册吗？", "不用。打开就能玩，也不用登录。"),
-        ("进度存在哪？", "存在这个浏览器里，同时自动传一份到云端。打卡和成就一拿到就存，中途关掉页面也不丢；图鉴和累计数据在一局结束时存。"),
+        ("进度存在哪？", "存在这个浏览器里，同时自动传一份到云端。打卡、成就、工资、培训和返聘一有变化就存，中途关掉页面也不丢；图鉴和累计数据在一局结束时存。"),
         ("换手机、换浏览器怎么办？", "在游戏里的「设置 → 云存档」拿到 12 位存档码，在新设备上输入，两边的进度会合并在一起。"),
         ("清了浏览器数据，或者微信把存储清了，进度会丢吗？", "本机那份会丢，云端那份还在，但要输入存档码才能找回来。所以最好先在「设置 → 云存档」里把存档码记下来。"),
         ("不想要云存档了？", "「设置 → 云存档」里可以删除云存档，存档码当场作废，本机的进度保留。"),
@@ -394,7 +422,7 @@ def how_section(data: dict) -> str:
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
-<li>每分钟来一个 boss，打掉必掉「年终奖」，按绩效白给升级；难得开出绩效 S 给一次「返聘」，被裁时可以选择回来</li>
+<li>每分钟来一个 boss，打掉必掉「年终奖」，按绩效发工资，攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
 <li>撑满 10:00 就能敲钟上市</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
 <article class="card"><h3>一局的节奏</h3><p class="muted">boss 每局打乱、前后浮动 10 秒，这是写在代码里的排期：</p><ol class="timeline">{rows}</ol></article>
@@ -497,19 +525,19 @@ show(0);
 
 def build(data: dict, art_dir: pathlib.Path) -> str:
     body = "".join([how_section(data), jobs_section(data), stats_section(data), weapons_section(data), passives_section(data),
-                    upgrades_section(data), maps_section(data), difficulty_section(data), stamps_section(data), bestiary_section(data),
+                    upgrades_section(data), training_section(data), maps_section(data), difficulty_section(data), stamps_section(data), bestiary_section(data),
                     achievements_section(data), faq_section(data)])
     hero_arts = "".join(art(name, 56) for name in [data["jobs"][0]["art"], "bug", "meeting", "deadline", "ai_boss", "chest", "bell"])
     page = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>大厂幸存者 · Big Tech Survivors</title>
-<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。职业、属性、武器、被动、升级、地图、难度、打卡点和怪物图鉴。">
+<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。职业、属性、武器、被动、升级、培训、地图、难度、打卡点和怪物图鉴。">
 <meta property="og:title" content="大厂幸存者 Big Tech Survivors"><meta property="og:description" content="躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。打开网页就能玩。">
 <meta property="og:image" content="https://survivors.lab115.com/index.png"><meta property="og:url" content="https://survivors.lab115.com/">
 <meta name="theme-color" content="#f7c948">
 <style>{STYLE}</style></head><body>
 <nav class="top"><div class="inner"><span class="brand">大厂幸存者</span>
-<a class="link" href="#how">怎么玩</a><a class="link" href="#jobs">职业</a><a class="link" href="#stats">属性</a><a class="link" href="#weapons">武器</a><a class="link" href="#passives">被动</a><a class="link" href="#upgrades">升级</a><a class="link" href="#maps">地图</a><a class="link" href="#difficulty">难度</a><a class="link" href="#stamps">打卡点</a><a class="link" href="#bestiary">图鉴</a><a class="link" href="#achievements">成就</a><a class="link" href="#faq">问答</a>
+<a class="link" href="#how">怎么玩</a><a class="link" href="#jobs">职业</a><a class="link" href="#stats">属性</a><a class="link" href="#weapons">武器</a><a class="link" href="#passives">被动</a><a class="link" href="#upgrades">升级</a><a class="link" href="#training">培训</a><a class="link" href="#maps">地图</a><a class="link" href="#difficulty">难度</a><a class="link" href="#stamps">打卡点</a><a class="link" href="#bestiary">图鉴</a><a class="link" href="#achievements">成就</a><a class="link" href="#faq">问答</a>
 <a class="play" href="{PLAY_URL}">开始玩</a></div></nav>
 <main><header class="hero"><div class="hero-art">{hero_arts}</div>
 <h1>大厂幸存者</h1><div class="en">BIG TECH SURVIVORS</div>

@@ -1,7 +1,7 @@
 class_name Seattle
 extends RefCounted
 ## The Seattle stage (西雅图, .34) as data, under the same names as BayArea and Beijing so City,
-## Traffic, the minimap and the rest draw and move through it the same way. Nothing here draws.
+## Traffic and the rest draw and move through it the same way. Nothing here draws.
 ##
 ## Squeezed onto the grid at the size the user asked for in .34 (every landmark within about 30
 ## seconds' walk): the run starts in South Lake Union among Amazin's offices, with the Space Needle
@@ -43,7 +43,7 @@ const MAP_EVENT := {"id": "rain", "at": 285.0, "seconds": 20.0, "text": "西雅�
 	"name": "下雨", "hint": "水坑里走不快，把怪引进去"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "slu"
-## The named part of the world for the minimap, in world pixels: from Elliott Bay to the Eastside,
+## The named part of the world (the minimap showed it until .44), in world pixels: from Elliott Bay to the Eastside,
 ## from the university to SoDo.
 const OVERVIEW := Rect2(-1800.0, -2000.0, 4600.0, 4000.0)
 ## Spelled out rather than City.BLOCK, to keep the classes' constants acyclic (as in BayArea).
@@ -157,21 +157,12 @@ const LANDMARKS := {
 	Vector2i(0, 0): "brand_row:amazin",
 	Vector2i(0, -1): "brand_row:amazin",
 	Vector2i(1, -1): "brand_row:zillo",
-	Vector2i(-1, 0): "art:first_coffee",
 	Vector2i(1, 0): "art:spheres",
 	Vector2i(-1, -1): "art:space_needle",
-	Vector2i(0, 1): "art:caltrain",
 	Vector2i(-1, 1): "art:pike_place",
-	# On the waterfront, the last block before Elliott Bay.
-	Vector2i(-1, 2): "art:great_wheel",
-	Vector2i(0, 2): "art:central_library",
 	Vector2i(1, 2): "brand_row:expedio",
-	Vector2i(0, 3): "art:stadium",
-	Vector2i(1, 3): "art:mt_rainier",
 	# On Lake Union's north shore.
-	Vector2i(0, -3): "art:gas_works",
 	Vector2i(-1, -3): "art:fremont_troll",
-	Vector2i(1, -3): "art:uw_library",
 	# Across Lake Washington.
 	Vector2i(3, -1): "brand_row:valv",
 	Vector2i(3, 0): "brand_row:microhard",
@@ -179,25 +170,17 @@ const LANDMARKS := {
 }
 const LAWN_LANDMARKS := {}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"caltrain": "station", "pike_place": "pike", "first_coffee": "starbacks", "stadium": "lumens"}
+const LANDMARK_BRANDS := {"pike_place": "pike"}
 const SOLID_SPANS := {}
 
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start sea_ so they never clash with
 ## another map's in the save. Their bonuses add up the same as the other maps'.
 const STAMPS := {
-	"sea_first_coffee": {"art": "first_coffee", "block": Vector2i(-1, 0), "name": "Starbacks 一号店", "note": "全世界排队最长的咖啡店", "bonus": ["haste", 0.02]},
-	"sea_spheres": {"art": "spheres", "block": Vector2i(1, 0), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["might", 0.02]},
-	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-1, -1), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 5.0]},
-	"sea_westlake": {"art": "caltrain", "block": Vector2i(0, 1), "name": "Westlake 轻轨站", "note": "下雨天也准点，就是人多", "bonus": ["speed", 0.02]},
-	"sea_pike": {"art": "pike_place", "block": Vector2i(-1, 1), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.05]},
-	"sea_great_wheel": {"art": "great_wheel", "block": Vector2i(-1, 2), "name": "海滨摩天轮", "note": "转一圈看遍艾略特湾", "bonus": ["luck", 10.0]},
-	"sea_library": {"art": "central_library", "block": Vector2i(0, 2), "name": "中央图书馆", "note": "一栋斜着长的玻璃楼", "bonus": ["haste", 0.02]},
-	"sea_gas_works": {"art": "gas_works", "block": Vector2i(0, -3), "name": "煤气厂公园", "note": "生锈的管子成了网红背景", "bonus": ["might", 0.02]},
-	"sea_troll": {"art": "fremont_troll", "block": Vector2i(-1, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["regen", 0.05]},
-	"sea_uw": {"art": "uw_library", "block": Vector2i(1, -3), "name": "华盛顿大学", "note": "图书馆像霍格沃茨", "bonus": ["magnet", 0.05]},
-	"sea_stadium": {"art": "stadium", "block": Vector2i(0, 3), "name": "Lumens 球场", "note": "全联盟最吵的主场", "bonus": ["max_hp", 5.0]},
-	"sea_microhard": {"art": "icon_window", "block": Vector2i(3, 0), "name": "Microhard 园区", "note": "过了浮桥就是东区", "bonus": ["luck", 10.0]},
-	"sea_rainier": {"art": "mt_rainier", "block": Vector2i(1, 3), "name": "雷尼尔雪山", "note": "天晴才看得见，一年没几天", "bonus": ["might", 0.03]},
+	"sea_spheres": {"art": "spheres", "block": Vector2i(1, 0), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 20.0]},
+	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-1, -1), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 10.0]},
+	"sea_pike": {"art": "pike_place", "block": Vector2i(-1, 1), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.10]},
+	"sea_troll": {"art": "fremont_troll", "block": Vector2i(-1, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.03]},
+	"sea_microhard": {"art": "icon_window", "block": Vector2i(3, 0), "name": "Microhard 园区", "note": "过了浮桥就是东区", "bonus": ["might", 0.03]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

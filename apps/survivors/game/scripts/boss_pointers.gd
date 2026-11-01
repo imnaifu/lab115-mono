@@ -5,7 +5,7 @@ extends Node2D
 ## around the player, so a phone playing turned sideways gets them turned with everything else.
 
 ## Kept clear of the screen's edges (the arrow reaches DISC_RADIUS + ARROW_SIZE past the disc's
-## centre); more at the top, where the upgrade slots and minimap sit.
+## centre); more at the top, where the upgrade slots and buttons sit.
 const INSET_SIDE := 32.0
 const INSET_TOP := 80.0
 const INSET_BOTTOM := 32.0

@@ -8,7 +8,8 @@ signal inventory_changed
 signal level_up_offered(choices: Array, lucky: bool)
 signal run_ended(victory: bool)
 signal announced(text: String)
-signal chest_opened(funding_round: Dictionary, items: Array, odds: Array[float])
+## `salary`: the 工资 this one paid, one of the rating's amounts.
+signal chest_opened(funding_round: Dictionary, salary: int, odds: Array[float])
 ## A boss is starting one of its moves (Enemy.ABILITIES); the HUD explains how to dodge it.
 signal boss_move(ability: String)
 ## The player died holding a 返聘 (Progress.revives_left, `left` of them) they may spend.
@@ -61,16 +62,17 @@ const HOARD_SPILL_VALUE := 6
 const HOARD_SPILL_MAX := 14
 ## An AI's clone appears this far from the player.
 const CLONE_DISTANCE := 110.0
-## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides what
-## comes out: free upgrades for 绩效 B and A, for a rare 绩效 S no upgrades but a 返聘 (`revive`),
-## a revive kept in the save for a later death (Progress.add_revive). The odds are fixed since .43,
-## the user's call: neither luck nor the boss's affixes move them any more. The ids are the data's
-## (Telemetry `chests`) from when these were funding rounds (天使轮 / A 轮 / IPO), kept so runs
-## before and after compare.
+## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
+## 工资 it pays: one of its `salary` amounts at random (the user's lucky numbers, ending in 66 or
+## 88), kept in the save for 培训 (Training). Since .44 it pays nothing in the run (the user's call:
+## 年终奖改成给工资; it gave 1 / 3 / 5 free upgrades before), and 绩效 S no longer gives a 返聘
+## (.43's prize, bought in 培训 now). The odds are fixed since .43: neither luck nor the boss's
+## affixes move them. The ids are the data's (Telemetry `chests`) from when these were funding
+## rounds (天使轮 / A 轮 / IPO), kept so runs before and after compare.
 const FUNDING_ROUNDS := [
-	{"id": "angel", "name": "绩效 B", "items": 1, "weight": 90.0},
-	{"id": "series_a", "name": "绩效 A", "items": 3, "weight": 9.0},
-	{"id": "ipo", "name": "绩效 S", "items": 0, "weight": 1.0, "revive": true},
+	{"id": "angel", "name": "绩效 B", "salary": [66, 88, 166, 188, 266, 288], "weight": 86.0},
+	{"id": "series_a", "name": "绩效 A", "salary": [366, 388, 466, 488, 566, 588], "weight": 9.0},
+	{"id": "ipo", "name": "绩效 S", "salary": [666, 688, 766, 788, 866, 888], "weight": 5.0},
 ]
 ## A 返聘 brings the player back on this share of their health, untouchable for REVIVE_INVULN
 ## seconds, with everything within REVIVE_RADIUS pushed off and stunned (like a 站会's, no damage).
@@ -118,8 +120,10 @@ var revived := false
 ## Year-end bonuses picked up while another was open, opened once it closes: each one's lowest
 ## rating (an index into FUNDING_ROUNDS).
 var _waiting_chests: Array[int] = []
-## Year-end bonuses opened this run, numbering the 返聘 they give (their ids in the save).
+## Year-end bonuses opened this run, numbering the 工资 they pay (their ids in the save).
 var _chests_opened := 0
+## 工资 this run's year-end bonuses paid (the result screen, Telemetry).
+var salary_earned := 0
 ## Investors out this frame, whose auras shield the crowd round them (Enemy "aura").
 var _aura_sources: Array[Enemy] = []
 
@@ -880,9 +884,9 @@ func choose_upgrade(index: int) -> void:
 
 # --- Year-end bonuses (boss chests) ------------------------------------------------------
 
-## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS), hands out what it
-## gives straight away (its upgrades, or a 返聘 into the save) and pauses while the HUD opens the
-## chest. A second chest picked up meanwhile waits its turn.
+## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS) and one of its 工资
+## amounts, saves that straight away (closing the page mid-run keeps it, as a stamp) and pauses
+## while the HUD opens the chest. A second chest picked up meanwhile waits its turn.
 func _open_chest(lowest_round: int = 0) -> void:
 	if state != State.PLAYING:
 		_waiting_chests.append(lowest_round)
@@ -892,9 +896,11 @@ func _open_chest(lowest_round: int = 0) -> void:
 		weights.append(option["weight"])
 	var funding_round: Dictionary = FUNDING_ROUNDS[maxi(rng.rand_weighted(weights), lowest_round)]
 	_chests_opened += 1
-	if funding_round.get("revive", false):
-		# Saved at once, like a stamp: closing the page mid-run keeps it.
-		Progress.add_revive("%s-%d" % [run_id, _chests_opened])
+	var chest_id := "%s-%d" % [run_id, _chests_opened]
+	var amounts: Array = funding_round["salary"]
+	var salary: int = amounts[rng.randi() % amounts.size()]
+	Progress.add_salary(chest_id, salary)
+	salary_earned += salary
 	# This chest's real odds for the dialog: ratings under the floor count as the floor.
 	var total := 0.0
 	for weight in weights:
@@ -904,13 +910,10 @@ func _open_chest(lowest_round: int = 0) -> void:
 		odds.append(0.0 if index < lowest_round else weights[index] / total * 100.0)
 	for index in lowest_round:
 		odds[lowest_round] += weights[index] / total * 100.0
-	# 绩效 S has none: open_chest would still evolve a ready weapon first.
-	var items: Array = upgrades.open_chest(funding_round["items"]) if funding_round["items"] > 0 else []
-	telemetry.on_chest(funding_round["id"], items)
+	telemetry.on_chest(funding_round["id"])
 	state = State.CHEST
 	get_tree().paused = true
-	inventory_changed.emit()
-	chest_opened.emit(funding_round, items, odds)
+	chest_opened.emit(funding_round, salary, odds)
 
 
 ## The HUD's "take it" button (and the smoke-test bot).
@@ -975,9 +978,10 @@ func start_run() -> void:
 ## Zeroes the tilt to how the phone is held right now, and says so: without the hint, the first
 ## tilt player wonders why holding the phone at an angle doesn't send them running.
 func _on_run_started() -> void:
-	# Every landmark checked in at in earlier runs: after the job's own build, before the run's
-	# data notes the player's numbers.
+	# Every landmark checked in at and every rank trained in earlier runs: after the job's own
+	# build, before the run's data notes the player's numbers.
 	Stamps.apply_all(player)
+	Training.apply(player)
 	# A test run (TestMode) isn't reported: it would skew the live numbers.
 	if not TestMode.on:
 		telemetry.start()
@@ -990,12 +994,12 @@ func _on_run_started() -> void:
 
 
 ## 测试模式: the run as if played up to `minute`: the clock there, the bosses before it skipped,
-## and the level a player who picks up every star would have, each level-up a random card, plus
-## the upgrades those bosses' year-end bonuses would have given.
+## and the level a player who picks up every star would have, each level-up a random card. (The
+## skipped bosses' year-end bonuses added their upgrades too, until they paid 工资 instead, .44.)
 func _fast_forward(minute: int) -> void:
 	elapsed = minute * 60.0
-	var bosses := spawner.skip_to(elapsed)
-	var picks := TestMode.level_at(minute) - 1 + roundi(bosses * TestMode.CHEST_UPGRADES)
+	spawner.skip_to(elapsed)
+	var picks := TestMode.level_at(minute) - 1
 	for i in picks:
 		if level < TestMode.level_at(minute):
 			level += 1

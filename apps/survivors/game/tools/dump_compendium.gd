@@ -2,7 +2,7 @@ extends SceneTree
 ## Writes everything the 官网 shows (tools/build_site.py) as JSON: the jobs, weapons, passives,
 ## every enemy by the bestiary's groups, the boss affixes, the maps and their landmarks, the
 ## achievements and a run's schedule; the player's stats, card rarity, luck, drops and the
-## year-end bonus, the XP curve and how a run gets harder; read straight from the game's own tables
+## year-end bonus and 培训, the XP curve and how a run gets harder; read straight from the game's own tables
 ## and formulas, so the site says what the game does. Art is named, not included: build_site.py
 ## reads assets/art/ itself.
 ##
@@ -22,6 +22,10 @@ func _initialize() -> void:
 		printerr("usage: -- <out.json>")
 		quit(1)
 		return
+	# A save of its own in memory: the 培训 totals are worked out by buying in it (_train_fully),
+	# and nothing here should read or write whoever's save is on this machine.
+	Progress.to_disk = false
+	Progress.reset()
 	var hud: GDScript = load(HUD_SCRIPT)
 	var data := {
 		"version": Telemetry.VERSION,
@@ -43,6 +47,7 @@ func _initialize() -> void:
 			"magnet_chance": Game.MAGNET_DROP_CHANCE, "magnet_from_level": Game.MAGNET_FROM_LEVEL,
 			"max_pickups": Game.MAX_PICKUPS, "chests": Game.FUNDING_ROUNDS,
 			"revive": {"hp": Game.REVIVE_HP, "invuln": Game.REVIVE_INVULN}},
+		"training": _training(),
 		"xp": _xp(),
 		"job_weapon_levels": Upgrades.JOB_WEAPON_LEVELS,
 		"pacing": _pacing(),
@@ -202,19 +207,53 @@ func _achievements() -> Array:
 
 
 ## The player's stats (what the pause screen lists) at the start of a run, before the job's own
-## health, armour and speed, and with every landmark on every map checked in at, both read off a
-## Player as Stamps.apply_bonus leaves it, so the totals compound the way the game does.
+## health, armour and speed: fresh, with every landmark on every map checked in at, and with every
+## 培训 rank bought, each read off a Player as Stamps.apply_bonus / Training.apply leave it, so the
+## totals compound the way the game does.
 func _stats() -> Dictionary:
 	var fresh := Player.new()
 	var stamped := Player.new()
 	for map_id: String in Maps.ORDER:
 		for stamp_id: String in Maps.script_of(map_id).STAMPS:
 			Stamps.apply_bonus(stamped, stamp_id)
+	var trained := Player.new()
+	_train_fully()
+	Training.apply(trained)
 	var stats := {"start": _player_stats(fresh), "all_stamps": _player_stats(stamped),
-		"invuln_seconds": Player.INVULN_SECONDS, "passive_steps": Upgrades.STAT_STEPS}
+		"all_training": _player_stats(trained), "invuln_seconds": Player.INVULN_SECONDS,
+		"passive_steps": Upgrades.STAT_STEPS}
 	fresh.free()
 	stamped.free()
+	trained.free()
 	return stats
+
+
+## 培训 (Training) for the 官网: each stat's ranks, what one rank and the top give, the price of each
+## rank before the tax, and what training everything costs bought rank by rank in table order.
+func _training() -> Dictionary:
+	var stats := []
+	for entry: Dictionary in Training.STATS:
+		var id: String = entry["id"]
+		var prices := []
+		for level in range(1, int(entry["ranks"]) + 1):
+			prices.append(Training.price_at(id, level, 0))
+		stats.append({"id": id, "name": entry["name"], "art": entry["art"], "ranks": entry["ranks"],
+			"step_text": Training.amount_text(id, 1), "max_text": Training.amount_text(id, entry["ranks"]), "prices": prices})
+	return {"stats": stats, "tax": Training.TAX, "full_cost": _train_fully(), "revive_price": Training.REVIVE_PRICE}
+
+
+## Buys every 培训 rank in a throwaway save (kept in memory, never on disk) and says what it cost.
+func _train_fully() -> int:
+	Progress.to_disk = false
+	Progress.reset()
+	Progress.add_salary("dump", 100000000)
+	var more := true
+	# Rank by rank across the table, the way a player spreading their 工资 would.
+	while more:
+		more = false
+		for entry: Dictionary in Training.STATS:
+			more = Training.buy(entry["id"]) or more
+	return 100000000 - Training.balance()
 
 
 func _player_stats(player: Player) -> Dictionary:

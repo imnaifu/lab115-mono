@@ -34,11 +34,11 @@ const LIST := [
 	{"id": "win_ops", "tier": "gold", "art": "ops", "group": "职业", "name": "运维敲钟", "text": "用运维通关", "job": "ops"},
 	{"id": "win_data_scientist", "tier": "gold", "art": "data_scientist", "group": "职业", "name": "数据科学家敲钟", "text": "用数据科学家通关", "job": "data_scientist"},
 	{"id": "stamps_5", "tier": "bronze", "art": "stanford_tower", "group": "打卡", "name": "网红打卡", "text": "打卡 5 个地标", "goal": 5},
-	{"id": "stamps_all", "tier": "gold", "art": "golden_gate", "group": "打卡", "name": "湾区通", "text": "硅谷 13 个地标全部打卡", "goal": 13},
-	{"id": "ldn_stamps_all", "tier": "gold", "art": "london_eye", "group": "打卡", "name": "伦敦通", "text": "伦敦 13 个地标全部打卡", "goal": 13},
-	{"id": "sea_stamps_all", "tier": "gold", "art": "great_wheel", "group": "打卡", "name": "西雅图通", "text": "西雅图 13 个地标全部打卡", "goal": 13},
-	{"id": "sg_stamps_all", "tier": "gold", "art": "mbs", "group": "打卡", "name": "新加坡通", "text": "新加坡 13 个地标全部打卡", "goal": 13},
-	{"id": "bj_stamps_all", "tier": "gold", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 13 个地标全部打卡", "goal": 13},
+	{"id": "stamps_all", "tier": "gold", "art": "golden_gate", "group": "打卡", "name": "湾区通", "text": "硅谷 5 个地标全部打卡", "goal": 5},
+	{"id": "ldn_stamps_all", "tier": "gold", "art": "tower_bridge", "group": "打卡", "name": "伦敦通", "text": "伦敦 5 个地标全部打卡", "goal": 5},
+	{"id": "sea_stamps_all", "tier": "gold", "art": "pike_place", "group": "打卡", "name": "西雅图通", "text": "西雅图 5 个地标全部打卡", "goal": 5},
+	{"id": "sg_stamps_all", "tier": "gold", "art": "mbs", "group": "打卡", "name": "新加坡通", "text": "新加坡 5 个地标全部打卡", "goal": 5},
+	{"id": "bj_stamps_all", "tier": "gold", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 5 个地标全部打卡", "goal": 5},
 	{"id": "train_hit", "tier": "bronze", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
 ]
 const GROUPS := ["生存", "战斗", "职业", "打卡", "彩蛋"]
@@ -62,7 +62,7 @@ const ESTIMATED_RATES := {
 	"thousand": 20.0, "ten_thousand": 2.0, "first_boss": 80.0, "all_bosses": 10.0, "bestiary_all": 1.0,
 	"first_evolve": 25.0, "full_kit": 30.0,
 	"win_coder": 8.0, "win_pm": 6.0, "win_designer": 5.0, "win_ops": 5.0, "win_data_scientist": 4.0,
-	"stamps_5": 35.0, "stamps_all": 5.0, "ldn_stamps_all": 3.0, "sea_stamps_all": 2.0, "sg_stamps_all": 1.5, "bj_stamps_all": 1.0, "train_hit": 40.0,
+	"stamps_5": 30.0, "stamps_all": 25.0, "ldn_stamps_all": 8.0, "sea_stamps_all": 6.0, "sg_stamps_all": 5.0, "bj_stamps_all": 4.0, "train_hit": 40.0,
 }
 const SURVIVE_SECONDS := 300.0
 const UNTOUCHED_SECONDS := 180.0

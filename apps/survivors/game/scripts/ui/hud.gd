@@ -1,7 +1,7 @@
 class_name Hud
 extends CanvasLayer
 ## Screen-space UI, drawn after the design canvas 「硅谷幸存者 · 界面设计」: the HUD (upgrade slots,
-## XP, clock, boss readouts, kills, minimap, joystick, hints) and the title, level-up, funding
+## XP, clock, boss readouts, kills, district, joystick, hints) and the title, level-up, funding
 ## bag, pause, result and settings screens. Keeps running while the tree is paused so the
 ## screens can take input. The pieces come from UiKit.
 ## Screen visibility follows game.state every frame instead of being toggled by events, so a
@@ -22,7 +22,8 @@ const LOW_HP_RATIO := 0.35
 ## How red the screen's edges flash for a hit just taken (of the low-health vignette's full red).
 const HURT_FLASH := 0.6
 const XP_BAR_SIZE := Vector2(96, 18)
-## The boss bar sits under the clock; on an upright phone it must clear the minimap.
+## The boss bar sits under the clock; on an upright phone it must clear the buttons and the
+## district on the right (the minimap was there too until .44).
 const BOSS_BAR_WIDTH := 110.0
 const BOSS_BAR_WIDTH_PORTRAIT := 80.0
 ## Level-up cards side by side when there are more than three of them (luck's extra card).
@@ -71,6 +72,8 @@ const CHEST_RAY_TURN_SECONDS := 8.0
 const CHEST_STAR_SIZE := 18.0
 const CHEST_GLOW := [Color("dfe5ee"), Color("f7c948"), Color("ff9f1a")]
 const CHEST_STARS := [0, 6, 14]
+## A year-end bonus paying one of these 工资 amounts says so after it (Game.FUNDING_ROUNDS).
+const LUCKY_SALARIES := {666: "六六六！", 888: "发发发！"}
 ## Space kept around a screen that has to shrink to fit.
 const FIT_MARGIN := 8.0
 const RANKING_ROWS := 6
@@ -119,7 +122,6 @@ var _boss_name: Label
 var _boss_more: Label
 var _boss_progress: ProgressBar
 var _kills_label: Label
-var _minimap: Minimap
 var _district_label: Label
 ## The district's own icon beside its name (the map's DISTRICTS `icon`, .37).
 var _district_icon: TextureRect
@@ -162,6 +164,11 @@ var _chest_stamp: Control
 var _odds_chips: Array[PanelContainer] = []
 var _pause_overlay: Control
 var _pause_holder: CenterContainer
+## The 培训 page (Training), opened from the title screen.
+var _training_overlay: Control
+var _training_holder: Control
+var _training_open := false
+var _training_scroll: ScrollContainer
 ## The revive dialog (Game.State.REVIVE), and the top bar's sign that this run has a 返聘 to spend.
 var _revive_overlay: Control
 var _revive_holder: CenterContainer
@@ -257,6 +264,8 @@ func _ready() -> void:
 	_collection_holder = _full(_collection_overlay)
 	_world_overlay = _overlay(Art.PAPER_SOFT)
 	_world_holder = _full(_world_overlay)
+	_training_overlay = _overlay(Art.PAPER_SOFT)
+	_training_holder = _full(_training_overlay)
 	# Last, so it opens on top of the title or pause screen it was opened from.
 	_settings_overlay = _overlay(Art.PAPER_SOFT)
 	_settings_holder = _full(_settings_overlay)
@@ -348,8 +357,10 @@ func _process(delta: float) -> void:
 	if state != Game.State.TITLE:
 		_collection_open = false
 		_world_open = false
+		_training_open = false
 	_collection_overlay.visible = _collection_open
 	_world_overlay.visible = _world_open
+	_training_overlay.visible = _training_open
 	_settings_overlay.visible = _settings_open
 	_save_overlay.visible = _save_open
 	if _settings_open and _tilt_hint != null:
@@ -395,6 +406,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _world_open:
 		if key == KEY_ESCAPE:
 			_world_open = false
+		return
+	if _training_open:
+		if key == KEY_ESCAPE:
+			_close_training()
 		return
 	match game.state:
 		Game.State.TITLE:
@@ -444,6 +459,8 @@ func fit_screen(turned: bool) -> void:
 	_show_title.call_deferred()
 	if _world_open:
 		_open_departures.call_deferred()
+	if _training_open:
+		_open_training.call_deferred()
 
 
 # --- Touch joystick ------------------------------------------------------------------------
@@ -619,7 +636,8 @@ func _build_top_bar() -> void:
 	boss_row.add_child(_boss_more)
 	_center_column.add_child(_boss_bar)
 
-	# Kills and the buttons, the minimap under them, the district under that.
+	# Kills and the buttons, the district under them. (A minimap sat between them until .44: the
+	# user found it too busy.)
 	var right := VBoxContainer.new()
 	right.anchor_left = 1.0
 	right.anchor_right = 1.0
@@ -661,10 +679,6 @@ func _build_top_bar() -> void:
 	buttons.add_child(_recalibrate_button)
 	_pause_button = UiKit.round_button("pause", game.set_paused.bind(true))
 	buttons.add_child(_pause_button)
-	_minimap = Minimap.new()
-	_minimap.game = game
-	_minimap.size_flags_horizontal = Control.SIZE_SHRINK_END
-	right.add_child(_minimap)
 	var district := UiKit.panel(UiKit.box(Art.PAPER, Color.TRANSPARENT, 0, UiKit.PILL, Vector4(6, 1, 8, 1)))
 	district.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var district_row := HBoxContainer.new()
@@ -994,29 +1008,36 @@ func _show_title() -> void:
 	column.add_child(UiKit.gap(20 if portrait else 10))
 
 	var start := UiKit.primary_button("开始搬砖", game.start_run, 56.0 if portrait else 48.0, 20)
-	start.custom_minimum_size.x = 312.0 if portrait else 200.0
+	start.custom_minimum_size.x = 312.0 if portrait else 160.0
 	start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var settings := _settings_button()
-	settings.custom_minimum_size.x = 140.0 if portrait else 120.0
+	settings.custom_minimum_size.x = 104.0 if portrait else 94.0
 	settings.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var collection := UiKit.secondary_button("收藏", _open_collection)
 	collection.icon = Art.texture("star_gold")
 	collection.add_theme_constant_override("icon_max_width", 18)
-	collection.custom_minimum_size.x = 150.0 if portrait else 140.0
+	collection.custom_minimum_size.x = 104.0 if portrait else 100.0
+	# 培训 (.44): where year-end bonuses' 工资 is spent on the base stats.
+	var training := UiKit.secondary_button("培训", _open_training)
+	training.icon = Art.texture("moneybag")
+	training.add_theme_constant_override("icon_max_width", 18)
+	training.custom_minimum_size.x = 104.0 if portrait else 100.0
 	if portrait:
 		column.add_child(start)
 		column.add_child(UiKit.gap(12))
 		var more := HBoxContainer.new()
 		more.alignment = BoxContainer.ALIGNMENT_CENTER
-		more.add_theme_constant_override("separation", 12)
+		more.add_theme_constant_override("separation", 8)
+		more.add_child(training)
 		more.add_child(collection)
 		more.add_child(settings)
 		column.add_child(more)
 	else:
 		var buttons := HBoxContainer.new()
 		buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-		buttons.add_theme_constant_override("separation", 12)
+		buttons.add_theme_constant_override("separation", 10)
 		buttons.add_child(start)
+		buttons.add_child(training)
 		buttons.add_child(collection)
 		buttons.add_child(settings)
 		column.add_child(buttons)
@@ -1478,6 +1499,167 @@ func _fit_title() -> void:
 	_size_heading(_title_heading, TITLE_SIZE if width <= room else floori(TITLE_SIZE * room / width))
 
 
+# --- 培训 ------------------------------------------------------------------------------------
+
+## The 培训 page (.44, Training, after Vampire Survivors' PowerUp shop): the 工资 there to spend, a
+## row per base stat (its rank, what it gives now and at the next rank, and a button with the
+## price), and 全部退款. Rebuilt after every purchase, staying scrolled where it was.
+func _open_training() -> void:
+	var kept_scroll := 0
+	if _training_open and is_instance_valid(_training_scroll):
+		kept_scroll = _training_scroll.scroll_vertical
+	_training_open = true
+	_clear(_training_holder)
+	var portrait := _is_portrait()
+	var page := _page(Vector4(16, 20, 16, 16) if portrait else Vector4(24, 14, 24, 12))
+	_training_holder.add_child(page)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12 if portrait else 8)
+	page.add_child(column)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	column.add_child(header)
+	var back := UiKit.round_button("ui_back", _close_training, 44.0, Art.INK)
+	header.add_child(back)
+	var title := UiKit.label("培训", 22, "heavy")
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var wallet := UiKit.panel(UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.PILL, Vector4(10, 4, 12, 4)))
+	wallet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var wallet_row := HBoxContainer.new()
+	wallet_row.add_theme_constant_override("separation", 6)
+	wallet_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wallet.add_child(wallet_row)
+	wallet_row.add_child(UiKit.icon("moneybag", 20))
+	var balance := UiKit.label(tr("工资 ¥%d") % maxi(Training.balance(), 0), 15, "heavy")
+	balance.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	wallet_row.add_child(balance)
+	header.add_child(wallet)
+
+	column.add_child(_collection_note(tr("年终奖发的工资在这里花：每项基础属性练几级，以后每局开局都带着。每练一级，所有价格都涨 %d%%；随时可以全部退款重新分配（已经买的返聘不退）。") % roundi(Training.TAX * 100.0)))
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	_training_scroll = scroll
+	if kept_scroll > 0:
+		_scroll_after_layout(scroll, kept_scroll)
+	var grid := GridContainer.new()
+	grid.columns = 1 if portrait else 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(grid)
+	for entry: Dictionary in Training.STATS:
+		grid.add_child(_training_row(entry))
+	grid.add_child(_revive_shop_row())
+
+	var footer := HBoxContainer.new()
+	footer.alignment = BoxContainer.ALIGNMENT_END
+	column.add_child(footer)
+	var refund := UiKit.secondary_button("全部退款", func() -> void:
+		Training.refund_all()
+		Sound.play("payout")
+		_open_training(), 40.0, 14)
+	refund.disabled = Training.total_ranks() == 0
+	footer.add_child(refund)
+	_focus(back)
+
+
+## One stat on the 培训 page: its icon, name and rank dots, what it gives now and what the next
+## rank adds, and the button to buy it (its price, or 已满).
+func _training_row(entry: Dictionary) -> Control:
+	var id: String = entry["id"]
+	var rank := Training.rank(id)
+	var top: int = entry["ranks"]
+	var row_panel := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_panel.add_child(row)
+	row.add_child(UiKit.well(entry["art"], 40, Art.MINT_LIGHT if rank > 0 else Art.PAPER_SUNK, UiKit.RADIUS_SM))
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 2)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 8)
+	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(name_row)
+	name_row.add_child(UiKit.label(entry["name"], 14, "strong"))
+	name_row.add_child(UiKit.level_dots(rank, top, rank < top))
+	var gives: String
+	if rank >= top:
+		gives = tr("已练满 %s") % Training.amount_value(id, rank)
+	elif rank > 0:
+		gives = tr("现在 %s → 下一级 %s") % [Training.amount_value(id, rank), Training.amount_value(id, rank + 1)]
+	else:
+		gives = tr("还没练 → 下一级 %s") % Training.amount_value(id, 1)
+	var detail := UiKit.label(gives, 11, "muted")
+	detail.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.custom_minimum_size.x = 120.0
+	text.add_child(detail)
+	var buy: Button
+	if rank >= top:
+		buy = UiKit.secondary_button("已满", func() -> void: pass, 36.0, 13)
+		buy.disabled = true
+	else:
+		var cost := Training.price(id)
+		buy = UiKit.primary_button("¥%d" % cost, func() -> void:
+			if Training.buy(id):
+				Sound.play("pick")
+				_open_training(), 36.0, 14)
+		buy.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		buy.disabled = cost > Training.balance()
+	buy.custom_minimum_size.x = 76.0
+	buy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(buy)
+	return row_panel
+
+
+## The 培训 page's 返聘 (.44; 绩效 S's prize in .43): how many are saved, what one does, and the
+## button to buy another for Training.REVIVE_PRICE.
+func _revive_shop_row() -> Control:
+	var row_panel := UiKit.panel(UiKit.box(Art.MINT_LIGHT, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_panel.add_child(row)
+	row.add_child(UiKit.well("rehire", 40, Art.PAPER, UiKit.RADIUS_SM))
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 2)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	var name_label := UiKit.label(tr("返聘 ×%d") % Progress.revives_left(), 14, "strong")
+	name_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	text.add_child(name_label)
+	var detail := UiKit.label("被裁时可以选择回来上班（回半血），每局最多用一次，存着下局也能用", 11, "muted")
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.custom_minimum_size.x = 120.0
+	text.add_child(detail)
+	var buy := UiKit.primary_button("¥%d" % Training.REVIVE_PRICE, func() -> void:
+		if Training.buy_revive():
+			Sound.play("pick")
+			_open_training(), 36.0, 14)
+	buy.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	buy.disabled = Training.REVIVE_PRICE > Training.balance()
+	buy.custom_minimum_size.x = 76.0
+	buy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(buy)
+	return row_panel
+
+
+func _close_training() -> void:
+	_training_open = false
+
+
 # --- Level-up ------------------------------------------------------------------------------
 
 ## `lucky`: luck added a card (Upgrades.lucky_card), which the line under the title says, with the
@@ -1732,10 +1914,10 @@ func _hover(card: Control, entered: bool) -> void:
 
 ## A boss's year-end bonus (年终奖): the chest rocks, quicker and quicker, then flies open on the
 ## rating Game rolled (绩效 B / A / S), with rays behind it and, for A and S, stars flying out;
-## then the upgrades it brought appear one by one (Game has applied them already), or for 绩效 S
-## the 返聘 it saved. `odds` are this chest's own chances: the same for every chest since .43, but
-## for a Deadline met in time, which has no 绩效 B.
-func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) -> void:
+## then the 工资 it paid (`salary`, for 培训, .44; it gave upgrades before) and for 绩效 S the 返聘
+## it saved, both in the save already. `odds` are this chest's own chances: the same for every
+## chest since .43, but for a Deadline met in time, which has no 绩效 B.
+func _show_chest(funding_round: Dictionary, salary: int, odds: Array[float]) -> void:
 	_clear(_chest_holder)
 	_chest_revealed = false
 	_odds_chips.clear()
@@ -1752,7 +1934,7 @@ func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) ->
 	if portrait:
 		head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	else:
-		# Sideways the chest keeps a fixed width and the upgrades get the rest, for their names.
+		# Sideways the chest keeps a fixed width and what it gave gets the rest.
 		head.custom_minimum_size = Vector2(240, 0)
 	body.add_child(head)
 	head.add_child(UiKit.kicker("YEAR-END BONUS"))
@@ -1800,7 +1982,9 @@ func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) ->
 		var round_name := UiKit.label(option["name"], 13, "strong")
 		round_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		chip_column.add_child(round_name)
-		var gives := tr("返聘") if option.get("revive", false) else tr("升 %d 样") % option["items"]
+		# The rating's range of 工资 (one of its amounts comes out).
+		var amounts: Array = option["salary"]
+		var gives := "¥%d–%d" % [amounts.min(), amounts.max()]
 		var chance := UiKit.label("%s · %d%%" % [gives, roundi(odds[index])], 11, "muted")
 		chance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		chip_column.add_child(chance)
@@ -1817,7 +2001,7 @@ func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) ->
 	var result := UiKit.label("", 15, "heavy")
 	result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tail.add_child(result)
-	# One upgrade a row, so every name has room (two columns sideways made the dialog too wide).
+	# The 工资, and under it the 返聘 for 绩效 S.
 	var prize := VBoxContainer.new()
 	prize.add_theme_constant_override("separation", 8)
 	tail.add_child(prize)
@@ -1831,7 +2015,7 @@ func _show_chest(funding_round: Dictionary, items: Array, odds: Array[float]) ->
 	_fit_to_screen(_chest_holder)
 
 	# Swings each a little shorter and wider than the last, a tick on each, then it opens.
-	_chest_reveal = _reveal_chest.bind(landing, result, prize, funding_round, items)
+	_chest_reveal = _reveal_chest.bind(landing, result, prize, funding_round, salary)
 	_chest_shake = dialog.create_tween()
 	var swing_seconds := CHEST_SHAKE_SECONDS / CHEST_SHAKES
 	for i in CHEST_SHAKES:
@@ -1864,7 +2048,7 @@ func _burst(color: Color) -> Control:
 	return burst
 
 
-func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_round: Dictionary, items: Array) -> void:
+func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_round: Dictionary, salary: int) -> void:
 	if _chest_revealed:
 		return
 	_chest_revealed = true
@@ -1886,41 +2070,17 @@ func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_ro
 	_stamp_on(_chest_stamp)
 	_odds_chips[landing].add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, 10, Vector4(4, 5, 4, 5)))
 	Sound.play("win" if funding_round["id"] == "ipo" else "payout")
-	if funding_round.get("revive", false):
-		result.text = tr("%s！拿到一次返聘") % tr(funding_round["name"])
-		var rehire_row := _rehire_row()
-		prize.add_child(rehire_row)
-		_pop_in(rehire_row, 0.3)
-		_fit_to_screen(_chest_holder)
-		_show_chest_take(0.6)
-		return
-	result.text = tr("%s！白给 %d 样升级") % [tr(funding_round["name"]), items.size()]
-	# The same upgrade twice in one chest is one row, from its first level to its last, in the
-	# rarer of its two rarities.
-	var rows: Array[Dictionary] = []
-	var row_of := {}
-	for item: Dictionary in items:
-		# A job weapon's directions level up apart (.35): one row each, with that direction's level.
-		var key: String = item["id"] + ":" + item.get("branch", "")
-		var reached: int = item.get("branch_level", item.get("to_level", item["level"]))
-		if row_of.has(key):
-			var row_entry: Dictionary = rows[row_of[key]]
-			row_entry["level"] = reached
-			row_entry["rarity"] = maxi(row_entry.get("rarity", 0), item.get("rarity", 0))
-		else:
-			row_of[key] = rows.size()
-			var entry := item.duplicate()
-			entry["from"] = item.get("branch_level", item["level"]) - 1
-			entry["level"] = reached
-			rows.append(entry)
-	for i in rows.size():
-		var row := _prize_row(rows[i], _is_portrait())
-		prize.add_child(row)
-		# After the lid has come off.
-		_pop_in(row, 0.3 + i * 0.12)
+	result.text = tr("%s！工资 +¥%d") % [tr(funding_round["name"]), salary]
+	# The luckiest amounts get a cheer of their own.
+	if LUCKY_SALARIES.has(salary):
+		result.text += " " + tr(LUCKY_SALARIES[salary])
+	var row := _salary_row(salary)
+	prize.add_child(row)
+	# After the lid has come off.
+	_pop_in(row, 0.3)
 	_fit_to_screen(_chest_holder)
-	# 收下 comes up once the last row has popped in (0.22 s each) and the stars have flown (0.6 s).
-	_show_chest_take(maxf(0.6, 0.3 + (rows.size() - 1) * 0.12 + 0.22))
+	# 收下 comes up once the row has popped in (0.22 s) and the stars have flown (0.6 s).
+	_show_chest_take(0.6)
 
 
 ## The chest's 收下, faded in after `settled` seconds (once what it gave is all on screen).
@@ -1934,23 +2094,29 @@ func _show_chest_take(settled: float) -> void:
 		_focus(take))
 
 
-## 绩效 S's prize (.43): a 返聘, saved for a death in any run, one spent a run at most.
-func _rehire_row() -> Control:
-	var row_panel := UiKit.panel(UiKit.box(Art.MINT_LIGHT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+## A year-end bonus's prize (.44): its 工资, saved for 培训 on the title screen. (.43's 绩效 S gave a
+## 返聘 too, in a green row under it; 返聘 are bought in 培训 now.)
+func _salary_row(amount: int) -> Control:
+	var heading := tr("工资 +¥%d") % amount
+	var note_text := tr("攒着去开始画面的「培训」升级属性，现在有 ¥%d") % Training.balance()
+	var row_panel := UiKit.panel(UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
 	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row_panel.resized.connect(func() -> void: row_panel.pivot_offset = row_panel.size / 2.0)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row_panel.add_child(row)
-	row.add_child(UiKit.icon("rehire", 36))
+	row.add_child(UiKit.icon("moneybag", 36))
 	var text := VBoxContainer.new()
 	text.add_theme_constant_override("separation", 0)
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(text)
-	text.add_child(UiKit.label(tr("返聘 ×%d") % Progress.revives_left(), 15, "heavy"))
-	var note := UiKit.label("被裁时可以选择回来上班（回半血），每局最多用一次，存着下局也能用", 11, "muted")
+	var heading_label := UiKit.label(heading, 15, "heavy")
+	heading_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	text.add_child(heading_label)
+	var note := UiKit.label(note_text, 11, "muted")
+	note.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.custom_minimum_size.x = 180.0
 	text.add_child(note)
@@ -1979,38 +2145,6 @@ func _stamp_on(stamp: Control) -> void:
 	press.tween_property(stamp, "modulate:a", 1.0, 0.1)
 	press.tween_property(stamp, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	press.tween_property(stamp, "rotation", -0.05, 0.25)
-
-
-## One upgrade out of the chest: its icon, name, rarity and the level it went to.
-func _prize_row(item: Dictionary, roomy: bool) -> Control:
-	var row_panel := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
-	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row_panel.resized.connect(func() -> void: row_panel.pivot_offset = row_panel.size / 2.0)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row_panel.add_child(row)
-	var kind: String = item["kind"]
-	var level: int = item["level"]
-	var rarity: int = item.get("rarity", 0)
-	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.BRAND_SOFT if kind == "evolve" else Art.SKY_LIGHT
-	if kind == "evolve":
-		row_panel.add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
-	elif rarity > 0:
-		# Outlined in its rarity's colour, as a level-up card would be.
-		row_panel.add_theme_stylebox_override("panel", UiKit.box(Art.PAPER, Art.RARITY_EDGE[rarity], UiKit.OUTLINE_HEAVY, UiKit.RADIUS_MD, Vector4(10, 6 if roomy else 3, 10, 6 if roomy else 3)))
-	row.add_child(UiKit.well(item["art"], 34 if roomy else 28, fill, UiKit.RADIUS_SM))
-	var name_label := UiKit.label(_card_name(item), 14, "strong")
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.clip_text = true
-	name_label.custom_minimum_size = Vector2(60, 0)
-	row.add_child(name_label)
-	if rarity > 0:
-		row.add_child(UiKit.tag(Upgrades.RARITIES[rarity]["name"], Art.RARITY_FILL[rarity], Art.RARITY_INK[rarity]))
-	var from: int = item.get("from", level - 1)
-	var step := tr("回复 30") if kind == "heal" else tr("进化！") if kind == "evolve" else tr("新") if level == 1 and not item.has("branch") else "Lv %d → %d" % [from, level]
-	row.add_child(UiKit.label(step, 12, "display", Art.LINK))
-	return row_panel
 
 
 ## Closes the dialog once the opening has played out (_chest_take is on); before that, nothing.
@@ -2316,10 +2450,12 @@ func _show_end(victory: bool) -> void:
 	_fit_to_screen(_end_holder)
 
 
-## What the run added to 局外成长, on gold: landmarks checked in at and achievements earned;
-## null when nothing.
+## What the run added to 局外成长, on gold: 工资 for 培训 (.44), landmarks checked in at and
+## achievements earned; null when nothing.
 func _earned_row() -> Control:
 	var parts := PackedStringArray()
+	if game.salary_earned > 0:
+		parts.append(tr("工资 +¥%d") % game.salary_earned)
 	var stamp_names := PackedStringArray()
 	for id in game.stamps.new_ids:
 		stamp_names.append(tr(Maps.current.STAMPS[id]["name"]))

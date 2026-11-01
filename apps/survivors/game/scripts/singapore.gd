@@ -1,7 +1,7 @@
 class_name Singapore
 extends RefCounted
 ## The Singapore stage (新加坡, .38) as data, under the same names as BayArea and the rest so City,
-## Traffic, the minimap and the rest draw and move through it the same way. Nothing here draws.
+## Traffic and the rest draw and move through it the same way. Nothing here draws.
 ##
 ## Squeezed onto the grid at the size every map has (every landmark within about 30 seconds'
 ## walk): the run starts at one-north among the e-commerce campuses, with the university to the
@@ -44,7 +44,7 @@ const MAP_EVENT := {"id": "heat", "at": 290.0, "seconds": 20.0, "text": "热浪�
 	"name": "热浪", "hint": "躲进蓝色冷气圈，外面会掉血"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "onenorth"
-## The named part of the world for the minimap, in world pixels: from the university to Jewel,
+## The named part of the world (the minimap showed it until .44), in world pixels: from the university to Jewel,
 ## from Little India to Sentosa.
 const OVERVIEW := Rect2(-1300.0, -1100.0, 4200.0, 3200.0)
 ## Spelled out rather than City.BLOCK, to keep the classes' constants acyclic (as in BayArea).
@@ -80,7 +80,7 @@ const SALT_POND_FROM_ROW := 1000
 const RUNWAYS: Array[Vector2i] = []
 
 ## Per district, as in BayArea.DISTRICTS. Rain trees; durian signs, orchids and hawker stalls on
-## the pavements. `icon` is drawn by the district's name under the minimap.
+## the pavements. `icon` is drawn by the district's name in the HUD.
 const DISTRICTS := {
 	"onenorth": {
 		"name": "纬壹科技城", "icon": "one_north",
@@ -158,42 +158,26 @@ const LANDMARKS := {
 	Vector2i(2, 0): "brand_row:dbb",
 	Vector2i(1, -2): "brand_row:tiktak",
 	Vector2i(0, -1): "art:one_north",
-	Vector2i(-1, 0): "art:nus_hall",
-	Vector2i(0, 1): "art:chinatown",
-	Vector2i(1, 0): "art:lau_pa_sat",
-	Vector2i(1, 1): "art:raffles_place",
-	Vector2i(1, -1): "art:clarke_quay",
-	Vector2i(2, -2): "art:little_india",
-	# On the coast, looking out to sea, and across the water on Sentosa.
-	Vector2i(0, 2): "art:mount_faber",
+	# Across the water on Sentosa, looking out to sea.
 	Vector2i(0, 3): "art:sentosa_beach",
 	# Round Marina Bay: the Merlion on its west shore, the rest on its east.
 	Vector2i(1, 2): "art:merlion",
 	Vector2i(3, 2): "art:mbs",
-	Vector2i(3, 1): "art:supertrees",
 	Vector2i(3, -1): "art:jewel",
 }
 const LAWN_LANDMARKS := {}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"one_north": "onenorth_sign", "lau_pa_sat": "lps"}
+const LANDMARK_BRANDS := {"one_north": "onenorth_sign"}
 const SOLID_SPANS := {}
 
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start sg_ so they never clash with
 ## another map's in the save. Their bonuses add up the same as the other maps'.
 const STAMPS := {
-	"sg_one_north": {"art": "one_north", "block": Vector2i(0, -1), "name": "纬壹科技城", "note": "几家大厂的亚太总部挤在一起", "bonus": ["haste", 0.02]},
-	"sg_nus": {"art": "nus_hall", "block": Vector2i(-1, 0), "name": "国大", "note": "毕业了直接走到隔壁上班", "bonus": ["magnet", 0.05]},
-	"sg_mount_faber": {"art": "mount_faber", "block": Vector2i(0, 2), "name": "花柏山", "note": "缆车从这里出发去圣淘沙", "bonus": ["might", 0.02]},
-	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(0, 3), "name": "圣淘沙", "note": "过了桥就是度假岛", "bonus": ["luck", 10.0]},
-	"sg_merlion": {"art": "merlion", "block": Vector2i(1, 2), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["might", 0.02]},
-	"sg_mbs": {"art": "mbs", "block": Vector2i(3, 2), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 5.0]},
-	"sg_supertrees": {"art": "supertrees", "block": Vector2i(3, 1), "name": "超级树", "note": "钢筋做的树，晚上会发光", "bonus": ["regen", 0.05]},
-	"sg_lau_pa_sat": {"art": "lau_pa_sat", "block": Vector2i(1, 0), "name": "老巴刹", "note": "写字楼中间的小贩中心，中午排长队", "bonus": ["max_hp", 5.0]},
-	"sg_chinatown": {"art": "chinatown", "block": Vector2i(0, 1), "name": "牛车水", "note": "一排排的老店屋，挂满红灯笼", "bonus": ["magnet", 0.05]},
-	"sg_clarke_quay": {"art": "clarke_quay", "block": Vector2i(1, -1), "name": "克拉码头", "note": "河边的彩色仓库，下班喝一杯", "bonus": ["speed", 0.02]},
-	"sg_little_india": {"art": "little_india", "block": Vector2i(2, -2), "name": "小印度", "note": "全城颜色最多的一栋房子", "bonus": ["haste", 0.02]},
-	"sg_raffles": {"art": "raffles_place", "block": Vector2i(1, 1), "name": "莱佛士坊", "note": "银行塔楼围着一块小草坪", "bonus": ["luck", 10.0]},
+	"sg_one_north": {"art": "one_north", "block": Vector2i(0, -1), "name": "纬壹科技城", "note": "几家大厂的亚太总部挤在一起", "bonus": ["haste", 0.03]},
+	"sg_merlion": {"art": "merlion", "block": Vector2i(1, 2), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.10]},
+	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(0, 3), "name": "圣淘沙", "note": "过了桥就是度假岛", "bonus": ["luck", 20.0]},
 	"sg_jewel": {"art": "jewel", "block": Vector2i(3, -1), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.03]},
+	"sg_mbs": {"art": "mbs", "block": Vector2i(3, 2), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 10.0]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

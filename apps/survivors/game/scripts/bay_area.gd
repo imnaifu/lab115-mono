@@ -37,7 +37,7 @@ const MAP_EVENT := {"id": "quake", "at": 270.0, "seconds": 20.0, "text": "湾区
 	"name": "湾区地震", "hint": "躲开地上的红圈"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"
-## The named part of the world for the minimap, in world pixels: from the Pacific to across the
+## The named part of the world (the minimap showed it until .44), in world pixels: from the Pacific to across the
 ## Bay, and from the Golden Gate's water to south of San Jose. Pulled in to about half in .34 (it
 ## was 5600 x 6300), at the user's ask after Vampire Survivors: every landmark is now within about
 ## 30 seconds' walk of the start, the furthest (the Golden Gate) used to take about a minute.
@@ -78,7 +78,7 @@ const RUNWAYS: Array[Vector2i] = [Vector2i(0, -2)]
 const VEHICLES := ["car_top"]
 const TRAIN := "train_top"
 
-## Per district: the `name` the minimap shows; ground colour; `structures` to line the streets with ("soco:<file>" for a
+## Per district: the `name` the HUD shows; ground colour; `structures` to line the streets with ("soco:<file>" for a
 ## soco-st building, "art:<svg>" for one of ours); the gap between them (at least 36, so the
 ## biggest boss, 32 across, still squeezes through a row instead of walking round it); which parody
 ## `brands` get rooftop signs and how often; the street `tree`; sidewalk `props`; how many
@@ -153,44 +153,27 @@ const HEIGHTS := {
 ## is an ordinary row where every building carries that brand (a company campus).
 const LANDMARKS := {
 	Vector2i(-1, 0): "art:stanford_tower",
-	Vector2i(0, 1): "art:caltrain",
-	Vector2i(-1, -1): "brand_row:beta",
 	Vector2i(0, -1): "brand_row:goggle",
 	Vector2i(1, 1): "art:pear_park",
-	Vector2i(1, -1): "brand_row:linkedout",
-	Vector2i(0, 3): "brand_row:envy",
-	Vector2i(-1, 2): "brand_row:nutflix",
-	Vector2i(2, 0): "art:burger_shop",
-	Vector2i(2, 2): "art:stadium",
-	Vector2i(0, -3): "art:transamerica",
 	Vector2i(-1, -4): "art:sailsforce_tower",
 	# On the north shore, looking out over the Golden Gate's water.
 	Vector2i(-1, -5): "art:golden_gate",
 }
 ## Landmarks standing on a block's lawn, in front of its row of buildings: the campus mascots.
-const LAWN_LANDMARKS := {Vector2i(0, -1): "dino_skeleton", Vector2i(-1, -1): "thumbs_up_sign"}
+const LAWN_LANDMARKS := {Vector2i(0, -1): "dino_skeleton"}
 ## The landmarks a player can check in at (打卡, Stamps), nearest the start first: its picture
 ## on the 打卡 page, the block it stands on (in LANDMARKS / LAWN_LANDMARKS), its name, a line about
 ## it, and the small bonus it gives for good once checked in at ([kind, amount], Stamps.BONUSES).
 ## All of them together come to about one passive at level 2.
 const STAMPS := {
-	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-1, 0), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
-	"caltrain": {"art": "caltrain", "block": Vector2i(0, 1), "name": "Caltrain 帕罗奥图站", "note": "赶不上这班就等下一班，小心别被撞", "bonus": ["luck", 10.0]},
-	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["might", 0.02]},
-	"beta": {"art": "thumbs_up_sign", "block": Vector2i(-1, -1), "name": "Beta 园区", "note": "门口立着巨大的点赞牌", "bonus": ["magnet", 0.05]},
-	"linkedout": {"art": "card", "block": Vector2i(1, -1), "name": "LinkedOut 园区", "note": "人人都在看下一份工作", "bonus": ["luck", 10.0]},
-	"burger_shop": {"art": "burger_shop", "block": Vector2i(2, 0), "name": "Out-N-In 汉堡", "note": "加班到半夜的宵夜", "bonus": ["max_hp", 5.0]},
-	"pear_park": {"art": "pear_park", "block": Vector2i(1, 1), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["might", 0.02]},
-	"nutflix": {"art": "icon_nut", "block": Vector2i(-1, 2), "name": "Nutflix 园区", "note": "下班回家接着刷", "bonus": ["regen", 0.05]},
-	"envy": {"art": "icon_eye", "block": Vector2i(0, 3), "name": "Envy 园区", "note": "显卡又卖断货了", "bonus": ["haste", 0.02]},
-	"stadium": {"art": "stadium", "block": Vector2i(2, 2), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["speed", 0.02]},
-	"transamerica": {"art": "transamerica", "block": Vector2i(0, -3), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["magnet", 0.05]},
-	"sailsforce_tower": {"art": "sailsforce_tower", "block": Vector2i(-1, -4), "name": "Sailsforce 大厦", "note": "旧金山最高的楼", "bonus": ["max_hp", 5.0]},
+	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-1, 0), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.03]},
+	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 20.0]},
+	"pear_park": {"art": "pear_park", "block": Vector2i(1, 1), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 10.0]},
+	"sailsforce_tower": {"art": "sailsforce_tower", "block": Vector2i(-1, -4), "name": "Sailsforce 大厦", "note": "旧金山最高的楼", "bonus": ["magnet", 0.10]},
 	"golden_gate": {"art": "golden_gate", "block": Vector2i(-1, -5), "name": "金门大桥", "note": "一路往北，走到陆地尽头", "bonus": ["might", 0.03]},
 }
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"pear_park": "pear", "sailsforce_tower": "sailsforce", "caltrain": "station",
-	"burger_shop": "outnin", "stadium": "levys"}
+const LANDMARK_BRANDS := {"pear_park": "pear", "sailsforce_tower": "sailsforce"}
 ## Landmarks that are only partly solid, as [from, to] fractions of their width: the Golden
 ## Gate's towers block, the deck between them is walked under.
 const SOLID_SPANS := {"golden_gate": [[0.22, 0.28], [0.72, 0.78]]}
