@@ -1,9 +1,10 @@
 class_name SwingWeapon
 extends Weapon
-## A swing round the front of the player: everything the roll sweeps over is hurt as it gets
-## there. (Silicon Valley: PRD 卷筒, the spec rolled up and swung.) Halls of Torment's sword,
-## HoloCure's scythe. 需求评审会 (evolved with 站会): every swing a full circle, at least
-## EVOLVED_RADIUS wide, that stuns.
+## A swing round the front of the player: everything the beam sweeps over is hurt as it gets
+## there. The product manager's 激光笔, the laser pointer from every review meeting (.62, the user:
+## keep the swing, change the weapon; until then 「PRD 卷筒」, the spec rolled up and swung).
+## Halls of Torment's sword, HoloCure's scythe. 需求评审会 (evolved with 站会): every swing a full
+## circle, at least EVOLVED_RADIUS wide, that stuns.
 ##
 ## It no longer knocks back (140) or, from its second upgrade on, stuns (0.3-0.5 s): .39, the
 ## user's call for every job's own weapon, so the jobs differ only in how they deal damage.
@@ -12,9 +13,9 @@ extends Weapon
 ## 更长 reaches further, 更宽 widens the arc (four of those make a half circle). Either way each
 ## upgrade also hits harder; none swings sooner (.39: only 双屏显示器 speeds weapons up).
 ##
-## The swing is drawn as the roll itself sweeping through the arc (a bare white flash read as
-## nothing in particular), what it hits sheds scraps of paper, and now and then the product
-## manager says one of their lines.
+## The swing is drawn as the beam itself sweeping through the arc (a bare white flash read as
+## nothing in particular), what it hits sparks, and now and then the product manager says one of
+## their lines.
 
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
@@ -33,9 +34,9 @@ const COOLDOWN := 0.85
 const AIM_RANGE := 70.0
 const EVOLVED_RADIUS := 80.0
 const EVOLVED_STUN := 0.6
-## Enemies per swing that shed paper scraps, so a swing through a crowd doesn't spawn dozens.
+## Enemies per swing that spark, so a swing through a crowd doesn't spawn dozens.
 ## (The product manager's lines moved to Jobs with every other job's, said by Game._taunt.)
-const SCRAPS_PER_SWING := 4
+const SPARKS_PER_SWING := 4
 
 
 ## What the swing is with `longer` upgrades to 更长 and `wider` to 更宽 (the cards' numbers too).
@@ -56,7 +57,7 @@ func fire() -> bool:
 	var target := game.nearest_enemy(player.position, AIM_RANGE)
 	var aim := player.facing if target == null else (target.position - player.position).normalized()
 	var sweep := Sweep.new()
-	sweep.setup(art, aim.angle(), arc, radius)
+	sweep.setup(aim.angle(), arc, radius)
 	sweep.damage = stats["damage"] * damage_scale()
 	sweep.stun = EVOLVED_STUN if evolved else 0.0
 	sweep.swept_over.connect(_hit_swept.bind(sweep))
@@ -64,8 +65,8 @@ func fire() -> bool:
 	return true
 
 
-## Hurts what the roll went over this frame (`from` to `to`, radians into the swing), so a hit
-## lands as the roll gets there and only inside the wedge as drawn: measured from where the player
+## Hurts what the beam went over this frame (`from` to `to`, radians into the swing), so a hit
+## lands as the beam gets there and only inside the wedge as drawn: measured from where the player
 ## is now (the wedge moves with them), counting an enemy whose body reaches into the wedge, each
 ## enemy at most once a swing. Until .39 the whole arc was hit the moment the swing began, by
 ## where enemies' centres were, and an enemy pressed against the player was hit from any side,
@@ -86,8 +87,8 @@ func _hit_swept(from: float, to: float, sweep: Sweep) -> void:
 		if not (_reaches(into, spread, from, to) or _reaches(into - TAU, spread, from, to)):
 			continue
 		sweep.hit[key] = true
-		if sweep.hit.size() <= SCRAPS_PER_SWING:
-			Effects.scraps(game, enemy.position)
+		if sweep.hit.size() <= SPARKS_PER_SWING:
+			Effects.spark(game, enemy.position, false)
 		game.damage_enemy(enemy, sweep.damage, Vector2.ZERO, id)
 		if sweep.stun > 0.0:
 			enemy.stun(sweep.stun)
@@ -105,33 +106,27 @@ static func _reaches(into: float, spread: float, from: float, to: float) -> bool
 	return into + spread >= from and into - spread <= to
 
 
-## One swing as drawn: the rolled-up PRD, reaching from the player's side out to the swing's
-## reach, sweeping from one end of the arc to the other (all the way round at full level) with a
-## short paper-coloured smear behind it that fades towards its tail, then fades out. The roll is
-## what hits, as it gets there, so the drawing is the roll moving (.39, the user's report: a
-## paper wedge over the whole arc, laid down at once and left there, read as the whole arc being
-## hit at once while the hits came where the roll was). The smear lies on the ground under the
-## crowd, the roll goes over it. A child of the weapon, so it moves with the player.
+## One swing as drawn: the laser pointer's beam, reaching from the player's side out to the
+## swing's reach, sweeping from one end of the arc to the other (all the way round at full level)
+## with a short green afterglow behind it that fades towards its tail, then fades out. The beam is
+## what hits, as it gets there, so the drawing is the beam moving (.39, the user's report: a wedge
+## over the whole arc, laid down at once and left there, read as the whole arc being hit at once
+## while the hits came where the roll was). Green, not a laser pointer's usual red, since red on
+## the ground is how a boss warns of an attack (.62). The afterglow lies on the ground under the
+## crowd, the beam goes over it. A child of the weapon, so it moves with the player.
 class Sweep:
 	extends Node2D
 
 	const SWEEP_SECONDS := 0.18
 	const FADE_SECONDS := 0.12
-	const ROLL_SIZE := 26.0
-	## How long the roll is drawn at ROLL_SIZE (it fills 94% of the art's width), and how far out
-	## from the player its near end is held: it is stretched along its length to reach from there to
-	## the swing's reach, so what it sweeps over is what it hits (.39: a fixed 24 px roll held out at
-	## 0.7 of the reach stopped short of it, by a third once 更长 had grown the reach).
-	const ROLL_LENGTH := ROLL_SIZE * 0.94
+	## How far out from the player the beam starts (the pointer in their hand).
 	const HOLD := 10.0
-	## How far round behind the roll its smear trails, in radians.
+	## How far round behind the beam its afterglow trails, in radians.
 	const TRAIL := 0.6
-	const PAPER := Color("fff7e0")
-	## prd_roll.svg draws the roll turned 35° up to the right, its curled end at the top right:
-	## turned by minus this it lies along its holder's x axis, the curled end pointing outward.
-	const ROLL_ART_ANGLE := deg_to_rad(-35.0)
+	const LASER := Color("39d98a")
+	const LASER_CORE := Color("eafff3")
 
-	## Each frame the roll moves on: the stretch of the swing it covered, in radians from `start`.
+	## Each frame the beam moves on: the stretch of the swing it covered, in radians from `start`.
 	signal swept_over(from: float, to: float)
 
 	## Where the swing starts (an angle) and how far out it reaches.
@@ -144,25 +139,21 @@ class Sweep:
 	var _arc := PI
 	var _age := 0.0
 	var _covered := 0.0
-	## The roll, turned to lie along its holder's x axis; the holder is turned to the swing and
-	## stretched along x only, so the roll gets longer without getting fatter.
-	var _roll_holder: Node2D
+	## The beam, drawn along its own x axis and turned to the swing.
+	var _beam: Beam
 
-	func setup(art: String, middle: float, arc: float, swing_reach: float) -> void:
+	func setup(middle: float, arc: float, swing_reach: float) -> void:
 		start = middle - arc / 2.0
 		_arc = arc
 		reach = swing_reach
-		# The smear on the ground under everyone, like the Wi-Fi field; the roll over the enemies,
-		# like the drones (its z counts from this one's).
+		# The afterglow on the ground under everyone, like the Wi-Fi field; the beam over the
+		# enemies, like the drones (its z counts from this one's).
 		z_index = -1
-		_roll_holder = Node2D.new()
-		_roll_holder.z_index = 7
-		_roll_holder.scale = Vector2(maxf(reach - HOLD, ROLL_LENGTH) / ROLL_LENGTH, 1.0)
-		add_child(_roll_holder)
-		var roll := Art.sprite(art, ROLL_SIZE)
-		roll.rotation = -ROLL_ART_ANGLE
-		_roll_holder.add_child(roll)
-		_place_roll()
+		_beam = Beam.new()
+		_beam.z_index = 7
+		_beam.reach = reach
+		add_child(_beam)
+		_place_beam()
 
 	func _process(delta: float) -> void:
 		_age += delta
@@ -175,30 +166,27 @@ class Sweep:
 		if swept > _covered:
 			swept_over.emit(_covered, swept)
 			_covered = swept
-		_place_roll()
+		_place_beam()
 		queue_redraw()
 
 	## Fast out of the wind-up, easing into the end of the swing.
 	func _swept() -> float:
 		return _arc * ease(minf(_age / SWEEP_SECONDS, 1.0), 0.5)
 
-	## Held by its near end, HOLD out from the player, its far end at the reach, along the swing.
-	func _place_roll() -> void:
-		var heading := start + _swept()
-		_roll_holder.position = Vector2.from_angle(heading) * (HOLD + reach) / 2.0
-		_roll_holder.rotation = heading
+	func _place_beam() -> void:
+		_beam.rotation = start + _swept()
 
 	func _draw() -> void:
 		var swept := _swept()
-		# Once the roll has stopped, the smear catches up with it as it fades.
+		# Once the beam has stopped, the afterglow catches up with it as it fades.
 		var trail := TRAIL
 		if _age > SWEEP_SECONDS:
 			trail *= 1.0 - (_age - SWEEP_SECONDS) / FADE_SECONDS
 		var tail := maxf(0.0, swept - trail)
 		if swept - tail < 0.02:
 			return
-		# A band from the roll's near end out to the reach, faint at the tail and strongest at the
-		# roll; its rim inked the same way.
+		# A band from the beam's near end out to the reach, faint at the tail and strongest at the
+		# beam; its rim lit the same way.
 		var steps := maxi(3, ceili((swept - tail) / 0.08))
 		var outer := PackedVector2Array()
 		var inner := PackedVector2Array()
@@ -209,8 +197,8 @@ class Sweep:
 			var heading := Vector2.from_angle(start + tail + (swept - tail) * along)
 			outer.append(heading * reach)
 			inner.append(heading * HOLD)
-			shades.append(Color(PAPER, 0.75 * along))
-			rim_shades.append(Color(Art.INK, 0.6 * along))
+			shades.append(Color(LASER, 0.3 * along))
+			rim_shades.append(Color(LASER, 0.8 * along))
 		var band := outer.duplicate()
 		var band_shades := shades.duplicate()
 		for i in range(steps, -1, -1):
@@ -218,3 +206,20 @@ class Sweep:
 			band_shades.append(shades[i])
 		draw_polygon(band, band_shades)
 		draw_polyline_colors(outer, rim_shades, 2.0, true)
+
+
+## The beam itself: a soft green glow round a bright core, from the pointer's end (Sweep.HOLD) out
+## to the reach, with the dot it makes there.
+class Beam:
+	extends Node2D
+
+	var reach := 50.0
+
+	func _draw() -> void:
+		var near := Vector2(Sweep.HOLD, 0.0)
+		var far := Vector2(reach, 0.0)
+		draw_line(near, far, Color(Sweep.LASER, 0.35), 7.0, true)
+		draw_line(near, far, Sweep.LASER_CORE, 2.4, true)
+		draw_circle(near, 2.0, Sweep.LASER)
+		draw_circle(far, 3.6, Sweep.LASER)
+		draw_circle(far, 1.6, Sweep.LASER_CORE)

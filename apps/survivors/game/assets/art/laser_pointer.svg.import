@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dmwkgsm4l8ig1"
-path="res://.godot/imported/prd_roll.svg-30e812d095ff549d8e3b253954927201.ctex"
+uid="uid://b8shkn5p3mtmn"
+path="res://.godot/imported/laser_pointer.svg-d1c1a2a5fa9091cf0bae2aff1cbb9596.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/prd_roll.svg"
-dest_files=["res://.godot/imported/prd_roll.svg-30e812d095ff549d8e3b253954927201.ctex"]
+source_file="res://assets/art/laser_pointer.svg"
+dest_files=["res://.godot/imported/laser_pointer.svg-d1c1a2a5fa9091cf0bae2aff1cbb9596.ctex"]
 
 [params]
 

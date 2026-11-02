@@ -65,8 +65,8 @@ const WEAPONS := {
 		"levels": ["往上一抛，落下砸穿一切", "多抛一把", "伤害 +10", "多抛一把", "伤害 +10，键盘变大"]},
 	"email": {"name": "邮件抄送", "art": "email_cc", "behavior": "ricochet", "type": "shoot",
 		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "多抄送 1 个", "伤害 +5", "多发一封，多抄送 1 个", "伤害 +6，多抄送 1 个"]},
-	"prd": {"name": "PRD 卷筒", "art": "prd_roll", "behavior": "swing", "type": "melee", "job": "pm",
-		"levels": ["朝最近的怪抡一扇形，扇形里的怪都挨打"]},
+	"prd": {"name": "激光笔", "art": "laser_pointer", "behavior": "swing", "type": "melee", "job": "pm",
+		"levels": ["朝最近的怪扫一下激光，扫过的怪都挨打"]},
 	"poke": {"name": "抽样", "art": "sample_needle", "behavior": "poke", "type": "melee", "job": "data_scientist",
 		"levels": ["朝最近的怪扎一针抽个样，只扎最前面的一只；没怪也照扎"]},
 	"guides": {"name": "网格线", "art": "layout_grid", "behavior": "guides", "type": "area", "job": "designer",
@@ -101,7 +101,7 @@ const EVOLUTIONS := {
 	# Its partner 猎头电话 is gone (.35); give it another when evolutions come back.
 	"copy": {"passive": "headhunter", "name": "Ctrl+A 全选粘贴", "text": "朝 8 个方向一起粘贴"},
 	"screensaver": {"passive": "armor", "name": "动态壁纸", "text": "每次碰到屏幕边缘都炸一圈"},
-	"prd": {"passive": "standup", "name": "需求评审会", "text": "每次都抡满一圈，范围更大，定得更久"},
+	"prd": {"passive": "standup", "name": "需求评审会", "text": "每次都扫满一圈，范围更大，定得更久"},
 	"poke": {"passive": "magnet", "name": "全量数据", "text": "不抽了，12 个方向一起扎，线长 +20%"},
 	"guides": {"passive": "open_source", "name": "栅格系统", "text": "网格线不再消失，一直留到下一组画出来"},
 	"pen": {"passive": "swiftness", "name": "矢量图层", "text": "线留两倍久；画个圈，圈里的怪受一次重击"},
@@ -118,7 +118,7 @@ const EVOLUTIONS := {
 const BRANCH_MAX := 4
 const BRANCHES := {
 	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +8"}},
-	"prd": {"a": {"name": "更长", "text": "抡得更远，伤害 +13"}, "b": {"name": "更宽", "text": "扇形更宽（四次到 180°），伤害 +13"}},
+	"prd": {"a": {"name": "更长", "text": "光束更长，伤害 +13"}, "b": {"name": "更宽", "text": "扫得更开（四次到 180°），伤害 +13"}},
 	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +14"}},
 	"guides": {"a": {"name": "更多网格线", "text": "多一条网格线（横竖轮流加，最多各 3 条）"}, "b": {"name": "更粗", "text": "线更粗，伤害 +1.5"}},
 	# Stratified sampling takes from every stratum, so more ways; a bigger sample is more jabs.

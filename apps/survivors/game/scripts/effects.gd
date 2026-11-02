@@ -2,8 +2,8 @@ class_name Effects
 extends RefCounted
 ## Short-lived visual feedback: damage numbers, hit sparks, dust, death puffs and pops,
 ## lightning strikes, blast rings, bombs going off (a boss's 定点 shapes), the melee weapons'
-## lashes and stabs, paper scraps, and short callouts over the world. (The PRD roll's swing is drawn by SwingWeapon itself, as it follows
-## the player.)
+## lashes and stabs, and short callouts over the world. (The laser pointer's sweep is drawn by
+## SwingWeapon itself, as it follows the player; until .62 the PRD roll shed paper scraps.)
 
 const MAX_DAMAGE_NUMBERS := 40
 ## Hits at least this hard get a bigger, yellow number.
@@ -205,14 +205,6 @@ static func lash(game: Game, at: Vector2, direction: Vector2, length: float, wid
 	game.effect_layer.add_child(swing)
 
 
-## A few torn bits of paper flying off something hit with the PRD roll: white with an ink edge,
-## so they show on the lawn as well as the road (a puff of white dots wouldn't).
-static func scraps(game: Game, at: Vector2) -> void:
-	var burst := PaperScraps.new()
-	burst.position = at
-	game.effect_layer.add_child(burst)
-
-
 ## A word or two popping up over the world and drifting up (屏保 hitting a corner, every job's
 ## trash talk, a car's 砰).
 static func callout(game: Game, at: Vector2, text: String, color: Color, size: int = 13) -> void:
@@ -348,41 +340,6 @@ class Swoosh:
 		draw_colored_polygon(bar, Color(1, 1, 1, 0.85))
 		bar.append(side)
 		draw_polyline(bar, Art.INK, 2.0, true)
-
-
-class PaperScraps:
-	extends Node2D
-
-	const SECONDS := 0.35
-	const COUNT := 4
-	const SPEED := 70.0
-
-	var _age := 0.0
-	var _headings := PackedFloat32Array()
-	var _spins := PackedFloat32Array()
-
-	func _ready() -> void:
-		for i in COUNT:
-			_headings.append(TAU * (i + randf() * 0.6) / COUNT)
-			_spins.append(randf_range(-9.0, 9.0))
-
-	func _process(delta: float) -> void:
-		_age += delta
-		if _age >= SECONDS:
-			queue_free()
-			return
-		modulate.a = 1.0 - _age / SECONDS
-		queue_redraw()
-
-	func _draw() -> void:
-		# Flung out fast, slowing down.
-		var travel := SPEED * SECONDS * (1.0 - pow(1.0 - _age / SECONDS, 2.0))
-		for i in COUNT:
-			draw_set_transform(Vector2.from_angle(_headings[i]) * travel, _spins[i] * _age, Vector2.ONE)
-			var scrap := Rect2(-3.0, -2.0, 6.0, 4.0)
-			draw_rect(scrap, Art.PAPER)
-			draw_rect(scrap, Art.INK, false, 1.0)
-		draw_set_transform(Vector2.ZERO)
 
 
 class BlastRing:

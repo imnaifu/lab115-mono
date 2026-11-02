@@ -1817,7 +1817,7 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 	return card
 
 
-## A card's name; a job weapon's direction card adds the direction: 「PRD 卷筒 · 更宽」.
+## A card's name; a job weapon's direction card adds the direction: 「激光笔 · 更宽」.
 func _card_name(choice: Dictionary) -> String:
 	if not choice.has("branch_name"):
 		return choice["name"]
