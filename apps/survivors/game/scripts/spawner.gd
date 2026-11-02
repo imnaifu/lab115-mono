@@ -22,29 +22,31 @@ const HP_PER_MINUTE := 0.25
 ## purpose: they are the balance the game was tuned with, and crowds overlapping a little reads
 ## fine with these drawings. `elite` marks bosses (health bar, the boss bar at the top of the
 ## screen, a chest when killed; what each does is BossKits').
-## Radii stay at or under Game.MAX_ENEMY_RADIUS.
+## Radii stay at or under Game.MAX_ENEMY_RADIUS. Regular enemies walk about 5% slower since .65 (the
+## user: 小怪的移速慢一点点): 50 / 46 / 44 / 40 / 38 / 34 / 30 / 26 became 48 / 44 / 42 / 38 / 36 /
+## 32 / 29 / 25; bosses kept theirs.
 const ENEMY_TYPES := {
 	"ping": {"name": "消息红点", "art": "ping", "size": 22.0, "color": Color("ff5d5d"),
-		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+		"hp": 4.0, "speed": 48.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
 	"bug": {"name": "Bug", "art": "bug", "size": 24.0, "color": Color("ff5d5d"),
-		"hp": 8.0, "speed": 38.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 36.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	"mail": {"name": "未读邮件", "art": "mail", "size": 24.0, "color": Color("fff7e0"),
-		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
+		"hp": 14.0, "speed": 42.0, "damage": 8.0, "xp": 2, "radius": 6.0},
 	"meeting": {"name": "会议邀请", "art": "meeting", "size": 26.0, "color": Color("5b9cff"),
-		"hp": 26.0, "speed": 30.0, "damage": 9.0, "xp": 3, "radius": 6.0},
+		"hp": 26.0, "speed": 29.0, "damage": 9.0, "xp": 3, "radius": 6.0},
 	"ghost": {"name": "404 幽灵", "art": "ghost404", "size": 26.0, "color": Color("eef1f6"),
-		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
+		"hp": 18.0, "speed": 38.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
 	"techdebt": {"name": "技术债", "art": "techdebt", "size": 28.0, "color": Color("ffd36b"),
-		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
+		"hp": 45.0, "speed": 32.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
 	"server": {"name": "宕机服务器", "art": "server", "size": 38.0, "color": Color("a9b3c4"),
-		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
+		"hp": 140.0, "speed": 25.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
 	# 西二旗's rush hour (Beijing.RING_SWAPS): a crowd of commuters in place of the Bug outbreak,
 	# a little quicker than bugs and as frail.
 	"commuter": {"name": "早高峰打工人", "art": "commuter", "size": 24.0, "color": Color("9aa5b8"),
-		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 42.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	# Same-day delivery (Seattle.RING_SWAPS): a ring of parcels in place of the Bug outbreak, as frail.
 	"parcel": {"name": "Prime 包裹", "art": "parcel", "size": 24.0, "color": Color("d4b483"),
-		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 42.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	# Each map's own crowd (the map's MOB_SWAPS, .36, the user's call): the seven regular enemies
 	# redrawn for the map, built and as strong as the ones they stand in for (Game.spawn_enemy
 	# swaps them in, so waves and rings use them). Since .41 every map has 硅谷's crowd again (the
@@ -52,74 +54,74 @@ const ENEMY_TYPES := {
 	# in the table, unused.
 	# 北京.
 	"dingding": {"name": "盯盯消息", "art": "dingding", "size": 22.0, "color": Color("5b9cff"),
-		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+		"hp": 4.0, "speed": 48.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
 	# Three of the old local crowd back in every map's mix from .57 (the user: 加更多小怪类型，不用技能，
 	# 只要数值), each with numbers of its own between the seven's: 小需求 quick fodder (a bug's
 	# health and damage, a ping's speed), KPI quick and sturdy mid-run, 流量洪峰 a heavy between 技术债
 	# and 宕机服务器. (Until .40 they were Beijing's stand-ins, the numbers of the ones they replaced.)
 	"small_req": {"name": "小需求", "art": "small_req", "size": 24.0, "color": Color("ffd25e"),
-		"hp": 10.0, "speed": 50.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 10.0, "speed": 48.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	"daily_report": {"name": "日报", "art": "daily_report", "size": 24.0, "color": Color("fff7e0"),
-		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
+		"hp": 14.0, "speed": 42.0, "damage": 8.0, "xp": 2, "radius": 6.0},
 	"group_chat": {"name": "拉个群", "art": "group_chat", "size": 26.0, "color": Color("6cc25a"),
-		"hp": 26.0, "speed": 30.0, "damage": 9.0, "xp": 3, "radius": 6.0},
+		"hp": 26.0, "speed": 29.0, "damage": 9.0, "xp": 3, "radius": 6.0},
 	"read_no_reply": {"name": "已读不回", "art": "read_no_reply", "size": 26.0, "color": Color("eef1f6"),
-		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
+		"hp": 18.0, "speed": 38.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
 	"kpi": {"name": "KPI", "art": "kpi", "size": 28.0, "color": Color("ff5d5d"),
-		"hp": 30.0, "speed": 46.0, "damage": 10.0, "xp": 3, "radius": 6.0, "knockback_resist": 0.5},
+		"hp": 30.0, "speed": 44.0, "damage": 10.0, "xp": 3, "radius": 6.0, "knockback_resist": 0.5},
 	"traffic_flood": {"name": "流量洪峰", "art": "traffic_flood", "size": 38.0, "color": Color("5b9cff"),
-		"hp": 90.0, "speed": 34.0, "damage": 15.0, "xp": 6, "radius": 9.0, "knockback_resist": 0.6},
+		"hp": 90.0, "speed": 32.0, "damage": 15.0, "xp": 6, "radius": 9.0, "knockback_resist": 0.6},
 	# 西雅图.
 	"at_here": {"name": "@here", "art": "at_here", "size": 22.0, "color": Color("7b68d9"),
-		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+		"hp": 4.0, "speed": 48.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
 	"sev3_ticket": {"name": "Sev-3 工单", "art": "sev3_ticket", "size": 24.0, "color": Color("f7c948"),
-		"hp": 8.0, "speed": 38.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 36.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	"code_review": {"name": "CR 请求", "art": "code_review", "size": 24.0, "color": Color("fff7e0"),
-		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
+		"hp": 14.0, "speed": 42.0, "damage": 8.0, "xp": 2, "radius": 6.0},
 	"one_on_one": {"name": "1:1", "art": "one_on_one", "size": 26.0, "color": Color("bcdcf2"),
-		"hp": 26.0, "speed": 30.0, "damage": 9.0, "xp": 3, "radius": 6.0},
+		"hp": 26.0, "speed": 29.0, "damage": 9.0, "xp": 3, "radius": 6.0},
 	"night_page": {"name": "半夜 Page", "art": "night_page", "size": 26.0, "color": Color("eef1f6"),
-		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
+		"hp": 18.0, "speed": 38.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
 	"six_pager": {"name": "六页纸", "art": "six_pager", "size": 28.0, "color": Color("faf7f0"),
-		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
+		"hp": 45.0, "speed": 32.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
 	"cloud_bill": {"name": "AWS 账单", "art": "cloud_bill", "size": 38.0, "color": Color("ffd25e"),
-		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
+		"hp": 140.0, "speed": 25.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
 	# 伦敦 (.37): its crowd and its queue ring.
 	"pigeon": {"name": "鸽子", "art": "pigeon", "size": 22.0, "color": Color("a9b3c4"),
-		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+		"hp": 4.0, "speed": 48.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
 	"teabag": {"name": "茶包", "art": "teabag", "size": 24.0, "color": Color("c98d5a"),
-		"hp": 8.0, "speed": 38.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 36.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	"visa_form": {"name": "签证材料", "art": "visa_form", "size": 24.0, "color": Color("fff7e0"),
-		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
+		"hp": 14.0, "speed": 42.0, "damage": 8.0, "xp": 2, "radius": 6.0},
 	"pub_invite": {"name": "Pub 社交局", "art": "pub_invite", "size": 26.0, "color": Color("ffd25e"),
-		"hp": 26.0, "speed": 30.0, "damage": 9.0, "xp": 3, "radius": 6.0},
+		"hp": 26.0, "speed": 29.0, "damage": 9.0, "xp": 3, "radius": 6.0},
 	"tower_ghost": {"name": "伦敦塔幽灵", "art": "tower_ghost", "size": 26.0, "color": Color("eef1f6"),
-		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
+		"hp": 18.0, "speed": 38.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
 	"compliance": {"name": "合规流程", "art": "compliance", "size": 28.0, "color": Color("d6d9de"),
-		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
+		"hp": 45.0, "speed": 32.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
 	"double_decker": {"name": "双层巴士", "art": "double_decker", "size": 38.0, "color": Color("d94b5c"),
-		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
+		"hp": 140.0, "speed": 25.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
 	# The queue (London.RING_SWAPS): a ring of Britons in place of the Bug outbreak, as frail.
 	"queue_brit": {"name": "排队的英国人", "art": "queue_brit", "size": 24.0, "color": Color("8a909c"),
-		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 42.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	# 新加坡 (.38): its crowd and its tissue ring.
 	"mosquito": {"name": "蚊子", "art": "mosquito", "size": 22.0, "color": Color("8a909c"),
-		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+		"hp": 4.0, "speed": 48.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
 	"gecko": {"name": "壁虎", "art": "gecko", "size": 24.0, "color": Color("c9d6a3"),
-		"hp": 8.0, "speed": 38.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 36.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	"grub_order": {"name": "Grub 外卖单", "art": "grub_order", "size": 24.0, "color": Color("6cc25a"),
-		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
+		"hp": 14.0, "speed": 42.0, "damage": 8.0, "xp": 2, "radius": 6.0},
 	"align_call": {"name": "跨时区对齐会", "art": "align_call", "size": 26.0, "color": Color("bcdcf2"),
-		"hp": 26.0, "speed": 30.0, "damage": 9.0, "xp": 3, "radius": 6.0},
+		"hp": 26.0, "speed": 29.0, "damage": 9.0, "xp": 3, "radius": 6.0},
 	"hungry_ghost": {"name": "中元节饿鬼", "art": "hungry_ghost", "size": 26.0, "color": Color("eef1f6"),
-		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
+		"hp": 18.0, "speed": 38.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
 	"coe": {"name": "COE 拥车证", "art": "coe", "size": 28.0, "color": Color("fff7e0"),
-		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
+		"hp": 45.0, "speed": 32.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
 	"durian": {"name": "榴莲", "art": "durian", "size": 38.0, "color": Color("c6d94a"),
-		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
+		"hp": 140.0, "speed": 25.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
 	# The hawker centre at lunch (Singapore.RING_SWAPS): a ring of tissue packets, as frail as bugs.
 	"tissue_chope": {"name": "纸巾占座", "art": "tissue_chope", "size": 24.0, "color": Color("faf7f0"),
-		"hp": 8.0, "speed": 44.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 8.0, "speed": 42.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	# The bosses (.45, BossKits: their attacks and lines), four a map in the order they come (each map's
 	# BOSSES), as strong as their slot (BossKits.SLOT_STATS): health before the minute's and the map's
 	# multipliers, contact damage before the map's, stars. Until .44 there were 10 to 12 a run, from a

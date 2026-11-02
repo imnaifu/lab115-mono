@@ -29,7 +29,7 @@ const SPIN_SECONDS := 0.45
 ## Bosses catch up faster than the crowd walks (.35, the user's call: they hung back behind it, so
 ## the weapons only ever hit the small fry). A boss's own speed (22-40) maps onto
 ## BOSS_SPEED_FLOOR and up, BOSS_SPEED_SPREAD of each point over SLOWEST_BOSS_SPEED, so the slow
-## ones are still the slower bosses: 46-50.5, against the crowd's 26-44. From .39 that is only its
+## ones are still the slower bosses: 46-50.5, against the crowd's 25-48 (26-50 until .65). From .39 that is only its
 ## catch-up speed: within CATCH_UP_NEAR of the player it walks at its own speed again (what .35
 ## had everywhere cost the test bot about a minute of each run, as a boss on its heels could hardly
 ## be shaken off), blending into the catch-up speed by CATCH_UP_FAR. It walks no faster than
