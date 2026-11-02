@@ -53,12 +53,13 @@ const CHEST_GLOW_RINGS := 5
 const CHEST_RAYS := 12
 const CHEST_RAY_TURN_SECONDS := 8.0
 const CHEST_STAR_SIZE := 18.0
-## Stars thrown out as it opens, by rating (绩效 B / A / S; S throws a second wave as many).
-const CHEST_STARS := [10, 16, 24]
+## Stars thrown out as it opens, by rating (绩效 C / B / A / S; S throws a second wave as many).
+const CHEST_STARS := [6, 10, 16, 24]
 ## How wide the shine running across the upgrade's row is.
 const CHEST_SHINE_WIDTH := 18.0
-## A year-end bonus paying one of these 工资 amounts says so after it (Game.FUNDING_ROUNDS).
-const LUCKY_SALARIES := {666: "六六六！", 888: "发发发！"}
+## A year-end bonus paying one of these 工资 amounts says so after it (Game.FUNDING_ROUNDS; 888's
+## 发发发！ went with .63, when 666 became the most one pays).
+const LUCKY_SALARIES := {666: "六六六！"}
 ## Space kept around a screen that has to shrink to fit.
 const FIT_MARGIN := 8.0
 const RANKING_ROWS := 6
@@ -1850,7 +1851,7 @@ func _hover(card: Control, entered: bool) -> void:
 ## A boss's year-end bonus (年终奖), opened over about six seconds (.46, the user: 酷炫一点，长一点，
 ## 五秒以上; before, it opened after 0.9 s of rocking). On a dark stage the chest drops in and rocks,
 ## quicker and quicker, a white light growing behind it; then it shudders and swells while the light
-## climbs the rarities to the rating Game rolled (绩效 B green, A blue, S purple: the colour of the
+## climbs the rarities to the rating Game rolled (绩效 C white, B green, A blue, S purple: the colour of the
 ## upgrade it gives) and bursts open. Then the 工资 it paid counts up and its upgrade flips in, both
 ## saved / applied already (Game._open_chest). What it gives is laid out from the start, unseen, so
 ## the dialog keeps its size as it plays. Not skippable: 收下 comes up last. Shows what each rating
@@ -1947,7 +1948,9 @@ func _show_chest(funding_round: Dictionary, salary: int, item: Dictionary) -> vo
 		var amounts: Array = option["salary"]
 		var option_rarity: int = option["rarity"]
 		var round_name := UiKit.label(option["name"], 13, "strong")
-		var pay := UiKit.label("¥%d–%d" % [amounts.min(), amounts.max()], 11, "muted")
+		# One amount a rating since .63; a range before.
+		var pay_text := "¥%d" % amounts[0] if amounts.min() == amounts.max() else "¥%d–%d" % [amounts.min(), amounts.max()]
+		var pay := UiKit.label(pay_text, 11, "muted")
 		var upgrade := UiKit.label(tr("%s升级") % tr(Upgrades.RARITIES[option_rarity]["colour"]), 11, "heavy", Art.RARITY_INK[option_rarity])
 		upgrade.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		for chip_label: Label in [round_name, pay, upgrade]:

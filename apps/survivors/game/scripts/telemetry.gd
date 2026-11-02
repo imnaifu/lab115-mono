@@ -35,7 +35,7 @@ extends RefCounted
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
 ##   rates), `chests` (the ratings year-end bonuses landed on: angel / series_a / ipo, from .27 shown
-##   as 绩效 B / A / S), `evolved` (weapons evolved), a
+##   as 绩效 B / A / S; from .63 also seed, 绩效 C), `evolved` (weapons evolved), a
 ##   `timeline` of
 ##   "seconds:level/HP/enemies" every 30 s, bosses met and killed, the `district` the run ended
 ##   in, and frames per second (average and worst second). `dmg_<weapon>` is each weapon's share of
@@ -76,7 +76,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.62"
+const VERSION := "2026-10-28.63"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.

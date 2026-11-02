@@ -260,6 +260,12 @@ def upgrades_section(data: dict) -> str:
                    f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}</div>')
 
 
+def salary_text(chest: dict) -> str:
+    """A year-end bonus rating's 工资: its one amount (since .63), or the range it picks from."""
+    amounts = chest["salary"]
+    return f"¥{amounts[0]}" if min(amounts) == max(amounts) else f"¥{min(amounts)}–{max(amounts)}"
+
+
 def drops_section(data: dict) -> str:
     """What enemies drop, each with its art (its own section since .46: the user couldn't find 奶茶's
     drop rate inside 升级; 午休 and 红包 since .61). A year-end bonus says what each rating gives and,
@@ -279,17 +285,17 @@ def drops_section(data: dict) -> str:
         card("red_packet", "红包", f"从开局起，普通怪有 {percent(drops['red_packet_chance'])} 的几率掉，掉一个后 {number(drops['rare_drop_gap'])} 秒内不再掉。捡到发工资 "
              + "、".join(f"¥{amount}" for amount in drops["red_packet_salary"]) + " 里随机一个，当场存进存档，和年终奖的工资一样在<a href=\"#training\">培训</a>里花。"),
     ]
-    # Every rating: the range of its 工资 amounts (one comes out at random; the whole list made the
-    # table too wide for its card) and its upgrade's colour.
+    # Every rating: its odds, its 工资 (one amount since .63; before, the range of the amounts it
+    # picked from, the whole list made the table too wide for its card) and its upgrade's colour.
     chest_total = sum(chest["weight"] for chest in drops["chests"])
     ratings = "".join(
-        f"<tr><td><b>{esc(chest['name'])}</b></td><td>{percent(chest['weight'] / chest_total)}</td><td>¥{min(chest['salary'])}–{max(chest['salary'])}</td>"
+        f"<tr><td><b>{esc(chest['name'])}</b></td><td>{percent(chest['weight'] / chest_total)}</td><td>{salary_text(chest)}</td>"
         f"<td>{esc(rarities[chest['rarity']]['colour'])} {rarity_tag(rarities[chest['rarity']])}</td></tr>"
         for chest in drops["chests"])
     chest_card = f"""<article class="card"><div class="head">{art("chest", 48, "年终奖")}<div><h3>年终奖</h3>
 <p class="muted">每个 boss 必掉的红色宝箱。捡到就开箱，开出一档绩效：按绩效发工资，同时白送一个局内升级。</p></div></div>
 <div class="scroll"><table class="nums"><tr><th>绩效</th><th>概率</th><th>工资</th><th>送的升级</th></tr>{ratings}</table></div>
-<p class="muted">送的升级当场生效：从身上已有、还没满级的武器和被动里随机挑一个，升一级，稀有度按绩效定（股票期权这类有自己玩法的被动只出紫色，所以只有绩效 S 会抽到）；身上的都满了才出新的。工资是这个范围里 66、88 结尾的吉利数随机一个，存进存档，在<a href="#training">培训</a>里花。开出哪档绩效和运气无关。</p></article>"""
+<p class="muted">送的升级当场生效：从身上已有、还没满级的武器和被动里随机挑一个，升一级，稀有度按绩效定；身上的都满了才出新的。每档工资是固定的一个 66 结尾的吉利数，存进存档，在<a href="#training">培训</a>里花。开出哪档绩效和运气无关。</p></article>"""
     rehire_card = card("rehire", "返聘", f"不是掉的，在<a href=\"#training\">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用："
                        f"用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。")
     return section("drops", "掉落", "打怪会掉东西，走近就捡；boss 必掉珍珠奶茶和年终奖。",
@@ -298,7 +304,9 @@ def drops_section(data: dict) -> str:
 
 def training_section(data: dict) -> str:
     training = data["training"]
-    salaries = " / ".join(f"¥{min(chest['salary'])}–{max(chest['salary'])}" for chest in data["drops"]["chests"])
+    chests = data["drops"]["chests"]
+    salaries = " / ".join(salary_text(chest) for chest in chests)
+    rating_letters = " / ".join(chest["name"].replace("绩效 ", "") for chest in chests)
     rows = "".join(
         f"<tr><td>{art(entry['art'], 24, entry['name'])}<b>{esc(entry['name'])}</b></td><td>{esc(entry['step_text'])}</td>"
         f"<td>{entry['ranks']}</td><td>{' / '.join(f'¥{price}' for price in entry['prices'])}</td><td>{esc(entry['max_text'])}</td></tr>"
@@ -307,7 +315,7 @@ def training_section(data: dict) -> str:
 <div class="scroll"><table class="nums"><tr><th>属性</th><th>每级</th><th>级数</th><th>每级价格（不算涨价）</th><th>练满</th></tr>{rows}</table></div>
 <p class="muted">每练一级（不管哪项），所有价格再涨 {percent(training['tax'])}。一级一级轮着练满全部，一共大约 ¥{training['full_cost']:,}。</p></article>"""
     how = f"""<article class="card"><h3>工资和退款</h3><ul>
-<li>工资主要从年终奖来：绩效 B / A / S 分别发 {salaries}（都是 66、88 结尾的吉利数），boss 打得越多挣得越多；普通怪偶尔掉<b>红包</b>，一个 ¥{min(data["drops"]["red_packet_salary"])}–{max(data["drops"]["red_packet_salary"])}（见<a href="#drops">掉落</a>）</li>
+<li>工资主要从年终奖来：绩效 {rating_letters} 分别发 {salaries}（都是 66 结尾的吉利数），boss 打得越多挣得越多；普通怪偶尔掉<b>红包</b>，一个 ¥{min(data["drops"]["red_packet_salary"])}–{max(data["drops"]["red_packet_salary"])}（见<a href="#drops">掉落</a>）</li>
 <li>工资存进存档，一局结束也不清零，在开始画面的「培训」里花</li>
 <li>练的等级每局开局都带着，在所有地图都算，和打卡的加成叠加</li>
 <li>「全部退款」把练等级花掉的工资全部退回，可以重新分配</li>

@@ -26,6 +26,7 @@ const EN := {
 	"推荐": "TOP PICK",
 	# Year-end bonus (the boss chest)
 	"年终奖开箱": "Open Your Bonus",
+	"绩效 C": "Rated C",
 	"绩效 B": "Rated B",
 	"绩效 A": "Rated A",
 	"绩效 S": "Rated S",

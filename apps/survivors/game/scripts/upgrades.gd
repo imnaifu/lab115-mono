@@ -278,7 +278,7 @@ func _give_rarity(choice: Dictionary, rarity: int) -> void:
 		choice["text"] = passive_text(choice["id"], rarity)
 
 
-## A year-end bonus's upgrade (.46: Game.FUNDING_ROUNDS `rarity`, 绩效 B 优秀 / A 稀有 / S 史诗), not
+## A year-end bonus's upgrade (.46: Game.FUNDING_ROUNDS `rarity`, 绩效 B 优秀 / A 稀有 / S 史诗; .63's C 普通), not
 ## applied yet. Like Vampire Survivors' chests (and these until .44) it levels up something the
 ## player already carries, picked at random; only when nothing carried can take that rarity does
 ## something new come out, and with nothing left at all, the fallback card. Any of them can take any

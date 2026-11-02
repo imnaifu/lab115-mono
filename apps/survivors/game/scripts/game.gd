@@ -71,20 +71,24 @@ const RED_PACKET_SALARY := [6, 8, 16, 18]
 ## (.61, the user: 60s 内不出; each kind counts on its own).
 const RARE_DROP_GAP := 60.0
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
-## 工资 it pays: one of its `salary` amounts at random (the user's lucky numbers, ending in 66 or
-## 88), kept in the save for 培训 (Training), and one upgrade in the run at the rating's `rarity`
-## (Upgrades.RARITIES: 绩效 B 优秀 green, A 稀有 blue, S 史诗 purple; Upgrades.chest_upgrade). It
-## gave 1 / 3 / 5 free upgrades until .43, none from .44 (年终奖改成给工资) and one again from .46
-## (the user: 年终奖开箱同时送一个局内升级). 绩效 S no longer gives a 返聘 (.43's prize, bought in
-## 培训 now). The odds are fixed since .43: neither luck nor anything about the boss moves them, and
+## 工资 it pays (one of its `salary` amounts at random; since .63 each has just one), kept in the
+## save for 培训 (Training), and one upgrade in the run at the rating's `rarity` (Upgrades.RARITIES:
+## 绩效 C 普通 white, B 优秀 green, A 稀有 blue, S 史诗 purple; Upgrades.chest_upgrade). It gave
+## 1 / 3 / 5 free upgrades until .43, none from .44 (年终奖改成给工资) and one again from .46 (the
+## user: 年终奖开箱同时送一个局内升级). 绩效 S no longer gives a 返聘 (.43's prize, bought in 培训
+## now). The odds are fixed since .43: neither luck nor anything about the boss moves them, and
 ## since .46 the game doesn't show them (the user: 概率藏起来不要可见); the site does again from .60
-## (the user: 官网写上，概率改成 80，15，5; 86 / 9 / 5 until then). The
-## ids are the data's (Telemetry `chests`) from when these were funding rounds (天使轮 / A 轮 / IPO),
-## kept so runs before and after compare.
+## (the user: 官网写上). Since .63 (the user: 年终奖调低点，最高 666; S 一档 666，C 一档 66，A、B
+## 以 66 结尾; S 5%, C 10%, B 60%, A 25%) four ratings at one lucky number each, ¥206 on average;
+## .60–.62 had three at 80 / 15 / 5 (¥66–288 / ¥366–588 / ¥666–888 in 66s and 88s, ¥252 on
+## average), and 86 / 9 / 5 before. The ids are the data's (Telemetry `chests`) from when these were
+## funding rounds (天使轮 / A 轮 / IPO), kept so runs before and after compare; 绩效 C, new in .63,
+## is the round before them all (种子轮).
 const FUNDING_ROUNDS := [
-	{"id": "angel", "name": "绩效 B", "salary": [66, 88, 166, 188, 266, 288], "rarity": 1, "weight": 80.0},
-	{"id": "series_a", "name": "绩效 A", "salary": [366, 388, 466, 488, 566, 588], "rarity": 2, "weight": 15.0},
-	{"id": "ipo", "name": "绩效 S", "salary": [666, 688, 766, 788, 866, 888], "rarity": 3, "weight": 5.0},
+	{"id": "seed", "name": "绩效 C", "salary": [66], "rarity": 0, "weight": 10.0},
+	{"id": "angel", "name": "绩效 B", "salary": [166], "rarity": 1, "weight": 60.0},
+	{"id": "series_a", "name": "绩效 A", "salary": [266], "rarity": 2, "weight": 25.0},
+	{"id": "ipo", "name": "绩效 S", "salary": [666], "rarity": 3, "weight": 5.0},
 ]
 ## A 返聘 brings the player back on this share of their health, untouchable for REVIVE_INVULN
 ## seconds, with everything within REVIVE_RADIUS pushed off and stunned (like a 站会's, no damage).
