@@ -1,15 +1,22 @@
 class_name GuideWeapon
 extends Weapon
-## A chart's axes: every so often a horizontal and a vertical line are pulled across the whole
-## screen through where the player stands, and stay a moment; enemies on a line keep taking
-## damage. (Silicon Valley: 坐标轴; it was the designer's 参考线, guides, until the two jobs swapped
-## weapons.) Vampire Survivors' Song of Mana, a column of light through the player.
-## 实时看板 (evolved with 开源项目): the lines stay until the next set replaces them.
+## A design tool's layout grid: every so often a horizontal and a vertical gridline are pulled
+## across the whole screen through where the player stands, and stay a moment; enemies on a line
+## keep taking damage. (Silicon Valley: 网格线. It was the designer's 参考线, guides, in .12-.13,
+## the data scientist's 坐标轴, a chart's axes, in .14-.40, and the designer's again from .41; the
+## chart look, purple lines and a bar-chart icon, stayed on it until .49.) Vampire Survivors' Song
+## of Mana, a column of light through the player.
+## 栅格系统 (evolved with 开源项目; 实时看板 until .49): the lines stay until the next set replaces
+## them.
 ##
-## The data scientist's own weapon, so it levels up along two directions (Upgrades.BRANCHES):
-## 更多网格线 adds one more line each way, 更粗更久 makes every line wider, longer-lasting and
-## harder-hitting. A new set always replaces the last, so lasting longer only fills the gap
-## until the next set (from 2 levels of 更粗更久 the lines are always up) and never stacks.
+## The designer's own weapon, so it levels up along two directions (Upgrades.BRANCHES):
+## 更多网格线 adds one more line each way, 更粗 makes every line wider and harder-hitting.
+##
+## A set stays three quarters of its cycle and is gone for the last quarter, however it is
+## upgraded (.49, the user's call: 去掉更久). Until then 更粗 was 更粗更久 and each level also made a
+## set last 0.4 s longer: from two levels on a set lasted the whole cycle, so a grid stood round the
+## player all the time, the two lines through them catching anything that touched them, and the
+## user stood still through the last two minutes and won.
 ##
 ## A set lives at most one cycle (the cooldown, sped up as it is) and fades in and out, so the next
 ## takes over as the last has faded (.41, the user's report: a set that outlived the cycle was
@@ -26,8 +33,9 @@ const DAMAGE_PER_THICKER := 1.5
 const TICK := 0.43
 const BASE_WIDTH := 8.0
 const WIDTH_PER_THICKER := 4.0
+## How long a set stays: three quarters of the cooldown, and like the cooldown shorter with 双屏
+## and the other cooldown bonuses, so the quarter left open never closes.
 const BASE_SECONDS := 1.5
-const SECONDS_PER_THICKER := 0.4
 ## A set fades in over FADE_IN and out over its last FADE_OUT seconds.
 const FADE_IN := 0.15
 const FADE_OUT := 0.3
@@ -36,8 +44,9 @@ const FADE_OUT := 0.3
 ## in turn, three each way at most (.41, the user's call: it added one each way a time, up to five
 ## each way, and made the data scientist the strongest job).
 const OFFSETS := [0.0, 40.0, -40.0]
-## The data scientist's purple.
-const COLOR := Color("8c7cf0")
+## The designer's pink, the soft red of a design tool's layout grid. The data scientist's purple
+## (8c7cf0) until .49, when the data scientist's needle took that colour.
+const COLOR := Color("ff5d9e")
 
 
 class Guide:
@@ -53,11 +62,11 @@ var _guides: Array[Guide] = []
 var _floor: Node2D
 
 
-## The lines with `more` upgrades to 更多网格线 and `thicker` to 更粗更久 (the cards' numbers too):
-## `count` lines each way.
+## The lines with `more` upgrades to 更多网格线 and `thicker` to 更粗 (the cards' numbers too):
+## `count` lines each way. `duration` is the same at every level, before cooldown bonuses.
 static func branch_stats(more: int, thicker: int) -> Dictionary:
 	return {"rows": 1 + ceili(more / 2.0), "columns": 1 + floori(more / 2.0), "damage": BASE_DAMAGE + DAMAGE_PER_THICKER * thicker,
-		"size": (BASE_WIDTH + WIDTH_PER_THICKER * thicker) / BASE_WIDTH, "duration": BASE_SECONDS + SECONDS_PER_THICKER * thicker}
+		"size": (BASE_WIDTH + WIDTH_PER_THICKER * thicker) / BASE_WIDTH, "duration": BASE_SECONDS}
 
 
 func _ready() -> void:
@@ -81,7 +90,7 @@ func cooldown() -> float:
 
 func fire() -> bool:
 	var stats := branch_stats(branch_a, branch_b)
-	# One set at a time (.32): with 更粗更久 a set outlives the cooldown, and overlapping sets all
+	# One set at a time (.32): when 更粗更久 made a set outlive the cooldown, overlapping sets all
 	# ticked on whatever stood next to the player, so nothing got close (bots as the data
 	# scientist lasted the full 10 minutes 28% of the time, 8% with this).
 	_guides.clear()
@@ -90,9 +99,10 @@ func fire() -> bool:
 			var guide := Guide.new()
 			guide.horizontal = horizontal
 			guide.at = (player.position.y if horizontal else player.position.x) + OFFSETS[i]
-			# Never past the next set (evolved, it lasts until then).
+			# Three quarters of the cycle, sped up with it, so a gap is always left before the next
+			# set (evolved, it lasts until then).
 			var cycle := COOLDOWN * player.cooldown_scale
-			guide.life = cycle if evolved else minf(stats["duration"], cycle)
+			guide.life = cycle if evolved else stats["duration"] * player.cooldown_scale
 			_guides.append(guide)
 	return true
 

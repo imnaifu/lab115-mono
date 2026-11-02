@@ -8,7 +8,7 @@ extends RefCounted
 ## players learn the game on the simplest weapon.
 ##
 ## The build follows one rule (.39, the user's call): every job starts with 100 health, the
-## close-range ones (PRD 卷筒, 埋点) get armor 2 and speed 60, the far-reaching ones (回车键, 网格线)
+## close-range ones (PRD 卷筒, 抽样) get armor 2 and speed 60, the far-reaching ones (回车键, 网格线)
 ## armor 0 and speed 66 (.41: the designer and the data scientist swapped weapons back, the user
 ## wanting the designer to be the ranged one; .14 had swapped them the other way), and the ops, whose walls guard round them but fly out to hit, half of
 ## each: armor 1, speed 63 (.40). Luck starts at 0 for everyone.
@@ -39,8 +39,9 @@ const JOBS := {
 		"lines": ["拒绝访问", "403", "已拉黑", "别碰生产", "限流了", "谁动了配置"]},
 	"data_scientist": {"name": "数据科学家", "art": "data_scientist", "weapon": "poke",
 		"hp": 100.0, "armor": 2.0, "speed": 60.0,
-		"pitch": "埋点朝前一路戳，越升埋得越多越密",
-		"lines": ["显著了", "p < 0.05", "样本太少", "相关非因果", "过拟合了", "看大盘"]},
+		"pitch": "贴着怪一针针扎，专挑离你最近的抽样",
+		# 便利抽样 (convenience sampling) owns up to the weapon always taking the nearest one.
+		"lines": ["显著了", "p < 0.05", "样本太少", "相关非因果", "过拟合了", "看大盘", "便利抽样"]},
 }
 
 ## Weapon types: card tag colours (tint, text) and names.

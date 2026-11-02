@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5ns1qbgfme5q"
-path="res://.godot/imported/axes.svg-549abe4979d30f563f31b42abd58a855.ctex"
+uid="uid://mtquwsf3rgfm"
+path="res://.godot/imported/sample_needle.svg-5d123021dc392d5fdf0832d25c016a99.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/axes.svg"
-dest_files=["res://.godot/imported/axes.svg-549abe4979d30f563f31b42abd58a855.ctex"]
+source_file="res://assets/art/sample_needle.svg"
+dest_files=["res://.godot/imported/sample_needle.svg-5d123021dc392d5fdf0832d25c016a99.ctex"]
 
 [params]
 

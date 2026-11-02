@@ -67,9 +67,9 @@ const WEAPONS := {
 		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "多抄送 1 个", "伤害 +5", "多发一封，多抄送 1 个", "伤害 +6，多抄送 1 个"]},
 	"prd": {"name": "PRD 卷筒", "art": "prd_roll", "behavior": "swing", "type": "melee", "job": "pm",
 		"levels": ["朝最近的怪抡一扇形，扇形里的怪都挨打"]},
-	"poke": {"name": "埋点", "art": "stylus", "behavior": "poke", "type": "melee", "job": "data_scientist",
-		"levels": ["朝最近的怪埋一个点，只打最前面的一只；没怪也照埋"]},
-	"guides": {"name": "网格线", "art": "axes", "behavior": "guides", "type": "area", "job": "designer",
+	"poke": {"name": "抽样", "art": "sample_needle", "behavior": "poke", "type": "melee", "job": "data_scientist",
+		"levels": ["朝最近的怪扎一针抽个样，只扎最前面的一只；没怪也照扎"]},
+	"guides": {"name": "网格线", "art": "layout_grid", "behavior": "guides", "type": "area", "job": "designer",
 		"levels": ["以你为中心拉出横竖两条贯穿全屏的网格线，线上的怪持续掉血"]},
 	"pen": {"name": "钢笔工具", "art": "pen_tool", "behavior": "trail", "type": "area",
 		"levels": ["走过的地方留下一条线，碰到的怪持续掉血", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +4，线粗一半、留 3 秒"]},
@@ -102,8 +102,8 @@ const EVOLUTIONS := {
 	"copy": {"passive": "headhunter", "name": "Ctrl+A 全选粘贴", "text": "朝 8 个方向一起粘贴"},
 	"screensaver": {"passive": "armor", "name": "动态壁纸", "text": "每次碰到屏幕边缘都炸一圈"},
 	"prd": {"passive": "standup", "name": "需求评审会", "text": "每次都抡满一圈，范围更大，定得更久"},
-	"poke": {"passive": "magnet", "name": "多点触控", "text": "每次朝 12 个方向一起埋点，线长 +20%"},
-	"guides": {"passive": "open_source", "name": "实时看板", "text": "网格线不再消失，一直留到下一组画出来"},
+	"poke": {"passive": "magnet", "name": "全量数据", "text": "不抽了，12 个方向一起扎，线长 +20%"},
+	"guides": {"passive": "open_source", "name": "栅格系统", "text": "网格线不再消失，一直留到下一组画出来"},
 	"pen": {"passive": "swiftness", "name": "矢量图层", "text": "线留两倍久；画个圈，圈里的怪受一次重击"},
 	"wifi": {"passive": "regen", "name": "5G 基站", "text": "范围更大，打中怪就回一点血"},
 	"cloud": {"passive": "might", "name": "多云多活", "text": "劈的道数翻倍，范围翻倍"},
@@ -120,8 +120,9 @@ const BRANCHES := {
 	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +4"}},
 	"prd": {"a": {"name": "更长", "text": "抡得更远，伤害 +13"}, "b": {"name": "更宽", "text": "扇形更宽（四次到 180°），伤害 +13"}},
 	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +14"}},
-	"guides": {"a": {"name": "更多网格线", "text": "多一条网格线（横竖轮流加，最多各 3 条）"}, "b": {"name": "更粗更久", "text": "线更粗、留得更久，伤害 +1.5"}},
-	"poke": {"a": {"name": "更多方向", "text": "多埋几个方向（前 → 前后 → 四向 → 六向 → 八向），伤害 +1"}, "b": {"name": "更多次数", "text": "一轮多埋一下，伤害 +1"}},
+	"guides": {"a": {"name": "更多网格线", "text": "多一条网格线（横竖轮流加，最多各 3 条）"}, "b": {"name": "更粗", "text": "线更粗，伤害 +1.5"}},
+	# Stratified sampling takes from every stratum, so more ways; a bigger sample is more jabs.
+	"poke": {"a": {"name": "分层抽样", "text": "多扎几个方向（前 → 前后 → 四向 → 六向 → 八向），伤害 +1"}, "b": {"name": "加大样本量", "text": "一轮多扎一针，伤害 +1"}},
 }
 
 const PASSIVES := {
@@ -628,7 +629,8 @@ func _shown_stat(stat_key: String, value: Variant, damage_bonus: float) -> Strin
 		"arc":
 			return "%d°" % roundi(value)
 		"duration":
-			return tr("%s 秒") % _short_float(value)
+			# Only the grid lines have one, and it shortens with the cooldown (GuideWeapon.BASE_SECONDS).
+			return tr("%s 秒") % _short_float(value * player.cooldown_scale)
 	return str(roundi(value))
 
 

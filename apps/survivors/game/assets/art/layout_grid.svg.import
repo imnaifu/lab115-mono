@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://eohfkc0kada7"
-path="res://.godot/imported/stylus.svg-d5095f40984589f2e84cccd3ecd42041.ctex"
+uid="uid://b1ju70o3all6w"
+path="res://.godot/imported/layout_grid.svg-c637d6da0355fd7d62e91209e202ec02.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/stylus.svg"
-dest_files=["res://.godot/imported/stylus.svg-d5095f40984589f2e84cccd3ecd42041.ctex"]
+source_file="res://assets/art/layout_grid.svg"
+dest_files=["res://.godot/imported/layout_grid.svg-c637d6da0355fd7d62e91209e202ec02.ctex"]
 
 [params]
 
