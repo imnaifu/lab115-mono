@@ -26,21 +26,21 @@ const JOB_WEAPON_LEVELS := [3, 6, 10, 15, 20, 25]
 
 ## Card rarity (白 / 绿 / 蓝 / 紫 / 橙): every weapon and passive card rolls one, and the rarer it is
 ## the more its step gives, the level still going up by one. `scale` multiplies a stat passive's
-## step (stat_step: 冰美式 +10% common, +12% green); `weapon_bonus` adds to that weapon's own
-## damage for good (Weapon.damage_bonus); a table perk (Perks: 股票期权, 背锅侠…) reads its
-## numbers off per-level tables instead, so it jumps `extra_levels` more and only rolls 普通, 史诗
-## (+1) and 传说 (+2): whole levels can't be split finer, and that way a rarer card still always
-## gives more, about as much more on average as a stat passive's. `weight` is the chance in percent with no
+## step (stat_step: 冰美式 +10% common, +12% green); `bonus` adds to that weapon's own damage
+## for good (Weapon.damage_bonus), or to a table perk's (Perks: 股票期权, 背锅侠…) own effect for
+## good (perk_bonus, Perks reads it): at full level about what a stat passive's rarer step adds.
+## Until .53 a table perk only rolled 普通, 史诗 and 传说, and those jumped one and two levels
+## more instead (the user: 史诗 / 传说也加到被动的数值上). `weight` is the chance in percent with no
 ## luck (Player.luck, see luck_factor). Frequent and modest on purpose: about half the cards have
 ## a colour, none of them swings a run on its own. .33 took the rarer tiers down a little at the
-## user's ask (was 45 / 32 / 15 / 6 / 2): epic and legendary also level table perks up faster.
+## user's ask (was 45 / 32 / 15 / 6 / 2).
 ## `colour` is how the year-end bonus dialog and the site name a tier (.46: 绩效 B 送绿色升级).
 const RARITIES := [
-	{"id": "common", "name": "普通", "colour": "白色", "weight": 65.0, "scale": 1.0, "weapon_bonus": 0.0, "extra_levels": 0},
-	{"id": "uncommon", "name": "优秀", "colour": "绿色", "weight": 24.0, "scale": 1.15, "weapon_bonus": 0.04, "extra_levels": 0},
-	{"id": "rare", "name": "稀有", "colour": "蓝色", "weight": 8.0, "scale": 1.3, "weapon_bonus": 0.08, "extra_levels": 0},
-	{"id": "epic", "name": "史诗", "colour": "紫色", "weight": 2.5, "scale": 1.6, "weapon_bonus": 0.12, "extra_levels": 1},
-	{"id": "legendary", "name": "传说", "colour": "橙色", "weight": 0.5, "scale": 2.0, "weapon_bonus": 0.2, "extra_levels": 2},
+	{"id": "common", "name": "普通", "colour": "白色", "weight": 65.0, "scale": 1.0, "bonus": 0.0},
+	{"id": "uncommon", "name": "优秀", "colour": "绿色", "weight": 24.0, "scale": 1.15, "bonus": 0.04},
+	{"id": "rare", "name": "稀有", "colour": "蓝色", "weight": 8.0, "scale": 1.3, "bonus": 0.08},
+	{"id": "epic", "name": "史诗", "colour": "紫色", "weight": 2.5, "scale": 1.6, "bonus": 0.12},
+	{"id": "legendary", "name": "传说", "colour": "橙色", "weight": 0.5, "scale": 2.0, "bonus": 0.2},
 ]
 ## The passives that add a number, by how much at common rarity (percent for the multipliers);
 ## the card text has it as %s. The rest are table perks.
@@ -140,7 +140,6 @@ const PASSIVES := {
 	"cost_cut": {"name": "降本增效", "art": "cost_cut", "text": "打死的怪有几率爆炸，还能连环炸"},
 	"open_source": {"name": "开源项目", "art": "turret", "text": "打死怪有几率留下小炮台，自动打怪 8 秒"},
 	"standup": {"name": "站会", "art": "standup", "text": "每隔一阵开站会，震开并定住身边的怪"},
-	"nap": {"name": "午休", "art": "nap", "text": "站着不动 1 秒后，快速回血"},
 }
 
 ## The names the weapon stats go by on cards, most telling first; a card shows at most
@@ -149,11 +148,17 @@ const PASSIVES := {
 const WEAPON_STAT_NAMES := {"damage": "伤害", "count": "数量", "rows": "横线", "columns": "竖线", "pierce": "穿透", "radius": "范围",
 	"range": "长度", "arc": "角度", "times": "次数", "speed": "速度", "size": "大小", "duration": "持续", "cooldown": "间隔"}
 const MAX_STATS_SHOWN := 2
+## The number each table perk's card shows (Perks.effect), which a rarer card makes better.
+const PERK_STAT_NAMES := {"stock": "每分钟伤害", "scapegoat": "反伤", "cost_cut": "爆炸几率", "open_source": "炮台几率",
+	"standup": "站会间隔"}
 
 ## Offered only when everything else is maxed out.
 const FALLBACK := {"kind": "heal", "id": "heal", "level": 0, "name": "摸鱼一会儿", "art": "boba", "text": "回复 30 生命"}
 
 var passive_levels := {}
+## Each table perk's own extra effect from rarer cards (RARITIES `bonus`, stacking): 0.12 is its
+## number 12% better (Perks._bonus).
+var perk_bonus := {}
 var _game: Game
 ## Level-ups offered so far this run (for NEW_WEAPONS_GUARANTEED).
 var _offers := 0
@@ -249,43 +254,26 @@ static func luck_factor(luck: float, tier: int) -> float:
 	return pow(1.0 + maxf(luck, 0.0) / 100.0, tier)
 
 
-## Rolls `choice`'s rarity by the player's luck and words the card for it. A table perk only rolls
-## 普通 or tiers that add levels, and only those whose extra levels still fit under its cap, so a
-## rarer card always gives more.
+## Rolls `choice`'s rarity by the player's luck and words the card for it.
 func _set_rarity(choice: Dictionary) -> void:
-	var table_perk := _is_table_perk(choice)
-	var room: int = choice["max"] - choice["level"] if table_perk else 99
 	var weights := PackedFloat32Array()
 	for tier in RARITIES.size():
-		var extra: int = RARITIES[tier]["extra_levels"]
-		var fits := extra <= room and (tier == 0 or extra > 0 or not table_perk)
-		weights.append(RARITIES[tier]["weight"] * luck_factor(_game.player.luck, tier) if fits else 0.0)
+		weights.append(RARITIES[tier]["weight"] * luck_factor(_game.player.luck, tier))
 	_give_rarity(choice, _game.rng.rand_weighted(weights))
 
 
 ## Makes `choice` a card of `rarity` and words it for it.
 func _give_rarity(choice: Dictionary, rarity: int) -> void:
 	choice["rarity"] = rarity
-	if _is_table_perk(choice):
-		choice["to_level"] = choice["level"] + RARITIES[rarity]["extra_levels"]
-	elif choice["kind"] == "passive":
+	if choice["kind"] == "passive" and not _is_table_perk(choice):
 		choice["text"] = passive_text(choice["id"], rarity)
-
-
-## Whether `choice` can come out at `rarity` (> 0): anything can but a table perk, which only takes
-## a tier that adds levels and only with room for them under its cap (as in _set_rarity).
-func _fits_rarity(choice: Dictionary, rarity: int) -> bool:
-	if not _is_table_perk(choice):
-		return true
-	var extra: int = RARITIES[rarity]["extra_levels"]
-	return extra > 0 and extra <= choice["max"] - choice["level"]
 
 
 ## A year-end bonus's upgrade (.46: Game.FUNDING_ROUNDS `rarity`, 绩效 B 优秀 / A 稀有 / S 史诗), not
 ## applied yet. Like Vampire Survivors' chests (and these until .44) it levels up something the
 ## player already carries, picked at random; only when nothing carried can take that rarity does
-## something new come out, and with nothing left at all, the fallback card. A table perk takes only
-## 史诗 (Upgrades.RARITIES `extra_levels`), so 绩效 B and A never land on one.
+## something new come out, and with nothing left at all, the fallback card. Any of them can take any
+## rarity (until .53 a table perk only took 史诗, its extra level).
 func chest_upgrade(rarity: int) -> Dictionary:
 	var carried: Array = []
 	for weapon in _game.player.weapons:
@@ -300,11 +288,10 @@ func chest_upgrade(rarity: int) -> Dictionary:
 	for passive_id: String in passive_levels:
 		if passive_levels[passive_id] < max_level("passive", passive_id):
 			carried.append(_choice("passive", passive_id, passive_levels[passive_id] + 1))
-	var fitting := carried.filter(func(choice: Dictionary) -> bool: return _fits_rarity(choice, rarity))
+	var fitting := carried
 	if fitting.is_empty():
 		# The whole level-up pool (what isn't carried yet, where there are free slots).
-		fitting = _roll(99, 0).filter(func(choice: Dictionary) -> bool:
-			return choice["kind"] in ["weapon", "passive"] and _fits_rarity(choice, rarity))
+		fitting = _roll(99, 0).filter(func(choice: Dictionary) -> bool: return choice["kind"] in ["weapon", "passive"])
 	if fitting.is_empty():
 		return FALLBACK.duplicate()
 	var item: Dictionary = fitting[_game.rng.randi() % fitting.size()]
@@ -337,13 +324,15 @@ static func _amount_text(value: float) -> String:
 
 
 ## What a card's rarity adds that its text doesn't say, translated: a weapon's own damage bonus,
-## a table perk's extra levels. Empty at common, and for stat passives (their text has it).
+## a table perk's own effect bonus. Empty at common, and for stat passives (their text has it).
 static func rarity_line(choice: Dictionary) -> String:
 	var rarity: Dictionary = RARITIES[choice.get("rarity", 0)]
-	if choice["kind"] == "weapon" and rarity["weapon_bonus"] > 0.0:
-		return TranslationServer.translate("本武器伤害 +%d%%") % roundi(rarity["weapon_bonus"] * 100.0)
-	if _is_table_perk(choice) and rarity["extra_levels"] > 0:
-		return TranslationServer.translate("直接升到 Lv %d") % choice["to_level"]
+	if rarity["bonus"] <= 0.0:
+		return ""
+	if choice["kind"] == "weapon":
+		return TranslationServer.translate("本武器伤害 +%d%%") % roundi(rarity["bonus"] * 100.0)
+	if _is_table_perk(choice):
+		return TranslationServer.translate("本被动效果 +%d%%") % roundi(rarity["bonus"] * 100.0)
 	return ""
 
 
@@ -494,14 +483,15 @@ func apply(choice: Dictionary) -> void:
 				player.add_weapon(weapon)
 			else:
 				weapon.level_up(choice.get("branch", ""))
-			weapon.damage_bonus += rarity["weapon_bonus"]
+			weapon.damage_bonus += rarity["bonus"]
 		"passive":
 			var current: int = passive_levels.get(choice["id"], 0)
 			if STAT_STEPS.has(choice["id"]):
 				passive_levels[choice["id"]] = current + 1
 				_apply_passive(choice["id"], choice.get("rarity", 0))
 			else:
-				passive_levels[choice["id"]] = mini(current + 1 + rarity["extra_levels"], max_level("passive", choice["id"]))
+				passive_levels[choice["id"]] = current + 1
+				perk_bonus[choice["id"]] = perk_bonus.get(choice["id"], 0.0) + rarity["bonus"]
 		"heal":
 			player.heal(30.0)
 
@@ -547,7 +537,7 @@ func numbers(choice: Dictionary) -> String:
 			var before: Dictionary
 			var carried := _game.player.get_weapon(weapon_id)
 			var bonus_before := carried.damage_bonus if carried != null else 0.0
-			var bonus_after: float = bonus_before + RARITIES[choice.get("rarity", 0)]["weapon_bonus"]
+			var bonus_after: float = bonus_before + RARITIES[choice.get("rarity", 0)]["bonus"]
 			if choice.has("branch"):
 				var weapon := _game.player.get_weapon(weapon_id)
 				var more_a := 1 if choice["branch"] == "a" else 0
@@ -572,7 +562,7 @@ func numbers(choice: Dictionary) -> String:
 				parts.append(tr("配「%s」可进化") % tr(passive_name))
 			return " · ".join(parts)
 		"passive":
-			return _passive_numbers(choice["id"], choice.get("to_level", next_level), choice.get("rarity", 0))
+			return _passive_numbers(choice["id"], next_level, choice.get("rarity", 0))
 	return ""
 
 
@@ -661,27 +651,30 @@ func _passive_numbers(passive_id: String, next_level: int, rarity: int = 0) -> S
 			return _step("回血", tr("%s/秒") % _amount_text(player.regen), tr("%s/秒") % _amount_text(player.regen + step))
 		"luck":
 			return _step("运气", _amount_text(player.luck), _amount_text(player.luck + step))
-		"stock":
-			return _step("每分钟伤害", "+%d%%" % roundi(Perks.VESTING_MIGHT * current * 100.0), "+%d%%" % roundi(Perks.VESTING_MIGHT * next_level * 100.0))
-		"scapegoat":
-			return _perk_step("反伤", Perks.SCAPEGOAT_MULTIPLIER, current, next_level, "×%s")
-		"cost_cut":
-			return _perk_step("爆炸几率", Perks.BLAST_CHANCE, current, next_level, "%s%%", 100.0)
-		"open_source":
-			return _perk_step("炮台几率", Perks.TURRET_CHANCE, current, next_level, "%s%%", 100.0)
-		"standup":
-			return _perk_step("站会间隔", Perks.STANDUP_EVERY, current, next_level, tr("%s 秒"))
-		"nap":
-			return _perk_step("午休回血", Perks.NAP_REGEN, current, next_level, tr("%s/秒"))
+	if PERK_STAT_NAMES.has(passive_id):
+		return _perk_numbers(passive_id, current, next_level, rarity)
 	return ""
 
 
-## A perk's value from its per-level table, before and after; just the new value at level 1.
-func _perk_step(stat_name: String, table: Array, current: int, next_level: int, value_format: String, scale: float = 1.0) -> String:
-	var after: String = value_format % _short_float(table[next_level - 1] * scale)
-	if current == 0:
-		return _step(stat_name, "", after)
-	return _step(stat_name, value_format % _short_float(table[current - 1] * scale), after)
+## A table perk's main number (Perks.effect) before and after the card, its own bonus counted
+## (perk_bonus, with this card's rarity on top); just the new value at level 1.
+func _perk_numbers(perk_id: String, current: int, next_level: int, rarity: int) -> String:
+	var bonus: float = perk_bonus.get(perk_id, 0.0)
+	var after := _perk_value(perk_id, Perks.effect(perk_id, next_level, bonus + RARITIES[rarity]["bonus"]))
+	var before := _perk_value(perk_id, Perks.effect(perk_id, current, bonus)) if current > 0 else ""
+	return _step(PERK_STAT_NAMES[perk_id], before, after)
+
+
+## A table perk's main number as its card shows it.
+func _perk_value(perk_id: String, value: float) -> String:
+	match perk_id:
+		"stock":
+			return "+%d%%" % roundi(value * 100.0)
+		"scapegoat":
+			return "×%s" % _short_float(value)
+		"standup":
+			return tr("%s 秒") % _short_float(value)
+	return "%s%%" % _short_float(value * 100.0)
 
 
 ## "name before → after", or "name after" with no before (or one of nothing, like "+0%").

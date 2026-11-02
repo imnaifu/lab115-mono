@@ -9,7 +9,10 @@ extends RefCounted
 ## - cost_cut (降本增效): a killed enemy may explode and hurt its neighbours, which may explode too.
 ## - open_source (开源项目): a killed enemy may leave a turret behind for a few seconds.
 ## - standup (站会): every so often knocks back and stuns everything close.
-## - nap (午休): standing still for a moment heals quickly.
+## 午休 (nap: standing still a moment healed quickly) was taken out in .53, the user's call.
+##
+## A rarer card makes each one's main number better for good (effect, Upgrades.perk_bonus); until
+## .53 it jumped them a level or two instead.
 
 const VESTING_SECONDS := 60.0
 ## Damage vested per minute, per level.
@@ -32,14 +35,10 @@ const STANDUP_RADIUS := 100.0
 const STANDUP_DAMAGE := [10.0, 15.0, 20.0, 25.0, 30.0]
 const STANDUP_STUN := 1.0
 const STANDUP_PUSH := 120.0
-## Seconds of standing still before the nap starts, then HP per second by level.
-const NAP_AFTER := 1.0
-const NAP_REGEN := [1.5, 2.5, 3.5, 4.5, 6.0]
 
 var _game: Game
 var _vesting_left := VESTING_SECONDS
 var _standup_left := 0.0
-var _still_for := 0.0
 var _blasts: Array[Vector2] = []
 var _turrets: Array[Turret] = []
 
@@ -56,21 +55,14 @@ func tick(delta: float) -> void:
 		_vesting_left -= delta
 		if _vesting_left <= 0.0:
 			_vesting_left += VESTING_SECONDS
-			player.might += VESTING_MIGHT * stock
+			player.might += effect("stock", stock, _bonus("stock"))
 
 	var standup := _level("standup")
 	if standup > 0:
 		_standup_left -= delta
 		if _standup_left <= 0.0:
-			_standup_left = _stat(STANDUP_EVERY, standup)
+			_standup_left = effect("standup", standup, _bonus("standup"))
 			_hold_standup(_stat(STANDUP_DAMAGE, standup))
-
-	var nap := _level("nap")
-	_still_for = _still_for + delta if player.velocity.length_squared() < 1.0 else 0.0
-	var napping := nap > 0 and _still_for >= NAP_AFTER
-	player.set_napping(napping)
-	if napping and player.hp < player.max_hp:
-		player.heal(_stat(NAP_REGEN, nap) * delta)
 
 	var cost_cut := _level("cost_cut")
 	for i in mini(_blasts.size(), MAX_BLASTS_PER_FRAME):
@@ -83,10 +75,10 @@ func tick(delta: float) -> void:
 
 func on_kill(enemy: Enemy) -> void:
 	var cost_cut := _level("cost_cut")
-	if cost_cut > 0 and _game.rng.randf() < _stat(BLAST_CHANCE, cost_cut):
+	if cost_cut > 0 and _game.rng.randf() < effect("cost_cut", cost_cut, _bonus("cost_cut")):
 		_blasts.append(enemy.position)
 	var open_source := _level("open_source")
-	if open_source > 0 and _turrets.size() < MAX_TURRETS and _game.rng.randf() < _stat(TURRET_CHANCE, open_source):
+	if open_source > 0 and _turrets.size() < MAX_TURRETS and _game.rng.randf() < effect("open_source", open_source, _bonus("open_source")):
 		var turret := Turret.new()
 		turret.game = _game
 		turret.seconds_left = TURRET_SECONDS
@@ -101,7 +93,7 @@ func on_hurt(amount: float) -> void:
 	if scapegoat == 0:
 		return
 	var player := _game.player
-	var damage: float = amount * _stat(SCAPEGOAT_MULTIPLIER, scapegoat) * player.might
+	var damage: float = amount * effect("scapegoat", scapegoat, _bonus("scapegoat")) * player.might
 	Effects.ring(_game, player.position, SCAPEGOAT_RADIUS, Art.INK)
 	for enemy in _game.query_enemies(player.position, SCAPEGOAT_RADIUS):
 		_game.damage_enemy(enemy, damage, (enemy.position - player.position).normalized() * 80.0, "scapegoat")
@@ -124,6 +116,28 @@ func _blast(at: Vector2, damage: float) -> void:
 
 func _level(perk_id: String) -> int:
 	return _game.upgrades.passive_levels.get(perk_id, 0)
+
+
+## This run's rarity bonus for `perk_id` (Upgrades.perk_bonus).
+func _bonus(perk_id: String) -> float:
+	return _game.upgrades.perk_bonus.get(perk_id, 0.0)
+
+
+## A perk's main number at `level` with its rarity bonus `bonus`: what it does and what its card
+## shows. 站会 comes round more often; the others' numbers go up.
+static func effect(perk_id: String, level: int, bonus: float) -> float:
+	match perk_id:
+		"stock":
+			return VESTING_MIGHT * level * (1.0 + bonus)
+		"scapegoat":
+			return _stat(SCAPEGOAT_MULTIPLIER, level) * (1.0 + bonus)
+		"cost_cut":
+			return _stat(BLAST_CHANCE, level) * (1.0 + bonus)
+		"open_source":
+			return _stat(TURRET_CHANCE, level) * (1.0 + bonus)
+		"standup":
+			return _stat(STANDUP_EVERY, level) / (1.0 + bonus)
+	return 0.0
 
 
 static func _stat(table: Array, level: int) -> float:

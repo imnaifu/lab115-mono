@@ -16,20 +16,24 @@ extends RefCounted
 ## All of it costs about ¥36,800: 35-50 runs of 工资 (a year-end bonus pays about ¥234 on average,
 ## and the bots that go for the stars open 3-5 a run, 2026-11).
 const STATS := [
-	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 10.0, "ranks": 5, "price": 100},
-	{"id": "might", "name": "伤害", "art": "coffee", "step": 0.05, "ranks": 5, "price": 100},
-	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.025, "ranks": 4, "price": 450},
-	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.05, "ranks": 2, "price": 150},
-	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.25, "ranks": 2, "price": 150},
-	{"id": "armor", "name": "护甲", "art": "headphones", "step": 1.0, "ranks": 3, "price": 300},
-	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.1, "ranks": 5, "price": 100},
-	{"id": "luck", "name": "运气", "art": "koi", "step": 10.0, "ranks": 3, "price": 300},
+	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 6.0, "ranks": 5, "price": 1000},
+	{"id": "might", "name": "伤害", "art": "coffee", "step": 0.03, "ranks": 5, "price": 1000},
+	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.015, "ranks": 4, "price": 4500},
+	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.03, "ranks": 2, "price": 1500},
+	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.15, "ranks": 2, "price": 1500},
+	{"id": "armor", "name": "护甲", "art": "headphones", "step": 0.6, "ranks": 3, "price": 3000},
+	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.06, "ranks": 5, "price": 1000},
+	{"id": "luck", "name": "运气", "art": "koi", "step": 6.0, "ranks": 3, "price": 3000},
 ]
+## .53 (the user: 局外的成长调低一点；保留等级，砍每一级的增长；培训的所有东西价格 ×10): every step is
+## 60% of what it was (生命 +10, 伤害 +5%, 冷却 -2.5%, 移速 +5%, 拾取 +25%, 护甲 +1, 回血 +0.1,
+## 运气 +10 a rank before) and every price ten times, 返聘 too. Ranks already bought stay bought
+## (the save keeps what each cost, state()), only worth less.
 ## Every rank bought (of any stat) makes every price this much dearer, as a share of it.
 const TAX := 0.1
 ## A 返聘 (a revive, Game.accept_revive) costs this, every time, untaxed (the user's price, .44; it
 ## was 绩效 S's prize in .43). Unlike a rank it is used up, so 全部退款 doesn't give it back.
-const REVIVE_PRICE := 1888
+const REVIVE_PRICE := 18880
 ## How a stat's total reads, given its amount (as Stamps.BONUSES).
 const TEXTS := {
 	"max_hp": "最大生命 +%s", "might": "伤害 +%s%%", "haste": "冷却 -%s%%", "speed": "移速 +%s%%",

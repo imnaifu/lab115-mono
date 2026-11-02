@@ -238,14 +238,14 @@ def upgrades_section(data: dict) -> str:
 
     rows = []
     for rarity in rarities:
-        # A perk with its own way of working (股票期权, 背锅侠…) only rolls the tiers that add levels.
-        table_perk = f"多升 {rarity['extra_levels']} 级" if rarity["extra_levels"] else ("照常 +1 级" if rarity is rarities[0] else "不出")
+        # A weapon's own damage and a perk with its own way of working (股票期权, 背锅侠…) both take
+        # the tier's `bonus` for good (.53; until then such a perk jumped extra levels instead).
         rows.append(f"<tr><td>{rarity_tag(rarity)}</td><td>{percent(rarity['weight'] / 100)}</td><td>×{number(rarity['scale'])}</td>"
-                    f"<td>+{percent(rarity['weapon_bonus'])}</td><td>{table_perk}</td></tr>")
+                    f"<td>+{percent(rarity['bonus'])}</td><td>+{percent(rarity['bonus'])}</td></tr>")
     rarity_card = f"""<article class="card"><h3>升级卡稀有度</h3>
 <p class="muted">每张武器卡和被动卡都抽一个稀有度，等级照常 +1，越稀有这一步给得越多。</p>
-<div class="scroll"><table class="nums"><tr><th></th><th>概率</th><th>数值被动</th><th>武器伤害</th><th>其他被动</th></tr>{"".join(rows)}</table></div>
-<p class="muted">概率是运气 0 时的。「数值被动」（冰美式这种加数的）这一级加的量乘这么多，比如冰美式 +10% 变 +20%；「武器伤害」是这一把武器永久多的伤害，同一把能叠；「其他被动」（股票期权这种有自己玩法的）按等级生效，只出普通、史诗、传说。</p></article>"""
+<div class="scroll"><table class="nums"><tr><th></th><th>概率</th><th>数值被动</th><th>武器伤害</th><th>其他被动效果</th></tr>{"".join(rows)}</table></div>
+<p class="muted">概率是运气 0 时的。「数值被动」（冰美式这种加数的）这一级加的量乘这么多，比如冰美式 +10% 变 +20%；「武器伤害」是这一把武器永久多的伤害，同一把能叠；「其他被动效果」（股票期权这种有自己玩法的）是这个被动的效果永久多这么多（背锅侠的反伤倍数、降本增效和开源项目的几率、股票期权每分钟加的伤害，站会是间隔缩短），同一个能叠。</p></article>"""
 
     luck = data["luck"]
     head = "".join(f"<th>{rarity_tag(rarity)}</th>" for rarity in rarities)
@@ -318,7 +318,7 @@ def difficulty_section(data: dict) -> str:
                           for minute in pacing["minutes"])
     curve_card = f"""<article class="card"><h3>怪越来越多、越来越抗打</h3>
 <div class="scroll"><table class="nums"><tr><th>时间</th><th>每秒刷怪</th><th>怪物生命</th></tr>{minute_rows}</table></div>
-<p class="muted">怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样。场上到了 {pacing['max_alive']} 只（手机 {pacing['max_alive_mobile']} 只）就先停刷。</p></article>"""
+<p class="muted">怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样；{number(pacing['late_from_minute'])} 分钟以后刷怪每分钟再多 {percent(pacing['late_spawn_per_minute'])}。场上到了 {pacing['max_alive']} 只（手机 {pacing['max_alive_mobile']} 只）就先停刷。</p></article>"""
 
     start, wave_rows = 0.0, []
     for wave in pacing["waves"]:

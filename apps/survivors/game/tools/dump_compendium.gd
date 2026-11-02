@@ -307,7 +307,8 @@ func _pacing() -> Dictionary:
 			"damage": stats["damage"], "xp": stats["xp"]})
 	return {"minutes": minutes, "waves": waves, "boss_slots": slots, "walk_seconds": BossKits.WALK_SECONDS,
 		"phase_two_at": BossKits.PHASE_TWO_AT,
-		"hp_per_minute": Spawner.HP_PER_MINUTE, "max_alive": Spawner.MAX_ALIVE, "max_alive_mobile": Spawner.MAX_ALIVE_MOBILE,
+		"hp_per_minute": Spawner.HP_PER_MINUTE, "late_from_minute": Spawner.LATE_FROM_MINUTE,
+		"late_spawn_per_minute": Spawner.LATE_SPAWN_PER_MINUTE, "max_alive": Spawner.MAX_ALIVE, "max_alive_mobile": Spawner.MAX_ALIVE_MOBILE,
 		"max_bosses_out": Spawner.MAX_BOSSES_OUT}
 
 
@@ -472,8 +473,6 @@ func _perk_levels(id: String) -> String:
 		"standup":
 			return "每 %s 秒开一次：身边 %s 内的怪受 %s 伤害，被震开、定住 %s 秒" % [
 				_by_level(_numbers(Perks.STANDUP_EVERY)), _num(Perks.STANDUP_RADIUS), _by_level(_numbers(Perks.STANDUP_DAMAGE)), _num(Perks.STANDUP_STUN)]
-		"nap":
-			return "站着不动 %s 秒后，每秒回 %s 生命" % [_num(Perks.NAP_AFTER), _by_level(_numbers(Perks.NAP_REGEN))]
 	push_warning("dump: no site wording for perk %s" % id)
 	return ""
 

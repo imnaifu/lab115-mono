@@ -37,6 +37,7 @@ const EN := {
 	"史诗": "Epic",
 	"传说": "Legendary",
 	"本武器伤害 +%d%%": "This weapon's damage +%d%%",
+	"本被动效果 +%d%%": "This perk's effect +%d%%",
 	"直接升到 Lv %d": "Straight to Lv %d",
 	"运气": "Luck",
 	# Card numbers
@@ -58,7 +59,6 @@ const EN := {
 	"爆炸几率": "Blast chance",
 	"炮台几率": "Turret chance",
 	"站会间隔": "Every",
-	"午休回血": "Nap heal",
 	"选项": "Choices",
 	"%s 秒": "%ss",
 	"%s/秒": "%s/s",
@@ -310,7 +310,6 @@ const EN := {
 	"打死怪有几率留下小炮台，自动打怪 8 秒": "Kills may leave a mini turret that fires for 8s",
 	"站会": "Stand-up",
 	"每隔一阵开站会，震开并定住身边的怪": "Every so often, a stand-up knocks back and stuns enemies near you",
-	"午休": "Nap Time",
 	"站着不动 1 秒后，快速回血": "Stand still for 1s to heal fast",
 	"拾取范围 +%s%%": "Pickup range +%s%%",
 	"工位绿植": "Desk Plant",

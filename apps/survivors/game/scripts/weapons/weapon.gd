@@ -19,7 +19,7 @@ var branch_a := 0
 var branch_b := 0
 ## Set once it has evolved (Upgrades.EVOLUTIONS): each weapon reads it to attack its evolved way.
 var evolved := false
-## This weapon's own extra damage from rarer level-up cards (Upgrades.RARITIES `weapon_bonus`),
+## This weapon's own extra damage from rarer level-up cards (Upgrades.RARITIES `bonus`),
 ## added up: 0.3 is +30%.
 var damage_bonus := 0.0
 

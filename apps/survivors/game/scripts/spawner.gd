@@ -16,6 +16,13 @@ const EASE_IN_START := 0.6
 ## How much tougher every enemy gets a minute (.40: 0.2 until then; the user wanted it harder
 ## after .39 made it much easier). The first minute's Bug still takes two of a job weapon's 7s.
 const HP_PER_MINUTE := 0.25
+## From LATE_FROM_MINUTE on, each minute spawns LATE_SPAWN_PER_MINUTE more of the rate on top (.53,
+## the user: 后期难度调高一点, then 不操作怪物生命，改成怪物数量), 1.95x by the ten-minute mark. Sized
+## by the balance formula (DESIGN.md 2.8) for a new player who plays well to win about 5%: it was
+## measured on enemy health (3.5x / 4.75x / 6x at 10:00 won 48% / 20% / 8%) and wants 6.8x, taken
+## here as the same total health a minute coming in more enemies (6.8 / 3.5 = 1.94), unmeasured.
+const LATE_FROM_MINUTE := 5.0
+const LATE_SPAWN_PER_MINUTE := 0.19
 
 ## `size` is the art's frame height in logical pixels, `radius` the body used for hits and
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on
@@ -211,8 +218,9 @@ func _init(game: Game) -> void:
 
 
 ## Spawns per second: about 0.5 at the start (eased in, see EASE_IN_SECONDS), about 6.3 by the
-## ten-minute mark. Kept lower than the crowd the game first had (9 a second by the end), since
-## the bosses now carry more of the pressure.
+## ten-minute mark before the late push (LATE_SPAWN_PER_MINUTE), 12.3 with it. Kept lower than the
+## crowd the game first had (9 a second by the end) until .53, since the bosses carry more of the
+## pressure.
 func spawn_rate() -> float:
 	return rate_at(_game.elapsed, Maps.current.DIFFICULTY["spawn"])
 
@@ -221,7 +229,8 @@ func spawn_rate() -> float:
 ## 官网 can chart it).
 static func rate_at(seconds: float, map_spawn: float) -> float:
 	var ease_in := lerpf(EASE_IN_START, 1.0, minf(seconds / EASE_IN_SECONDS, 1.0))
-	return (0.8 + seconds / 60.0 * 0.55) * ease_in * map_spawn
+	var late := 1.0 + maxf(seconds / 60.0 - LATE_FROM_MINUTE, 0.0) * LATE_SPAWN_PER_MINUTE
+	return (0.8 + seconds / 60.0 * 0.55) * ease_in * late * map_spawn
 
 
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute

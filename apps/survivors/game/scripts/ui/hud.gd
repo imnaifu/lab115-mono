@@ -1778,8 +1778,7 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 		# A job weapon's direction card: that direction's own level (.35).
 		badge = UiKit.level_dots(choice["branch_level"] - 1, Upgrades.BRANCH_MAX, true, 1)
 	elif kind != "heal":
-		# A rarer table perk jumps several levels at once (Upgrades.RARITIES `extra_levels`).
-		badge = UiKit.level_dots(level - 1, choice["max"], true, choice.get("to_level", level) - level + 1)
+		badge = UiKit.level_dots(level - 1, choice["max"], true, 1)
 	# What type of weapon it is.
 	var type_tag: Control = null
 	if kind == "weapon":
@@ -2367,7 +2366,7 @@ func _chest_step(item: Dictionary) -> String:
 	var level: int = item["level"]
 	if level == 1:
 		return tr("新")
-	return "Lv %d → %d" % [level - 1, item.get("to_level", level)]
+	return "Lv %d → %d" % [level - 1, level]
 
 
 ## A gold star flying out of the open chest at `angle`, spinning and fading as it goes.

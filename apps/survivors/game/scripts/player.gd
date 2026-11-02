@@ -72,8 +72,6 @@ var _camera: Camera2D
 var _bar_track: StyleBoxFlat
 var _bar_fill: StyleBoxFlat
 var _bar_outline: StyleBoxFlat
-## Standing still with the nap perk (Perks): healing, shown as a "Zz" over the head.
-var _napping := false
 ## Seconds spent under the low-health line, for the health bar's flashing.
 var _low_hp_clock := 0.0
 ## A push from traffic, added to the walk and dying away; no damage comes with it.
@@ -207,9 +205,6 @@ func _draw() -> void:
 		draw_circle(ring_at, CHECK_IN_RING_RADIUS + 2.0, Art.PAPER)
 		draw_arc(ring_at, CHECK_IN_RING_RADIUS, -PI / 2.0, -PI / 2.0 + TAU * _check_in_drawn, 32, Art.HP_RED, 3.0, true)
 		draw_arc(ring_at, CHECK_IN_RING_RADIUS + 2.0, 0.0, TAU, 32, Art.INK, 1.5, true)
-	if _napping:
-		draw_string_outline(font, Vector2(SIZE * 0.2, -SIZE * 0.45), "Zz", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 4, Art.PAPER)
-		draw_string(font, Vector2(SIZE * 0.2, -SIZE * 0.45), "Zz", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Art.BLUE)
 
 
 static func _pill_style(color: Color, border: int) -> StyleBoxFlat:
@@ -325,12 +320,6 @@ func shake(seconds: float, strength: float) -> void:
 	if seconds >= _shake_left:
 		_shake_strength = strength
 	_shake_left = maxf(_shake_left, seconds)
-
-
-func set_napping(value: bool) -> void:
-	if value != _napping:
-		_napping = value
-		queue_redraw()
 
 
 func heal(amount: float) -> void:
