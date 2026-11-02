@@ -52,9 +52,16 @@ var armor := 0.0
 var regen := 0.0
 var might := 1.0
 var cooldown_scale := 1.0
-## 运气: makes rarer level-up cards and better year-end bonuses likelier (Upgrades.luck_factor).
-## From the 锦鲤 passive and some landmarks' stamps.
-var luck := 0.0
+## 运气: makes rarer level-up cards and an extra card likelier (Upgrades.luck_factor,
+## extra_card_chance). From the 锦鲤 passive, the luck landmarks' stamps and 培训.
+## At most MAX_LUCK, all of those together (.60, the user: 就算拉满也不能优秀比普通概率高, 运气封顶要
+## 保证场外所有 + 场内不会超过 170): at 170 优秀's 24 × 2.7 = 64.8 is just under 普通's 65 and the
+## tiers stay in order (25 / 25 / 22 / 19 / 10%). Out of a run it reaches 68 (landmarks 50, 培训
+## 18), so a few 锦鲤 levels fill it; past it the card isn't offered (Upgrades._passive_open).
+const MAX_LUCK := 170.0
+var luck := 0.0:
+	set(value):
+		luck = minf(value, MAX_LUCK)
 var velocity := Vector2.ZERO
 var facing := Vector2.RIGHT
 ## Set by the smoke-test bot to steer without a keyboard; null means read real input.

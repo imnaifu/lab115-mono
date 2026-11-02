@@ -31,8 +31,8 @@ extends SceneTree
 ## to look at the evolutions), --map=sv|ldn|sea|sg|bj (play that map, locked or not), --stamps=N|all (start
 ## having checked in at the first N of the map's landmarks, or all of them),
 ## --collection=0|1|2 (with --shots, also screenshot the title's 收藏 page on that tab),
-## --departures[=city] (with --shots, also screenshot the title's departures board, with that
-## city's boarding pass if given), --luck=N
+## --map-picker[=city] (with --shots, also screenshot the title's map picker, with that
+## city's card if given), --luck=N
 ## (start with that much luck, to see rarer cards), --cloud=local|<url>
 ## (connect the cloud save to that Nakama server, as the web build does), --save-page (with
 ## --shots, also screenshot the settings and the 云存档 page; with --cloud, synced and with a
@@ -90,9 +90,9 @@ var _stamps_before := 0
 ## The 打卡 · 成就 tab to screenshot at the title, or -1; and frames it has been open.
 var _collection_tab := -1
 var _collection_frames := 0
-var _departures := false
-var _departures_city := ""
-var _departures_frames := 0
+var _map_picker := false
+var _map_picker_city := ""
+var _map_picker_frames := 0
 var _save_page := false
 var _save_page_frames := 0
 var _revives_before := 0
@@ -165,9 +165,9 @@ func _initialize() -> void:
 			_stamps_before = 1000 if value == "all" else int(value)
 		elif arg.begins_with("--collection="):
 			_collection_tab = int(value)
-		elif arg == "--departures" or arg.begins_with("--departures="):
-			_departures = true
-			_departures_city = value if arg.contains("=") else ""
+		elif arg == "--map-picker" or arg.begins_with("--map-picker="):
+			_map_picker = true
+			_map_picker_city = value if arg.contains("=") else ""
 		elif arg == "--save-page":
 			_save_page = true
 		elif arg.begins_with("--luck="):
@@ -241,17 +241,17 @@ func _process(_delta: float) -> bool:
 					_save_shot("collection")
 					_game.hud._collection_open = false
 					_collection_tab = -1
-				if _departures:
-					if _departures_frames == 0:
-						_game.hud._open_departures()
-						if _departures_city != "":
-							_game.hud._show_boarding_pass(_departures_city)
-					_departures_frames += 1
-					if _departures_frames < OVERLAY_SETTLE_FRAMES:
+				if _map_picker:
+					if _map_picker_frames == 0:
+						_game.hud._open_map_picker()
+						if _map_picker_city != "":
+							_game.hud._map_list._pick(_map_picker_city)
+					_map_picker_frames += 1
+					if _map_picker_frames < OVERLAY_SETTLE_FRAMES:
 						return false
-					_save_shot("departures")
+					_save_shot("map_picker")
 					_game.hud._world_open = false
-					_departures = false
+					_map_picker = false
 				if _save_page:
 					_save_page_frames += 1
 					if _save_page_frames == 1:

@@ -246,8 +246,17 @@ func _job_pair_due(for_level: int) -> Array:
 	return pair
 
 
+## A passive at `level` can still go up: under its max level, and for 锦鲤 while luck is under
+## Player.MAX_LUCK (a level past it would give nothing).
+func _passive_open(passive_id: String, level: int) -> bool:
+	if passive_id == "luck" and _game.player.luck >= Player.MAX_LUCK:
+		return false
+	return level < max_level("passive", passive_id)
+
+
 ## How much likelier `luck` makes a tier past the first: each point 1% per tier, compounding
 ## (luck 50: green ×1.5, blue ×2.25, purple ×3.4, orange ×5.1), so it lifts the rare end most.
+## Luck itself stops at Player.MAX_LUCK (.60), where 优秀 is just under 普通.
 ## Card rarity (RARITIES) uses it; a year-end bonus's 绩效 (Game.FUNDING_ROUNDS) did until .43, when
 ## its odds were fixed, and its upgrade's rarity comes from that 绩效 (.46), not luck.
 static func luck_factor(luck: float, tier: int) -> float:
@@ -286,7 +295,7 @@ func chest_upgrade(rarity: int) -> Dictionary:
 		else:
 			carried.append(_choice("weapon", weapon.id, weapon.level + 1))
 	for passive_id: String in passive_levels:
-		if passive_levels[passive_id] < max_level("passive", passive_id):
+		if _passive_open(passive_id, passive_levels[passive_id]):
 			carried.append(_choice("passive", passive_id, passive_levels[passive_id] + 1))
 	var fitting := carried
 	if fitting.is_empty():
@@ -381,7 +390,7 @@ func _roll(count: int, new_weapons: int, skip_pair: String = "") -> Array:
 		var current: int = passive_levels.get(passive_id, 0)
 		if current == 0 and passive_slots_full:
 			continue
-		if current < max_level("passive", passive_id):
+		if _passive_open(passive_id, current):
 			pool.append(_choice("passive", passive_id, current + 1))
 			weights.append(2.0)
 
@@ -650,7 +659,7 @@ func _passive_numbers(passive_id: String, next_level: int, rarity: int = 0) -> S
 		"regen":
 			return _step("回血", tr("%s/秒") % _amount_text(player.regen), tr("%s/秒") % _amount_text(player.regen + step))
 		"luck":
-			return _step("运气", _amount_text(player.luck), _amount_text(player.luck + step))
+			return _step("运气", _amount_text(player.luck), _amount_text(minf(player.luck + step, Player.MAX_LUCK)))
 	if PERK_STAT_NAMES.has(passive_id):
 		return _perk_numbers(passive_id, current, next_level, rarity)
 	return ""

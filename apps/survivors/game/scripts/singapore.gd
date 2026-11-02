@@ -13,9 +13,9 @@ extends RefCounted
 ## ride-hailing cars on them.
 
 const NAME := "新加坡"
-## 985: nine to eight, five days, and the late calls with headquarters on top. Between 西雅图's
-## 975 and 北京's 996 (Maps.ORDER), with 班加罗尔 still to come between it and 北京.
-const HOURS := "985"
+## A little harder than 西雅图, the same two stars (BayArea.STARS); 班加罗尔 is still to come
+## between it and 北京 (Maps.ROUTE).
+const STARS := 2
 const DIFFICULTY := {"hp": 1.19, "damage": 1.13, "spawn": 1.09}
 ## The American giants' Asia-Pacific offices' levels: L1, L2…
 const RANK_PREFIX := "L"
@@ -30,7 +30,7 @@ const MOB_SWAPS := {}
 ## The Bug outbreak is the hawker centre at lunch: every seat round you reserved with tissues.
 const RING_SWAPS := {}
 ## The map's weather (MapEvents): 热浪 (out in the heat you lose health; cool air-conditioned spots appear round you).
-const MAP_EVENT := {"id": "heat", "at": 290.0, "seconds": 20.0, "text": "热浪来了！外面待着会掉血，躲进冷气里",
+const MAP_EVENT := {"id": "heat", "at": 300.0, "seconds": 20.0, "text": "热浪来了！外面待着会掉血，躲进冷气里",
 	"name": "热浪", "hint": "躲进蓝色冷气圈，外面会掉血"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "onenorth"

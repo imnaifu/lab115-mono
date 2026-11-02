@@ -252,7 +252,7 @@ def upgrades_section(data: dict) -> str:
     card_rows = "".join(f"<tr><td><b>{number(row['luck'])}</b></td>" + "".join(f"<td>{percent(share)}</td>" for share in row["cards"]) + "</tr>" for row in luck)
     more_rows = "".join(f"<tr><td><b>{number(row['luck'])}</b></td><td>{percent(row['extra_card'])}</td></tr>" for row in luck)
     luck_card = f"""<article class="card"><h3>运气</h3>
-<p class="muted">运气来自被动「锦鲤」、打卡和培训。每点让优秀及以上每一档的几率多 1%，逐档复利，越稀有的涨得越多。年终奖开出哪档绩效和运气无关。</p>
+<p class="muted">运气来自被动「锦鲤」、打卡和培训。每点让优秀及以上每一档的几率多 1%，逐档复利，越稀有的涨得越多。运气最多 {number(data['max_luck'])}，打卡、培训和锦鲤加起来超过也按 {number(data['max_luck'])} 算（拉满时优秀也不会比普通多），到了以后升级不再出锦鲤。年终奖开出哪档绩效和运气无关。</p>
 <div class="scroll"><table class="nums"><tr><th>运气</th>{head}</tr>{card_rows}</table></div>
 <div class="scroll"><table class="nums"><tr><th>运气</th><th>升级时多一张卡</th></tr>{more_rows}</table></div></article>"""
 
@@ -262,8 +262,8 @@ def upgrades_section(data: dict) -> str:
 
 def drops_section(data: dict) -> str:
     """What enemies drop, each with its art (its own section since .46: the user couldn't find 奶茶's
-    drop rate inside 升级). A year-end bonus says what each rating gives but not how likely it is
-    (.46, the user: 年终奖的概率藏起来不要可见)."""
+    drop rate inside 升级). A year-end bonus says what each rating gives and, again from .60 (the
+    user: 官网写上), how likely it is; .46–.59 left that out (年终奖的概率藏起来不要可见)."""
     drops, rarities = data["drops"], data["rarities"]
     revive = drops["revive"]
 
@@ -278,13 +278,14 @@ def drops_section(data: dict) -> str:
     ]
     # Every rating: the range of its 工资 amounts (one comes out at random; the whole list made the
     # table too wide for its card) and its upgrade's colour.
+    chest_total = sum(chest["weight"] for chest in drops["chests"])
     ratings = "".join(
-        f"<tr><td><b>{esc(chest['name'])}</b></td><td>¥{min(chest['salary'])}–{max(chest['salary'])}</td>"
+        f"<tr><td><b>{esc(chest['name'])}</b></td><td>{percent(chest['weight'] / chest_total)}</td><td>¥{min(chest['salary'])}–{max(chest['salary'])}</td>"
         f"<td>{esc(rarities[chest['rarity']]['colour'])} {rarity_tag(rarities[chest['rarity']])}</td></tr>"
         for chest in drops["chests"])
     chest_card = f"""<article class="card"><div class="head">{art("chest", 48, "年终奖")}<div><h3>年终奖</h3>
 <p class="muted">每个 boss 必掉的红色宝箱。捡到就开箱，开出一档绩效：按绩效发工资，同时白送一个局内升级。</p></div></div>
-<div class="scroll"><table class="nums"><tr><th>绩效</th><th>工资</th><th>送的升级</th></tr>{ratings}</table></div>
+<div class="scroll"><table class="nums"><tr><th>绩效</th><th>概率</th><th>工资</th><th>送的升级</th></tr>{ratings}</table></div>
 <p class="muted">送的升级当场生效：从身上已有、还没满级的武器和被动里随机挑一个，升一级，稀有度按绩效定（股票期权这类有自己玩法的被动只出紫色，所以只有绩效 S 会抽到）；身上的都满了才出新的。工资是这个范围里 66、88 结尾的吉利数随机一个，存进存档，在<a href="#training">培训</a>里花。开出哪档绩效和运气无关。</p></article>"""
     rehire_card = card("rehire", "返聘", f"不是掉的，在<a href=\"#training\">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用："
                        f"用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。")
@@ -349,14 +350,14 @@ def maps_section(data: dict) -> str:
         hard = "基准难度" if difficulty["hp"] <= 1.0 else f"怪物生命 ×{number(difficulty['hp'])} · 伤害 ×{number(difficulty['damage'])} · 刷怪 ×{number(difficulty['spawn'])}"
         event = game_map["event"]
         cards.append(f"""<article class="card map">
-<h3>{esc(game_map['name'])} <span class="hours">{esc(game_map['hours'])}</span></h3>
+<h3>{esc(game_map['name'])} <span class="stars" title="难度 {game_map['stars']} 星">{"★" * game_map['stars']}<span class="off">{"★" * (game_map['max_stars'] - game_map['stars'])}</span></span></h3>
 <p class="muted">{esc(hard)} · 职级 {esc(game_map['rank_prefix'])}1、{esc(game_map['rank_prefix'])}2…</p>
 <p><b>分区</b>：{esc('、'.join(game_map['districts']))}</p>
 <p><b>地图事件 · {esc(event['name'])}</b>（{clock(event['at'])} 起，持续 {number(event['seconds'])} 秒）：{esc(event['text'])}<br>{esc(event['detail'])}<br><span class="muted">{esc(event['hint'])}</span></p>
 <p><b>boss</b>：{esc(' → '.join(boss['name'] for boss in game_map['bosses'][:-1]))}　<b>最后一战</b>：{esc(game_map['finale'])}</p>
 <p><a href="#stamps-{esc(game_map['id'])}">{len(game_map['stamps'])} 个打卡点 ›</a>　<a href="#bestiary" data-tab="{index}">本地怪物 ›</a></p></article>""")
     soon = "、".join(COMING_SOON_NAMES.get(city, city) for city in data["coming_soon"])
-    return section("maps", "地图", "按工时排，越卷越难：通关一张开下一张。每张地图有自己的街区、地标、4 个 boss 和天气事件。"
+    return section("maps", "地图", "按难度排，星越多越难（1–3 星）：通关一张开下一张。每张地图有自己的街区、地标、4 个 boss 和天气事件。"
                    "路上的车和火车（地铁）不扣血，只会把人和怪推到路边；火车来之前铁轨会先闪。",
                    f'<div class="grid wide">{"".join(cards)}</div><p class="muted soon">还在装修：{esc(soon)}</p>')
 
@@ -517,7 +518,7 @@ ol li .lv{margin-left:-4px}
 .move .phase{color:#b23344;font-weight:700}
 ul.said{margin:6px 0 0;padding-left:0;list-style:none;font-size:13px}ul.said li{margin:2px 0}span.said{display:inline-block;min-width:64px;color:var(--muted);font-weight:700}
 .levels{font-size:13px;margin:6px 0 0}.levels .span{white-space:nowrap;font-size:12px;font-weight:800;color:var(--muted);margin-right:6px}ol.perk{padding-left:0;list-style:none;font-size:13px;margin:6px 0 0}ol.perk li{margin:3px 0}
-.hours{display:inline-block;background:var(--ink);color:#fff;border-radius:999px;padding:0 10px;font-size:13px;vertical-align:3px}
+.stars{color:var(--brand-deep);font-size:18px;letter-spacing:1px;vertical-align:1px}.stars .off{color:var(--line)}
 .soon{margin-top:10px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
 .tab{font:inherit;font-weight:800;border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:4px 16px;cursor:pointer;color:var(--ink)}

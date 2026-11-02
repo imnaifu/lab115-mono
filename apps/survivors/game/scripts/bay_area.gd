@@ -16,10 +16,11 @@ extends RefCounted
 ## either.
 
 const NAME := "硅谷"
-## The working week the map is known for; maps get harder the longer it is (Maps.ORDER), and
+## How hard the map is, as the map picker shows it (MapList): one to three stars, by DIFFICULTY
+## (.60, the user: 每个地图给个难度星星，硅谷一颗星; until then each map's working week, 965 here).
 ## DIFFICULTY says how much: enemy health, contact and move damage, and the spawn rate, as
-## multiples. 硅谷 is the 965 baseline.
-const HOURS := "965"
+## multiples. 硅谷 is the baseline.
+const STARS := 1
 const DIFFICULTY := {"hp": 1.0, "damage": 1.0, "spawn": 1.0}
 ## The job grades the run's level reads as (Maps.rank_of): Google-style here, L1, L2…
 const RANK_PREFIX := "L"
@@ -28,9 +29,10 @@ const BOSSES := ["deadline", "server_elite", "ai", "pie_boss"]
 ## Regular enemies swapped for the map's own (Game.spawn_enemy, .36); 硅谷 keeps the originals.
 const MOB_SWAPS := {}
 const RING_SWAPS := {}
-## The map's weather (MapEvents): 湾区地震 (debris crashing down).
+## The map's weather (MapEvents): 湾区地震 (debris crashing down). Every map's starts at 5:00 (.60, the
+## user: 地图事件都放在 5:00; until then 4:30–5:00, each map a little apart).
 ## `name` and `hint` stay on screen while it lasts (.34, the user's ask: say what the weather is).
-const MAP_EVENT := {"id": "quake", "at": 270.0, "seconds": 20.0, "text": "湾区地震！小心头顶掉下来的碎块",
+const MAP_EVENT := {"id": "quake", "at": 300.0, "seconds": 20.0, "text": "湾区地震！小心头顶掉下来的碎块",
 	"name": "湾区地震", "hint": "躲开地上的红圈"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"

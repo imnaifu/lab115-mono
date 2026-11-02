@@ -183,12 +183,12 @@ var _collection_open := false
 var _collection_tab := 0
 ## The page's scrolling list, whose position a redraw of the same tab keeps.
 var _collection_scroll: ScrollContainer
-## The world map page (from the title screen, .34) and the card for the city picked on it.
+## The map picker page (from the title screen, .34) and the card for the city picked on it.
 var _world_overlay: Control
 var _world_holder: Control
 var _world_open := false
 var _world_card: Control
-var _departures: Departures
+var _map_list: MapList
 ## The 云存档 page (from the settings), and its scrolling list.
 var _save_overlay: Control
 var _save_holder: Control
@@ -453,10 +453,10 @@ func fit_screen(turned: bool) -> void:
 	else:
 		transform = Transform2D.IDENTITY
 		_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The title has a portrait and a landscape arrangement, and so have the departures.
+	# The title has a portrait and a landscape arrangement, and so has the map picker.
 	_show_title.call_deferred()
 	if _world_open:
-		_open_departures.call_deferred()
+		_open_map_picker.call_deferred()
 	if _training_open:
 		_open_training.call_deferred()
 
@@ -1059,18 +1059,19 @@ func _show_title() -> void:
 	_fit_title()
 
 
-## The map in use, with its working week (how hard it is: 北京 · 996), on a button that opens the
-## departures board to pick another (.38; .34–.37 a world map, before that a row of map tabs).
+## The map in use, with its stars (how hard it is: 北京 ★★★; until .60 its working week) and its
+## landmark, on a button that opens the map picker to pick another (.38; .34–.37 a world map,
+## before that a row of map tabs).
 func _map_button(portrait: bool) -> Control:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var label := UiKit.label("目的地", 13, "strong", Art.INK_MUTED)
+	var label := UiKit.label("地图", 13, "strong", Art.INK_MUTED)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
-	var button := UiKit.secondary_button("%s  ›" % Maps.label_of(Maps.current_id), _open_departures, 36.0, 14)
-	button.icon = Art.texture("plane")
+	var button := UiKit.secondary_button("%s  ›" % Maps.label_of(Maps.current_id), _open_map_picker, 36.0, 14)
+	button.icon = Art.texture(MapList.icon_of(Maps.current_id))
 	button.add_theme_constant_override("icon_max_width", 28)
 	button.custom_minimum_size.x = 240.0 if portrait else 220.0
 	row.add_child(button)
@@ -1125,10 +1126,10 @@ func _test_buttons() -> Control:
 	return flow
 
 
-## The map picker (.38, the user's pick: an airport's departures board): the board listing every
-## city by working week, and under it (beside it, held sideways) the boarding pass for the one
-## picked, to begin with the map in use.
-func _open_departures() -> void:
+## The map picker (.60, the user: 不用登机的逻辑，每个地图给个难度星星; .38–.59 an airport's
+## departures board and a boarding pass): every city in a list with its stars, and under it
+## (beside it, held sideways) the card for the one picked, to begin with the map in use.
+func _open_map_picker() -> void:
 	_world_open = true
 	_clear(_world_holder)
 	var portrait := _is_portrait()
@@ -1147,9 +1148,9 @@ func _open_departures() -> void:
 	titles.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(titles)
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	titles.add_child(UiKit.label("选目的地", 20, "heavy"))
+	titles.add_child(UiKit.label("选地图", 20, "heavy"))
 	# Wrapped, so the longer English line doesn't widen the page (which then shrinks to fit).
-	var note := UiKit.label("按工时排，越往下越卷；通关一座城，下一座就能登机", 11, "muted")
+	var note := UiKit.label("星越多越难；通关一张，下一张就开放", 11, "muted")
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	titles.add_child(note)
 
@@ -1157,30 +1158,28 @@ func _open_departures() -> void:
 	body.add_theme_constant_override("separation", 8 if portrait else 10)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(body)
-	_departures = Departures.new()
-	_departures.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_departures.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	_departures.city_picked.connect(_show_boarding_pass)
-	body.add_child(_departures)
+	_map_list = MapList.new()
+	_map_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_map_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_map_list.city_picked.connect(_show_map_card)
+	body.add_child(_map_list)
 	_world_card = VBoxContainer.new()
 	_world_card.add_theme_constant_override("separation", 6)
 	_world_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_world_card.custom_minimum_size.x = 0.0 if portrait else 250.0
 	body.add_child(_world_card)
-	_show_boarding_pass(Maps.current_id)
+	_show_map_card(Maps.current_id)
 	_fit_to_screen(_world_holder)
 
 
-## The boarding pass for the city picked on the departures board: the leg of the route into it
-## (from the city before it), its working week, grade and difficulty, its weather, its four
-## bosses, how far along the player is there, and 登机 if it is open (or what opens it, or
+## The card for the city picked in the map picker: its landmark, name and stars, its weather, its
+## four bosses, how far along the player is there, and 出发 if it is open (or what opens it, or
 ## that it is still to come).
-func _show_boarding_pass(id: String) -> void:
+func _show_map_card(id: String) -> void:
 	if not is_instance_valid(_world_card):
 		return
 	_clear(_world_card)
-	var playable := Maps.ORDER.has(id)
-	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 8, 12, 10)))
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_world_card.add_child(card)
 	var lines := VBoxContainer.new()
@@ -1188,50 +1187,30 @@ func _show_boarding_pass(id: String) -> void:
 	card.add_child(lines)
 
 	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 5)
+	head.add_theme_constant_override("separation", 8)
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lines.add_child(head)
-	head.add_child(UiKit.icon("plane", 14))
-	var kicker := UiKit.kicker("BOARDING PASS", Art.INK_MUTED, 10)
-	kicker.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	head.add_child(kicker)
-	head.add_child(UiKit.label("登机牌", 11, "strong", Art.INK_MUTED))
-
-	# From the city before it on the route to this one, over the map between them.
-	var index := Maps.ROUTE.find(id)
-	var from: String = Maps.ROUTE[index - 1] if index > 0 else ""
-	var route := HBoxContainer.new()
-	route.add_theme_constant_override("separation", 8)
-	route.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lines.add_child(route)
-	route.add_child(_airport(from))
-	var frame := UiKit.panel(UiKit.box(WorldMap.SEA, Art.INK, 2, 8, Vector4.ONE * 2.0))
-	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	route.add_child(frame)
-	var strip := WorldMap.new()
-	strip.from = from
-	strip.to = id
-	strip.custom_minimum_size = Vector2(0.0, 60.0)
-	frame.add_child(strip)
-	route.add_child(_airport(id))
-
+	head.add_child(UiKit.well(MapList.icon_of(id), 40.0, Art.PAPER_SUNK, 10))
+	var city_name := UiKit.label(WorldMap.CITIES[id]["name"], 20, "heavy")
+	city_name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	city_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	city_name.clip_text = true
+	city_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	head.add_child(city_name)
+	if not Maps.ORDER.has(id):
+		var later := UiKit.label("还在装修，下个版本见", 12, "muted")
+		later.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lines.add_child(later)
+		return
+	head.add_child(MapList.stars(MapList.stars_of(id), 18))
+	var map := Maps.script_of(id)
 	var facts := HFlowContainer.new()
 	facts.add_theme_constant_override("h_separation", 10)
 	facts.add_theme_constant_override("v_separation", 4)
 	facts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lines.add_child(facts)
-	facts.add_child(_pass_fact("", "工时", Departures.hours_of(id)))
-	facts.add_child(_pass_fact("", "职级", "%s1" % Departures.rank_of(id)))
-	if not playable:
-		var later := UiKit.label("还在装修，下个版本见", 12, "muted")
-		later.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		lines.add_child(later)
-		return
-	var map := Maps.script_of(id)
-	var difficulty: Dictionary = map.DIFFICULTY
-	facts.add_child(_pass_fact("", "难度", tr("基准") if difficulty["hp"] <= 1.0 else tr("生命 ×%s · 伤害 ×%s") % [difficulty["hp"], difficulty["damage"]]))
 	var map_event: Dictionary = map.MAP_EVENT
-	facts.add_child(_pass_fact("event_" + map_event["id"], "天气", tr(map_event["name"])))
+	facts.add_child(_map_fact("event_" + map_event["id"], "天气", tr(map_event["name"])))
 
 	# The four bosses it brings, in the order they come.
 	var bosses := HFlowContainer.new()
@@ -1251,7 +1230,6 @@ func _show_boarding_pass(id: String) -> void:
 		progress += " · " + tr("通关 %d 次") % wins
 	lines.add_child(UiKit.label(progress, 12, "body"))
 	lines.add_child(UiKit.filler())
-	lines.add_child(_perforation())
 	if not Maps.unlocked(id):
 		var hint := UiKit.label(Maps.unlock_hint(id), 12, "strong", Art.BOSS_RED)
 		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1260,33 +1238,16 @@ func _show_boarding_pass(id: String) -> void:
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
 	lines.add_child(actions)
-	var board := UiKit.primary_button("登机", func() -> void: game.change_map(id, true), 44.0, 17)
-	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(board)
+	var start := UiKit.primary_button("出发", func() -> void: game.change_map(id, true), 44.0, 17)
+	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(start)
 	if id != Maps.current_id:
 		var switch := UiKit.secondary_button("只换地图", func() -> void: game.change_map(id), 44.0, 13)
 		actions.add_child(switch)
 
 
-## One end of the boarding pass's flight: the city's code over its name ("首站" with no code for
-## the start of the route).
-func _airport(id: String) -> Control:
-	var block := VBoxContainer.new()
-	block.add_theme_constant_override("separation", -2)
-	block.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	block.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var code := UiKit.label(WorldMap.CITIES[id]["code"] if id != "" else "—", 20, "display")
-	code.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	code.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	block.add_child(code)
-	var name := UiKit.label(WorldMap.CITIES[id]["name"] if id != "" else "首站", 10, "muted")
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	block.add_child(name)
-	return block
-
-
-## A line of the boarding pass: an optional icon, a grey caption and its value.
-func _pass_fact(art: String, caption: String, value: String) -> Control:
+## A line of the map card: an optional icon, a grey caption and its value.
+func _map_fact(art: String, caption: String, value: String) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1295,20 +1256,6 @@ func _pass_fact(art: String, caption: String, value: String) -> Control:
 		row.add_child(UiKit.icon(art, 16))
 	row.add_child(UiKit.label(value, 11, "strong"))
 	return row
-
-
-## The dashed tear-off line above the boarding pass's stub.
-func _perforation() -> Control:
-	var line := Control.new()
-	line.custom_minimum_size = Vector2(0.0, 6.0)
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	line.draw.connect(func() -> void:
-		var y := line.size.y / 2.0
-		var x := 0.0
-		while x < line.size.x:
-			line.draw_line(Vector2(x, y), Vector2(minf(x + 5.0, line.size.x), y), Art.LINE_STRONG, 1.5)
-			x += 9.0)
-	return line
 
 
 ## A soft disc of `color` peeking in from the left (or right) edge.

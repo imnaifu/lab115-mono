@@ -999,23 +999,13 @@ const EN := {
 	"被冗余了，遣散费都没谈": "Made redundant before the payout talk",
 	"被欧盟罚到破产": "Fined into bankruptcy by the EU",
 	"被监控拍下了最后一刻": "Your last moment, caught on CCTV",
-	# The departures board and the boarding pass (ui/departures.gd, Hud._show_boarding_pass, .38)
-	"目的地": "Destination",
-	"选目的地": "Choose a Destination",
-	"按工时排，越往下越卷；通关一座城，下一座就能登机": "Ordered by working hours, harder further down; win a city to board the next",
-	"航班": "Flights",
-	"工时": "Hours",
-	"状态": "Status",
+	# The map picker (ui/map_list.gd, Hud._show_map_card; .60, the departures board and boarding
+	# pass before it)
+	"选地图": "Choose a Map",
+	"星越多越难；通关一张，下一张就开放": "More stars, harder; win a map to open the next",
 	"已通关": "Cleared",
-	"可登机": "Boarding",
 	"锁定": "Locked",
-	"未开航": "Soon",
-	"登机牌": "Boarding pass",
-	"登机": "Board",
-	"首站": "Start",
-	"难度": "Difficulty",
-	"基准": "Baseline",
-	"生命 ×%s · 伤害 ×%s": "HP ×%s · damage ×%s",
+	"敬请期待": "Coming soon",
 	"特邀嘉宾": "Guest",
 	"大小周": "Alt-6d",
 	# 新加坡 (Singapore, .38): the map, its districts, landmarks, crowd and bosses

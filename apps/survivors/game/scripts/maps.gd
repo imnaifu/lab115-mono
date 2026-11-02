@@ -5,27 +5,24 @@ extends RefCounted
 ## is the one this run is on, and City, Traffic and the rest ask it rather than a map
 ## by name. (Calling through a script held in a variable costs no more than calling it by name.)
 ##
-## Maps get harder the longer their working week (each map's HOURS and DIFFICULTY, at the user's
-## call): 硅谷 965 first and easiest, 西雅图 975, 新加坡 985, 北京 996 the hardest; the one to come
-## (班加罗尔's 70h) goes in between by its hours, ORDER kept in that order. (深圳 was planned too;
-## the user took it off the route in .45.) 伦敦 is the
-## one exception (.37, the user's call): a 955 week, but second, after 硅谷 and as hard as it, so
-## 硅谷 stays the first map new players see.
-## The title screen's departures board (ui/departures.gd; .34–.37 a world map like Kingdom Rush's
-## campaign) lists them in that order and opens them one by one: a map opens once the one before
-## it has been won.
+## Maps get harder down ORDER (each map's DIFFICULTY, shown as STARS from .60; until then by
+## working week, 965 to 996, at the user's call): 硅谷 and 伦敦 one star, 西雅图 and 新加坡 two,
+## 北京 three; the one to come (班加罗尔) goes in before 北京. (深圳 was planned too; the user took
+## it off the route in .45.) 伦敦 is second and as hard as 硅谷, so 硅谷 stays the first map new
+## players see.
+## The title screen's map picker (ui/map_list.gd; .38–.59 an airport departures board, .34–.37 a
+## world map like Kingdom Rush's campaign) lists them in that order and opens them one by one: a
+## map opens once the one before it has been won.
 
 const ORDER := ["sv", "ldn", "sea", "sg", "bj"]
 ## Open from the first run, whatever unlocked() says: all of them for now (.34), at the user's call
 ## (the one-by-one rule is in, but every map stays open while they are being tested). 北京 has
 ## been open from the start since .25.
 const OPEN_FROM_START := ["sv", "ldn", "sea", "sg", "bj"]
-## Cities still to come, listed on the departures board as 即将开放 (WorldMap.CITIES has their
-## codes, hours and grades).
+## Cities still to come, listed in the map picker as 敬请期待 (WorldMap.CITIES has their names).
 const COMING_SOON := ["blr"]
-## The whole route by working week, easiest first (.38, for the departures board, Departures): the
-## playable maps (ORDER, 伦敦 second as there) with the cities still to come in the places their
-## hours will give them.
+## The whole route, easiest first (.38, for the map picker, MapList): the playable maps (ORDER)
+## with the cities still to come in their places.
 const ROUTE := ["sv", "ldn", "sea", "sg", "blr", "bj"]
 
 static var current: GDScript = BayArea
@@ -119,10 +116,11 @@ static func rank_of(level: int) -> String:
 	return "%s%d" % [current.RANK_PREFIX, level]
 
 
-## The map's name with its working week, for the map picker: 北京 · 996.
+## The map's name with its stars, for the title screen's map button: 北京 ★★★ (.60; until then its
+## working week, 北京 · 996).
 static func label_of(id: String) -> String:
 	var map := script_of(id)
-	return "%s · %s" % [TranslationServer.translate(map.NAME), map.HOURS]
+	return "%s %s" % [TranslationServer.translate(map.NAME), "★".repeat(map.STARS)]
 
 
 ## Every map's landmarks, all told.

@@ -15,10 +15,9 @@ extends RefCounted
 ## their own bridges, and black cabs and buses drive them.
 
 const NAME := "伦敦"
-## 955: nine to five, five days, the hours the "955 不加班" list of employers is named after. The
-## one map out of its working week's order (Maps.ORDER, the user's call): it comes second, after
-## 硅谷, and is exactly as hard, so new players still start in 硅谷.
-const HOURS := "955"
+## Second (Maps.ORDER, the user's call) and exactly as hard as 硅谷, so one star too
+## (BayArea.STARS); new players still start in 硅谷.
+const STARS := 1
 const DIFFICULTY := {"hp": 1.0, "damage": 1.0, "spawn": 1.0}
 ## The civil service's grades: G1, G2…
 const RANK_PREFIX := "G"
@@ -33,7 +32,7 @@ const MOB_SWAPS := {}
 ## The Bug outbreak is a queue here: a ring of patient Britons.
 const RING_SWAPS := {}
 ## The map's weather (MapEvents): 伦敦大雾 (you only see round yourself, and the crowd slows down in it).
-const MAP_EVENT := {"id": "fog", "at": 280.0, "seconds": 20.0, "text": "伦敦起大雾了！看不远，怪也走得慢",
+const MAP_EVENT := {"id": "fog", "at": 300.0, "seconds": 20.0, "text": "伦敦起大雾了！看不远，怪也走得慢",
 	"name": "伦敦大雾", "hint": "只看得清身边，怪也走得慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "kx"

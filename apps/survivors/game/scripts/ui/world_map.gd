@@ -4,12 +4,12 @@ extends Control
 ## city before it on Maps.ROUTE, over the stretch of map between them (assets/art/world_map.svg),
 ## with a little plane flying it. .34–.37 this was the whole world-map page, a flag on every city
 ## like Kingdom Rush's campaign; the user picked an airport departures board instead (Departures),
-## and the map stayed on as this strip. CITIES is also where each city's place, code and icon live.
+## and the map stayed on as this strip. .60 took the boarding pass and the strip out (the user:
+## 不用登机的逻辑), so nothing draws this now; CITIES is still where each city's name and icon live.
 
 ## Each city: latitude and longitude (east of Greenwich, 0-360; London, just west of it, is 359.9),
 ## its name, its three-letter code for the departures board, and the landmark that stands for it
-## there ("" until it has one drawn). The cities still to come (Maps.COMING_SOON) also carry the
-## working week and grade they will have. `arc` is how far the leg of the route into the city bows
+## there ("" until it has one drawn). `arc` is how far the leg of the route into the city bows
 ## north, in art pixels (left out, it goes by the leg's length): 硅谷 to London and London back to
 ## 西雅图 cross the same stretch of map, so the second flies the polar way, over Greenland.
 const CITIES := {
@@ -17,7 +17,7 @@ const CITIES := {
 	"ldn": {"lat": 51.5, "lon": 359.9, "name": "伦敦", "code": "LON", "icon": "big_ben", "arc": 36.0},
 	"sea": {"lat": 47.6, "lon": 237.7, "name": "西雅图", "code": "SEA", "icon": "space_needle", "arc": 100.0},
 	"sg": {"lat": 1.3, "lon": 103.8, "name": "新加坡", "code": "SIN", "icon": "merlion"},
-	"blr": {"lat": 13.0, "lon": 77.6, "name": "班加罗尔", "code": "BLR", "icon": "", "hours": "70h", "rank": "SDE"},
+	"blr": {"lat": 13.0, "lon": 77.6, "name": "班加罗尔", "code": "BLR", "icon": ""},
 	"bj": {"lat": 39.9, "lon": 116.4, "name": "北京", "code": "PEK", "icon": "summer_palace"},
 }
 ## The map art's own size, and the projection it was drawn in (equirectangular, 65°E at the left

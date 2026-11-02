@@ -62,12 +62,13 @@ const MAGNET_FROM_LEVEL := 10
 ## gave 1 / 3 / 5 free upgrades until .43, none from .44 (年终奖改成给工资) and one again from .46
 ## (the user: 年终奖开箱同时送一个局内升级). 绩效 S no longer gives a 返聘 (.43's prize, bought in
 ## 培训 now). The odds are fixed since .43: neither luck nor anything about the boss moves them, and
-## since .46 the game doesn't show them (the user: 概率藏起来不要可见; the site doesn't either). The
+## since .46 the game doesn't show them (the user: 概率藏起来不要可见); the site does again from .60
+## (the user: 官网写上，概率改成 80，15，5; 86 / 9 / 5 until then). The
 ## ids are the data's (Telemetry `chests`) from when these were funding rounds (天使轮 / A 轮 / IPO),
 ## kept so runs before and after compare.
 const FUNDING_ROUNDS := [
-	{"id": "angel", "name": "绩效 B", "salary": [66, 88, 166, 188, 266, 288], "rarity": 1, "weight": 86.0},
-	{"id": "series_a", "name": "绩效 A", "salary": [366, 388, 466, 488, 566, 588], "rarity": 2, "weight": 9.0},
+	{"id": "angel", "name": "绩效 B", "salary": [66, 88, 166, 188, 266, 288], "rarity": 1, "weight": 80.0},
+	{"id": "series_a", "name": "绩效 A", "salary": [366, 388, 466, 488, 566, 588], "rarity": 2, "weight": 15.0},
 	{"id": "ipo", "name": "绩效 S", "salary": [666, 688, 766, 788, 866, 888], "rarity": 3, "weight": 5.0},
 ]
 ## A 返聘 brings the player back on this share of their health, untouchable for REVIVE_INVULN

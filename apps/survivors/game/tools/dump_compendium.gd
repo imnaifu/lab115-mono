@@ -9,8 +9,8 @@ extends SceneTree
 ##   godot --headless --path . -s tools/dump_compendium.gd -- /tmp/compendium.json
 
 ## The luck values the site's luck table shows: none, one 锦鲤, and on up to about what a run can
-## reach (锦鲤 maxed and every luck landmark checked in at).
-const LUCK_SHOWN := [0.0, 20.0, 50.0, 100.0, 200.0]
+## reach, Player.MAX_LUCK (.60).
+const LUCK_SHOWN := [0.0, 20.0, 50.0, 100.0, 170.0]
 ## How far the site's XP curve goes.
 const XP_LEVELS := 50
 
@@ -39,7 +39,7 @@ func _initialize() -> void:
 		"events": _events(),
 		"stats": _stats(),
 		"rarities": _rarities(),
-		"luck": _luck(),
+		"luck": _luck(), "max_luck": Player.MAX_LUCK,
 		"drops": {"heal_amount": Game.HEAL_AMOUNT,
 			"magnet_chance": Game.MAGNET_DROP_CHANCE, "magnet_from_level": Game.MAGNET_FROM_LEVEL,
 			"max_pickups": Game.MAX_PICKUPS, "chests": Game.FUNDING_ROUNDS,
@@ -150,7 +150,7 @@ func _maps() -> Array:
 			var boss_id: String = map.BOSSES[slot]
 			bosses.append({"id": boss_id, "name": Spawner.ENEMY_TYPES[boss_id]["name"], "art": Spawner.ENEMY_TYPES[boss_id]["art"],
 				"at": BossKits.SLOT_AT[slot]})
-		maps.append({"id": id, "name": map.NAME, "hours": map.HOURS, "difficulty": map.DIFFICULTY,
+		maps.append({"id": id, "name": map.NAME, "stars": map.STARS, "max_stars": MapList.MAX_STARS, "difficulty": map.DIFFICULTY,
 			"rank_prefix": map.RANK_PREFIX, "districts": districts, "stamps": stamps,
 			"event": {"name": map.MAP_EVENT.get("name", ""), "text": map.MAP_EVENT.get("text", ""), "hint": map.MAP_EVENT.get("hint", ""),
 				"at": map.MAP_EVENT.get("at", 0.0), "seconds": map.MAP_EVENT.get("seconds", 0.0),

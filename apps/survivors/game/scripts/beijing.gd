@@ -12,8 +12,8 @@ extends RefCounted
 ## goes on every way, and the only water is the lake.
 
 const NAME := "北京"
-## 996: the longest week of the maps, so the hardest (BayArea.HOURS says how this works).
-const HOURS := "996"
+## The hardest of the maps (BayArea.STARS says how this works).
+const STARS := 3
 const DIFFICULTY := {"hp": 1.3, "damage": 1.2, "spawn": 1.15}
 ## Job grades Alibaba-style, P1, P2…
 const RANK_PREFIX := "P"

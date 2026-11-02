@@ -12,9 +12,8 @@ extends RefCounted
 ## Bellevue). I-5 runs north and south east of downtown, the light rail along the waterfront.
 
 const NAME := "西雅图"
-## Between 硅谷's 965 and 北京's 996 (BayArea.HOURS says how this works): 9 to 7, five days, and
-## on-call on top.
-const HOURS := "975"
+## Between 硅谷 and 北京 (BayArea.STARS says how this works).
+const STARS := 2
 const DIFFICULTY := {"hp": 1.15, "damage": 1.1, "spawn": 1.07}
 ## Amazin's levels, like Silicon Valley's: L1, L2…
 const RANK_PREFIX := "L"
@@ -29,7 +28,7 @@ const MOB_SWAPS := {}
 ## The Bug outbreak is a same-day delivery here: a ring of parcels.
 const RING_SWAPS := {}
 ## The map's weather (MapEvents): 下雨 (puddles that slow everyone).
-const MAP_EVENT := {"id": "rain", "at": 285.0, "seconds": 20.0, "text": "西雅图又下雨了！水坑里走不快",
+const MAP_EVENT := {"id": "rain", "at": 300.0, "seconds": 20.0, "text": "西雅图又下雨了！水坑里走不快",
 	"name": "下雨", "hint": "水坑里走不快，把怪引进去"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "slu"
