@@ -41,17 +41,19 @@ const RELOCATE_DISTANCE := 560.0
 ## without this, one rounding a corner flipped between the two every frame and stood still.
 const DETOUR_HOLD_SECONDS := 0.6
 const MAX_PICKUPS := 400
-const HEAL_DROP_CHANCE := 0.012
-## What a 珍珠奶茶 heals (dropped by HEAL_DROP_CHANCE of regular kills and by every boss).
-const HEAL_AMOUNT := 30.0
+## What a 珍珠奶茶 heals. Since .48 only bosses drop one, one each (the user's call: 奶茶改成只有
+## boss 掉落，回血改成 20); until then 1.2% of regular kills did too, about 9 a run in the live
+## data's median run on top of the bosses', and each healed 30.
+const HEAL_AMOUNT := 20.0
 ## XP for the first level-ups, cheaper than the curve in xp_to_next() (5, 11, 17, 23) so a new run
 ## gets its first upgrades quickly; from level 5 on the curve applies.
 const EARLY_LEVEL_XP := [3, 7, 13, 20]
-## Magnets pull every star on the map at once, so each one can bank several level-ups. Until .32
-## any kill dropped one 0.4% of the time and every boss dropped one: about 13 a run, the user felt
-## the run kept leveling up in bursts. Now only regular kills from level 10 on (Vampire Survivors'
-## Vacuum only drops from level 12), about 4-5 a run.
-const MAGNET_DROP_CHANCE := 0.002
+## A magnet pulls in the stars on screen (since .48; every star on the map before, so each one
+## could bank several level-ups). Until .32 any kill dropped one 0.4% of the time and every boss
+## dropped one: about 13 a run, the user felt the run kept leveling up in bursts. Since then only
+## regular kills from level 10 on (Vampire Survivors' Vacuum only drops from level 12): 0.2% (about
+## 4-5 a run) until .48, 0.5% since (the user's call, with the pull cut down to the screen).
+const MAGNET_DROP_CHANCE := 0.005
 const MAGNET_FROM_LEVEL := 10
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
 ## 工资 it pays: one of its `salary` amounts at random (the user's lucky numbers, ending in 66 or
@@ -509,12 +511,9 @@ func _kill(enemy: Enemy) -> void:
 	if enemy.is_elite:
 		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), 0)
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
-	else:
-		var roll := rng.randf()
-		if roll < HEAL_DROP_CHANCE:
-			_drop(Pickup.Kind.HEAL, enemy.position + Vector2(6, 0), 1)
-		elif roll < HEAL_DROP_CHANCE + MAGNET_DROP_CHANCE and level >= MAGNET_FROM_LEVEL:
-			_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(6, 0), 1)
+	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet.
+	elif level >= MAGNET_FROM_LEVEL and rng.randf() < MAGNET_DROP_CHANCE:
+		_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(6, 0), 1)
 	# Freed only once the grid no longer references it (next rebuild); until then queries skip
 	# it via `dead`. Freeing now would leave a dangling entry for anything that queries before
 	# the next rebuild.
@@ -688,15 +687,19 @@ func _collect(pickup: Pickup) -> void:
 		Pickup.Kind.HEAL:
 			Sound.play("heal")
 			player.heal(HEAL_AMOUNT)
-			announce("珍珠奶茶，回血 30！")
+			announce(tr("珍珠奶茶，回血 %d！") % roundi(HEAL_AMOUNT))
 		Pickup.Kind.BONUS:
 			_open_chest(pickup.value)
 		Pickup.Kind.MAGNET:
 			Sound.play("magnet")
+			# Only the stars on screen (.48, the user: 不是全图，而是全屏幕): the view is centred on
+			# the player.
+			var half := view_half()
 			for other in pickups:
-				if other.kind == Pickup.Kind.XP:
+				var offset := (other.position - player.position).abs()
+				if other.kind == Pickup.Kind.XP and offset.x <= half.x and offset.y <= half.y:
 					other.attract()
-			announce("磁铁！全图经验飞过来了")
+			announce("磁铁！屏幕里的星星都飞过来了")
 
 
 ## A source's damage per second while the player had it (.46, the result's 伤害排行): its total

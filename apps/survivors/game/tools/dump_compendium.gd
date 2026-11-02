@@ -40,7 +40,7 @@ func _initialize() -> void:
 		"stats": _stats(),
 		"rarities": _rarities(),
 		"luck": _luck(),
-		"drops": {"heal_chance": Game.HEAL_DROP_CHANCE, "heal_amount": Game.HEAL_AMOUNT,
+		"drops": {"heal_amount": Game.HEAL_AMOUNT,
 			"magnet_chance": Game.MAGNET_DROP_CHANCE, "magnet_from_level": Game.MAGNET_FROM_LEVEL,
 			"max_pickups": Game.MAX_PICKUPS, "chests": Game.FUNDING_ROUNDS,
 			"revive": {"hp": Game.REVIVE_HP, "invuln": Game.REVIVE_INVULN}},

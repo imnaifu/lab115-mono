@@ -252,8 +252,8 @@ def drops_section(data: dict) -> str:
 
     small = [
         card("star_blue", "经验星星", f"每只怪都掉，走近才会吸过来，攒够就升级。地上超过 {drops['max_pickups']} 个时，新掉的经验并进已有的星星。"),
-        card("boba", "珍珠奶茶", f"普通怪有 {percent(drops['heal_chance'])} 的几率掉，boss 必掉一杯。捡到回 {number(drops['heal_amount'])} 生命。"),
-        card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉。捡到时全图的星星一起飞过来。"),
+        card("boba", "珍珠奶茶", f"只有 boss 掉，每个 boss 一杯，普通怪不掉。捡到回 {number(drops['heal_amount'])} 生命。"),
+        card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉。捡到时屏幕里的星星一起飞过来（屏幕外的不算）。"),
     ]
     # Every rating: the range of its 工资 amounts (one comes out at random; the whole list made the
     # table too wide for its card) and its upgrade's colour.

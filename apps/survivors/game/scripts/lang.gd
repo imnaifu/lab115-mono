@@ -218,8 +218,8 @@ const EN := {
 	"没有权限：请在浏览器设置里允许动作与方向": "No permission: allow motion & orientation in the browser settings",
 	"这台设备不支持": "Not supported on this device",
 	# Announcements
-	"珍珠奶茶，回血 30！": "Bubble tea! +30 HP",
-	"磁铁！全图经验飞过来了": "Magnet! All the XP flies to you",
+	"珍珠奶茶，回血 %d！": "Bubble tea! +%d HP",
+	"磁铁！屏幕里的星星都飞过来了": "Magnet! Every star on screen flies to you",
 	"捡星星升级！走近就会自动吸过来": "Grab stars to level up! Walk close and they fly to you",
 	"消息轰炸！": "Notification storm!",
 	"Deadline 逼近！": "A Deadline approaches!",
