@@ -8,7 +8,7 @@ extends RefCounted
 ## The crowd, the same everywhere (.41; .36-.40 each map had its own), then each map's four bosses
 ## (.45; until .44 eleven a map).
 const GROUPS := [
-	{"name": "小怪", "ids": ["ping", "bug", "mail", "meeting", "ghost", "techdebt", "server"]},
+	{"name": "小怪", "ids": ["ping", "small_req", "bug", "mail", "meeting", "kpi", "ghost", "techdebt", "traffic_flood", "server"]},
 	{"name": "硅谷 boss", "ids": ["deadline", "server_elite", "ai", "pie_boss"]},
 	{"name": "伦敦 boss", "ids": ["committee", "redundancy", "gdpr", "scone_boss"]},
 	{"name": "西雅图 boss", "ids": ["monolith", "meeting_spam", "pip", "all_hands"]},

@@ -60,8 +60,12 @@ const ENEMY_TYPES := {
 	# 北京.
 	"dingding": {"name": "盯盯消息", "art": "dingding", "size": 22.0, "color": Color("5b9cff"),
 		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
+	# Three of the old local crowd back in every map's mix from .57 (the user: 加更多小怪类型，不用技能，
+	# 只要数值), each with numbers of its own between the seven's: 小需求 quick fodder (a bug's
+	# health and damage, a ping's speed), KPI quick and sturdy mid-run, 流量洪峰 a heavy between 技术债
+	# and 宕机服务器. (Until .40 they were Beijing's stand-ins, the numbers of the ones they replaced.)
 	"small_req": {"name": "小需求", "art": "small_req", "size": 24.0, "color": Color("ffd25e"),
-		"hp": 8.0, "speed": 38.0, "damage": 6.0, "xp": 1, "radius": 6.0},
+		"hp": 10.0, "speed": 50.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	"daily_report": {"name": "日报", "art": "daily_report", "size": 24.0, "color": Color("fff7e0"),
 		"hp": 14.0, "speed": 44.0, "damage": 8.0, "xp": 2, "radius": 6.0},
 	"group_chat": {"name": "拉个群", "art": "group_chat", "size": 26.0, "color": Color("6cc25a"),
@@ -69,9 +73,9 @@ const ENEMY_TYPES := {
 	"read_no_reply": {"name": "已读不回", "art": "read_no_reply", "size": 26.0, "color": Color("eef1f6"),
 		"hp": 18.0, "speed": 40.0, "damage": 10.0, "xp": 3, "radius": 6.0, "ghostly": true},
 	"kpi": {"name": "KPI", "art": "kpi", "size": 28.0, "color": Color("ff5d5d"),
-		"hp": 45.0, "speed": 34.0, "damage": 12.0, "xp": 4, "radius": 6.0, "knockback_resist": 0.5},
+		"hp": 30.0, "speed": 46.0, "damage": 10.0, "xp": 3, "radius": 6.0, "knockback_resist": 0.5},
 	"traffic_flood": {"name": "流量洪峰", "art": "traffic_flood", "size": 38.0, "color": Color("5b9cff"),
-		"hp": 140.0, "speed": 26.0, "damage": 18.0, "xp": 10, "radius": 10.0, "knockback_resist": 0.8},
+		"hp": 90.0, "speed": 34.0, "damage": 15.0, "xp": 6, "radius": 9.0, "knockback_resist": 0.6},
 	# 西雅图.
 	"at_here": {"name": "@here", "art": "at_here", "size": 22.0, "color": Color("7b68d9"),
 		"hp": 4.0, "speed": 50.0, "damage": 5.0, "xp": 1, "radius": 5.0, "wobble": 30.0},
@@ -179,15 +183,21 @@ const ENEMY_TYPES := {
 const MAX_BOSSES_OUT := 3
 
 ## Mix of the steady trickle by run time; each entry applies until its `until` second.
-## The opening is slow bugs only; pings, fast and weaving, join once the player has a level or two.
+## The opening is pings only since .57 (the user: 刚开始出来的应该是红点，因为他血量最少): one hit
+## of the starting weapons kills one (4 health; a bug's 8 takes two), so the first star comes
+## sooner, and though they weave they are still slower than any job. Bugs join at 0:30 and take
+## over. (Until .56 it was bugs only, pings joining at 0:30, for being fast and weaving.)
+## .57 added 小需求 (from 1:00), KPI (2:30) and 流量洪峰 (5:30), weighted so each stretch's average
+## health per enemy stays within 6% of what it was (and its stars about the same): more kinds,
+## about the same difficulty.
 const WAVES := [
-	{"until": 30.0, "mix": {"bug": 1}},
-	{"until": 60.0, "mix": {"ping": 3, "bug": 2}},
-	{"until": 150.0, "mix": {"ping": 2, "bug": 3, "mail": 2}},
-	{"until": 240.0, "mix": {"bug": 1, "mail": 3, "meeting": 2, "ghost": 1}},
-	{"until": 330.0, "mix": {"mail": 2, "meeting": 2, "ghost": 2, "techdebt": 2}},
-	{"until": 450.0, "mix": {"meeting": 2, "ghost": 2, "techdebt": 3, "server": 1}},
-	{"until": 600.0, "mix": {"mail": 2, "ghost": 2, "techdebt": 3, "server": 2}},
+	{"until": 30.0, "mix": {"ping": 1}},
+	{"until": 60.0, "mix": {"bug": 3, "ping": 2}},
+	{"until": 150.0, "mix": {"ping": 2, "small_req": 2, "bug": 3, "mail": 2}},
+	{"until": 240.0, "mix": {"bug": 1, "small_req": 1, "mail": 3, "meeting": 2, "kpi": 1, "ghost": 1}},
+	{"until": 330.0, "mix": {"mail": 2, "meeting": 2, "kpi": 2, "ghost": 2, "techdebt": 2}},
+	{"until": 450.0, "mix": {"meeting": 2, "kpi": 1, "ghost": 2, "techdebt": 3, "traffic_flood": 1, "server": 1}},
+	{"until": 600.0, "mix": {"mail": 2, "kpi": 2, "ghost": 2, "techdebt": 2, "traffic_flood": 1, "server": 2}},
 ]
 
 ## The rings of regular enemies, sorted by time (each map may swap in its own, RING_SWAPS). The
