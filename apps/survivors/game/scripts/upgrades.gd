@@ -508,8 +508,12 @@ func apply(choice: Dictionary) -> void:
 
 ## A stat passive's step at the card's rarity (stat_step).
 func _apply_passive(passive_id: String, rarity: int = 0) -> void:
-	var player := _game.player
-	var step := stat_step(passive_id, rarity)
+	apply_stat(_game.player, passive_id, stat_step(passive_id, rarity))
+
+
+## A stat passive's `step` added to `player`, the way a card adds it: some add up, the speeds and
+## ranges multiply (static so the 官网 can total five levels on a fresh Player, .50).
+static func apply_stat(player: Player, passive_id: String, step: float) -> void:
 	match passive_id:
 		"might":
 			player.might += step / 100.0

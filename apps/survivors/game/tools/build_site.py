@@ -165,6 +165,18 @@ def weapon_numbers(weapon: dict, names: dict) -> str:
     return f'<details><summary>每级数值</summary><div class="scroll"><table class="nums"><tr><th></th>{head}</tr>{rows}</table></div></details>'
 
 
+def branch_table(levels: list, names: dict) -> str:
+    """One direction of a job weapon at every level of it (Upgrades.branch_stats, the other direction
+    left at 0): the numbers that change, folded away."""
+    keys = [key for key in names if len({str(level.get(key)) for level in levels}) > 1]
+    if not keys:
+        return ""
+    head = "".join(f"<th>{esc(names[key])}</th>" for key in keys)
+    rows = "".join(f'<tr><td class="lv">{"开局" if i == 0 else f"+{i}"}</td>' + "".join(f"<td>{stat_value(key, level[key]) if key in level else ''}</td>" for key in keys) + "</tr>"
+                   for i, level in enumerate(levels))
+    return f'<details><summary>每级数值</summary><div class="scroll"><table class="nums"><tr><th></th>{head}</tr>{rows}</table></div></details>'
+
+
 def weapons_section(data: dict) -> str:
     jobs = {job["id"]: job["name"] for job in data["jobs"]}
     names = dict(data["weapon_stat_names"])
@@ -172,7 +184,8 @@ def weapons_section(data: dict) -> str:
     for weapon in data["weapons"]:
         kind = data["weapon_types"][weapon["type"]]
         if weapon.get("branches"):
-            branches = "".join(f'<li><b>{esc(b["name"])}</b>：{esc(b["text"])}</li>' for b in weapon["branches"].values())
+            branches = "".join(f'<li><b>{esc(b["name"])}</b>：{esc(b["text"])}{branch_table(weapon["branch_levels"][key], names)}</li>'
+                               for key, b in weapon["branches"].items())
             detail = f'<p>{esc(weapon["levels"][0])}</p>{weapon_numbers(weapon, names)}<p class="muted">两个方向各升 4 次：</p><ul>{branches}</ul>'
             owner = f'<span class="tag plain">{esc(jobs.get(weapon["job"], ""))}专属</span>'
             own.append((weapon, kind, detail, owner))
@@ -189,10 +202,18 @@ def weapons_section(data: dict) -> str:
                    f'<h3 class="sub">专属武器</h3><div class="grid">{cards(own)}</div><h3 class="sub">公共武器</h3><div class="grid">{cards(public)}</div>')
 
 
+def passive_levels(passive: dict) -> str:
+    """A passive at every level on one line: a stat passive's running total at 普通 rarity, a perk's
+    table with what changes by level as a list."""
+    shown = " / ".join(esc(total) for total in passive["levels"]) if passive["stat"] else esc(passive["table"])
+    return f'<p class="levels"><span class="span">Lv1–{passive["max"]}</span>{shown}</p>'
+
+
 def passives_section(data: dict) -> str:
     cards = "".join(f"""<article class="card small"><div class="head">{art(p['art'], 44, p['name'])}<div><h3>{esc(p['name'])}</h3>
-<p class="muted">{esc(p['text'])}{'（每级）' if p['stat'] else ''}</p></div></div></article>""" for p in data["passives"])
-    return section("passives", "被动", '一局最多带 6 种被动，大多能升 5 级。升级卡有稀有度（白 / 绿 / 蓝 / 紫 / 橙），越稀有给得越多；「锦鲤」加运气，更容易出好卡（见<a href="#upgrades">升级</a>）。',
+<p class="muted">{esc(p['text'])}{'（每级）' if p['stat'] else ''}</p></div></div>{passive_levels(p)}</article>""" for p in data["passives"])
+    return section("passives", "被动", '一局最多带 6 种被动，大多能升 5 级。升级卡有稀有度（白 / 绿 / 蓝 / 紫 / 橙），越稀有给得越多；「锦鲤」加运气，更容易出好卡（见<a href="#upgrades">升级</a>）。'
+                   '加数值的被动写的是全拿普通卡时升到这一级的累计（移速、冷却、拾取范围是一级一级乘上去的）。',
                    f'<div class="grid">{cards}</div>')
 
 
@@ -331,7 +352,7 @@ def maps_section(data: dict) -> str:
 <h3>{esc(game_map['name'])} <span class="hours">{esc(game_map['hours'])}</span></h3>
 <p class="muted">{esc(hard)} · 职级 {esc(game_map['rank_prefix'])}1、{esc(game_map['rank_prefix'])}2…</p>
 <p><b>分区</b>：{esc('、'.join(game_map['districts']))}</p>
-<p><b>地图事件 · {esc(event['name'])}</b>：{esc(event['text'])}<br><span class="muted">{esc(event['hint'])}</span></p>
+<p><b>地图事件 · {esc(event['name'])}</b>（{clock(event['at'])} 起，持续 {number(event['seconds'])} 秒）：{esc(event['text'])}<br>{esc(event['detail'])}<br><span class="muted">{esc(event['hint'])}</span></p>
 <p><b>boss</b>：{esc(' → '.join(boss['name'] for boss in game_map['bosses'][:-1]))}　<b>最后一战</b>：{esc(game_map['finale'])}</p>
 <p><a href="#stamps-{esc(game_map['id'])}">{len(game_map['stamps'])} 个打卡点 ›</a>　<a href="#bestiary" data-tab="{index}">本地怪物 ›</a></p></article>""")
     soon = "、".join(COMING_SOON_NAMES.get(city, city) for city in data["coming_soon"])
@@ -360,9 +381,11 @@ def bestiary_section(data: dict) -> str:
         name = bosses["name"].replace(" boss", "")
         tabs.append(f'<button class="tab" data-tab="{index}">{esc(name)}</button>')
         elites = "".join(_boss_card(enemy) for enemy in bosses["enemies"])
-        panels.append(f'<div class="panel" data-panel="{index}"><div class="grid">{elites}</div></div>')
+        panels.append(f'<div class="panel" data-panel="{index}"><div class="grid wide">{elites}</div></div>')
     total = sum(len(group["enemies"]) for group in groups)
-    return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪每张地图都一样；boss 每张地图 4 个，2:00、4:00、6:00、8:00 各一个，招式固定、没有随机。",
+    speeds = [job["speed"] for job in data["jobs"]]
+    return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪每张地图都一样；boss 每张地图 4 个，2:00、4:00、6:00、8:00 各一个，招式固定、没有随机。"
+                   f"boss 的生命和伤害已经按它所在地图的倍率算好（伤害还要减去你的护甲）；距离是游戏里的像素，人物每秒走 {number(min(speeds))}–{number(max(speeds))}。",
                    f'<h3 class="sub">小怪</h3><div class="grid">{mobs}</div><h3 class="sub">boss</h3><div class="tabs">{"".join(tabs)}</div>{"".join(panels)}')
 
 
@@ -374,13 +397,27 @@ def _mob_card(enemy: dict) -> str:
 
 
 def _boss_card(enemy: dict) -> str:
-    # Each attack: its name and kind, then how to dodge it (BossKits).
-    moves = "".join(f'<p class="move"><b>{esc(m["name"])}</b>（{esc(m["kind"])}）：{esc(m["hint"])}</p>' for m in enemy["moves"])
-    arrive = enemy["lines"].get("arrive", "")
-    line = f'<p class="muted">「{esc(arrive)}」</p>' if arrive else ""
-    where = f'<p class="muted">{clock(enemy["at"])} 出场 · {esc("、".join(enemy["maps"]))}</p>' if enemy["maps"] else ""
-    return f"""<article class="card small boss">{art(enemy['art'], 64, enemy['name'])}<h4>{esc(enemy['name'])}</h4>
-<p>{esc(enemy['note'])}</p>{line}{moves}{where}</article>"""
+    """A boss in full (.50, the user wanted the site's design more detailed: how many circles an
+    attack drops): its strength on its own map, each attack in numbers with how to dodge it, what
+    its second phase changes, and everything it says."""
+    moves = enemy["moves"]
+    rhythm = (f"走 {number(enemy['walk_seconds'])} 秒出一招，一直循环" if len(moves) == 1
+              else f"{len(moves)} 招轮流出（{' → '.join(esc(m['name']) for m in moves)} → …），每招之间走 {number(enemy['walk_seconds'])} 秒")
+    move_html = "".join(
+        f'<div class="move"><p><b>{esc(m["name"])}</b> <span class="kind">{esc(m["kind"])}</span></p>'
+        f'<p>{esc(m["detail"])}</p><p class="muted">躲：{esc(m["hint"])}</p>'
+        + (f'<p class="phase">{clock(enemy["phase_two_at"])} 二阶段：{esc(m["phase2"])}</p>' if m.get("phase2") else "")
+        + "</div>" for m in moves)
+    lines = enemy["lines"]
+    said = [("出场", lines.get("arrive", "")), ("出招", " / ".join(lines.get("attack", []))),
+            (f"{clock(enemy['phase_two_at'])} 二阶段", lines.get("phase2", "")), ("打死你", lines.get("kill", "")), ("被打死", lines.get("death", ""))]
+    said_html = "".join(f"<li><span class=\"said\">{esc(when)}</span>「{esc(words)}」</li>" for when, words in said if words)
+    where = f'{clock(enemy["at"])} 出场 · {esc("、".join(enemy["maps"]))}' if enemy["maps"] else ""
+    return f"""<article class="card boss"><div class="head">{art(enemy['art'], 64, enemy['name'])}<div><h3>{esc(enemy['name'])}</h3>
+<p class="muted">{where}</p></div></div><p>{esc(enemy['note'])}</p>
+<p class="stats"><span>出场生命 <b>{number(round(enemy['hp_then']))}</b></span><span>碰到 <b>{number(round(enemy['contact'], 1))}</b></span><span>速度 <b>{number(enemy['speed'])}</b></span><span>经验 <b>{enemy['xp']}</b></span></p>
+<p class="muted">{rhythm}。</p>{move_html}
+<details><summary>台词</summary><ul class="said">{said_html}</ul></details></article>"""
 
 
 def achievements_section(data: dict) -> str:
@@ -475,7 +512,11 @@ p.intro{color:var(--muted);margin:0 0 14px;max-width:760px}
 ol li .lv{margin-left:-4px}
 .card ol{list-style:none;padding-left:0}
 .bonus{display:inline-block;background:var(--brand-soft);border-radius:999px;padding:1px 10px;font-weight:800;font-size:13px}
-.move{background:#fff0f0;border-radius:10px;padding:4px 8px;font-size:13px}
+.move{background:#fff0f0;border-radius:10px;padding:6px 10px;font-size:13px;margin:8px 0}.move p{margin:2px 0}
+.move .kind{font-size:11px;font-weight:800;background:#fff;border:1px solid #f2b8b8;border-radius:999px;padding:0 7px;margin-left:4px}
+.move .phase{color:#b23344;font-weight:700}
+ul.said{margin:6px 0 0;padding-left:0;list-style:none;font-size:13px}ul.said li{margin:2px 0}span.said{display:inline-block;min-width:64px;color:var(--muted);font-weight:700}
+.levels{font-size:13px;margin:6px 0 0}.levels .span{white-space:nowrap;font-size:12px;font-weight:800;color:var(--muted);margin-right:6px}ol.perk{padding-left:0;list-style:none;font-size:13px;margin:6px 0 0}ol.perk li{margin:3px 0}
 .hours{display:inline-block;background:var(--ink);color:#fff;border-radius:999px;padding:0 10px;font-size:13px;vertical-align:3px}
 .soon{margin-top:10px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
