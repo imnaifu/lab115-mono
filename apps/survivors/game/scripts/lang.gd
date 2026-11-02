@@ -714,6 +714,13 @@ const EN := {
 	"删除云存档": "Delete Cloud Save",
 	"删除后，云端的存档和存档码都会作废，这台设备上的进度保留。确定吗？": "This deletes your cloud save and its save code. Progress on this device stays. Delete?",
 	"确定删除": "Delete",
+	"重置进度": "Reset Progress",
+	"下一步": "Next",
+	"确定重置": "Reset",
+	"重置会清空这台设备上的全部进度：打卡、成就、图鉴、工资和培训、返聘、各地图的通关记录，从头开始。": "Resetting clears all progress on this device: landmarks, achievements, the bestiary, pay and training, rehires and every map's wins. You start over.",
+	"这台设备会换一个新的存档码。原来的存档码 %s 还能用：别的设备上的进度不受影响，以后输入它还能把旧进度合并回来，先记下来。": "This device gets a new save code. Your old code %s keeps working: other devices keep their progress, and entering it later brings the old progress back. Write it down first.",
+	"这台设备还没有存档码，重置以后旧进度就找不回来了。": "This device has no save code yet, so the old progress can't be brought back after a reset.",
+	"最后确认：真的要清空这台设备上的全部进度吗？": "Last check: really clear all progress on this device?",
 	"云存档已删除，这台设备上的进度还在": "Cloud save deleted; progress on this device is still here",
 	# 西雅图 (Seattle, .34): the map, its districts and landmarks
 	"西雅图": "Seattle",

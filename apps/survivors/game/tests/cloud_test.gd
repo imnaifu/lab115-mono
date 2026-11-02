@@ -1,6 +1,7 @@
 extends SceneTree
 ## Checks the cloud save (Cloud) against a Nakama server: two devices merging their progress
-## through a 存档码, deleting the cloud save, and quiet failure with no server. Progress stays in
+## through a 存档码, deleting the cloud save, resetting the progress (.56), and quiet failure with
+## no server. Progress stays in
 ## memory and the devices' ids too, so the save and device id of the game on this machine are
 ## left alone. Also checks Progress.merge_text's rules on their own. Exits with code 1 on a failure.
 ##
@@ -26,6 +27,7 @@ func _run() -> void:
 		if arg.begins_with("--cloud="):
 			url = arg.get_slice("=", 1)
 	await _check_two_devices(url)
+	await _check_reset(url)
 	await _check_no_server()
 	if _failures.is_empty():
 		print("[cloud] all checks passed")
@@ -127,6 +129,34 @@ func _check_two_devices(url: String) -> void:
 	_check(device_b.status == Cloud.Status.SYNCED and device_b.code.is_empty(), "turning it back on starts a fresh account")
 	device_a.queue_free()
 	device_b.queue_free()
+
+
+## 重置进度 (.56): the device leaves its account for a fresh one with an empty save and no code
+## yet; the old account keeps its progress and its code, unmarked, and entering that code merges
+## the old progress back.
+func _check_reset(url: String) -> void:
+	Progress.reset()
+	Progress.add_stamp("golden_gate")
+	Progress.set_stat("runs", 4)
+	var device := await _device(url)
+	var old_code: String = await device.ensure_code()
+	var old_user := device._session.user_id
+	var old_device_id: String = device._config.get_value("cloud", "device_id", "")
+	_check((await _read_cloud(device)).contains("golden_gate"), "reset: the progress is in the cloud before")
+	await device.leave_account()
+	Progress.clear_all()
+	device.reconnect()
+	await _wait(func() -> bool: return device.status == Cloud.Status.SYNCED and device._session != null, device)
+	_check(device._session != null and device._session.user_id != old_user, "reset: the device is on a fresh account")
+	_check(device.code.is_empty(), "reset: no code until one is asked for")
+	_check(not Progress.has_stamp("golden_gate") and Progress.stat("runs", 0) == 0, "reset: the save on the device is empty")
+	_check(not (await _read_cloud(device)).contains("golden_gate"), "reset: the fresh account's cloud copy is empty")
+	var new_code: String = await device.ensure_code()
+	_check(new_code.length() == Cloud.CODE_LENGTH and new_code != old_code, "reset: a new code (%s)" % Cloud.format_code(new_code))
+	_check((await _state_of(device, old_device_id)).is_empty(), "reset: the old account isn't marked")
+	_check((await device.redeem(old_code)) == Cloud.Redeem.OK and Progress.has_stamp("golden_gate"),
+		"reset: the old code still works and brings the old progress back")
+	device.queue_free()
 
 
 func _check_no_server() -> void:

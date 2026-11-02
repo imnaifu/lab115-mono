@@ -62,7 +62,7 @@ extends RefCounted
 ##   offline), copy (复制 tapped), copied (the page's copy button: ok / hold, when only a long
 ##   press can copy), redeem (a code entered: ok / invalid / not_found / offline, with the
 ##   `previous` account), redeem_cancelled (the page's field closed), delete (ok / offline, with
-##   the deleted `account`), enable.
+##   the deleted `account`), enable, reset (.56: 重置进度, with the `account` the device left).
 ## - share (.30): the result image. `open` from the game with `where` (end / pause); then from
 ##   the page's dialog share, shared / share_cancelled (the system share sheet's outcome), save,
 ##   close. A long press on the image (how WeChat saves) can't be seen.
@@ -74,7 +74,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.55"
+const VERSION := "2026-10-28.56"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.

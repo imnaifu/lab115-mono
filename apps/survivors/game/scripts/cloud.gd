@@ -213,6 +213,31 @@ func delete_account() -> bool:
 	return true
 
 
+## 重置进度 (.56, the user: 清空本地，换新存档码，只重置本机，旧码不动), first half: this device leaves
+## its account and forgets its 存档码, so the save can be cleared without the old account's copy
+## merging back into it. The old account isn't marked or touched: its progress and its code carry
+## on for any other device on it, and entering that code here again merges the progress back. Waits
+## out a sync in flight, which would otherwise merge the old copy in after the save is cleared.
+func leave_account() -> void:
+	if _timer != null:
+		_timer.stop()
+	while _syncing:
+		await get_tree().process_frame
+	_pending = false
+	_set_session(null)
+	_remember_code("")
+	# The next sign-in makes a new device id, so a new anonymous account with nothing on it.
+	_config.set_value("cloud", "device_id", null)
+	_save_config()
+
+
+## The second half, once the save is cleared: a fresh account for this device right away, unless
+## the cloud save is off here (删除云存档), which makes one when it's turned back on.
+func reconnect() -> void:
+	if _client != null and status != Status.DISABLED:
+		_start()
+
+
 ## Turns the cloud save back on after delete_account.
 func enable() -> void:
 	if _client == null:

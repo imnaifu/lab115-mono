@@ -200,6 +200,8 @@ var _save_note := ""
 var _save_note_ok := true
 var _save_busy := false
 var _confirm_delete := false
+## 重置进度's questions on the 云存档 page: 0 none, 1 the warning, 2 the last confirmation.
+var _confirm_reset := 0
 ## A 存档码 is made the first time the view opens on a synced account; once per scene, so a failed
 ## try isn't repeated on every redraw.
 var _code_requested := false
@@ -3166,6 +3168,7 @@ func _open_save_page() -> void:
 	else:
 		_save_note = ""
 		_confirm_delete = false
+		_confirm_reset = 0
 		Telemetry.send_event("cloud_action", {"action": "open", "status": Cloud.status_name()})
 	_save_open = true
 	_clear(_save_holder)
@@ -3272,19 +3275,80 @@ func _fill_save(body: VBoxContainer, portrait: bool) -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(hint)
 
-	if disabled or not _confirm_delete:
+	if not disabled and _confirm_delete:
+		var confirm := UiKit.panel(UiKit.box(Art.PINK_LIGHT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
+		var confirm_column := VBoxContainer.new()
+		confirm_column.add_theme_constant_override("separation", 10)
+		confirm.add_child(confirm_column)
+		var warning := UiKit.label(tr("删除后，云端的存档和存档码都会作废，这台设备上的进度保留。确定吗？"), 13, "strong", Art.BOSS_RED)
+		warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		confirm_column.add_child(warning)
+		confirm_column.add_child(_save_buttons([_save_button("确定删除", _delete_cloud_save), _save_button("取消", func() -> void:
+			_confirm_delete = false
+			_open_save_page())]))
+		body.add_child(confirm)
+	_fill_reset(body)
+
+
+## 重置进度 (.56), at the bottom of the 云存档 page: on the title screen only (not over a paused run),
+## and not in 测试模式 (whose saves are thrown away anyway). Asks twice: first what goes and what
+## stays (the old 存档码 shown, to write down), then a last confirmation.
+func _fill_reset(body: VBoxContainer) -> void:
+	if game.state != Game.State.TITLE or TestMode.on:
 		return
+	body.add_child(UiKit.label(tr("重置进度"), 13, "strong", Art.INK_MUTED))
+	if _confirm_reset == 0:
+		body.add_child(_save_buttons([_save_button("重置进度", func() -> void:
+			_confirm_reset = 1
+			_open_save_page()
+			_scroll_after_layout(_save_scroll, 1 << 20))]))
+		return
+	var cloud := Cloud.shared()
+	var lines := PackedStringArray()
+	if _confirm_reset == 1:
+		lines.append(tr("重置会清空这台设备上的全部进度：打卡、成就、图鉴、工资和培训、返聘、各地图的通关记录，从头开始。"))
+		if cloud != null and cloud.code != "":
+			lines.append(tr("这台设备会换一个新的存档码。原来的存档码 %s 还能用：别的设备上的进度不受影响，以后输入它还能把旧进度合并回来，先记下来。") % Cloud.format_code(cloud.code))
+		else:
+			lines.append(tr("这台设备还没有存档码，重置以后旧进度就找不回来了。"))
+	else:
+		lines.append(tr("最后确认：真的要清空这台设备上的全部进度吗？"))
 	var confirm := UiKit.panel(UiKit.box(Art.PINK_LIGHT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 10, 12, 10)))
 	var confirm_column := VBoxContainer.new()
 	confirm_column.add_theme_constant_override("separation", 10)
 	confirm.add_child(confirm_column)
-	var warning := UiKit.label(tr("删除后，云端的存档和存档码都会作废，这台设备上的进度保留。确定吗？"), 13, "strong", Art.BOSS_RED)
-	warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	confirm_column.add_child(warning)
-	confirm_column.add_child(_save_buttons([_save_button("确定删除", _delete_cloud_save), _save_button("取消", func() -> void:
-		_confirm_delete = false
+	for line in lines:
+		var warning := UiKit.label(line, 13, "strong", Art.BOSS_RED)
+		warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		confirm_column.add_child(warning)
+	var go_on := _save_button("下一步" if _confirm_reset == 1 else "确定重置", func() -> void:
+		if _confirm_reset == 1:
+			_confirm_reset = 2
+			_open_save_page()
+			_scroll_after_layout(_save_scroll, 1 << 20)
+		else:
+			_reset_progress())
+	confirm_column.add_child(_save_buttons([go_on, _save_button("取消", func() -> void:
+		_confirm_reset = 0
 		_open_save_page())]))
 	body.add_child(confirm)
+
+
+## Clears this device's progress for a fresh account and 存档码 (Cloud.leave_account, then
+## Progress.clear_all, then Cloud.reconnect, in that order so the old copy can't merge back), and
+## starts the title screen over on the empty save.
+func _reset_progress() -> void:
+	_confirm_reset = 0
+	var cloud := Cloud.shared()
+	var account := cloud.account_id() if cloud != null else ""
+	if cloud != null:
+		await _save_action(cloud.leave_account)
+	Progress.clear_all()
+	Telemetry.send_event("cloud_action", {"action": "reset", "result": "ok", "account": account})
+	if cloud != null:
+		cloud.reconnect()
+	# Back to the title screen on the same map, rebuilt from the empty save.
+	game.change_map(Maps.current_id)
 
 
 ## The 存档码 field of a computer build.

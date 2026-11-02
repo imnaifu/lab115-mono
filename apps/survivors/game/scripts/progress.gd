@@ -194,6 +194,15 @@ static func _keys(section: String) -> PackedStringArray:
 	return config.get_section_keys(section) if config.has_section(section) else PackedStringArray()
 
 
+## 重置进度 (.56): forgets everything kept here (landmarks, achievements, the bestiary, 工资 and 培训,
+## 返聘, map wins, the totals) and saves the empty save. Not uploaded from here: Cloud.leave_account
+## has taken the device off its account first, so that account keeps its copy, and Cloud.reconnect
+## gives the device a fresh one to upload to.
+static func clear_all() -> void:
+	_config = ConfigFile.new()
+	_save(false)
+
+
 ## `upload` false for a save that came from the cloud in the first place.
 static func _save(upload: bool = true) -> void:
 	# A test run (TestMode) keeps nothing: what it earns lasts only until the page closes.
