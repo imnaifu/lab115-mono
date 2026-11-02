@@ -147,14 +147,15 @@ const LAWN_LANDMARKS := {Vector2i(3, -1): "dino_skeleton"}
 ## The landmarks a player can check in at (打卡, Stamps), clockwise from the north: its picture
 ## on the 打卡 page, the block it stands on (in LANDMARKS / LAWN_LANDMARKS), its name, a line about
 ## it, and the small bonus it gives for good once checked in at ([kind, amount], Stamps.BONUSES).
-## All of them together come to about one passive at level 2.
+## Since .55 (the user's call) each gives 2% damage, 2% cooldown, +10 luck, 5% pickup range or +5
+## health (3%, 3%, 20, 10%, 10 from .44); all five maps' together are about one passive card each.
 const STAMPS := {
-	"golden_gate": {"art": "golden_gate", "block": Vector2i(0, -5), "name": "金门大桥", "note": "一路往北，走到地图尽头", "bonus": ["might", 0.03]},
-	"goggle": {"art": "dino_skeleton", "block": Vector2i(3, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 20.0]},
+	"golden_gate": {"art": "golden_gate", "block": Vector2i(0, -5), "name": "金门大桥", "note": "一路往北，走到地图尽头", "bonus": ["might", 0.02]},
+	"goggle": {"art": "dino_skeleton", "block": Vector2i(3, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
 	# Sailsforce 大厦's place and bonus until .52.
-	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.10]},
-	"pear_park": {"art": "pear_park", "block": Vector2i(-2, 3), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 10.0]},
-	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-3, -2), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.03]},
+	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
+	"pear_park": {"art": "pear_park", "block": Vector2i(-2, 3), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 5.0]},
+	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-3, -2), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
 }
 ## Signs that belong to a landmark drawing.
 const LANDMARK_BRANDS := {"pear_park": "pear", "stadium": "levys"}

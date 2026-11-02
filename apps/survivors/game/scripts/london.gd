@@ -157,11 +157,11 @@ const SOLID_SPANS := {"tower_bridge": [[0.22, 0.28], [0.72, 0.78]]}
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start ldn_ so they never clash with
 ## another map's in the save. Their bonuses add up the same as the other maps'.
 const STAMPS := {
-	"ldn_kings_cross": {"art": "kings_cross", "block": Vector2i(1, 0), "name": "国王十字站", "note": "站台上有辆推车一半卡进了墙里", "bonus": ["luck", 20.0]},
-	"ldn_museum": {"art": "british_museum", "block": Vector2i(0, 1), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.10]},
-	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-1, 1), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.03]},
-	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(2, 2), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 10.0]},
-	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(3, 1), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.03]},
+	"ldn_kings_cross": {"art": "kings_cross", "block": Vector2i(1, 0), "name": "国王十字站", "note": "站台上有辆推车一半卡进了墙里", "bonus": ["luck", 10.0]},
+	"ldn_museum": {"art": "british_museum", "block": Vector2i(0, 1), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.05]},
+	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-1, 1), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.02]},
+	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(2, 2), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 5.0]},
+	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(3, 1), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.02]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

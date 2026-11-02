@@ -163,11 +163,11 @@ const SOLID_SPANS := {}
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start sg_ so they never clash with
 ## another map's in the save. Their bonuses add up the same as the other maps'.
 const STAMPS := {
-	"sg_one_north": {"art": "one_north", "block": Vector2i(0, -1), "name": "纬壹科技城", "note": "几家大厂的亚太总部挤在一起", "bonus": ["haste", 0.03]},
-	"sg_merlion": {"art": "merlion", "block": Vector2i(1, 2), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.10]},
-	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(0, 3), "name": "圣淘沙", "note": "过了桥就是度假岛", "bonus": ["luck", 20.0]},
-	"sg_jewel": {"art": "jewel", "block": Vector2i(3, -1), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.03]},
-	"sg_mbs": {"art": "mbs", "block": Vector2i(3, 2), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 10.0]},
+	"sg_one_north": {"art": "one_north", "block": Vector2i(0, -1), "name": "纬壹科技城", "note": "几家大厂的亚太总部挤在一起", "bonus": ["haste", 0.02]},
+	"sg_merlion": {"art": "merlion", "block": Vector2i(1, 2), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.05]},
+	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(0, 3), "name": "圣淘沙", "note": "过了桥就是度假岛", "bonus": ["luck", 10.0]},
+	"sg_jewel": {"art": "jewel", "block": Vector2i(3, -1), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.02]},
+	"sg_mbs": {"art": "mbs", "block": Vector2i(3, 2), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 5.0]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

@@ -166,11 +166,11 @@ const SOLID_SPANS := {}
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start sea_ so they never clash with
 ## another map's in the save. Their bonuses add up the same as the other maps'.
 const STAMPS := {
-	"sea_spheres": {"art": "spheres", "block": Vector2i(1, 0), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 20.0]},
-	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-1, -1), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 10.0]},
-	"sea_pike": {"art": "pike_place", "block": Vector2i(-1, 1), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.10]},
-	"sea_troll": {"art": "fremont_troll", "block": Vector2i(-1, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.03]},
-	"sea_microhard": {"art": "icon_window", "block": Vector2i(3, 0), "name": "Microhard 园区", "note": "过了浮桥就是东区", "bonus": ["might", 0.03]},
+	"sea_spheres": {"art": "spheres", "block": Vector2i(1, 0), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 10.0]},
+	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-1, -1), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 5.0]},
+	"sea_pike": {"art": "pike_place", "block": Vector2i(-1, 1), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.05]},
+	"sea_troll": {"art": "fremont_troll", "block": Vector2i(-1, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.02]},
+	"sea_microhard": {"art": "icon_window", "block": Vector2i(3, 0), "name": "Microhard 园区", "note": "过了浮桥就是东区", "bonus": ["might", 0.02]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.
