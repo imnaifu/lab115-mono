@@ -552,7 +552,7 @@ const EN := {
 	"Sailsforce 大厦": "Sailsforce Tower",
 	"旧金山最高的楼": "San Francisco's tallest",
 	"金门大桥": "Golden Gate Bridge",
-	"一路往北，走到陆地尽头": "Go north till the land runs out",
+	"一路往北，走到地图尽头": "Go north till the map runs out",
 	"生存": "Survival",
 	"战斗": "Combat",
 	"职业": "Jobs",

@@ -9,6 +9,10 @@ extends Node2D
 ## itself under everything. Buildings, trees, props and signs stand up, so they are spawned per block into
 ## Game's y-sorted entity layer, where the player walks behind or in front of them.
 ##
+## A map may be open ground instead (its OPEN_GROUND and BOUNDS, 硅谷 since .52): only its landmarks
+## stand, trees don't block, and past its BOUNDS (which it reports as water) City draws the map's
+## edge rather than the sea.
+##
 ## The base of each building, tree trunks and the water are solid: resolve() pushes a body out
 ## of them. Only a building's base blocks, so you can walk behind the rest of it (it fades
 ## while you do). Solids are filed in a coarse grid so each body checks only the few near it.
@@ -79,6 +83,11 @@ const DENSE_GAP_SCALE := 0.6
 const SPARSE_GAP_SCALE := 2.2
 ## The narrowest gap left between two buildings: the biggest boss still squeezes through.
 const MIN_GAP := 36.0
+## An open map's edge (_draw_edge): the ground past it, the hatching on that, and the fence along
+## the line, a post every EDGE_POST_GAP.
+const OUT_OF_BOUNDS := Color("d6d0bd")
+const EDGE_HATCH := 28.0
+const EDGE_POST_GAP := 36.0
 
 var game: Game
 var follow: Node2D
@@ -95,6 +104,16 @@ var _missing_warned := false
 var _traffic: Traffic
 ## The current map's check-in landmark blocks (Maps.current.STAMPS), for _density.
 var _stamp_blocks: Array[Vector2i] = []
+## Whether the current map is open ground (OPEN_GROUND), and its edge (BOUNDS), or null for a map
+## bounded by its sea. Read off the map's script, since only open maps have them.
+var _open_ground := false
+var _bounds: Variant = null
+
+
+func _ready() -> void:
+	var constants: Dictionary = Maps.current.get_script_constant_map()
+	_open_ground = constants.get("OPEN_GROUND", false)
+	_bounds = constants.get("BOUNDS", null)
 
 
 func _process(delta: float) -> void:
@@ -127,7 +146,10 @@ func resolve(point: Vector2, radius: float) -> Vector2:
 
 
 func _resolve_once(point: Vector2, radius: float) -> Vector2:
-	var resolved := _out_of_water(point, radius)
+	# An open map's edge is a plain rectangle: clamping into it is exact, even from past a corner,
+	# where pushing out of its strips one at a time can bounce between them.
+	var resolved := point.clamp(_bounds.position + Vector2(radius, radius), _bounds.end - Vector2(radius, radius)) \
+		if _bounds is Rect2 else _out_of_water(point, radius)
 	var bucket = _solid_cells.get(Vector2i((resolved / SOLID_CELL).floor()))
 	if bucket == null:
 		return resolved
@@ -266,7 +288,10 @@ func _draw() -> void:
 			if column == Maps.current.RAILWAY_COLUMN and Maps.current.has_railway(row):
 				_draw_railway(x + RAILWAY_OFFSET, row * BLOCK.y + road_reach, (row + 1) * BLOCK.y - road_reach)
 
-	_draw_water(area)
+	if _bounds is Rect2:
+		_draw_edge(area, _bounds)
+	else:
+		_draw_water(area)
 
 	# Flowers and grass on the lawns.
 	var first_cell := Vector2i((area.position / DECOR_CELL).floor())
@@ -418,6 +443,42 @@ func _draw_water(area: Rect2) -> void:
 			draw_arc(at + Vector2(8, 0), 5.0, PI * 1.15, PI * 1.85, 8, Color.WHITE, 1.6, true)
 
 
+## An open map's edge (.52): the ground past BOUNDS (Maps.current.water_rects) a flat muted colour
+## hatched across, and a fence of posts along the line itself, so it reads as the end of the map
+## rather than as water.
+func _draw_edge(area: Rect2, bounds: Rect2) -> void:
+	var outside: Array[Rect2] = Maps.current.water_rects(area)
+	if outside.is_empty():
+		return
+	for rect: Rect2 in outside:
+		draw_rect(rect, OUT_OF_BOUNDS)
+		# Diagonal hatching, each line clipped to the rect: x - y runs over every EDGE_HATCH.
+		var first := floori((rect.position.x - rect.end.y) / EDGE_HATCH)
+		var last := ceili((rect.end.x - rect.position.y) / EDGE_HATCH)
+		for index in range(first, last + 1):
+			var offset := index * EDGE_HATCH
+			var from := Vector2(maxf(rect.position.x, rect.position.y + offset), 0.0)
+			from.y = from.x - offset
+			var to := Vector2(minf(rect.end.x, rect.end.y + offset), 0.0)
+			to.y = to.x - offset
+			if from.y < rect.position.y or to.y > rect.end.y or from.x >= to.x:
+				continue
+			draw_line(from, to, Color(Art.INK, 0.12), 2.0)
+	# The fence: a rail along the edge and a post every EDGE_POST_GAP, where the view can see it.
+	var visible := bounds.grow(4.0).intersection(area)
+	draw_rect(bounds, Art.INK, false, 3.0)
+	for side: Array in [[bounds.position, Vector2.RIGHT, bounds.size.x], [Vector2(bounds.position.x, bounds.end.y), Vector2.RIGHT, bounds.size.x],
+			[bounds.position, Vector2.DOWN, bounds.size.y], [Vector2(bounds.end.x, bounds.position.y), Vector2.DOWN, bounds.size.y]]:
+		var start: Vector2 = side[0]
+		var along: Vector2 = side[1]
+		for step in range(0, int(side[2] / EDGE_POST_GAP) + 1):
+			var post: Vector2 = start + along * step * EDGE_POST_GAP
+			if not visible.has_point(post):
+				continue
+			draw_rect(Rect2(post - Vector2(4.0, 4.0), Vector2(8.0, 8.0)), Art.INK)
+			draw_rect(Rect2(post - Vector2(2.0, 2.0), Vector2(4.0, 4.0)), Art.PAPER)
+
+
 func _near_road(point: Vector2, reach: float) -> bool:
 	var off_x := absf(point.x - roundf(point.x / BLOCK.x) * BLOCK.x)
 	var off_y := absf(point.y - roundf(point.y / BLOCK.y) * BLOCK.y)
@@ -523,7 +584,8 @@ func _populate(block: Vector2i) -> Dictionary:
 	elif landmark.begins_with("brand_row:"):
 		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, landmark.trim_prefix("brand_row:"), density)
 		_place_campus_sign(content, landmark.trim_prefix("brand_row:"), Vector2(inner_left + 70.0, lawn_top + 40.0))
-	elif not is_park and inner_right > inner_left:
+	elif not is_park and inner_right > inner_left and not _open_ground:
+		# Open ground (.52) has no rows of ordinary buildings, only its landmarks.
 		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, "", density)
 	var lawn_landmark: String = Maps.current.LAWN_LANDMARKS.get(block, "")
 	if lawn_landmark != "":
@@ -539,13 +601,17 @@ func _populate(block: Vector2i) -> Dictionary:
 	if lawn_bottom - lawn_top > 30.0 and inner_right > inner_left:
 		for i in rng.randi_range(district["bushes"][0], district["bushes"][1]):
 			var spot := Vector2(rng.randf_range(inner_left, inner_right), rng.randf_range(lawn_top, lawn_bottom))
-			content["nodes"].append(_place_art("bush", Maps.current.HEIGHTS["bush"], spot, true))
+			# Nothing grows past an open map's edge.
+			if not Maps.current.is_water(spot):
+				content["nodes"].append(_place_art("bush", Maps.current.HEIGHTS["bush"], spot, true))
 		var tree: String = district["tree"] if district["tree"] != "" else "palm"
 		# Trees would hide a lawn landmark; bushes are low enough.
 		var tree_count := 0 if Maps.current.LAWN_LANDMARKS.has(block) else rng.randi_range(district["lawn_trees"][0], district["lawn_trees"][1])
 		for i in tree_count:
 			var spot := Vector2(rng.randf_range(inner_left, inner_right), rng.randf_range(lawn_top + 40.0, lawn_bottom))
-			_place_tree(content, tree, spot)
+			# On open ground trees are scenery to walk past, never in the way (.52: 哪里都能走).
+			if not Maps.current.is_water(spot):
+				_place_tree(content, tree, spot, not _open_ground)
 	return content
 
 

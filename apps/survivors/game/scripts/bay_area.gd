@@ -4,12 +4,13 @@ extends RefCounted
 ## there, the landmarks, the street names and the parody company signs. City reads it and
 ## draws; nothing here draws.
 ##
-## Shaped like the real peninsula: the run starts mid-peninsula (Palo Alto / Mountain View),
-## San Francisco is up north at its narrow tip, with the Golden Gate's water past its north
-## shore, the Pacific off its west side and the Bay off its east side; going south the land
-## widens, the hills and Sand Hill Road lie to the west with the ocean beyond them, the Bay
-## widens to the east and ends at San Jose, which goes on south (and east, round the Bay's end)
-## for ever. US-101 runs down the Bay side, I-280 down the hills side, Caltrain beside Alma St.
+## Open ground since .52 (the user: 地图整体改空旷一点，只有打卡点的建筑；不要海，玩家哪里都能走，除非
+## 到地图边界): a square of land round the start (BOUNDS) with no sea, where the only buildings are
+## the five check-in landmarks (OPEN_GROUND), set out evenly on a ring round the start, and a
+## tree here and there. The districts still run the way the real peninsula does: San Francisco to
+## the north, San Jose to the south, the hills on the west edge; US-101 and I-280 run north-south,
+## Caltrain beside Alma St. (Until .51 it was the peninsula itself, built up street after street,
+## with the Golden Gate's water to the north, the Pacific to the west and the Bay to the east.)
 ##
 ## One of the maps (Maps); Beijing has the same names, so whatever reads Maps.current works on
 ## either.
@@ -33,31 +34,24 @@ const MAP_EVENT := {"id": "quake", "at": 270.0, "seconds": 20.0, "text": "湾区
 	"name": "湾区地震", "hint": "躲开地上的红圈"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"
-## The named part of the world (the minimap showed it until .44), in world pixels: from the Pacific to across the
-## Bay, and from the Golden Gate's water to south of San Jose. Pulled in to about half in .34 (it
-## was 5600 x 6300), at the user's ask after Vampire Survivors: every landmark is now within about
-## 30 seconds' walk of the start, the furthest (the Golden Gate) used to take about a minute.
-const OVERVIEW := Rect2(-2400.0, -2100.0, 4800.0, 3900.0)
+## The map (.52): a square 2300 out every way from the start (Game puts the player at
+## City.BLOCK × (0.5, 0.45) = (280, 180)), about 500 past the check-in landmarks' ring. Outside it
+## counts as water (is_water, water_rects), so the collision, the enemies' paths, the spawns, the
+## cars and the weather all stay inside, and City draws it as the map's edge rather than as sea.
+const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+## Only the check-in landmarks stand (no rows of buildings), and trees don't block (City, .52).
+const OPEN_GROUND := true
+## The named part of the world (the minimap showed it until .44): the map itself since .52.
+const OVERVIEW := BOUNDS
 
 ## Block rows at or above / below these are San Francisco / San Jose; columns at or before
-## HILLS_COLUMN are the hills. (560 x 400 below is City.BLOCK, spelled out to keep the two
-## classes' constants acyclic.)
-const SF_ROW := -2
+## HILLS_COLUMN are the hills, the map's west edge. (560 x 400 below is City.BLOCK, spelled out to
+## keep the two classes' constants acyclic.) .52 moved San Francisco's edge a row north and the
+## hills' a column west, so the 胡佛塔 stands on the peninsula.
+const SF_ROW := -3
 const SJ_ROW := 2
-const HILLS_COLUMN := -3
+const HILLS_COLUMN := -4
 const BLOCK_SIZE := Vector2(560.0, 400.0)
-## The coast, row by row (west_shore_column / east_shore_column): land runs from the west shore
-## road to the east shore road plus SHORE_STRIP on either side (a beach to the west, salt ponds
-## or a waterfront to the east); past that is water, which nothing but ghosts crosses.
-const SHORE_STRIP := 200.0
-## North of San Francisco's north shore road (Lombard St), past a strip of shore, is the water
-## of the Golden Gate.
-const NORTH_SHORE_ROW := -4
-const NORTH_WATER_Y := NORTH_SHORE_ROW * 400.0 - SHORE_STRIP
-## Rows within this of a road are the road (with its sidewalks and a margin): a row's own
-## coast applies only between them, and a road is water only where both rows it divides are,
-## so a road along a stretch of coast is never half under water.
-const ROAD_BAND := 40.0
 ## The freeways and the railway, by block column, and the first row they run from; `north` /
 ## `south` are where the green signs point.
 const FREEWAYS := {2: {"number": "101", "shield": "shield_us", "from_row": -1, "north": "San Francisco", "south": "San Jose"},
@@ -66,10 +60,11 @@ const RAILWAY_COLUMN := -1
 const RAILWAY_FROM_ROW := -4
 ## The railway runs on south for ever (Singapore's ends on Sentosa).
 const RAILWAY_TO_ROW := 1000
-## Salt ponds line the shore from this row south (further north is a waterfront).
+## Salt ponds lined the Bay shore from this row south until .52; with no Bay there are none
+## (east_shore_column), but City still reads the row.
 const SALT_POND_FROM_ROW := -1
-## Blocks given over to SFO's runway (City draws it; a parked plane stands on it).
-const RUNWAYS: Array[Vector2i] = [Vector2i(0, -2)]
+## Blocks given over to an airport runway: SFO's until .52, none on open ground.
+const RUNWAYS: Array[Vector2i] = []
 ## What drives the freeways and the railway (Traffic, .37): robotaxis and Caltrain.
 const VEHICLES := ["car_top"]
 const TRAIN := "train_top"
@@ -79,6 +74,9 @@ const TRAIN := "train_top"
 ## biggest boss, 32 across, still squeezes through a row instead of walking round it); which parody
 ## `brands` get rooftop signs and how often; the street `tree`; sidewalk `props`; how many
 ## bushes and trees dot the lawn; how often a block is a park; and the flat `decor`.
+## Since .52 (OPEN_GROUND) only `ground`, `tree`, `bushes`, `lawn_trees` and `decor` show: there
+## are no rows of buildings (the campus district's `structures` still make Goggle's), and each
+## block gets at most one tree and one bush, a tree here and there as the user asked (零星).
 const DISTRICTS := {
 	"peninsula": {
 		"name": "硅谷", "icon": "pear_park",
@@ -87,7 +85,7 @@ const DISTRICTS := {
 			"soco:small_1", "soco:small_2", "soco:small_3", "soco:small_4", "soco:office_block"],
 		"gap": [36.0, 70.0], "brands": ["pear", "goggle", "beta", "envy", "linkedout", "nutflix"],
 		"brand_chance": 0.85, "tree": "palm", "props": ["bike", "bike_campus", "scooter", "cone"],
-		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.2,
+		"bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.2,
 		"decor": [["flower", 11.0], ["poppy", 11.0], ["tuft", 12.0], ["tuft", 12.0]],
 	},
 	"sf": {
@@ -97,7 +95,7 @@ const DISTRICTS := {
 			"art:victorian_mint", "art:victorian_blue", "art:victorian_pink", "soco:midrise_grid", "soco:small_3"],
 		"gap": [36.0, 48.0], "brands": [], "brand_chance": 0.0, "tree": "",
 		"props": ["robotaxi", "cable_car", "robotaxi"],
-		"bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.15,
+		"bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"sj": {
@@ -106,7 +104,7 @@ const DISTRICTS := {
 		"structures": ["art:mission_house", "art:mission_house", "art:mission_house", "soco:supermarket",
 			"soco:convenience_store", "soco:shop_1", "soco:shop_2"],
 		"gap": [36.0, 64.0], "brands": ["envy", "nutflix", "pear"], "brand_chance": 0.4, "tree": "palm",
-		"props": ["cone", "bike", "scooter"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.15,
+		"props": ["cone", "bike", "scooter"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["poppy", 11.0], ["tuft", 12.0], ["flower", 11.0]],
 	},
 	"hills": {
@@ -114,23 +112,8 @@ const DISTRICTS := {
 		"ground": Color("f0dc9a"),
 		"structures": ["soco:small_1", "soco:small_2", "soco:small_4"],
 		"gap": [120.0, 220.0], "brands": ["sandhill"], "brand_chance": 1.0, "tree": "redwood",
-		"props": [], "bushes": [1, 2], "lawn_trees": [3, 6], "park_chance": 0.4,
+		"props": [], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.4,
 		"decor": [["poppy", 11.0], ["poppy", 11.0], ["tuft", 12.0]],
-	},
-	# The sand between the roads and the Pacific, and north of San Francisco's north shore.
-	"beach": {
-		"name": "海滩", "icon": "palm",
-		"ground": Color("f3e5b5"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["tuft", 12.0]],
-	},
-	"bay": {
-		"name": "海湾", "icon": "plane",
-		"ground": Color("e9e4c6"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["tuft", 12.0]],
 	},
 }
 
@@ -147,29 +130,34 @@ const HEIGHTS := {
 
 ## One-off landmarks by block, replacing that block's row of buildings. "brand_row:<brand>"
 ## is an ordinary row where every building carries that brand (a company campus).
+## Since .52 the five stand evenly on a ring about 1800 out from the start (the user: 打卡点平均
+## 分布), about 29 seconds' walk each and 34 between neighbours, as near a regular pentagon as the
+## blocks allow (within 5°): 金门大桥 north, Goggle east-north-east, Levy's 球场 south-east, Pear
+## south-west, 胡佛塔 west-north-west, roughly where they are in the real Bay Area. Sailsforce
+## 大厦 gave way to Levy's 球场 (two in San Francisco left the south empty).
 const LANDMARKS := {
-	Vector2i(-1, 0): "art:stanford_tower",
-	Vector2i(0, -1): "brand_row:goggle",
-	Vector2i(1, 1): "art:pear_park",
-	Vector2i(-1, -4): "art:sailsforce_tower",
-	# On the north shore, looking out over the Golden Gate's water.
-	Vector2i(-1, -5): "art:golden_gate",
+	Vector2i(0, -5): "art:golden_gate",
+	Vector2i(3, -1): "brand_row:goggle",
+	Vector2i(2, 3): "art:stadium",
+	Vector2i(-2, 3): "art:pear_park",
+	Vector2i(-3, -2): "art:stanford_tower",
 }
 ## Landmarks standing on a block's lawn, in front of its row of buildings: the campus mascots.
-const LAWN_LANDMARKS := {Vector2i(0, -1): "dino_skeleton"}
-## The landmarks a player can check in at (打卡, Stamps), nearest the start first: its picture
+const LAWN_LANDMARKS := {Vector2i(3, -1): "dino_skeleton"}
+## The landmarks a player can check in at (打卡, Stamps), clockwise from the north: its picture
 ## on the 打卡 page, the block it stands on (in LANDMARKS / LAWN_LANDMARKS), its name, a line about
 ## it, and the small bonus it gives for good once checked in at ([kind, amount], Stamps.BONUSES).
 ## All of them together come to about one passive at level 2.
 const STAMPS := {
-	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-1, 0), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.03]},
-	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 20.0]},
-	"pear_park": {"art": "pear_park", "block": Vector2i(1, 1), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 10.0]},
-	"sailsforce_tower": {"art": "sailsforce_tower", "block": Vector2i(-1, -4), "name": "Sailsforce 大厦", "note": "旧金山最高的楼", "bonus": ["magnet", 0.10]},
-	"golden_gate": {"art": "golden_gate", "block": Vector2i(-1, -5), "name": "金门大桥", "note": "一路往北，走到陆地尽头", "bonus": ["might", 0.03]},
+	"golden_gate": {"art": "golden_gate", "block": Vector2i(0, -5), "name": "金门大桥", "note": "一路往北，走到地图尽头", "bonus": ["might", 0.03]},
+	"goggle": {"art": "dino_skeleton", "block": Vector2i(3, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 20.0]},
+	# Sailsforce 大厦's place and bonus until .52.
+	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.10]},
+	"pear_park": {"art": "pear_park", "block": Vector2i(-2, 3), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 10.0]},
+	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-3, -2), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.03]},
 }
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"pear_park": "pear", "sailsforce_tower": "sailsforce"}
+const LANDMARK_BRANDS := {"pear_park": "pear", "stadium": "levys"}
 ## Landmarks that are only partly solid, as [from, to] fractions of their width: the Golden
 ## Gate's towers block, the deck between them is walked under.
 const SOLID_SPANS := {"golden_gate": [[0.22, 0.28], [0.72, 0.78]]}
@@ -205,11 +193,6 @@ const EAST_WEST := {
 
 
 static func district_of(block: Vector2i) -> String:
-	var east = east_shore_column(block.y)
-	if east != null and block.x >= east:
-		return "bay"
-	if block.x < west_shore_column(block.y) or block.y < NORTH_SHORE_ROW:
-		return "beach"
 	if block.y <= SF_ROW:
 		return "sf"
 	if block.y >= SJ_ROW:
@@ -236,81 +219,38 @@ static func _ordinal(number: int) -> String:
 	return "%d%s" % [number, suffix]
 
 
-## The block column whose road is the row's last before the Bay (null: no Bay on this row):
-## close in at San Francisco and the airport, further out down the peninsula, and none from
-## San Jose on, where the Bay has ended. Called for every body every frame, hence code not a
-## table.
-static func east_shore_column(row: int) -> Variant:
-	if row <= -2:
-		return 1
-	if row == -1:
-		return 2
-	if row == 0:
-		return 3
-	if row == 1:
-		return 4
+## The block column whose road is the row's last before the Bay: none since .52 (no sea), so no
+## salt ponds either (City).
+static func east_shore_column(_row: int) -> Variant:
 	return null
 
 
-## The block column whose road is the row's last before the Pacific: San Francisco's Ocean
-## Beach, then past the hills further south.
-static func west_shore_column(row: int) -> int:
-	return -2 if row <= SF_ROW else -3
+static func east_water_x(_row: int) -> float:
+	return INF
 
 
-## Where the row's water starts, east and west (INF / -INF: none that way).
-static func east_water_x(row: int) -> float:
-	var column = east_shore_column(row)
-	return INF if column == null else column * BLOCK_SIZE.x + SHORE_STRIP
-
-
-static func west_water_x(row: int) -> float:
-	return west_shore_column(row) * BLOCK_SIZE.x - SHORE_STRIP
-
-
+## Off the map counts as water (.52): there is no sea, only the edge.
 static func is_water(point: Vector2) -> bool:
-	if point.y < NORTH_WATER_Y:
-		return true
-	var row := floori(point.y / BLOCK_SIZE.y)
-	var within := point.y - row * BLOCK_SIZE.y
-	var east := east_water_x(row)
-	var west := west_water_x(row)
-	# On a road: water only where the rows on both sides of it are.
-	if within < ROAD_BAND:
-		east = maxf(east, east_water_x(row - 1))
-		west = minf(west, west_water_x(row - 1))
-	elif within > BLOCK_SIZE.y - ROAD_BAND:
-		east = maxf(east, east_water_x(row + 1))
-		west = minf(west, west_water_x(row + 1))
-	return point.x > east or point.x < west
+	return not BOUNDS.has_point(point)
 
 
-## The water inside `area` as rects (adjacent ones touch; together they are exactly is_water):
-## per row, the stretch between its roads, and per road, where both rows beside it are water.
+## What of `area` lies off the map, as up to four rects (together exactly is_water): the bands
+## north and south of it full width, and west and east of it between them.
 static func water_rects(area: Rect2) -> Array[Rect2]:
 	var rects: Array[Rect2] = []
-	if area.position.y < NORTH_WATER_Y:
-		rects.append(Rect2(area.position.x, area.position.y, area.size.x, NORTH_WATER_Y - area.position.y))
-	var first := floori(maxf(area.position.y, NORTH_WATER_Y) / BLOCK_SIZE.y)
-	var last := floori(area.end.y / BLOCK_SIZE.y)
-	# One row past the last: its top road band reaches up into the area.
-	for row in range(first, last + 2):
-		var top := row * BLOCK_SIZE.y
-		var bands := [
-			[top + ROAD_BAND, top + BLOCK_SIZE.y - ROAD_BAND, east_water_x(row), west_water_x(row)],
-			[top - ROAD_BAND, top + ROAD_BAND, maxf(east_water_x(row), east_water_x(row - 1)), minf(west_water_x(row), west_water_x(row - 1))],
-		]
-		for band: Array in bands:
-			var from_y := maxf(band[0], maxf(area.position.y, NORTH_WATER_Y))
-			var to_y := minf(band[1], area.end.y)
-			if to_y <= from_y:
-				continue
-			if band[2] < area.end.x:
-				var from_x := maxf(band[2], area.position.x)
-				rects.append(Rect2(from_x, from_y, area.end.x - from_x, to_y - from_y))
-			if band[3] > area.position.x:
-				var to_x := minf(band[3], area.end.x)
-				rects.append(Rect2(area.position.x, from_y, to_x - area.position.x, to_y - from_y))
+	if area.position.y < BOUNDS.position.y:
+		rects.append(Rect2(area.position.x, area.position.y, area.size.x, minf(BOUNDS.position.y, area.end.y) - area.position.y))
+	if area.end.y > BOUNDS.end.y:
+		var south := maxf(BOUNDS.end.y, area.position.y)
+		rects.append(Rect2(area.position.x, south, area.size.x, area.end.y - south))
+	var top := maxf(area.position.y, BOUNDS.position.y)
+	var bottom := minf(area.end.y, BOUNDS.end.y)
+	if bottom > top:
+		if area.position.x < BOUNDS.position.x:
+			rects.append(Rect2(area.position.x, top, minf(BOUNDS.position.x, area.end.x) - area.position.x, bottom - top))
+		if area.end.x > BOUNDS.end.x:
+			var east := maxf(BOUNDS.end.x, area.position.x)
+			rects.append(Rect2(east, top, area.end.x - east, bottom - top))
 	return rects
 
 
