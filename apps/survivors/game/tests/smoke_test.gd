@@ -461,6 +461,7 @@ func _report() -> int:
 	print("[smoke] result=%s elapsed=%.1fs level=%d kills=%d upgrades=%d peak_enemies=%d hp=%.0f/%.0f" % [
 		_outcome(), _game.elapsed, _game.level, _game.kills, _upgrades_taken, _peak_enemies,
 		_game.player.hp, _game.player.max_hp])
+	print("[smoke] salary=%d red_packets=%d naps=%d" % [_game.salary_earned, _game.red_packets, _game.naps])
 	print("[smoke] weapons=%s passives=%s (* evolved)" % [", ".join(weapon_levels), ", ".join(passive_levels)])
 	print("[smoke] last hurt by=%s" % _game.telemetry.last_hurt_by)
 	print("[smoke] checked in=%s achievements=%s" % [",".join(_game.stamps.new_ids), ",".join(_game.achievements.new_ids)])

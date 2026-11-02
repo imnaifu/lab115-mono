@@ -1,10 +1,11 @@
 class_name Pickup
 extends Node2D
 ## Something on the ground for the player to collect: XP stars, bubble tea that heals, the
-## year-end bonus chest (a boss's drop, free upgrades) and the magnet that pulls in every star. Game drives
-## tick() for all pickups at once, since late runs can have hundreds of stars.
+## year-end bonus chest (a boss's drop, free upgrades), the magnet that pulls in every star, the
+## 午休 that stops every enemy for a moment and the 红包 that pays a little 工资 (both .61). Game
+## drives tick() for all pickups at once, since late runs can have hundreds of stars.
 
-enum Kind { XP, HEAL, BONUS, MAGNET }
+enum Kind { XP, HEAL, BONUS, MAGNET, NAP, RED_PACKET }
 
 const COLLECT_DISTANCE := 6.0
 const PULL_ACCELERATION := 700.0
@@ -13,13 +14,16 @@ const LOOKS := {
 	Kind.HEAL: ["boba", 18.0],
 	Kind.BONUS: ["chest", 22.0],
 	Kind.MAGNET: ["magnet", 16.0],
+	Kind.NAP: ["nap", 17.0],
+	Kind.RED_PACKET: ["red_packet", 16.0],
 }
 ## Big enough to spot on any ground at a glance: stars are the whole economy of a run.
 const STAR_SIZES := {"star_blue": 13.0, "star_green": 15.0, "star_gold": 18.0}
 ## The halo behind a pickup, as a multiple of its size. Stars glow pale yellow (white barely
 ## shows on the pale lawn), rare drops a deeper gold.
 const HALO_SCALE := 2.2
-const HALO_COLORS := {Kind.XP: Color("fff3a8"), Kind.HEAL: Color("ffd25e"), Kind.BONUS: Color("ffd25e"), Kind.MAGNET: Color("ffd25e")}
+const HALO_COLORS := {Kind.XP: Color("fff3a8"), Kind.HEAL: Color("ffd25e"), Kind.BONUS: Color("ffd25e"), Kind.MAGNET: Color("ffd25e"),
+	Kind.NAP: Color("ffd25e"), Kind.RED_PACKET: Color("ffd25e")}
 ## Each pickup swells and shrinks a little, and every few seconds flashes brighter.
 const PULSE := 0.08
 const TWINKLE_EVERY := 2.5

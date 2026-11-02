@@ -52,9 +52,24 @@ const EARLY_LEVEL_XP := [3, 7, 13, 20]
 ## could bank several level-ups). Until .32 any kill dropped one 0.4% of the time and every boss
 ## dropped one: about 13 a run, the user felt the run kept leveling up in bursts. Since then only
 ## regular kills from level 10 on (Vampire Survivors' Vacuum only drops from level 12): 0.2% (about
-## 4-5 a run) until .48, 0.5% since (the user's call, with the pull cut down to the screen).
+## 4-5 a run) until .48, 0.5% since (the user's call, with the pull cut down to the screen), and
+## since .61 never two within RARE_DROP_GAP (the user: 磁铁也是).
 const MAGNET_DROP_CHANCE := 0.005
 const MAGNET_FROM_LEVEL := 10
+## A 午休 (.61, Vampire Survivors' Orologion) stops every enemy, bosses too and the ones that turn
+## up meanwhile, for NAP_SECONDS (the user: 全场怪定住 3s，包括 boss). Stopped is Enemy.stun: no
+## walking and no new attack, but touching still hurts and a boss's shapes already down still go
+## off. Regular kills from level 10 on drop one, as often as a magnet (the user: 概率和磁铁一样).
+const NAP_DROP_CHANCE := 0.005
+const NAP_FROM_LEVEL := 10
+const NAP_SECONDS := 3.0
+## A 红包 (.61) pays one of these in 工资, saved at once like a year-end bonus's. Regular kills drop
+## one from the start, so even a run over before its first boss earns a little.
+const RED_PACKET_DROP_CHANCE := 0.005
+const RED_PACKET_SALARY := [6, 8, 16, 18]
+## After a magnet, a 午休 or a 红包 drops, no more of that kind for this many seconds of the run
+## (.61, the user: 60s 内不出; each kind counts on its own).
+const RARE_DROP_GAP := 60.0
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
 ## 工资 it pays: one of its `salary` amounts at random (the user's lucky numbers, ending in 66 or
 ## 88), kept in the save for 培训 (Training), and one upgrade in the run at the rating's `rarity`
@@ -121,8 +136,16 @@ var revived := false
 var _waiting_chests: Array[int] = []
 ## Year-end bonuses opened this run, numbering the 工资 they pay (their ids in the save).
 var _chests_opened := 0
-## 工资 this run's year-end bonuses paid (the result screen, Telemetry).
+## 工资 this run's year-end bonuses and 红包 paid (the result screen, Telemetry).
 var salary_earned := 0
+## 红包 picked up this run, numbering the 工资 they pay (their ids in the save).
+var red_packets := 0
+## 午休 picked up this run (Telemetry).
+var naps := 0
+## Seconds left of the 午休 under way: enemies that turn up meanwhile are stopped for the rest.
+var nap_left := 0.0
+## Run time (`elapsed`) before which each rare kind (Pickup.Kind) can't drop again (RARE_DROP_GAP).
+var _rare_drop_ready_at := {}
 
 var rng := RandomNumberGenerator.new()
 var player: Player
@@ -236,6 +259,7 @@ func _process(delta: float) -> void:
 	if elapsed >= RUN_SECONDS:
 		_end_run(true)
 		return
+	nap_left = maxf(0.0, nap_left - delta)
 	if not has_moved and player.velocity.length_squared() > 1.0:
 		has_moved = true
 	spawner.tick(delta)
@@ -303,6 +327,9 @@ func spawn_enemy(type_name: String, at: Vector2) -> Enemy:
 	enemy.position = at if enemy.ghostly else city.resolve(at, enemy.radius)
 	entity_layer.add_child(enemy)
 	enemies.append(enemy)
+	# Turning up during a 午休 doesn't get it out of one.
+	if nap_left > 0.0:
+		enemy.stun(nap_left, 1.0)
 	telemetry.on_enemy_spawned(enemy)
 	achievements.on_spawned(type_name)
 	return enemy
@@ -512,9 +539,14 @@ func _kill(enemy: Enemy) -> void:
 	if enemy.is_elite:
 		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), 0)
 		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
-	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet.
-	elif level >= MAGNET_FROM_LEVEL and rng.randf() < MAGNET_DROP_CHANCE:
-		_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(6, 0), 1)
+	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet, a 午休 or a 红包.
+	else:
+		if _rare_drop_due(Pickup.Kind.MAGNET, MAGNET_DROP_CHANCE, MAGNET_FROM_LEVEL):
+			_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(6, 0), 1)
+		if _rare_drop_due(Pickup.Kind.NAP, NAP_DROP_CHANCE, NAP_FROM_LEVEL):
+			_drop(Pickup.Kind.NAP, enemy.position + Vector2(-6, 0), 1)
+		if _rare_drop_due(Pickup.Kind.RED_PACKET, RED_PACKET_DROP_CHANCE, 1):
+			_drop(Pickup.Kind.RED_PACKET, enemy.position + Vector2(0, 6), RED_PACKET_SALARY[rng.randi() % RED_PACKET_SALARY.size()])
 	# Freed only once the grid no longer references it (next rebuild); until then queries skip
 	# it via `dead`. Freeing now would leave a dangling entry for anything that queries before
 	# the next rebuild.
@@ -662,6 +694,15 @@ func _drop_xp(at: Vector2, value: int) -> Pickup:
 	return _drop(Pickup.Kind.XP, at, value)
 
 
+## Whether a regular kill drops a rare `kind` (its `chance`, from `from_level` on, not within
+## RARE_DROP_GAP of the last one of its kind); a yes starts that kind's gap.
+func _rare_drop_due(kind: Pickup.Kind, chance: float, from_level: int) -> bool:
+	if level < from_level or elapsed < _rare_drop_ready_at.get(kind, 0.0) or rng.randf() >= chance:
+		return false
+	_rare_drop_ready_at[kind] = elapsed + RARE_DROP_GAP
+	return true
+
+
 func _drop(kind: Pickup.Kind, at: Vector2, value: int) -> Pickup:
 	var pickup := Pickup.new()
 	pickup.setup(kind, value)
@@ -701,6 +742,30 @@ func _collect(pickup: Pickup) -> void:
 				if other.kind == Pickup.Kind.XP and offset.x <= half.x and offset.y <= half.y:
 					other.attract()
 			announce("磁铁！屏幕里的星星都飞过来了")
+		Pickup.Kind.NAP:
+			_take_nap()
+		Pickup.Kind.RED_PACKET:
+			Sound.play("payout")
+			red_packets += 1
+			Progress.add_salary("%s-rp-%d" % [run_id, red_packets], pickup.value)
+			salary_earned += pickup.value
+			Effects.callout(self, player.position + Vector2(0.0, -22.0), "+¥%d" % pickup.value, Art.RED, 13)
+			announce(tr("红包！工资 +¥%d") % pickup.value)
+
+
+## A 午休 (NAP_SECONDS): every enemy on the map stops where it is, bosses for the whole time too,
+## and the ones that turn up before it's over (spawn_enemy).
+func _take_nap() -> void:
+	naps += 1
+	nap_left = NAP_SECONDS
+	for enemy in enemies:
+		enemy.stun(NAP_SECONDS, 1.0)
+		if enemy.is_elite:
+			# Off to the upper right: straight above are its speech bubble and health bar.
+			Effects.callout(self, enemy.position + Vector2(enemy.radius + 8.0, -enemy.radius), "Zzz", Art.BLUE, 13)
+	Sound.play("standup")
+	Effects.ring(self, player.position, view_half().length(), Art.BLUE)
+	announce(tr("午休！所有怪定住 %d 秒") % roundi(NAP_SECONDS))
 
 
 ## A source's damage per second while the player had it (.46, the result's 伤害排行): its total

@@ -137,7 +137,7 @@ def stats_section(data: dict) -> str:
 <p class="muted">挨一下之后这么久不再扣血，被一群怪围住也不会一下掉光。不能升级。</p></article>""")
     return section("stats", "属性", "主角就这几项属性，局里按暂停能看到当前的数。开局的生命、护甲、移速看职业；之后靠被动往上加（卡越稀有加得越多，见"
                    '<a href="#upgrades">升级</a>）。局外还有两样永久加成，哪张地图拿的在所有地图都算：打卡，每个地标给一项；'
-                   '<a href="#training">培训</a>，用年终奖发的工资练。',
+                   '<a href="#training">培训</a>，用年终奖和红包发的工资练。',
                    f'<div class="grid wide">{"".join(cards)}</div>')
 
 
@@ -262,8 +262,8 @@ def upgrades_section(data: dict) -> str:
 
 def drops_section(data: dict) -> str:
     """What enemies drop, each with its art (its own section since .46: the user couldn't find 奶茶's
-    drop rate inside 升级). A year-end bonus says what each rating gives and, again from .60 (the
-    user: 官网写上), how likely it is; .46–.59 left that out (年终奖的概率藏起来不要可见)."""
+    drop rate inside 升级; 午休 and 红包 since .61). A year-end bonus says what each rating gives and,
+    again from .60 (the user: 官网写上), how likely it is; .46–.59 left that out (年终奖的概率藏起来不要可见)."""
     drops, rarities = data["drops"], data["rarities"]
     revive = drops["revive"]
 
@@ -274,7 +274,10 @@ def drops_section(data: dict) -> str:
     small = [
         card("star_blue", "经验星星", f"每只怪都掉，走近才会吸过来，攒够就升级。地上超过 {drops['max_pickups']} 个时，新掉的经验并进已有的星星。"),
         card("boba", "珍珠奶茶", f"只有 boss 掉，每个 boss 一杯，普通怪不掉。捡到回 {number(drops['heal_amount'])} 生命。"),
-        card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉。捡到时屏幕里的星星一起飞过来（屏幕外的不算）。"),
+        card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉，掉一个后 {number(drops['rare_drop_gap'])} 秒内不再掉。捡到时屏幕里的星星一起飞过来（屏幕外的不算）。"),
+        card("nap", "午休", f"升到 {drops['nap_from_level']} 级以后，普通怪有 {percent(drops['nap_chance'])} 的几率掉，掉一个后 {number(drops['rare_drop_gap'])} 秒内不再掉。捡到时全图的怪原地定住 {number(drops['nap_seconds'])} 秒，boss 也一样，这期间新来的怪也定住；定住的怪贴身照样扣血，boss 已经落地的圈照样会炸。"),
+        card("red_packet", "红包", f"从开局起，普通怪有 {percent(drops['red_packet_chance'])} 的几率掉，掉一个后 {number(drops['rare_drop_gap'])} 秒内不再掉。捡到发工资 "
+             + "、".join(f"¥{amount}" for amount in drops["red_packet_salary"]) + " 里随机一个，当场存进存档，和年终奖的工资一样在<a href=\"#training\">培训</a>里花。"),
     ]
     # Every rating: the range of its 工资 amounts (one comes out at random; the whole list made the
     # table too wide for its card) and its upgrade's colour.
@@ -304,12 +307,12 @@ def training_section(data: dict) -> str:
 <div class="scroll"><table class="nums"><tr><th>属性</th><th>每级</th><th>级数</th><th>每级价格（不算涨价）</th><th>练满</th></tr>{rows}</table></div>
 <p class="muted">每练一级（不管哪项），所有价格再涨 {percent(training['tax'])}。一级一级轮着练满全部，一共大约 ¥{training['full_cost']:,}。</p></article>"""
     how = f"""<article class="card"><h3>工资和退款</h3><ul>
-<li>工资只从年终奖来：绩效 B / A / S 分别发 {salaries}（都是 66、88 结尾的吉利数），boss 打得越多挣得越多</li>
+<li>工资主要从年终奖来：绩效 B / A / S 分别发 {salaries}（都是 66、88 结尾的吉利数），boss 打得越多挣得越多；普通怪偶尔掉<b>红包</b>，一个 ¥{min(data["drops"]["red_packet_salary"])}–{max(data["drops"]["red_packet_salary"])}（见<a href="#drops">掉落</a>）</li>
 <li>工资存进存档，一局结束也不清零，在开始画面的「培训」里花</li>
 <li>练的等级每局开局都带着，在所有地图都算，和打卡的加成叠加</li>
 <li>「全部退款」把练等级花掉的工资全部退回，可以重新分配</li>
 <li>这里还卖<b>返聘</b>：¥{training['revive_price']} 一个，被裁时可以选择回来（见<a href="#drops">掉落</a>），用掉就没了，退款不退</li></ul></article>"""
-    return section("training", "培训", "参考吸血鬼幸存者的局外商店：年终奖发的工资攒下来，用来永久升级基础属性。",
+    return section("training", "培训", "参考吸血鬼幸存者的局外商店：年终奖和红包发的工资攒下来，用来永久升级基础属性。",
                    f'<div class="grid wide">{card}{how}</div>')
 
 

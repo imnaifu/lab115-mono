@@ -220,6 +220,8 @@ const EN := {
 	# Announcements
 	"珍珠奶茶，回血 %d！": "Bubble tea! +%d HP",
 	"磁铁！屏幕里的星星都飞过来了": "Magnet! Every star on screen flies to you",
+	"午休！所有怪定住 %d 秒": "Nap time! Every enemy stops for %d s",
+	"红包！工资 +¥%d": "Red packet! +¥%d pay",
 	"捡星星升级！走近就会自动吸过来": "Grab stars to level up! Walk close and they fly to you",
 	"消息轰炸！": "Notification storm!",
 	"Deadline 逼近！": "A Deadline approaches!",

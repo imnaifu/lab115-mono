@@ -351,9 +351,10 @@ func body_sprite() -> Sprite2D:
 	return _sprite
 
 
-## Stops it in place for a while (bosses for less), tinted so it reads as frozen.
-func stun(seconds: float) -> void:
-	stun_left = maxf(stun_left, seconds * (BOSS_STUN_SCALE if is_elite else 1.0))
+## Stops it in place for a while, tinted so it reads as frozen. Bosses for `boss_share` of it:
+## less by default; the whole time for a 午休 (Game.NAP_SECONDS, the user: 包括 boss).
+func stun(seconds: float, boss_share := BOSS_STUN_SCALE) -> void:
+	stun_left = maxf(stun_left, seconds * (boss_share if is_elite else 1.0))
 	if _flash_left <= 0.0:
 		_sprite.modulate = _rest_modulate()
 

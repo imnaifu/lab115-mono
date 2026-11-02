@@ -56,6 +56,8 @@ extends RefCounted
 ##   From .46 (each year-end bonus applies one upgrade again, at its 绩效's rarity): run_end's
 ##   `chest_upgrades`, those upgrades' card ids in order (like `picks`; `rarities` still counts
 ##   picked cards only, so it compares with .44 and .45).
+##   From .61 (午休 and 红包 drop from regular kills): run_end's `naps` and `red_packets`, how many
+##   were picked up; `salary` counts what the 红包 paid too.
 ## - cloud_action (.30): the cloud save and its page (设置 → 云存档), `action` with a `result`: connect
 ##   (once per page when the first sync settles: synced / offline, `ms`, `merged` when the cloud
 ##   brought progress), open (the 云存档 page, with its `status`), code (a 存档码 made: ok /
@@ -74,7 +76,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.60"
+const VERSION := "2026-10-28.61"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -294,6 +296,8 @@ func _summary(result: String) -> Dictionary:
 		"chests": ",".join(_chests).left(MAX_TEXT),
 		"chest_upgrades": ",".join(_chest_upgrades).left(MAX_TEXT),
 		"salary": _game.salary_earned,
+		"naps": _game.naps,
+		"red_packets": _game.red_packets,
 		"luck": roundi(player.luck),
 		"rarities": ",".join(Array(_rarities).map(func(count: int) -> String: return str(count))),
 		"lucky_cards": _lucky_cards,
