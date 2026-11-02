@@ -20,7 +20,9 @@ extends Weapon
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
-const DAMAGE_PER_UPGRADE := 13.0
+## 10 an upgrade from 66 (the user: PM 武器有点强了，改弱点; 13 until then): about a fifth less at
+## every level past the first (59 → 47 after four, 111 → 87 at full).
+const DAMAGE_PER_UPGRADE := 10.0
 ## 90° to start with (narrowed from 120° at the user's request, so a swing reads as aimed).
 const BASE_ARC_DEGREES := 90.0
 ## Four 更宽 reach MAX_ARC_DEGREES, a half circle: the user's call in .35 (it went all the way

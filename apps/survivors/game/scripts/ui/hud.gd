@@ -184,6 +184,8 @@ var _collection_open := false
 var _collection_tab := 0
 ## The page's scrolling list, whose position a redraw of the same tab keeps.
 var _collection_scroll: ScrollContainer
+## 战绩 opened to show their details (run ids), on the collection page's 战绩 tab.
+var _history_open := {}
 ## The map picker page (from the title screen, .34) and the card for the city picked on it.
 var _world_overlay: Control
 var _world_holder: Control
@@ -2986,7 +2988,8 @@ func _open_collection(tab: int = -1) -> void:
 	var earned := Achievements.earned_count()
 	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
 		"%s %d/%d" % [tr("成就"), earned, Achievements.shown().size()],
-		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()]], _collection_tab, _open_collection, Art.PAPER_SUNK)
+		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()],
+		tr("战绩")], _collection_tab, _open_collection, Art.PAPER_SUNK)
 	tabs.custom_minimum_size.x = 330.0
 	if portrait:
 		column.add_child(tabs)
@@ -3010,8 +3013,10 @@ func _open_collection(tab: int = -1) -> void:
 			_fill_stamps(body, portrait)
 		1:
 			_fill_achievements(body, portrait)
-		_:
+		2:
 			_fill_bestiary(body, portrait)
+		_:
+			_fill_history(body)
 	_focus(back)
 
 
@@ -3079,6 +3084,108 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 ## The 怪物图鉴: each group's enemies, a silhouette until met; then what it is, its numbers (the
 ## regular ones; a boss's depend on when it comes), its attacks and how to dodge them, the maps it
 ## turns up on, and how many have been killed.
+## 战绩 (66, the user: 支持查看历史战绩): the runs kept (RunHistory), newest first, under a line of
+## totals over them; tapping one opens its details (what did the damage, who ended it, 工资).
+func _fill_history(body: VBoxContainer) -> void:
+	var entries := RunHistory.entries()
+	if entries.is_empty():
+		body.add_child(_collection_note(tr("还没有战绩：打满 30 秒的局（通关、被裁、下班）都会记在这里，留最近 %d 局") % Progress.RUNS_KEPT))
+		return
+	var wins := 0
+	var longest := 0
+	var most_kills := 0
+	for entry: Dictionary in entries:
+		wins += 1 if entry.get("result", "") == "win" else 0
+		longest = maxi(longest, int(entry.get("seconds", 0)))
+		most_kills = maxi(most_kills, int(entry.get("kills", 0)))
+	body.add_child(_collection_note(tr("最近 %d 局 · 通关 %d 次 · 最长存活 %s · 最多击杀 %d") % [entries.size(), wins, _clock_text(longest), most_kills]))
+	for entry: Dictionary in entries:
+		body.add_child(_history_row(entry))
+
+
+## One run of 战绩: the job's face, map and job, how long it lasted, its grade and kills, how it
+## ended and when; opened, the damage ranking, who ended it and the 工资 it paid.
+func _history_row(entry: Dictionary) -> Control:
+	var run_id: String = entry["id"]
+	var opened: bool = _history_open.has(run_id)
+	# A card that grows with what's in it (a Button doesn't), with a see-through button laid over
+	# it to take the tap.
+	var row := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, 1, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(column)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 10)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(line)
+	var job: Dictionary = Jobs.data(str(entry.get("job", "")))
+	var face := UiKit.well(job["art"], 34.0, Art.PAPER_SUNK, 10)
+	face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(face)
+	var words := VBoxContainer.new()
+	words.add_theme_constant_override("separation", 0)
+	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line.add_child(words)
+	var map_id := str(entry.get("map", "sv"))
+	var where := tr(Maps.script_of(map_id).NAME) if Maps.ORDER.has(map_id) else map_id
+	words.add_child(UiKit.label("%s · %s" % [where, tr(job["name"])], 13, "heavy"))
+	var numbers := UiKit.label(tr("存活 %s · %s · 击杀 %d") % [_clock_text(int(entry.get("seconds", 0))), RunHistory.rank_text(entry), int(entry.get("kills", 0))], 11, "muted")
+	numbers.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	words.add_child(numbers)
+	var ending := VBoxContainer.new()
+	ending.add_theme_constant_override("separation", 2)
+	ending.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ending.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(ending)
+	var look: Array = RunHistory.RESULTS.get(str(entry.get("result", "")), RunHistory.RESULTS["quit"])
+	var pill := UiKit.panel(UiKit.box(look[1], Color.TRANSPARENT, 0, UiKit.PILL, Vector4(8, 0, 8, 1)))
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.size_flags_horizontal = Control.SIZE_SHRINK_END
+	pill.add_child(UiKit.label(look[0], 11, "heavy", look[2]))
+	ending.add_child(pill)
+	var date := UiKit.label(RunHistory.date_text(entry), 10, "muted")
+	date.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	date.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	ending.add_child(date)
+	if opened:
+		column.add_child(_history_details(entry))
+	var tap := Button.new()
+	tap.flat = true
+	tap.focus_mode = Control.FOCUS_NONE
+	for state in ["normal", "hover", "pressed", "focus"]:
+		tap.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	tap.pressed.connect(func() -> void:
+		if opened:
+			_history_open.erase(run_id)
+		else:
+			_history_open[run_id] = true
+		_open_collection(_collection_tab))
+	row.add_child(tap)
+	return row
+
+
+## A run's details: what did the damage, who ended it, what it paid.
+func _history_details(entry: Dictionary) -> Control:
+	var lines := PackedStringArray()
+	var evolved: Array = entry.get("evolved", [])
+	var damage := PackedStringArray()
+	for source: Array in entry.get("damage", []):
+		damage.append("%s %d%%" % [RunHistory.source_name(source[0], evolved), source[1]])
+	if not damage.is_empty():
+		lines.append(tr("伤害：") + " · ".join(damage))
+	var killer := str(entry.get("killer", ""))
+	if entry.get("result", "") == "died" and Spawner.ENEMY_TYPES.has(killer):
+		lines.append(tr("被%s裁掉") % tr(Spawner.ENEMY_TYPES[killer]["name"]))
+	if int(entry.get("salary", 0)) > 0:
+		lines.append(tr("工资 +¥%d") % int(entry["salary"]))
+	var details := UiKit.label("\n".join(lines) if not lines.is_empty() else tr("没有更多记录"), 12)
+	details.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return details
+
+
 func _fill_bestiary(body: VBoxContainer, portrait: bool) -> void:
 	body.add_child(_collection_note(tr("遇到过的怪会收进图鉴；每张图 4 个 boss，招式固定")))
 	for group: Dictionary in Bestiary.GROUPS:

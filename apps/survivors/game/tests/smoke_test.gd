@@ -30,7 +30,7 @@ extends SceneTree
 ## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
 ## to look at the evolutions), --map=sv|ldn|sea|sg|bj (play that map, locked or not), --stamps=N|all (start
 ## having checked in at the first N of the map's landmarks, or all of them),
-## --collection=0|1|2 (with --shots, also screenshot the title's 收藏 page on that tab),
+## --collection=0|1|2|3 (with --shots, also screenshot the title's 收藏 page on that tab; 3 is 战绩),
 ## --map-picker[=city] (with --shots, also screenshot the title's map picker, with that
 ## city's card if given), --luck=N
 ## (start with that much luck, to see rarer cards), --cloud=local|<url>

@@ -4,10 +4,10 @@ extends RefCounted
 ## scripted events at fixed times: enemy rings closing in, the map's weather, and the map's four
 ## bosses (BossKits.SLOT_AT).
 
-const MAX_ALIVE := 260
-## Phones run the same GDScript through WebAssembly on a slower CPU, so the crowd is capped
-## lower there to keep the frame rate up.
-const MAX_ALIVE_MOBILE := 200
+## The most enemies out at once; past it the trickle waits (the scripted rings still come). The
+## same on every device from 66 (the user: 手机电脑都最多 200); until then a computer allowed 260
+## and phones 200 (WebAssembly on a phone's slower CPU needs the smaller crowd).
+const MAX_ALIVE := 200
 const RING_RADIUS := 210.0
 ## The first minutes spawn fewer enemies than the curve says (60% at the start, back to the full
 ## rate by 3:00), so the lone starting weapon isn't swamped before the first upgrades land.
@@ -16,6 +16,17 @@ const EASE_IN_START := 0.6
 ## How much tougher every enemy gets a minute (.40: 0.2 until then; the user wanted it harder
 ## after .39 made it much easier). The first minute's Bug still takes two of a job weapon's 7s.
 const HP_PER_MINUTE := 0.25
+## How much the spawn rate grows a minute (spawns a second): EARLY_GROWTH up to LATE_FROM_MINUTE,
+## LATE_GROWTH after (66, the user: 后期怪有点过分多了，稍微减一点; 0.55 all the way until then).
+## Only a little less spawned (7:00 -4%, 10:00 -8%), but late in a run more come than the player
+## kills, so the crowd that piles up shrinks by more than that.
+const EARLY_GROWTH := 0.55
+const LATE_GROWTH := 0.45
+const LATE_FROM_MINUTE := 5.0
+## The fewest spawns a second, before the map's multiple (66, the user: 每秒刷怪从 1/1s 开始，不要
+## 0.5): the eased-in curve starts at 0.48 and passes 1 only at about 1:00, so the first minute
+## is held at 1 a second and the rest of the curve is unchanged.
+const MIN_RATE := 1.0
 
 ## `size` is the art's frame height in logical pixels, `radius` the body used for hits and
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on
@@ -204,8 +215,6 @@ const EVENTS := [
 	{"at": 510.0, "kind": "ring", "type": "ping", "count": 48, "text": "消息轰炸 ×2！"},
 ]
 
-var max_alive := MAX_ALIVE
-
 var _game: Game
 var _spawn_budget := 0.0
 var _next_event := 0
@@ -217,16 +226,15 @@ var _events: Array[Dictionary] = []
 
 func _init(game: Game) -> void:
 	_game = game
-	if OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios"):
-		max_alive = MAX_ALIVE_MOBILE
 	_events = _plan_events()
 
 
-## Spawns per second: about 0.5 at the start (eased in, see EASE_IN_SECONDS), about 6.3 by the
-## ten-minute mark. Kept lower than the crowd the game first had (9 a second by the end), since the
-## bosses carry more of the pressure. .53–.58 spawned more on top from 5:00 on (+19% a minute,
-## 12.3 a second by 10:00); .59 took that out (the user: 这个逻辑去掉), partly because MAX_ALIVE
-## likely cut much of it off late in a run anyway.
+## Spawns per second: never under MIN_RATE (1 at the start, where the ease-in alone gave about
+## 0.5 until 66; see EASE_IN_SECONDS), 3.55 by 5:00, then
+## growing more slowly (LATE_GROWTH), 5.8 by the ten-minute mark. Kept lower than the crowd the
+## game first had (9 a second by the end), since the bosses carry more of the pressure. .53–.58
+## spawned more on top from 5:00 on (+19% a minute, 12.3 a second by 10:00); .59 took that out
+## (the user: 这个逻辑去掉), partly because MAX_ALIVE likely cut much of it off late in a run anyway.
 func spawn_rate() -> float:
 	return rate_at(_game.elapsed, Maps.current.DIFFICULTY["spawn"])
 
@@ -235,7 +243,9 @@ func spawn_rate() -> float:
 ## 官网 can chart it).
 static func rate_at(seconds: float, map_spawn: float) -> float:
 	var ease_in := lerpf(EASE_IN_START, 1.0, minf(seconds / EASE_IN_SECONDS, 1.0))
-	return (0.8 + seconds / 60.0 * 0.55) * ease_in * map_spawn
+	var minutes := seconds / 60.0
+	var grown := EARLY_GROWTH * minf(minutes, LATE_FROM_MINUTE) + LATE_GROWTH * maxf(minutes - LATE_FROM_MINUTE, 0.0)
+	return maxf(MIN_RATE, (0.8 + grown) * ease_in) * map_spawn
 
 
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
@@ -258,7 +268,7 @@ func tick(delta: float) -> void:
 	_spawn_budget += spawn_rate() * delta
 	while _spawn_budget >= 1.0:
 		_spawn_budget -= 1.0
-		if _game.enemies.size() >= max_alive:
+		if _game.enemies.size() >= MAX_ALIVE:
 			_spawn_budget = 0.0
 			break
 		_game.spawn_enemy(_pick_type(), _game.offscreen_point(_game.random_direction()))

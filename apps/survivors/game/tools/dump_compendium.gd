@@ -310,7 +310,7 @@ func _pacing() -> Dictionary:
 			"damage": stats["damage"], "xp": stats["xp"]})
 	return {"minutes": minutes, "waves": waves, "boss_slots": slots, "walk_seconds": BossKits.WALK_SECONDS,
 		"phase_two_at": BossKits.PHASE_TWO_AT,
-		"hp_per_minute": Spawner.HP_PER_MINUTE, "max_alive": Spawner.MAX_ALIVE, "max_alive_mobile": Spawner.MAX_ALIVE_MOBILE,
+		"hp_per_minute": Spawner.HP_PER_MINUTE, "max_alive": Spawner.MAX_ALIVE,
 		"max_bosses_out": Spawner.MAX_BOSSES_OUT}
 
 

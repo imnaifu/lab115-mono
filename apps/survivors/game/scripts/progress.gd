@@ -23,10 +23,17 @@ extends RefCounted
 ## 工资 and 培训 (.44) the same way: `salary` has an entry per year-end bonus that paid (its own id,
 ## the amount), `training` one per purchase or refund (Training plays them back). Neither entry
 ## ever changes once written, so merging is just gaining the other side's.
+##
+## 战绩 (66, RunHistory) are the one thing that goes: `runs` has an entry per run (its id, a
+## summary that never changes), and only the newest RUNS_KEPT are kept, the rest dropped whenever
+## one is added or two saves merge. Which ones are newest is the same on every device (by time,
+## then id), so two devices merging still end up with the same list.
 
 const PATH := "user://progress.cfg"
 ## Sections whose keys are ids with the time they were earned: merged by keeping the earliest.
 const EARNED := ["stamps", "achievements", "revives", "revives_used"]
+## How many 战绩 the save keeps (the user: 留最近 50 局).
+const RUNS_KEPT := 50
 
 ## False keeps everything in memory only: the smoke test's runs mustn't fill the player's save.
 static var to_disk := true
@@ -112,6 +119,35 @@ static func add_training_event(event: Array) -> String:
 	return id
 
 
+## Every run kept for 战绩: run id -> its summary (RunHistory.record says what's in it).
+static func runs() -> Dictionary:
+	var kept := {}
+	for id in _keys("runs"):
+		kept[id] = _load().get_value("runs", id)
+	return kept
+
+
+## A run's summary, saved at once (dropping the oldest past RUNS_KEPT).
+static func add_run(id: String, summary: Dictionary) -> void:
+	_load().set_value("runs", id, summary)
+	_prune_runs()
+	_save()
+
+
+## Drops all but the newest RUNS_KEPT runs: by their `at`, then by id, so every device picks the same.
+static func _prune_runs() -> void:
+	var ids := Array(_keys("runs"))
+	if ids.size() <= RUNS_KEPT:
+		return
+	var config := _load()
+	ids.sort_custom(func(a: String, b: String) -> bool:
+		var at_a := int((config.get_value("runs", a) as Dictionary).get("at", 0))
+		var at_b := int((config.get_value("runs", b) as Dictionary).get("at", 0))
+		return at_a > at_b if at_a != at_b else a > b)
+	for id: String in ids.slice(RUNS_KEPT):
+		config.erase_section_key("runs", id)
+
+
 ## A running total or set (`kills`, `runs`, `bosses`, `wins`), or `default` before the first.
 static func stat(key: String, default: Variant) -> Variant:
 	return _load().get_value("stats", key, default)
@@ -145,14 +181,15 @@ static func merge_text(text: String) -> bool:
 	if text.is_empty() or other.parse(text) != OK:
 		return false
 	var config := _load()
-	var changed := false
+	# Compared with what's there afterwards: runs the other side brings that are too old to keep
+	# come and go again within the merge (_prune_runs), which isn't a change.
+	var before := config.encode_to_text()
 	for section in other.get_sections():
 		for key in other.get_section_keys(section):
 			var theirs: Variant = other.get_value(section, key)
 			# Checked first: get_value takes a null default as none at all and logs an error.
 			if not config.has_section_key(section, key):
 				config.set_value(section, key, theirs)
-				changed = true
 				continue
 			var mine: Variant = config.get_value(section, key)
 			var merged: Variant
@@ -163,7 +200,8 @@ static func merge_text(text: String) -> bool:
 			# Compared as text: arrays and dictionaries then compare by what's in them.
 			if var_to_str(merged) != var_to_str(mine):
 				config.set_value(section, key, merged)
-				changed = true
+	_prune_runs()
+	var changed := config.encode_to_text() != before
 	if changed:
 		# Not uploaded from here: whoever merged is writing the result to the cloud already.
 		_save(false)

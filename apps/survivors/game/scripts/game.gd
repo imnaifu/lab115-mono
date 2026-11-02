@@ -912,11 +912,19 @@ func change_map(map_id: String, start: bool = false) -> void:
 ## The result screen's 回主页 (换职业 until .46) and the pause screen's 下班: back to the title screen (to pick another
 ## job or map), a run still going counted as given up.
 func change_job() -> void:
+	_record_given_up()
 	achievements.finish(false)
 	telemetry.finish("restart")
 	skip_title = false
 	get_tree().paused = false
 	get_tree().reload_current_scene()
+
+
+## A run left from the pause screen (重新开始, 下班) goes into 战绩 as 下班; one that already ended
+## was recorded then, and the title screen has no run to record.
+func _record_given_up() -> void:
+	if state == State.PLAYING or state == State.PAUSED:
+		RunHistory.record(self, "quit")
 
 
 ## Leaves the title screen.
@@ -992,6 +1000,7 @@ func set_paused(value: bool) -> void:
 
 func restart() -> void:
 	# A run given up from the pause screen; after a death or a win it was already sent.
+	_record_given_up()
 	achievements.finish(false)
 	telemetry.finish("restart")
 	skip_title = true
@@ -1047,6 +1056,7 @@ func _end_run(victory: bool) -> void:
 	# Before the run's data goes out and the result screen is built: both list what it earned.
 	achievements.finish(victory)
 	telemetry.finish("win" if victory else "died")
+	RunHistory.record(self, "win" if victory else "died")
 	Sound.stop_music()
 	Sound.play("win" if victory else "lose")
 	run_ended.emit(victory)

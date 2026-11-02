@@ -330,7 +330,7 @@ def difficulty_section(data: dict) -> str:
                           for minute in pacing["minutes"])
     curve_card = f"""<article class="card"><h3>怪越来越多、越来越抗打</h3>
 <div class="scroll"><table class="nums"><tr><th>时间</th><th>每秒刷怪</th><th>怪物生命</th></tr>{minute_rows}</table></div>
-<p class="muted">怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样。场上到了 {pacing['max_alive']} 只（手机 {pacing['max_alive_mobile']} 只）就先停刷。</p></article>"""
+<p class="muted">怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样。场上到了 {pacing['max_alive']} 只就先停刷。</p></article>"""
 
     start, wave_rows = 0.0, []
     for wave in pacing["waves"]:
