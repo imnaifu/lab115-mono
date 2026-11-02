@@ -8,8 +8,11 @@ extends Weapon
 ##
 ## The programmer's own weapon, so it levels up along two directions (Upgrades.BRANCHES): 更多
 ## adds a press to every burst, 更大 makes each key bigger and harder-hitting. It starts at one
-## press every 0.3 s (.41; .39 started at two presses every 0.48 s, the user asked why it opened
-## with two): a key no longer one-shots a Bug, and a key a second left the programmer far behind.
+## press every 0.5 s (.58, the user: 初始的攻击频率有点高, 降到 0.5 秒，用公式补成长 on 更大; .41-.57
+## one every 0.3 s, .39 two every 0.48 s until the user asked why it opened with two). A key a
+## second left the programmer far behind. 更大 makes up the slower pace: damage per second is
+## presses x damage / pace, so +8 a level instead of +4 brings full 更大 back to where it was
+## (39 / 0.5 against 23 / 0.3), whatever 更多 is at; on the way it's 18% / 8% / 2% short.
 ##
 ## Every key hits one enemy and pushes nothing (.39, the user's call for every job's own weapon:
 ## no piercing, knockback or stun, so the jobs differ only in how they deal damage). 更大 added a
@@ -18,7 +21,7 @@ extends Weapon
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
-const DAMAGE_PER_SIZE := 4.0
+const DAMAGE_PER_SIZE := 8.0
 const SIZE_GROWTH := 0.25
 const SPEED := 230.0
 ## Kept short so most kills, and their stars, land within walking distance.
@@ -40,7 +43,7 @@ static func branch_stats(more: int, bigger: int) -> Dictionary:
 
 
 func cooldown() -> float:
-	return 0.3
+	return 0.5
 
 
 func _process(delta: float) -> void:

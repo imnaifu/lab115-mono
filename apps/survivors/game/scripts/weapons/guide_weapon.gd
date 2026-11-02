@@ -25,12 +25,13 @@ extends Weapon
 ## 2.0, down from 2.4, so the lines are up three quarters of the time: data scientist bots ended
 ## their first three minutes anywhere from level 5 to 11, one at a third of its health.
 const COOLDOWN := 2.0
-## Per tick, every TICK seconds, to everything on a line.
+## Per tick, every TICK seconds, to everything on a line. 0.6 from .58 (the user: 设计师也降一下,
+## 单纯变弱, nothing given back): a quarter less damage a second than the 0.43 before.
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
 const DAMAGE_PER_THICKER := 1.5
-const TICK := 0.43
+const TICK := 0.6
 const BASE_WIDTH := 8.0
 const WIDTH_PER_THICKER := 4.0
 ## How long a set stays: three quarters of the cooldown, and like the cooldown shorter with 双屏

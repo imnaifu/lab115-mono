@@ -117,7 +117,7 @@ const EVOLUTIONS := {
 ## upgrades in all, in any mix, took it to MAX_LEVEL, so going all one way shut the other).
 const BRANCH_MAX := 4
 const BRANCHES := {
-	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +4"}},
+	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +8"}},
 	"prd": {"a": {"name": "更长", "text": "抡得更远，伤害 +13"}, "b": {"name": "更宽", "text": "扇形更宽（四次到 180°），伤害 +13"}},
 	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +14"}},
 	"guides": {"a": {"name": "更多网格线", "text": "多一条网格线（横竖轮流加，最多各 3 条）"}, "b": {"name": "更粗", "text": "线更粗，伤害 +1.5"}},

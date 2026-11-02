@@ -649,7 +649,7 @@ const EN := {
 	"更硬": "Harder",
 	"更粗": "Thicker",
 	"分层抽样": "Stratified Sampling",
-	"按键变大，伤害 +4": "Bigger keys, damage +4",
+	"按键变大，伤害 +8": "Bigger keys, damage +8",
 	"抡得更远，伤害 +13": "Longer reach, damage +13",
 	"扇形更宽（四次到 180°），伤害 +13": "Wider arc (four reach 180°), damage +13",
 	"墙更大，伤害 +14": "Bigger walls, damage +14",
