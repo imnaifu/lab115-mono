@@ -300,6 +300,9 @@ static func build_theme() -> Theme:
 	theme.set_color("font_color", "Label", Art.INK)
 	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 		theme.set_color(color_name, "Button", Art.INK)
+	# A disabled button's text (a 培训 price it can't afford yet) took Godot's own pale grey, all but
+	# white on PAPER_SUNK until .54 (the user's report: 有时候价格是白的看不清).
+	theme.set_color("font_disabled_color", "Button", Art.INK_MUTED)
 	theme.set_stylebox("focus", "Button", focus_ring(PILL))
 	return theme
 
