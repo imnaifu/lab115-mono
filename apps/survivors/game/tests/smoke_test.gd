@@ -321,9 +321,9 @@ func _process(_delta: float) -> bool:
 			_upgrades_taken += 1
 		Game.State.CHEST:
 			if _shot_dir != "" and not _chest_shot_taken:
-				# Long enough for the slot machine to land.
+				# Long enough for the opening to play out and 收下 to come up (about 6.2 s since .46).
 				_chest_frames += 1
-				if _chest_frames < 120:
+				if _chest_frames < 400:
 					return false
 				_save_shot("chest")
 				_chest_shot_taken = true

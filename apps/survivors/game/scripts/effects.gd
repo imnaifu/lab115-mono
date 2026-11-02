@@ -1,8 +1,8 @@
 class_name Effects
 extends RefCounted
 ## Short-lived visual feedback: damage numbers, hit sparks, dust, death puffs and pops,
-## lightning strikes, blast rings, the melee weapons' lashes and stabs, paper scraps, and short
-## callouts over the world. (The PRD roll's swing is drawn by SwingWeapon itself, as it follows
+## lightning strikes, blast rings, bombs going off (a boss's 定点 shapes), the melee weapons'
+## lashes and stabs, paper scraps, and short callouts over the world. (The PRD roll's swing is drawn by SwingWeapon itself, as it follows
 ## the player.)
 
 const MAX_DAMAGE_NUMBERS := 40
@@ -11,6 +11,8 @@ const BIG_HIT := 30.0
 ## Kills popping at once; past that a kill only puffs (a bomb going off in a crowd).
 const MAX_DEATH_POPS := 24
 const DEATH_POP_GROUP := "death_pop"
+## A bomb's scorch mark sits on the ground: over the town and the stars, under everyone.
+const SCORCH_Z := -3
 
 static var _number_settings: LabelSettings
 static var _big_number_settings: LabelSettings
@@ -176,6 +178,21 @@ static func ring(game: Game, at: Vector2, radius: float, color: Color) -> void:
 	blast.radius = radius
 	blast.color = color
 	game.effect_layer.add_child(blast)
+
+
+## A bomb going off at `at` (.46: a boss's 定点 shape, BossAttack.impacts; the user wanted a bombing
+## where only a red flash and a ring had been): an Explosion over everything, inside `radius` so it
+## shows what it reached, and a Scorch left on the ground under it.
+static func explosion(game: Game, at: Vector2, radius: float) -> void:
+	var blast := Explosion.new()
+	blast.position = at
+	blast.radius = radius
+	game.effect_layer.add_child(blast)
+	var scorch := Scorch.new()
+	scorch.position = at
+	scorch.radius = radius
+	scorch.z_index = SCORCH_Z
+	game.add_child(scorch)
 
 
 ## A lash or stab: a white bar from `at` along `direction`, `length` long and `width` wide.
@@ -393,6 +410,85 @@ class BlastRing:
 		var wave := minf(progress / 0.4, 1.0)
 		if wave < 1.0:
 			draw_arc(Vector2.ZERO, radius * (0.4 + 0.6 * wave), 0.0, TAU, 40, Color(color, 0.5 * (1.0 - wave)), 2.0, true)
+
+
+## A bomb going off (Effects.explosion): a white flash filling it, a fireball swelling and cooling
+## from yellow through orange to red round a white-hot core, smoke puffing up and inked bits flung
+## out, all inside `radius`.
+class Explosion:
+	extends Node2D
+
+	const SECONDS := 0.6
+	const FLASH_SECONDS := 0.07
+	## The share of the time the fireball burns.
+	const FIRE_SHARE := 0.55
+	const PUFFS := 5
+	const BITS := 7
+	const FIRE_HOT := Color("ffe9a6")
+	const FIRE_ORANGE := Color("ff8a3d")
+
+	var radius := 30.0
+	var _age := 0.0
+	## Each puff of smoke: its offset from the middle (x, y) and its size as a share of the radius (z).
+	var _puffs: Array[Vector3] = []
+	var _bits := PackedFloat32Array()
+
+	func _ready() -> void:
+		for i in PUFFS:
+			var offset := Vector2.from_angle(randf() * TAU) * radius * randf_range(0.1, 0.4)
+			_puffs.append(Vector3(offset.x, offset.y, randf_range(0.25, 0.4)))
+		for i in BITS:
+			_bits.append(TAU * (i + randf() * 0.7) / BITS)
+
+	func _process(delta: float) -> void:
+		_age += delta
+		if _age >= SECONDS:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var progress := _age / SECONDS
+		# Smoke under the fire, swelling and drifting up a little, fading the whole time.
+		for puff in _puffs:
+			draw_circle(Vector2(puff.x, puff.y - radius * 0.2 * progress), radius * puff.z * (0.7 + 0.7 * progress),
+				Color(Art.INK, 0.4 * (1.0 - progress)))
+		var fire := progress / FIRE_SHARE
+		if fire < 1.0:
+			var swell := 1.0 - pow(1.0 - fire, 3.0)
+			var heat := Art.YELLOW.lerp(FIRE_ORANGE, minf(fire * 2.0, 1.0)).lerp(Art.BOSS_RED, maxf(fire * 2.0 - 1.0, 0.0))
+			draw_circle(Vector2.ZERO, radius * (0.5 + 0.45 * swell), Color(heat, 0.9 * (1.0 - fire)))
+			draw_circle(Vector2.ZERO, radius * (0.3 + 0.2 * swell), Color(FIRE_HOT, 0.95 * pow(1.0 - fire, 2.0)))
+		# Bits of whatever it hit, flung fast to the edge, slowing.
+		var travel := radius * 0.9 * (1.0 - pow(1.0 - progress, 2.0))
+		for heading in _bits:
+			var bit := Vector2.from_angle(heading) * travel
+			draw_circle(bit, 2.2, Color(Art.INK, 1.0 - progress))
+			draw_circle(bit, 1.3, Color(FIRE_ORANGE, 1.0 - progress))
+		if _age < FLASH_SECONDS:
+			draw_circle(Vector2.ZERO, radius * 0.95, Color(Color.WHITE, 0.8 * (1.0 - _age / FLASH_SECONDS)))
+
+
+## The dark mark a bomb leaves on the ground (Effects.explosion), fading.
+class Scorch:
+	extends Node2D
+
+	const SECONDS := 1.2
+
+	var radius := 30.0
+	var _age := 0.0
+
+	func _process(delta: float) -> void:
+		_age += delta
+		if _age >= SECONDS:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var fade := 1.0 - _age / SECONDS
+		draw_circle(Vector2.ZERO, radius * 0.75, Color(Art.INK, 0.28 * fade))
+		draw_circle(Vector2.ZERO, radius * 0.45, Color(Art.INK, 0.2 * fade))
 
 
 static func _bolt_line(points: PackedVector2Array, width: float, color: Color) -> Line2D:

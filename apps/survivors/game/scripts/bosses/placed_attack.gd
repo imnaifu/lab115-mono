@@ -45,6 +45,12 @@ func start() -> void:
 						rect(at + Vector2(column, row) * cell, Vector2(cell, cell) / 2.0, 0.0, fuse)
 
 
+## Every 定点 shape is bombed (BossAttack `bomb`): a bomb drops on it and it blows up.
+func add_zone(zone: Zone) -> Zone:
+	zone.bomb = true
+	return super(zone)
+
+
 func busy() -> bool:
 	return _drops_left > 0 or not zones.is_empty()
 

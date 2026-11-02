@@ -118,6 +118,17 @@ const EN := {
 	# 工资 and 培训 (.44, Training)
 	"%s！工资 +¥%d": "%s! Pay +¥%d",
 	"工资 +¥%d": "Pay +¥%d",
+	# The year-end bonus opening (.46): its upgrade's colour by rating, the rating once it opens.
+	"拆年终奖中…": "Opening…",
+	"%s！": "%s!",
+	"%s升级": "%s card",
+	# The result's 伤害排行: each source's damage per second (.46).
+	"%d/秒": "%d/s",
+	"白色": "White",
+	"绿色": "Green",
+	"蓝色": "Blue",
+	"紫色": "Purple",
+	"橙色": "Orange",
 	"六六六！": "Six six six!",
 	"发发发！": "Fortune times three!",
 	"攒着去开始画面的「培训」升级属性，现在有 ¥%d": "Save it for Training on the title screen. You have ¥%d",
@@ -319,7 +330,7 @@ const EN := {
 	"召唤": "Summon",
 	"专属武器：%s": "Own weapon: %s",
 	"生命 %d · 护甲 %d · 移速 %d": "HP %d · Armor %d · Speed %d",
-	"换职业": "Change Job",
+	"回主页": "Home",
 	"第 %d 局 · %s": "Run #%d · %s",
 	"进化！": "Evolved!",
 	"配「%s」可进化": "evolves with %s",

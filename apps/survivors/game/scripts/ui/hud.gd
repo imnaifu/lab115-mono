@@ -34,19 +34,29 @@ const NEXT_BOSS_WARNING := 20.0
 const MOVE_HINT_AFTER := 2.0
 const MOVE_HINT_RUNS := 3
 const WARNING_SECONDS := 3.5
-## The year-end bonus chest rocks CHEST_SHAKES times (leaning CHEST_LEAN radians, a little more
-## each swing) over about CHEST_SHAKE_SECONDS before it opens. By rating (绩效 B / A / S): the
-## colour of its rays and stamp, and how many stars fly out.
-const CHEST_SHAKES := 7
-const CHEST_SHAKE_SECONDS := 0.9
-const CHEST_LEAN := 0.12
+## The year-end bonus opening (_show_chest, .46: about six seconds, the user's 五秒以上), beat by
+## beat: the chest drops in (CHEST_DROP_SECONDS), rocks CHEST_SHAKES times over CHEST_SHAKE_SECONDS
+## (leaning CHEST_LEAN radians, a little more each swing), builds up over CHEST_CHARGE_SECONDS in
+## CHEST_CHARGE_BEATS jolts, bursts open, counts the 工资 up over CHEST_COUNT_SECONDS
+## (CHEST_COUNT_TICKS ticks), flips the upgrade in and only then shows 收下.
+const CHEST_DROP_SECONDS := 0.5
+const CHEST_SHAKES := 12
+const CHEST_SHAKE_SECONDS := 2.0
+const CHEST_LEAN := 0.1
+const CHEST_CHARGE_SECONDS := 1.5
+const CHEST_CHARGE_BEATS := 15
+const CHEST_COUNT_SECONDS := 1.0
+const CHEST_COUNT_TICKS := 12
 const CHEST_ART_SIZE := 96.0
-const CHEST_STAGE_HEIGHT := 128.0
+const CHEST_STAGE_HEIGHT := 140.0
+const CHEST_GLOW_RINGS := 5
 const CHEST_RAYS := 12
 const CHEST_RAY_TURN_SECONDS := 8.0
 const CHEST_STAR_SIZE := 18.0
-const CHEST_GLOW := [Color("dfe5ee"), Color("f7c948"), Color("ff9f1a")]
-const CHEST_STARS := [0, 6, 14]
+## Stars thrown out as it opens, by rating (绩效 B / A / S; S throws a second wave as many).
+const CHEST_STARS := [10, 16, 24]
+## How wide the shine running across the upgrade's row is.
+const CHEST_SHINE_WIDTH := 18.0
 ## A year-end bonus paying one of these 工资 amounts says so after it (Game.FUNDING_ROUNDS).
 const LUCKY_SALARIES := {666: "六六六！", 888: "发发发！"}
 ## Space kept around a screen that has to shrink to fit.
@@ -125,19 +135,29 @@ var _level_up_overlay: Control
 var _cards_holder: CenterContainer
 var _chest_overlay: Control
 var _chest_holder: CenterContainer
-var _chest_shake: Tween
 var _chest_revealed := false
-## Opens the chest straight away (the button pressed while it still rocks).
-var _chest_reveal := Callable()
 var _chest_stage: Control
+## Everything on the stage but the flash, moved as one when the chest jolts.
+var _chest_shaker: Control
 var _chest_art: TextureRect
+## The light behind the chest and how it is drawn now (_glow); `target` is the colour it is
+## turning to.
+var _chest_glow: Control
+var _chest_glow_power := 0.0
+var _chest_glow_color := Color.WHITE
+var _chest_glow_target := Color.WHITE
+var _chest_flash: ColorRect
+## The 工资 heading, counting up as it opens, and how many ticks the count has played.
+var _chest_salary_label: Label
+var _chest_count_ticks := 0
 ## The chest's 收下 button: there from the start so the dialog doesn't jump, but see-through and
 ## off until the opening has played out (.39, the user's call: it used to be live at once, and a
 ## tap mid-shake skipped straight to the end).
 var _chest_take: Button
 var _chest_burst: Control
 var _chest_stamp: Control
-var _odds_chips: Array[PanelContainer] = []
+## What each rating gives, under the chest (the one it landed on marked).
+var _chest_chips: Array[PanelContainer] = []
 var _pause_overlay: Control
 var _pause_holder: CenterContainer
 ## The 培训 page (Training), opened from the title screen.
@@ -1879,18 +1899,28 @@ func _hover(card: Control, entered: bool) -> void:
 
 # --- Year-end bonus ------------------------------------------------------------------------
 
-## A boss's year-end bonus (年终奖): the chest rocks, quicker and quicker, then flies open on the
-## rating Game rolled (绩效 B / A / S), with rays behind it and, for A and S, stars flying out;
-## then the 工资 it paid (`salary`, for 培训, .44; it gave upgrades before) and for 绩效 S the 返聘
-## it saved, both in the save already. `odds` are this chest's own chances: the same for every
-## chest since .43, but for a Deadline met in time, which has no 绩效 B.
-func _show_chest(funding_round: Dictionary, salary: int, odds: Array[float]) -> void:
+## A boss's year-end bonus (年终奖), opened over about six seconds (.46, the user: 酷炫一点，长一点，
+## 五秒以上; before, it opened after 0.9 s of rocking). On a dark stage the chest drops in and rocks,
+## quicker and quicker, a white light growing behind it; then it shudders and swells while the light
+## climbs the rarities to the rating Game rolled (绩效 B green, A blue, S purple: the colour of the
+## upgrade it gives) and bursts open. Then the 工资 it paid counts up and its upgrade flips in, both
+## saved / applied already (Game._open_chest). What it gives is laid out from the start, unseen, so
+## the dialog keeps its size as it plays. Not skippable: 收下 comes up last. Shows what each rating
+## gives but not how likely it is (.46, the user: 概率藏起来不要可见).
+func _show_chest(funding_round: Dictionary, salary: int, item: Dictionary) -> void:
 	_clear(_chest_holder)
 	_chest_revealed = false
-	_odds_chips.clear()
+	_chest_chips.clear()
+	_chest_glow_power = 0.0
+	_chest_glow_color = Color.WHITE
+	_chest_glow_target = Color.WHITE
+	_chest_count_ticks = 0
+	var landing := Game.FUNDING_ROUNDS.find(funding_round)
+	var rarity: int = funding_round["rarity"]
 	var portrait := _is_portrait()
 	var dialog := UiKit.panel(UiKit.dialog_box(Vector4(18, 18, 18, 18)))
 	dialog.custom_minimum_size = Vector2(minf(320.0, _root.size.x - 40.0), 0.0) if portrait else Vector2(minf(560.0, _root.size.x - 40.0), 0.0)
+	dialog.resized.connect(func() -> void: dialog.pivot_offset = dialog.size / 2.0)
 	_chest_holder.add_child(dialog)
 	var body: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
 	body.add_theme_constant_override("separation", 12 if portrait else 20)
@@ -1908,55 +1938,75 @@ func _show_chest(funding_round: Dictionary, salary: int, odds: Array[float]) -> 
 	var title := UiKit.label("年终奖开箱", 26, "heavy")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head.add_child(title)
+	head.add_child(UiKit.gap(6))
 
-	# The stage: the chest in the middle, its rays (hidden until it opens) behind, clipped to it.
-	var landing := Game.FUNDING_ROUNDS.find(funding_round)
-	_chest_stage = Control.new()
-	_chest_stage.custom_minimum_size = Vector2(0, CHEST_STAGE_HEIGHT)
-	_chest_stage.clip_contents = true
-	_chest_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head.add_child(_chest_stage)
-	_chest_burst = _burst(CHEST_GLOW[landing])
-	_chest_stage.add_child(_chest_burst)
+	# The stage, dark so the light and the sparks show, clipped to its rounded box: on a layer that
+	# shudders as one, the light, the rays (hidden until it opens) and the chest; over it all, the
+	# white flash as it opens.
+	var stage := Control.new()
+	stage.custom_minimum_size = Vector2(0, CHEST_STAGE_HEIGHT)
+	stage.clip_contents = true
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.draw.connect(func() -> void:
+		stage.draw_style_box(UiKit.box(Art.INK, Color.TRANSPARENT, 0, UiKit.RADIUS_MD), Rect2(Vector2.ZERO, stage.size)))
+	head.add_child(stage)
+	_chest_stage = stage
+	_chest_shaker = _stage_layer()
+	stage.add_child(_chest_shaker)
+	_chest_glow = _glow()
+	_chest_shaker.add_child(_chest_glow)
+	_chest_burst = _burst(Art.RARITY_EDGE[rarity])
+	_chest_shaker.add_child(_chest_burst)
 	var centre := CenterContainer.new()
 	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_chest_stage.add_child(centre)
+	_chest_shaker.add_child(centre)
+	# The chest on a seat of its own size, so it can drop in and jolt about without the
+	# CenterContainer putting it back.
+	var seat := Control.new()
+	seat.custom_minimum_size = Vector2.ONE * CHEST_ART_SIZE
+	seat.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	centre.add_child(seat)
 	_chest_art = UiKit.icon("chest", CHEST_ART_SIZE)
 	# It rocks on its base rather than spinning round its middle.
 	_chest_art.pivot_offset = Vector2(CHEST_ART_SIZE / 2.0, CHEST_ART_SIZE * 0.85)
-	centre.add_child(_chest_art)
-	# The rating, stamped on under the chest once it opens.
-	_chest_stamp = UiKit.tag(funding_round["name"], CHEST_GLOW[landing], Art.INK, UiKit.OUTLINE_HEAVY, 20)
+	seat.add_child(_chest_art)
+	_chest_flash = ColorRect.new()
+	_chest_flash.color = Color(Color.WHITE, 0.0)
+	_chest_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_chest_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(_chest_flash)
+	# The rating, stamped on under the chest once it opens, in its upgrade's colours.
+	head.add_child(UiKit.gap(6))
+	_chest_stamp = UiKit.tag(funding_round["name"], Art.RARITY_FILL[rarity], Art.RARITY_INK[rarity], UiKit.OUTLINE_HEAVY, 20)
 	_chest_stamp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_chest_stamp.modulate.a = 0.0
 	head.add_child(_chest_stamp)
 
-	# What each rating gives and how likely it was for this chest, the one it landed on marked once
-	# it opens.
+	# What each rating gives, its 工资 and its upgrade's colour (not its odds); the one it landed on
+	# marked once it opens.
 	var chips := GridContainer.new()
 	chips.columns = Game.FUNDING_ROUNDS.size()
 	chips.add_theme_constant_override("h_separation", 6)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for index in Game.FUNDING_ROUNDS.size():
-		var option: Dictionary = Game.FUNDING_ROUNDS[index]
+	for option: Dictionary in Game.FUNDING_ROUNDS:
 		var chip := UiKit.panel(UiKit.box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, 10, Vector4(4, 5, 4, 5)))
 		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var chip_column := VBoxContainer.new()
 		chip_column.add_theme_constant_override("separation", 0)
 		chip_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		chip.add_child(chip_column)
-		var round_name := UiKit.label(option["name"], 13, "strong")
-		round_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		chip_column.add_child(round_name)
-		# The rating's range of 工资 (one of its amounts comes out).
 		var amounts: Array = option["salary"]
-		var gives := "¥%d–%d" % [amounts.min(), amounts.max()]
-		var chance := UiKit.label("%s · %d%%" % [gives, roundi(odds[index])], 11, "muted")
-		chance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		chip_column.add_child(chance)
+		var option_rarity: int = option["rarity"]
+		var round_name := UiKit.label(option["name"], 13, "strong")
+		var pay := UiKit.label("¥%d–%d" % [amounts.min(), amounts.max()], 11, "muted")
+		var upgrade := UiKit.label(tr("%s升级") % tr(Upgrades.RARITIES[option_rarity]["colour"]), 11, "heavy", Art.RARITY_INK[option_rarity])
+		upgrade.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		for chip_label: Label in [round_name, pay, upgrade]:
+			chip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			chip_column.add_child(chip_label)
 		chips.add_child(chip)
-		_odds_chips.append(chip)
+		_chest_chips.append(chip)
 	head.add_child(UiKit.gap(10))
 	head.add_child(chips)
 
@@ -1965,13 +2015,16 @@ func _show_chest(funding_round: Dictionary, salary: int, odds: Array[float]) -> 
 	tail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tail.alignment = BoxContainer.ALIGNMENT_CENTER
 	body.add_child(tail)
-	var result := UiKit.label("", 15, "heavy")
+	var result := UiKit.label("拆年终奖中…", 15, "heavy", Art.INK_MUTED)
 	result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tail.add_child(result)
-	# The 工资, and under it the 返聘 for 绩效 S.
-	var prize := VBoxContainer.new()
-	prize.add_theme_constant_override("separation", 8)
-	tail.add_child(prize)
+	# What it gave, laid out now but unseen until it has opened: the 工资, then the upgrade.
+	var salary_row := _salary_row(salary)
+	salary_row.modulate.a = 0.0
+	tail.add_child(salary_row)
+	var upgrade_row := _chest_upgrade_row(item)
+	upgrade_row.modulate.a = 0.0
+	tail.add_child(upgrade_row)
 	var take := UiKit.primary_button("收下", _on_chest_button)
 	take.modulate.a = 0.0
 	take.disabled = true
@@ -1980,25 +2033,93 @@ func _show_chest(funding_round: Dictionary, salary: int, odds: Array[float]) -> 
 	_pop_in(dialog, 0.0)
 	_accept_picks_at = Time.get_ticks_msec() + PICK_DELAY_MS
 	_fit_to_screen(_chest_holder)
+	_play_chest(dialog, landing, rarity, result, salary_row, upgrade_row, funding_round, salary)
 
-	# Swings each a little shorter and wider than the last, a tick on each, then it opens.
-	_chest_reveal = _reveal_chest.bind(landing, result, prize, funding_round, salary)
-	_chest_shake = dialog.create_tween()
-	var swing_seconds := CHEST_SHAKE_SECONDS / CHEST_SHAKES
+
+## The opening, beat by beat (the CHEST_* timings), on one tween on the dialog, gone with it.
+func _play_chest(dialog: Control, landing: int, rarity: int, result: Label, salary_row: Control, upgrade_row: Control,
+		funding_round: Dictionary, salary: int) -> void:
+	var show := dialog.create_tween()
+	# 1. It drops onto the stage from above, squashes and puffs dust.
+	_chest_art.position.y = -CHEST_STAGE_HEIGHT
+	show.tween_property(_chest_art, "position:y", 0.0, CHEST_DROP_SECONDS * 0.64).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	show.tween_callback(_chest_landed)
+	show.tween_property(_chest_art, "scale", Vector2(1.18, 0.82), CHEST_DROP_SECONDS * 0.12)
+	show.tween_property(_chest_art, "scale", Vector2.ONE, CHEST_DROP_SECONDS * 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# 2. It rocks, each swing shorter and wider than the last with a tick a little higher, while a
+	# white light comes up behind it.
+	show.tween_callback(func() -> void:
+		_chest_glow.create_tween().tween_method(_set_glow_power, 0.0, 0.45, CHEST_SHAKE_SECONDS))
+	var swing_weights := 0.0
 	for i in CHEST_SHAKES:
-		var lean := CHEST_LEAN * (1.0 + i * 0.15) * (1.0 if i % 2 == 0 else -1.0)
-		_chest_shake.tween_property(_chest_art, "rotation", lean, swing_seconds * (1.5 - float(i) / CHEST_SHAKES)) \
-			.set_trans(Tween.TRANS_SINE)
-		_chest_shake.tween_callback(func() -> void: Sound.play("reel_tick"))
-	_chest_shake.tween_property(_chest_art, "rotation", 0.0, 0.06)
-	_chest_shake.tween_callback(_chest_reveal)
+		swing_weights += 1.5 - float(i) / CHEST_SHAKES
+	for i in CHEST_SHAKES:
+		var lean := CHEST_LEAN * (1.0 + i * 0.12) * (1.0 if i % 2 == 0 else -1.0)
+		var seconds := CHEST_SHAKE_SECONDS * (1.5 - float(i) / CHEST_SHAKES) / swing_weights
+		var pitch := 1.0 + i * 0.04
+		show.tween_property(_chest_art, "rotation", lean, seconds).set_trans(Tween.TRANS_SINE)
+		show.tween_callback(func() -> void: Sound.play_pitched("reel_tick", pitch))
+	show.tween_property(_chest_art, "rotation", 0.0, 0.05)
+	# 3. It shudders and swells, spitting sparks, while the light climbs from white through the
+	# rarities to the one it landed on: white for the first share of the beats, then a share per
+	# colour, so every rating keeps the player guessing for a while and 绩效 S climbs the most.
+	for beat in CHEST_CHARGE_BEATS:
+		var progress := float(beat) / CHEST_CHARGE_BEATS
+		show.tween_callback(_charge_beat.bind(progress, floori(progress * (rarity + 1))))
+		show.tween_interval(CHEST_CHARGE_SECONDS / CHEST_CHARGE_BEATS)
+	# 4. It bursts open; 绩效 S throws a second wave of stars.
+	show.tween_callback(_reveal_chest.bind(dialog, landing, rarity, result, funding_round))
+	show.tween_interval(0.25)
+	if landing == Game.FUNDING_ROUNDS.size() - 1:
+		show.tween_callback(_star_wave.bind(rarity, CHEST_STARS[landing], 0.5))
+	show.tween_interval(0.1)
+	# 5. The 工资 counts up, ticking, then rings up (a cheer for the luckiest amounts).
+	show.tween_callback(_pop_in.bind(salary_row, 0.0))
+	show.tween_method(_count_salary.bind(salary), 0.0, float(salary), CHEST_COUNT_SECONDS)
+	show.tween_callback(_salary_counted.bind(salary_row, result, funding_round, salary))
+	# 6. The upgrade turns over into view, a shine running across it.
+	show.tween_interval(0.15)
+	show.tween_callback(_flip_in.bind(upgrade_row))
+	# 7. And only then 收下.
+	show.tween_interval(0.6)
+	show.tween_callback(_show_chest_take.bind(0.0))
+
+
+## A layer filling the chest's stage, drawn on or moved as one.
+func _stage_layer() -> Control:
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return layer
+
+
+## The light behind the chest: soft rings of _chest_glow_color, as strong as _chest_glow_power.
+func _glow() -> Control:
+	var glow := _stage_layer()
+	glow.draw.connect(func() -> void:
+		if _chest_glow_power <= 0.01:
+			return
+		var middle := glow.size / 2.0
+		for ring in CHEST_GLOW_RINGS:
+			var radius := CHEST_ART_SIZE * (0.3 + 0.16 * ring) * (0.7 + 0.5 * _chest_glow_power)
+			glow.draw_circle(middle, radius, Color(_chest_glow_color, 0.14 * _chest_glow_power))
+	)
+	return glow
+
+
+func _set_glow_power(power: float) -> void:
+	_chest_glow_power = power
+	_chest_glow.queue_redraw()
+
+
+func _set_glow_color(colour: Color) -> void:
+	_chest_glow_color = colour
+	_chest_glow.queue_redraw()
 
 
 ## Rays and a glow in `color` round the chest, shown when it opens (turning slowly).
 func _burst(color: Color) -> Control:
-	var burst := Control.new()
-	burst.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	burst.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var burst := _stage_layer()
 	burst.modulate.a = 0.0
 	burst.resized.connect(func() -> void: burst.pivot_offset = burst.size / 2.0)
 	burst.draw.connect(func() -> void:
@@ -2015,39 +2136,130 @@ func _burst(color: Color) -> Control:
 	return burst
 
 
-func _reveal_chest(landing: int, result: Label, prize: VBoxContainer, funding_round: Dictionary, salary: int) -> void:
-	if _chest_revealed:
-		return
+## The chest hitting the stage: a thud and dust puffing out either side of its base.
+func _chest_landed() -> void:
+	Sound.play("block")
+	var base := _chest_stage.size / 2.0 + Vector2(0.0, CHEST_ART_SIZE * 0.4)
+	for i in 10:
+		var side := -1.0 if i % 2 == 0 else 1.0
+		_stage_dot(base + Vector2(side * CHEST_ART_SIZE * 0.3, 0.0), Vector2(side * randf_range(25.0, 60.0), randf_range(-16.0, -2.0)),
+			randf_range(4.0, 7.0), Color(Art.PAPER, 0.55), 0.5)
+
+
+## One beat of the build-up (`progress` 0 to 1): the chest jolts, harder as it goes, and swells,
+## sparks fly off it, and the light turns to `tier`'s colour (0 white, then Art.RARITY_EDGE) when
+## it climbs, with a chime a step higher each time.
+func _charge_beat(progress: float, tier: int) -> void:
+	var jolt := 1.5 + 3.0 * progress
+	_chest_shaker.position = Vector2(randf_range(-jolt, jolt), randf_range(-jolt, jolt))
+	_chest_art.scale = Vector2.ONE * (1.0 + 0.15 * progress)
+	_set_glow_power(0.5 + 0.5 * progress)
+	var colour: Color = Color.WHITE if tier == 0 else Art.RARITY_EDGE[tier]
+	if colour != _chest_glow_target:
+		_chest_glow_target = colour
+		_chest_glow.create_tween().tween_method(_set_glow_color, _chest_glow_color, colour, 0.15)
+		Sound.play_pitched("pick", 1.0 + 0.2 * tier)
+	var middle := _chest_stage.size / 2.0
+	for i in 2:
+		_stage_dot(middle, Vector2.from_angle(randf() * TAU) * randf_range(45.0, 75.0), randf_range(2.0, 3.5), colour.lightened(0.3), 0.4)
+
+
+## The chest bursting open: a white flash on the stage and a fainter one over the whole screen,
+## the lid off, the rays and the light in the rating's colour, the dialog punched out and back,
+## stars and sparks flying, the rating stamped on and its chip marked.
+func _reveal_chest(dialog: Control, landing: int, rarity: int, result: Label, funding_round: Dictionary) -> void:
 	_chest_revealed = true
-	if _chest_shake != null and _chest_shake.is_valid():
-		_chest_shake.kill()
-	# The lid flies open: the open chest pops, the rays come up behind it and turn.
-	_chest_art.rotation = 0.0
+	_chest_shaker.position = Vector2.ZERO
 	_chest_art.texture = Art.texture("chest_open")
-	_chest_art.scale = Vector2.ONE * 1.25
-	_chest_art.create_tween().tween_property(_chest_art, "scale", Vector2.ONE, 0.35) \
+	_chest_art.scale = Vector2.ONE * 1.4
+	_chest_art.create_tween().tween_property(_chest_art, "scale", Vector2.ONE, 0.4) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_chest_burst.scale = Vector2.ONE * 0.5
-	var glow := _chest_burst.create_tween().set_parallel()
-	glow.tween_property(_chest_burst, "modulate:a", 1.0, 0.2)
-	glow.tween_property(_chest_burst, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_set_glow_power(1.0)
+	_set_glow_color(Art.RARITY_EDGE[rarity])
+	_chest_burst.scale = Vector2.ONE * 0.4
+	var rays := _chest_burst.create_tween().set_parallel()
+	rays.tween_property(_chest_burst, "modulate:a", 1.0, 0.15)
+	rays.tween_property(_chest_burst, "scale", Vector2.ONE * 1.1, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_chest_burst.create_tween().set_loops().tween_property(_chest_burst, "rotation", TAU, CHEST_RAY_TURN_SECONDS).from(0.0)
-	for i in CHEST_STARS[landing]:
-		_throw_star(TAU * i / CHEST_STARS[landing] + randf() * 0.4)
+	_chest_flash.color.a = 1.0
+	_chest_flash.create_tween().tween_property(_chest_flash, "color:a", 0.0, 0.45)
+	var screen_flash := ColorRect.new()
+	screen_flash.color = Color(Color.WHITE, 0.6)
+	screen_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_chest_overlay.add_child(screen_flash)
+	var fade := screen_flash.create_tween()
+	fade.tween_property(screen_flash, "color:a", 0.0, 0.35)
+	fade.tween_callback(screen_flash.queue_free)
+	dialog.scale = Vector2.ONE * 1.06
+	dialog.create_tween().tween_property(dialog, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_star_wave(rarity, CHEST_STARS[landing], 0.0)
 	_stamp_on(_chest_stamp)
-	_odds_chips[landing].add_theme_stylebox_override("panel", UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, 10, Vector4(4, 5, 4, 5)))
+	_chest_chips[landing].add_theme_stylebox_override("panel", UiKit.box(Art.RARITY_FILL[rarity], Art.INK, UiKit.OUTLINE, 10, Vector4(4, 5, 4, 5)))
+	result.text = tr("%s！") % tr(funding_round["name"])
+	result.add_theme_color_override("font_color", Art.INK)
+	Sound.play("ultimate")
+
+
+## `count` gold stars thrown out of the open chest (turned by `turn` of a step, so a second wave
+## flies between the first's), and sparks in the rating's colour.
+func _star_wave(rarity: int, count: int, turn: float) -> void:
+	for i in count:
+		_throw_star(TAU * (i + turn) / count + randf() * 0.3)
+	var middle := _chest_stage.size / 2.0
+	for i in count:
+		_stage_dot(middle, Vector2.from_angle(randf() * TAU) * randf_range(50.0, 110.0), randf_range(2.5, 4.0),
+			Art.RARITY_EDGE[rarity].lightened(0.35), 0.6)
+
+
+## A dot on the chest's stage (dust, a spark) flying `drift` from `at`, shrinking and fading over
+## `seconds`.
+func _stage_dot(at: Vector2, drift: Vector2, radius: float, colour: Color, seconds: float) -> void:
+	var dot := Control.new()
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dot.position = at
+	dot.draw.connect(func() -> void: dot.draw_circle(Vector2.ZERO, radius, colour))
+	_chest_shaker.add_child(dot)
+	var flight := dot.create_tween().set_parallel()
+	flight.tween_property(dot, "position", at + drift, seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	flight.tween_property(dot, "scale", Vector2.ONE * 0.3, seconds)
+	flight.tween_property(dot, "modulate:a", 0.0, seconds * 0.6).set_delay(seconds * 0.4)
+	flight.chain().tween_callback(dot.queue_free)
+
+
+## The 工资 counting up to `salary` (the tween's `value`), a tick at every CHEST_COUNT_TICKS-th of it.
+func _count_salary(value: float, salary: int) -> void:
+	_chest_salary_label.text = tr("工资 +¥%d") % roundi(value)
+	var tick := floori(value / maxf(salary, 1.0) * CHEST_COUNT_TICKS)
+	if tick > _chest_count_ticks:
+		_chest_count_ticks = tick
+		Sound.play_pitched("reel_tick", 1.2 + 0.03 * tick)
+
+
+## The 工资 counted up: its row pops, the till rings (a fanfare for 绩效 S) and the luckiest amounts
+## get a cheer of their own.
+func _salary_counted(salary_row: Control, result: Label, funding_round: Dictionary, salary: int) -> void:
+	_chest_salary_label.text = tr("工资 +¥%d") % salary
+	salary_row.scale = Vector2.ONE * 1.08
+	salary_row.create_tween().tween_property(salary_row, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Sound.play("win" if funding_round["id"] == "ipo" else "payout")
-	result.text = tr("%s！工资 +¥%d") % [tr(funding_round["name"]), salary]
-	# The luckiest amounts get a cheer of their own.
 	if LUCKY_SALARIES.has(salary):
 		result.text += " " + tr(LUCKY_SALARIES[salary])
-	var row := _salary_row(salary)
-	prize.add_child(row)
-	# After the lid has come off.
-	_pop_in(row, 0.3)
-	_fit_to_screen(_chest_holder)
-	# 收下 comes up once the row has popped in (0.22 s) and the stars have flown (0.6 s).
-	_show_chest_take(0.6)
+
+
+## The upgrade's row turning over into view, then a shine running across it.
+func _flip_in(card: Control) -> void:
+	card.modulate.a = 1.0
+	card.scale = Vector2(0.0, 1.0)
+	Sound.play("level_up")
+	var flip := card.create_tween()
+	flip.tween_property(card, "scale:x", 1.0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	flip.tween_method(_set_shine.bind(card), 0.0, 1.0, 0.5)
+
+
+func _set_shine(shine: float, card: Control) -> void:
+	card.set_meta("shine", shine)
+	card.queue_redraw()
 
 
 ## The chest's 收下, faded in after `settled` seconds (once what it gave is all on screen).
@@ -2061,10 +2273,10 @@ func _show_chest_take(settled: float) -> void:
 		_focus(take))
 
 
-## A year-end bonus's prize (.44): its 工资, saved for 培训 on the title screen. (.43's 绩效 S gave a
-## 返聘 too, in a green row under it; 返聘 are bought in 培训 now.)
+## A year-end bonus's 工资 (.44), saved for 培训 on the title screen; its heading counts up as the
+## chest opens (_count_salary). (.43's 绩效 S gave a 返聘 too, in a green row under it; 返聘 are
+## bought in 培训 now.)
 func _salary_row(amount: int) -> Control:
-	var heading := tr("工资 +¥%d") % amount
 	var note_text := tr("攒着去开始画面的「培训」升级属性，现在有 ¥%d") % Training.balance()
 	var row_panel := UiKit.panel(UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
 	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2079,9 +2291,10 @@ func _salary_row(amount: int) -> Control:
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(text)
-	var heading_label := UiKit.label(heading, 15, "heavy")
-	heading_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	text.add_child(heading_label)
+	# Sized for the whole amount from the start, so the row doesn't grow as it counts up.
+	_chest_salary_label = UiKit.label(tr("工资 +¥%d") % amount, 15, "heavy")
+	_chest_salary_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	text.add_child(_chest_salary_label)
 	var note := UiKit.label(note_text, 11, "muted")
 	note.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2090,16 +2303,85 @@ func _salary_row(amount: int) -> Control:
 	return row_panel
 
 
-## A gold star flying out of the open chest at `angle`, fading as it goes.
+## The upgrade a year-end bonus gave (.46), applied already: outlined in its rarity's colour like a
+## level-up card, with its rarity's tag, the step it took and what that changed. Clipped, so the
+## shine _flip_in runs across it stays inside.
+func _chest_upgrade_row(item: Dictionary) -> Control:
+	var rarity: int = item.get("rarity", 0)
+	var edge: Color = Art.RARITY_EDGE[rarity] if rarity > 0 else Art.LINE
+	var row_panel := UiKit.panel(UiKit.box(Art.PAPER, edge, UiKit.OUTLINE_HEAVY, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_panel.clip_contents = true
+	row_panel.resized.connect(func() -> void: row_panel.pivot_offset = row_panel.size / 2.0)
+	# Drawn over the box and under the text: a slanted white band at `shine` (0 to 1) across it.
+	row_panel.draw.connect(func() -> void:
+		var shine: float = row_panel.get_meta("shine", -1.0)
+		if shine <= 0.0 or shine >= 1.0:
+			return
+		var slant := row_panel.size.y * 0.5
+		var left := lerpf(-CHEST_SHINE_WIDTH, row_panel.size.x + slant, shine)
+		row_panel.draw_colored_polygon(PackedVector2Array([Vector2(left, 0.0), Vector2(left + CHEST_SHINE_WIDTH, 0.0),
+			Vector2(left + CHEST_SHINE_WIDTH - slant, row_panel.size.y), Vector2(left - slant, row_panel.size.y)]), Color(Color.WHITE, 0.75))
+	)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_panel.add_child(row)
+	var kind: String = item["kind"]
+	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT
+	row.add_child(UiKit.well(item["art"], 40, fill, UiKit.RADIUS_SM))
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 1)
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 6)
+	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(name_row)
+	name_row.add_child(UiKit.label(_card_name(item), 15, "heavy"))
+	if rarity > 0:
+		name_row.add_child(UiKit.tag(Upgrades.RARITIES[rarity]["name"], Art.RARITY_FILL[rarity], Art.RARITY_INK[rarity], UiKit.OUTLINE))
+	# The step it took, then what it changed (worked out before it was applied, Game._open_chest).
+	var numbers: String = item.get("numbers", "")
+	var change := UiKit.label(_chest_step(item) + (" · " + numbers if numbers != "" else ""), 12, "strong", Art.LINK)
+	change.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	change.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	change.custom_minimum_size.x = 160.0
+	text.add_child(change)
+	var rarity_text := Upgrades.rarity_line(item)
+	if rarity_text != "":
+		var rarity_label := UiKit.label(rarity_text, 11, "heavy", Art.RARITY_INK[rarity])
+		rarity_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		text.add_child(rarity_label)
+	return row_panel
+
+
+## The step a year-end bonus's upgrade took, translated: 新, Lv 2 → 3 (a job weapon's direction its
+## own level), or the fallback card's heal.
+func _chest_step(item: Dictionary) -> String:
+	if item["kind"] == "heal":
+		return tr("回复 30")
+	if item.has("branch_level"):
+		return "Lv %d → %d" % [item["branch_level"] - 1, item["branch_level"]]
+	var level: int = item["level"]
+	if level == 1:
+		return tr("新")
+	return "Lv %d → %d" % [level - 1, item.get("to_level", level)]
+
+
+## A gold star flying out of the open chest at `angle`, spinning and fading as it goes.
 func _throw_star(angle: float) -> void:
 	var star := UiKit.icon("star_gold", CHEST_STAR_SIZE)
 	var start := _chest_stage.size / 2.0 - Vector2.ONE * CHEST_STAR_SIZE / 2.0
 	star.position = start
+	star.pivot_offset = Vector2.ONE * CHEST_STAR_SIZE / 2.0
 	_chest_stage.add_child(star)
 	var flight := star.create_tween().set_parallel()
-	flight.tween_property(star, "position", start + Vector2.from_angle(angle) * randf_range(60.0, 120.0), 0.6) \
+	flight.tween_property(star, "position", start + Vector2.from_angle(angle) * randf_range(60.0, 130.0), 0.7) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	flight.tween_property(star, "modulate:a", 0.0, 0.3).set_delay(0.35)
+	flight.tween_property(star, "rotation", randf_range(-3.0, 3.0), 0.7)
+	flight.tween_property(star, "modulate:a", 0.0, 0.3).set_delay(0.4)
 	flight.chain().tween_callback(star.queue_free)
 
 
@@ -2253,7 +2535,7 @@ func _show_pause() -> void:
 	restart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	second_row.add_child(restart)
 	# Back to the title screen, giving the run up (.39, the user asked for a way back to the first
-	# page; named for the title's 开始搬砖), as the result screen's 换职业 does.
+	# page; named for the title's 开始搬砖), as the result screen's 回主页 does.
 	var clock_out := UiKit.secondary_button("下班", game.change_job)
 	clock_out.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	second_row.add_child(clock_out)
@@ -2405,7 +2687,9 @@ func _show_end(victory: bool) -> void:
 	var share := UiKit.secondary_button("生成战绩图", _make_share_image, 50.0, 15)
 	share.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(share)
-	var change := UiKit.secondary_button("换职业", game.change_job, 50.0, 15)
+	# 回主页 since .46 (was 换职业, the user: 改成类似回到主页的意思): it goes back to the title screen,
+	# where the job and the map are picked.
+	var change := UiKit.secondary_button("回主页", game.change_job, 50.0, 15)
 	change.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(change)
 	var again := UiKit.primary_button("再来一局", game.restart)
@@ -2528,8 +2812,9 @@ func _bosses_out() -> int:
 	return count
 
 
-## Weapons (and the perks that deal damage) by their share of all damage dealt this run, or null
-## when nothing dealt any.
+## Weapons (and the perks that deal damage) by their share of all damage dealt this run, each with
+## its damage per second while the player had it (Game.dps_of, .46, the user: 伤害排行加个每秒伤害),
+## or null when nothing dealt any.
 func _damage_ranking() -> Control:
 	var total := 0.0
 	var entries: Array = []
@@ -2557,6 +2842,11 @@ func _damage_ranking() -> Control:
 		name_label.custom_minimum_size = Vector2(64, 0)
 		row.add_child(name_label)
 		row.add_child(ShareBar.new(share))
+		var per_second := UiKit.label(tr("%d/秒") % roundi(game.dps_of(entry[0])), 12, "display", Art.INK_MUTED)
+		per_second.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		per_second.custom_minimum_size = Vector2(52, 0)
+		per_second.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(per_second)
 		var percent := UiKit.label("%d%%" % roundi(share * 100.0), 13, "display")
 		percent.custom_minimum_size = Vector2(36, 0)
 		percent.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

@@ -8,13 +8,25 @@ extends RefCounted
 ##
 ## Red shapes are Zones: shown from the moment they are placed, filling in until they go off
 ## (`fuse`), then hurting the player if they are inside (by the player's hurt radius, so the line
-## drawn is the line that counts) and flashing.
+## drawn is the line that counts) and flashing. A 定点 shape (PlacedAttack, `bomb`) is bombed: for its
+## last FALL_SECONDS a bomb drops onto each of its impacts() with its shadow growing under it, and
+## it goes off in explosions (Effects.explosion) that stay inside the shape (.46, the user: 红色圆圈完了
+## 要有轰炸的动画效果; it only flashed before). How it looks only: what it hurts is unchanged.
 
 ## How long a shape that went off stays lit.
 const FLASH_SECONDS := 0.18
 const FILL := 0.13
 const FILL_GROWING := 0.22
 const EDGE := 0.85
+## A bomb's fall onto a 定点 shape: how long before it goes off, from how high, with a streak this
+## long above it.
+const FALL_SECONDS := 0.3
+const FALL_HEIGHT := 140.0
+const FALL_STREAK := 26.0
+## The most bombs along one long band (an X's arm, BossKits "cross").
+const BOMBS_PER_BAND := 5
+## A blast this close to the player (past its own reach) shakes the view.
+const SHAKE_REACH := 40.0
 
 
 class Zone:
@@ -33,6 +45,8 @@ class Zone:
 	var armed := true
 	## A lane fills from its start along `angle`, not out from the middle.
 	var fills_along := false
+	## A 定点 shape, bombed as it goes off (set by PlacedAttack).
+	var bomb := false
 	var flash_left := 0.0
 
 	func progress() -> float:
@@ -130,6 +144,13 @@ func _go_off(zone: Zone) -> void:
 		hurt(zone.damage)
 	if zone.shape == "circle":
 		Effects.ring(game, zone.center, zone.radius, Art.BOSS_RED)
+	if zone.bomb:
+		var shake := false
+		for impact: Dictionary in impacts(zone):
+			Effects.explosion(game, impact["at"], impact["radius"])
+			shake = shake or player().position.distance_to(impact["at"]) <= impact["radius"] + SHAKE_REACH
+		if shake:
+			player().shake(0.15, 2.0)
 	went_off(zone)
 
 
@@ -157,6 +178,22 @@ static func inside(zone: Zone, point: Vector2) -> bool:
 			# The edge's slack is the hurt radius at that distance, as an angle.
 			return absf(angle_difference(zone.angle, offset.angle())) <= zone.spread / 2.0 + asin(minf(reach / distance, 1.0))
 	return false
+
+
+## Where a bombed shape's bombs land (`at`) and how big each blows up (`radius`), inside the shape:
+## one in the middle of a circle or a squarish box, a row along a long band (up to BOMBS_PER_BAND),
+## each as wide as the band.
+static func impacts(zone: Zone) -> Array[Dictionary]:
+	if zone.shape != "rect":
+		return [{"at": zone.center, "radius": zone.radius}]
+	var long := maxf(zone.half.x, zone.half.y)
+	var short := minf(zone.half.x, zone.half.y)
+	var count := clampi(roundi(long / short), 1, BOMBS_PER_BAND)
+	var along := Vector2.from_angle(zone.angle) if zone.half.x >= zone.half.y else Vector2.from_angle(zone.angle).orthogonal()
+	var spots: Array[Dictionary] = []
+	for i in count:
+		spots.append({"at": zone.center + along * (-long + 2.0 * long * (i + 0.5) / count), "radius": minf(short, long / count)})
+	return spots
 
 
 ## On the boss's telegraph canvas, in world space.
@@ -192,6 +229,21 @@ static func draw_zone(canvas: CanvasItem, zone: Zone) -> void:
 			var edge := _fan_points(zone, zone.radius)
 			edge.append(edge[0])
 			canvas.draw_polyline(edge, Color(red, EDGE), 2.0, true)
+	if zone.bomb and not lit and zone.left < FALL_SECONDS:
+		_draw_falling(canvas, zone, 1.0 - zone.left / FALL_SECONDS)
+
+
+## A bombed shape's bombs coming down, `drop` of the way (0 to 1): each one's shadow growing on the
+## ground, and the bomb, inked like the art, falling onto it out of a white streak.
+static func _draw_falling(canvas: CanvasItem, zone: Zone, drop: float) -> void:
+	for impact: Dictionary in impacts(zone):
+		var spot: Vector2 = impact["at"]
+		var size: float = impact["radius"]
+		canvas.draw_circle(spot, size * 0.5 * drop, Color(Art.INK, 0.3 * drop))
+		var bomb := spot - Vector2(0.0, FALL_HEIGHT * (1.0 - drop * drop))
+		canvas.draw_line(bomb - Vector2(0.0, FALL_STREAK), bomb, Color(Color.WHITE, 0.75), 3.0, true)
+		canvas.draw_circle(bomb, 5.0, Art.INK)
+		canvas.draw_circle(bomb, 3.5, Art.BOSS_RED)
 
 
 static func _fan_points(zone: Zone, radius: float) -> PackedVector2Array:

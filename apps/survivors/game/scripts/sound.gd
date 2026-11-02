@@ -130,6 +130,11 @@ static func play(effect: String) -> void:
 	_shared()._play(effect, 1.0)
 
 
+## An effect at `pitch` (1 as recorded): the year-end bonus's ticks climbing as the chest rocks.
+static func play_pitched(effect: String, pitch: float) -> void:
+	_shared()._play(effect, pitch)
+
+
 ## A star was picked up: the same pluck, a little higher each time while they keep coming.
 static func xp() -> void:
 	var sound := _shared()

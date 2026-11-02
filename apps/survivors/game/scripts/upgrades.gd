@@ -34,12 +34,13 @@ const JOB_WEAPON_LEVELS := [3, 6, 10, 15, 20, 25]
 ## luck (Player.luck, see luck_factor). Frequent and modest on purpose: about half the cards have
 ## a colour, none of them swings a run on its own. .33 took the rarer tiers down a little at the
 ## user's ask (was 45 / 32 / 15 / 6 / 2): epic and legendary also level table perks up faster.
+## `colour` is how the year-end bonus dialog and the site name a tier (.46: 绩效 B 送绿色升级).
 const RARITIES := [
-	{"id": "common", "name": "普通", "weight": 65.0, "scale": 1.0, "weapon_bonus": 0.0, "extra_levels": 0},
-	{"id": "uncommon", "name": "优秀", "weight": 24.0, "scale": 1.15, "weapon_bonus": 0.04, "extra_levels": 0},
-	{"id": "rare", "name": "稀有", "weight": 8.0, "scale": 1.3, "weapon_bonus": 0.08, "extra_levels": 0},
-	{"id": "epic", "name": "史诗", "weight": 2.5, "scale": 1.6, "weapon_bonus": 0.12, "extra_levels": 1},
-	{"id": "legendary", "name": "传说", "weight": 0.5, "scale": 2.0, "weapon_bonus": 0.2, "extra_levels": 2},
+	{"id": "common", "name": "普通", "colour": "白色", "weight": 65.0, "scale": 1.0, "weapon_bonus": 0.0, "extra_levels": 0},
+	{"id": "uncommon", "name": "优秀", "colour": "绿色", "weight": 24.0, "scale": 1.15, "weapon_bonus": 0.04, "extra_levels": 0},
+	{"id": "rare", "name": "稀有", "colour": "蓝色", "weight": 8.0, "scale": 1.3, "weapon_bonus": 0.08, "extra_levels": 0},
+	{"id": "epic", "name": "史诗", "colour": "紫色", "weight": 2.5, "scale": 1.6, "weapon_bonus": 0.12, "extra_levels": 1},
+	{"id": "legendary", "name": "传说", "colour": "橙色", "weight": 0.5, "scale": 2.0, "weapon_bonus": 0.2, "extra_levels": 2},
 ]
 ## The passives that add a number, by how much at common rarity (percent for the multipliers);
 ## the card text has it as %s. The rest are table perks.
@@ -91,8 +92,9 @@ const WEAPONS := {
 ##
 ## Switched off from .27, to be redesigned: no chest evolves a weapon, no card says 配「X」可进化,
 ## and the achievement for one is hidden (Achievements.shown). The table and each weapon's evolved
-## form stay, for that redesign and the bot's --evolve. Since .44 year-end bonuses pay 工资 and no
-## upgrades, so the redesign needs another moment to evolve at (the chest code went with them).
+## form stay, for that redesign and the bot's --evolve. From .44 to .45 year-end bonuses gave no
+## upgrades and the chest code that evolved went with them; .46's one upgrade (chest_upgrade)
+## doesn't evolve either, so the redesign needs to bring that back.
 const EVOLUTION_ON := false
 const EVOLUTIONS := {
 	"enter": {"passive": "haste", "name": "Shift+Enter 批量提交", "text": "每轮朝屏幕里的敌人各敲一下"},
@@ -240,8 +242,8 @@ func _job_pair_due(for_level: int) -> Array:
 
 ## How much likelier `luck` makes a tier past the first: each point 1% per tier, compounding
 ## (luck 50: green ×1.5, blue ×2.25, purple ×3.4, orange ×5.1), so it lifts the rare end most.
-## Card rarity (RARITIES) uses it, in a year-end bonus too; the bonus's 绩效 (Game.FUNDING_ROUNDS)
-## did until .43, when its odds were fixed.
+## Card rarity (RARITIES) uses it; a year-end bonus's 绩效 (Game.FUNDING_ROUNDS) did until .43, when
+## its odds were fixed, and its upgrade's rarity comes from that 绩效 (.46), not luck.
 static func luck_factor(luck: float, tier: int) -> float:
 	return pow(1.0 + maxf(luck, 0.0) / 100.0, tier)
 
@@ -257,12 +259,56 @@ func _set_rarity(choice: Dictionary) -> void:
 		var extra: int = RARITIES[tier]["extra_levels"]
 		var fits := extra <= room and (tier == 0 or extra > 0 or not table_perk)
 		weights.append(RARITIES[tier]["weight"] * luck_factor(_game.player.luck, tier) if fits else 0.0)
-	var rarity := _game.rng.rand_weighted(weights)
+	_give_rarity(choice, _game.rng.rand_weighted(weights))
+
+
+## Makes `choice` a card of `rarity` and words it for it.
+func _give_rarity(choice: Dictionary, rarity: int) -> void:
 	choice["rarity"] = rarity
 	if _is_table_perk(choice):
 		choice["to_level"] = choice["level"] + RARITIES[rarity]["extra_levels"]
 	elif choice["kind"] == "passive":
 		choice["text"] = passive_text(choice["id"], rarity)
+
+
+## Whether `choice` can come out at `rarity` (> 0): anything can but a table perk, which only takes
+## a tier that adds levels and only with room for them under its cap (as in _set_rarity).
+func _fits_rarity(choice: Dictionary, rarity: int) -> bool:
+	if not _is_table_perk(choice):
+		return true
+	var extra: int = RARITIES[rarity]["extra_levels"]
+	return extra > 0 and extra <= choice["max"] - choice["level"]
+
+
+## A year-end bonus's upgrade (.46: Game.FUNDING_ROUNDS `rarity`, 绩效 B 优秀 / A 稀有 / S 史诗), not
+## applied yet. Like Vampire Survivors' chests (and these until .44) it levels up something the
+## player already carries, picked at random; only when nothing carried can take that rarity does
+## something new come out, and with nothing left at all, the fallback card. A table perk takes only
+## 史诗 (Upgrades.RARITIES `extra_levels`), so 绩效 B and A never land on one.
+func chest_upgrade(rarity: int) -> Dictionary:
+	var carried: Array = []
+	for weapon in _game.player.weapons:
+		if weapon_maxed(weapon):
+			continue
+		if BRANCHES.has(weapon.id):
+			# A job's own weapon goes up one of its open directions, picked at random.
+			var open := open_branches(weapon)
+			carried.append(_branch_choice(weapon.id, open[_game.rng.randi() % open.size()]))
+		else:
+			carried.append(_choice("weapon", weapon.id, weapon.level + 1))
+	for passive_id: String in passive_levels:
+		if passive_levels[passive_id] < max_level("passive", passive_id):
+			carried.append(_choice("passive", passive_id, passive_levels[passive_id] + 1))
+	var fitting := carried.filter(func(choice: Dictionary) -> bool: return _fits_rarity(choice, rarity))
+	if fitting.is_empty():
+		# The whole level-up pool (what isn't carried yet, where there are free slots).
+		fitting = _roll(99, 0).filter(func(choice: Dictionary) -> bool:
+			return choice["kind"] in ["weapon", "passive"] and _fits_rarity(choice, rarity))
+	if fitting.is_empty():
+		return FALLBACK.duplicate()
+	var item: Dictionary = fitting[_game.rng.randi() % fitting.size()]
+	_give_rarity(item, rarity)
+	return item
 
 
 static func _is_table_perk(choice: Dictionary) -> bool:

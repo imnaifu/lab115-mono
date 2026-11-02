@@ -235,24 +235,40 @@ def upgrades_section(data: dict) -> str:
 <div class="scroll"><table class="nums"><tr><th>运气</th>{head}</tr>{card_rows}</table></div>
 <div class="scroll"><table class="nums"><tr><th>运气</th><th>升级时多一张卡</th></tr>{more_rows}</table></div></article>"""
 
-    drops = data["drops"]
-    chests = drops["chests"]
+    return section("upgrades", "升级", '打怪捡星星升级，升级时选卡；boss 掉的年终奖还白送一个升级（见<a href="#drops">掉落</a>）。',
+                   f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}</div>')
+
+
+def drops_section(data: dict) -> str:
+    """What enemies drop, each with its art (its own section since .46: the user couldn't find 奶茶's
+    drop rate inside 升级). A year-end bonus says what each rating gives but not how likely it is
+    (.46, the user: 年终奖的概率藏起来不要可见)."""
+    drops, rarities = data["drops"], data["rarities"]
     revive = drops["revive"]
-    total_weight = sum(chest["weight"] for chest in chests)
-    # Every rating pays one of its 工资 amounts (for 培训) at random.
-    chest_lines = "".join(f"<li><b>{esc(chest['name'])}</b>：{percent(chest['weight'] / total_weight)}，工资 "
-                          + " / ".join(f"¥{amount}" for amount in chest["salary"]) + " 里随机一个</li>"
-                          for chest in chests)
-    drops_card = f"""<article class="card"><h3>掉落</h3><ul>
-<li><b>经验星星</b>：每只怪都掉，走近才会吸过来；地上超过 {drops['max_pickups']} 个时，新的经验并进已有的星星</li>
-<li><b>珍珠奶茶</b>：普通怪 {percent(drops['heal_chance'])} 掉，boss 必掉，回 {number(drops['heal_amount'])} 生命</li>
-<li><b>磁铁</b>：{drops['magnet_from_level']} 级以后普通怪 {percent(drops['magnet_chance'])} 掉，全图的星星一起飞过来</li>
-<li><b>年终奖</b>：每个 boss 必掉的红色宝箱</li></ul>
-<h3>年终奖开出什么</h3><ul>{chest_lines}</ul>
-<p class="muted">几率每个年终奖都一样，和运气无关。年终奖不给局内升级，工资存进存档，在<a href="#training">培训</a>里花。</p>
-<h3>返聘</h3>
-<p>在<a href="#training">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用：用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。</p></article>"""
-    return section("upgrades", "升级", "打怪捡星星升级，升级时选卡；boss 掉的年终奖发工资。", f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}{drops_card}</div>')
+
+    def card(art_name: str, title: str, body: str) -> str:
+        return f"""<article class="card"><div class="head">{art(art_name, 48, title)}<div><h3>{esc(title)}</h3>
+<p class="muted">{body}</p></div></div></article>"""
+
+    small = [
+        card("star_blue", "经验星星", f"每只怪都掉，走近才会吸过来，攒够就升级。地上超过 {drops['max_pickups']} 个时，新掉的经验并进已有的星星。"),
+        card("boba", "珍珠奶茶", f"普通怪有 {percent(drops['heal_chance'])} 的几率掉，boss 必掉一杯。捡到回 {number(drops['heal_amount'])} 生命。"),
+        card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉。捡到时全图的星星一起飞过来。"),
+    ]
+    # Every rating: the range of its 工资 amounts (one comes out at random; the whole list made the
+    # table too wide for its card) and its upgrade's colour.
+    ratings = "".join(
+        f"<tr><td><b>{esc(chest['name'])}</b></td><td>¥{min(chest['salary'])}–{max(chest['salary'])}</td>"
+        f"<td>{esc(rarities[chest['rarity']]['colour'])} {rarity_tag(rarities[chest['rarity']])}</td></tr>"
+        for chest in drops["chests"])
+    chest_card = f"""<article class="card"><div class="head">{art("chest", 48, "年终奖")}<div><h3>年终奖</h3>
+<p class="muted">每个 boss 必掉的红色宝箱。捡到就开箱，开出一档绩效：按绩效发工资，同时白送一个局内升级。</p></div></div>
+<div class="scroll"><table class="nums"><tr><th>绩效</th><th>工资</th><th>送的升级</th></tr>{ratings}</table></div>
+<p class="muted">送的升级当场生效：从身上已有、还没满级的武器和被动里随机挑一个，升一级，稀有度按绩效定（股票期权这类有自己玩法的被动只出紫色，所以只有绩效 S 会抽到）；身上的都满了才出新的。工资是这个范围里 66、88 结尾的吉利数随机一个，存进存档，在<a href="#training">培训</a>里花。开出哪档绩效和运气无关。</p></article>"""
+    rehire_card = card("rehire", "返聘", f"不是掉的，在<a href=\"#training\">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用："
+                       f"用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。")
+    return section("drops", "掉落", "打怪会掉东西，走近就捡；boss 必掉珍珠奶茶和年终奖。",
+                   f'<div class="grid">{"".join(small)}</div><div class="grid wide">{chest_card}{rehire_card}</div>')
 
 
 def training_section(data: dict) -> str:
@@ -270,7 +286,7 @@ def training_section(data: dict) -> str:
 <li>工资存进存档，一局结束也不清零，在开始画面的「培训」里花</li>
 <li>练的等级每局开局都带着，在所有地图都算，和打卡的加成叠加</li>
 <li>「全部退款」把练等级花掉的工资全部退回，可以重新分配</li>
-<li>这里还卖<b>返聘</b>：¥{training['revive_price']} 一个，被裁时可以选择回来（见<a href="#upgrades">升级</a>），用掉就没了，退款不退</li></ul></article>"""
+<li>这里还卖<b>返聘</b>：¥{training['revive_price']} 一个，被裁时可以选择回来（见<a href="#drops">掉落</a>），用掉就没了，退款不退</li></ul></article>"""
     return section("training", "培训", "参考吸血鬼幸存者的局外商店：年终奖发的工资攒下来，用来永久升级基础属性。",
                    f'<div class="grid wide">{card}{how}</div>')
 
@@ -402,7 +418,7 @@ def how_section(data: dict) -> str:
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
-<li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉必掉「年终奖」，按绩效发工资，攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
+<li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉必掉「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
 <li>撑满 10:00 就能敲钟上市</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
 <article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（boss 是每张地图自己的，见<a href="#maps">地图</a>）：</p><ol class="timeline">{rows}</ol></article>
@@ -504,19 +520,19 @@ show(0);
 
 def build(data: dict, art_dir: pathlib.Path) -> str:
     body = "".join([how_section(data), jobs_section(data), stats_section(data), weapons_section(data), passives_section(data),
-                    upgrades_section(data), training_section(data), maps_section(data), difficulty_section(data), stamps_section(data), bestiary_section(data),
+                    upgrades_section(data), drops_section(data), training_section(data), maps_section(data), difficulty_section(data), stamps_section(data), bestiary_section(data),
                     achievements_section(data), faq_section(data)])
     hero_arts = "".join(art(name, 56) for name in [data["jobs"][0]["art"], "bug", "meeting", "deadline", "ai_boss", "chest", "bell"])
     page = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>大厂幸存者 · Big Tech Survivors</title>
-<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。职业、属性、武器、被动、升级、培训、地图、难度、打卡点和怪物图鉴。">
+<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。职业、属性、武器、被动、升级、掉落、培训、地图、难度、打卡点和怪物图鉴。">
 <meta property="og:title" content="大厂幸存者 Big Tech Survivors"><meta property="og:description" content="躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。打开网页就能玩。">
 <meta property="og:image" content="https://survivors.lab115.com/index.png"><meta property="og:url" content="https://survivors.lab115.com/">
 <meta name="theme-color" content="#f7c948">
 <style>{STYLE}</style></head><body>
 <nav class="top"><div class="inner"><span class="brand">大厂幸存者</span>
-<a class="link" href="#how">怎么玩</a><a class="link" href="#jobs">职业</a><a class="link" href="#stats">属性</a><a class="link" href="#weapons">武器</a><a class="link" href="#passives">被动</a><a class="link" href="#upgrades">升级</a><a class="link" href="#training">培训</a><a class="link" href="#maps">地图</a><a class="link" href="#difficulty">难度</a><a class="link" href="#stamps">打卡点</a><a class="link" href="#bestiary">图鉴</a><a class="link" href="#achievements">成就</a><a class="link" href="#faq">问答</a>
+<a class="link" href="#how">怎么玩</a><a class="link" href="#jobs">职业</a><a class="link" href="#stats">属性</a><a class="link" href="#weapons">武器</a><a class="link" href="#passives">被动</a><a class="link" href="#upgrades">升级</a><a class="link" href="#drops">掉落</a><a class="link" href="#training">培训</a><a class="link" href="#maps">地图</a><a class="link" href="#difficulty">难度</a><a class="link" href="#stamps">打卡点</a><a class="link" href="#bestiary">图鉴</a><a class="link" href="#achievements">成就</a><a class="link" href="#faq">问答</a>
 <a class="play" href="{PLAY_URL}">开始玩</a></div></nav>
 <main><header class="hero"><div class="hero-art">{hero_arts}</div>
 <h1>大厂幸存者</h1><div class="en">BIG TECH SURVIVORS</div>

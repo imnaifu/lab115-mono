@@ -251,10 +251,15 @@ func tick(delta: float) -> void:
 
 
 ## 测试模式 (TestMode): a run started at `seconds` skips everything planned before then (those
-## bosses would have come and gone).
-func skip_to(seconds: float) -> void:
+## bosses would have come and gone). Returns how many bosses that skipped, for their year-end
+## bonus upgrades.
+func skip_to(seconds: float) -> int:
+	var bosses := 0
 	while _next_event < _events.size() and _events[_next_event]["at"] < seconds:
+		if _events[_next_event]["kind"] == "elite":
+			bosses += 1
 		_next_event += 1
+	return bosses
 
 
 ## 测试模式: the next planned boss, now.

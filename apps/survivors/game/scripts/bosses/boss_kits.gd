@@ -62,7 +62,8 @@ const KITS := {
 		"lines": {"arrive": "明天上线，没得商量", "attack": ["冲刺！"], "kill": "项目延期，责任在你", "death": "…那就下个季度吧"},
 	},
 	"server_elite": {
-		"attacks": [{"kind": "placed", "form": "chain", "name": "级联故障", "count": 4, "every": 0.5, "radius": 35.0, "fuse": 1.2, "damage": 15.0}],
+		# .46: 4 circles of 35 → 3 of 30, the user found it too hard (the bots died most at 4:00).
+		"attacks": [{"kind": "placed", "form": "chain", "name": "级联故障", "count": 3, "every": 0.5, "radius": 30.0, "fuse": 1.2, "damage": 15.0}],
 		"lines": {"arrive": "主库挂了，全员救火", "attack": ["备库也挂了"], "kill": "P0 事故报告里有你", "death": "恢复了，复盘会明天开"},
 	},
 	"ai": {

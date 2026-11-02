@@ -9,7 +9,7 @@ signal level_up_offered(choices: Array, lucky: bool)
 signal run_ended(victory: bool)
 signal announced(text: String)
 ## `salary`: the 工资 this one paid, one of the rating's amounts.
-signal chest_opened(funding_round: Dictionary, salary: int, odds: Array[float])
+signal chest_opened(funding_round: Dictionary, salary: int, item: Dictionary)
 ## A boss is starting one of its attacks (its form, BossKits.HINTS); the HUD explains how to dodge it.
 signal boss_move(form: String)
 ## The player died holding a 返聘 (Progress.revives_left, `left` of them) they may spend.
@@ -55,15 +55,18 @@ const MAGNET_DROP_CHANCE := 0.002
 const MAGNET_FROM_LEVEL := 10
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
 ## 工资 it pays: one of its `salary` amounts at random (the user's lucky numbers, ending in 66 or
-## 88), kept in the save for 培训 (Training). Since .44 it pays nothing in the run (the user's call:
-## 年终奖改成给工资; it gave 1 / 3 / 5 free upgrades before), and 绩效 S no longer gives a 返聘
-## (.43's prize, bought in 培训 now). The odds are fixed since .43: neither luck nor anything about
-## the boss moves them. The ids are the data's (Telemetry `chests`) from when these were funding
-## rounds (天使轮 / A 轮 / IPO), kept so runs before and after compare.
+## 88), kept in the save for 培训 (Training), and one upgrade in the run at the rating's `rarity`
+## (Upgrades.RARITIES: 绩效 B 优秀 green, A 稀有 blue, S 史诗 purple; Upgrades.chest_upgrade). It
+## gave 1 / 3 / 5 free upgrades until .43, none from .44 (年终奖改成给工资) and one again from .46
+## (the user: 年终奖开箱同时送一个局内升级). 绩效 S no longer gives a 返聘 (.43's prize, bought in
+## 培训 now). The odds are fixed since .43: neither luck nor anything about the boss moves them, and
+## since .46 the game doesn't show them (the user: 概率藏起来不要可见; the site doesn't either). The
+## ids are the data's (Telemetry `chests`) from when these were funding rounds (天使轮 / A 轮 / IPO),
+## kept so runs before and after compare.
 const FUNDING_ROUNDS := [
-	{"id": "angel", "name": "绩效 B", "salary": [66, 88, 166, 188, 266, 288], "weight": 86.0},
-	{"id": "series_a", "name": "绩效 A", "salary": [366, 388, 466, 488, 566, 588], "weight": 9.0},
-	{"id": "ipo", "name": "绩效 S", "salary": [666, 688, 766, 788, 866, 888], "weight": 5.0},
+	{"id": "angel", "name": "绩效 B", "salary": [66, 88, 166, 188, 266, 288], "rarity": 1, "weight": 86.0},
+	{"id": "series_a", "name": "绩效 A", "salary": [366, 388, 466, 488, 566, 588], "rarity": 2, "weight": 9.0},
+	{"id": "ipo", "name": "绩效 S", "salary": [666, 688, 766, 788, 866, 888], "rarity": 3, "weight": 5.0},
 ]
 ## A 返聘 brings the player back on this share of their health, untouchable for REVIVE_INVULN
 ## seconds, with everything within REVIVE_RADIUS pushed off and stunned (like a 站会's, no damage).
@@ -100,6 +103,8 @@ var queued_level_ups := 0
 var current_choices: Array = []
 ## Total damage dealt per weapon id, for the end-of-run ranking.
 var damage_by_source := {}
+## When (`elapsed`) each source first dealt damage, for its damage per second (dps_of, .46).
+var damage_since := {}
 ## Runs this device had played before this one (Settings' runs_played as the scene loaded).
 var runs_before := 0
 ## Whether the player has moved yet this run; the HUD shows how to until they do.
@@ -406,6 +411,8 @@ func damage_enemy(enemy: Enemy, amount: float, push: Vector2 = Vector2.ZERO, sou
 		return
 	enemy.take_hit(amount, push)
 	damage_by_source[source] = damage_by_source.get(source, 0.0) + amount
+	if not damage_since.has(source):
+		damage_since[source] = elapsed
 	Effects.damage_number(self, enemy.position, amount)
 	# No spark for the constant ticks (the Wi-Fi field, the axes), which would cover the crowd.
 	if not silent:
@@ -692,6 +699,13 @@ func _collect(pickup: Pickup) -> void:
 			announce("磁铁！全图经验飞过来了")
 
 
+## A source's damage per second while the player had it (.46, the result's 伤害排行): its total
+## over the time since it first dealt damage, so a weapon taken late isn't measured against the
+## minutes before it came (at least a second, so one early hit doesn't read as a huge number).
+func dps_of(source: String) -> float:
+	return damage_by_source.get(source, 0.0) / maxf(elapsed - damage_since.get(source, 0.0), 1.0)
+
+
 ## Steeper from level 10 since .33 (was + max(0, level - 20) * 4): the user found the level-ups
 ## too frequent. Bots that pick up every star now reach about 39 by 10:00 instead of 49, and have
 ## every weapon and passive maxed at 9:00-9:40, some never (before, 7:30-8:30).
@@ -749,35 +763,37 @@ func choose_upgrade(index: int) -> void:
 # --- Year-end bonuses (boss chests) ------------------------------------------------------
 
 ## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS) and one of its 工资
-## amounts, saves that straight away (closing the page mid-run keeps it, as a stamp) and pauses
-## while the HUD opens the chest. A second chest picked up meanwhile waits its turn.
+## amounts, saves that straight away (closing the page mid-run keeps it, as a stamp), applies its
+## upgrade and pauses while the HUD opens the chest. A second chest picked up meanwhile waits its
+## turn.
 func _open_chest(lowest_round: int = 0) -> void:
 	if state != State.PLAYING:
 		_waiting_chests.append(lowest_round)
 		return
-	var weights := PackedFloat32Array()
-	for option: Dictionary in FUNDING_ROUNDS:
-		weights.append(option["weight"])
-	var funding_round: Dictionary = FUNDING_ROUNDS[maxi(rng.rand_weighted(weights), lowest_round)]
+	var funding_round: Dictionary = FUNDING_ROUNDS[_roll_rating(lowest_round)]
 	_chests_opened += 1
 	var chest_id := "%s-%d" % [run_id, _chests_opened]
 	var amounts: Array = funding_round["salary"]
 	var salary: int = amounts[rng.randi() % amounts.size()]
 	Progress.add_salary(chest_id, salary)
 	salary_earned += salary
-	# This chest's real odds for the dialog: ratings under the floor count as the floor.
-	var total := 0.0
-	for weight in weights:
-		total += weight
-	var odds: Array[float] = []
-	for index in FUNDING_ROUNDS.size():
-		odds.append(0.0 if index < lowest_round else weights[index] / total * 100.0)
-	for index in lowest_round:
-		odds[lowest_round] += weights[index] / total * 100.0
-	telemetry.on_chest(funding_round["id"])
+	var item := upgrades.chest_upgrade(funding_round["rarity"])
+	# What it changes, worked out before it's applied: afterwards the numbers would be the next step's.
+	item["numbers"] = upgrades.numbers(item)
+	upgrades.apply(item)
+	telemetry.on_chest(funding_round["id"], item)
 	state = State.CHEST
 	get_tree().paused = true
-	chest_opened.emit(funding_round, salary, odds)
+	inventory_changed.emit()
+	chest_opened.emit(funding_round, salary, item)
+
+
+## A year-end bonus's rating, an index into FUNDING_ROUNDS: by their weights, at least `lowest_round`.
+func _roll_rating(lowest_round: int = 0) -> int:
+	var weights := PackedFloat32Array()
+	for option: Dictionary in FUNDING_ROUNDS:
+		weights.append(option["weight"])
+	return maxi(rng.rand_weighted(weights), lowest_round)
 
 
 ## The HUD's "take it" button (and the smoke-test bot).
@@ -820,7 +836,7 @@ func change_map(map_id: String, start: bool = false) -> void:
 	get_tree().reload_current_scene()
 
 
-## The result screen's 换职业 and the pause screen's 下班: back to the title screen (to pick another
+## The result screen's 回主页 (换职业 until .46) and the pause screen's 下班: back to the title screen (to pick another
 ## job or map), a run still going counted as given up.
 func change_job() -> void:
 	achievements.finish(false)
@@ -858,11 +874,11 @@ func _on_run_started() -> void:
 
 
 ## 测试模式: the run as if played up to `minute`: the clock there, the bosses before it skipped,
-## and the level a player who picks up every star would have, each level-up a random card. (The
-## skipped bosses' year-end bonuses added their upgrades too, until they paid 工资 instead, .44.)
+## and the level a player who picks up every star would have, each level-up a random card, plus
+## the skipped bosses' year-end bonus upgrades (none from .44 to .45; their 工资 isn't paid).
 func _fast_forward(minute: int) -> void:
 	elapsed = minute * 60.0
-	spawner.skip_to(elapsed)
+	var bosses := spawner.skip_to(elapsed)
 	var picks := TestMode.level_at(minute) - 1
 	for i in picks:
 		if level < TestMode.level_at(minute):
@@ -870,6 +886,8 @@ func _fast_forward(minute: int) -> void:
 		var choices := upgrades.roll_choices(upgrades.choice_count(), level)
 		if not choices.is_empty():
 			upgrades.apply(choices[rng.randi() % choices.size()])
+	for i in bosses:
+		upgrades.apply(upgrades.chest_upgrade(FUNDING_ROUNDS[_roll_rating()]["rarity"]))
 	xp = 0
 	player.hp = player.max_hp
 	inventory_changed.emit()

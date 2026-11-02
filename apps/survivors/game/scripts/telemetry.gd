@@ -53,6 +53,9 @@ extends RefCounted
 ##   From .44 (year-end bonuses pay 工资 for 培训, no upgrades): run_start's `training` (ranks bought,
 ##   Training.summary: max_hp:2,might:3) and `salary` (工资 there to spend); run_end's `salary`, what
 ##   this run's bonuses paid. `rarities` counts picked cards only from .44.
+##   From .46 (each year-end bonus applies one upgrade again, at its 绩效's rarity): run_end's
+##   `chest_upgrades`, those upgrades' card ids in order (like `picks`; `rarities` still counts
+##   picked cards only, so it compares with .44 and .45).
 ## - cloud_action (.30): the cloud save and its page (设置 → 云存档), `action` with a `result`: connect
 ##   (once per page when the first sync settles: synced / offline, `ms`, `merged` when the cloud
 ##   brought progress), open (the 云存档 page, with its `status`), code (a 存档码 made: ok /
@@ -71,7 +74,7 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.45"
+const VERSION := "2026-10-28.46"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -88,6 +91,8 @@ var _picks := PackedStringArray()
 ## Times each card id was offered at a level-up.
 var _offered := {}
 var _chests := PackedStringArray()
+## The card ids of the upgrades year-end bonuses applied (.46).
+var _chest_upgrades := PackedStringArray()
 ## Upgrades got by rarity tier (Upgrades.RARITIES), picked (and from chests until .44).
 var _rarities := PackedInt32Array([0, 0, 0, 0, 0])
 ## Level-ups where luck added a card (Upgrades.lucky_card).
@@ -226,8 +231,9 @@ func on_lucky_card() -> void:
 	_lucky_cards += 1
 
 
-func on_chest(round_id: String) -> void:
+func on_chest(round_id: String, item: Dictionary) -> void:
 	_chests.append(round_id)
+	_chest_upgrades.append(_card_id(item))
 
 
 func on_revive(used: bool) -> void:
@@ -286,6 +292,7 @@ func _summary(result: String) -> Dictionary:
 		"picks": ",".join(_picks).left(MAX_TEXT),
 		"offered": ",".join(offered).left(MAX_TEXT),
 		"chests": ",".join(_chests).left(MAX_TEXT),
+		"chest_upgrades": ",".join(_chest_upgrades).left(MAX_TEXT),
 		"salary": _game.salary_earned,
 		"luck": roundi(player.luck),
 		"rarities": ",".join(Array(_rarities).map(func(count: int) -> String: return str(count))),
