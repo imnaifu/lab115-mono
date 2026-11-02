@@ -99,7 +99,7 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 
 **恶搞招牌**：故意不用任何真实 logo —— 名字和图标都是自己画的谐音梗，避免商标和版权问题。加新招牌改 `bay_area.gd` 的 `BRANDS`。
 
-**调数值**主要改三处：`spawner.gd` 的 `ENEMY_TYPES` / `WAVES` / `EVENTS` 和刷怪速率，`weapons/*.gd` 顶部的等级表（改了记得同步 `upgrades.gd` 的卡片文案），`game.gd` 的 `xp_to_next()`。**每次上线**都把 `telemetry.gd` 的 `VERSION` 升一号（当天日期，同一天再上线就加 `.2`、`.3`……），线上数据才分得清改前改后，开始画面上显示的版本号也才对得上每次部署。
+**调数值**主要改三处：`spawner.gd` 的 `ENEMY_TYPES` / `WAVES` / `EVENTS` 和刷怪速率，`weapons/*.gd` 顶部的等级表（改了记得同步 `upgrades.gd` 的卡片文案），`game.gd` 的 `xp_to_next()`。**每次上线**都把 `telemetry.gd` 的 `VERSION` 加一（纯数字，64 起不带日期；之前是「2026-10-28.63」这样），线上数据才分得清改前改后，开始画面上显示的版本号也才对得上每次部署。
 
 ## 对局数据
 

@@ -76,7 +76,10 @@ extends RefCounted
 
 ## Bumped with every release (not only balance changes), so data from before and after can be
 ## told apart and the version shown on the title screen pins down which build someone is on.
-const VERSION := "2026-10-28.63"
+## A bare number from 64 on (the user: 版本去掉日期，只保留数字); up to 63 it was
+## "2026-10-28.<n>" (the very first build plain "2026-10-28"), so to compare across both, read an
+## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
+const VERSION := "64"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
