@@ -5,8 +5,12 @@ extends Weapon
 
 ## Enemies each email reaches, the first included.
 ## Toned down from 8 bounces of 18 at full level, a third of a product manager's damage.
-const BOUNCES := [3, 4, 4, 5, 6]
-const DAMAGE := [10.0, 10.0, 15.0, 15.0, 21.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): eight enemies a mail at level 5 (six before).
+const BOUNCES := [3, 4, 5, 6, 8]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 10 / 10 / 15 / 15 / 21 and 3–6 enemies a mail. One enemy at a
+## time, it fell behind the weapons that hit a crowd: about 160 a second alone at full level at 8:00,
+## now about 300.
+const DAMAGE := [10.0, 13.0, 20.0, 24.0, 30.0]
 const COUNT := [1, 1, 1, 2, 2]
 ## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
 ## the speed-ups gave went into damage instead, the same damage a second at every level.

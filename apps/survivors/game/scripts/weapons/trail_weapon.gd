@@ -7,9 +7,13 @@ extends Weapon
 
 ## Enemies chase slower than the player runs, so the line has to last long enough for them to
 ## reach it: at 1.5 seconds (the first draft) the bot's designer killed 9 enemies in a minute.
-const DAMAGE := [8.0, 10.0, 12.0, 14.0, 18.0]
-const WIDTH := [12.0, 14.0, 16.0, 18.0, 26.0]
-const LIFETIME := [2.5, 2.8, 3.1, 3.4, 4.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 8 / 10 / 12 / 14 / 18, 12–26 wide, 2.5–4 s. A late crowd walks
+## into it all the time: about 500 a second alone at full level at 8:00, now about 300.
+const DAMAGE := [8.0, 8.0, 9.0, 9.0, 10.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): 12–16 wide (26 at level 5 before).
+const WIDTH := [12.0, 13.0, 14.0, 15.0, 16.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): 3 s at level 5 (4 before).
+const LIFETIME := [2.5, 2.6, 2.7, 2.8, 3.0]
 const TICK := 0.3
 ## A new point every this many pixels walked; under the narrowest line's width, so the circles
 ## hits are checked in leave no gaps.

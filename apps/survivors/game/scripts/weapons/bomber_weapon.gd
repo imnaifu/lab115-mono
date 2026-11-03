@@ -8,11 +8,15 @@ extends Weapon
 ## them, which the ops' guard wall and the outsourced workers did too. 集束轰炸 (evolved with
 ## 降本增效): every bomb throws out three smaller ones round where it lands.
 
-const COUNT := [1, 2, 2, 3, 4]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): three drones at level 5 (two at 3, three at 4 and four at 5 before).
+const COUNT := [1, 2, 2, 2, 3]
 ## A quarter down in .35 (was 16, 16, 22, 22, 28) once the bombs started landing: in bot runs its
 ## share of the damage went from about 7% to 24%, the user asked for it a little weaker.
-const DAMAGE := [12.0, 12.0, 16.0, 16.0, 21.0]
-const BLAST_RADIUS := [26.0, 26.0, 30.0, 30.0, 36.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 12 / 12 / 16 / 16 / 21, blasts 26–36. Bombs go on the thickest
+## crowd: about 450 a second alone at full level at 8:00, now about 300.
+const DAMAGE := [12.0, 12.0, 14.0, 16.0, 16.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): blasts up to 30 (36 before).
+const BLAST_RADIUS := [26.0, 26.0, 28.0, 28.0, 30.0]
 ## Was 180 until .35, slow enough for the crowd to walk out from under the bomb.
 const SPEED := 260.0
 ## Seconds between one drone's bombs, before the player's cooldown multiplier.

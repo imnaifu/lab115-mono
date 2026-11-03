@@ -7,8 +7,11 @@ extends Weapon
 ## Starts a little wider than the player's own sprite; any smaller and only what is already
 ## biting them is in range.
 ## Raised after the live runs had it at 2-9% of all damage even at full level.
-const RADIUS := [40.0, 46.0, 46.0, 54.0, 62.0]
-const DAMAGE := [6.0, 6.0, 11.0, 11.0, 20.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): up to 70 (62 before).
+const RADIUS := [40.0, 48.0, 52.0, 60.0, 70.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 6 / 6 / 11 / 11 / 20, radius 40–62: about 120 a second alone at
+## full level at 8:00, now about 290.
+const DAMAGE := [6.0, 9.0, 15.0, 18.0, 32.0]
 ## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
 ## the speed-ups gave went into damage instead, the same damage a second at every level.
 const TICK_SECONDS := [0.6, 0.6, 0.6, 0.6, 0.6]

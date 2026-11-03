@@ -3,9 +3,14 @@ extends Weapon
 ## Heavy things tossed upward that arc back down, smashing through everything in the way.
 ## (Silicon Valley: 机械键盘.)
 
-const COUNT := [1, 2, 2, 3, 3]
-const DAMAGE := [24.0, 24.0, 34.0, 34.0, 44.0]
-const SIZE := [1.0, 1.0, 1.0, 1.0, 1.4]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): the third keyboard at level 5 (4 before).
+const COUNT := [1, 2, 2, 2, 3]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 24 / 24 / 34 / 34 / 44, with one more keyboard at level 4 and
+## ×1.4 at 5. Smashing through a late crowd it dealt about 490 a second alone at full level at 8:00,
+## now about 300 (the common weapons' mark; the jobs' own about 500).
+const DAMAGE := [24.0, 24.0, 26.0, 28.0, 28.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): ×1.2 at level 5 (×1.4 before).
+const SIZE := [1.0, 1.0, 1.0, 1.0, 1.2]
 const GRAVITY := 420.0
 const ART_SIZE := 20.0
 

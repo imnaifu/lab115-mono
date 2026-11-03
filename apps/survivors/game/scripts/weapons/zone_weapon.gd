@@ -5,11 +5,15 @@ extends Weapon
 ## with a slow.
 
 ## Meetings running at once.
-const COUNT := [1, 1, 2, 2, 3]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): two rooms at most (three at level 5 before).
+const COUNT := [1, 1, 2, 2, 2]
 ## Per tick, every TICK seconds. Halved from the first draft, which dealt 22-41% of all damage in
 ## the bot's full runs, whatever the job: an area that slows and hits everything in it.
-const DAMAGE := [3.0, 4.0, 4.0, 5.0, 7.0]
-const RADIUS := [36.0, 40.0, 44.0, 48.0, 54.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 3 / 4 / 4 / 5 / 7, three rooms at level 5, radius up to 54. Rooms
+## go where the crowd is thickest: about 440 a second alone at full level at 8:00, now about 300.
+const DAMAGE := [3.0, 3.0, 4.0, 4.0, 5.0]
+## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): up to 46 (54 before).
+const RADIUS := [36.0, 38.0, 40.0, 42.0, 46.0]
 const LIFETIME := 3.0
 ## A room fades in over this long, and starts working once it has (.39: it used to slow and hurt
 ## from the first frame, while still almost invisible).
