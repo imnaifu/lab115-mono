@@ -10,6 +10,13 @@ extends RefCounted
 ## Bay; north past Lake Union are Fremont's troll, Gas Works Park and the university; east is Lake
 ## Washington, crossed only by the 520 and I-90 floating bridges to the Eastside (Microhard,
 ## Bellevue). I-5 runs north and south east of downtown, the light rail along the waterfront.
+##
+## Open ground since .77, as 硅谷 since .52 (the user: 其余地图参考硅谷，改的空旷点): a square of land
+## round the start (BOUNDS) with no bay and no lakes, the districts still where they were, and
+## the only buildings the five check-in spots, big tech's campuses (the user: 每个地图的打卡点能不能
+## 更像大厂一点): Amazin's spheres in the middle, then Starbacks, Valv, Microhard and T-Mobble on
+## the corners. (Until .76: the bay to the west, Lake Union and Lake Washington with its floating
+## bridges, rows of buildings on every street, and the city's landmarks to check in at.)
 
 const NAME := "西雅图"
 ## Between 硅谷 and 北京 (BayArea.STARS says how this works).
@@ -32,35 +39,22 @@ const MAP_EVENT := {"id": "rain", "at": 300.0, "seconds": 20.0, "text": "西雅�
 	"name": "下雨", "hint": "水坑里走不快，把怪引进去"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "slu"
-## The named part of the world (the minimap showed it until .44), in world pixels: from Elliott Bay to the Eastside,
-## from the university to SoDo.
-const OVERVIEW := Rect2(-1800.0, -2000.0, 4600.0, 4000.0)
+## The map (.77), as BayArea.BOUNDS: a square 2300 out every way from the start. Outside it counts
+## as water (is_water, water_rects), so everything stays inside, and City draws it as the edge.
+const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+## Only the check-in spots stand, and trees don't block (City).
+const OPEN_GROUND := true
+## The named part of the world (the minimap showed it until .44): the map itself since .77.
+const OVERVIEW := BOUNDS
 ## Spelled out rather than City.BLOCK, to keep the classes' constants acyclic (as in BayArea).
 const BLOCK_SIZE := Vector2(560.0, 400.0)
 ## Block rows at or above NORTH_ROW are north of Lake Union, at or below DOWNTOWN_ROW downtown,
-## at or below SODO_ROW SoDo; columns at or past EASTSIDE_COLUMN are across Lake Washington.
+## at or below SODO_ROW SoDo; columns at or past EASTSIDE_COLUMN are the Eastside (across Lake
+## Washington until .77).
 const NORTH_ROW := -2
 const DOWNTOWN_ROW := 1
 const SODO_ROW := 3
 const EASTSIDE_COLUMN := 3
-## Elliott Bay, as BayArea's Pacific: west of each row's shore road (west_shore_column) and a
-## strip of waterfront is water. ROAD_BAND as in BayArea: a road is water only where both rows
-## beside it are, so the waterfront road never goes half under.
-const SHORE_STRIP := 200.0
-const ROAD_BAND := 40.0
-## Lake Union (one block north of the start) and Lake Washington (a column of blocks down the
-## east side). The lakes stop short of the roads round them; Lake Washington is cut in three so
-## that only the 520 (the road at y = -400) and I-90 (y = 400) cross it, as the floating bridges do.
-const LAKE_BLOCKS: Array[Vector2i] = [
-	Vector2i(0, -2), Vector2i(2, -4), Vector2i(2, -3), Vector2i(2, -2), Vector2i(2, -1),
-	Vector2i(2, 0), Vector2i(2, 1), Vector2i(2, 2), Vector2i(2, 3),
-]
-const LAKES: Array[Rect2] = [
-	Rect2(60.0, -740.0, 440.0, 280.0),
-	Rect2(1180.0, -1540.0, 440.0, 1100.0),
-	Rect2(1180.0, -360.0, 440.0, 720.0),
-	Rect2(1180.0, 440.0, 440.0, 1100.0),
-]
 ## I-5 east of downtown and I-405 down the Eastside, by block column; `north` / `south` are where
 ## the green signs point.
 const FREEWAYS := {
@@ -79,7 +73,8 @@ const RUNWAYS: Array[Vector2i] = []
 const VEHICLES := ["car_top"]
 const TRAIN := "train_top"
 
-## Per district, as in BayArea.DISTRICTS. Firs and rain-green lawns everywhere.
+## Per district, as in BayArea.DISTRICTS. Firs and rain-green lawns everywhere. Since .77 (open
+## ground) at most a bush and a tree a block; the bay strip and the lakes' blocks are gone.
 const DISTRICTS := {
 	"slu": {
 		"name": "南联合湖", "icon": "spheres",
@@ -87,7 +82,7 @@ const DISTRICTS := {
 		"structures": ["soco:office", "soco:midrise_bands", "soco:midrise_grid", "soco:office_block", "soco:commercial"],
 		"gap": [36.0, 70.0], "brands": ["amazin", "zillo", "expedio", "starbacks"],
 		"brand_chance": 0.85, "tree": "redwood", "props": ["coffee_cart", "bike", "scooter", "cone"],
-		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.15,
+		"bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["tuft", 12.0], ["flower", 11.0], ["tuft", 12.0]],
 	},
 	"downtown": {
@@ -96,7 +91,7 @@ const DISTRICTS := {
 		"structures": ["soco:midrise_grid", "soco:office_block", "soco:midrise_bands", "soco:commercial",
 			"soco:shop_1", "soco:shop_2"],
 		"gap": [36.0, 56.0], "brands": ["starbacks", "zillo", "amazin"], "brand_chance": 0.4, "tree": "redwood",
-		"props": ["coffee_cart", "bike", "robotaxi"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.1,
+		"props": ["coffee_cart", "bike", "robotaxi"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.1,
 		"decor": [["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"sodo": {
@@ -104,7 +99,7 @@ const DISTRICTS := {
 		"ground": Color("e6e4d6"),
 		"structures": ["soco:supermarket", "soco:commercial", "soco:convenience_store", "soco:shop_1"],
 		"gap": [36.0, 70.0], "brands": ["starbacks", "costgo"], "brand_chance": 0.35, "tree": "poplar",
-		"props": ["cone", "coffee_cart"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.15,
+		"props": ["cone", "coffee_cart"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["tuft", 12.0], ["flower", 11.0]],
 	},
 	"north": {
@@ -112,7 +107,7 @@ const DISTRICTS := {
 		"ground": Color("d9ebcb"),
 		"structures": ["soco:small_1", "soco:small_2", "soco:small_3", "soco:small_4", "soco:shop_2"],
 		"gap": [40.0, 72.0], "brands": [], "brand_chance": 0.0, "tree": "redwood",
-		"props": ["bike", "bike", "coffee_cart"], "bushes": [2, 4], "lawn_trees": [1, 3], "park_chance": 0.25,
+		"props": ["bike", "bike", "coffee_cart"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.25,
 		"decor": [["flower", 11.0], ["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"eastside": {
@@ -120,56 +115,44 @@ const DISTRICTS := {
 		"ground": Color("dfeccf"),
 		"structures": ["soco:office", "soco:office_block", "soco:midrise_grid", "soco:midrise_bands", "soco:commercial"],
 		"gap": [36.0, 70.0], "brands": ["microhard", "tmobble", "valv", "costgo"], "brand_chance": 0.8,
-		"tree": "redwood", "props": ["robotaxi", "bike", "coffee_cart"], "bushes": [2, 4], "lawn_trees": [1, 2],
+		"tree": "redwood", "props": ["robotaxi", "bike", "coffee_cart"], "bushes": [0, 1], "lawn_trees": [0, 1],
 		"park_chance": 0.15, "decor": [["tuft", 12.0], ["flower", 11.0]],
 	},
-	# The waterfront strip between the shore road and Elliott Bay, and the lakes' blocks.
-	"sound": {
-		"name": "艾略特湾", "icon": "great_wheel",
-		"ground": Color("e9e4c6"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["tuft", 12.0]],
-	},
-	"lake": {
-		"name": "湖边", "icon": "gas_works",
-		"ground": Color("dceccf"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["tuft", 12.0]],
-	},
+
 }
 
-## One-off landmarks by block, as in BayArea.LANDMARKS.
+## One-off landmarks by block, as in BayArea.LANDMARKS: since .77 only the check-in spots, where
+## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
-	# Where a run starts: Amazin's campus round the first screen.
-	Vector2i(0, 0): "brand_row:amazin",
-	Vector2i(0, -1): "brand_row:amazin",
-	Vector2i(1, -1): "brand_row:zillo",
-	Vector2i(1, 0): "art:spheres",
-	Vector2i(-1, -1): "art:space_needle",
-	Vector2i(-1, 1): "art:pike_place",
-	Vector2i(1, 2): "brand_row:expedio",
-	# On Lake Union's north shore.
-	Vector2i(-1, -3): "art:fremont_troll",
-	# Across Lake Washington.
-	Vector2i(3, -1): "brand_row:valv",
-	Vector2i(3, 0): "brand_row:microhard",
-	Vector2i(3, 1): "brand_row:tmobble",
+	Vector2i(0, 1): "art:spheres",
+	Vector2i(-3, -5): "brand_row:starbacks",
+	Vector2i(3, -5): "brand_row:valv",
+	Vector2i(3, 4): "brand_row:microhard",
+	Vector2i(-3, 4): "brand_row:tmobble",
 }
-const LAWN_LANDMARKS := {}
+## The campuses' mascots and logo statues on the lawn (tools/make_logo_statues.py): Starbacks
+## keeps its first shop in front of its head office.
+const LAWN_LANDMARKS := {
+	Vector2i(-3, -5): "first_coffee",
+	Vector2i(3, -5): "statue_gamepad",
+	Vector2i(3, 4): "statue_window",
+	Vector2i(-3, 4): "statue_phone",
+}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"pike_place": "pike"}
+const LANDMARK_BRANDS := {}
 const SOLID_SPANS := {}
 
-## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start sea_ so they never clash with
-## another map's in the save. Their bonuses add up the same as the other maps'.
+## Landmarks to check in at (打卡), as in BayArea.STAMPS, in the order they open (the middle one,
+## then the corners clockwise from the north-west); ids start sea_ so they never clash with
+## another map's in the save. Their bonuses add up the same as the other maps'. The ids are the
+## save's, so they stay when a spot changes (.77: sea_space_needle is Starbacks, sea_troll Valv,
+## sea_pike T-Mobble; until then 太空针塔, 弗里蒙特巨魔, 派克市场).
 const STAMPS := {
-	"sea_spheres": {"art": "spheres", "block": Vector2i(1, 0), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 10.0]},
-	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-1, -1), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 5.0]},
-	"sea_pike": {"art": "pike_place", "block": Vector2i(-1, 1), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.05]},
-	"sea_troll": {"art": "fremont_troll", "block": Vector2i(-1, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.02]},
-	"sea_microhard": {"art": "icon_window", "block": Vector2i(3, 0), "name": "Microhard 园区", "note": "过了浮桥就是东区", "bonus": ["might", 0.02]},
+	"sea_spheres": {"art": "spheres", "block": Vector2i(0, 1), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 10.0]},
+	"sea_space_needle": {"art": "first_coffee", "block": Vector2i(-3, -5), "name": "Starbacks 总部", "note": "门口还开着 1 号店", "bonus": ["max_hp", 5.0]},
+	"sea_troll": {"art": "icon_gamepad", "block": Vector2i(3, -5), "name": "Valv 总部", "note": "游戏卖得好，3 永远不出", "bonus": ["haste", 0.02]},
+	"sea_microhard": {"art": "icon_window", "block": Vector2i(3, 4), "name": "Microhard 园区", "note": "窗户开了几十年还在更新", "bonus": ["might", 0.02]},
+	"sea_pike": {"art": "icon_phone", "block": Vector2i(-3, 4), "name": "T-Mobble 总部", "note": "满屏的粉红色", "bonus": ["magnet", 0.05]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.
@@ -179,8 +162,8 @@ const BRANDS := {
 	"zillo": {"text": "Zillo", "color": Color("2f6fe0")},
 	"expedio": {"text": "Expedio", "color": Color("1f4fa3")},
 	"starbacks": {"text": "Starbacks", "color": Color("1e7a4f")},
-	"tmobble": {"text": "T-Mobble", "color": Color("d6237f")},
-	"valv": {"text": "Valv", "color": Color("2f3542")},
+	"tmobble": {"text": "T-Mobble", "icon": "icon_phone", "color": Color("d6237f")},
+	"valv": {"text": "Valv", "icon": "icon_gamepad", "color": Color("2f3542")},
 	"costgo": {"text": "Costgo", "color": Color("d63a2f")},
 	"station": {"text": "Westlake", "color": Color("2f3542")},
 	"pike": {"text": "Public Market", "color": Color("c8453a")},
@@ -204,15 +187,12 @@ const HEIGHTS := {
 	"great_wheel": 124.0, "central_library": 124.0, "fremont_troll": 76.0, "gas_works": 104.0,
 	"uw_library": 104.0, "mt_rainier": 104.0, "caltrain": 46.0, "stadium": 150.0,
 	"redwood": 92.0, "poplar": 66.0, "bush": 23.0,
+	"statue_gamepad": 76.0, "statue_window": 76.0, "statue_phone": 76.0,
 	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0, "scooter": 24.0, "coffee_cart": 28.0,
 }
 
 
 static func district_of(block: Vector2i) -> String:
-	if LAKE_BLOCKS.has(block):
-		return "lake"
-	if block.x < west_shore_column(block.y):
-		return "sound"
 	if block.x >= EASTSIDE_COLUMN:
 		return "eastside"
 	if block.y <= NORTH_ROW:
@@ -239,17 +219,7 @@ static func _ordinal(number: int) -> String:
 	return "%d%s" % [number, suffix]
 
 
-## The block column whose road is the row's last before Elliott Bay: further west north of Lake
-## Union (Ballard), right at the waterfront road from South Lake Union south.
-static func west_shore_column(row: int) -> int:
-	return -2 if row <= NORTH_ROW else -1
-
-
-static func west_water_x(row: int) -> float:
-	return west_shore_column(row) * BLOCK_SIZE.x - SHORE_STRIP
-
-
-## No shore to the east (the lakes are LAKES): City asks, for the salt ponds and the beach.
+## No shore anywhere since .77 (City asks, for the salt ponds and the beach).
 static func east_shore_column(_row: int) -> Variant:
 	return null
 
@@ -258,46 +228,14 @@ static func east_water_x(_row: int) -> float:
 	return INF
 
 
+## Off the map counts as water (.77, as BayArea): there is no water, only the edge.
 static func is_water(point: Vector2) -> bool:
-	for lake in LAKES:
-		if lake.has_point(point):
-			return true
-	var row := floori(point.y / BLOCK_SIZE.y)
-	var within := point.y - row * BLOCK_SIZE.y
-	var west := west_water_x(row)
-	# On a road: water only where the rows on both sides of it are.
-	if within < ROAD_BAND:
-		west = minf(west, west_water_x(row - 1))
-	elif within > BLOCK_SIZE.y - ROAD_BAND:
-		west = minf(west, west_water_x(row + 1))
-	return point.x < west
+	return not BOUNDS.has_point(point)
 
 
-## The water inside `area` as rects (together exactly is_water): each lake's part of it, and per
-## row the bay west of its shore, per road where both rows beside it are bay (as BayArea does).
+## What of `area` lies off the map, as BayArea.water_rects.
 static func water_rects(area: Rect2) -> Array[Rect2]:
-	var rects: Array[Rect2] = []
-	for lake in LAKES:
-		var part := lake.intersection(area)
-		if part.has_area():
-			rects.append(part)
-	var first := floori(area.position.y / BLOCK_SIZE.y)
-	var last := floori(area.end.y / BLOCK_SIZE.y)
-	# One row past the last: its top road band reaches up into the area.
-	for row in range(first, last + 2):
-		var top := row * BLOCK_SIZE.y
-		var bands := [
-			[top + ROAD_BAND, top + BLOCK_SIZE.y - ROAD_BAND, west_water_x(row)],
-			[top - ROAD_BAND, top + ROAD_BAND, minf(west_water_x(row), west_water_x(row - 1))],
-		]
-		for band: Array in bands:
-			var from_y := maxf(band[0], area.position.y)
-			var to_y := minf(band[1], area.end.y)
-			if to_y <= from_y or band[2] <= area.position.x:
-				continue
-			var to_x := minf(band[2], area.end.x)
-			rects.append(Rect2(area.position.x, from_y, to_x - area.position.x, to_y - from_y))
-	return rects
+	return BayArea.water_rects_outside(BOUNDS, area)
 
 
 static func freeway_at(column: int, row: int) -> Dictionary:

@@ -8,7 +8,8 @@ extends RefCounted
 ## 到地图边界): a square of land round the start (BOUNDS) with no sea, where the only buildings are
 ## the five check-in landmarks (OPEN_GROUND), one just south of the start and one near each of
 ## the map's corners (.68, the user: 打卡点改成中间一个，靠近四个角个一个; .52–.67 they stood evenly
-## on a ring round the start), and a tree here and there. The districts still run the way the
+## on a ring round the start), big tech's campuses since .77, and a tree here and there. The other
+## four maps are built the same way since .77. The districts still run the way the
 ## real peninsula does: San Francisco to the north, San Jose to the south, the hills on the west
 ## edge; US-101 and I-280 run north-south, Caltrain beside Alma St. (Until .51 it was the
 ## peninsula itself, built up street after street, with the Golden Gate's water to the north, the
@@ -129,47 +130,54 @@ const HEIGHTS := {
 	"stanford_tower": 140.0, "pear_park": 62.0, "caltrain": 46.0,
 	"palm": 58.0, "redwood": 92.0, "bush": 23.0,
 	"bike": 22.0, "bike_campus": 22.0, "cone": 14.0, "robotaxi": 24.0, "cable_car": 30.0, "scooter": 24.0,
-	"dino_skeleton": 64.0, "thumbs_up_sign": 58.0, "burger_shop": 58.0, "stadium": 150.0, "plane": 96.0,
+	"dino_skeleton": 64.0, "thumbs_up_sign": 58.0, "statue_nut": 76.0, "statue_eye": 76.0, "burger_shop": 58.0, "stadium": 150.0, "plane": 96.0,
 }
 
 ## One-off landmarks by block, replacing that block's row of buildings. "brand_row:<brand>"
 ## is an ordinary row where every building carries that brand (a company campus).
-## Since .52 the five stand evenly on a ring about 1800 out from the start (the user: 打卡点平均
-## 分布), about 29 seconds' walk each and 34 between neighbours, as near a regular pentagon as the
-## blocks allow (within 5°): 金门大桥 north, Goggle east-north-east, Levy's 球场 south-east, Pear
-## south-west, 胡佛塔 west-north-west, roughly where they are in the real Bay Area. Sailsforce
-## 大厦 gave way to Levy's 球场 (two in San Francisco left the south empty).
-## The five check-in landmarks since .68: Goggle's campus the block south of the start, the rest
-## one column in from the map's east and west edges (the next column out would put a landmark's
-## drawing 60 past the fence) and about 500 in from its north and south edges.
+## The five check-in spots, one just south of the start and one near each corner (.68), are big
+## tech's campuses since .77 (the user: 每个地图的打卡点能不能更像大厂一点): Goggle's in the middle,
+## Beta's north-west, NUTFLIX's north-east, Envy's south-east and Pear's ring south-west, each a
+## row of its offices with its statue on the lawn (Pear's ring is its own drawing). The corners
+## are one column in from the map's east and west edges (the next column out would put a
+## landmark's drawing 60 past the fence) and about 500 in from its north and south edges.
+## (.52-.67: 金门大桥, Goggle, Levy's 球场, Pear, 胡佛塔 evenly on a ring; .68-.76 金门大桥, 胡佛塔
+## and Levy's 球场 on the corners.)
 const LANDMARKS := {
 	Vector2i(0, 1): "brand_row:goggle",
-	Vector2i(-3, -5): "art:golden_gate",
-	Vector2i(3, -5): "art:stanford_tower",
-	Vector2i(3, 4): "art:stadium",
+	Vector2i(-3, -5): "brand_row:beta",
+	Vector2i(3, -5): "brand_row:nutflix",
+	Vector2i(3, 4): "brand_row:envy",
 	Vector2i(-3, 4): "art:pear_park",
 }
-## Landmarks standing on a block's lawn, in front of its row of buildings: the campus mascots.
-const LAWN_LANDMARKS := {Vector2i(0, 1): "dino_skeleton"}
+## Landmarks standing on a block's lawn, in front of its row of buildings: the campus mascots and
+## logo statues (tools/make_logo_statues.py).
+const LAWN_LANDMARKS := {
+	Vector2i(0, 1): "dino_skeleton",
+	Vector2i(-3, -5): "thumbs_up_sign",
+	Vector2i(3, -5): "statue_nut",
+	Vector2i(3, 4): "statue_eye",
+}
 ## The landmarks a player can check in at (打卡, Stamps), in the order they open (Stamps.OPEN_AT: the
 ## middle one at 1:00, then the corners clockwise from the north-west at 3:00, 5:00, 7:00, 9:00): its picture
 ## on the 打卡 page, the block it stands on (in LANDMARKS / LAWN_LANDMARKS), its name, a line about
 ## it, and the small bonus it gives for good once checked in at ([kind, amount], Stamps.BONUSES).
 ## Since .55 (the user's call) each gives 2% damage, 2% cooldown, +10 luck, 5% pickup range or +5
 ## health (3%, 3%, 20, 10%, 10 from .44); all five maps' together are about one passive card each.
+## The ids are the save's, so they stay when a spot changes (.77: golden_gate is Beta's campus,
+## stanford_tower NUTFLIX's, stadium Envy's): whoever checked in there keeps it and its bonus.
 const STAMPS := {
 	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, 1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
-	"golden_gate": {"art": "golden_gate", "block": Vector2i(-3, -5), "name": "金门大桥", "note": "一路往西北，走到地图角上", "bonus": ["might", 0.02]},
-	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(3, -5), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
-	# Sailsforce 大厦's bonus until .52.
-	"stadium": {"art": "stadium", "block": Vector2i(3, 4), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
+	"golden_gate": {"art": "thumbs_up_sign", "block": Vector2i(-3, -5), "name": "Beta 园区", "note": "门口立着一块大大的点赞牌", "bonus": ["might", 0.02]},
+	"stanford_tower": {"art": "icon_nut", "block": Vector2i(3, -5), "name": "NUTFLIX 总部", "note": "下班回家接着刷剧", "bonus": ["haste", 0.02]},
+	"stadium": {"art": "icon_eye", "block": Vector2i(3, 4), "name": "Envy 园区", "note": "买显卡的队排到了门口", "bonus": ["magnet", 0.05]},
 	"pear_park": {"art": "pear_park", "block": Vector2i(-3, 4), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 5.0]},
 }
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"pear_park": "pear", "stadium": "levys"}
-## Landmarks that are only partly solid, as [from, to] fractions of their width: the Golden
-## Gate's towers block, the deck between them is walked under.
-const SOLID_SPANS := {"golden_gate": [[0.22, 0.28], [0.72, 0.78]]}
+const LANDMARK_BRANDS := {"pear_park": "pear"}
+## Landmarks that are only partly solid, as [from, to] fractions of their width (the Golden Gate's
+## towers until .77).
+const SOLID_SPANS := {}
 
 ## Parody companies: a name, an icon and a colour, close enough to recognise and drawn from
 ## scratch rather than borrowing anyone's logo.
@@ -243,22 +251,27 @@ static func is_water(point: Vector2) -> bool:
 	return not BOUNDS.has_point(point)
 
 
-## What of `area` lies off the map, as up to four rects (together exactly is_water): the bands
-## north and south of it full width, and west and east of it between them.
+## What of `area` lies off the map, as up to four rects (together exactly is_water).
 static func water_rects(area: Rect2) -> Array[Rect2]:
+	return water_rects_outside(BOUNDS, area)
+
+
+## What of `area` lies outside `bounds`, as up to four rects: the bands north and south of it full
+## width, and west and east of it between them. Every open map's water_rects (.77).
+static func water_rects_outside(bounds: Rect2, area: Rect2) -> Array[Rect2]:
 	var rects: Array[Rect2] = []
-	if area.position.y < BOUNDS.position.y:
-		rects.append(Rect2(area.position.x, area.position.y, area.size.x, minf(BOUNDS.position.y, area.end.y) - area.position.y))
-	if area.end.y > BOUNDS.end.y:
-		var south := maxf(BOUNDS.end.y, area.position.y)
+	if area.position.y < bounds.position.y:
+		rects.append(Rect2(area.position.x, area.position.y, area.size.x, minf(bounds.position.y, area.end.y) - area.position.y))
+	if area.end.y > bounds.end.y:
+		var south := maxf(bounds.end.y, area.position.y)
 		rects.append(Rect2(area.position.x, south, area.size.x, area.end.y - south))
-	var top := maxf(area.position.y, BOUNDS.position.y)
-	var bottom := minf(area.end.y, BOUNDS.end.y)
+	var top := maxf(area.position.y, bounds.position.y)
+	var bottom := minf(area.end.y, bounds.end.y)
 	if bottom > top:
-		if area.position.x < BOUNDS.position.x:
-			rects.append(Rect2(area.position.x, top, minf(BOUNDS.position.x, area.end.x) - area.position.x, bottom - top))
-		if area.end.x > BOUNDS.end.x:
-			var east := maxf(BOUNDS.end.x, area.position.x)
+		if area.position.x < bounds.position.x:
+			rects.append(Rect2(area.position.x, top, minf(bounds.position.x, area.end.x) - area.position.x, bottom - top))
+		if area.end.x > bounds.end.x:
+			var east := maxf(bounds.end.x, area.position.x)
 			rects.append(Rect2(east, top, area.end.x - east, bottom - top))
 	return rects
 

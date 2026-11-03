@@ -365,6 +365,49 @@ boss 朝你走 {number(pacing['walk_seconds'])} 秒（在屏幕里才算），�
                    f'<div class="grid wide">{curve_card}{waves_card}{bosses_card}</div>')
 
 
+def map_plan(game_map: dict) -> str:
+    """The map seen from above (.77, the user: 改完后加到网站上): its square of land, every block in
+    its district's ground colour with the roads between, the freeways and the railway, where a run
+    starts and the five check-in campuses with the time each opens. Drawn in world pixels."""
+    layout = game_map["layout"]
+    left, top, width, height = layout["bounds"]
+    right, bottom = left + width, top + height
+    block_w, block_h = layout["block"]
+    road = 20.0
+    shapes = [f'<rect x="{left}" y="{top}" width="{width}" height="{height}" fill="#e3e5e9"/>']
+    for block in layout["blocks"]:
+        # A block's lawn inside its roads, cut at the map's edge.
+        x0 = max(block["x"] * block_w + road, left)
+        y0 = max(block["y"] * block_h + road, top)
+        x1 = min((block["x"] + 1) * block_w - road, right)
+        y1 = min((block["y"] + 1) * block_h - road, bottom)
+        if x1 > x0 and y1 > y0:
+            shapes.append(f'<rect x="{x0:g}" y="{y0:g}" width="{x1 - x0:g}" height="{y1 - y0:g}" fill="{block["ground"]}"/>')
+    for freeway in layout["freeways"]:
+        x = freeway["column"] * block_w
+        y0 = max(freeway["from_row"] * block_h, top)
+        shapes.append(f'<line x1="{x}" y1="{y0:g}" x2="{x}" y2="{bottom}" stroke="#a3a9b4" stroke-width="56"/>'
+                      f'<line x1="{x}" y1="{y0:g}" x2="{x}" y2="{bottom}" stroke="#f7c948" stroke-width="8"/>')
+    railway = layout["railway"]
+    rail_x = railway["column"] * block_w + 44
+    rail_top = max(railway["from_row"] * block_h, top)
+    rail_bottom = min((railway["to_row"] + 1) * block_h, bottom)
+    shapes.append(f'<line x1="{rail_x}" y1="{rail_top:g}" x2="{rail_x}" y2="{rail_bottom:g}" stroke="#8a5a3c" stroke-width="20" stroke-dasharray="44 22"/>')
+    start_x, start_y = layout["start"]
+    shapes.append(f'<circle cx="{start_x}" cy="{start_y}" r="58" fill="#f7c948" stroke="#2f3542" stroke-width="14"/>')
+    shapes.append(f'<rect x="{left}" y="{top}" width="{width}" height="{height}" fill="none" stroke="#2f3542" stroke-width="40"/>')
+    svg = (f'<svg viewBox="{left:g} {top:g} {width:g} {height:g}" aria-hidden="true">' + "".join(shapes) + "</svg>")
+    pins = []
+    for stamp in game_map["stamps"]:
+        column, row = stamp["block"]
+        x = ((column + 0.5) * block_w - left) / width * 100
+        y = ((row + 0.5) * block_h - top) / height * 100
+        pins.append(f'<span class="pin" style="left:{x:.1f}%;top:{y:.1f}%" title="{esc(stamp["name"])}">'
+                    f'{art(stamp["art"], 30, stamp["name"])}<b>{clock(stamp["opens"])}</b></span>')
+    return (f'<div class="plan">{svg}{"".join(pins)}</div>'
+            '<p class="muted plan-key">黄点是出生点；灰色宽路是高速，棕色虚线是铁轨；图标是 5 个打卡的大厂园区和开门时间。</p>')
+
+
 def maps_section(data: dict) -> str:
     cards = []
     for index, game_map in enumerate(data["maps"]):
@@ -373,13 +416,15 @@ def maps_section(data: dict) -> str:
         event = game_map["event"]
         cards.append(f"""<article class="card map">
 <h3>{esc(game_map['name'])} <span class="stars" title="难度 {game_map['stars']} 星">{"★" * game_map['stars']}<span class="off">{"★" * (game_map['max_stars'] - game_map['stars'])}</span></span></h3>
+{map_plan(game_map)}
 <p class="muted">{esc(hard)} · 职级 {esc(game_map['rank_prefix'])}1、{esc(game_map['rank_prefix'])}2…</p>
 <p><b>分区</b>：{esc('、'.join(game_map['districts']))}</p>
 <p><b>地图事件 · {esc(event['name'])}</b>（{clock(event['at'])} 起，持续 {number(event['seconds'])} 秒）：{esc(event['text'])}<br>{esc(event['detail'])}<br><span class="muted">{esc(event['hint'])}</span></p>
 <p><b>boss</b>：{esc(' → '.join(boss['name'] for boss in game_map['bosses'][:-1]))}　<b>最后一战</b>：{esc(game_map['finale'])}</p>
 <p><a href="#stamps-{esc(game_map['id'])}">{len(game_map['stamps'])} 个打卡点 ›</a>　<a href="#bestiary" data-tab="{index}">本地怪物 ›</a></p></article>""")
     soon = "、".join(COMING_SOON_NAMES.get(city, city) for city in data["coming_soon"])
-    return section("maps", "地图", "按难度排，星越多越难（1–3 星）：通关一张开下一张。每张地图有自己的街区、地标、4 个 boss 和天气事件。"
+    return section("maps", "地图", "按难度排，星越多越难（1–3 星）：通关一张开下一张。每张地图都是一块空旷的方形地，四边是栅栏，哪里都能走；"
+                   "地上只有 5 个大厂园区（打卡点），中间一个、四个角各一个。每张地图有自己的分区、4 个 boss 和天气事件。"
                    "路上的车和火车（地铁）不扣血，只会把人和怪推到路边；火车来之前铁轨会先闪。",
                    f'<div class="grid wide">{"".join(cards)}</div><p class="muted soon">还在装修：{esc(soon)}</p>')
 
@@ -390,7 +435,7 @@ def stamps_section(data: dict) -> str:
         cards = "".join(f"""<article class="card stamp">{art(s['art'], 72, s['name'])}<h4>{esc(s['name'])}</h4>
 <p class="muted">{clock(s['opens'])} 开门 · {esc(s['note'])}</p><p class="bonus">{esc(s['bonus'])}</p></article>""" for s in game_map["stamps"])
         blocks.append(f'<h3 class="sub" id="stamps-{esc(game_map["id"])}">{esc(game_map["name"])}</h3><div class="grid stamps">{cards}</div>')
-    return section("stamps", "打卡点", "每张地图 5 个地标，一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（近的先开），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。每个地标给一点永久加成，这一局和以后每一局都带着，哪张地图打的卡在所有地图都生效；打过的地标不再有圈。",
+    return section("stamps", "打卡点", "每张地图 5 个大厂园区，一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（中间的先开，再从西北角顺时针），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。每个地标给一点永久加成，这一局和以后每一局都带着，哪张地图打的卡在所有地图都生效；打过的地标不再有圈。",
                    "".join(blocks))
 
 
@@ -524,6 +569,11 @@ p.intro{color:var(--muted);margin:0 0 14px;max-width:760px}
 .card .head{display:flex;gap:12px;align-items:center}
 .card.stamp,.card.small{text-align:left}
 .card.boss{border-color:#f2b8b8;background:#fffafa}
+.plan{position:relative;margin:10px 0 4px;border-radius:10px;overflow:hidden}.plan svg{display:block;width:100%;height:auto}
+.plan .pin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;pointer-events:auto}
+.plan .pin img{width:30px;height:30px;background:var(--paper);border:2px solid var(--ink);border-radius:50%;padding:2px}
+.plan .pin b{font-size:11px;line-height:1;margin-top:2px;background:var(--paper);border-radius:4px;padding:1px 3px}
+.plan-key{font-size:12px;margin:2px 0 8px}
 .muted{color:var(--muted);font-size:13px}
 .stats{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}.stats b{color:var(--ink);font-size:15px}
 .weapon{display:flex;align-items:center;gap:6px;flex-wrap:wrap}

@@ -11,6 +11,13 @@ extends RefCounted
 ## east. South is a strip of beach and then the sea; Sentosa is an island out in it, joined by one
 ## bridge that carries the road and the Sentosa line. Two expressways run north and south, with
 ## ride-hailing cars on them.
+##
+## Open ground since .77, as 硅谷 since .52 (the user: 其余地图参考硅谷，改的空旷点): a square of land
+## round the start (BOUNDS) with no sea and no bay, the districts still where they were (the
+## coast's blocks the ones north of them), and the only buildings the five check-in spots, big
+## tech's campuses (the user: 每个地图的打卡点能不能更像大厂一点): Shopay in the middle, then TikTak,
+## Grub, DBB and Lazado on the corners. (Until .76: the sea, Sentosa and Marina Bay, rows of
+## buildings on every street, and the city's landmarks to check in at.)
 
 const NAME := "新加坡"
 ## A little harder than 西雅图, the same two stars (BayArea.STARS); 班加罗尔 is still to come
@@ -34,34 +41,24 @@ const MAP_EVENT := {"id": "heat", "at": 300.0, "seconds": 20.0, "text": "热浪�
 	"name": "热浪", "hint": "躲进蓝色冷气圈，外面会掉血"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "onenorth"
-## The named part of the world (the minimap showed it until .44), in world pixels: from the university to Jewel,
-## from Little India to Sentosa.
-const OVERVIEW := Rect2(-1300.0, -1100.0, 4200.0, 3200.0)
+## The map (.77), as BayArea.BOUNDS: a square 2300 out every way from the start. Outside it counts
+## as water (is_water, water_rects), so everything stays inside, and City draws it as the edge.
+const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+## Only the check-in spots stand, and trees don't block (City).
+const OPEN_GROUND := true
+## The named part of the world (the minimap showed it until .44): the map itself since .77.
+const OVERVIEW := BOUNDS
 ## Spelled out rather than City.BLOCK, to keep the classes' constants acyclic (as in BayArea).
 const BLOCK_SIZE := Vector2(560.0, 400.0)
-## The coast: the road along the shore runs at the top of COAST_ROW, a beach below it, and past
-## SEA_Y the sea (south for ever), but for Sentosa (ISLAND) and the bridge out to it (BRIDGE,
-## along column 0's road, wide enough for the railway beside it).
-const COAST_ROW := 3
-const SEA_Y := COAST_ROW * 400.0 + 160.0
-const ISLAND := Rect2(-480.0, 1500.0, 1000.0, 460.0)
-const BRIDGE := Rect2(-40.0, SEA_Y, 110.0, 1500.0 - SEA_Y)
-## The blocks Sentosa stands on (its district).
-const ISLAND_BLOCKS: Array[Vector2i] = [Vector2i(-1, 3), Vector2i(0, 3), Vector2i(-1, 4), Vector2i(0, 4)]
-## Marina Bay: water down BAY_COLUMN's blocks from just below row 1's road to the sea, crossed by
-## row 2's road (the Helix Bridge) and the coast road (the barrage).
-const BAY_COLUMN := 2
-const BAY := Rect2(1160.0, 440.0, 464.0, SEA_Y - 440.0)
-const BAY_BRIDGES: Array[Vector2] = [Vector2(760.0, 840.0), Vector2(1160.0, 1240.0)]
 ## Two expressways, by block column; `north` / `south` are where the green signs point.
 const FREEWAYS := {
 	1: {"number": "CTE", "shield": "shield_sg", "from_row": -12, "north": "Ang Mo Kio", "south": "Chinatown"},
 	3: {"number": "KPE", "shield": "shield_sg", "from_row": -12, "north": "Punggol", "south": "Marina"},
 }
-## The MRT, beside one-north's road and over the bridge to Sentosa, where it ends.
+## The MRT, beside one-north's road (over the bridge to Sentosa, where it ended, until .77).
 const RAILWAY_COLUMN := 0
 const RAILWAY_FROM_ROW := -12
-const RAILWAY_TO_ROW := 3
+const RAILWAY_TO_ROW := 1000
 ## What drives the expressways and the railway (Traffic): ride-hailing cars and taxis, and the MRT.
 const VEHICLES := ["grub_top", "grub_top", "car_top"]
 const TRAIN := "mrt_top"
@@ -69,7 +66,8 @@ const TRAIN := "mrt_top"
 const SALT_POND_FROM_ROW := 1000
 const RUNWAYS: Array[Vector2i] = []
 
-## Per district, as in BayArea.DISTRICTS. Rain trees; durian signs, orchids and hawker stalls on
+## Per district, as in BayArea.DISTRICTS. Since .77 (open ground) at most a bush and a tree a
+## block; Marina Bay, the coast and Sentosa are gone. Rain trees; durian signs, orchids and hawker stalls on
 ## the pavements. `icon` is drawn by the district's name in the HUD.
 const DISTRICTS := {
 	"onenorth": {
@@ -78,7 +76,7 @@ const DISTRICTS := {
 		"structures": ["soco:office", "soco:midrise_bands", "soco:midrise_grid", "soco:office_block", "soco:commercial"],
 		"gap": [36.0, 70.0], "brands": ["shopay", "grub", "tiktak", "razzer"],
 		"brand_chance": 0.85, "tree": "rain_tree", "props": ["durian_sign", "orchid_pot", "bike"],
-		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.15,
+		"bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["tuft", 12.0], ["flower", 11.0], ["tuft", 12.0]],
 	},
 	"hdb": {
@@ -86,7 +84,7 @@ const DISTRICTS := {
 		"ground": Color("dfeccd"),
 		"structures": ["art:hdb_block", "art:hdb_block", "soco:shop_1", "soco:convenience_store"],
 		"gap": [40.0, 70.0], "brands": ["lazado"], "brand_chance": 0.3, "tree": "rain_tree",
-		"props": ["hawker_stall", "bike", "durian_sign"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.15,
+		"props": ["hawker_stall", "bike", "durian_sign"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["flower_pink", 11.0], ["tuft", 12.0]],
 	},
 	"heritage": {
@@ -94,7 +92,7 @@ const DISTRICTS := {
 		"ground": Color("ece4d2"),
 		"structures": ["art:shophouse_teal", "art:shophouse_pink", "art:shophouse_teal", "art:shophouse_pink", "soco:shop_2"],
 		"gap": [36.0, 44.0], "brands": [], "brand_chance": 0.0, "tree": "rain_tree",
-		"props": ["hawker_stall", "orchid_pot"], "bushes": [1, 2], "lawn_trees": [0, 1], "park_chance": 0.1,
+		"props": ["hawker_stall", "orchid_pot"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.1,
 		"decor": [["flower_pink", 11.0], ["tuft", 12.0]],
 	},
 	"cbd": {
@@ -102,7 +100,7 @@ const DISTRICTS := {
 		"ground": Color("e2e7dc"),
 		"structures": ["soco:office_block", "soco:midrise_grid", "soco:midrise_bands", "soco:office", "soco:commercial"],
 		"gap": [36.0, 60.0], "brands": ["dbb", "tiktak", "lazado", "shopay"], "brand_chance": 0.6,
-		"tree": "rain_tree", "props": ["orchid_pot", "durian_sign", "hawker_stall"], "bushes": [1, 2], "lawn_trees": [0, 1],
+		"tree": "rain_tree", "props": ["orchid_pot", "durian_sign", "hawker_stall"], "bushes": [0, 1], "lawn_trees": [0, 1],
 		"park_chance": 0.1, "decor": [["tuft", 12.0], ["flower", 11.0]],
 	},
 	"east": {
@@ -110,64 +108,45 @@ const DISTRICTS := {
 		"ground": Color("dcefc6"),
 		"structures": ["art:hdb_block", "soco:small_1", "soco:small_2", "soco:supermarket"],
 		"gap": [40.0, 90.0], "brands": ["grub"], "brand_chance": 0.2, "tree": "rain_tree",
-		"props": ["bike", "orchid_pot"], "bushes": [2, 4], "lawn_trees": [1, 3], "park_chance": 0.3,
+		"props": ["bike", "orchid_pot"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.3,
 		"decor": [["flower", 11.0], ["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	# Marina Bay's column: the water, and the promenades either side of it.
-	"marina": {
-		"name": "滨海湾", "icon": "mbs",
-		"ground": Color("e6e2d6"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["tuft", 12.0]],
-	},
-	# The beach along the coast road, and the sea past it.
-	"coast": {
-		"name": "海滨", "icon": "merlion",
-		"ground": Color("f3e5b5"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["tuft", 12.0]],
-	},
-	# Sentosa: beach and palms (on the landmark; trees dotted on its blocks could land in the sea).
-	"sentosa": {
-		"name": "圣淘沙", "icon": "sentosa_beach",
-		"ground": Color("f3e5b5"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["flower", 11.0], ["tuft", 12.0]],
-	},
+
 }
 
-## One-off landmarks by block, as in BayArea.LANDMARKS.
+## One-off landmarks by block, as in BayArea.LANDMARKS: since .77 only the check-in spots, where
+## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
-	# Where a run starts: an e-commerce campus round the first screen, a ride-hailing one west.
-	Vector2i(0, 0): "brand_row:shopay",
-	Vector2i(-1, 1): "brand_row:grub",
-	Vector2i(-1, -1): "brand_row:lazado",
-	Vector2i(2, 0): "brand_row:dbb",
-	Vector2i(1, -2): "brand_row:tiktak",
-	Vector2i(0, -1): "art:one_north",
-	# Across the water on Sentosa, looking out to sea.
-	Vector2i(0, 3): "art:sentosa_beach",
-	# Round Marina Bay: the Merlion on its west shore, the rest on its east.
-	Vector2i(1, 2): "art:merlion",
-	Vector2i(3, 2): "art:mbs",
-	Vector2i(3, -1): "art:jewel",
+	Vector2i(0, 1): "brand_row:shopay",
+	Vector2i(-3, -5): "brand_row:tiktak",
+	Vector2i(3, -5): "brand_row:grub",
+	Vector2i(3, 4): "brand_row:dbb",
+	Vector2i(-3, 4): "brand_row:lazado",
 }
-const LAWN_LANDMARKS := {}
+## The campuses' logo statues on the lawn (tools/make_logo_statues.py).
+const LAWN_LANDMARKS := {
+	Vector2i(0, 1): "statue_bag",
+	Vector2i(-3, -5): "statue_note",
+	Vector2i(3, -5): "statue_ride",
+	Vector2i(3, 4): "statue_coins",
+	Vector2i(-3, 4): "statue_heart_box",
+}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"one_north": "onenorth_sign"}
+const LANDMARK_BRANDS := {}
 const SOLID_SPANS := {}
 
-## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start sg_ so they never clash with
-## another map's in the save. Their bonuses add up the same as the other maps'.
+## Landmarks to check in at (打卡), as in BayArea.STAMPS, in the order they open (the middle one,
+## then the corners clockwise from the north-west); ids start sg_ so they never clash with
+## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
+## sg_one_north is Shopay, sg_merlion TikTak, sg_jewel Grub, sg_mbs DBB, sg_sentosa Lazado; until
+## then 纬壹科技城, 鱼尾狮, 星耀樟宜, 滨海湾金沙, 圣淘沙).
 const STAMPS := {
-	"sg_one_north": {"art": "one_north", "block": Vector2i(0, -1), "name": "纬壹科技城", "note": "几家大厂的亚太总部挤在一起", "bonus": ["haste", 0.02]},
-	"sg_merlion": {"art": "merlion", "block": Vector2i(1, 2), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.05]},
-	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(0, 3), "name": "圣淘沙", "note": "过了桥就是度假岛", "bonus": ["luck", 10.0]},
-	"sg_jewel": {"art": "jewel", "block": Vector2i(3, -1), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.02]},
-	"sg_mbs": {"art": "mbs", "block": Vector2i(3, 2), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 5.0]},
+	"sg_one_north": {"art": "icon_bag", "block": Vector2i(0, 1), "name": "Shopay 总部", "note": "大促一来，全楼通宵", "bonus": ["haste", 0.02]},
+	"sg_merlion": {"art": "icon_note", "block": Vector2i(-3, -5), "name": "TikTak 亚太总部", "note": "上班刷视频算工作", "bonus": ["magnet", 0.05]},
+	"sg_jewel": {"art": "icon_ride", "block": Vector2i(3, -5), "name": "Grub 总部", "note": "打车、外卖、钱包，一个 App 全包", "bonus": ["might", 0.02]},
+	"sg_mbs": {"art": "icon_coins", "block": Vector2i(3, 4), "name": "DBB 银行", "note": "金库就在楼下", "bonus": ["max_hp", 5.0]},
+	"sg_sentosa": {"art": "icon_heart_box", "block": Vector2i(-3, 4), "name": "Lazado 园区", "note": "快递盒堆成了山", "bonus": ["luck", 10.0]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.
@@ -175,8 +154,8 @@ const BRANDS := {
 	"shopay": {"text": "Shopay", "icon": "icon_bag", "color": Color("ee4d2d")},
 	"grub": {"text": "Grub", "icon": "icon_ride", "color": Color("00a94f")},
 	"tiktak": {"text": "TikTak", "icon": "icon_note", "color": Color("2f3542")},
-	"lazado": {"text": "Lazado", "color": Color("1a2a8e")},
-	"dbb": {"text": "DBB", "color": Color("d63a2f")},
+	"lazado": {"text": "Lazado", "icon": "icon_heart_box", "color": Color("1a2a8e")},
+	"dbb": {"text": "DBB", "icon": "icon_coins", "color": Color("d63a2f")},
 	"razzer": {"text": "Razzer", "color": Color("2f9e44")},
 	"onenorth_sign": {"text": "one-north", "color": Color("2f3542")},
 	"lps": {"text": "Lau Pa Sat", "color": Color("8a5a2b")},
@@ -200,15 +179,12 @@ const HEIGHTS := {
 	"little_india": 80.0, "raffles_place": 170.0, "jewel": 90.0,
 	"hdb_block": 100.0, "shophouse_teal": 70.0, "shophouse_pink": 70.0,
 	"rain_tree": 70.0, "bush": 23.0,
+	"statue_bag": 76.0, "statue_note": 76.0, "statue_ride": 76.0, "statue_coins": 76.0, "statue_heart_box": 76.0,
 	"bike": 22.0, "durian_sign": 30.0, "orchid_pot": 22.0, "hawker_stall": 30.0,
 }
 
 
 static func district_of(block: Vector2i) -> String:
-	if block.y >= COAST_ROW:
-		return "sentosa" if ISLAND_BLOCKS.has(block) else "coast"
-	if block.x == BAY_COLUMN and block.y >= 1:
-		return "marina"
 	if block.x >= 3:
 		return "east"
 	if block.x >= 1:
@@ -237,40 +213,14 @@ static func east_water_x(_row: int) -> float:
 	return INF
 
 
+## Off the map counts as water (.77, as BayArea): there is no sea, only the edge.
 static func is_water(point: Vector2) -> bool:
-	if BAY.has_point(point):
-		for band: Vector2 in BAY_BRIDGES:
-			if point.y > band.x and point.y < band.y:
-				return false
-		return true
-	if point.y <= SEA_Y:
-		return false
-	return not (ISLAND.has_point(point) or BRIDGE.has_point(point))
+	return not BOUNDS.has_point(point)
 
 
-## The water inside `area` as rects (together exactly is_water): Marina Bay between its bridges,
-## and the sea round Sentosa and its bridge.
+## What of `area` lies off the map, as BayArea.water_rects.
 static func water_rects(area: Rect2) -> Array[Rect2]:
-	var far := 1.0e6
-	var pieces: Array[Rect2] = []
-	var from_y := BAY.position.y
-	for band: Vector2 in BAY_BRIDGES:
-		pieces.append(Rect2(BAY.position.x, from_y, BAY.size.x, band.x - from_y))
-		from_y = band.y
-	pieces.append(Rect2(BAY.position.x, from_y, BAY.size.x, BAY.end.y - from_y))
-	# The sea: beside the bridge down to the island, beside the island, and past it.
-	var island_top := ISLAND.position.y
-	pieces.append(Rect2(-far, SEA_Y, BRIDGE.position.x + far, island_top - SEA_Y))
-	pieces.append(Rect2(BRIDGE.end.x, SEA_Y, far, island_top - SEA_Y))
-	pieces.append(Rect2(-far, island_top, ISLAND.position.x + far, ISLAND.size.y))
-	pieces.append(Rect2(ISLAND.end.x, island_top, far, ISLAND.size.y))
-	pieces.append(Rect2(-far, ISLAND.end.y, far * 2.0, far))
-	var rects: Array[Rect2] = []
-	for piece in pieces:
-		var part := piece.intersection(area)
-		if part.has_area():
-			rects.append(part)
-	return rects
+	return BayArea.water_rects_outside(BOUNDS, area)
 
 
 static func freeway_at(column: int, row: int) -> Dictionary:

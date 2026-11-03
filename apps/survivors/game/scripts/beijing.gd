@@ -10,6 +10,12 @@ extends RefCounted
 ## the Western Hills beyond; south-east the Olympic park and the Bird's Nest. Line 13 runs north
 ## and south past 西二旗 station, the G7 and G6 expressways either side. There is no sea: the city
 ## goes on every way, and the only water is the lake.
+##
+## Open ground since .77, as 硅谷 since .52 (the user: 其余地图参考硅谷，改的空旷点): a square of land
+## round the start (BOUNDS) with no lake, the districts still where they were, and the only
+## buildings the five check-in spots, big tech's campuses (the user: 每个地图的打卡点能不能更像大厂
+## 一点; the names and lines of .34-.43's 白度, 网异, 大米 and 字节跳跳 landmarks): 白度 in the middle, then 网异, 大米, 字节跳跳 and 京西 on the corners. (Until .76: 昆明湖,
+## rows of buildings on every street, and the city's landmarks to check in at.)
 
 const NAME := "北京"
 ## The hardest of the maps (BayArea.STARS says how this works).
@@ -32,10 +38,14 @@ const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "�
 	"name": "沙尘暴", "hint": "风往东刮，逆风走慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "houchang"
-## The named part of the world (the minimap showed it until .44), in world pixels. Pulled in to about half in .34
-## (it was 8400 x 6400), at the user's ask after Vampire Survivors: every landmark is within about
-## 30 seconds' walk of the start.
-const OVERVIEW := Rect2(-2800.0, -2000.0, 5600.0, 4400.0)
+## The map (.77), as BayArea.BOUNDS: a square 2300 out every way from the start. Outside it counts
+## as water (is_water, water_rects), so everything stays inside, and City draws it as the edge.
+## (The named part of the world was 5600 x 4400 until .76, pulled in from 8400 x 6400 in .34.)
+const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+## Only the check-in spots stand, and trees don't block (City).
+const OPEN_GROUND := true
+## The named part of the world (the minimap showed it until .44): the map itself since .77.
+const OVERVIEW := BOUNDS
 ## Spelled out rather than City.BLOCK, to keep the classes' constants acyclic (as in BayArea).
 const BLOCK_SIZE := Vector2(560.0, 400.0)
 ## Block rows at or above / below these are 回龙观 / the universities; columns at or before
@@ -43,10 +53,6 @@ const BLOCK_SIZE := Vector2(560.0, 400.0)
 const HUILONGGUAN_ROW := -2
 const HAIDIAN_ROW := 2
 const WEST_HILLS_COLUMN := -4
-## 昆明湖: the blocks it fills (their district is the lake) and the water itself, a margin short of
-## the roads round it, so a lakeside road runs all the way round.
-const LAKE_BLOCKS: Array[Vector2i] = [Vector2i(-3, 3), Vector2i(-2, 3), Vector2i(-3, 4), Vector2i(-2, 4)]
-const LAKES: Array[Rect2] = [Rect2(-1620.0, 1270.0, 1000.0, 660.0)]
 ## The expressways and Line 13 by block column, from far north on; `north` / `south` are where the
 ## green signs point.
 const FREEWAYS := {
@@ -64,7 +70,8 @@ const RUNWAYS: Array[Vector2i] = []
 const VEHICLES := ["car_top"]
 const TRAIN := "train_top"
 
-## Per district, as in BayArea.DISTRICTS.
+## Per district, as in BayArea.DISTRICTS. Since .77 (open ground) at most a bush and a tree a
+## block; the lake's blocks are 颐和园's.
 const DISTRICTS := {
 	"houchang": {
 		"name": "后厂村", "icon": "icon_paw",
@@ -72,7 +79,7 @@ const DISTRICTS := {
 		"structures": ["soco:office", "soco:midrise_bands", "soco:midrise_grid", "soco:office_block", "soco:commercial"],
 		"gap": [36.0, 70.0], "brands": ["baidu", "xiaomi", "netease", "didi", "kuaishou"],
 		"brand_chance": 0.85, "tree": "poplar", "props": ["shared_bike", "shared_bike", "delivery_ebike", "robotaxi"],
-		"bushes": [2, 4], "lawn_trees": [0, 2], "park_chance": 0.15,
+		"bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.15,
 		"decor": [["flower", 11.0], ["tuft", 12.0], ["tuft", 12.0]],
 	},
 	"huilongguan": {
@@ -81,7 +88,7 @@ const DISTRICTS := {
 		"structures": ["art:tower_block", "soco:midrise_grid", "art:tower_block", "soco:midrise_bands",
 			"soco:convenience_store", "soco:supermarket"],
 		"gap": [36.0, 56.0], "brands": [], "brand_chance": 0.0, "tree": "poplar",
-		"props": ["shared_bike", "jianbing_cart", "delivery_ebike"], "bushes": [1, 3], "lawn_trees": [0, 1], "park_chance": 0.1,
+		"props": ["shared_bike", "jianbing_cart", "delivery_ebike"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.1,
 		"decor": [["tuft", 12.0], ["flower", 11.0]],
 	},
 	"haidian": {
@@ -90,7 +97,7 @@ const DISTRICTS := {
 		"structures": ["soco:small_1", "soco:small_2", "soco:small_3", "soco:shop_1", "soco:shop_2",
 			"soco:commercial", "soco:convenience_store"],
 		"gap": [36.0, 64.0], "brands": ["bytedance", "jd"], "brand_chance": 0.3, "tree": "poplar",
-		"props": ["shared_bike", "jianbing_cart", "delivery_ebike", "bike"], "bushes": [2, 4], "lawn_trees": [1, 2], "park_chance": 0.2,
+		"props": ["shared_bike", "jianbing_cart", "delivery_ebike", "bike"], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.2,
 		"decor": [["flower", 11.0], ["tuft", 12.0], ["flower_pink", 11.0]],
 	},
 	"yiheyuan": {
@@ -98,7 +105,7 @@ const DISTRICTS := {
 		"ground": Color("d8ecc0"),
 		"structures": ["soco:small_1", "soco:small_3"],
 		"gap": [90.0, 160.0], "brands": [], "brand_chance": 0.0, "tree": "poplar",
-		"props": [], "bushes": [2, 4], "lawn_trees": [2, 4], "park_chance": 0.7,
+		"props": [], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.7,
 		"decor": [["flower", 11.0], ["flower_pink", 11.0], ["tuft", 12.0]],
 	},
 	"xishan": {
@@ -106,50 +113,51 @@ const DISTRICTS := {
 		"ground": Color("f0dc9a"),
 		"structures": ["soco:small_1", "soco:small_4"],
 		"gap": [120.0, 220.0], "brands": [], "brand_chance": 0.0, "tree": "redwood",
-		"props": [], "bushes": [1, 2], "lawn_trees": [3, 6], "park_chance": 0.4,
+		"props": [], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 0.4,
 		"decor": [["poppy", 11.0], ["tuft", 12.0]],
 	},
 	"aoyun": {
 		"name": "奥林匹克公园", "icon": "birds_nest",
 		"ground": Color("d6eec0"),
 		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "poplar",
-		"props": [], "bushes": [2, 4], "lawn_trees": [1, 3], "park_chance": 1.0,
+		"props": [], "bushes": [0, 1], "lawn_trees": [0, 1], "park_chance": 1.0,
 		"decor": [["flower", 11.0], ["tuft", 12.0]],
 	},
-	"lake": {
-		"name": "昆明湖", "icon": "koi",
-		"ground": Color("e9e4c6"),
-		"structures": [], "gap": [0.0, 0.0], "brands": [], "brand_chance": 0.0, "tree": "",
-		"props": [], "bushes": [0, 0], "lawn_trees": [0, 0], "park_chance": 1.0,
-		"decor": [["tuft", 12.0]],
-	},
+
 }
 
-## One-off landmarks by block, as in BayArea.LANDMARKS.
+## One-off landmarks by block, as in BayArea.LANDMARKS: since .77 only the check-in spots, where
+## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
-	# Where a run starts: a campus round the first screen, not a park that happened to roll.
-	Vector2i(0, 0): "brand_row:kuaishou",
-	Vector2i(1, 0): "art:subway_13",
-	Vector2i(0, 3): "art:tsinghua_gate",
-	Vector2i(0, 4): "brand_row:zgc",
-	# On the lake's north shore, looking out over 昆明湖, as 佛香阁 does from 万寿山.
-	Vector2i(-3, 2): "art:summer_palace",
-	Vector2i(2, 3): "art:birds_nest",
+	Vector2i(0, 1): "brand_row:baidu",
+	Vector2i(-3, -5): "brand_row:netease",
+	Vector2i(3, -5): "brand_row:xiaomi",
+	Vector2i(3, 4): "brand_row:bytedance",
+	Vector2i(-3, 4): "brand_row:jd",
 }
-const LAWN_LANDMARKS := {}
+## The campuses' logo statues on the lawn (tools/make_logo_statues.py).
+const LAWN_LANDMARKS := {
+	Vector2i(0, 1): "statue_paw",
+	Vector2i(-3, -5): "statue_web",
+	Vector2i(3, -5): "statue_rice",
+	Vector2i(3, 4): "statue_note",
+	Vector2i(-3, 4): "statue_cart",
+}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"subway_13": "station", "tsinghua_gate": "tsinghua"}
+const LANDMARK_BRANDS := {}
 const SOLID_SPANS := {}
 
-## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start bj_ so they never clash with
-## another map's in the save. Nearest first: they open in this order (Stamps.OPEN_AT, .68; 中关村
-## moved ahead of 鸟巢 and 颐和园 then).
+## Landmarks to check in at (打卡), as in BayArea.STAMPS, in the order they open (the middle one,
+## then the corners clockwise from the north-west); ids start bj_ so they never clash with
+## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
+## bj_xierqi is 白度, bj_yiheyuan 网异, bj_tsinghua 大米, bj_birds_nest 字节跳跳, bj_zhongguancun 京西;
+## until then 西二旗地铁站, 颐和园, 清华园, 鸟巢, 中关村).
 const STAMPS := {
-	"bj_xierqi": {"art": "subway_13", "block": Vector2i(1, 0), "name": "西二旗地铁站", "note": "早高峰进站要排半小时", "bonus": ["luck", 10.0]},
-	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(0, 3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.02]},
-	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(0, 4), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
-	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.02]},
-	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, 2), "name": "颐和园", "note": "佛香阁下就是昆明湖", "bonus": ["max_hp", 5.0]},
+	"bj_xierqi": {"art": "icon_paw", "block": Vector2i(0, 1), "name": "白度科技园", "note": "门口的熊掌老远就看得见", "bonus": ["luck", 10.0]},
+	"bj_yiheyuan": {"art": "icon_web", "block": Vector2i(-3, -5), "name": "网异大厦", "note": "猪厂，食堂出了名的好吃", "bonus": ["max_hp", 5.0]},
+	"bj_tsinghua": {"art": "icon_rice", "block": Vector2i(3, -5), "name": "大米科技园", "note": "为加班而生", "bonus": ["haste", 0.02]},
+	"bj_birds_nest": {"art": "icon_note", "block": Vector2i(3, 4), "name": "字节跳跳", "note": "大力出奇迹", "bonus": ["might", 0.02]},
+	"bj_zhongguancun": {"art": "icon_cart", "block": Vector2i(-3, 4), "name": "京西总部", "note": "仓库连着办公楼", "bonus": ["magnet", 0.05]},
 }
 
 ## Parody companies, as in BayArea.BRANDS, each with an icon of its own (.39: 嘀嘀 a taxi, 网异 a
@@ -185,13 +193,12 @@ const HEIGHTS := {
 	"subway_13": 46.0, "tower_block": 170.0, "tsinghua_gate": 70.0, "boya_pagoda": 150.0,
 	"summer_palace": 140.0, "birds_nest": 96.0,
 	"poplar": 66.0, "redwood": 92.0, "bush": 23.0,
+	"statue_paw": 76.0, "statue_web": 76.0, "statue_rice": 76.0, "statue_note": 76.0, "statue_cart": 76.0,
 	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0, "shared_bike": 22.0, "jianbing_cart": 30.0, "delivery_ebike": 26.0,
 }
 
 
 static func district_of(block: Vector2i) -> String:
-	if LAKE_BLOCKS.has(block):
-		return "lake"
 	if block.x <= WEST_HILLS_COLUMN:
 		return "xishan"
 	if block.x <= -2 and block.y >= HAIDIAN_ROW:
@@ -222,21 +229,14 @@ static func east_water_x(_row: int) -> float:
 	return INF
 
 
+## Off the map counts as water (.77, as BayArea): there is no water, only the edge.
 static func is_water(point: Vector2) -> bool:
-	for lake in LAKES:
-		if lake.has_point(point):
-			return true
-	return false
+	return not BOUNDS.has_point(point)
 
 
-## The water inside `area` as rects: the part of each lake that falls in it.
+## What of `area` lies off the map, as BayArea.water_rects.
 static func water_rects(area: Rect2) -> Array[Rect2]:
-	var rects: Array[Rect2] = []
-	for lake in LAKES:
-		var part := lake.intersection(area)
-		if part.has_area():
-			rects.append(part)
-	return rects
+	return BayArea.water_rects_outside(BOUNDS, area)
 
 
 static func freeway_at(column: int, row: int) -> Dictionary:

@@ -148,7 +148,8 @@ func _maps() -> Array:
 			# Opening times go by the landmark's place in STAMPS (Stamps.open_at, which reads the current map).
 			var opens: float = Stamps.OPEN_AT[mini(stamps.size(), Stamps.OPEN_AT.size() - 1)]
 			stamps.append({"id": stamp_id, "name": stamp["name"], "art": stamp["art"], "note": stamp.get("note", ""),
-				"bonus": _bonus_text(stamp["bonus"]), "kind": stamp["bonus"][0], "opens": opens})
+				"bonus": _bonus_text(stamp["bonus"]), "kind": stamp["bonus"][0], "opens": opens,
+				"block": [stamp["block"].x, stamp["block"].y]})
 		var bosses := []
 		for slot in (map.BOSSES as Array).size():
 			var boss_id: String = map.BOSSES[slot]
@@ -159,8 +160,29 @@ func _maps() -> Array:
 			"event": {"name": map.MAP_EVENT.get("name", ""), "text": map.MAP_EVENT.get("text", ""), "hint": map.MAP_EVENT.get("hint", ""),
 				"at": map.MAP_EVENT.get("at", 0.0), "seconds": map.MAP_EVENT.get("seconds", 0.0),
 				"detail": _event_detail(map.MAP_EVENT.get("id", ""), map.DIFFICULTY["damage"])},
-			"bosses": bosses, "finale": bosses[-1]["name"]})
+			"bosses": bosses, "finale": bosses[-1]["name"], "layout": _layout(map)})
 	return maps
+
+
+## A map's plan for the site's drawing of it (.77, the user: 改完后加到网站上): its edge, every
+## block inside it with its district's ground colour, the freeways' and the railway's columns and
+## where a run starts (Game puts the player at City.BLOCK × (0.5, 0.45)).
+func _layout(map: Script) -> Dictionary:
+	var bounds: Rect2 = map.BOUNDS
+	var block_size: Vector2 = map.BLOCK_SIZE
+	var blocks := []
+	for row in range(floori(bounds.position.y / block_size.y), ceili(bounds.end.y / block_size.y)):
+		for column in range(floori(bounds.position.x / block_size.x), ceili(bounds.end.x / block_size.x)):
+			var district: Dictionary = map.DISTRICTS[map.district_of(Vector2i(column, row))]
+			blocks.append({"x": column, "y": row, "ground": "#" + (district["ground"] as Color).to_html(false),
+				"district": district["name"]})
+	var freeways := []
+	for column: int in map.FREEWAYS:
+		freeways.append({"column": column, "from_row": map.FREEWAYS[column]["from_row"], "number": map.FREEWAYS[column]["number"]})
+	return {"bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y],
+		"block": [block_size.x, block_size.y], "blocks": blocks, "freeways": freeways,
+		"railway": {"column": map.RAILWAY_COLUMN, "from_row": map.RAILWAY_FROM_ROW, "to_row": map.RAILWAY_TO_ROW},
+		"start": [block_size.x * 0.5, block_size.y * 0.45]}
 
 
 ## A landmark's bonus as the 打卡 page words it (Stamps.BONUSES).

@@ -675,6 +675,9 @@ func _place_freeway_sign(content: Dictionary, block: Vector2i) -> void:
 	var freeway: Dictionary = Maps.current.freeway_at(block.x, block.y)
 	if freeway.is_empty() or posmod(block.y, 2) != 0:
 		return
+	# Not on a campus's lawn, where its big sign stands (.77: the check-in campuses by a freeway).
+	if String(Maps.current.LANDMARKS.get(block, "")).begins_with("brand_row:"):
+		return
 	# Below the street sign at the corner.
 	var at := Vector2(block.x * BLOCK.x + FREEWAY_HALF + SIDEWALK + 44.0, block.y * BLOCK.y + 150.0)
 	if Maps.current.is_water(at):
