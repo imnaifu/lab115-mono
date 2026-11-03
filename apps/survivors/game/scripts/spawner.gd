@@ -32,7 +32,7 @@ const MIN_RATE := 1.0
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on
 ## purpose: they are the balance the game was tuned with, and crowds overlapping a little reads
 ## fine with these drawings. `elite` marks bosses (health bar, the boss bar at the top of the
-## screen, a chest when killed; what each does is BossKits').
+## screen, a year-end bonus opening when killed; what each does is BossKits').
 ## Radii stay at or under Game.MAX_ENEMY_RADIUS. Regular enemies walk about 5% slower since .65 (the
 ## user: 小怪的移速慢一点点): 50 / 46 / 44 / 40 / 38 / 34 / 30 / 26 became 48 / 44 / 42 / 38 / 36 /
 ## 32 / 29 / 25; bosses kept theirs.

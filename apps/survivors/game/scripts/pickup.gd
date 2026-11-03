@@ -1,7 +1,7 @@
 class_name Pickup
 extends Node2D
 ## Something on the ground for the player to collect: XP stars, bubble tea that heals, the
-## year-end bonus chest (a boss's drop, free upgrades), the magnet that pulls in every star, the
+## year-end bonus chest (a boss's drop until .69, now opened by itself; Game.BOSS_CHEST_DELAY), the magnet that pulls in every star, the
 ## 午休 that stops every enemy for a moment and the 红包 that pays a little 工资 (both .61). Game
 ## drives tick() for all pickups at once, since late runs can have hundreds of stars.
 

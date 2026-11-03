@@ -105,6 +105,9 @@ const HITSTOP_SPEED := 0.05
 const SHAKE_CROWD := 5
 ## A boss going down: a longer beat of hit-stop, a ring and a shake.
 const BOSS_KILL_HITSTOP := 0.08
+## How long after a boss goes down its year-end bonus opens by itself (.69, the user: boss 不用掉落
+## 宝箱，打完 boss 自动出动画；不用捡): long enough to see it fall before the dialog covers it.
+const BOSS_CHEST_DELAY := 0.6
 ## Hits pushing at least this hard kick up dust behind what they hit.
 const DUST_PUSH := 120.0
 ## Every job talks trash (Jobs "lines") when its own weapon lands a hit, at most this often.
@@ -544,8 +547,11 @@ func _kill(enemy: Enemy) -> void:
 		# wasn't enough to send them to the star.
 		star.point_at()
 	if enemy.is_elite:
-		_drop(Pickup.Kind.BONUS, enemy.position + Vector2(12, 0), 0)
-		_drop(Pickup.Kind.HEAL, enemy.position + Vector2(-12, 0), 1)
+		# No chest on the ground since .69: the year-end bonus opens by itself a beat later. A
+		# pausable timer, so a level-up, the pause screen or 返聘 holding the game holds it too;
+		# if the run ends first (the tree stays paused) it never opens.
+		get_tree().create_timer(BOSS_CHEST_DELAY, false).timeout.connect(_open_chest)
+		_drop(Pickup.Kind.HEAL, enemy.position, 1)
 	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet, a 午休 or a 红包.
 	else:
 		if _rare_drop_due(Pickup.Kind.MAGNET, MAGNET_DROP_CHANCE, MAGNET_FROM_LEVEL):
@@ -840,8 +846,10 @@ func choose_upgrade(index: int) -> void:
 
 ## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS) and one of its 工资
 ## amounts, saves that straight away (closing the page mid-run keeps it, as a stamp), applies its
-## upgrade and pauses while the HUD opens the chest. A second chest picked up meanwhile waits its
-## turn.
+## upgrade and pauses while the HUD opens the chest. A second one due meanwhile (two bosses down
+## together, or one falling as a level-up is offered) waits its turn. Opened BOSS_CHEST_DELAY after
+## a boss's kill since .69; until then the boss dropped it as a pickup (Pickup.Kind.BONUS, kept
+## but no longer dropped) and it opened when picked up.
 func _open_chest(lowest_round: int = 0) -> void:
 	if state != State.PLAYING:
 		_waiting_chests.append(lowest_round)

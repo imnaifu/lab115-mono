@@ -256,7 +256,7 @@ def upgrades_section(data: dict) -> str:
 <div class="scroll"><table class="nums"><tr><th>运气</th>{head}</tr>{card_rows}</table></div>
 <div class="scroll"><table class="nums"><tr><th>运气</th><th>升级时多一张卡</th></tr>{more_rows}</table></div></article>"""
 
-    return section("upgrades", "升级", '打怪捡星星升级，升级时选卡；boss 掉的年终奖还白送一个升级（见<a href="#drops">掉落</a>）。',
+    return section("upgrades", "升级", '打怪捡星星升级，升级时选卡；打掉 boss 开的年终奖还白送一个升级（见<a href="#drops">掉落</a>）。',
                    f'<div class="grid wide">{xp_card}{rarity_card}{luck_card}</div>')
 
 
@@ -293,12 +293,12 @@ def drops_section(data: dict) -> str:
         f"<td>{esc(rarities[chest['rarity']]['colour'])} {rarity_tag(rarities[chest['rarity']])}</td></tr>"
         for chest in drops["chests"])
     chest_card = f"""<article class="card"><div class="head">{art("chest", 48, "年终奖")}<div><h3>年终奖</h3>
-<p class="muted">每个 boss 必掉的红色宝箱。捡到就开箱，开出一档绩效：按绩效发工资，同时白送一个局内升级。</p></div></div>
+<p class="muted">打掉 boss 就发：不掉在地上、不用捡，boss 倒下后自动开箱，开出一档绩效：按绩效发工资，同时白送一个局内升级。</p></div></div>
 <div class="scroll"><table class="nums"><tr><th>绩效</th><th>概率</th><th>工资</th><th>送的升级</th></tr>{ratings}</table></div>
 <p class="muted">送的升级当场生效：从身上已有、还没满级的武器和被动里随机挑一个，升一级，稀有度按绩效定；身上的都满了才出新的。每档工资是固定的一个 66 结尾的吉利数，存进存档，在<a href="#training">培训</a>里花。开出哪档绩效和运气无关。</p></article>"""
     rehire_card = card("rehire", "返聘", f"不是掉的，在<a href=\"#training\">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用："
                        f"用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。")
-    return section("drops", "掉落", "打怪会掉东西，走近就捡；boss 必掉珍珠奶茶和年终奖。",
+    return section("drops", "掉落", "打怪会掉东西，走近就捡；boss 必掉珍珠奶茶，打掉还自动开年终奖。",
                    f'<div class="grid">{"".join(small)}</div><div class="grid wide">{chest_card}{rehire_card}</div>')
 
 
@@ -467,7 +467,7 @@ def how_section(data: dict) -> str:
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
-<li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉必掉「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
+<li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉自动开「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
 <li>撑满 10:00 就能敲钟上市</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
 <article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（boss 是每张地图自己的，见<a href="#maps">地图</a>）：</p><ol class="timeline">{rows}</ol></article>
