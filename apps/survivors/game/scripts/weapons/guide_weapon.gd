@@ -1,8 +1,8 @@
 class_name GuideWeapon
 extends Weapon
 ## A design tool's layout grid: every so often a horizontal and a vertical gridline are pulled
-## across the whole screen through where the player stands, and stay a moment; enemies on a line
-## keep taking damage. (Silicon Valley: 网格线. It was the designer's 参考线, guides, in .12-.13,
+## through where the player stands, a small cross at first and right across the screen at full
+## 更长, and stay a moment; enemies on a line keep taking damage. (Silicon Valley: 网格线. It was the designer's 参考线, guides, in .12-.13,
 ## the data scientist's 坐标轴, a chart's axes, in .14-.40, and the designer's again from .41; the
 ## chart look, purple lines and a bar-chart icon, stayed on it until .49.) Vampire Survivors' Song
 ## of Mana, a column of light through the player.
@@ -10,7 +10,12 @@ extends Weapon
 ## them.
 ##
 ## The designer's own weapon, so it levels up along two directions (Upgrades.BRANCHES):
-## 更多网格线 adds one more line each way, 更粗 makes every line wider and harder-hitting.
+## 更长 draws both lines longer, 更粗 makes them wider and harder-hitting. Always one line each way
+## since .74 (the user: 线改短一点，升级是加长和加粗，不加数量；线加满才全屏，一开始就个十字):
+## .41–.73 every line ran across the whole screen and 更多网格线 added one more, up to three each
+## way, so in a late crowd it outdid every other job's weapon (about 600 damage a second alone at
+## 8:00 against the programmer's 360); 更粗 went from +1.5 a level to +3.5 to make up for the lines
+## it no longer adds, about 520 a second at full level at 8:00.
 ##
 ## A set stays three quarters of its cycle and is gone for the last quarter, however it is
 ## upgraded (.49, the user's call: 去掉更久). Until then 更粗 was 更粗更久 and each level also made a
@@ -30,7 +35,7 @@ const COOLDOWN := 2.0
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
-const DAMAGE_PER_THICKER := 1.5
+const DAMAGE_PER_THICKER := 3.5
 const TICK := 0.6
 const BASE_WIDTH := 8.0
 const WIDTH_PER_THICKER := 4.0
@@ -40,11 +45,13 @@ const BASE_SECONDS := 1.5
 ## A set fades in over FADE_IN and out over its last FADE_OUT seconds.
 const FADE_IN := 0.15
 const FADE_OUT := 0.3
-## How far from the player each line of a set runs, the first through the player.
-## Where each axis's lines go, out from the player. 更多网格线 adds one line a time, across then down
-## in turn, three each way at most (.41, the user's call: it added one each way a time, up to five
-## each way, and made the data scientist the strongest job).
-const OFFSETS := [0.0, 40.0, -40.0]
+## How far each line runs either way from the player with no 更长: a small cross. Each 更长 takes it
+## a quarter of the way on to the screen's edge (the view's half width for the horizontal line, its
+## half height for the vertical one), so at BRANCH_MAX it crosses the whole screen.
+const START_HALF := 60.0
+## The landscape view's half width (640 / 2): what the cards and the 官网 give as 长度, the
+## horizontal line's reach on a computer.
+const SHOWN_SCREEN_HALF := 320.0
 ## The designer's pink, the soft red of a design tool's layout grid. The data scientist's purple
 ## (8c7cf0) until .49, when the data scientist's needle took that colour.
 const COLOR := Color("ff5d9e")
@@ -54,6 +61,9 @@ class Guide:
 	var horizontal := true
 	## The line's y if horizontal, its x if vertical.
 	var at := 0.0
+	## Where along the line its middle is (x if horizontal), and how far it runs either way.
+	var middle := 0.0
+	var half_length := 0.0
 	var life := 0.0
 	var age := 0.0
 	var tick_left := 0.0
@@ -63,11 +73,18 @@ var _guides: Array[Guide] = []
 var _floor: Node2D
 
 
-## The lines with `more` upgrades to 更多网格线 and `thicker` to 更粗 (the cards' numbers too):
-## `count` lines each way. `duration` is the same at every level, before cooldown bonuses.
-static func branch_stats(more: int, thicker: int) -> Dictionary:
-	return {"rows": 1 + ceili(more / 2.0), "columns": 1 + floori(more / 2.0), "damage": BASE_DAMAGE + DAMAGE_PER_THICKER * thicker,
+## The lines with `longer` upgrades to 更长 and `thicker` to 更粗 (the cards' numbers too): `range`
+## is how far the horizontal line runs either way on a computer's screen (SHOWN_SCREEN_HALF at
+## full). `duration` is the same at every level, before cooldown bonuses.
+static func branch_stats(longer: int, thicker: int) -> Dictionary:
+	return {"range": reach_share(longer) * (SHOWN_SCREEN_HALF - START_HALF) + START_HALF,
+		"damage": BASE_DAMAGE + DAMAGE_PER_THICKER * thicker,
 		"size": (BASE_WIDTH + WIDTH_PER_THICKER * thicker) / BASE_WIDTH, "duration": BASE_SECONDS}
+
+
+## How far from START_HALF to the screen's edge the lines run after `longer` upgrades to 更长.
+static func reach_share(longer: int) -> float:
+	return clampf(float(longer) / Upgrades.BRANCH_MAX, 0.0, 1.0)
 
 
 func _ready() -> void:
@@ -96,15 +113,19 @@ func fire() -> bool:
 	# scientist lasted the full 10 minutes 28% of the time, 8% with this).
 	_guides.clear()
 	for horizontal in [true, false]:
-		for i in mini(stats["rows"] if horizontal else stats["columns"], OFFSETS.size()):
-			var guide := Guide.new()
-			guide.horizontal = horizontal
-			guide.at = (player.position.y if horizontal else player.position.x) + OFFSETS[i]
-			# Three quarters of the cycle, sped up with it, so a gap is always left before the next
-			# set (evolved, it lasts until then).
-			var cycle := COOLDOWN * player.cooldown_scale
-			guide.life = cycle if evolved else stats["duration"] * player.cooldown_scale
-			_guides.append(guide)
+		var guide := Guide.new()
+		guide.horizontal = horizontal
+		guide.at = player.position.y if horizontal else player.position.x
+		guide.middle = player.position.x if horizontal else player.position.y
+		# A small cross, out to the screen's edges at full 更长 (each axis its own: on a phone held
+		# upright the horizontal line has less screen to cross).
+		var edge: float = game.view_half().x if horizontal else game.view_half().y
+		guide.half_length = lerpf(START_HALF, maxf(edge, START_HALF), reach_share(branch_a))
+		# Three quarters of the cycle, sped up with it, so a gap is always left before the next
+		# set (evolved, it lasts until then).
+		var cycle := COOLDOWN * player.cooldown_scale
+		guide.life = cycle if evolved else stats["duration"] * player.cooldown_scale
+		_guides.append(guide)
 	return true
 
 
@@ -127,21 +148,21 @@ func _process(delta: float) -> void:
 		guide.tick_left = TICK * player.cooldown_scale
 		for enemy in on_screen:
 			var across := enemy.position.y if guide.horizontal else enemy.position.x
-			if absf(across - guide.at) <= half_width + enemy.hit_radius:
+			var along := enemy.position.x if guide.horizontal else enemy.position.y
+			if absf(across - guide.at) <= half_width + enemy.hit_radius and absf(along - guide.middle) <= guide.half_length + enemy.hit_radius:
 				game.damage_enemy(enemy, damage, Vector2.ZERO, id, true)
 	_floor.queue_redraw()
 
 
-## Each guide across the visible screen: a soft band as wide as it hits, with a crisp line down
-## its middle, fading in at the start and out at the end.
+## Each guide as far as it reaches from where it was pulled (.74; across the visible screen until
+## then): a soft band as wide as it hits, with a crisp line down its middle, fading in at the start
+## and out at the end.
 func _draw_guides() -> void:
 	var stats := branch_stats(branch_a, branch_b)
 	var width: float = BASE_WIDTH * stats["size"]
-	var half := game.view_half() + Vector2(20.0, 20.0)
-	var centre := player.position
 	for guide in _guides:
 		var alpha := clampf(minf(guide.age / FADE_IN, guide.life / FADE_OUT), 0.0, 1.0)
-		var from := Vector2(centre.x - half.x, guide.at) if guide.horizontal else Vector2(guide.at, centre.y - half.y)
-		var to := Vector2(centre.x + half.x, guide.at) if guide.horizontal else Vector2(guide.at, centre.y + half.y)
+		var from := Vector2(guide.middle - guide.half_length, guide.at) if guide.horizontal else Vector2(guide.at, guide.middle - guide.half_length)
+		var to := Vector2(guide.middle + guide.half_length, guide.at) if guide.horizontal else Vector2(guide.at, guide.middle + guide.half_length)
 		_floor.draw_line(from, to, Color(COLOR, 0.22 * alpha), width)
 		_floor.draw_line(from, to, Color(COLOR, 0.9 * alpha), 1.5)

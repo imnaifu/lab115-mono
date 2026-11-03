@@ -23,12 +23,15 @@ extends Weapon
 ## for every job's own weapon was no piercing, knockback or stun, so the jobs differ only in how
 ## they deal damage. Piercing a whole line made this the strongest job by far.
 
-const COOLDOWN := 0.68
+## .74 (the user: 回车和抽样成长伤害加高；抽样改成 +2，频率调整下，略低一点): +2 a level (+1 before) and a
+## round every 0.72 s (0.68): one target a jab, it fell behind the weapons that hit a crowd late
+## (about 375 damage a second alone at 8:00, now about 490).
+const COOLDOWN := 0.72
 const POKE_GAP := 0.09
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
-const DAMAGE_PER_UPGRADE := 1.0
+const DAMAGE_PER_UPGRADE := 2.0
 const LENGTH := 80.0
 const WIDTH := 10.0
 ## Directions at once by upgrades to 分层抽样, spread evenly round the first.

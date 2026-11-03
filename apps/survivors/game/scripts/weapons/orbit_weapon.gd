@@ -23,7 +23,9 @@ const BASE_WALLS := 1
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
-const DAMAGE_PER_HARDER := 14.0
+## +10 a 更硬 since .74 (the user: 防火墙成长也调低; +14 before): walls slam whatever crowds the player,
+## and in a late crowd that came to about 650 damage a second alone at 8:00, now about 500.
+const DAMAGE_PER_HARDER := 10.0
 ## Enemies this close to the player are the walls' to go for.
 const BASE_GUARD_RADIUS := 70.0
 const GUARD_PER_UPGRADE := 4.0

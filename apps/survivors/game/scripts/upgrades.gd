@@ -71,7 +71,7 @@ const WEAPONS := {
 	"poke": {"name": "抽样", "art": "sample_needle", "behavior": "poke", "type": "melee", "job": "data_scientist",
 		"levels": ["朝最近的怪扎一针抽个样，只扎最前面的一只；没怪也照扎"]},
 	"guides": {"name": "网格线", "art": "layout_grid", "behavior": "guides", "type": "area", "job": "designer",
-		"levels": ["以你为中心拉出横竖两条贯穿全屏的网格线，线上的怪持续掉血"]},
+		"levels": ["以你为中心拉出一个网格线十字，线上的怪持续掉血；升满「更长」横竖都到屏幕边"]},
 	"pen": {"name": "钢笔工具", "art": "pen_tool", "behavior": "trail", "type": "area",
 		"levels": ["走过的地方留下一条线，碰到的怪持续掉血", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +2，线更粗、留得更久", "伤害 +4，线粗一半、留 3 秒"]},
 	"wifi": {"name": "Wi-Fi 信号", "art": "wifi", "behavior": "aura", "type": "area",
@@ -118,12 +118,12 @@ const EVOLUTIONS := {
 ## upgrades in all, in any mix, took it to MAX_LEVEL, so going all one way shut the other).
 const BRANCH_MAX := 4
 const BRANCHES := {
-	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +8"}},
-	"prd": {"a": {"name": "更长", "text": "光束更长，伤害 +10"}, "b": {"name": "更宽", "text": "扫得更开（四次到 180°），伤害 +10"}},
-	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +14"}},
-	"guides": {"a": {"name": "更多网格线", "text": "多一条网格线（横竖轮流加，最多各 3 条）"}, "b": {"name": "更粗", "text": "线更粗，伤害 +1.5"}},
+	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +12"}},
+	"prd": {"a": {"name": "更长", "text": "光束更长，伤害 +6"}, "b": {"name": "更宽", "text": "扫得更开（四次到 150°），伤害 +6"}},
+	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +10"}},
+	"guides": {"a": {"name": "更长", "text": "十字更长，升满四次横竖都到屏幕边"}, "b": {"name": "更粗", "text": "线更粗，伤害 +3.5"}},
 	# Stratified sampling takes from every stratum, so more ways; a bigger sample is more jabs.
-	"poke": {"a": {"name": "分层抽样", "text": "多扎几个方向（前 → 前后 → 四向 → 六向 → 八向），伤害 +1"}, "b": {"name": "加大样本量", "text": "一轮多扎一针，伤害 +1"}},
+	"poke": {"a": {"name": "分层抽样", "text": "多扎几个方向（前 → 前后 → 四向 → 六向 → 八向），伤害 +2"}, "b": {"name": "加大样本量", "text": "一轮多扎一针，伤害 +2"}},
 }
 
 const PASSIVES := {

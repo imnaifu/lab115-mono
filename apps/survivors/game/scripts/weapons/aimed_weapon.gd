@@ -21,7 +21,10 @@ extends Weapon
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
 const BASE_DAMAGE := 7.0
-const DAMAGE_PER_SIZE := 8.0
+## +12 a 更大 since .74 (the user: 回车和抽样成长伤害加高; +8 before): a key hits one enemy, and late
+## the weapons that hit a crowd left it far behind (about 360 damage a second alone at 8:00 against
+## the product manager's 930); now about 500.
+const DAMAGE_PER_SIZE := 12.0
 const SIZE_GROWTH := 0.25
 const SPEED := 230.0
 ## Kept short so most kills, and their stars, land within walking distance.

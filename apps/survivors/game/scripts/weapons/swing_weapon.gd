@@ -22,15 +22,20 @@ extends Weapon
 const BASE_DAMAGE := 7.0
 ## 10 an upgrade from 66 (the user: PM 武器有点强了，改弱点; 13 until then): about a fifth less at
 ## every level past the first (59 → 47 after four, 111 → 87 at full).
-const DAMAGE_PER_UPGRADE := 10.0
+## .74 (the user: 有穿透的武器数值调低点……激光笔初始伤害不动，成长伤害降低；可以不要降那么多，改成
+## 范围/长度调整): a swing catches everything in its arc, so in a late crowd it outdid every other
+## job's weapon (about 930 damage a second alone at 8:00 against the programmer's 360). Now +6 a
+## level (+10 before), and each 更长 / 更宽 adds half what it did: +4 reach (+8), +15° (+22.5°, so
+## four make 150° rather than a half circle). About 500 a second at full level at 8:00.
+const DAMAGE_PER_UPGRADE := 6.0
 ## 90° to start with (narrowed from 120° at the user's request, so a swing reads as aimed).
 const BASE_ARC_DEGREES := 90.0
-## Four 更宽 reach MAX_ARC_DEGREES, a half circle: the user's call in .35 (it went all the way
-## round, 67.5° a time, which left nothing to aim).
-const ARC_PER_WIDER := 22.5
+## Four 更宽 reached MAX_ARC_DEGREES, a half circle, .35–.73 (the user's call; it went all the
+## way round, 67.5° a time, which left nothing to aim); 150° since .74, MAX_ARC_DEGREES kept as a cap.
+const ARC_PER_WIDER := 15.0
 const MAX_ARC_DEGREES := 180.0
 const BASE_RADIUS := 50.0
-const RADIUS_PER_LONGER := 8.0
+const RADIUS_PER_LONGER := 4.0
 const COOLDOWN := 0.85
 ## Swings at the nearest enemy this close, otherwise the way the player faces.
 const AIM_RANGE := 70.0
