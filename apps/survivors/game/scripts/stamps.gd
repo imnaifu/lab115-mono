@@ -13,8 +13,8 @@ extends RefCounted
 ## rush to every landmark in the first minute, while the enemies are few, is what the times stop.
 ## Until .67 any landmark could be checked in at any time by standing within 110 of it for a second.
 
-## The ring's radius, round ring_center().
-const RADIUS := 150.0
+## The ring's radius, round ring_center(): 120 from .77 (the user: 打开的圈略微小一点; 150 until then).
+const RADIUS := 120.0
 const CHECK_IN_SECONDS := 10.0
 ## When each landmark opens (run seconds), by its place in the map's STAMPS.
 const OPEN_AT := [60.0, 180.0, 300.0, 420.0, 540.0]
