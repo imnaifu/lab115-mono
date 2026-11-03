@@ -135,7 +135,7 @@ const EN := {
 	"攒着去开始画面的「培训」升级属性，现在有 ¥%d": "Save it for Training on the title screen. You have ¥%d",
 	"培训": "Training",
 	"工资 ¥%d": "Pay ¥%d",
-	"年终奖发的工资在这里花：每项基础属性练几级，以后每局开局都带着。每练一级，所有价格都涨 %d%%；随时可以全部退款重新分配（已经买的返聘不退）。": "Spend your year-end pay here: every rank of a base stat comes with you into every run. Each rank bought makes all prices %d%% dearer; refund everything any time to spend it again (rehires bought are not refunded).",
+	"年终奖发的工资在这里花：每项基础属性练几级，以后每局开局都带着。随时可以全部退款重新分配（已经买的返聘不退）。": "Spend your year-end pay here: every rank of a base stat comes with you into every run. Refund everything any time to spend it again (rehires bought are not refunded).",
 	"全部退款": "Refund All",
 	"已练满 %s": "Maxed: %s",
 	"现在 %s → 下一级 %s": "Now %s → next %s",

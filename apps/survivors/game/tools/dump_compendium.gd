@@ -220,17 +220,17 @@ func _stats() -> Dictionary:
 
 
 ## 培训 (Training) for the 官网: each stat's ranks, what one rank and the top give, the price of each
-## rank before the tax, and what training everything costs bought rank by rank in table order.
+## rank (.44–.70 before the tax), and what training everything costs.
 func _training() -> Dictionary:
 	var stats := []
 	for entry: Dictionary in Training.STATS:
 		var id: String = entry["id"]
 		var prices := []
 		for level in range(1, int(entry["ranks"]) + 1):
-			prices.append(Training.price_at(id, level, 0))
+			prices.append(Training.price_at(id, level))
 		stats.append({"id": id, "name": entry["name"], "art": entry["art"], "ranks": entry["ranks"],
 			"step_text": Training.amount_text(id, 1), "max_text": Training.amount_text(id, entry["ranks"]), "prices": prices})
-	return {"stats": stats, "tax": Training.TAX, "full_cost": _train_fully(), "revive_price": Training.REVIVE_PRICE}
+	return {"stats": stats, "full_cost": _train_fully(), "revive_price": Training.REVIVE_PRICE}
 
 
 ## Buys every 培训 rank in a throwaway save (kept in memory, never on disk) and says what it cost.

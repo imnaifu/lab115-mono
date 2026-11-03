@@ -3,8 +3,10 @@ extends RefCounted
 ## 培训 (.44, the user's call after Vampire Survivors' PowerUp shop): the 工资 that year-end bonuses
 ## pay (Game.FUNDING_ROUNDS `salary`, saved by Progress.add_salary) buys ranks of the base stats,
 ## for good, on every run and map, on top of the landmarks' (Stamps). Like Vampire Survivors, rank
-## n of a stat costs its `price` times n, every rank bought anywhere makes all of them TAX dearer,
-## and 全部退款 gives every bit back to spend again. A 返聘 (REVIVE_PRICE) is sold here too.
+## n of a stat costs its `price` times n, and 全部退款 gives every bit back to spend again. Unlike
+## it, buying one stat no longer makes the others dearer since .71 (the user: 每级涨价……去掉;
+## .44–.70 every rank bought anywhere added 10% to every price, so the last ranks cost ¥50,000–
+## 68,400 and everything about ¥401,700). A 返聘 (REVIVE_PRICE) is sold here too.
 ##
 ## The save only ever grows (see Progress), so what was bought isn't kept as ranks and a balance:
 ## each purchase and each refund is an event of its own (Progress.add_training_event), and the
@@ -13,12 +15,12 @@ extends RefCounted
 ## on both. A rank bought twice offline past the top is ignored, costing nothing.
 
 ## Ordered as the 培训 page lists them. `step` per rank; `ranks` the most; `price` of rank 1.
-## All of it costs about ¥36,800: 35-50 runs of 工资 (a year-end bonus pays about ¥234 on average,
-## and the bots that go for the stars open 3-5 a run, 2026-11).
+## All of it costs ¥130,000 since .71: about 85 runs with all four bosses down (¥1,496 of year-end
+## bonuses on average since .70, and about ¥60 of 红包).
 const STATS := [
 	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 6.0, "ranks": 5, "price": 1000},
 	{"id": "might", "name": "伤害", "art": "coffee", "step": 0.03, "ranks": 5, "price": 1000},
-	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.015, "ranks": 4, "price": 4500},
+	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.02, "ranks": 4, "price": 4000},
 	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.03, "ranks": 2, "price": 1500},
 	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.15, "ranks": 2, "price": 1500},
 	{"id": "armor", "name": "护甲", "art": "headphones", "step": 0.6, "ranks": 3, "price": 3000},
@@ -28,9 +30,9 @@ const STATS := [
 ## .53 (the user: 局外的成长调低一点；保留等级，砍每一级的增长；培训的所有东西价格 ×10): every step is
 ## 60% of what it was (生命 +10, 伤害 +5%, 冷却 -2.5%, 移速 +5%, 拾取 +25%, 护甲 +1, 回血 +0.1,
 ## 运气 +10 a rank before) and every price ten times, 返聘 too. Ranks already bought stay bought
-## (the save keeps what each cost, state()), only worth less.
-## Every rank bought (of any stat) makes every price this much dearer, as a share of it.
-const TAX := 0.1
+## (the save keeps what each cost, state()), only worth less. .71 (the user: 冷却数值加到每级 -2%,
+## 冷却降价到 4000): 冷却 -1.5% → -2% a rank and ¥4,500 → ¥4,000; it was the worst buy for its price
+## by the balance formula (DESIGN.md 2.8), about a ninth of 伤害's.
 ## A 返聘 (a revive, Game.accept_revive) costs this, every time, untaxed (the user's price, .44; it
 ## was 绩效 S's prize in .43). Unlike a rank it is used up, so 全部退款 doesn't give it back.
 const REVIVE_PRICE := 18880
@@ -96,15 +98,14 @@ static func total_ranks() -> int:
 	return total
 
 
-## What the next rank of `id` costs now: its price times the rank, plus TAX for every rank of
-## anything bought so far.
+## What the next rank of `id` costs now.
 static func price(id: String) -> int:
-	return price_at(id, rank(id) + 1, total_ranks())
+	return price_at(id, rank(id) + 1)
 
 
-## The price of rank `level` of `id` with `bought` ranks bought in all (static for the 官网).
-static func price_at(id: String, level: int, bought: int) -> int:
-	return roundi(int(stat(id)["price"]) * level * (1.0 + TAX * bought))
+## The price of rank `level` of `id`: its first rank's price times the rank (static for the 官网).
+static func price_at(id: String, level: int) -> int:
+	return int(stat(id)["price"]) * level
 
 
 static func maxed(id: String) -> bool:

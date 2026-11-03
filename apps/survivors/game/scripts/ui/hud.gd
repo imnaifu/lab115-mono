@@ -1477,7 +1477,7 @@ func _open_training() -> void:
 	wallet_row.add_child(balance)
 	header.add_child(wallet)
 
-	column.add_child(_collection_note(tr("年终奖发的工资在这里花：每项基础属性练几级，以后每局开局都带着。每练一级，所有价格都涨 %d%%；随时可以全部退款重新分配（已经买的返聘不退）。") % roundi(Training.TAX * 100.0)))
+	column.add_child(_collection_note(tr("年终奖发的工资在这里花：每项基础属性练几级，以后每局开局都带着。随时可以全部退款重新分配（已经买的返聘不退）。")))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
