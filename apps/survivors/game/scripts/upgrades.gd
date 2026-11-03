@@ -33,12 +33,13 @@ const JOB_WEAPON_LEVELS := [3, 6, 10, 15, 20, 25]
 ## more instead (the user: 史诗 / 传说也加到被动的数值上). `weight` is the chance in percent with no
 ## luck (Player.luck, see luck_factor). Frequent and modest on purpose: about half the cards have
 ## a colour, none of them swings a run on its own. .33 took the rarer tiers down a little at the
-## user's ask (was 45 / 32 / 15 / 6 / 2).
+## user's ask (was 45 / 32 / 15 / 6 / 2). .73 (the user: 数值被动改成 1，1.2，1.4，1.6，2): 优秀 and 稀有
+## scale a stat passive's step ×1.2 and ×1.4 (were ×1.15 and ×1.3); the bonuses didn't change.
 ## `colour` is how the year-end bonus dialog and the site name a tier (.46: 绩效 B 送绿色升级).
 const RARITIES := [
 	{"id": "common", "name": "普通", "colour": "白色", "weight": 65.0, "scale": 1.0, "bonus": 0.0},
-	{"id": "uncommon", "name": "优秀", "colour": "绿色", "weight": 24.0, "scale": 1.15, "bonus": 0.04},
-	{"id": "rare", "name": "稀有", "colour": "蓝色", "weight": 8.0, "scale": 1.3, "bonus": 0.08},
+	{"id": "uncommon", "name": "优秀", "colour": "绿色", "weight": 24.0, "scale": 1.2, "bonus": 0.04},
+	{"id": "rare", "name": "稀有", "colour": "蓝色", "weight": 8.0, "scale": 1.4, "bonus": 0.08},
 	{"id": "epic", "name": "史诗", "colour": "紫色", "weight": 2.5, "scale": 1.6, "bonus": 0.12},
 	{"id": "legendary", "name": "传说", "colour": "橙色", "weight": 0.5, "scale": 2.0, "bonus": 0.2},
 ]
