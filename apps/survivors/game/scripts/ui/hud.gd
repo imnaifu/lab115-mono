@@ -3022,7 +3022,7 @@ func _open_collection(tab: int = -1) -> void:
 
 func _fill_stamps(body: VBoxContainer, portrait: bool) -> void:
 	var totals := Stamps.total_text()
-	var summary := tr("走到地标跟前站 1 秒就能打卡，每个地标都送一点永久加成") if totals.is_empty() \
+	var summary := tr("地标按时开门，站进圈里满 10 秒就能打卡，每个地标都送一点永久加成") if totals.is_empty() \
 		else tr("已获得：") + "  ".join(totals)
 	body.add_child(_collection_note(summary))
 	# A section per map, the one in use first; a locked map's landmarks stay hidden behind what

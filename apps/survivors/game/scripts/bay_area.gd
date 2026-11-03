@@ -6,11 +6,13 @@ extends RefCounted
 ##
 ## Open ground since .52 (the user: 地图整体改空旷一点，只有打卡点的建筑；不要海，玩家哪里都能走，除非
 ## 到地图边界): a square of land round the start (BOUNDS) with no sea, where the only buildings are
-## the five check-in landmarks (OPEN_GROUND), set out evenly on a ring round the start, and a
-## tree here and there. The districts still run the way the real peninsula does: San Francisco to
-## the north, San Jose to the south, the hills on the west edge; US-101 and I-280 run north-south,
-## Caltrain beside Alma St. (Until .51 it was the peninsula itself, built up street after street,
-## with the Golden Gate's water to the north, the Pacific to the west and the Bay to the east.)
+## the five check-in landmarks (OPEN_GROUND), one just south of the start and one near each of
+## the map's corners (.68, the user: 打卡点改成中间一个，靠近四个角个一个; .52–.67 they stood evenly
+## on a ring round the start), and a tree here and there. The districts still run the way the
+## real peninsula does: San Francisco to the north, San Jose to the south, the hills on the west
+## edge; US-101 and I-280 run north-south, Caltrain beside Alma St. (Until .51 it was the
+## peninsula itself, built up street after street, with the Golden Gate's water to the north, the
+## Pacific to the west and the Bay to the east.)
 ##
 ## One of the maps (Maps); Beijing has the same names, so whatever reads Maps.current works on
 ## either.
@@ -37,7 +39,7 @@ const MAP_EVENT := {"id": "quake", "at": 300.0, "seconds": 20.0, "text": "湾区
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"
 ## The map (.52): a square 2300 out every way from the start (Game puts the player at
-## City.BLOCK × (0.5, 0.45) = (280, 180)), about 500 past the check-in landmarks' ring. Outside it
+## City.BLOCK × (0.5, 0.45) = (280, 180)), about 500 past the corner landmarks. Outside it
 ## counts as water (is_water, water_rects), so the collision, the enemies' paths, the spawns, the
 ## cars and the weather all stay inside, and City draws it as the map's edge rather than as sea.
 const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
@@ -137,27 +139,31 @@ const HEIGHTS := {
 ## blocks allow (within 5°): 金门大桥 north, Goggle east-north-east, Levy's 球场 south-east, Pear
 ## south-west, 胡佛塔 west-north-west, roughly where they are in the real Bay Area. Sailsforce
 ## 大厦 gave way to Levy's 球场 (two in San Francisco left the south empty).
+## The five check-in landmarks since .68: Goggle's campus the block south of the start, the rest
+## one column in from the map's east and west edges (the next column out would put a landmark's
+## drawing 60 past the fence) and about 500 in from its north and south edges.
 const LANDMARKS := {
-	Vector2i(0, -5): "art:golden_gate",
-	Vector2i(3, -1): "brand_row:goggle",
-	Vector2i(2, 3): "art:stadium",
-	Vector2i(-2, 3): "art:pear_park",
-	Vector2i(-3, -2): "art:stanford_tower",
+	Vector2i(0, 1): "brand_row:goggle",
+	Vector2i(-3, -5): "art:golden_gate",
+	Vector2i(3, -5): "art:stanford_tower",
+	Vector2i(3, 4): "art:stadium",
+	Vector2i(-3, 4): "art:pear_park",
 }
 ## Landmarks standing on a block's lawn, in front of its row of buildings: the campus mascots.
-const LAWN_LANDMARKS := {Vector2i(3, -1): "dino_skeleton"}
-## The landmarks a player can check in at (打卡, Stamps), clockwise from the north: its picture
+const LAWN_LANDMARKS := {Vector2i(0, 1): "dino_skeleton"}
+## The landmarks a player can check in at (打卡, Stamps), in the order they open (Stamps.OPEN_AT: the
+## middle one at 1:00, then the corners clockwise from the north-west at 3:00, 5:00, 7:00, 9:00): its picture
 ## on the 打卡 page, the block it stands on (in LANDMARKS / LAWN_LANDMARKS), its name, a line about
 ## it, and the small bonus it gives for good once checked in at ([kind, amount], Stamps.BONUSES).
 ## Since .55 (the user's call) each gives 2% damage, 2% cooldown, +10 luck, 5% pickup range or +5
 ## health (3%, 3%, 20, 10%, 10 from .44); all five maps' together are about one passive card each.
 const STAMPS := {
-	"golden_gate": {"art": "golden_gate", "block": Vector2i(0, -5), "name": "金门大桥", "note": "一路往北，走到地图尽头", "bonus": ["might", 0.02]},
-	"goggle": {"art": "dino_skeleton", "block": Vector2i(3, -1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
-	# Sailsforce 大厦's place and bonus until .52.
-	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
-	"pear_park": {"art": "pear_park", "block": Vector2i(-2, 3), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 5.0]},
-	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(-3, -2), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
+	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, 1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
+	"golden_gate": {"art": "golden_gate", "block": Vector2i(-3, -5), "name": "金门大桥", "note": "一路往西北，走到地图角上", "bonus": ["might", 0.02]},
+	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(3, -5), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
+	# Sailsforce 大厦's bonus until .52.
+	"stadium": {"art": "stadium", "block": Vector2i(3, 4), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
+	"pear_park": {"art": "pear_park", "block": Vector2i(-3, 4), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 5.0]},
 }
 ## Signs that belong to a landmark drawing.
 const LANDMARK_BRANDS := {"pear_park": "pear", "stadium": "levys"}

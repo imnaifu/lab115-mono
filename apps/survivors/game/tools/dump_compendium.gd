@@ -146,8 +146,10 @@ func _maps() -> Array:
 		var stamps := []
 		for stamp_id: String in map.STAMPS:
 			var stamp: Dictionary = map.STAMPS[stamp_id]
+			# Opening times go by the landmark's place in STAMPS (Stamps.open_at, which reads the current map).
+			var opens: float = Stamps.OPEN_AT[mini(stamps.size(), Stamps.OPEN_AT.size() - 1)]
 			stamps.append({"id": stamp_id, "name": stamp["name"], "art": stamp["art"], "note": stamp.get("note", ""),
-				"bonus": _bonus_text(stamp["bonus"]), "kind": stamp["bonus"][0]})
+				"bonus": _bonus_text(stamp["bonus"]), "kind": stamp["bonus"][0], "opens": opens})
 		var bosses := []
 		for slot in (map.BOSSES as Array).size():
 			var boss_id: String = map.BOSSES[slot]

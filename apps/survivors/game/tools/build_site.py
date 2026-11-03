@@ -377,9 +377,9 @@ def stamps_section(data: dict) -> str:
     blocks = []
     for game_map in data["maps"]:
         cards = "".join(f"""<article class="card stamp">{art(s['art'], 72, s['name'])}<h4>{esc(s['name'])}</h4>
-<p class="muted">{esc(s['note'])}</p><p class="bonus">{esc(s['bonus'])}</p></article>""" for s in game_map["stamps"])
+<p class="muted">{clock(s['opens'])} 开门 · {esc(s['note'])}</p><p class="bonus">{esc(s['bonus'])}</p></article>""" for s in game_map["stamps"])
         blocks.append(f'<h3 class="sub" id="stamps-{esc(game_map["id"])}">{esc(game_map["name"])}</h3><div class="grid stamps">{cards}</div>')
-    return section("stamps", "打卡点", "走到地标跟前站满 1 秒就算打卡。每个地标给一点永久加成，这一局和以后每一局都带着，哪张地图打的卡在所有地图都生效。",
+    return section("stamps", "打卡点", "每张地图 5 个地标，一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（近的先开），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。每个地标给一点永久加成，这一局和以后每一局都带着，哪张地图打的卡在所有地图都生效；打过的地标不再有圈。",
                    "".join(blocks))
 
 

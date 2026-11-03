@@ -142,13 +142,14 @@ const LANDMARK_BRANDS := {"subway_13": "station", "tsinghua_gate": "tsinghua"}
 const SOLID_SPANS := {}
 
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS; ids start bj_ so they never clash with
-## another map's in the save.
+## another map's in the save. Nearest first: they open in this order (Stamps.OPEN_AT, .68; 中关村
+## moved ahead of 鸟巢 and 颐和园 then).
 const STAMPS := {
 	"bj_xierqi": {"art": "subway_13", "block": Vector2i(1, 0), "name": "西二旗地铁站", "note": "早高峰进站要排半小时", "bonus": ["luck", 10.0]},
 	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(0, 3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.02]},
-	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, 2), "name": "颐和园", "note": "佛香阁下就是昆明湖", "bonus": ["max_hp", 5.0]},
-	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.02]},
 	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(0, 4), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
+	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.02]},
+	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, 2), "name": "颐和园", "note": "佛香阁下就是昆明湖", "bonus": ["max_hp", 5.0]},
 }
 
 ## Parody companies, as in BayArea.BRANDS, each with an icon of its own (.39: 嘀嘀 a taxi, 网异 a

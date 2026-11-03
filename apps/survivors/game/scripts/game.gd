@@ -232,6 +232,9 @@ func _ready() -> void:
 	var boss_pointers := BossPointers.new()
 	boss_pointers.game = self
 	number_layer.add_child(boss_pointers)
+	var stamp_rings := StampRings.new()
+	stamp_rings.game = self
+	add_child(stamp_rings)
 
 	upgrades = Upgrades.new(self)
 	spawner = Spawner.new(self)
