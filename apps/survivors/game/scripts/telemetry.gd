@@ -79,7 +79,7 @@ extends RefCounted
 ## A bare number from 64 on (the user: 版本去掉日期，只保留数字); up to 63 it was
 ## "2026-10-28.<n>" (the very first build plain "2026-10-28"), so to compare across both, read an
 ## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
-const VERSION := "77"
+const VERSION := "78"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -155,6 +155,9 @@ func start() -> void:
 	var data := {
 		"version": VERSION,
 		"run": _run_id,
+		# Enemies still up at 10:00, -1 for a run that ended before (.78: a win is clearing them;
+		# `seconds` of a win is then the clear time the leaderboard ranks).
+		"left_at_end": _game.left_at_end,
 		"job": _game.player.job,
 		"map": Maps.current_id,
 		"device": "phone" if Device.is_handheld() else "desktop",
@@ -282,6 +285,9 @@ func _summary(result: String) -> Dictionary:
 	var data := {
 		"version": VERSION,
 		"run": _run_id,
+		# Enemies still up at 10:00, -1 for a run that ended before (.78: a win is clearing them;
+		# `seconds` of a win is then the clear time the leaderboard ranks).
+		"left_at_end": _game.left_at_end,
 		"job": player.job,
 		"map": Maps.current_id,
 		"result": result,

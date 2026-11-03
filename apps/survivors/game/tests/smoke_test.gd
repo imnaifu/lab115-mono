@@ -509,4 +509,5 @@ func _report() -> int:
 func _outcome() -> String:
 	if _game.state != Game.State.ENDED:
 		return "timeout"
-	return "victory" if _game.elapsed >= Game.RUN_SECONDS else "died"
+	# Won only when the field was cleared after Game.RUN_SECONDS (.78).
+	return "victory" if _game.won else "died"

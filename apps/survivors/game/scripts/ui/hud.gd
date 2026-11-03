@@ -30,6 +30,8 @@ const BOSS_BAR_WIDTH_PORTRAIT := 80.0
 const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 ## The next-boss countdown under the clock shows this many seconds ahead.
 const NEXT_BOSS_WARNING := 20.0
+## How long before Game.RUN_SECONDS the 离下班 countdown shows.
+const CLEAR_WARNING := 30.0
 ## A first few runs show how to move until the player does, after this long standing still.
 const MOVE_HINT_AFTER := 2.0
 const MOVE_HINT_RUNS := 3
@@ -101,6 +103,16 @@ var _time_label: Label
 var _center_column: VBoxContainer
 var _next_boss_pill: Control
 var _next_boss_time: Label
+## 离下班 0:23 in the last CLEAR_WARNING seconds, then 清场中 · 剩 37 until the last enemy is down
+## (.78: nothing new comes after Game.RUN_SECONDS; the user: 10:00 到了给个提示).
+var _clear_pill: Control
+var _clear_label: Label
+## The result screen's line about the clear-time board (.78): its rank, or a button to pick a 昵称.
+var _board_row: VBoxContainer
+## The 收藏 page's 排行榜 tab (.78): which map's board, and what came back for it.
+var _board_map := ""
+var _board_answer := {}
+var _board_note := ""
 ## The map's weather while it lasts (the map's MAP_EVENT, .34): its name, seconds left, what to do.
 var _weather_pill: Control
 var _weather_time: Label
@@ -212,6 +224,8 @@ var _code_requested := false
 var _code_callback: JavaScriptObject
 ## Where a computer build takes a 存档码 (the web asks in a field of the page's own).
 var _code_field: LineEdit
+## The web page's 昵称 dialog calls back into this (kept, or the browser drops it).
+var _name_callback: JavaScriptObject
 ## The banner for a landmark checked in at or an achievement earned, and the ones waiting.
 var _badge: PanelContainer
 var _badge_icon: TextureRect
@@ -312,6 +326,7 @@ func _process(delta: float) -> void:
 	_time_label.text = _clock_text(game.elapsed)
 	_kills_label.text = str(game.kills)
 	_update_next_boss()
+	_update_clear_pill()
 	_update_weather()
 	_update_boss_bar()
 	# The announcements drop in under whatever the centre column shows right now.
@@ -602,6 +617,14 @@ func _build_top_bar() -> void:
 	countdown.add_child(_next_boss_time)
 	_center_column.add_child(_next_boss_pill)
 
+	_clear_pill = UiKit.panel(UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE, UiKit.PILL, Vector4(8, 1, 8, 2)))
+	_clear_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_clear_pill.visible = false
+	_clear_label = UiKit.label("", 10, "strong", Art.INK)
+	_clear_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_clear_pill.add_child(_clear_label)
+	_center_column.add_child(_clear_pill)
+
 	# 湾区地震 12 秒 · 躲开地上的红圈, for as long as the weather lasts (the user wanted it said on
 	# screen, not only in the toast as it starts).
 	_weather_pill = UiKit.panel(UiKit.box(Art.SKY_LIGHT, Art.LINK, UiKit.OUTLINE, UiKit.PILL, Vector4(8, 1, 8, 2)))
@@ -718,6 +741,17 @@ func _update_next_boss() -> void:
 	_next_boss_pill.visible = seconds_left > 0.0 and seconds_left <= NEXT_BOSS_WARNING
 	if _next_boss_pill.visible:
 		_next_boss_time.text = "0:%02d" % ceili(seconds_left)
+
+
+func _update_clear_pill() -> void:
+	var seconds_left := Game.RUN_SECONDS - game.elapsed
+	_clear_pill.visible = seconds_left <= CLEAR_WARNING
+	if not _clear_pill.visible:
+		return
+	if seconds_left > 0.0:
+		_clear_label.text = tr("离下班 %s · 之后不再来新怪") % ("0:%02d" % ceili(seconds_left))
+	else:
+		_clear_label.text = tr("清场中 · 剩 %d") % game.enemies.size()
 
 
 func _update_boss_bar() -> void:
@@ -982,7 +1016,7 @@ func _show_title() -> void:
 	column.add_child(UiKit.gap(6))
 	_title_heading = _heading("大厂幸存者", TITLE_SIZE if portrait else 40)
 	column.add_child(_title_heading)
-	var pitch := UiKit.label("躲开 Bug、会议和 Deadline\n撑过 10 分钟就能敲钟上市" if portrait else "躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市！", 15 if portrait else 13)
+	var pitch := UiKit.label("躲开 Bug、会议和 Deadline\n撑过 10 分钟、清完场就能敲钟上市" if portrait else "躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市！", 15 if portrait else 13)
 	pitch.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(UiKit.gap(12 if portrait else 6))
@@ -2603,7 +2637,8 @@ func _show_end(victory: bool) -> void:
 	var stats := HBoxContainer.new()
 	stats.add_theme_constant_override("separation", 8)
 	left.add_child(stats)
-	for stat: Array in [["存活", _clock_text(game.elapsed)], ["职级", Maps.rank_of(game.level)], ["击杀", str(game.kills)]]:
+	# A win is timed to the last enemy down (.78): that is the time the leaderboard ranks.
+	for stat: Array in [["通关用时" if victory else "存活", _clock_text(game.elapsed)], ["职级", Maps.rank_of(game.level)], ["击杀", str(game.kills)]]:
 		var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(4, 6, 4, 6)))
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var card_column := VBoxContainer.new()
@@ -2619,6 +2654,11 @@ func _show_end(victory: bool) -> void:
 		card_column.add_child(caption)
 		stats.add_child(card)
 
+	if victory:
+		_board_row = VBoxContainer.new()
+		_board_row.add_theme_constant_override("separation", 6)
+		left.add_child(_board_row)
+		_send_clear()
 	var culprit := _culprit_row(victory)
 	if culprit != null:
 		left.add_child(culprit)
@@ -2988,7 +3028,7 @@ func _open_collection(tab: int = -1) -> void:
 	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
 		"%s %d/%d" % [tr("成就"), earned, Achievements.shown().size()],
 		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()],
-		tr("战绩")], _collection_tab, _open_collection, Art.PAPER_SUNK)
+		tr("战绩"), tr("排行榜")], _collection_tab, _open_collection, Art.PAPER_SUNK)
 	tabs.custom_minimum_size.x = 330.0
 	if portrait:
 		column.add_child(tabs)
@@ -3014,6 +3054,8 @@ func _open_collection(tab: int = -1) -> void:
 			_fill_achievements(body, portrait)
 		2:
 			_fill_bestiary(body, portrait)
+		4:
+			_fill_board(body, portrait)
 		_:
 			_fill_history(body)
 	_focus(back)
@@ -3784,6 +3826,185 @@ func _pop_in(node: Control, delay: float) -> void:
 	tween.tween_property(node, "modulate:a", 1.0, 0.12).set_delay(delay)
 	tween.tween_property(node, "scale", Vector2.ONE, 0.22).set_delay(delay) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Sends the run just won to its board when the player has a 昵称, and says how it went.
+func _send_clear() -> void:
+	if not Leaderboard.online():
+		_show_board_row(tr("连上云端后才能上排行榜"), false)
+		return
+	if not Leaderboard.has_name():
+		_show_board_row(tr("起个昵称，这次的用时就能上%s榜") % tr(Maps.current.NAME), true)
+		return
+	_show_board_row(tr("正在上榜…"), false)
+	var answer: Dictionary = await Leaderboard.submit()
+	if answer.get("ok", false):
+		_show_board_row(tr("%s榜第 %d 名 · 最好 %s") % [tr(Maps.current.NAME), Leaderboard.last_rank, Leaderboard.time_text(Leaderboard.last_best_ms)], false)
+	else:
+		_show_board_row(Leaderboard.error_text(answer), not Leaderboard.has_name())
+
+
+## The result screen's board line: a note, and the 起个昵称 button while one is wanted.
+func _show_board_row(text: String, ask_name: bool) -> void:
+	if not is_instance_valid(_board_row):
+		return
+	_clear(_board_row)
+	var strip := UiKit.panel(UiKit.box(Art.BRAND_SOFT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	strip.add_child(row)
+	row.add_child(UiKit.icon("star_gold", 18))
+	var note := UiKit.label(text, 13, "strong", Art.INK)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(note)
+	if ask_name:
+		row.add_child(UiKit.secondary_button("起昵称", func() -> void: _ask_name(_on_end_name), 34.0, 13))
+	_board_row.add_child(strip)
+
+
+func _on_end_name(answer: Dictionary) -> void:
+	if answer.get("ok", false):
+		_send_clear()
+	else:
+		_show_board_row(Leaderboard.error_text(answer), true)
+
+
+## Asks for a 昵称 (the page's own field on the web, where the game's fields bring up no keyboard
+## on a phone; a field of the game's elsewhere) and sets it; `done` gets the server's answer.
+func _ask_name(done: Callable) -> void:
+	var asked := func(text: String) -> void:
+		if text.strip_edges() == "":
+			return
+		done.call(await Leaderboard.set_name(text))
+	if OS.has_feature("web"):
+		var page := JavaScriptBridge.get_interface("survivorsCode")
+		if page != null:
+			_name_callback = JavaScriptBridge.create_callback(func(args: Array) -> void: asked.call(str(args[0])))
+			page.askName(tr("起个昵称"), tr("排行榜上显示的名字，2–12 个字，以后能在「收藏 → 排行榜」里改"), tr("比如：摸鱼的程序员"),
+				Cloud.shared().display_name, tr("确定"), tr("取消"), _name_callback)
+			return
+	_name_dialog(asked)
+
+
+## A computer build's 昵称 dialog: a field and two buttons over the screen.
+func _name_dialog(asked: Callable) -> void:
+	var cover := ColorRect.new()
+	cover.color = Color(Art.INK, 0.45)
+	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cover.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(cover)
+	var center := _centered(cover)
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(18, 16, 18, 16)))
+	center.add_child(card)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	card.add_child(column)
+	column.add_child(UiKit.label("起个昵称", 18, "heavy"))
+	var field := LineEdit.new()
+	field.text = Cloud.shared().display_name
+	field.placeholder_text = tr("比如：摸鱼的程序员")
+	field.max_length = 12
+	field.custom_minimum_size = Vector2(240, 40)
+	column.add_child(field)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 8)
+	column.add_child(buttons)
+	var submit := func() -> void:
+		var text := field.text
+		cover.queue_free()
+		asked.call(text)
+	field.text_submitted.connect(func(_text: String) -> void: submit.call())
+	buttons.add_child(UiKit.primary_button("确定", submit, 40.0, 15))
+	buttons.add_child(UiKit.secondary_button("取消", cover.queue_free, 40.0, 15))
+	field.grab_focus.call_deferred()
+
+
+## The 收藏 page's 排行榜 tab: a map's board (the map in use first), the player's 昵称, and a
+## report button on every name but their own.
+func _fill_board(body: VBoxContainer, portrait: bool) -> void:
+	if _board_map == "":
+		_board_map = Maps.current_id
+	body.add_child(_collection_note(tr("每张地图一个榜：撑过 10:00、清完场上的怪，按开局到清完的用时排，越短越前。每人留自己最好的一次")))
+	var names: Array = []
+	for map_id: String in Maps.ORDER:
+		names.append(tr(Maps.script_of(map_id).NAME))
+	var maps := UiKit.segmented(names, Maps.ORDER.find(_board_map), func(index: int) -> void:
+		_board_map = Maps.ORDER[index]
+		_board_answer = {}
+		_open_collection(4), Art.PAPER_SUNK)
+	body.add_child(maps)
+	if not Leaderboard.online():
+		body.add_child(_collection_note(tr("连上云端后才能看排行榜")))
+		return
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 8)
+	var name_text := tr("我的昵称：%s") % Cloud.shared().display_name if Leaderboard.has_name() else tr("还没有昵称，起一个才能上榜")
+	var name_label := UiKit.label(name_text, 13, "strong", Art.INK)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_row.add_child(name_label)
+	name_row.add_child(UiKit.secondary_button("改昵称" if Leaderboard.has_name() else "起昵称", func() -> void:
+		_ask_name(func(answer: Dictionary) -> void:
+			_board_note = "" if answer.get("ok", false) else Leaderboard.error_text(answer)
+			_board_answer = {}
+			_open_collection(4)), 34.0, 13))
+	body.add_child(name_row)
+	if _board_note != "":
+		body.add_child(_collection_note(_board_note))
+	if _board_answer.is_empty():
+		body.add_child(_collection_note(tr("正在读取…")))
+		_load_board(_board_map)
+		return
+	if _board_answer.has("error"):
+		body.add_child(_collection_note(Leaderboard.error_text(_board_answer)))
+		return
+	var records: Array = _board_answer.get("records", [])
+	if records.is_empty():
+		body.add_child(_collection_note(tr("还没人上榜，第一个就是你")))
+	for record: Dictionary in records:
+		body.add_child(_board_line(record))
+	var me: Variant = _board_answer.get("me")
+	if me is Dictionary and int(me.get("rank", 0)) > records.size():
+		body.add_child(UiKit.label("…", 13, "muted"))
+		body.add_child(_board_line(me))
+
+
+func _load_board(map_id: String) -> void:
+	var answer: Dictionary = await Leaderboard.board(map_id)
+	if not _collection_open or _collection_tab != 4 or _board_map != map_id:
+		return
+	_board_answer = answer if not answer.is_empty() else {"error": "offline"}
+	_open_collection(4)
+
+
+## One line of a board: rank, job, name, time; a report button on others' names.
+func _board_line(record: Dictionary) -> Control:
+	var mine: bool = record.get("me", false)
+	var strip := UiKit.panel(UiKit.box(Art.BRAND_SOFT if mine else Art.PAPER, Art.INK if mine else Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6, 10, 6)))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	strip.add_child(row)
+	var rank := UiKit.label(str(record.get("rank", 0)), 15, "display")
+	rank.custom_minimum_size.x = 30
+	row.add_child(rank)
+	var job: String = str(record.get("job", ""))
+	if Jobs.JOBS.has(job):
+		row.add_child(UiKit.icon(Jobs.data(job)["art"], 22))
+	var shown_name := UiKit.label(str(record.get("name", "")), 14, "strong", Art.INK)
+	shown_name.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	shown_name.clip_text = true
+	shown_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(shown_name)
+	var time := UiKit.label(Leaderboard.time_text(int(record.get("ms", 0))), 14, "display")
+	time.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	row.add_child(time)
+	if not mine:
+		var user := str(record.get("user", ""))
+		row.add_child(UiKit.secondary_button("举报", func() -> void:
+			await Leaderboard.report(user)
+			_board_note = tr("已举报，被举报多的名字会先藏起来")
+			_open_collection(4), 28.0, 11))
+	return strip
 
 
 func _clock_text(seconds_elapsed: float) -> String:

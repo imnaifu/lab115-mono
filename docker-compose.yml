@@ -210,9 +210,11 @@ services:
   # apps/survivors/README.md). The game talks to it straight from the browser: Nakama answers
   # any origin (CORS) and the session is a bearer token, not a cookie.
   nakama:
-    # Pinned, like umami: starting a newer version migrates the database, which should come with
-    # a version bump here rather than by surprise.
-    image: heroiclabs/nakama:3.41.0
+    # Pinned (in the Dockerfile), like umami: starting a newer version migrates the database,
+    # which should come with a version bump there rather than by surprise. Built so the game's
+    # server module (apps/survivors/nakama/modules: the clear-time leaderboards, .78) ships with it.
+    build:
+      context: ./apps/survivors/nakama
     restart: unless-stopped
     depends_on:
       nakama-db:
@@ -249,7 +251,8 @@ services:
           --runtime.http_key "$$(key http)" \
           --console.username chopper \
           --console.password "$${NAKAMA_CONSOLE_PASSWORD}" \
-          --console.signing_key "$$(key console)"
+          --console.signing_key "$$(key console)" \
+          --runtime.path /nakama/data/modules
     healthcheck:
       test: ["CMD", "/nakama/nakama", "healthcheck"]
       interval: 10s

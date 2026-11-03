@@ -65,6 +65,8 @@ static var _connect_reported := false
 var status := Status.OFF
 ## This account's 存档码 as last seen, "" while it has none.
 var code := ""
+## This account's 昵称 on the leaderboards (.78, Leaderboard), "" until the player picks one.
+var display_name := ""
 var _client: NakamaClient
 var _session: NakamaSession
 var _config := ConfigFile.new()
@@ -274,6 +276,8 @@ func _start() -> void:
 		# The code this device remembers may be gone: another device on the account deleted it,
 		# and this device has a fresh account now, with no code yet.
 		var account: NakamaAPI.ApiAccount = await _client.get_account_async(_session)
+		if not account.is_exception():
+			display_name = account.user.display_name if account.user.display_name != null else ""
 		if not account.is_exception() and account.custom_id != code:
 			_remember_code(account.custom_id)
 		await _sync()
@@ -285,6 +289,18 @@ func _start() -> void:
 		_connect_reported = true
 		Telemetry.send_event("cloud_action", {"action": "connect", "result": STATUS_NAMES[status],
 			"ms": Time.get_ticks_msec() - started_msec, "merged": _last_merged})
+
+
+## Calls one of the server module's RPCs (apps/survivors/nakama/modules/survivors.lua) with a
+## JSON payload; its answer as a Dictionary, {"error": "offline"} when it can't get through.
+func call_rpc(id: String, payload: Dictionary) -> Dictionary:
+	if status == Status.DISABLED or not await _sign_in():
+		return {"error": "offline"}
+	var result = await _client.rpc_async(_session, id, JSON.stringify(payload))
+	if result == null or result.is_exception():
+		return {"error": "offline"}
+	var answer: Variant = JSON.parse_string(result.payload)
+	return answer if answer is Dictionary else {"error": "offline"}
 
 
 ## A session for this device's account, signing in again when the last one is about to run out.

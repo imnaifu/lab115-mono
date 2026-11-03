@@ -109,7 +109,12 @@ func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> vo
 	var seconds := floori(game.elapsed)
 	column.add_child(_centered(UiKit.label("%02d:%02d" % [floori(seconds / 60.0), seconds % 60], 64 * SCALE, "display")))
 	var left := maxi(0, roundi(Game.RUN_SECONDS) - seconds)
-	var sub := tr("撑满 10 分钟") if victory and not ongoing else tr("离上市还差 %s") % ("%02d:%02d" % [floori(left / 60.0), left % 60])
+	var sub := tr("离上市还差 %s") % ("%02d:%02d" % [floori(left / 60.0), left % 60])
+	# Past 10:00 the clock is the clear (.78): a win's time to the last enemy, or how many were left.
+	if victory and not ongoing:
+		sub = tr("撑满 10 分钟，清完场")
+	elif game.clearing():
+		sub = tr("清场时倒下，还剩 %d 只") % game.enemies.size()
 	column.add_child(_centered(UiKit.label(sub, 13 * SCALE, "muted")))
 
 	column.add_child(UiKit.gap(12 * SCALE))

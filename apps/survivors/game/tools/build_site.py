@@ -518,13 +518,15 @@ def faq_section(data: dict) -> str:
 
 def how_section(data: dict) -> str:
     rows = "".join(f'<li><span class="at">{clock(e["at"])}</span>{esc(e["text"])}</li>' for e in data["events"])
+    # 10:00 isn't one of the spawner's events: it is when they stop (.78).
+    rows += f'<li><span class="at">{clock(data["run_seconds"])}</span>下班：不再来新怪，清完场就上市</li>'
     return section("how", "怎么玩", "", f"""<div class="grid wide how">
 <article class="card"><h3>一局 10 分钟</h3><ul>
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
 <li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉自动开「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
-<li>撑满 10:00 就能敲钟上市</li></ul>
+<li>10:00 下班：不再来新怪，清完场上剩下的就敲钟上市（清场时倒下也算失败）；从开局到清完的用时上每张地图的排行榜</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
 <article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（boss 是每张地图自己的，见<a href="#maps">地图</a>）：</p><ol class="timeline">{rows}</ol></article>
 </div>""")
@@ -640,8 +642,8 @@ def build(data: dict, art_dir: pathlib.Path) -> str:
     page = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>大厂幸存者 · Big Tech Survivors</title>
-<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。职业、属性、武器、被动、升级、掉落、培训、地图、难度、打卡点和怪物图鉴。">
-<meta property="og:title" content="大厂幸存者 Big Tech Survivors"><meta property="og:description" content="躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。打开网页就能玩。">
+<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市。职业、属性、武器、被动、升级、掉落、培训、地图、难度、打卡点和怪物图鉴。">
+<meta property="og:title" content="大厂幸存者 Big Tech Survivors"><meta property="og:description" content="躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市。打开网页就能玩。">
 <meta property="og:image" content="https://survivors.lab115.com/index.png"><meta property="og:url" content="https://survivors.lab115.com/">
 <meta name="theme-color" content="#f7c948">
 <style>{STYLE}</style></head><body>
@@ -650,7 +652,7 @@ def build(data: dict, art_dir: pathlib.Path) -> str:
 <a class="play" href="{PLAY_URL}">开始玩</a></div></nav>
 <main><header class="hero"><div class="hero-art">{hero_arts}</div>
 <h1>大厂幸存者</h1><div class="en">BIG TECH SURVIVORS</div>
-<p class="tagline">躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市。<br>打开网页就能玩，手机单手、电脑键盘都行。</p>
+<p class="tagline">躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市。<br>打开网页就能玩，手机单手、电脑键盘都行。</p>
 <a class="btn primary" href="{PLAY_URL}">开始搬砖</a>
 <span class="version">版本 {esc(data['version'])} · 本页内容由游戏数据生成</span></header>
 {body}</main>

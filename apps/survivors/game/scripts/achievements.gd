@@ -14,7 +14,7 @@ const LIST := [
 	{"id": "all_clear", "tier": "platinum", "art": "moneybag", "group": "生存", "name": "财务自由", "text": "全职业、全地图通关，地标全打卡，图鉴收齐"},
 	{"id": "first_day", "tier": "bronze", "art": "coffee", "group": "生存", "name": "第一天上班", "text": "打完第一局"},
 	{"id": "probation", "tier": "bronze", "art": "stock_options", "group": "生存", "name": "转正", "text": "一局撑过 5 分钟"},
-	{"id": "ipo", "tier": "silver", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑满 10 分钟通关"},
+	{"id": "ipo", "tier": "silver", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑过 10 分钟，再清完场上的怪"},
 	{"id": "win_london", "tier": "gold", "art": "big_ben", "group": "生存", "name": "大本钟敲钟", "text": "在伦敦地图通关"},
 	{"id": "win_seattle", "tier": "gold", "art": "space_needle", "group": "生存", "name": "太空针敲钟", "text": "在西雅图地图通关"},
 	{"id": "win_singapore", "tier": "gold", "art": "merlion", "group": "生存", "name": "鱼尾狮敲钟", "text": "在新加坡地图通关"},

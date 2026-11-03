@@ -19,6 +19,9 @@ signal revive_offered(left: int)
 ## dead, asked whether to spend a 返聘 (the revive dialog in Hud).
 enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED, REVIVE }
 
+## Nothing new comes after RUN_SECONDS (.78, the user: 10:00 后不刷怪，直到清完所有怪才结束): the run
+## is won when the last enemy left goes down (a clear, timed for the leaderboard), and dying while
+## clearing up is a loss. Until .77 the run was won the moment the clock reached it.
 const RUN_SECONDS := 600.0
 ## Logical view sizes; project.godot's viewport size is the landscape one.
 const LANDSCAPE_VIEW := Vector2i(640, 360)
@@ -124,6 +127,10 @@ var screen_turned := false
 var state := State.TITLE
 var elapsed := 0.0
 var kills := 0
+## How many enemies were still up at RUN_SECONDS (-1 before then), and whether the run was won
+## (cleared): for the result screen, the leaderboard and the run's data.
+var left_at_end := -1
+var won := false
 var level := 1
 var xp := 0
 var queued_level_ups := 0
@@ -267,12 +274,18 @@ func _process(delta: float) -> void:
 		return
 	elapsed += delta
 	if elapsed >= RUN_SECONDS:
-		_end_run(true)
-		return
+		if left_at_end < 0:
+			left_at_end = enemies.size()
+			announce(tr("下班时间到！不再来新怪，清完场上的就上市"))
+		if enemies.is_empty():
+			_end_run(true)
+			return
 	nap_left = maxf(0.0, nap_left - delta)
 	if not has_moved and player.velocity.length_squared() > 1.0:
 		has_moved = true
-	spawner.tick(delta)
+	# Clearing up (past RUN_SECONDS) nothing spawns: no crowd, rings, weather or bosses.
+	if not clearing():
+		spawner.tick(delta)
 	telemetry.tick(delta)
 	flow_field.update(delta, player.position)
 	_rebuild_grid()
@@ -1067,10 +1080,20 @@ func decline_revive() -> void:
 	_end_run(false)
 
 
+## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear.
+func clearing() -> bool:
+	return elapsed >= RUN_SECONDS
+
+
 func _end_run(victory: bool) -> void:
 	if state == State.ENDED:
 		return
 	state = State.ENDED
+	won = victory
+	# A clear goes on its map's board (Leaderboard; the result screen sends it, and asks for a 昵称
+	# first when there is none).
+	if victory:
+		Leaderboard.record_win(self)
 	get_tree().paused = true
 	# Before the run's data goes out and the result screen is built: both list what it earned.
 	achievements.finish(victory)
