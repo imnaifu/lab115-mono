@@ -15,21 +15,26 @@ extends RefCounted
 ## on both. A rank bought twice offline past the top is ignored, costing nothing.
 
 ## Ordered as the 培训 page lists them. `step` per rank; `ranks` the most; `price` of rank 1.
-## All of it costs ¥130,000 since .71: about 85 runs with all four bosses down (¥1,496 of year-end
-## bonuses on average since .70, and about ¥60 of 红包).
+## All of it costs ¥139,500 since .75: about 90 runs with all four bosses down (¥1,496 of year-end
+## bonuses on average since .70, and about ¥60 of 红包). ¥130,000 in .71–.74.
 const STATS := [
-	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 10.0, "ranks": 5, "price": 1000},
+	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 10.0, "ranks": 5, "price": 1500},
 	{"id": "might", "name": "伤害", "art": "coffee", "step": 0.03, "ranks": 5, "price": 1000},
-	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.02, "ranks": 4, "price": 4000},
-	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.03, "ranks": 2, "price": 1500},
-	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.1, "ranks": 2, "price": 1500},
-	{"id": "armor", "name": "护甲", "art": "headphones", "step": 0.5, "ranks": 3, "price": 3000},
-	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.1, "ranks": 5, "price": 1000},
+	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.03, "ranks": 4, "price": 3000},
+	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.05, "ranks": 2, "price": 2500},
+	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.2, "ranks": 2, "price": 1500},
+	{"id": "armor", "name": "护甲", "art": "headphones", "step": 0.5, "ranks": 3, "price": 2000},
+	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.1, "ranks": 3, "price": 5000},
 	{"id": "luck", "name": "运气", "art": "koi", "step": 10.0, "ranks": 3, "price": 3000},
 ]
-## .75 (the user: 加一下培训的数值，都凑个整吧): 生命 +10, 伤害 +3%, 冷却 -2%, 移速 +3%, 拾取 +10%, 护甲 +0.5,
-## 回血 +0.1, 运气 +10 a rank (were +6, +3%, -2%, +3%, +15%, +0.6, +0.06, +6): 生命, 回血 and 运气 up,
-## 拾取 and 护甲 a little down to round numbers, the rest as they were; prices unchanged.
+## .75 (the user: 加一下培训的数值，都凑个整吧, then 移速 +5、拾取 +20; 冷却 -3%、护甲 2000、回血改最多三级
+## 价格 5000、移动速度和生命加点钱、冷却改 3000): a rank gives 生命 +10, 伤害 +3%, 冷却 -3%, 移速 +5%,
+## 拾取 +20%, 护甲 +0.5, 回血 +0.1, 运气 +10 (were +6, +3%, -2%, +3%, +15%, +0.6, +0.06, +6), and the
+## first ranks cost 生命 ¥1,500 (1,000), 冷却 ¥3,000 (4,000), 移速 ¥2,500 (1,500), 护甲 ¥2,000 (3,000),
+## 回血 ¥5,000 (1,000) with three ranks rather than five; the rest as they were. By the balance formula
+## the value per ¥ now sits within about 2× across the stats the formula has (冷却 was 10× off).
+## A 4th or 5th 回血 bought before .75 no longer counts (state() skips buys past the top), and what it
+## cost goes back to the balance with it.
 ## .53 (the user: 局外的成长调低一点；保留等级，砍每一级的增长；培训的所有东西价格 ×10): every step is
 ## 60% of what it was (生命 +10, 伤害 +5%, 冷却 -2.5%, 移速 +5%, 拾取 +25%, 护甲 +1, 回血 +0.1,
 ## 运气 +10 a rank before) and every price ten times, 返聘 too. Ranks already bought stay bought
