@@ -9,7 +9,7 @@ signal level_up_offered(choices: Array, lucky: bool)
 signal run_ended(victory: bool)
 signal announced(text: String)
 ## `salary`: the 工资 this one paid, one of the rating's amounts.
-signal chest_opened(funding_round: Dictionary, salary: int, item: Dictionary)
+signal chest_opened(funding_round: Dictionary, salary: int, item: Dictionary, boss_slot: int)
 ## A boss is starting one of its attacks (its form, BossKits.HINTS); the HUD explains how to dodge it.
 signal boss_move(form: String)
 ## The player died holding a 返聘 (Progress.revives_left, `left` of them) they may spend.
@@ -71,7 +71,8 @@ const RED_PACKET_SALARY := [6, 8, 16, 18]
 ## (.61, the user: 60s 内不出; each kind counts on its own).
 const RARE_DROP_GAP := 60.0
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
-## 工资 it pays (one of its `salary` amounts at random; since .63 each has just one), kept in the
+## 工资 it pays (`salary`: since .70 one amount per boss, the 2:00 / 4:00 / 6:00 / 8:00 boss in turn,
+## chest_salary; .63–.69 one amount a rating; before, one of several at random), kept in the
 ## save for 培训 (Training), and one upgrade in the run at the rating's `rarity` (Upgrades.RARITIES:
 ## 绩效 C 普通 white, B 优秀 green, A 稀有 blue, S 史诗 purple; Upgrades.chest_upgrade). It gave
 ## 1 / 3 / 5 free upgrades until .43, none from .44 (年终奖改成给工资) and one again from .46 (the
@@ -83,12 +84,15 @@ const RARE_DROP_GAP := 60.0
 ## .60–.62 had three at 80 / 15 / 5 (¥66–288 / ¥366–588 / ¥666–888 in 66s and 88s, ¥252 on
 ## average), and 86 / 9 / 5 before. The ids are the data's (Telemetry `chests`) from when these were
 ## funding rounds (天使轮 / A 轮 / IPO), kept so runs before and after compare; 绩效 C, new in .63,
-## is the round before them all (种子轮).
+## is the round before them all (种子轮). Since .70 (the user: 四个 boss 根据顺序 C 66, 88, 166, 188，
+## B 266, 288, 366, 388，A 466, 488, 566, 588，S 666) the later the boss, the more it pays, by the
+## boss's place in the map's line-up (BOSSES), not the order they fall in: on these odds about
+## ¥316 / 337 / 411 / 432, ¥1496 for all four (.63–.69: ¥206 each, ¥824).
 const FUNDING_ROUNDS := [
-	{"id": "seed", "name": "绩效 C", "salary": [66], "rarity": 0, "weight": 10.0},
-	{"id": "angel", "name": "绩效 B", "salary": [166], "rarity": 1, "weight": 60.0},
-	{"id": "series_a", "name": "绩效 A", "salary": [266], "rarity": 2, "weight": 25.0},
-	{"id": "ipo", "name": "绩效 S", "salary": [666], "rarity": 3, "weight": 5.0},
+	{"id": "seed", "name": "绩效 C", "salary": [66, 88, 166, 188], "rarity": 0, "weight": 10.0},
+	{"id": "angel", "name": "绩效 B", "salary": [266, 288, 366, 388], "rarity": 1, "weight": 60.0},
+	{"id": "series_a", "name": "绩效 A", "salary": [466, 488, 566, 588], "rarity": 2, "weight": 25.0},
+	{"id": "ipo", "name": "绩效 S", "salary": [666, 666, 666, 666], "rarity": 3, "weight": 5.0},
 ]
 ## A 返聘 brings the player back on this share of their health, untouchable for REVIVE_INVULN
 ## seconds, with everything within REVIVE_RADIUS pushed off and stunned (like a 站会's, no damage).
@@ -550,7 +554,10 @@ func _kill(enemy: Enemy) -> void:
 		# No chest on the ground since .69: the year-end bonus opens by itself a beat later. A
 		# pausable timer, so a level-up, the pause screen or 返聘 holding the game holds it too;
 		# if the run ends first (the tree stays paused) it never opens.
-		get_tree().create_timer(BOSS_CHEST_DELAY, false).timeout.connect(_open_chest)
+		# Which of the map's bosses it was decides the 工资 (.70); a boss from outside the line-up
+		# (测试模式, --boss) pays as the first.
+		var boss_slot := maxi(Maps.current.BOSSES.find(enemy.type_name), 0)
+		get_tree().create_timer(BOSS_CHEST_DELAY, false).timeout.connect(_open_chest.bind(boss_slot))
 		_drop(Pickup.Kind.HEAL, enemy.position, 1)
 	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet, a 午休 or a 红包.
 	else:
@@ -844,21 +851,19 @@ func choose_upgrade(index: int) -> void:
 
 # --- Year-end bonuses (boss chests) ------------------------------------------------------
 
-## Rolls the rating (at least `lowest_round`, an index into FUNDING_ROUNDS) and one of its 工资
-## amounts, saves that straight away (closing the page mid-run keeps it, as a stamp), applies its
+## Rolls the rating and pays its 工资 for the `boss_slot`th boss (chest_salary), saves that straight away (closing the page mid-run keeps it, as a stamp), applies its
 ## upgrade and pauses while the HUD opens the chest. A second one due meanwhile (two bosses down
 ## together, or one falling as a level-up is offered) waits its turn. Opened BOSS_CHEST_DELAY after
 ## a boss's kill since .69; until then the boss dropped it as a pickup (Pickup.Kind.BONUS, kept
-## but no longer dropped) and it opened when picked up.
-func _open_chest(lowest_round: int = 0) -> void:
+## but no longer dropped, whose `value` comes here as the slot) and it opened when picked up.
+func _open_chest(boss_slot: int = 0) -> void:
 	if state != State.PLAYING:
-		_waiting_chests.append(lowest_round)
+		_waiting_chests.append(boss_slot)
 		return
-	var funding_round: Dictionary = FUNDING_ROUNDS[_roll_rating(lowest_round)]
+	var funding_round: Dictionary = FUNDING_ROUNDS[_roll_rating()]
 	_chests_opened += 1
 	var chest_id := "%s-%d" % [run_id, _chests_opened]
-	var amounts: Array = funding_round["salary"]
-	var salary: int = amounts[rng.randi() % amounts.size()]
+	var salary := chest_salary(funding_round, boss_slot)
 	Progress.add_salary(chest_id, salary)
 	salary_earned += salary
 	var item := upgrades.chest_upgrade(funding_round["rarity"])
@@ -869,7 +874,13 @@ func _open_chest(lowest_round: int = 0) -> void:
 	state = State.CHEST
 	get_tree().paused = true
 	inventory_changed.emit()
-	chest_opened.emit(funding_round, salary, item)
+	chest_opened.emit(funding_round, salary, item, boss_slot)
+
+
+## What a rating (a FUNDING_ROUNDS entry) pays for the `boss_slot`th boss of the map (0 = 2:00's).
+static func chest_salary(funding_round: Dictionary, boss_slot: int) -> int:
+	var amounts: Array = funding_round["salary"]
+	return amounts[clampi(boss_slot, 0, amounts.size() - 1)]
 
 
 ## A year-end bonus's rating, an index into FUNDING_ROUNDS: by their weights, at least `lowest_round`.

@@ -1858,7 +1858,7 @@ func _hover(card: Control, entered: bool) -> void:
 ## saved / applied already (Game._open_chest). What it gives is laid out from the start, unseen, so
 ## the dialog keeps its size as it plays. Not skippable: 收下 comes up last. Shows what each rating
 ## gives but not how likely it is (.46, the user: 概率藏起来不要可见).
-func _show_chest(funding_round: Dictionary, salary: int, item: Dictionary) -> void:
+func _show_chest(funding_round: Dictionary, salary: int, item: Dictionary, boss_slot: int) -> void:
 	_clear(_chest_holder)
 	_chest_revealed = false
 	_chest_chips.clear()
@@ -1947,12 +1947,11 @@ func _show_chest(funding_round: Dictionary, salary: int, item: Dictionary) -> vo
 		chip_column.add_theme_constant_override("separation", 0)
 		chip_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		chip.add_child(chip_column)
-		var amounts: Array = option["salary"]
 		var option_rarity: int = option["rarity"]
 		var round_name := UiKit.label(option["name"], 13, "strong")
-		# One amount a rating since .63; a range before.
-		var pay_text := "¥%d" % amounts[0] if amounts.min() == amounts.max() else "¥%d–%d" % [amounts.min(), amounts.max()]
-		var pay := UiKit.label(pay_text, 11, "muted")
+		# What each rating pays for this boss (.70: more for each later boss); .63–.69 one amount a
+		# rating, a range before.
+		var pay := UiKit.label("¥%d" % Game.chest_salary(option, boss_slot), 11, "muted")
 		var upgrade := UiKit.label(tr("%s升级") % tr(Upgrades.RARITIES[option_rarity]["colour"]), 11, "heavy", Art.RARITY_INK[option_rarity])
 		upgrade.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		for chip_label: Label in [round_name, pay, upgrade]:
