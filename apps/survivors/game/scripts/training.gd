@@ -18,15 +18,18 @@ extends RefCounted
 ## All of it costs ¥130,000 since .71: about 85 runs with all four bosses down (¥1,496 of year-end
 ## bonuses on average since .70, and about ¥60 of 红包).
 const STATS := [
-	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 6.0, "ranks": 5, "price": 1000},
+	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 10.0, "ranks": 5, "price": 1000},
 	{"id": "might", "name": "伤害", "art": "coffee", "step": 0.03, "ranks": 5, "price": 1000},
 	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.02, "ranks": 4, "price": 4000},
 	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.03, "ranks": 2, "price": 1500},
-	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.15, "ranks": 2, "price": 1500},
-	{"id": "armor", "name": "护甲", "art": "headphones", "step": 0.6, "ranks": 3, "price": 3000},
-	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.06, "ranks": 5, "price": 1000},
-	{"id": "luck", "name": "运气", "art": "koi", "step": 6.0, "ranks": 3, "price": 3000},
+	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.1, "ranks": 2, "price": 1500},
+	{"id": "armor", "name": "护甲", "art": "headphones", "step": 0.5, "ranks": 3, "price": 3000},
+	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.1, "ranks": 5, "price": 1000},
+	{"id": "luck", "name": "运气", "art": "koi", "step": 10.0, "ranks": 3, "price": 3000},
 ]
+## .75 (the user: 加一下培训的数值，都凑个整吧): 生命 +10, 伤害 +3%, 冷却 -2%, 移速 +3%, 拾取 +10%, 护甲 +0.5,
+## 回血 +0.1, 运气 +10 a rank (were +6, +3%, -2%, +3%, +15%, +0.6, +0.06, +6): 生命, 回血 and 运气 up,
+## 拾取 and 护甲 a little down to round numbers, the rest as they were; prices unchanged.
 ## .53 (the user: 局外的成长调低一点；保留等级，砍每一级的增长；培训的所有东西价格 ×10): every step is
 ## 60% of what it was (生命 +10, 伤害 +5%, 冷却 -2.5%, 移速 +5%, 拾取 +25%, 护甲 +1, 回血 +0.1,
 ## 运气 +10 a rank before) and every price ten times, 返聘 too. Ranks already bought stay bought
