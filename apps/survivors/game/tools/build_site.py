@@ -368,7 +368,7 @@ boss 朝你走 {number(pacing['walk_seconds'])} 秒（在屏幕里才算），�
 def map_plan(game_map: dict) -> str:
     """The map seen from above (.77, the user: 改完后加到网站上): its square of land, every block in
     its district's ground colour with the roads between, the freeways and the railway, where a run
-    starts and the five check-in campuses with the time each opens. Drawn in world pixels."""
+    starts and the five check-in spots with the time each opens. Drawn in world pixels."""
     layout = game_map["layout"]
     left, top, width, height = layout["bounds"]
     right, bottom = left + width, top + height
@@ -405,7 +405,7 @@ def map_plan(game_map: dict) -> str:
         pins.append(f'<span class="pin" style="left:{x:.1f}%;top:{y:.1f}%" title="{esc(stamp["name"])}">'
                     f'{art(stamp["art"], 30, stamp["name"])}<b>{clock(stamp["opens"])}</b></span>')
     return (f'<div class="plan">{svg}{"".join(pins)}</div>'
-            '<p class="muted plan-key">黄点是出生点；灰色宽路是高速，棕色虚线是铁轨；图标是 5 个打卡的大厂园区和开门时间。</p>')
+            '<p class="muted plan-key">黄点是出生点；灰色宽路是高速，棕色虚线是铁轨；图标是 5 个打卡点和开门时间。</p>')
 
 
 def maps_section(data: dict) -> str:
@@ -424,7 +424,7 @@ def maps_section(data: dict) -> str:
 <p><a href="#stamps-{esc(game_map['id'])}">{len(game_map['stamps'])} 个打卡点 ›</a>　<a href="#bestiary" data-tab="{index}">本地怪物 ›</a></p></article>""")
     soon = "、".join(COMING_SOON_NAMES.get(city, city) for city in data["coming_soon"])
     return section("maps", "地图", "按难度排，星越多越难（1–3 星）：通关一张开下一张。每张地图都是一块空旷的方形地，四边是栅栏，哪里都能走；"
-                   "地上只有 5 个大厂园区（打卡点），中间一个、四个角各一个。每张地图有自己的分区、4 个 boss 和天气事件。"
+                   "地上只有 5 个打卡点：中间是总部在这座城市的大厂，四个角是城市地标。每张地图有自己的分区、4 个 boss 和天气事件。"
                    "路上的车和火车（地铁）不扣血，只会把人和怪推到路边；火车来之前铁轨会先闪。",
                    f'<div class="grid wide">{"".join(cards)}</div><p class="muted soon">还在装修：{esc(soon)}</p>')
 
@@ -435,7 +435,7 @@ def stamps_section(data: dict) -> str:
         cards = "".join(f"""<article class="card stamp">{art(s['art'], 72, s['name'])}<h4>{esc(s['name'])}</h4>
 <p class="muted">{clock(s['opens'])} 开门 · {esc(s['note'])}</p><p class="bonus">{esc(s['bonus'])}</p></article>""" for s in game_map["stamps"])
         blocks.append(f'<h3 class="sub" id="stamps-{esc(game_map["id"])}">{esc(game_map["name"])}</h3><div class="grid stamps">{cards}</div>')
-    return section("stamps", "打卡点", "每张地图 5 个大厂园区，一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（中间的先开，再从西北角顺时针），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。每个地标给一点永久加成，这一局和以后每一局都带着，哪张地图打的卡在所有地图都生效；打过的地标不再有圈。",
+    return section("stamps", "打卡点", "每张地图 5 个打卡点（中间是本城大厂的总部，四角是城市地标），一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（中间的先开，再从西北角顺时针），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。每个地标给一点永久加成，这一局和以后每一局都带着，哪张地图打的卡在所有地图都生效；打过的地标不再有圈。",
                    "".join(blocks))
 
 

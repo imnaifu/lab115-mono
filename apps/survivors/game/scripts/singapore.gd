@@ -14,10 +14,10 @@ extends RefCounted
 ##
 ## Open ground since .77, as 硅谷 since .52 (the user: 其余地图参考硅谷，改的空旷点): a square of land
 ## round the start (BOUNDS) with no sea and no bay, the districts still where they were (the
-## coast's blocks the ones north of them), and the only buildings the five check-in spots, big
-## tech's campuses (the user: 每个地图的打卡点能不能更像大厂一点): Shopay in the middle, then TikTak,
-## Grub, DBB and Lazado on the corners. (Until .76: the sea, Sentosa and Marina Bay, rows of
-## buildings on every street, and the city's landmarks to check in at.)
+## coast's blocks the ones north of them), and the only buildings the five check-in spots (the
+## user: 打卡点设计，只放总部在这个城市的，其余的还是用城市标志): Shopay's headquarters in the middle,
+## and the Merlion, Jewel, Marina Bay Sands and Sentosa on the corners. (Until .76: the sea,
+## Sentosa's island and Marina Bay, and rows of buildings on every street.)
 
 const NAME := "新加坡"
 ## A little harder than 西雅图, the same two stars (BayArea.STARS); 班加罗尔 is still to come
@@ -118,20 +118,14 @@ const DISTRICTS := {
 ## One-off landmarks by block, as in BayArea.LANDMARKS: since .77 only the check-in spots, where
 ## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
-	Vector2i(0, 1): "brand_row:shopay",
-	Vector2i(-3, -5): "brand_row:tiktak",
-	Vector2i(3, -5): "brand_row:grub",
-	Vector2i(3, 4): "brand_row:dbb",
-	Vector2i(-3, 4): "brand_row:lazado",
+	Vector2i(0, 1): "hq:shopay",
+	Vector2i(-3, -5): "art:merlion",
+	Vector2i(3, -5): "art:jewel",
+	Vector2i(3, 4): "art:mbs",
+	Vector2i(-3, 4): "art:sentosa_beach",
 }
-## The campuses' logo statues on the lawn (tools/make_logo_statues.py).
-const LAWN_LANDMARKS := {
-	Vector2i(0, 1): "statue_bag",
-	Vector2i(-3, -5): "statue_note",
-	Vector2i(3, -5): "statue_ride",
-	Vector2i(3, 4): "statue_coins",
-	Vector2i(-3, 4): "statue_heart_box",
-}
+## Shopay's bag on a plinth in front of its tower (tools/make_logo_statues.py).
+const LAWN_LANDMARKS := {Vector2i(0, 1): "statue_bag"}
 ## Signs that belong to a landmark drawing.
 const LANDMARK_BRANDS := {}
 const SOLID_SPANS := {}
@@ -139,14 +133,13 @@ const SOLID_SPANS := {}
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS, in the order they open (the middle one,
 ## then the corners clockwise from the north-west); ids start sg_ so they never clash with
 ## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
-## sg_one_north is Shopay, sg_merlion TikTak, sg_jewel Grub, sg_mbs DBB, sg_sentosa Lazado; until
-## then 纬壹科技城, 鱼尾狮, 星耀樟宜, 滨海湾金沙, 圣淘沙).
+## sg_one_north is Shopay's headquarters, 纬壹科技城 until then).
 const STAMPS := {
 	"sg_one_north": {"art": "icon_bag", "block": Vector2i(0, 1), "name": "Shopay 总部", "note": "大促一来，全楼通宵", "bonus": ["haste", 0.02]},
-	"sg_merlion": {"art": "icon_note", "block": Vector2i(-3, -5), "name": "TikTak 亚太总部", "note": "上班刷视频算工作", "bonus": ["magnet", 0.05]},
-	"sg_jewel": {"art": "icon_ride", "block": Vector2i(3, -5), "name": "Grub 总部", "note": "打车、外卖、钱包，一个 App 全包", "bonus": ["might", 0.02]},
-	"sg_mbs": {"art": "icon_coins", "block": Vector2i(3, 4), "name": "DBB 银行", "note": "金库就在楼下", "bonus": ["max_hp", 5.0]},
-	"sg_sentosa": {"art": "icon_heart_box", "block": Vector2i(-3, 4), "name": "Lazado 园区", "note": "快递盒堆成了山", "bonus": ["luck", 10.0]},
+	"sg_merlion": {"art": "merlion", "block": Vector2i(-3, -5), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.05]},
+	"sg_jewel": {"art": "jewel", "block": Vector2i(3, -5), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.02]},
+	"sg_mbs": {"art": "mbs", "block": Vector2i(3, 4), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 5.0]},
+	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(-3, 4), "name": "圣淘沙", "note": "沙滩、椰树和度假村", "bonus": ["luck", 10.0]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.
@@ -154,8 +147,8 @@ const BRANDS := {
 	"shopay": {"text": "Shopay", "icon": "icon_bag", "color": Color("ee4d2d")},
 	"grub": {"text": "Grub", "icon": "icon_ride", "color": Color("00a94f")},
 	"tiktak": {"text": "TikTak", "icon": "icon_note", "color": Color("2f3542")},
-	"lazado": {"text": "Lazado", "icon": "icon_heart_box", "color": Color("1a2a8e")},
-	"dbb": {"text": "DBB", "icon": "icon_coins", "color": Color("d63a2f")},
+	"lazado": {"text": "Lazado", "color": Color("1a2a8e")},
+	"dbb": {"text": "DBB", "color": Color("d63a2f")},
 	"razzer": {"text": "Razzer", "color": Color("2f9e44")},
 	"onenorth_sign": {"text": "one-north", "color": Color("2f3542")},
 	"lps": {"text": "Lau Pa Sat", "color": Color("8a5a2b")},
@@ -179,7 +172,7 @@ const HEIGHTS := {
 	"little_india": 80.0, "raffles_place": 170.0, "jewel": 90.0,
 	"hdb_block": 100.0, "shophouse_teal": 70.0, "shophouse_pink": 70.0,
 	"rain_tree": 70.0, "bush": 23.0,
-	"statue_bag": 76.0, "statue_note": 76.0, "statue_ride": 76.0, "statue_coins": 76.0, "statue_heart_box": 76.0,
+	"statue_bag": 76.0,
 	"bike": 22.0, "durian_sign": 30.0, "orchid_pot": 22.0, "hawker_stall": 30.0,
 }
 

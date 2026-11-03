@@ -16,10 +16,10 @@ extends RefCounted
 ##
 ## Open ground since .77, as 硅谷 since .52 (the user: 其余地图参考硅谷，改的空旷点): a square of land
 ## round the start (BOUNDS) with no river, the districts still where they were (the Thames' row is
-## the south bank's), and the only buildings the five check-in spots, big tech's campuses (the
-## user: 每个地图的打卡点能不能更像大厂一点): DeepMine in the middle, then Goggle's landscraper,
-## Revolout, Barcleys and Deliverhoo on the corners. (Until .76: the Thames with a bridge on every
-## other street, rows of buildings on every street, and the city's landmarks to check in at.)
+## the south bank's), and the only buildings the five check-in spots (the user: 打卡点设计，只放总部
+## 在这个城市的，其余的还是用城市标志): DeepMine's headquarters in the middle, and the British Museum,
+## Canary Wharf, Tower Bridge and Big Ben on the corners. (Until .76: the Thames with a bridge on
+## every other street, and rows of buildings on every street.)
 
 const NAME := "伦敦"
 ## Second (Maps.ORDER, the user's call) and exactly as hard as 硅谷, so one star too
@@ -131,45 +131,40 @@ const DISTRICTS := {
 ## One-off landmarks by block, as in BayArea.LANDMARKS: since .77 only the check-in spots, where
 ## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
-	Vector2i(0, 1): "brand_row:deepmine",
-	Vector2i(-3, -5): "art:landscraper",
-	Vector2i(3, -5): "brand_row:revolout",
-	Vector2i(3, 4): "brand_row:barcleys",
-	Vector2i(-3, 4): "brand_row:deliverhoo",
+	Vector2i(0, 1): "hq:deepmine",
+	Vector2i(-3, -5): "art:british_museum",
+	Vector2i(3, -5): "art:canary_wharf",
+	Vector2i(3, 4): "art:tower_bridge",
+	Vector2i(-3, 4): "art:big_ben",
 }
-## The campuses' logo statues on the lawn (tools/make_logo_statues.py).
-const LAWN_LANDMARKS := {
-	Vector2i(0, 1): "statue_pickaxe",
-	Vector2i(3, -5): "statue_card",
-	Vector2i(3, 4): "statue_bank",
-	Vector2i(-3, 4): "statue_kangaroo",
-}
-## Signs that belong to a landmark drawing: Goggle's on its landscraper.
-const LANDMARK_BRANDS := {"landscraper": "goggle"}
-const SOLID_SPANS := {}
+## DeepMine's pickaxe on a plinth in front of its tower (tools/make_logo_statues.py).
+const LAWN_LANDMARKS := {Vector2i(0, 1): "statue_pickaxe"}
+## Signs that belong to a landmark drawing.
+const LANDMARK_BRANDS := {}
+## Tower Bridge's towers block; the deck between them is walked under.
+const SOLID_SPANS := {"tower_bridge": [[0.22, 0.28], [0.72, 0.78]]}
 
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS, in the order they open (the middle one,
 ## then the corners clockwise from the north-west); ids start ldn_ so they never clash with
 ## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
-## ldn_kings_cross is DeepMine, ldn_museum Goggle, ldn_tower_bridge Revolout, ldn_canary Barcleys,
-## ldn_big_ben Deliverhoo; until then 国王十字站, 大英博物馆, 伦敦塔桥, 金丝雀码头, 大本钟).
+## ldn_kings_cross is DeepMine's headquarters, 国王十字站 until then).
 const STAMPS := {
-	"ldn_kings_cross": {"art": "icon_pickaxe", "block": Vector2i(0, 1), "name": "DeepMine", "note": "AI 实验室，下棋没输过", "bonus": ["luck", 10.0]},
-	"ldn_museum": {"art": "landscraper", "block": Vector2i(-3, -5), "name": "Goggle 地景楼", "note": "躺平的摩天楼，楼顶是花园", "bonus": ["magnet", 0.05]},
-	"ldn_tower_bridge": {"art": "icon_card", "block": Vector2i(3, -5), "name": "Revolout 总部", "note": "一张卡走遍全世界", "bonus": ["max_hp", 5.0]},
-	"ldn_canary": {"art": "icon_bank", "block": Vector2i(3, 4), "name": "Barcleys 大楼", "note": "老银行，柱子比人多", "bonus": ["might", 0.02]},
-	"ldn_big_ben": {"art": "icon_kangaroo", "block": Vector2i(-3, 4), "name": "Deliverhoo 总部", "note": "门口停满了外卖电驴", "bonus": ["haste", 0.02]},
+	"ldn_kings_cross": {"art": "icon_pickaxe", "block": Vector2i(0, 1), "name": "DeepMine 总部", "note": "AI 实验室，下棋没输过", "bonus": ["luck", 10.0]},
+	"ldn_museum": {"art": "british_museum", "block": Vector2i(-3, -5), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.05]},
+	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(3, -5), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.02]},
+	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(3, 4), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 5.0]},
+	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-3, 4), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.02]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.
 const BRANDS := {
 	"deepmine": {"text": "DeepMine", "icon": "icon_pickaxe", "color": Color("2f6fb0")},
 	"goggle": {"text": "Goggle", "icon": "icon_goggles", "color": Color("3f7fe0")},
-	"revolout": {"text": "Revolout", "icon": "icon_card", "color": Color("2f3542")},
+	"revolout": {"text": "Revolout", "color": Color("2f3542")},
 	"monzzo": {"text": "Monzzo", "color": Color("ff6a5c")},
 	"deliverhoo": {"text": "Deliverhoo", "icon": "icon_kangaroo", "color": Color("1fb5a5")},
 	"tesgo": {"text": "Tesgo", "color": Color("1f4fa3")},
-	"barcleys": {"text": "Barcleys", "icon": "icon_bank", "color": Color("2f9ad6")},
+	"barcleys": {"text": "Barcleys", "color": Color("2f9ad6")},
 	"hsbb": {"text": "HSBB", "color": Color("d63a2f")},
 	"station": {"text": "King's Cross", "color": Color("2f3542")},
 	"camden": {"text": "Camden Lock", "color": Color("8c4fd6")},
@@ -197,7 +192,7 @@ const HEIGHTS := {
 	"gherkin": 150.0, "tower_bridge": 150.0, "canary_wharf": 180.0, "greenwich": 80.0,
 	"terrace_brick": 74.0, "terrace_cream": 74.0,
 	"plane_tree": 84.0, "bush": 23.0,
-	"statue_pickaxe": 76.0, "statue_card": 76.0, "statue_bank": 76.0, "statue_kangaroo": 76.0,
+	"statue_pickaxe": 76.0,
 	"bike": 22.0, "phone_box": 36.0, "post_box": 24.0, "gas_lamp": 40.0,
 }
 

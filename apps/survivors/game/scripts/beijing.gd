@@ -13,9 +13,9 @@ extends RefCounted
 ##
 ## Open ground since .77, as 硅谷 since .52 (the user: 其余地图参考硅谷，改的空旷点): a square of land
 ## round the start (BOUNDS) with no lake, the districts still where they were, and the only
-## buildings the five check-in spots, big tech's campuses (the user: 每个地图的打卡点能不能更像大厂
-## 一点; the names and lines of .34-.43's 白度, 网异, 大米 and 字节跳跳 landmarks): 白度 in the middle, then 网异, 大米, 字节跳跳 and 京西 on the corners. (Until .76: 昆明湖,
-## rows of buildings on every street, and the city's landmarks to check in at.)
+## buildings the five check-in spots (the user: 打卡点设计，只放总部在这个城市的，其余的还是用城市标志):
+## 白度's headquarters in the middle, and 颐和园, 清华园, 鸟巢 and 中关村 on the corners. (Until .76:
+## 昆明湖 and rows of buildings on every street.)
 
 const NAME := "北京"
 ## The hardest of the maps (BayArea.STARS says how this works).
@@ -128,36 +128,30 @@ const DISTRICTS := {
 
 ## One-off landmarks by block, as in BayArea.LANDMARKS: since .77 only the check-in spots, where
 ## BayArea has its (the middle one the block south of the start, the rest near the corners).
+## 中关村 is one tower with its sign (City.HQ_STRUCTURE), as a headquarters is.
 const LANDMARKS := {
-	Vector2i(0, 1): "brand_row:baidu",
-	Vector2i(-3, -5): "brand_row:netease",
-	Vector2i(3, -5): "brand_row:xiaomi",
-	Vector2i(3, 4): "brand_row:bytedance",
-	Vector2i(-3, 4): "brand_row:jd",
+	Vector2i(0, 1): "hq:baidu",
+	Vector2i(-3, -5): "art:summer_palace",
+	Vector2i(3, -5): "art:tsinghua_gate",
+	Vector2i(3, 4): "art:birds_nest",
+	Vector2i(-3, 4): "hq:zgc",
 }
-## The campuses' logo statues on the lawn (tools/make_logo_statues.py).
-const LAWN_LANDMARKS := {
-	Vector2i(0, 1): "statue_paw",
-	Vector2i(-3, -5): "statue_web",
-	Vector2i(3, -5): "statue_rice",
-	Vector2i(3, 4): "statue_note",
-	Vector2i(-3, 4): "statue_cart",
-}
+## 白度's paw on a plinth in front of its tower (tools/make_logo_statues.py).
+const LAWN_LANDMARKS := {Vector2i(0, 1): "statue_paw"}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {}
+const LANDMARK_BRANDS := {"tsinghua_gate": "tsinghua"}
 const SOLID_SPANS := {}
 
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS, in the order they open (the middle one,
 ## then the corners clockwise from the north-west); ids start bj_ so they never clash with
 ## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
-## bj_xierqi is 白度, bj_yiheyuan 网异, bj_tsinghua 大米, bj_birds_nest 字节跳跳, bj_zhongguancun 京西;
-## until then 西二旗地铁站, 颐和园, 清华园, 鸟巢, 中关村).
+## bj_xierqi is 白度's headquarters, 西二旗地铁站 until then).
 const STAMPS := {
-	"bj_xierqi": {"art": "icon_paw", "block": Vector2i(0, 1), "name": "白度科技园", "note": "门口的熊掌老远就看得见", "bonus": ["luck", 10.0]},
-	"bj_yiheyuan": {"art": "icon_web", "block": Vector2i(-3, -5), "name": "网异大厦", "note": "猪厂，食堂出了名的好吃", "bonus": ["max_hp", 5.0]},
-	"bj_tsinghua": {"art": "icon_rice", "block": Vector2i(3, -5), "name": "大米科技园", "note": "为加班而生", "bonus": ["haste", 0.02]},
-	"bj_birds_nest": {"art": "icon_note", "block": Vector2i(3, 4), "name": "字节跳跳", "note": "大力出奇迹", "bonus": ["might", 0.02]},
-	"bj_zhongguancun": {"art": "icon_cart", "block": Vector2i(-3, 4), "name": "京西总部", "note": "仓库连着办公楼", "bonus": ["magnet", 0.05]},
+	"bj_xierqi": {"art": "icon_paw", "block": Vector2i(0, 1), "name": "白度总部", "note": "门口的熊掌老远就看得见", "bonus": ["luck", 10.0]},
+	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, -5), "name": "颐和园", "note": "佛香阁立在万寿山上", "bonus": ["max_hp", 5.0]},
+	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(3, -5), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.02]},
+	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(3, 4), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.02]},
+	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(-3, 4), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
 }
 
 ## Parody companies, as in BayArea.BRANDS, each with an icon of its own (.39: 嘀嘀 a taxi, 网异 a
@@ -193,7 +187,7 @@ const HEIGHTS := {
 	"subway_13": 46.0, "tower_block": 170.0, "tsinghua_gate": 70.0, "boya_pagoda": 150.0,
 	"summer_palace": 140.0, "birds_nest": 96.0,
 	"poplar": 66.0, "redwood": 92.0, "bush": 23.0,
-	"statue_paw": 76.0, "statue_web": 76.0, "statue_rice": 76.0, "statue_note": 76.0, "statue_cart": 76.0,
+	"statue_paw": 76.0,
 	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0, "shared_bike": 22.0, "jianbing_cart": 30.0, "delivery_ebike": 26.0,
 }
 

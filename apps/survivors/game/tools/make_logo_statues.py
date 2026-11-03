@@ -1,6 +1,7 @@
-"""Builds the logo statues that stand on a company campus's lawn at a check-in spot (.77, the
-user: 每个地图的打卡点能不能更像大厂一点): the company's icon (assets/art/icon_*.svg, 32 x 32) set
-big on a stone plinth, written as assets/art/statue_<icon>.svg. Run again after changing an icon:
+"""Builds the logo statues that stand on the lawn in front of a company's headquarters at a check-in
+spot (.77, the user: 每个地图的打卡点能不能更像大厂一点; 只放总部在这个城市的): the company's icon
+(assets/art/icon_*.svg, 32 x 32) set big on a stone plinth, written as
+assets/art/statue_<icon>.svg. Run again after changing an icon:
 
     python3 tools/make_logo_statues.py
 """
@@ -9,10 +10,9 @@ import pathlib
 import re
 
 ART = pathlib.Path(__file__).resolve().parent.parent / "assets" / "art"
-# The icons the maps' STAMPS stand on a plinth (each map's LAWN_LANDMARKS names statue_<icon>).
-ICONS = ["icon_nut", "icon_eye", "icon_window", "icon_gamepad", "icon_phone", "icon_paw", "icon_web",
-         "icon_rice", "icon_note", "icon_cart", "icon_pickaxe", "icon_card", "icon_bank", "icon_kangaroo",
-         "icon_bag", "icon_ride", "icon_coins", "icon_heart_box"]
+# The icons the maps' STAMPS stand on a plinth (each map's LAWN_LANDMARKS names statue_<icon>): the
+# headquarters in the middle of 北京, 伦敦 and 新加坡 (.77).
+ICONS = ["icon_paw", "icon_pickaxe", "icon_bag"]
 
 PLINTH = """<g stroke="#2f3542" stroke-linejoin="round" stroke-width="1.6">
 <rect x="9" y="38" width="22" height="14" fill="#d9d4c7"/>

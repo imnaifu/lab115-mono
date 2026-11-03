@@ -13,10 +13,10 @@ extends RefCounted
 ##
 ## Open ground since .77, as 硅谷 since .52 (the user: 其余地图参考硅谷，改的空旷点): a square of land
 ## round the start (BOUNDS) with no bay and no lakes, the districts still where they were, and
-## the only buildings the five check-in spots, big tech's campuses (the user: 每个地图的打卡点能不能
-## 更像大厂一点): Amazin's spheres in the middle, then Starbacks, Valv, Microhard and T-Mobble on
-## the corners. (Until .76: the bay to the west, Lake Union and Lake Washington with its floating
-## bridges, rows of buildings on every street, and the city's landmarks to check in at.)
+## the only buildings the five check-in spots (the user: 打卡点设计，只放总部在这个城市的，其余的还是
+## 用城市标志): Amazin's spheres, its headquarters, in the middle, and the Space Needle, the Fremont
+## Troll, Mount Rainier and Pike Place on the corners. (Until .76: the bay to the west, Lake Union
+## and Lake Washington with its floating bridges, and rows of buildings on every street.)
 
 const NAME := "西雅图"
 ## Between 硅谷 and 北京 (BayArea.STARS says how this works).
@@ -125,34 +125,27 @@ const DISTRICTS := {
 ## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
 	Vector2i(0, 1): "art:spheres",
-	Vector2i(-3, -5): "brand_row:starbacks",
-	Vector2i(3, -5): "brand_row:valv",
-	Vector2i(3, 4): "brand_row:microhard",
-	Vector2i(-3, 4): "brand_row:tmobble",
+	Vector2i(-3, -5): "art:space_needle",
+	Vector2i(3, -5): "art:fremont_troll",
+	Vector2i(3, 4): "art:mt_rainier",
+	Vector2i(-3, 4): "art:pike_place",
 }
-## The campuses' mascots and logo statues on the lawn (tools/make_logo_statues.py): Starbacks
-## keeps its first shop in front of its head office.
-const LAWN_LANDMARKS := {
-	Vector2i(-3, -5): "first_coffee",
-	Vector2i(3, -5): "statue_gamepad",
-	Vector2i(3, 4): "statue_window",
-	Vector2i(-3, 4): "statue_phone",
-}
+const LAWN_LANDMARKS := {}
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {}
+const LANDMARK_BRANDS := {"pike_place": "pike"}
 const SOLID_SPANS := {}
 
 ## Landmarks to check in at (打卡), as in BayArea.STAMPS, in the order they open (the middle one,
 ## then the corners clockwise from the north-west); ids start sea_ so they never clash with
 ## another map's in the save. Their bonuses add up the same as the other maps'. The ids are the
-## save's, so they stay when a spot changes (.77: sea_space_needle is Starbacks, sea_troll Valv,
-## sea_pike T-Mobble; until then 太空针塔, 弗里蒙特巨魔, 派克市场).
+## save's, so they stay when a spot changes (.77: sea_microhard is Mount Rainier; Microhard's
+## headquarters is in Redmond, the user: 只放总部在这个城市的).
 const STAMPS := {
 	"sea_spheres": {"art": "spheres", "block": Vector2i(0, 1), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 10.0]},
-	"sea_space_needle": {"art": "first_coffee", "block": Vector2i(-3, -5), "name": "Starbacks 总部", "note": "门口还开着 1 号店", "bonus": ["max_hp", 5.0]},
-	"sea_troll": {"art": "icon_gamepad", "block": Vector2i(3, -5), "name": "Valv 总部", "note": "游戏卖得好，3 永远不出", "bonus": ["haste", 0.02]},
-	"sea_microhard": {"art": "icon_window", "block": Vector2i(3, 4), "name": "Microhard 园区", "note": "窗户开了几十年还在更新", "bonus": ["might", 0.02]},
-	"sea_pike": {"art": "icon_phone", "block": Vector2i(-3, 4), "name": "T-Mobble 总部", "note": "满屏的粉红色", "bonus": ["magnet", 0.05]},
+	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-3, -5), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 5.0]},
+	"sea_troll": {"art": "fremont_troll", "block": Vector2i(3, -5), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.02]},
+	"sea_microhard": {"art": "mt_rainier", "block": Vector2i(3, 4), "name": "雷尼尔雪山", "note": "天晴才看得见，一年没几天", "bonus": ["might", 0.02]},
+	"sea_pike": {"art": "pike_place", "block": Vector2i(-3, 4), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.05]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.
@@ -162,8 +155,8 @@ const BRANDS := {
 	"zillo": {"text": "Zillo", "color": Color("2f6fe0")},
 	"expedio": {"text": "Expedio", "color": Color("1f4fa3")},
 	"starbacks": {"text": "Starbacks", "color": Color("1e7a4f")},
-	"tmobble": {"text": "T-Mobble", "icon": "icon_phone", "color": Color("d6237f")},
-	"valv": {"text": "Valv", "icon": "icon_gamepad", "color": Color("2f3542")},
+	"tmobble": {"text": "T-Mobble", "color": Color("d6237f")},
+	"valv": {"text": "Valv", "color": Color("2f3542")},
 	"costgo": {"text": "Costgo", "color": Color("d63a2f")},
 	"station": {"text": "Westlake", "color": Color("2f3542")},
 	"pike": {"text": "Public Market", "color": Color("c8453a")},
@@ -187,7 +180,6 @@ const HEIGHTS := {
 	"great_wheel": 124.0, "central_library": 124.0, "fremont_troll": 76.0, "gas_works": 104.0,
 	"uw_library": 104.0, "mt_rainier": 104.0, "caltrain": 46.0, "stadium": 150.0,
 	"redwood": 92.0, "poplar": 66.0, "bush": 23.0,
-	"statue_gamepad": 76.0, "statue_window": 76.0, "statue_phone": 76.0,
 	"bike": 22.0, "cone": 14.0, "robotaxi": 24.0, "scooter": 24.0, "coffee_cart": 28.0,
 }
 

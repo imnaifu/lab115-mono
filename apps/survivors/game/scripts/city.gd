@@ -46,6 +46,14 @@ const RUNWAY := Color("8e949e")
 const SAND_EDGE := 12.0
 ## The campus signs on the lawn are the rooftop signs this much bigger.
 const CAMPUS_SIGN_SCALE := 1.9
+## A company's headquarters on its own ("hq:<brand>" in a map's LANDMARKS, .77, the user: 不是只要
+## 一个总部的吗): one of the campus district's office towers, HQ_SCALE times the usual size, with
+## the company's sign on top.
+const HQ_STRUCTURE := "soco:midrise_bands"
+const HQ_SCALE := 1.5
+## It stands this far across its block from the west, clear of the check-in ring in front of the
+## mascot on the lawn (at 0.62).
+const HQ_X_SHARE := 0.28
 
 ## How likely a row of buildings is to have a prop on the sidewalk in front of its west half,
 ## and its east half (.37: more of them, the user wanted each map's character to show on its
@@ -527,6 +535,8 @@ func stamp_spot(block: Vector2i) -> Vector2:
 		if block.x == Maps.current.RAILWAY_COLUMN and Maps.current.has_railway(block.y):
 			inner_left += RAILWAY_OFFSET + RAILWAY_HALF
 		return Vector2(inner_left + 70.0, lawn_top + 40.0)
+	if String(Maps.current.LANDMARKS.get(block, "")).begins_with("hq:"):
+		return Vector2(origin.x + BLOCK.x * HQ_X_SHARE, origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0)
 	return Vector2(origin.x + BLOCK.x / 2.0, origin.y + BLOCK.y - ROAD_HALF - SIDEWALK - 2.0)
 
 
@@ -581,6 +591,8 @@ func _populate(block: Vector2i) -> Dictionary:
 	var landmark: String = Maps.current.LANDMARKS.get(block, "")
 	if landmark.begins_with("art:"):
 		tallest = _place_landmark(content, landmark.trim_prefix("art:"), Vector2(origin.x + BLOCK.x / 2.0, street_y))
+	elif landmark.begins_with("hq:"):
+		tallest = _place_headquarters(content, landmark.trim_prefix("hq:"), Vector2(origin.x + BLOCK.x * HQ_X_SHARE, street_y))
 	elif landmark.begins_with("brand_row:"):
 		tallest = _place_row(content, rng, district, inner_left, inner_right, street_y, landmark.trim_prefix("brand_row:"), density)
 		_place_campus_sign(content, landmark.trim_prefix("brand_row:"), Vector2(inner_left + 70.0, lawn_top + 40.0))
@@ -659,6 +671,17 @@ func _place_row(content: Dictionary, rng: RandomNumberGenerator, district: Dicti
 	return tallest
 
 
+## A company's headquarters: one big office tower with its sign on top (HQ_STRUCTURE). Returns
+## its height, as _place_row does.
+func _place_headquarters(content: Dictionary, brand: String, feet: Vector2) -> float:
+	var texture := _structure_texture(HQ_STRUCTURE)
+	if texture == null:
+		return 0.0
+	var size := _structure_size(HQ_STRUCTURE, texture) * HQ_SCALE
+	_place_structure(content, HQ_STRUCTURE, texture, size, feet, brand, [])
+	return size.y
+
+
 ## A big standalone version of a company's sign on the lawn in front of its campus.
 func _place_campus_sign(content: Dictionary, brand: String, feet: Vector2) -> void:
 	var holder := Node2D.new()
@@ -674,9 +697,6 @@ func _place_campus_sign(content: Dictionary, brand: String, feet: Vector2) -> vo
 func _place_freeway_sign(content: Dictionary, block: Vector2i) -> void:
 	var freeway: Dictionary = Maps.current.freeway_at(block.x, block.y)
 	if freeway.is_empty() or posmod(block.y, 2) != 0:
-		return
-	# Not on a campus's lawn, where its big sign stands (.77: the check-in campuses by a freeway).
-	if String(Maps.current.LANDMARKS.get(block, "")).begins_with("brand_row:"):
 		return
 	# Below the street sign at the corner.
 	var at := Vector2(block.x * BLOCK.x + FREEWAY_HALF + SIDEWALK + 44.0, block.y * BLOCK.y + 150.0)

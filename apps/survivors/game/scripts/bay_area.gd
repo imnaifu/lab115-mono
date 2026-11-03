@@ -8,9 +8,9 @@ extends RefCounted
 ## 到地图边界): a square of land round the start (BOUNDS) with no sea, where the only buildings are
 ## the five check-in landmarks (OPEN_GROUND), one just south of the start and one near each of
 ## the map's corners (.68, the user: 打卡点改成中间一个，靠近四个角个一个; .52–.67 they stood evenly
-## on a ring round the start), big tech's campuses since .77, and a tree here and there. The other
-## four maps are built the same way since .77. The districts still run the way the
-## real peninsula does: San Francisco to the north, San Jose to the south, the hills on the west
+## on a ring round the start), the middle one big tech's headquarters and the corners the city's
+## landmarks since .77, and a tree here and there. The other four maps are built the same way
+## since .77. The districts still run the way the real peninsula does: San Francisco to the north, San Jose to the south, the hills on the west
 ## edge; US-101 and I-280 run north-south, Caltrain beside Alma St. (Until .51 it was the
 ## peninsula itself, built up street after street, with the Golden Gate's water to the north, the
 ## Pacific to the west and the Bay to the east.)
@@ -130,54 +130,50 @@ const HEIGHTS := {
 	"stanford_tower": 140.0, "pear_park": 62.0, "caltrain": 46.0,
 	"palm": 58.0, "redwood": 92.0, "bush": 23.0,
 	"bike": 22.0, "bike_campus": 22.0, "cone": 14.0, "robotaxi": 24.0, "cable_car": 30.0, "scooter": 24.0,
-	"dino_skeleton": 64.0, "thumbs_up_sign": 58.0, "statue_nut": 76.0, "statue_eye": 76.0, "burger_shop": 58.0, "stadium": 150.0, "plane": 96.0,
+	"dino_skeleton": 64.0, "thumbs_up_sign": 58.0, "burger_shop": 58.0, "stadium": 150.0, "plane": 96.0,
 }
 
 ## One-off landmarks by block, replacing that block's row of buildings. "brand_row:<brand>"
-## is an ordinary row where every building carries that brand (a company campus).
-## The five check-in spots, one just south of the start and one near each corner (.68), are big
-## tech's campuses since .77 (the user: 每个地图的打卡点能不能更像大厂一点): Goggle's in the middle,
-## Beta's north-west, NUTFLIX's north-east, Envy's south-east and Pear's ring south-west, each a
-## row of its offices with its statue on the lawn (Pear's ring is its own drawing). The corners
-## are one column in from the map's east and west edges (the next column out would put a
-## landmark's drawing 60 past the fence) and about 500 in from its north and south edges.
-## (.52-.67: 金门大桥, Goggle, Levy's 球场, Pear, 胡佛塔 evenly on a ring; .68-.76 金门大桥, 胡佛塔
-## and Levy's 球场 on the corners.)
+## is an ordinary row where every building carries that brand (a company campus); "hq:<brand>" is
+## the company's headquarters, one big tower with its sign (City.HQ_STRUCTURE).
+## The five check-in spots, one just south of the start and one near each corner (.68): since .77
+## (the user: 打卡点设计，只放总部在这个城市的，其余的还是用城市标志) the middle one is the one big
+## tech company headquartered here, Goggle (its tower, the dinosaur on the lawn), and the corners
+## are the city's landmarks: 金门大桥 north-west, 胡佛塔 north-east, Levy's 球场 south-east and the
+## 泛美金字塔 south-west (Pear's ring until .77). The corners are one column in from the map's east
+## and west edges (the next column out would put a landmark's drawing 60 past the fence) and
+## about 500 in from its north and south edges. (.52-.67 the five stood evenly on a ring, Goggle a
+## row of its offices.)
 const LANDMARKS := {
-	Vector2i(0, 1): "brand_row:goggle",
-	Vector2i(-3, -5): "brand_row:beta",
-	Vector2i(3, -5): "brand_row:nutflix",
-	Vector2i(3, 4): "brand_row:envy",
-	Vector2i(-3, 4): "art:pear_park",
+	Vector2i(0, 1): "hq:goggle",
+	Vector2i(-3, -5): "art:golden_gate",
+	Vector2i(3, -5): "art:stanford_tower",
+	Vector2i(3, 4): "art:stadium",
+	Vector2i(-3, 4): "art:transamerica",
 }
-## Landmarks standing on a block's lawn, in front of its row of buildings: the campus mascots and
-## logo statues (tools/make_logo_statues.py).
-const LAWN_LANDMARKS := {
-	Vector2i(0, 1): "dino_skeleton",
-	Vector2i(-3, -5): "thumbs_up_sign",
-	Vector2i(3, -5): "statue_nut",
-	Vector2i(3, 4): "statue_eye",
-}
+## Landmarks standing on a block's lawn, behind its buildings: the campus mascots.
+const LAWN_LANDMARKS := {Vector2i(0, 1): "dino_skeleton"}
 ## The landmarks a player can check in at (打卡, Stamps), in the order they open (Stamps.OPEN_AT: the
 ## middle one at 1:00, then the corners clockwise from the north-west at 3:00, 5:00, 7:00, 9:00): its picture
 ## on the 打卡 page, the block it stands on (in LANDMARKS / LAWN_LANDMARKS), its name, a line about
 ## it, and the small bonus it gives for good once checked in at ([kind, amount], Stamps.BONUSES).
 ## Since .55 (the user's call) each gives 2% damage, 2% cooldown, +10 luck, 5% pickup range or +5
 ## health (3%, 3%, 20, 10%, 10 from .44); all five maps' together are about one passive card each.
-## The ids are the save's, so they stay when a spot changes (.77: golden_gate is Beta's campus,
-## stanford_tower NUTFLIX's, stadium Envy's): whoever checked in there keeps it and its bonus.
+## The ids are the save's, so they stay when a spot changes (.77: pear_park is the 泛美金字塔):
+## whoever checked in there keeps it and its bonus.
 const STAMPS := {
-	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, 1), "name": "Goggle 园区", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
-	"golden_gate": {"art": "thumbs_up_sign", "block": Vector2i(-3, -5), "name": "Beta 园区", "note": "门口立着一块大大的点赞牌", "bonus": ["might", 0.02]},
-	"stanford_tower": {"art": "icon_nut", "block": Vector2i(3, -5), "name": "NUTFLIX 总部", "note": "下班回家接着刷剧", "bonus": ["haste", 0.02]},
-	"stadium": {"art": "icon_eye", "block": Vector2i(3, 4), "name": "Envy 园区", "note": "买显卡的队排到了门口", "bonus": ["magnet", 0.05]},
-	"pear_park": {"art": "pear_park", "block": Vector2i(-3, 4), "name": "Pear 飞碟园区", "note": "一整圈玻璃的飞碟总部", "bonus": ["max_hp", 5.0]},
+	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, 1), "name": "Goggle 总部", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
+	"golden_gate": {"art": "golden_gate", "block": Vector2i(-3, -5), "name": "金门大桥", "note": "一路往西北，走到地图角上", "bonus": ["might", 0.02]},
+	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(3, -5), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
+	# Sailsforce 大厦's bonus until .52.
+	"stadium": {"art": "stadium", "block": Vector2i(3, 4), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
+	"pear_park": {"art": "transamerica", "block": Vector2i(-3, 4), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["max_hp", 5.0]},
 }
 ## Signs that belong to a landmark drawing.
-const LANDMARK_BRANDS := {"pear_park": "pear"}
-## Landmarks that are only partly solid, as [from, to] fractions of their width (the Golden Gate's
-## towers until .77).
-const SOLID_SPANS := {}
+const LANDMARK_BRANDS := {"stadium": "levys"}
+## Landmarks that are only partly solid, as [from, to] fractions of their width: the Golden
+## Gate's towers block, the deck between them is walked under.
+const SOLID_SPANS := {"golden_gate": [[0.22, 0.28], [0.72, 0.78]]}
 
 ## Parody companies: a name, an icon and a colour, close enough to recognise and drawn from
 ## scratch rather than borrowing anyone's logo.
