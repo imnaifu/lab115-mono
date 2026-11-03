@@ -6,14 +6,19 @@ extends Weapon
 ## (Silicon Valley: 屏保.) Vampire Survivors' Runetracer, made permanent: it used to fly a couple
 ## of seconds and vanish, and the user wanted them "never gone, just bouncing all over".
 ## 动态壁纸 (evolved with 降噪耳机): every bounce off an edge blasts the enemies near it too.
+##
+## A square tile since .74 (the user: 屏保可以略大一点，然后做成正方形，这样才能完美贴边): SIZE 18 → 24,
+## the drawing fills its square, it turns back the moment its side meets the screen's edge and
+## hits whatever overlaps the square. Until then a round-ish logo that rocked from side to side,
+## bounced and hit by a circle of radius 9 round its middle, so it turned short of the edge.
 
 ## Logos out at once.
 const COUNT := [1, 1, 2, 2, 3]
 const DAMAGE := [12.0, 16.0, 16.0, 20.0, 26.0]
 const SPEED := [150.0, 150.0, 170.0, 170.0, 190.0]
 const REHIT := 0.5
-const HIT_RADIUS := 9.0
-const SIZE := 18.0
+## The tile's side, as drawn and as it hits and bounces.
+const SIZE := 24.0
 ## A bounce this close to both edges at a corner counts as hitting the corner.
 const CORNER_SNAP := 14.0
 const CORNER_RADIUS := 60.0
@@ -42,7 +47,8 @@ func _process(delta: float) -> void:
 		_launch()
 	var damage: float = stat(DAMAGE) * damage_scale()
 	var speed: float = stat(SPEED)
-	var half := game.view_half() - Vector2(HIT_RADIUS, HIT_RADIUS)
+	# Where the tile's middle turns back: its side on the screen's edge.
+	var half := game.view_half() - Vector2.ONE * SIZE / 2.0
 	for logo in _logos:
 		# Levels speed them up as they go.
 		logo.velocity = logo.velocity.normalized() * speed
@@ -52,10 +58,13 @@ func _process(delta: float) -> void:
 		# through what showed and turned at lines nobody could see.
 		var bounced := _bounce_off_screen(logo, half)
 		logo.sprite.position = logo.position
-		logo.sprite.rotation = sin(_clock * 3.0) * 0.15
 		if bounced:
 			_on_edge_bounce(logo, half, damage)
-		for enemy in game.query_enemies(logo.position, HIT_RADIUS):
+		# Everything the square overlaps: candidates within its corner's reach, then the square.
+		for enemy in game.query_enemies(logo.position, SIZE * 0.71):
+			var gap := (enemy.position - logo.position).abs() - Vector2.ONE * (SIZE / 2.0 + enemy.hit_radius)
+			if gap.x > 0.0 or gap.y > 0.0:
+				continue
 			var key := enemy.get_instance_id()
 			if _clock - logo.hit_at.get(key, -INF) < REHIT:
 				continue

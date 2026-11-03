@@ -5,8 +5,11 @@ extends Weapon
 ## eight directions at once.
 
 const COUNT := [1, 1, 2, 2, 3]
-## Raised after the live runs had it at 1-7% of all damage even at full level.
-const DAMAGE := [10.0, 14.0, 14.0, 18.0, 25.0]
+## Raised after the live runs had it at 1-7% of all damage even at full level. Doubled in .74 (the
+## user: 复制粘贴只加伤害; was 10 / 14 / 14 / 18 / 25): it fires the way the player walks, mostly
+## away from the crowd, and alone it dealt about 56 a second at full level at 8:00 in the bot's
+## hands, a tenth of a job weapon; about 97 now (players who turn to face the crowd hit more).
+const DAMAGE := [20.0, 28.0, 28.0, 36.0, 50.0]
 ## Enemies each file passes through. Players walk away from a crowd as often as into it, so a
 ## file that reaches the crowd has to count for more than one hit.
 const PIERCE := [2, 2, 2, 2, 3]

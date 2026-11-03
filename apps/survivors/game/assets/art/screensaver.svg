@@ -1,10 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-<g stroke="#2f3542" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
-<ellipse cx="32" cy="53" rx="22" ry="7" fill="#5b9cff"/>
-<ellipse cx="32" cy="53" rx="6" ry="2" fill="#f7c948" stroke-width="2.4"/>
-<ellipse cx="32" cy="25" rx="28" ry="19" fill="#f7c948"/>
-<path d="M32 12 L35.6 20.6 L44.9 21.3 L37.8 27.4 L40 36.4 L32 31.5 L24 36.4 L26.2 27.4 L19.1 21.3 L28.4 20.6 Z" fill="#5b9cff" stroke-width="3"/>
-</g>
-<path d="M10 20 Q13 12 21 9.5" fill="none" stroke="#fff7e0" stroke-width="2.8" stroke-linecap="round"/>
-<path d="M17 52 Q20 49.5 25 49" fill="none" stroke="#a9ccff" stroke-width="2.2" stroke-linecap="round"/>
+<!-- .74: a square tile filling the whole canvas, so the drawing's edge is the logo's edge and it
+     bounces flush off the screen's (the user: 屏保可以略大一点，然后做成正方形，这样才能完美贴边). -->
+<rect x="1.75" y="1.75" width="60.5" height="60.5" rx="11" fill="#f7c948" stroke="#2f3542" stroke-width="3.5"/>
+<path d="M32.0 14.5 L36.8 26.9 L50.1 27.6 L39.8 36.0 L43.2 48.9 L32.0 41.7 L20.8 48.9 L24.2 36.0 L13.9 27.6 L27.2 26.9 Z" fill="#5b9cff" stroke="#2f3542" stroke-width="3" stroke-linejoin="round"/>
+<path d="M9 22 Q10 11 21 9" fill="none" stroke="#fff7e0" stroke-width="2.8" stroke-linecap="round"/>
 </svg>

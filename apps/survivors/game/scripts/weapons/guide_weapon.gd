@@ -45,10 +45,11 @@ const BASE_SECONDS := 1.5
 ## A set fades in over FADE_IN and out over its last FADE_OUT seconds.
 const FADE_IN := 0.15
 const FADE_OUT := 0.3
-## How far each line runs either way from the player with no 更长: a small cross. Each 更长 takes it
-## a quarter of the way on to the screen's edge (the view's half width for the horizontal line, its
-## half height for the vertical one), so at BRANCH_MAX it crosses the whole screen.
-const START_HALF := 60.0
+## How far each line runs either way from the player with no 更长: a small cross (80 from the start
+## of .74, the user: 设计师起手 80, then 改 70; 60 in the first draft). Each 更长 takes it a quarter
+## of the way on to the screen's edge (the view's half width for the horizontal line, its half
+## height for the vertical one), so at BRANCH_MAX it crosses the whole screen.
+const START_HALF := 70.0
 ## The landscape view's half width (640 / 2): what the cards and the 官网 give as 长度, the
 ## horizontal line's reach on a computer.
 const SHOWN_SCREEN_HALF := 320.0
