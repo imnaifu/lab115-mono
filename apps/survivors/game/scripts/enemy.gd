@@ -29,11 +29,14 @@ const SPIN_SECONDS := 0.45
 ## Bosses catch up faster than the crowd walks (.35, the user's call: they hung back behind it, so
 ## the weapons only ever hit the small fry). A boss's own speed (22-40) maps onto
 ## BOSS_SPEED_FLOOR and up, BOSS_SPEED_SPREAD of each point over SLOWEST_BOSS_SPEED, so the slow
-## ones are still the slower bosses: 46-50.5, against the crowd's 25-48 (26-50 until .65). From .39 that is only its
+## ones are still the slower bosses: 51-51.5 from .76 (own speeds 42-44, BossKits.SLOT_STATS;
+## 46-50.5 before), against the crowd's 25-48 (26-50 until .65). From .39 that is only its
 ## catch-up speed: within CATCH_UP_NEAR of the player it walks at its own speed again (what .35
 ## had everywhere cost the test bot about a minute of each run, as a boss on its heels could hardly
 ## be shaken off), blending into the catch-up speed by CATCH_UP_FAR. It walks no faster than
-## BOSS_MAX_SPEED, under the slowest job's 60.
+## BOSS_MAX_SPEED, under the slowest job's 60. From .76 it keeps catching up until 60-100 away
+## (130-170 before; the user: 这样能更好的打到 boss): the test bot then hit bosses about a third
+## more and they went down about 10 s sooner, and it is still slower than every job.
 const BOSS_SPEED_FLOOR := 46.0
 const SLOWEST_BOSS_SPEED := 22.0
 const BOSS_SPEED_SPREAD := 0.25
@@ -41,8 +44,8 @@ const BOSS_MAX_SPEED := 54.0
 ## See hit_radius.
 const BIG_ART := 40.0
 const HIT_SHARE := 0.36
-const CATCH_UP_NEAR := 130.0
-const CATCH_UP_FAR := 170.0
+const CATCH_UP_NEAR := 60.0
+const CATCH_UP_FAR := 100.0
 ## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
 const BOSS_STUN_SCALE := 0.5
 const STUN_TINT := Color(0.72, 0.84, 1.0)

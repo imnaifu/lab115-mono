@@ -26,11 +26,14 @@ const LINE_SECONDS := 2.2
 const ATTACK_LINE_EVERY := 3
 
 ## Each slot's numbers, before the map's and the minute's health multipliers (Spawner.hp_scale).
+## Speed 42-44 from .76 (the user: boss 移动速度快一点，这样能更好的打到 boss; 30-32 before): near
+## the player a boss walks at it, as quick as the quicker crowd, so it no longer drops behind the
+## crowd, and still under the slowest job's 60.
 const SLOT_STATS := [
-	{"hp": 600.0, "speed": 30.0, "damage": 12.0, "xp": 30},
-	{"hp": 1400.0, "speed": 30.0, "damage": 20.0, "xp": 60},
-	{"hp": 2200.0, "speed": 32.0, "damage": 24.0, "xp": 90},
-	{"hp": 3000.0, "speed": 30.0, "damage": 26.0, "xp": 100},
+	{"hp": 600.0, "speed": 42.0, "damage": 12.0, "xp": 30},
+	{"hp": 1400.0, "speed": 42.0, "damage": 20.0, "xp": 60},
+	{"hp": 2200.0, "speed": 44.0, "damage": 24.0, "xp": 90},
+	{"hp": 3000.0, "speed": 42.0, "damage": 26.0, "xp": 100},
 ]
 
 ## How each attack's shape is dodged, said at the bottom the first time it comes up in a run

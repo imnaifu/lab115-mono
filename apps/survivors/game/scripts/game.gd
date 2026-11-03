@@ -640,7 +640,9 @@ func _keep_out_of_walls(enemy: Enemy, target: Vector2, delta: float, slide: bool
 
 
 ## Position correction that pushes overlapping enemies apart, so crowds spread into a blob
-## instead of stacking on one pixel.
+## instead of stacking on one pixel. A boss shoulders through the crowd (.76, the user: 这样能更好的
+## 打到 boss): the crowd still makes way for it, but only another boss pushes it back, so it is no
+## longer held behind a wall of small fry.
 func _separation(enemy: Enemy) -> Vector2:
 	var push := Vector2.ZERO
 	var cell := _cell_of(enemy.position)
@@ -651,6 +653,8 @@ func _separation(enemy: Enemy) -> Vector2:
 				continue
 			for other: Enemy in bucket:
 				if other == enemy or other.ghostly:
+					continue
+				if enemy.is_elite and not other.is_elite:
 					continue
 				var offset := enemy.position - other.position
 				var min_distance := enemy.radius + other.radius
