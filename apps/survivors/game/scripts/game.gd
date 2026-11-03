@@ -52,8 +52,9 @@ const EARLY_LEVEL_XP := [3, 7, 13, 20]
 ## could bank several level-ups). Until .32 any kill dropped one 0.4% of the time and every boss
 ## dropped one: about 13 a run, the user felt the run kept leveling up in bursts. Since then only
 ## regular kills from level 10 on (Vampire Survivors' Vacuum only drops from level 12): 0.2% (about
-## 4-5 a run) until .48, 0.5% since (the user's call, with the pull cut down to the screen), and
-## since .61 never two within RARE_DROP_GAP (the user: 磁铁也是).
+## 4-5 a run) until .48, 0.5% since (the user's call, with the pull cut down to the screen).
+## .61–.71 never two of a kind within 60 seconds (the user: 磁铁也是); .72 took that out for all
+## three rare drops (the user: 移出 60s 不重复掉的设计), so each kill just rolls its chance.
 const MAGNET_DROP_CHANCE := 0.005
 const MAGNET_FROM_LEVEL := 10
 ## A 午休 (.61, Vampire Survivors' Orologion) stops every enemy, bosses too and the ones that turn
@@ -67,9 +68,6 @@ const NAP_SECONDS := 3.0
 ## one from the start, so even a run over before its first boss earns a little.
 const RED_PACKET_DROP_CHANCE := 0.005
 const RED_PACKET_SALARY := [6, 8, 16, 18]
-## After a magnet, a 午休 or a 红包 drops, no more of that kind for this many seconds of the run
-## (.61, the user: 60s 内不出; each kind counts on its own).
-const RARE_DROP_GAP := 60.0
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
 ## 工资 it pays (`salary`: since .70 one amount per boss, the 2:00 / 4:00 / 6:00 / 8:00 boss in turn,
 ## chest_salary; .63–.69 one amount a rating; before, one of several at random), kept in the
@@ -155,8 +153,6 @@ var red_packets := 0
 var naps := 0
 ## Seconds left of the 午休 under way: enemies that turn up meanwhile are stopped for the rest.
 var nap_left := 0.0
-## Run time (`elapsed`) before which each rare kind (Pickup.Kind) can't drop again (RARE_DROP_GAP).
-var _rare_drop_ready_at := {}
 
 var rng := RandomNumberGenerator.new()
 var player: Player
@@ -561,11 +557,11 @@ func _kill(enemy: Enemy) -> void:
 		_drop(Pickup.Kind.HEAL, enemy.position, 1)
 	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet, a 午休 or a 红包.
 	else:
-		if _rare_drop_due(Pickup.Kind.MAGNET, MAGNET_DROP_CHANCE, MAGNET_FROM_LEVEL):
+		if _rare_drop_due(MAGNET_DROP_CHANCE, MAGNET_FROM_LEVEL):
 			_drop(Pickup.Kind.MAGNET, enemy.position + Vector2(6, 0), 1)
-		if _rare_drop_due(Pickup.Kind.NAP, NAP_DROP_CHANCE, NAP_FROM_LEVEL):
+		if _rare_drop_due(NAP_DROP_CHANCE, NAP_FROM_LEVEL):
 			_drop(Pickup.Kind.NAP, enemy.position + Vector2(-6, 0), 1)
-		if _rare_drop_due(Pickup.Kind.RED_PACKET, RED_PACKET_DROP_CHANCE, 1):
+		if _rare_drop_due(RED_PACKET_DROP_CHANCE, 1):
 			_drop(Pickup.Kind.RED_PACKET, enemy.position + Vector2(0, 6), RED_PACKET_SALARY[rng.randi() % RED_PACKET_SALARY.size()])
 	# Freed only once the grid no longer references it (next rebuild); until then queries skip
 	# it via `dead`. Freeing now would leave a dangling entry for anything that queries before
@@ -714,13 +710,10 @@ func _drop_xp(at: Vector2, value: int) -> Pickup:
 	return _drop(Pickup.Kind.XP, at, value)
 
 
-## Whether a regular kill drops a rare `kind` (its `chance`, from `from_level` on, not within
-## RARE_DROP_GAP of the last one of its kind); a yes starts that kind's gap.
-func _rare_drop_due(kind: Pickup.Kind, chance: float, from_level: int) -> bool:
-	if level < from_level or elapsed < _rare_drop_ready_at.get(kind, 0.0) or rng.randf() >= chance:
-		return false
-	_rare_drop_ready_at[kind] = elapsed + RARE_DROP_GAP
-	return true
+## Whether a regular kill drops a rare pickup: its `chance`, from `from_level` on (no gap between
+## two of a kind since .72).
+func _rare_drop_due(chance: float, from_level: int) -> bool:
+	return level >= from_level and rng.randf() < chance
 
 
 func _drop(kind: Pickup.Kind, at: Vector2, value: int) -> Pickup:

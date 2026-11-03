@@ -84,6 +84,7 @@ scripts/
 ├── ui/departures.gd   # 选目的地的出发大屏（.38）：一行一座城，点选、新开放时翻牌
 └── ui/world_map.gd    # 登机牌上的一段航线（.38；.34–.37 是整页世界地图），各城市的经纬度、代码、地标
 tests/smoke_test.gd    # 机器人自动玩一局的冒烟测试
+tests/balance_bot.gd   # 会玩的机器人（挑卡、躲红圈、捡星星），校准平衡公式用（DESIGN.md 2.8）
 tests/cloud_test.gd    # 云存档对着 Nakama 服务器的测试：两台设备用存档码合并、换码、删除、连不上
 addons/com.heroiclabs.nakama/   # Nakama 的 Godot 客户端（Apache-2.0，固定在 heroiclabs/nakama-godot 的 6dc7b39，只留 api / client / socket / utils，去掉了 Satori、C# 工具和 autoload 辅助脚本）
 tools/                 # 导出 Web 版、下载 Web 导出模板、渲染启动图和 PWA 图标、重新下载 soco-st 素材、裁剪字体、生成战绩图的二维码
@@ -93,6 +94,8 @@ assets/fonts/          # Nunito + 思源黑体，只留游戏用到的字（tool
 assets/audio/          # sfx/ 音效（按用途命名）、music/ 标题和战斗两首循环音乐（.import 里开了 loop）
 assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录来源、可重新下载）
 ```
+
+**平衡公式**（`.72`）：改数值前后各跑一次 `godot --headless --path . -s tools/dump_compendium.gd -- /tmp/compendium.json && python3 tools/balance.py /tmp/compendium.json`，它按 DESIGN.md 2.8 的固定公式算各地图新手 / 培训 / 打卡 / 练满的预测通关率；公式不改，只在用 `tests/balance_bot.gd` 重新校准时改它顶部的 `PARAMS`。
 
 **成就达成率**：每次发版前跑一次 `python3 tools/achievement_rates.py`，它经本机的只读查询脚本（`~/.claude/bin/umami-readonly-query`，走 SSH 读 Umami 的库）统计每个成就有多少玩家拿到，写进 `scripts/achievement_rates.gd`；玩家不满 30 人时游戏用 `achievements.gd` 的估计值。
 

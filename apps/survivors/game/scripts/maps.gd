@@ -29,6 +29,14 @@ static var current: GDScript = BayArea
 static var current_id := "sv"
 ## The smoke test plays any map without earning it first.
 static var unlock_all := false
+## The balance bot's extra multipliers on top of the map's DIFFICULTY (tests/balance_bot.gd: e.g.
+## {"hp": 1.4} to measure what 40% more enemy health does); empty in the game.
+static var test_scale := {}
+
+
+## The map's DIFFICULTY multiplier `key` (hp, damage, spawn), with the balance bot's test_scale.
+static func difficulty(key: String) -> float:
+	return float(current.DIFFICULTY[key]) * float(test_scale.get(key, 1.0))
 
 
 static func script_of(id: String) -> GDScript:

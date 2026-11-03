@@ -230,7 +230,7 @@ func _init(game: Game) -> void:
 ## spawned more on top from 5:00 on (+19% a minute, 12.3 a second by 10:00); .59 took that out
 ## (the user: 这个逻辑去掉), partly because MAX_ALIVE likely cut much of it off late in a run anyway.
 func spawn_rate() -> float:
-	return rate_at(_game.elapsed, Maps.current.DIFFICULTY["spawn"])
+	return rate_at(_game.elapsed, Maps.difficulty("spawn"))
 
 
 ## spawn_rate() `seconds` into a run on a map spawning `map_spawn` times as many (static so the
@@ -245,7 +245,7 @@ static func rate_at(seconds: float, map_spawn: float) -> float:
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
 ## (3.5x by the ten-minute mark), times the map's (Maps: longer working weeks are harder).
 func hp_scale() -> float:
-	return hp_scale_at(_game.elapsed, Maps.current.DIFFICULTY["hp"])
+	return hp_scale_at(_game.elapsed, Maps.difficulty("hp"))
 
 
 ## hp_scale() `seconds` into a run on a map whose enemies have `map_hp` times the health.

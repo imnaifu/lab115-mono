@@ -130,7 +130,7 @@ func setup(type_id: String, data: Dictionary, hp_scale: float) -> void:
 		# Small per-enemy speed jitter keeps a crowd from marching in lockstep.
 		speed = own_speed * randf_range(0.9, 1.1)
 	# Harder maps hit harder (Maps.current.DIFFICULTY), its attacks too (_hits).
-	damage = data["damage"] * Maps.current.DIFFICULTY["damage"]
+	damage = data["damage"] * Maps.difficulty("damage")
 	xp_value = data["xp"]
 	radius = data["radius"]
 	color = data["color"]
@@ -389,7 +389,7 @@ func _spin_angle(delta: float) -> float:
 
 ## An attack's damage on this map (Maps.current.DIFFICULTY).
 static func _hits(amount: float) -> float:
-	return amount * Maps.current.DIFFICULTY["damage"]
+	return amount * Maps.difficulty("damage")
 
 
 func _rest_modulate() -> Color:

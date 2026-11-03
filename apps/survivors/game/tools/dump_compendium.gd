@@ -44,7 +44,6 @@ func _initialize() -> void:
 			"magnet_chance": Game.MAGNET_DROP_CHANCE, "magnet_from_level": Game.MAGNET_FROM_LEVEL,
 			"nap_chance": Game.NAP_DROP_CHANCE, "nap_from_level": Game.NAP_FROM_LEVEL, "nap_seconds": Game.NAP_SECONDS,
 			"red_packet_chance": Game.RED_PACKET_DROP_CHANCE, "red_packet_salary": Game.RED_PACKET_SALARY,
-			"rare_drop_gap": Game.RARE_DROP_GAP,
 			"max_pickups": Game.MAX_PICKUPS, "chests": Game.FUNDING_ROUNDS,
 			"revive": {"hp": Game.REVIVE_HP, "invuln": Game.REVIVE_INVULN}},
 		"training": _training(),
@@ -210,12 +209,26 @@ func _stats() -> Dictionary:
 	var trained := Player.new()
 	_train_fully()
 	Training.apply(trained)
+	# For the balance formula (tools/balance.py, .72): one 培训 rank of everything, and each map's own
+	# five landmarks.
+	var trained_one := Player.new()
+	_train_one_each()
+	Training.apply(trained_one)
+	var map_stamps := {}
+	for map_id: String in Maps.ORDER:
+		var map_stamped := Player.new()
+		for stamp_id: String in Maps.script_of(map_id).STAMPS:
+			Stamps.apply_bonus(map_stamped, stamp_id)
+		map_stamps[map_id] = _player_stats(map_stamped)
+		map_stamped.free()
 	var stats := {"start": _player_stats(fresh), "all_stamps": _player_stats(stamped),
-		"all_training": _player_stats(trained), "invuln_seconds": Player.INVULN_SECONDS,
+		"all_training": _player_stats(trained), "training_one": _player_stats(trained_one),
+		"map_stamps": map_stamps, "invuln_seconds": Player.INVULN_SECONDS,
 		"passive_steps": Upgrades.STAT_STEPS}
 	fresh.free()
 	stamped.free()
 	trained.free()
+	trained_one.free()
 	return stats
 
 
@@ -245,6 +258,15 @@ func _train_fully() -> int:
 		for entry: Dictionary in Training.STATS:
 			more = Training.buy(entry["id"]) or more
 	return 100000000 - Training.balance()
+
+
+## One rank of every 培训 stat, in a throwaway save like _train_fully.
+func _train_one_each() -> void:
+	Progress.to_disk = false
+	Progress.reset()
+	Progress.add_salary("dump", 100000000)
+	for entry: Dictionary in Training.STATS:
+		Training.buy(entry["id"])
 
 
 func _player_stats(player: Player) -> Dictionary:

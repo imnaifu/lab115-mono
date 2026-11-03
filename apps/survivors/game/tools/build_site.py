@@ -230,11 +230,21 @@ def upgrades_section(data: dict) -> str:
         prefixes.setdefault(game_map["rank_prefix"], []).append(game_map["name"])
     ranks = "；".join(f"{esc('、'.join(names))} {esc(prefix)}1、{esc(prefix)}2…" for prefix, names in prefixes.items())
     job_levels = " / ".join(str(level) for level in data["job_weapon_levels"])
+    # The whole curve (.72, the user: 升一级要的经验全都列出来放到网站上): each level, what the next one
+    # takes and the total from level 1. The steps are read off the curve, not written in.
+    early_step, late_step = xp[5] - xp[4], xp[-1] - xp[-2]
+    late_from = next(level for level in range(6, len(xp)) if xp[level] - xp[level - 1] == late_step)
+    total = 0
+    xp_rows = []
+    for level, amount in enumerate(xp, start=1):
+        total += amount
+        xp_rows.append(f"<tr><td>L{level} → L{level + 1}</td><td>{amount}</td><td>{total:,}</td></tr>")
     xp_card = f"""<article class="card"><h3>经验和职级</h3><ul>
-<li>升一级要的经验：{" / ".join(str(amount) for amount in xp[:8])}…，越往后越多（10 级以后涨得更快）</li>
+<li>升一级要的经验：前 4 级 {" / ".join(str(amount) for amount in xp[:4])}，之后每级多要 {early_step}，{late_from} 级以后每级多要 {late_step}（全表见下）</li>
 <li>从头升到 {"、".join(f"L{level} 一共要 {amount}" for level, amount in reach.items())}</li>
 <li>等级就是职级：{ranks}</li>
-<li>每次升级三选一，运气好多一张；专属武器第 {job_levels} 级必出</li></ul></article>"""
+<li>每次升级三选一，运气好多一张；专属武器第 {job_levels} 级必出</li></ul>
+<div class="scroll tall"><table class="nums"><thead><tr><th>等级</th><th>升下一级要</th><th>从 L1 累计</th></tr></thead><tbody>{"".join(xp_rows)}</tbody></table></div></article>"""
 
     rows = []
     for rarity in rarities:
@@ -281,9 +291,9 @@ def drops_section(data: dict) -> str:
     small = [
         card("star_blue", "经验星星", f"每只怪都掉，走近才会吸过来，攒够就升级。地上超过 {drops['max_pickups']} 个时，新掉的经验并进已有的星星。"),
         card("boba", "珍珠奶茶", f"只有 boss 掉，每个 boss 一杯，普通怪不掉。捡到回 {number(drops['heal_amount'])} 生命。"),
-        card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉，掉一个后 {number(drops['rare_drop_gap'])} 秒内不再掉。捡到时屏幕里的星星一起飞过来（屏幕外的不算）。"),
-        card("nap", "午休", f"升到 {drops['nap_from_level']} 级以后，普通怪有 {percent(drops['nap_chance'])} 的几率掉，掉一个后 {number(drops['rare_drop_gap'])} 秒内不再掉。捡到时全图的怪原地定住 {number(drops['nap_seconds'])} 秒，boss 也一样，这期间新来的怪也定住；定住的怪贴身照样扣血，boss 已经落地的圈照样会炸。"),
-        card("red_packet", "红包", f"从开局起，普通怪有 {percent(drops['red_packet_chance'])} 的几率掉，掉一个后 {number(drops['rare_drop_gap'])} 秒内不再掉。捡到发工资 "
+        card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉。捡到时屏幕里的星星一起飞过来（屏幕外的不算）。"),
+        card("nap", "午休", f"升到 {drops['nap_from_level']} 级以后，普通怪有 {percent(drops['nap_chance'])} 的几率掉。捡到时全图的怪原地定住 {number(drops['nap_seconds'])} 秒，boss 也一样，这期间新来的怪也定住；定住的怪贴身照样扣血，boss 已经落地的圈照样会炸。"),
+        card("red_packet", "红包", f"从开局起，普通怪有 {percent(drops['red_packet_chance'])} 的几率掉。捡到发工资 "
              + "、".join(f"¥{amount}" for amount in drops["red_packet_salary"]) + " 里随机一个，当场存进存档，和年终奖的工资一样在<a href=\"#training\">培训</a>里花。"),
     ]
     # Every rating: its odds, its 工资 (one amount since .63; before, the range of the amounts it
@@ -545,7 +555,7 @@ img.art{display:block;object-fit:contain;flex:none}
 .start{font-size:13px;font-weight:800;background:var(--brand-soft);border-radius:999px;padding:1px 10px}
 .row{display:flex;gap:8px;align-items:flex-start;font-size:14px}
 .pin{flex:none;font-size:12px;font-weight:800;background:var(--sunk);border-radius:999px;padding:1px 8px;margin-top:2px}
-.scroll{overflow-x:auto;margin:8px 0}
+.scroll{overflow-x:auto;margin:8px 0}.scroll.tall{max-height:320px;overflow-y:auto}.scroll.tall thead th{position:sticky;top:0;background:var(--paper)}
 table.nums{border-collapse:collapse;font-size:13px;width:100%}
 table.nums th,table.nums td{padding:4px 6px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
 table.nums th{color:var(--muted);font-weight:700}.who{display:inline-flex;gap:6px;align-items:center}

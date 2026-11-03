@@ -177,7 +177,7 @@ func _land(at: Vector2) -> void:
 	Effects.poof(game, at, DEBRIS)
 	Effects.dust(game, at, Vector2.UP)
 	if game.player.position.distance_to(at) <= QUAKE_RADIUS + Player.HURT_RADIUS:
-		game.hurt_player(QUAKE_DAMAGE * Maps.current.DIFFICULTY["damage"], "quake_debris", "debris")
+		game.hurt_player(QUAKE_DAMAGE * Maps.difficulty("damage"), "quake_debris", "debris")
 	for enemy in game.query_enemies(at, QUAKE_RADIUS):
 		game.damage_enemy(enemy, QUAKE_CROWD_DAMAGE, (enemy.position - at).normalized() * 60.0, "quake_debris", true)
 
@@ -245,7 +245,7 @@ func _tick_heat(delta: float) -> void:
 	for i in _cool_spots.size():
 		if _cool_strength(i) > 0.0 and game.player.position.distance_to(_cool_spots[i]) <= HEAT_SPOT_RADIUS:
 			return
-	game.hurt_player(HEAT_DAMAGE * Maps.current.DIFFICULTY["damage"], "heat", "heat")
+	game.hurt_player(HEAT_DAMAGE * Maps.difficulty("damage"), "heat", "heat")
 
 
 ## How open a cool spot is (0 to 1): fading in when new, out before it moves on. The first ones
