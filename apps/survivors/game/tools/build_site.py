@@ -347,7 +347,7 @@ def difficulty_section(data: dict) -> str:
     bosses_card = f"""<article class="card"><h3>boss 排期</h3>
 <p class="muted">每张地图 4 个 boss，2:00、4:00、6:00、8:00 各来一个，是这张地图自己的（见<a href="#maps">地图</a>）。出场顺序、招式、节奏每局都一样，没有随机：
 boss 朝你走 {number(pacing['walk_seconds'])} 秒（在屏幕里才算），出一招，再走，一直循环。攻击只有三类：近战（它自己冲、扫、跳、砸）、定点（地上出红色区域，到时间炸）、远程（发子弹）。
-前三个各是一类；最后一战两类两招轮流出，{clock(pacing['phase_two_at'])} 进二阶段：近战更宽更远、定点范围更大、远程更密。场上已经有 {pacing['max_bosses_out']} 个 boss 时，下一个等有 boss 倒下才来。</p>
+前三个各是一类；最后一战两类两招轮流出，{clock(pacing['phase_two_at'])} 进二阶段：近战更宽更远、定点范围更大、远程更密。没打死的 boss 不会走，下一个照样到点来，场上最多同时 4 个。</p>
 <div class="scroll"><table class="nums"><tr><th>时间</th><th>出场生命</th><th>伤害</th><th>经验</th></tr>{slot_rows}</table></div>
 <p class="muted">出场生命已经乘上那一刻的生命倍率，是硅谷的数；别的地图再乘上<a href="#maps">地图</a>的倍率。伤害是碰到它的伤害，招式的伤害见<a href="#bestiary">怪物图鉴</a>。</p></article>"""
     return section("difficulty", "难度", "一局越往后越难：怪越刷越多、越来越抗打，每两分钟来一个 boss。下面是硅谷的数，别的地图按地图卡上的倍率再乘。",

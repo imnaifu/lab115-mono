@@ -183,10 +183,6 @@ const ENEMY_TYPES := {
 	"annual_party": {"name": "年会讲话", "art": "annual_party", "size": 58.0, "color": Color("ff5d5d"),
 		"hp": 3000.0, "speed": 30.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 }
-## A boss due while this many are still out waits until one is down. Players who keep up
-## never see the wait; it stops a player who has fallen behind from being buried under bosses
-## (the live data's deaths had four or five alive at once).
-const MAX_BOSSES_OUT := 3
 
 ## Mix of the steady trickle by run time; each entry applies until its `until` second.
 ## The opening is pings only since .57 (the user: 刚开始出来的应该是红点，因为他血量最少): one hit
@@ -218,8 +214,6 @@ const EVENTS := [
 var _game: Game
 var _spawn_budget := 0.0
 var _next_event := 0
-## Events whose time has come but that haven't gone out yet (a boss held by MAX_BOSSES_OUT).
-var _due_events: Array[Dictionary] = []
 ## This run's schedule, in time order: the same every run on a map.
 var _events: Array[Dictionary] = []
 
@@ -260,10 +254,11 @@ static func hp_scale_at(seconds: float, map_hp: float) -> float:
 
 
 func tick(delta: float) -> void:
+	# Every event, bosses included, goes out on time. .3–.66 held a boss back while three were
+	# out (MAX_BOSSES_OUT); .67 took that out (the user: 场上最多三个限制去掉).
 	while _next_event < _events.size() and _game.elapsed >= _events[_next_event]["at"]:
-		_due_events.append(_events[_next_event])
+		_run_event(_events[_next_event])
 		_next_event += 1
-	_release_due_events()
 
 	_spawn_budget += spawn_rate() * delta
 	while _spawn_budget >= 1.0:
@@ -296,8 +291,7 @@ func bring_boss() -> void:
 			return
 
 
-## Seconds until the next boss is due, or -1 when none is left. A boss already due but held
-## back by MAX_BOSSES_OUT doesn't count: there is no time to show for it.
+## Seconds until the next boss is due, or -1 when none is left.
 func seconds_to_next_boss() -> float:
 	for index in range(_next_event, _events.size()):
 		if _events[index]["kind"] == "elite":
@@ -349,32 +343,6 @@ func _pick_type() -> String:
 	for type_name in names:
 		weights.append(mix[type_name])
 	return names[_game.rng.rand_weighted(weights)]
-
-
-## Sends out the due events in order, except that a boss waits while MAX_BOSSES_OUT are out;
-## rings behind a waiting boss still go out on time.
-func _release_due_events() -> void:
-	var index := 0
-	var bosses_out := -1
-	while index < _due_events.size():
-		var event := _due_events[index]
-		if event["kind"] == "elite":
-			if bosses_out < 0:
-				bosses_out = _bosses_out()
-			if bosses_out >= MAX_BOSSES_OUT:
-				index += 1
-				continue
-			bosses_out += event["count"]
-		_due_events.remove_at(index)
-		_run_event(event)
-
-
-func _bosses_out() -> int:
-	var count := 0
-	for enemy in _game.enemies:
-		if enemy.is_elite and not enemy.dead:
-			count += 1
-	return count
 
 
 func _run_event(event: Dictionary) -> void:
