@@ -46,13 +46,17 @@ const JOBS := {
 
 ## Each job's 大招 (.81, the user's design: 一个主动，一局放一次; the numbers are ours): its name,
 ## the line shouted as it goes off, and what it does, for the button, the job card and the site.
+## Since .93 (the user: 每个职业的技能都给个教学或者提示啥的吧，或者加一下无敌和无敌的倒计时，现在的实现
+## 太粗糙了，没有人知道发生了什么) also `brief`, what it does in a line short enough for the banner
+## as it goes off, the job card and the first-boss hint; and `timer`, the word over the countdown
+## while it lasts (none for the programmer's, over at once).
 ## Ultimates does the work.
 const ULTIMATES := {
-	"coder": {"name": "全量发布", "line": "Shift+Enter！", "text": "分三波螺旋射出 240 个回车键，每个是回车键伤害的 10 倍，穿透所有怪"},
-	"pm": {"name": "今天必须上线", "line": "今天必须上线！", "text": "5 秒内不受伤害，移速 +50%"},
-	"designer": {"name": "复制图层", "line": "Ctrl+J", "text": "出现一个带着你全部武器和属性的分身，会自己躲怪，会受伤，最多 15 秒"},
-	"ops": {"name": "扩容", "line": "扩容！", "text": "放下一台服务器，20 秒里朝附近的怪开炮，怪不会打它"},
-	"data_scientist": {"name": "改标签", "line": "重新标注！", "text": "身边的小怪变成自己人，去打别的怪，伤害不变，死了就没了，最多 20 秒"},
+	"coder": {"name": "全量发布", "line": "Shift+Enter！", "brief": "三波回车键螺旋射出，穿透所有怪", "timer": "", "text": "分三波螺旋射出 240 个回车键，每个是回车键伤害的 10 倍，穿透所有怪"},
+	"pm": {"name": "今天必须上线", "line": "今天必须上线！", "brief": "5 秒无敌，移速 +50%", "timer": "无敌", "text": "5 秒内不受伤害，移速 +50%"},
+	"designer": {"name": "复制图层", "line": "Ctrl+J", "brief": "分身带着你的全部武器，最多 15 秒", "timer": "分身", "text": "出现一个带着你全部武器和属性的分身，会自己躲怪，会受伤，最多 15 秒"},
+	"ops": {"name": "扩容", "line": "扩容！", "brief": "服务器朝附近的怪开炮 20 秒", "timer": "服务器", "text": "放下一台服务器，20 秒里朝附近的怪开炮，怪不会打它"},
+	"data_scientist": {"name": "改标签", "line": "重新标注！", "brief": "身边的小怪变成自己人，最多 20 秒", "timer": "自己人", "text": "身边的小怪变成自己人，去打别的怪，伤害不变，死了就没了，最多 20 秒"},
 }
 
 ## Weapon types: card tag colours (tint, text) and names.

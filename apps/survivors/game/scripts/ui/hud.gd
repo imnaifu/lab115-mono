@@ -36,6 +36,9 @@ const CLEAR_WARNING := 30.0
 const MAP_ICON := 26.0
 ## The 大招 button's size (_build_ultimate_button).
 const ULTIMATE_SIZE := 48.0
+## How long the first-boss hint saying what the 大招 does stays up: longer than a toast, it's a
+## sentence to read.
+const ULTIMATE_HINT_SECONDS := 4.0
 ## 加班's alarm lights (_build_overtime): their reach in from each side (a share of the width),
 ## strength and sweep speed (radians a second) by tier.
 const ALARM_REACH := 0.32
@@ -124,6 +127,10 @@ var _ultimate_button: Button
 var _ultimate_label: Label
 var _ultimate_hinted := false
 var _ultimate_job := ""
+## While a 大招 lasts (.93): a gold ring round the button running down with it, and the label
+## counting (无敌 3.2, 自己人 ×12) instead of 已用.
+var _ultimate_ring: Control
+var _ultimate_ring_share := 0.0
 ## The top bar's right-hand column (kills and pause, the district), where the 大招 button sits.
 var _top_right: VBoxContainer
 var _clear_pill: Control
@@ -265,6 +272,7 @@ var _badge_kicker: Label
 var _badge_title: Label
 var _badge_tween: Tween
 var _badge_queue: Array = []
+var _badge_current: Array = []
 var _tilt_hint: Label
 var _shown_state := -1
 ## Brightens the XP bar for a moment whenever XP comes in, so picking up a star registers.
@@ -369,6 +377,11 @@ func _process(delta: float) -> void:
 	# The announcements drop in under whatever the centre column shows right now.
 	_toast.offset_top = _center_column.position.y + _center_column.size.y + 6.0
 	_badge.offset_top = _toast.offset_top + 34.0
+	# On a phone a wide banner would cover the 大招 button and its countdown (.93): below that
+	# column then.
+	var column := _top_right.get_global_rect()
+	if _badge.get_global_rect().end.x > column.position.x - 4.0:
+		_badge.offset_top = maxf(_badge.offset_top, column.end.y + 6.0)
 	var district: String = Maps.current.district_of(Vector2i((game.player.position / City.BLOCK).floor()))
 	if district != _district:
 		_district = district
@@ -799,6 +812,12 @@ func _build_ultimate_button() -> void:
 	_ultimate_button = UiKit.round_button(Jobs.data(game.player.job)["art"], game.ultimates.cast, ULTIMATE_SIZE)
 	_ultimate_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	holder.add_child(_ultimate_button)
+	_ultimate_ring = Control.new()
+	_ultimate_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ultimate_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ultimate_ring.draw.connect(_draw_ultimate_ring)
+	_ultimate_button.add_child(_ultimate_ring)
+	game.ultimates.went_off.connect(_on_ultimate_went_off)
 	_ultimate_label = UiKit.label(Jobs.ultimate(game.player.job)["name"], 11, "strong", Art.INK)
 	_ultimate_label.add_theme_constant_override("outline_size", 5)
 	_ultimate_label.add_theme_color_override("font_outline_color", Art.PAPER)
@@ -819,13 +838,43 @@ func _update_ultimate() -> void:
 		_ultimate_job = game.player.job
 		_ultimate_button.icon = Art.texture(Jobs.data(_ultimate_job)["art"])
 	var used := game.ultimates.used
+	var ultimate := Jobs.ultimate(game.player.job)
+	var left := game.ultimates.seconds_left()
 	_ultimate_button.disabled = used
-	_ultimate_button.modulate = Color(1, 1, 1, 0.45) if used else Color.WHITE.lerp(Color(1.15, 1.1, 0.9), 0.5 + 0.5 * sin(_clock * 4.0))
-	_ultimate_label.text = tr("已用") if used else tr(Jobs.ultimate(game.player.job)["name"])
+	_ultimate_button.modulate = Color.WHITE if left > 0.0 else Color(1, 1, 1, 0.45) if used \
+		else Color.WHITE.lerp(Color(1.15, 1.1, 0.9), 0.5 + 0.5 * sin(_clock * 4.0))
+	var share := clampf(left / maxf(game.ultimates.duration(), 0.001), 0.0, 1.0)
+	if share != _ultimate_ring_share:
+		_ultimate_ring_share = share
+		_ultimate_ring.queue_redraw()
+	if left > 0.0:
+		_ultimate_label.text = "%s ×%d" % [tr(ultimate["timer"]), game.ultimates.allies()] if game.player.job == "data_scientist" \
+			else UltimateTimer.count_text(ultimate["timer"], left)
+	else:
+		_ultimate_label.text = tr("已用") if used else tr(ultimate["name"])
 	if not used and not _ultimate_hinted and game.enemies.any(func(enemy: Enemy) -> bool: return enemy.is_elite):
 		_ultimate_hinted = true
-		_show_toast(tr("危险时点右上角放大招「%s」，一局一次") % tr(Jobs.ultimate(game.player.job)["name"]) if Device.is_handheld() \
-			else tr("危险时按空格放大招「%s」，一局一次") % tr(Jobs.ultimate(game.player.job)["name"]))
+		# What it does under where it is (.93): the name alone told nobody anything. Two lines, so
+		# it fits a phone.
+		var where := tr("危险时点右上角放大招「%s」，一局一次") if Device.is_handheld() else tr("危险时按空格放大招「%s」，一局一次")
+		_show_toast(where % tr(ultimate["name"]) + "\n" + tr(ultimate["brief"]), ULTIMATE_HINT_SECONDS)
+
+
+## The gold ring round the 大招 button while it lasts, running down clockwise from the top.
+func _draw_ultimate_ring() -> void:
+	if _ultimate_ring_share <= 0.0:
+		return
+	var middle := _ultimate_ring.size / 2.0
+	var radius := ULTIMATE_SIZE / 2.0 + 1.0
+	_ultimate_ring.draw_arc(middle, radius, 0.0, TAU, 48, Art.INK, 6.0, true)
+	_ultimate_ring.draw_arc(middle, radius, -PI / 2.0, -PI / 2.0 + TAU * _ultimate_ring_share, 48, UltimateTimer.SHIELD_COLOR, 4.0, true)
+
+
+## The banner as it goes off (.93): the job's face, 大招「name」 and what it does in a line, ahead
+## of any landmark or achievement waiting.
+func _on_ultimate_went_off() -> void:
+	var ultimate := Jobs.ultimate(game.player.job)
+	_queue_badge([Jobs.data(game.player.job)["art"], tr("大招「%s」") % tr(ultimate["name"]), tr(ultimate["brief"]), Art.BRAND_DEEP, false, ""], true)
 
 
 func _update_clear_pill() -> void:
@@ -917,11 +966,13 @@ func _build_toast() -> void:
 	_toast.modulate.a = 0.0
 	_toast.resized.connect(func() -> void: _toast.pivot_offset = _toast.size / 2.0)
 	_toast_label = UiKit.label("", 13, "strong")
+	# Centred: the 大招 hint runs to two lines (.93).
+	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast.add_child(_toast_label)
 	_root.add_child(_toast)
 
 
-func _show_toast(text: String) -> void:
+func _show_toast(text: String, hold := 1.8) -> void:
 	_toast_label.text = text
 	# Back to a zero-width anchor point, so the box regrows around the centre for the new text.
 	_toast.offset_left = 0
@@ -932,7 +983,7 @@ func _show_toast(text: String) -> void:
 		_toast_tween.kill()
 	_toast_tween = create_tween()
 	_toast_tween.tween_property(_toast, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_toast_tween.tween_interval(1.8)
+	_toast_tween.tween_interval(hold)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.5)
 
 
@@ -976,17 +1027,28 @@ func _on_achievement(id: String) -> void:
 	_queue_badge([entry["art"], tr("成就达成") + " · " + tr(tier["name"]), tr(entry["name"]), tier["color"], false])
 
 
-## `badge` is [art, line, name, colour, whether it's a stamp].
-func _queue_badge(badge: Array) -> void:
-	_badge_queue.append(badge)
-	if _badge_tween == null or not _badge_tween.is_running():
-		_next_badge()
+## `badge` is [art, line, name, colour, whether it's a stamp, and optionally the sound ("" for none)].
+## `urgent` (the 大招's, .93) goes up now: whatever was showing goes back to the front of the
+## queue to show again after it.
+func _queue_badge(badge: Array, urgent := false) -> void:
+	var showing := _badge_tween != null and _badge_tween.is_running()
+	if not urgent:
+		_badge_queue.append(badge)
+		if not showing:
+			_next_badge()
+		return
+	if showing:
+		_badge_tween.kill()
+		_badge_queue.push_front(_badge_current)
+	_badge_queue.push_front(badge)
+	_next_badge()
 
 
 func _next_badge() -> void:
 	if _badge_queue.is_empty():
 		return
 	var badge: Array = _badge_queue.pop_front()
+	_badge_current = badge
 	var stamp: bool = badge[4]
 	_badge_icon.texture = Art.texture(badge[0])
 	_badge_kicker.text = badge[1]
@@ -999,7 +1061,10 @@ func _next_badge() -> void:
 	_badge.rotation = -0.06 if stamp else 0.0
 	_badge.scale = Vector2.ONE * (1.7 if stamp else 0.7)
 	_badge.modulate.a = 0.0
-	Sound.play("pick" if stamp else "level_up")
+	# A sixth entry overrides the sound; "" for none (the 大招 has its own).
+	var sound: String = badge[5] if badge.size() > 5 else ("pick" if stamp else "level_up")
+	if sound != "":
+		Sound.play(sound)
 	_badge_tween = create_tween()
 	if stamp:
 		# Slammed down: big, then hard onto the page.
@@ -1529,8 +1594,12 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	var pitch := UiKit.label(job_data["pitch"], 12)
 	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(pitch)
-	# The job's 大招 (.81), by name: what it does is said in play and on the site.
-	column.add_child(UiKit.label(tr("大招「%s」· 一局一次") % tr(Jobs.ultimate(job_id)["name"]), 12, "strong", Art.BRAND_DEEP))
+	# The job's 大招 (.81) and since .93 what it does in a line (the user: 每个职业的技能都给个教学或者
+	# 提示啥的吧): the name alone said nothing.
+	var ultimate := Jobs.ultimate(job_id)
+	var ultimate_line := UiKit.label(tr("大招「%s」（一局一次）：%s") % [tr(ultimate["name"]), tr(ultimate["brief"])], 12, "strong", Art.BRAND_DEEP)
+	ultimate_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(ultimate_line)
 	return card
 
 

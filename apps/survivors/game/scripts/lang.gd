@@ -1383,7 +1383,19 @@ const EN := {
 	"已用": "Used",
 	"危险时点右上角放大招「%s」，一局一次": "In a pinch, tap the button top right for your ultimate, %s: once a run",
 	"危险时按空格放大招「%s」，一局一次": "In a pinch, press Space for your ultimate, %s: once a run",
-	"大招「%s」· 一局一次": "Ultimate: %s · once a run",
+	# .93: what each does in a line (banner, job card, first-boss hint) and the countdown's word.
+	"大招「%s」（一局一次）：%s": "Ultimate (once a run): %s. %s",
+	"大招「%s」": "Ultimate: %s",
+	"三波回车键螺旋射出，穿透所有怪": "Three spirals of Enter keys, through everything",
+	"5 秒无敌，移速 +50%": "Untouchable for 5 s, 50% faster",
+	"分身带着你的全部武器，最多 15 秒": "A copy of you with all your weapons, up to 15 s",
+	"服务器朝附近的怪开炮 20 秒": "A server shells nearby enemies for 20 s",
+	"身边的小怪变成自己人，最多 20 秒": "Nearby enemies switch sides, up to 20 s",
+	"无敌": "Untouchable",
+	"分身": "Copy",
+	"服务器": "Server",
+	"自己人": "Allies",
+	"免疫": "Immune",
 }
 
 static var _registered := false

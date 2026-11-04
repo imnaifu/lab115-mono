@@ -74,6 +74,10 @@ var weapons: Array[Weapon] = []
 var _invuln_left := 0.0
 ## The product manager's 大招 (今天必须上线, Ultimates): untouchable and faster for this long.
 var boost_left := 0.0
+## A hit the 大招 stops says 免疫 over the player (.93: the user couldn't tell it was doing
+## anything), at most once every IMMUNE_NOTE_EVERY: touching a crowd tries to hurt every frame.
+const IMMUNE_NOTE_EVERY := 0.4
+var _immune_note_left := 0.0
 var _shake_left := 0.0
 var _walk_phase := 0.0
 var _base_scale := 1.0
@@ -132,6 +136,7 @@ func _process(delta: float) -> void:
 		direction = (keys + touch_direction + Tilt.direction()).limit_length(1.0)
 	velocity = direction * move_speed * (Ultimates.BOOST_SPEED if boost_left > 0.0 else 1.0)
 	boost_left = maxf(0.0, boost_left - delta)
+	_immune_note_left -= delta
 	position = game.city.resolve(position + (velocity + _shove + _drift) * delta, BODY_RADIUS)
 	_drift = Vector2.ZERO
 	_shove = _shove.lerp(Vector2.ZERO, minf(1.0, SHOVE_DECAY * delta))
@@ -253,7 +258,12 @@ func get_weapon(weapon_id: String) -> Weapon:
 
 
 func take_damage(amount: float) -> void:
-	if _invuln_left > 0.0 or boost_left > 0.0 or hp <= 0.0:
+	if boost_left > 0.0 and hp > 0.0:
+		if _immune_note_left <= 0.0:
+			_immune_note_left = IMMUNE_NOTE_EVERY
+			Effects.callout(game, position + Vector2(randf_range(-20.0, 20.0), 4.0), tr("免疫"), UltimateTimer.SHIELD_COLOR, 14)
+		return
+	if _invuln_left > 0.0 or hp <= 0.0:
 		return
 	var lost := minf(hp, maxf(1.0, amount - armor))
 	hp -= lost
