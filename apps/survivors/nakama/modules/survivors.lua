@@ -90,8 +90,16 @@ local function name_problem(name)
   return nil
 end
 
+-- A user id as Nakama writes them (8-4-4-4-12 hex digits), checked before a lookup that throws.
+local function is_user_id(text)
+  return type(text) == "string" and text:match("^%x+%-%x+%-%x+%-%x+%-%x+$") ~= nil and #text == 36
+end
+
 local function display_name(user_id)
-  local account = nk.account_get_id(user_id)
+  local ok, account = pcall(nk.account_get_id, user_id)
+  if not ok or account == nil then
+    return ""
+  end
   return account.user.display_name or ""
 end
 
@@ -180,12 +188,17 @@ local function board(context, payload)
     names[context.user_id] = display_name(context.user_id)
     me = row(owner_records[1])
   end
-  return reply({ records = rows, me = me, name = display_name(context.user_id) })
+  -- An empty Lua table encodes as {}, not []: the client reads a missing `records` as none.
+  local answer = { me = me, name = display_name(context.user_id) }
+  if #rows > 0 then
+    answer.records = rows
+  end
+  return reply(answer)
 end
 
 local function report(context, payload)
   local target = tostring(decode(payload).user or "")
-  if target == "" or target == context.user_id then
+  if not is_user_id(target) or target == context.user_id then
     return reply({ error = "invalid" })
   end
   local objects = nk.storage_read({ { collection = "name_reports", key = target, user_id = SYSTEM_USER } })

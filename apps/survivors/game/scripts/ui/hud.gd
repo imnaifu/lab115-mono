@@ -4016,7 +4016,9 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	if _board_answer.has("error"):
 		body.add_child(_collection_note(Leaderboard.error_text(_board_answer)))
 		return
-	var records: Array = _board_answer.get("records", [])
+	# The server leaves `records` out of an empty board (an empty Lua table would come as {}).
+	var listed: Variant = _board_answer.get("records", [])
+	var records: Array = listed if listed is Array else []
 	if records.is_empty():
 		body.add_child(_collection_note(tr("还没人上榜，第一个就是你")))
 	for record: Dictionary in records:
@@ -4042,7 +4044,8 @@ func _board_line(record: Dictionary) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	strip.add_child(row)
-	var rank := UiKit.label(str(record.get("rank", 0)), 15, "display")
+	# JSON numbers come back as floats: 1, not 1.0.
+	var rank := UiKit.label(str(int(record.get("rank", 0))), 15, "display")
 	rank.custom_minimum_size.x = 30
 	row.add_child(rank)
 	var job: String = str(record.get("job", ""))
