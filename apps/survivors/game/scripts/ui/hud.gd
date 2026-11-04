@@ -32,6 +32,8 @@ const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 const NEXT_BOSS_WARNING := 20.0
 ## How long before Game.RUN_SECONDS the 离下班 countdown shows.
 const CLEAR_WARNING := 30.0
+## The landmark on the title screen's map button (_map_button), fitted inside this square.
+const MAP_ICON := 26.0
 ## The 大招 button's size (_build_ultimate_button).
 const ULTIMATE_SIZE := 48.0
 ## 加班's alarm lights (_build_overtime): their reach in from each side (a share of the width),
@@ -1218,10 +1220,21 @@ func _map_button(portrait: bool) -> Control:
 	var label := UiKit.label("地图", 13, "strong", Art.INK_MUTED)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
-	var button := UiKit.secondary_button("%s  ›" % Maps.label_of(Maps.current_id), _open_map_picker, 36.0, 14)
-	button.icon = Art.texture(MapList.icon_of(Maps.current_id))
-	button.add_theme_constant_override("icon_max_width", 28)
+	var button := UiKit.secondary_button("", _open_map_picker, 36.0, 14)
 	button.custom_minimum_size.x = 240.0 if portrait else 220.0
+	# The landmark in a MAP_ICON square, not the button's own icon: that is capped in width only, so a
+	# tall one (Big Ben, the Space Needle) stretched the button tall and stuck out of it (.86, the
+	# user: 地图那里 ui 不太对).
+	var content := HBoxContainer.new()
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 8)
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(UiKit.icon(MapList.icon_of(Maps.current_id), MAP_ICON))
+	var name := UiKit.label("%s  ›" % Maps.label_of(Maps.current_id), 14, "strong", Art.INK)
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	content.add_child(name)
+	button.add_child(content)
 	row.add_child(button)
 	return row
 
