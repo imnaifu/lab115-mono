@@ -695,7 +695,7 @@ const EN := {
 	"分层抽样": "Stratified Sampling",
 	"按键变大，伤害 +12": "Bigger keys, damage +12",
 	"光束更长，伤害 +6": "Longer beam, damage +6",
-	"扫得更开（四次到 150°），伤害 +6": "Wider sweep (four reach 150°), damage +6",
+	"扫得更开（四次到 120°），伤害 +6": "Wider sweep (four reach 120°), damage +6",
 	"墙更大，伤害 +10": "Bigger walls, damage +10",
 	"线更粗，伤害 +3.5": "Thicker gridlines, damage +3.5",
 	"角度": "Angle",
