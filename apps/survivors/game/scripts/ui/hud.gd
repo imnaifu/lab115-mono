@@ -32,6 +32,14 @@ const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 const NEXT_BOSS_WARNING := 20.0
 ## How long before Game.RUN_SECONDS the 离下班 countdown shows.
 const CLEAR_WARNING := 30.0
+## 加班's alarm lights (_build_overtime): their reach in from each side (a share of the width),
+## strength and sweep speed (radians a second) by tier.
+const ALARM_REACH := 0.32
+const ALARM_START := 0.6
+const ALARM_STEP := 0.1
+const ALARM_SPEED := 3.0
+const ALARM_SPEED_STEP := 1.0
+const ALARM_SPEED_MAX := 8.0
 ## A first few runs show how to move until the player does, after this long standing still.
 const MOVE_HINT_AFTER := 2.0
 const MOVE_HINT_RUNS := 3
@@ -139,6 +147,11 @@ var _warning_tween: Tween
 ## Boss moves already explained this run.
 var _warned := {}
 var _vignette: TextureRect
+## 加班 (Game.overtime_tier, .78): a red alarm light sweeping the screen's left and right edges in
+## turn, faster and brighter each tier (the user: 屏幕也可以变红; not darker, 屏幕不用变暗). Not
+## the low-health vignette's red all round the edge, so the two don't read the same.
+var _alarm_left: TextureRect
+var _alarm_right: TextureRect
 var _joystick: Joystick
 var _touch_index := -1
 var _title_overlay: Control
@@ -250,6 +263,7 @@ func _ready() -> void:
 	_root.theme = UiKit.build_theme()
 	add_child(_root)
 
+	_build_overtime()
 	_build_vignette()
 	_joystick = Joystick.new()
 	_joystick.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -349,7 +363,8 @@ func _process(delta: float) -> void:
 	var playing := game.state == Game.State.PLAYING
 	var dialog := game.state in [Game.State.PAUSED, Game.State.LEVEL_UP, Game.State.CHEST, Game.State.REVIVE]
 	var last_minute := (playing or dialog) and game.elapsed >= Game.RUN_SECONDS - 60.0
-	Sound.set_mix(dialog, danger if playing else 0.0, last_minute)
+	Sound.set_mix(dialog, danger if playing else 0.0, last_minute, game.overtime_tier())
+	_update_overtime()
 
 	var state := game.state
 	_title_overlay.visible = state == Game.State.TITLE
@@ -751,7 +766,7 @@ func _update_clear_pill() -> void:
 	if seconds_left > 0.0:
 		_clear_label.text = tr("离下班 %s · 之后不再来新怪") % ("0:%02d" % ceili(seconds_left))
 	else:
-		_clear_label.text = tr("清场中 · 剩 %d") % game.enemies.size()
+		_clear_label.text = tr("加班中 · 剩 %d · 暴躁 ×%d") % [game.enemies.size(), game.overtime_tier()]
 
 
 func _update_boss_bar() -> void:
@@ -974,6 +989,49 @@ func _on_boss_move(ability: String) -> void:
 	_warning_tween.tween_interval(WARNING_SECONDS)
 	_warning_tween.tween_property(_warning, "modulate:a", 0.0, 0.4)
 	_warning_tween.tween_callback(func() -> void: _warning.visible = false)
+
+
+## The 加班 overlay (see _alarm_left): an alarm light on each side.
+func _build_overtime() -> void:
+	_alarm_left = _alarm_side(Vector2(0.0, 0.5), Vector2(ALARM_REACH, 0.5))
+	_alarm_right = _alarm_side(Vector2(1.0, 0.5), Vector2(1.0 - ALARM_REACH, 0.5))
+
+
+func _alarm_side(edge: Vector2, inner: Vector2) -> TextureRect:
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([Color(Art.BOSS_RED, 0.9), Color(Art.BOSS_RED, 0.0)])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill_from = edge
+	texture.fill_to = inner
+	var side := TextureRect.new()
+	side.texture = texture
+	side.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	side.stretch_mode = TextureRect.STRETCH_SCALE
+	side.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	side.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	side.modulate.a = 0.0
+	_root.add_child(side)
+	return side
+
+
+## The overlay, the red clock and its pulse, by tier; nothing outside play.
+func _update_overtime() -> void:
+	var tier := game.overtime_tier() if game.state != Game.State.TITLE and game.state != Game.State.ENDED else 0
+	if tier == 0:
+		_alarm_left.modulate.a = 0.0
+		_alarm_right.modulate.a = 0.0
+		_time_label.remove_theme_color_override("font_color")
+		_time_label.scale = Vector2.ONE
+		return
+	var step := tier - 1
+	var strength := minf(ALARM_START + ALARM_STEP * step, 1.0)
+	var sweep := sin(_clock * minf(ALARM_SPEED + ALARM_SPEED_STEP * step, ALARM_SPEED_MAX))
+	_alarm_left.modulate.a = strength * (0.5 + 0.5 * sweep)
+	_alarm_right.modulate.a = strength * (0.5 - 0.5 * sweep)
+	_time_label.add_theme_color_override("font_color", Art.BOSS_RED)
+	_time_label.pivot_offset = _time_label.size / 2.0
+	_time_label.scale = Vector2.ONE * (1.0 + 0.08 * maxf(0.0, sin(_clock * 6.0)))
 
 
 ## Red edges that pulse in as HP runs low.

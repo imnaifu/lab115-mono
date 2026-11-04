@@ -158,6 +158,8 @@ func start() -> void:
 		# Enemies still up at 10:00, -1 for a run that ended before (.78: a win is clearing them;
 		# `seconds` of a win is then the clear time the leaderboard ranks).
 		"left_at_end": _game.left_at_end,
+		# The 加班 tier the run ended in (0 before 10:00, Game.overtime_tier).
+		"overtime": _game.overtime_tier(),
 		"job": _game.player.job,
 		"map": Maps.current_id,
 		"device": "phone" if Device.is_handheld() else "desktop",

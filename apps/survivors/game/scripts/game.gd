@@ -23,6 +23,30 @@ enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED, REVIVE }
 ## is won when the last enemy left goes down (a clear, timed for the leaderboard), and dying while
 ## clearing up is a loss. Until .77 the run was won the moment the clock reached it.
 const RUN_SECONDS := 600.0
+## 加班 (.78, the user: 10:00 后所有怪加一下数值; 屏幕也可以变红之类的，提升紧张度): while clearing
+## up, a new tier every OVERTIME_STEP seconds (the first at RUN_SECONDS). From the first, every
+## enemy walks OVERTIME_SPEED faster, OVERTIME_SPEED_STEP more each tier after, a boss walks only
+## BossKits.OVERTIME_WALK_SECONDS between attacks, and all damage to the player is
+## OVERTIME_DAMAGE_START times, OVERTIME_DAMAGE more each tier after (×3 at 11:00, ×4 at 12:00).
+## Their speed is capped as always (the crowd at Enemy.OVERTIME_CROWD_MAX, bosses at
+## BOSS_MAX_SPEED, under the slowest job's 60) until OVERTIME_UNCAP_TIER, and from there the cap
+## rises OVERTIME_CAP_STEP a tier: a boss can catch the slowest job from 11:30 and a base-speed
+## 66 one from 12:30, so kiting a clear out for minutes gets dangerous. (The user picked both, .78: the
+## first try, ×1.0 then +15% a tier and no uncapping, killed 1 in 21 bots that reached 10:00,
+## and two kited a last boss for 6 and 14 minutes, never caught, at up to ×5 damage. The user
+## asked for about 15% of those reaching 10:00 to die clearing; the bots that did: ×1.2 +0.2 3%,
+## ×1.5 +0.3 7%, ×2 +0.5 11%, nearly all in the first seconds, under a full floor. Bots dodge
+## far better than people, so these numbers start there, to be checked on the runs' data.) No
+## extra health: the board ranks speed, the pressure is on staying alive.
+const OVERTIME_STEP := 30.0
+const OVERTIME_SPEED := 1.2
+const OVERTIME_SPEED_STEP := 0.05
+const OVERTIME_DAMAGE_START := 2.0
+const OVERTIME_DAMAGE := 0.5
+const OVERTIME_UNCAP_TIER := 3
+const OVERTIME_CAP_STEP := 3.0
+## What each new tier says (the first is the clock-out itself); past the list, the last one.
+const OVERTIME_LINES := ["下班时间到！不再来新怪，清完场上的就上市", "老板还没走…怪更暴躁了", "全员加班！怪越来越暴躁", "通宵了！再不清完要出事"]
 ## Logical view sizes; project.godot's viewport size is the landscape one.
 const LANDSCAPE_VIEW := Vector2i(640, 360)
 const PORTRAIT_VIEW := Vector2i(360, 640)
@@ -131,6 +155,8 @@ var kills := 0
 ## (cleared): for the result screen, the leaderboard and the run's data.
 var left_at_end := -1
 var won := false
+## The 加班 tier last announced (0 before RUN_SECONDS).
+var _overtime_shown := 0
 var level := 1
 var xp := 0
 var queued_level_ups := 0
@@ -276,7 +302,11 @@ func _process(delta: float) -> void:
 	if elapsed >= RUN_SECONDS:
 		if left_at_end < 0:
 			left_at_end = enemies.size()
-			announce(tr("下班时间到！不再来新怪，清完场上的就上市"))
+		var tier := overtime_tier()
+		if tier > _overtime_shown:
+			_overtime_shown = tier
+			var line: String = OVERTIME_LINES[mini(tier, OVERTIME_LINES.size()) - 1]
+			announce(tr(line) if tier == 1 else tr("%s · 暴躁 ×%d") % [tr(line), tier])
 		if enemies.is_empty():
 			_end_run(true)
 			return
@@ -379,7 +409,7 @@ func hurt_player(amount: float, by: String, how: String = "contact") -> void:
 	telemetry.last_hurt_by = by
 	telemetry.last_hurt_how = how
 	var hp_before := player.hp
-	player.take_damage(amount)
+	player.take_damage(amount * overtime_damage())
 	if player.hp < hp_before:
 		achievements.on_hurt()
 
@@ -1083,6 +1113,31 @@ func decline_revive() -> void:
 ## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear.
 func clearing() -> bool:
 	return elapsed >= RUN_SECONDS
+
+
+## The 加班 tier: 0 before RUN_SECONDS, then 1, 2, 3… every OVERTIME_STEP seconds.
+func overtime_tier() -> int:
+	if elapsed < RUN_SECONDS:
+		return 0
+	return 1 + floori((elapsed - RUN_SECONDS) / OVERTIME_STEP)
+
+
+## How much faster the enemies walk in this tier (1 before RUN_SECONDS).
+func overtime_speed() -> float:
+	var tier := overtime_tier()
+	return 1.0 if tier == 0 else OVERTIME_SPEED + OVERTIME_SPEED_STEP * (tier - 1)
+
+
+## How much more every hit on the player does in this tier (1 before RUN_SECONDS).
+func overtime_damage() -> float:
+	var tier := overtime_tier()
+	return 1.0 if tier == 0 else OVERTIME_DAMAGE_START + OVERTIME_DAMAGE * (tier - 1)
+
+
+## How far over its usual cap (Enemy.OVERTIME_CROWD_MAX, Enemy.BOSS_MAX_SPEED) an enemy may walk
+## in this tier: nothing until OVERTIME_UNCAP_TIER.
+func overtime_cap_raise() -> float:
+	return OVERTIME_CAP_STEP * maxi(overtime_tier() - OVERTIME_UNCAP_TIER + 1, 0)
 
 
 func _end_run(victory: bool) -> void:

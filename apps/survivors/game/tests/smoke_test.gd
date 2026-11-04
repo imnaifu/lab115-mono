@@ -499,6 +499,14 @@ func _report() -> int:
 	# The kill check above already covers the fresh run working after a restart.
 	if _restart_at >= 0.0 and _restarts == 0:
 		problems.append("restart never happened")
+	# Each map's bosses as strong and as quick as their slot says (.78: .76 changed only the slots).
+	for map_id: String in Maps.ORDER:
+		var bosses: Array = Maps.script_of(map_id).BOSSES
+		for slot in bosses.size():
+			var data: Dictionary = Spawner.ENEMY_TYPES[bosses[slot]]
+			var stats: Dictionary = BossKits.SLOT_STATS[slot]
+			if data["hp"] != stats["hp"] or data["speed"] != stats["speed"]:
+				problems.append("%s isn't as its slot (BossKits.SLOT_STATS)" % bosses[slot])
 	if not problems.is_empty():
 		printerr("[smoke] FAIL: %s" % ", ".join(problems))
 		return 1

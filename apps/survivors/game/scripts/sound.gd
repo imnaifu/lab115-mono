@@ -82,6 +82,9 @@ const HEARTBEAT_FAST := 0.55
 ## The last minute's music plays this much faster, reached over HURRY_RAMP_SECONDS. It is a plain
 ## speed-up, so it also goes up in pitch a little, like an old cartridge's hurry-up.
 const HURRY_SPEED := 1.05
+## Each 加班 tier past the first (Game.overtime_tier) plays it a little faster again, up to the cap.
+const OVERTIME_SPEED_STEP := 0.02
+const OVERTIME_SPEED_MAX := 1.15
 const HURRY_RAMP_SECONDS := 2.0
 ## The cue for a boss attack as it starts, by its form (BossKits): a melee or ranged one braces,
 ## a leap jumps, a placed one throws its shapes down. Going off and firing have their own
@@ -122,6 +125,7 @@ var _music_bus := -1
 var _dialog := false
 var _danger := 0.0
 var _hurry := false
+var _overtime := 0
 var _boss_duck_left := 0.0
 var _heartbeat_left := 0.0
 
@@ -183,11 +187,12 @@ static func boss_down() -> void:
 ## The HUD's report, every frame: whether a dialog covers the game, how close the player is to
 ## dying (0 at or above the low-health line, 1 at zero) and whether the run is in its last minute.
 ## The title and end screens report none of the three.
-static func set_mix(dialog: bool, danger: float, hurry: bool) -> void:
+static func set_mix(dialog: bool, danger: float, hurry: bool, overtime: int = 0) -> void:
 	var sound := _shared()
 	sound._dialog = dialog
 	sound._danger = danger
 	sound._hurry = hurry
+	sound._overtime = overtime
 
 
 static func sfx_enabled() -> bool:
@@ -262,6 +267,8 @@ func _process(delta: float) -> void:
 		_heartbeat_left = 0.0
 
 	var speed := HURRY_SPEED if _hurry else 1.0
+	if _hurry and _overtime > 1:
+		speed = minf(HURRY_SPEED + OVERTIME_SPEED_STEP * (_overtime - 1), OVERTIME_SPEED_MAX)
 	if not is_equal_approx(_music_player.pitch_scale, speed):
 		_music_player.pitch_scale = move_toward(_music_player.pitch_scale, speed, (HURRY_SPEED - 1.0) / HURRY_RAMP_SECONDS * delta)
 

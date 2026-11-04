@@ -22,6 +22,8 @@ const PHASE_TWO_AT := 540.0
 const PHASE_TWO_GUARD := 1.0
 ## Walking between attacks; counted only while it is on screen, so it never attacks from off it.
 const WALK_SECONDS := 3.0
+## Between attacks in 加班 (Game.OVERTIME_STEP, past 10:00).
+const OVERTIME_WALK_SECONDS := 2.0
 const LINE_SECONDS := 2.2
 const ATTACK_LINE_EVERY := 3
 

@@ -134,54 +134,56 @@ const ENEMY_TYPES := {
 	"tissue_chope": {"name": "纸巾占座", "art": "tissue_chope", "size": 24.0, "color": Color("faf7f0"),
 		"hp": 8.0, "speed": 42.0, "damage": 6.0, "xp": 1, "radius": 6.0},
 	# The bosses (.45, BossKits: their attacks and lines), four a map in the order they come (each map's
-	# BOSSES), as strong as their slot (BossKits.SLOT_STATS): health before the minute's and the map's
+	# BOSSES), as strong as their slot (BossKits.SLOT_STATS, which the game doesn't read: the numbers
+	# here are the ones that count, and the smoke test checks the two agree; .76 changed only the
+	# slots' speeds, so the bosses kept walking 30-32 until .78): health before the minute's and the map's
 	# multipliers, contact damage before the map's, stars. Until .44 there were 10 to 12 a run, from a
 	# shared schedule with each map's stand-ins, drawing moves and affixes at random.
 	# 硅谷.
 	"deadline": {"name": "Deadline", "art": "deadline", "size": 50.0, "color": Color("ff5d5d"),
-		"hp": 600.0, "speed": 30.0, "damage": 12.0, "xp": 30, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 600.0, "speed": 42.0, "damage": 12.0, "xp": 30, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"server_elite": {"name": "主库宕机", "art": "db_down", "size": 54.0, "color": Color("a9b3c4"),
-		"hp": 1400.0, "speed": 30.0, "damage": 20.0, "xp": 60, "radius": 13.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 1400.0, "speed": 42.0, "damage": 20.0, "xp": 60, "radius": 13.0, "knockback_resist": 1.0, "elite": true},
 	"ai": {"name": "AI 大模型", "art": "ai_boss", "size": 64.0, "color": Color("8c7cf0"),
-		"hp": 2200.0, "speed": 32.0, "damage": 24.0, "xp": 90, "radius": 16.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 2200.0, "speed": 44.0, "damage": 24.0, "xp": 90, "radius": 16.0, "knockback_resist": 1.0, "elite": true},
 	"pie_boss": {"name": "老板画饼", "art": "pie_boss", "size": 58.0, "color": Color("f2c46b"),
-		"hp": 3000.0, "speed": 30.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 3000.0, "speed": 42.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	# 伦敦.
 	"committee": {"name": "委员会", "art": "committee", "size": 60.0, "color": Color("a9b3c4"),
-		"hp": 600.0, "speed": 30.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 600.0, "speed": 42.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	"redundancy": {"name": "冗余通知", "art": "redundancy", "size": 54.0, "color": Color("d4b483"),
-		"hp": 1400.0, "speed": 30.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 1400.0, "speed": 42.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"gdpr": {"name": "GDPR 合规官", "art": "gdpr", "size": 58.0, "color": Color("5b9cff"),
-		"hp": 2200.0, "speed": 32.0, "damage": 24.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 2200.0, "speed": 44.0, "damage": 24.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	"scone_boss": {"name": "老板递司康", "art": "scone_boss", "size": 58.0, "color": Color("f2c46b"),
-		"hp": 3000.0, "speed": 30.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 3000.0, "speed": 42.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	# 西雅图.
 	"monolith": {"name": "巨石应用", "art": "monolith", "size": 60.0, "color": Color("8a909c"),
-		"hp": 600.0, "speed": 30.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 600.0, "speed": 42.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	"meeting_spam": {"name": "连环会", "art": "meeting_spam", "size": 54.0, "color": Color("b8a8f0"),
-		"hp": 1400.0, "speed": 30.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 1400.0, "speed": 42.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"pip": {"name": "PIP 绩效改进", "art": "pip", "size": 54.0, "color": Color("ffc2cf"),
-		"hp": 2200.0, "speed": 32.0, "damage": 24.0, "xp": 90, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 2200.0, "speed": 44.0, "damage": 24.0, "xp": 90, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"all_hands": {"name": "全员大会", "art": "all_hands", "size": 58.0, "color": Color("f2c46b"),
-		"hp": 3000.0, "speed": 30.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 3000.0, "speed": 42.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	# 新加坡.
 	"forms": {"name": "表格", "art": "forms", "size": 60.0, "color": Color("fff7e0"),
-		"hp": 600.0, "speed": 30.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 600.0, "speed": 42.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	"apac_cut": {"name": "亚太区优化", "art": "apac_cut", "size": 54.0, "color": Color("ffc2cf"),
-		"hp": 1400.0, "speed": 30.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 1400.0, "speed": 42.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"parachute_boss": {"name": "空降老板", "art": "parachute_boss", "size": 52.0, "color": Color("d9d1f2"),
-		"hp": 2200.0, "speed": 32.0, "damage": 24.0, "xp": 90, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 2200.0, "speed": 44.0, "damage": 24.0, "xp": 90, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"kaya_boss": {"name": "老板画咖椰吐司", "art": "kaya_boss", "size": 58.0, "color": Color("f2c46b"),
-		"hp": 3000.0, "speed": 30.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 3000.0, "speed": 42.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	# 北京.
 	"juanwang": {"name": "卷王", "art": "juanwang", "size": 58.0, "color": Color("ffd36b"),
-		"hp": 600.0, "speed": 30.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 600.0, "speed": 42.0, "damage": 12.0, "xp": 30, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	"ppt": {"name": "述职 PPT", "art": "ppt", "size": 54.0, "color": Color("f0a35e"),
-		"hp": 1400.0, "speed": 30.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 1400.0, "speed": 42.0, "damage": 20.0, "xp": 60, "radius": 14.0, "knockback_resist": 1.0, "elite": true},
 	"elimination": {"name": "末位淘汰", "art": "elimination", "size": 58.0, "color": Color("d64545"),
-		"hp": 2200.0, "speed": 32.0, "damage": 24.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 2200.0, "speed": 44.0, "damage": 24.0, "xp": 90, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 	"annual_party": {"name": "年会讲话", "art": "annual_party", "size": 58.0, "color": Color("ff5d5d"),
-		"hp": 3000.0, "speed": 30.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
+		"hp": 3000.0, "speed": 42.0, "damage": 26.0, "xp": 100, "radius": 15.0, "knockback_resist": 1.0, "elite": true},
 }
 
 ## Mix of the steady trickle by run time; each entry applies until its `until` second.
