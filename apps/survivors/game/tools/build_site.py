@@ -324,7 +324,7 @@ def training_section(data: dict) -> str:
         for entry in training["stats"])
     card = f"""<article class="card"><h3>能练什么</h3>
 <div class="scroll"><table class="nums"><tr><th>属性</th><th>每级</th><th>级数</th><th>每级价格</th><th>练满</th></tr>{rows}</table></div>
-<p class="muted">第 n 级是第 1 级价格的 n 倍，练别的项不会让它变贵。全部练满一共 ¥{training['full_cost']:,}。</p></article>"""
+<p class="muted">每升一级比上一级多第 1 级价格的一半（第 1 / 2 / 3 / 4 / 5 级是第 1 级的 1 / 1.5 / 2 / 2.5 / 3 倍），练别的项不会让它变贵。全部练满一共 ¥{training['full_cost']:,}。</p></article>"""
     how = f"""<article class="card"><h3>工资和退款</h3><ul>
 <li>工资主要从年终奖来：绩效 {rating_letters} 分别发 {salaries}（第 1 / 2 / 3 / 4 个 boss，越后面的越多，都是 66、88 结尾的吉利数），boss 打得越多挣得越多；普通怪偶尔掉<b>红包</b>，一个 ¥{min(data["drops"]["red_packet_salary"])}–{max(data["drops"]["red_packet_salary"])}（见<a href="#drops">掉落</a>）</li>
 <li>工资存进存档，一局结束也不清零，在开始画面的「培训」里花</li>

@@ -2,8 +2,9 @@ class_name Training
 extends RefCounted
 ## 培训 (.44, the user's call after Vampire Survivors' PowerUp shop): the 工资 that year-end bonuses
 ## pay (Game.FUNDING_ROUNDS `salary`, saved by Progress.add_salary) buys ranks of the base stats,
-## for good, on every run and map, on top of the landmarks' (Stamps). Like Vampire Survivors, rank
-## n of a stat costs its `price` times n, and 全部退款 gives every bit back to spend again. Unlike
+## for good, on every run and map, on top of the landmarks' (Stamps). Each rank of a stat costs half
+## its `price` more than the one before (.79; times n like Vampire Survivors before), and 全部退款
+## gives every bit back to spend again. Unlike
 ## it, buying one stat no longer makes the others dearer since .71 (the user: 每级涨价……去掉;
 ## .44–.70 every rank bought anywhere added 10% to every price, so the last ranks cost ¥50,000–
 ## 68,400 and everything about ¥401,700). A 返聘 (REVIVE_PRICE) is sold here too.
@@ -15,8 +16,8 @@ extends RefCounted
 ## on both. A rank bought twice offline past the top is ignored, costing nothing.
 
 ## Ordered as the 培训 page lists them. `step` per rank; `ranks` the most; `price` of rank 1.
-## All of it costs ¥139,500 since .75: about 90 runs with all four bosses down (¥1,496 of year-end
-## bonuses on average since .70, and about ¥60 of 红包). ¥130,000 in .71–.74.
+## All of it costs ¥101,000 since .79: about 65 runs with all four bosses down (¥1,496 of year-end
+## bonuses on average since .70, and about ¥60 of 红包). ¥139,500 in .75–.78, ¥130,000 in .71–.74.
 const STATS := [
 	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 10.0, "ranks": 5, "price": 1500},
 	{"id": "might", "name": "伤害", "art": "coffee", "step": 0.03, "ranks": 5, "price": 1000},
@@ -111,9 +112,14 @@ static func price(id: String) -> int:
 	return price_at(id, rank(id) + 1)
 
 
-## The price of rank `level` of `id`: its first rank's price times the rank (static for the 官网).
+## The price of rank `level` of `id` (static for the 官网): its first rank's price, plus half of it for
+## every rank after the first. .79 (the user: 培训价格有些贵了……每升一级 x1.5 而不是 x2): 1×, 1.5×,
+## 2×, 2.5×, 3× rather than 1×–5× (rank n was the first's times n since .71), so training everything
+## costs ¥101,000, not ¥139,500. Ranks bought before cost what they cost (the save keeps it); a 全部退款
+## and buying again gets the difference back.
 static func price_at(id: String, level: int) -> int:
-	return int(stat(id)["price"]) * level
+	# Every first-rank price is a multiple of 500, so the half steps land on whole yuan (¥2,250, ¥3,750).
+	return roundi(float(stat(id)["price"]) * (1.0 + 0.5 * (level - 1)))
 
 
 static func maxed(id: String) -> bool:
