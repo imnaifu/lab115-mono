@@ -10,9 +10,11 @@ extends Node2D
 ## - "rain" (西雅图 下雨, .34): for a while it rains, and puddles open up round the player; anyone
 ##   standing in one is slowed (the crowd more than the player), so leading the crowd through
 ##   them pays. They dry up a few seconds after the rain stops.
-## - "fog" (伦敦 大雾, .37): for a while a fog rolls in; only a ring round the player stays clear
-##   (and the fog thins rather than hides, so a boss's warnings still show through), and the
-##   crowd, as lost in it as the player, walks slower.
+## - "fog" (伦敦 大雾, .37): for a while a fog rolls in; only a ring round the player stays clear,
+##   and the crowd, as lost in it as the player, walks slower. Since .88 (the user: 大雾没什么用;
+##   picked 雾真的挡住) the fog hides what is in it, the crowd showing only as blurred shadows,
+##   and it lies under a boss's red warnings, which stay in full view; until then it only paled
+##   everything over (0.82) from 100 out, so it changed little.
 ## - "heat" (新加坡 热浪, .38): for a while it's sweltering; out in the open the player loses a
 ##   little health every second, and a few cool air-conditioned spots (a convenience store's
 ##   doorway, a mall's) open round them, where they don't. The spots move on every few seconds,
@@ -48,9 +50,12 @@ const RAIN_CROWD_SLOW := 0.5
 const RAIN_TINT := Color(0.32, 0.42, 0.58, 0.22)
 ## The fog: clear within FOG_CLEAR of the player, thickening over FOG_SOFT to FOG_ALPHA beyond;
 ## the crowd walks at FOG_CROWD_SLOW of its speed while it lasts (bosses shrug off half, Enemy.slow).
-const FOG_CLEAR := 100.0
-const FOG_SOFT := 80.0
-const FOG_ALPHA := 0.82
+const FOG_CLEAR := 80.0
+const FOG_SOFT := 60.0
+const FOG_ALPHA := 0.97
+## A shadow for each enemy in the fog, its body this much wider, this dark at most.
+const FOG_SHADOW_SCALE := 1.6
+const FOG_SHADOW_ALPHA := 0.35
 const FOG_COLOR := Color(0.8, 0.82, 0.85)
 const FOG_CROWD_SLOW := 0.75
 ## Seconds the fog takes to roll in and to lift.
@@ -92,6 +97,9 @@ var _cool_age := PackedFloat32Array()
 var _heat_tick := 0.0
 ## The puddles are drawn on the ground, under the crowd, unlike the rest of this node.
 var _ground: Node2D
+## The fog, over the crowd but under a boss's warnings (Enemy.TELEGRAPH_Z), so hiding the crowd
+## never hides what is about to hit the player.
+var _fog: Node2D
 
 
 func _init() -> void:
@@ -102,6 +110,11 @@ func _init() -> void:
 	_ground.z_index = -19
 	_ground.draw.connect(_draw_ground)
 	add_child(_ground)
+	_fog = Node2D.new()
+	# Relative to this node's 15: just under the warnings overall.
+	_fog.z_index = Enemy.TELEGRAPH_Z - 1 - z_index
+	_fog.draw.connect(_draw_fog_layer)
+	add_child(_fog)
 
 
 ## Starts the map's event `id`, lasting `seconds`.
@@ -130,8 +143,9 @@ func _process(delta: float) -> void:
 	if game.state != Game.State.PLAYING or not active():
 		if not active():
 			queue_redraw()
-			# Clears the last puddles off the ground once the event is over.
+			# Clears the last puddles off the ground once the event is over, and the last of the fog.
 			_ground.queue_redraw()
+			_fog.queue_redraw()
 		return
 	_clock += delta
 	_left -= delta
@@ -149,6 +163,8 @@ func _process(delta: float) -> void:
 				for enemy in game.enemies:
 					if not enemy.dead:
 						enemy.slow(FOG_CROWD_SLOW, 0.2)
+			# Every frame, and once more after it lifts so the last of it is wiped.
+			_fog.queue_redraw()
 		"heat":
 			_tick_heat(delta)
 			_ground.queue_redraw()
@@ -347,9 +363,8 @@ func _draw() -> void:
 				var from := view.position + Vector2(x, y)
 				draw_line(from, from + wind * 18.0, Color(0.95, 0.85, 0.6, 0.6 * strength), 1.5, true)
 		"fog":
-			if _left <= 0.0:
-				return
-			_draw_fog(clampf(minf(_left, _seconds - _left) / FOG_FADE, 0.0, 1.0))
+			# On its own layer (_fog), redrawn from _process.
+			pass
 		"heat":
 			if _left <= 0.0:
 				return
@@ -384,6 +399,12 @@ func _draw() -> void:
 				draw_line(from, from + fall * 12.0, Color(0.85, 0.92, 1.0, 0.55 * strength), 1.2, true)
 
 
+func _draw_fog_layer() -> void:
+	if _id != "fog" or _left <= 0.0:
+		return
+	_draw_fog(clampf(minf(_left, _seconds - _left) / FOG_FADE, 0.0, 1.0))
+
+
 ## The fog over everything but a ring round the player: clear inside FOG_CLEAR, thickening across
 ## FOG_SOFT, then even out past the edges of the screen; a few slow wisps drifting through it.
 ## `strength` fades it in and out.
@@ -398,9 +419,9 @@ func _draw_fog(strength: float) -> void:
 		var to := Vector2.from_angle(TAU * (i + 1) / steps)
 		var inner := FOG_CLEAR
 		var middle := FOG_CLEAR + FOG_SOFT
-		draw_polygon(PackedVector2Array([center + from * inner, center + to * inner, center + to * middle, center + from * middle]),
+		_fog.draw_polygon(PackedVector2Array([center + from * inner, center + to * inner, center + to * middle, center + from * middle]),
 			PackedColorArray([clear, clear, thick, thick]))
-		draw_colored_polygon(PackedVector2Array([center + from * middle, center + to * middle, center + to * far, center + from * far]), thick)
+		_fog.draw_colored_polygon(PackedVector2Array([center + from * middle, center + to * middle, center + to * far, center + from * far]), thick)
 	# Wisps: long pale strokes drifting east, in the thick of it.
 	var half := game.view_half() * 1.2
 	var view := Rect2(center - half, half * 2.0)
@@ -411,4 +432,14 @@ func _draw_fog(strength: float) -> void:
 		var from := view.position + Vector2(x, y)
 		if from.distance_to(center) < FOG_CLEAR + FOG_SOFT * 0.5:
 			continue
-		draw_line(from, from + Vector2(46.0, 0.0), Color(1, 1, 1, 0.45 * strength), 5.0, true)
+		_fog.draw_line(from, from + Vector2(46.0, 0.0), Color(1, 1, 1, 0.45 * strength), 5.0, true)
+	# The crowd in the fog: only a blurred shadow where each one is, darker the deeper in.
+	for enemy in game.query_enemies(center, far, false):
+		var distance := enemy.position.distance_to(center)
+		var depth := clampf((distance - FOG_CLEAR) / FOG_SOFT, 0.0, 1.0)
+		if depth <= 0.0:
+			continue
+		var shadow := Color(0.25, 0.27, 0.3, FOG_SHADOW_ALPHA * depth * strength)
+		var reach := enemy.radius * FOG_SHADOW_SCALE
+		_fog.draw_circle(enemy.position, reach, shadow)
+		_fog.draw_circle(enemy.position, reach * 0.6, shadow)
