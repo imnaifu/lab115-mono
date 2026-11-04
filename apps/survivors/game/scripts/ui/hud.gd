@@ -32,9 +32,8 @@ const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 const NEXT_BOSS_WARNING := 20.0
 ## How long before Game.RUN_SECONDS the 离下班 countdown shows.
 const CLEAR_WARNING := 30.0
-## The 大招 button (_build_ultimate_button): its size and its distance from the screen's corner.
-const ULTIMATE_SIZE := 58.0
-const ULTIMATE_MARGIN := 18.0
+## The 大招 button's size (_build_ultimate_button).
+const ULTIMATE_SIZE := 48.0
 ## 加班's alarm lights (_build_overtime): their reach in from each side (a share of the width),
 ## strength and sweep speed (radians a second) by tier.
 const ALARM_REACH := 0.32
@@ -116,12 +115,15 @@ var _next_boss_pill: Control
 var _next_boss_time: Label
 ## 离下班 0:23 in the last CLEAR_WARNING seconds, then 清场中 · 剩 37 until the last enemy is down
 ## (.78: nothing new comes after Game.RUN_SECONDS; the user: 10:00 到了给个提示).
-## The 大招 (Ultimates, .81): a round button low on the right with the job's face and the
-## ultimate's name, grey once used; and whether the first boss has brought its hint up yet.
+## The 大招 (Ultimates, .81): a round button with the job's face and the ultimate's name, grey once
+## used, top right under the pause button (.83, the user: 大招放上面，下面不好按; at the bottom
+## right in .81-.82); and whether the first boss has brought its hint up yet.
 var _ultimate_button: Button
 var _ultimate_label: Label
 var _ultimate_hinted := false
 var _ultimate_job := ""
+## The top bar's right-hand column (kills and pause, the district), where the 大招 button sits.
+var _top_right: VBoxContainer
 var _clear_pill: Control
 var _clear_label: Label
 ## The result screen's line about the clear-time board (.78): its rank, or a button to pick a 昵称.
@@ -743,6 +745,7 @@ func _build_top_bar() -> void:
 	_district_label = UiKit.label("", 10, "strong")
 	district_row.add_child(_district_label)
 	right.add_child(district)
+	_top_right = right
 
 
 ## A rounded bar: `track` behind, `fill` for the value.
@@ -774,14 +777,7 @@ func _update_next_boss() -> void:
 func _build_ultimate_button() -> void:
 	var holder := VBoxContainer.new()
 	holder.add_theme_constant_override("separation", 2)
-	holder.anchor_left = 1.0
-	holder.anchor_right = 1.0
-	holder.anchor_top = 1.0
-	holder.anchor_bottom = 1.0
-	holder.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	holder.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	holder.offset_right = -ULTIMATE_MARGIN
-	holder.offset_bottom = -ULTIMATE_MARGIN
+	holder.size_flags_horizontal = Control.SIZE_SHRINK_END
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ultimate_button = UiKit.round_button(Jobs.data(game.player.job)["art"], game.ultimates.cast, ULTIMATE_SIZE)
 	_ultimate_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -791,7 +787,7 @@ func _build_ultimate_button() -> void:
 	_ultimate_label.add_theme_color_override("font_outline_color", Art.PAPER)
 	_ultimate_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	holder.add_child(_ultimate_label)
-	_root.add_child(holder)
+	_top_right.add_child(holder)
 
 
 ## Shown in play only; glowing while it can go off, grey and 已用 after. The first boss coming
@@ -811,7 +807,7 @@ func _update_ultimate() -> void:
 	_ultimate_label.text = tr("已用") if used else tr(Jobs.ultimate(game.player.job)["name"])
 	if not used and not _ultimate_hinted and game.enemies.any(func(enemy: Enemy) -> bool: return enemy.is_elite):
 		_ultimate_hinted = true
-		_show_toast(tr("危险时点右下角放大招「%s」，一局一次") % tr(Jobs.ultimate(game.player.job)["name"]) if Device.is_handheld() \
+		_show_toast(tr("危险时点右上角放大招「%s」，一局一次") % tr(Jobs.ultimate(game.player.job)["name"]) if Device.is_handheld() \
 			else tr("危险时按空格放大招「%s」，一局一次") % tr(Jobs.ultimate(game.player.job)["name"]))
 
 

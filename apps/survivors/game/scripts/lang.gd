@@ -1380,7 +1380,7 @@ const EN := {
 	"重新标注！": "Relabelled!",
 	"身边的小怪变成自己人，去打别的怪，伤害不变，死了就没了，最多 20 秒": "Nearby enemies switch sides and fight the rest as hard as before, until they fall or 20 s pass",
 	"已用": "Used",
-	"危险时点右下角放大招「%s」，一局一次": "In a pinch, tap the bottom-right button for your ultimate, %s: once a run",
+	"危险时点右上角放大招「%s」，一局一次": "In a pinch, tap the button top right for your ultimate, %s: once a run",
 	"危险时按空格放大招「%s」，一局一次": "In a pinch, press Space for your ultimate, %s: once a run",
 	"大招「%s」· 一局一次": "Ultimate: %s · once a run",
 }
