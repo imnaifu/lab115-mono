@@ -14,8 +14,9 @@ const SHAKE_SECONDS := 0.15
 const SIZE := 30.0
 const SQUASH := 0.06
 ## Starting pickup range, kept so cards can show what passives have added (the starting speed
-## depends on the job: base_move_speed).
-const BASE_PICKUP_RADIUS := 40.0
+## depends on the job: base_move_speed). 45 since .85 (the user: 初始拾取范围加一点; 40 before);
+## 人脉名片, 培训 and the landmarks multiply it, so they grow with it.
+const BASE_PICKUP_RADIUS := 45.0
 ## The health bar under the player, tall enough to hold the HP number inside it.
 const HP_BAR_SIZE := Vector2(38.0, 11.0)
 const HP_FONT_SIZE := 8
