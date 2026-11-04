@@ -23,8 +23,10 @@ extends Weapon
 const BASE_DAMAGE := 7.0
 ## +12 a 更大 since .74 (the user: 回车和抽样成长伤害加高; +8 before): a key hits one enemy, and late
 ## the weapons that hit a crowd left it far behind (about 360 damage a second alone at 8:00 against
-## the product manager's 930); now about 500.
-const DAMAGE_PER_SIZE := 12.0
+## the product manager's 930); now about 500. +9 since .91 (the user, from the live runs: 程序员数值太
+## 高了，程序员降 → +8 → 改成 +9; a won London run had the Enter key at 77% of all damage): full 更大
+## hits 43, not 55.
+const DAMAGE_PER_SIZE := 9.0
 const SIZE_GROWTH := 0.25
 const SPEED := 230.0
 ## Kept short so most kills, and their stars, land within walking distance.

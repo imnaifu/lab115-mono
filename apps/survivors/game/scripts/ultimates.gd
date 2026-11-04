@@ -14,7 +14,8 @@ extends RefCounted
 ##   rest for Enemy.ALLY_SECONDS at most, hitting as hard as they did (the user: 伤害不要加大).
 
 const WAVES := 3
-const WAVE_KEYS := 120
+## 80 a wave since .91 (the user: 程序员大招也削弱下，数量少一点; 120 before).
+const WAVE_KEYS := 80
 const WAVE_GAP := 0.2
 ## Each wave turns this much further, so the three make a spiral.
 const WAVE_TURN := 1.0

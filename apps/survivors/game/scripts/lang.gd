@@ -693,7 +693,7 @@ const EN := {
 	"更硬": "Harder",
 	"更粗": "Thicker",
 	"分层抽样": "Stratified Sampling",
-	"按键变大，伤害 +12": "Bigger keys, damage +12",
+	"按键变大，伤害 +9": "Bigger keys, damage +9",
 	"光束更长，伤害 +6": "Longer beam, damage +6",
 	"扫得更开（四次到 120°），伤害 +6": "Wider sweep (four reach 120°), damage +6",
 	"墙更大，伤害 +10": "Bigger walls, damage +10",
@@ -1368,7 +1368,7 @@ const EN := {
 	# The jobs' 大招 (.81).
 	"全量发布": "Ship It All",
 	"Shift+Enter！": "Shift+Enter!",
-	"分三波螺旋射出 360 个回车键，每个是回车键伤害的 10 倍，穿透所有怪": "Three spirals of 360 Enter keys, each ten times an Enter hit, through everything",
+	"分三波螺旋射出 240 个回车键，每个是回车键伤害的 10 倍，穿透所有怪": "Three spirals of 240 Enter keys, each ten times an Enter hit, through everything",
 	"今天必须上线": "Ship It Today",
 	"今天必须上线！": "Ship it today!",
 	"5 秒内不受伤害，移速 +50%": "Untouchable for 5 s, 50% faster",

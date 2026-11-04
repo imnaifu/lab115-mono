@@ -28,8 +28,9 @@ extends Weapon
 
 ## .74 (the user: 回车和抽样成长伤害加高；抽样改成 +2，频率调整下，略低一点): +2 a level (+1 before) and a
 ## round every 0.72 s (0.68): one target a jab, it fell behind the weapons that hit a crowd late
-## (about 375 damage a second alone at 8:00, now about 490).
-const COOLDOWN := 0.72
+## (about 375 damage a second alone at 8:00, now about 490). 0.8 s since .91 (the user: 数据（科学家）
+## 降一点; the bots' strongest job, about 60% to 10:00): about a tenth less at every level.
+const COOLDOWN := 0.8
 const POKE_GAP := 0.09
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
