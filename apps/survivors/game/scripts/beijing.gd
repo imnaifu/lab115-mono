@@ -38,10 +38,10 @@ const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "�
 	"name": "沙尘暴", "hint": "风往东刮，逆风走慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "houchang"
-## The map (.77), as BayArea.BOUNDS: a square 2300 out every way from the start. Outside it counts
+## The map (.77), as BayArea.BOUNDS: a square 1800 out every way from the start (2300 .77–.85). Outside it counts
 ## as water (is_water, water_rects), so everything stays inside, and City draws it as the edge.
 ## (The named part of the world was 5600 x 4400 until .76, pulled in from 8400 x 6400 in .34.)
-const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+const BOUNDS := Rect2(-1520.0, -1620.0, 3600.0, 3600.0)
 ## Only the check-in spots stand, and trees don't block (City).
 const OPEN_GROUND := true
 ## The named part of the world (the minimap showed it until .44): the map itself since .77.
@@ -52,7 +52,7 @@ const BLOCK_SIZE := Vector2(560.0, 400.0)
 ## WEST_HILLS_COLUMN are the Western Hills.
 const HUILONGGUAN_ROW := -2
 const HAIDIAN_ROW := 2
-const WEST_HILLS_COLUMN := -4
+const WEST_HILLS_COLUMN := -3
 ## The expressways and Line 13 by block column, from far north on; `north` / `south` are where the
 ## green signs point.
 const FREEWAYS := {
@@ -131,10 +131,10 @@ const DISTRICTS := {
 ## 中关村 is one tower with its sign (City.HQ_STRUCTURE), as a headquarters is.
 const LANDMARKS := {
 	Vector2i(0, 1): "hq:baidu",
-	Vector2i(-3, -5): "art:summer_palace",
-	Vector2i(3, -5): "art:tsinghua_gate",
-	Vector2i(3, 4): "art:birds_nest",
-	Vector2i(-3, 4): "hq:zgc",
+	Vector2i(-2, -3): "art:summer_palace",
+	Vector2i(2, -3): "art:tsinghua_gate",
+	Vector2i(2, 3): "art:birds_nest",
+	Vector2i(-2, 3): "hq:zgc",
 }
 ## 白度's paw on a plinth in front of its tower (tools/make_logo_statues.py).
 const LAWN_LANDMARKS := {Vector2i(0, 1): "statue_paw"}
@@ -148,10 +148,10 @@ const SOLID_SPANS := {}
 ## bj_xierqi is 白度's headquarters, 西二旗地铁站 until then).
 const STAMPS := {
 	"bj_xierqi": {"art": "icon_paw", "block": Vector2i(0, 1), "name": "白度总部", "note": "门口的熊掌老远就看得见", "bonus": ["luck", 10.0]},
-	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-3, -5), "name": "颐和园", "note": "佛香阁立在万寿山上", "bonus": ["max_hp", 5.0]},
-	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(3, -5), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.02]},
-	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(3, 4), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.02]},
-	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(-3, 4), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
+	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-2, -3), "name": "颐和园", "note": "佛香阁立在万寿山上", "bonus": ["max_hp", 5.0]},
+	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(2, -3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.02]},
+	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.02]},
+	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(-2, 3), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
 }
 
 ## Parody companies, as in BayArea.BRANDS, each with an icon of its own (.39: 嘀嘀 a taxi, 网异 a

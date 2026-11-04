@@ -43,9 +43,9 @@ const MAP_EVENT := {"id": "fog", "at": 300.0, "seconds": 20.0, "text": "伦敦�
 	"name": "伦敦大雾", "hint": "只看得清身边，怪也走得慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "kx"
-## The map (.77), as BayArea.BOUNDS: a square 2300 out every way from the start. Outside it counts
+## The map (.77), as BayArea.BOUNDS: a square 1800 out every way from the start (2300 .77–.85). Outside it counts
 ## as water (is_water, water_rects), so everything stays inside, and City draws it as the edge.
-const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+const BOUNDS := Rect2(-1520.0, -1620.0, 3600.0, 3600.0)
 ## Only the check-in spots stand, and trees don't block (City).
 const OPEN_GROUND := true
 ## The named part of the world (the minimap showed it until .44): the map itself since .77.
@@ -132,10 +132,10 @@ const DISTRICTS := {
 ## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
 	Vector2i(0, 1): "hq:deepmine",
-	Vector2i(-3, -5): "art:british_museum",
-	Vector2i(3, -5): "art:canary_wharf",
-	Vector2i(3, 4): "art:tower_bridge",
-	Vector2i(-3, 4): "art:big_ben",
+	Vector2i(-2, -3): "art:british_museum",
+	Vector2i(2, -3): "art:canary_wharf",
+	Vector2i(2, 3): "art:tower_bridge",
+	Vector2i(-2, 3): "art:big_ben",
 }
 ## DeepMine's pickaxe on a plinth in front of its tower (tools/make_logo_statues.py).
 const LAWN_LANDMARKS := {Vector2i(0, 1): "statue_pickaxe"}
@@ -150,10 +150,10 @@ const SOLID_SPANS := {"tower_bridge": [[0.22, 0.28], [0.72, 0.78]]}
 ## ldn_kings_cross is DeepMine's headquarters, 国王十字站 until then).
 const STAMPS := {
 	"ldn_kings_cross": {"art": "icon_pickaxe", "block": Vector2i(0, 1), "name": "DeepMine 总部", "note": "AI 实验室，下棋没输过", "bonus": ["luck", 10.0]},
-	"ldn_museum": {"art": "british_museum", "block": Vector2i(-3, -5), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.05]},
-	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(3, -5), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.02]},
-	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(3, 4), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 5.0]},
-	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-3, 4), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.02]},
+	"ldn_museum": {"art": "british_museum", "block": Vector2i(-2, -3), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.05]},
+	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(2, -3), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.02]},
+	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(2, 3), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 5.0]},
+	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-2, 3), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.02]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

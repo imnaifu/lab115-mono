@@ -39,11 +39,12 @@ const MAP_EVENT := {"id": "quake", "at": 300.0, "seconds": 20.0, "text": "湾区
 	"name": "湾区地震", "hint": "躲开地上的红圈"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "peninsula"
-## The map (.52): a square 2300 out every way from the start (Game puts the player at
-## City.BLOCK × (0.5, 0.45) = (280, 180)), about 500 past the corner landmarks. Outside it
+## The map (.52): a square 1800 out every way from the start since .86 (the user: 地图改小一点;
+## 2300 until then; Game puts the player at City.BLOCK × (0.5, 0.45) = (280, 180)), about 400
+## past the corner landmarks. Outside it
 ## counts as water (is_water, water_rects), so the collision, the enemies' paths, the spawns, the
 ## cars and the weather all stay inside, and City draws it as the map's edge rather than as sea.
-const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+const BOUNDS := Rect2(-1520.0, -1620.0, 3600.0, 3600.0)
 ## Only the check-in landmarks stand (no rows of buildings), and trees don't block (City, .52).
 const OPEN_GROUND := true
 ## The named part of the world (the minimap showed it until .44): the map itself since .52.
@@ -55,7 +56,7 @@ const OVERVIEW := BOUNDS
 ## hills' a column west, so the 胡佛塔 stands on the peninsula.
 const SF_ROW := -3
 const SJ_ROW := 2
-const HILLS_COLUMN := -4
+const HILLS_COLUMN := -3
 const BLOCK_SIZE := Vector2(560.0, 400.0)
 ## The freeways and the railway, by block column, and the first row they run from; `north` /
 ## `south` are where the green signs point.
@@ -140,16 +141,16 @@ const HEIGHTS := {
 ## (the user: 打卡点设计，只放总部在这个城市的，其余的还是用城市标志) the middle one is the one big
 ## tech company headquartered here, Goggle (its tower, the dinosaur on the lawn), and the corners
 ## are the city's landmarks: 金门大桥 north-west, 胡佛塔 north-east, Levy's 球场 south-east and the
-## 泛美金字塔 south-west (Pear's ring until .77). The corners are one column in from the map's east
-## and west edges (the next column out would put a landmark's drawing 60 past the fence) and
-## about 500 in from its north and south edges. (.52-.67 the five stood evenly on a ring, Goggle a
+## 泛美金字塔 south-west (Pear's ring until .77). Since .86 (the map 3600 across, 4600 before) the
+## corners are the blocks two columns and three rows out (about 26 s' walk from the start, 39 s
+## at three columns and rows -5 / 4), about 400 in from every edge. (.52-.67 the five stood evenly on a ring, Goggle a
 ## row of its offices.)
 const LANDMARKS := {
 	Vector2i(0, 1): "hq:goggle",
-	Vector2i(-3, -5): "art:golden_gate",
-	Vector2i(3, -5): "art:stanford_tower",
-	Vector2i(3, 4): "art:stadium",
-	Vector2i(-3, 4): "art:transamerica",
+	Vector2i(-2, -3): "art:golden_gate",
+	Vector2i(2, -3): "art:stanford_tower",
+	Vector2i(2, 3): "art:stadium",
+	Vector2i(-2, 3): "art:transamerica",
 }
 ## Landmarks standing on a block's lawn, behind its buildings: the campus mascots.
 const LAWN_LANDMARKS := {Vector2i(0, 1): "dino_skeleton"}
@@ -163,11 +164,11 @@ const LAWN_LANDMARKS := {Vector2i(0, 1): "dino_skeleton"}
 ## whoever checked in there keeps it and its bonus.
 const STAMPS := {
 	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, 1), "name": "Goggle 总部", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
-	"golden_gate": {"art": "golden_gate", "block": Vector2i(-3, -5), "name": "金门大桥", "note": "一路往西北，走到地图角上", "bonus": ["might", 0.02]},
-	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(3, -5), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
+	"golden_gate": {"art": "golden_gate", "block": Vector2i(-2, -3), "name": "金门大桥", "note": "一路往西北，走到地图角上", "bonus": ["might", 0.02]},
+	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(2, -3), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
 	# Sailsforce 大厦's bonus until .52.
-	"stadium": {"art": "stadium", "block": Vector2i(3, 4), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
-	"pear_park": {"art": "transamerica", "block": Vector2i(-3, 4), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["max_hp", 5.0]},
+	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
+	"pear_park": {"art": "transamerica", "block": Vector2i(-2, 3), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["max_hp", 5.0]},
 }
 ## Signs that belong to a landmark drawing.
 const LANDMARK_BRANDS := {"stadium": "levys"}

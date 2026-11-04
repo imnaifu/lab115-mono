@@ -39,9 +39,9 @@ const MAP_EVENT := {"id": "rain", "at": 300.0, "seconds": 20.0, "text": "西雅�
 	"name": "下雨", "hint": "水坑里走不快，把怪引进去"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "slu"
-## The map (.77), as BayArea.BOUNDS: a square 2300 out every way from the start. Outside it counts
+## The map (.77), as BayArea.BOUNDS: a square 1800 out every way from the start (2300 .77–.85). Outside it counts
 ## as water (is_water, water_rects), so everything stays inside, and City draws it as the edge.
-const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+const BOUNDS := Rect2(-1520.0, -1620.0, 3600.0, 3600.0)
 ## Only the check-in spots stand, and trees don't block (City).
 const OPEN_GROUND := true
 ## The named part of the world (the minimap showed it until .44): the map itself since .77.
@@ -125,10 +125,10 @@ const DISTRICTS := {
 ## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
 	Vector2i(0, 1): "art:spheres",
-	Vector2i(-3, -5): "art:space_needle",
-	Vector2i(3, -5): "art:fremont_troll",
-	Vector2i(3, 4): "art:mt_rainier",
-	Vector2i(-3, 4): "art:pike_place",
+	Vector2i(-2, -3): "art:space_needle",
+	Vector2i(2, -3): "art:fremont_troll",
+	Vector2i(2, 3): "art:mt_rainier",
+	Vector2i(-2, 3): "art:pike_place",
 }
 const LAWN_LANDMARKS := {}
 ## Signs that belong to a landmark drawing.
@@ -142,10 +142,10 @@ const SOLID_SPANS := {}
 ## headquarters is in Redmond, the user: 只放总部在这个城市的).
 const STAMPS := {
 	"sea_spheres": {"art": "spheres", "block": Vector2i(0, 1), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 10.0]},
-	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-3, -5), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 5.0]},
-	"sea_troll": {"art": "fremont_troll", "block": Vector2i(3, -5), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.02]},
-	"sea_microhard": {"art": "mt_rainier", "block": Vector2i(3, 4), "name": "雷尼尔雪山", "note": "天晴才看得见，一年没几天", "bonus": ["might", 0.02]},
-	"sea_pike": {"art": "pike_place", "block": Vector2i(-3, 4), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.05]},
+	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-2, -3), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 5.0]},
+	"sea_troll": {"art": "fremont_troll", "block": Vector2i(2, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.02]},
+	"sea_microhard": {"art": "mt_rainier", "block": Vector2i(2, 3), "name": "雷尼尔雪山", "note": "天晴才看得见，一年没几天", "bonus": ["might", 0.02]},
+	"sea_pike": {"art": "pike_place", "block": Vector2i(-2, 3), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.05]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

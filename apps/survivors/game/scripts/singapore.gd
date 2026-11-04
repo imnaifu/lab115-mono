@@ -41,9 +41,9 @@ const MAP_EVENT := {"id": "heat", "at": 300.0, "seconds": 20.0, "text": "热浪�
 	"name": "热浪", "hint": "躲进蓝色冷气圈，外面会掉血"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "onenorth"
-## The map (.77), as BayArea.BOUNDS: a square 2300 out every way from the start. Outside it counts
+## The map (.77), as BayArea.BOUNDS: a square 1800 out every way from the start (2300 .77–.85). Outside it counts
 ## as water (is_water, water_rects), so everything stays inside, and City draws it as the edge.
-const BOUNDS := Rect2(-2020.0, -2120.0, 4600.0, 4600.0)
+const BOUNDS := Rect2(-1520.0, -1620.0, 3600.0, 3600.0)
 ## Only the check-in spots stand, and trees don't block (City).
 const OPEN_GROUND := true
 ## The named part of the world (the minimap showed it until .44): the map itself since .77.
@@ -119,10 +119,10 @@ const DISTRICTS := {
 ## BayArea has its (the middle one the block south of the start, the rest near the corners).
 const LANDMARKS := {
 	Vector2i(0, 1): "hq:shopay",
-	Vector2i(-3, -5): "art:merlion",
-	Vector2i(3, -5): "art:jewel",
-	Vector2i(3, 4): "art:mbs",
-	Vector2i(-3, 4): "art:sentosa_beach",
+	Vector2i(-2, -3): "art:merlion",
+	Vector2i(2, -3): "art:jewel",
+	Vector2i(2, 3): "art:mbs",
+	Vector2i(-2, 3): "art:sentosa_beach",
 }
 ## Shopay's bag on a plinth in front of its tower (tools/make_logo_statues.py).
 const LAWN_LANDMARKS := {Vector2i(0, 1): "statue_bag"}
@@ -136,10 +136,10 @@ const SOLID_SPANS := {}
 ## sg_one_north is Shopay's headquarters, 纬壹科技城 until then).
 const STAMPS := {
 	"sg_one_north": {"art": "icon_bag", "block": Vector2i(0, 1), "name": "Shopay 总部", "note": "大促一来，全楼通宵", "bonus": ["haste", 0.02]},
-	"sg_merlion": {"art": "merlion", "block": Vector2i(-3, -5), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.05]},
-	"sg_jewel": {"art": "jewel", "block": Vector2i(3, -5), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.02]},
-	"sg_mbs": {"art": "mbs", "block": Vector2i(3, 4), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 5.0]},
-	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(-3, 4), "name": "圣淘沙", "note": "沙滩、椰树和度假村", "bonus": ["luck", 10.0]},
+	"sg_merlion": {"art": "merlion", "block": Vector2i(-2, -3), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.05]},
+	"sg_jewel": {"art": "jewel", "block": Vector2i(2, -3), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.02]},
+	"sg_mbs": {"art": "mbs", "block": Vector2i(2, 3), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 5.0]},
+	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(-2, 3), "name": "圣淘沙", "note": "沙滩、椰树和度假村", "bonus": ["luck", 10.0]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

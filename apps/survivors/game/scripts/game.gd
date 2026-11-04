@@ -71,7 +71,11 @@ const RELOCATE_DISTANCE := 560.0
 ## fine" only means some grid path runs straight there, not that the direct line is clear;
 ## without this, one rounding a corner flipped between the two every frame and stood still.
 const DETOUR_HOLD_SECONDS := 0.6
-const MAX_PICKUPS := 400
+## Pickups on the ground at most: past it a new star takes in the one farthest from the player
+## (_drop_xp). 500 since .86 (the user: 星星上限 500，最远的删掉; 400 before, and then a kill's XP
+## went into some star already down anywhere on the map, so late in a run stars stopped dropping
+## where things died).
+const MAX_PICKUPS := 500
 ## What a 珍珠奶茶 heals. Since .48 only bosses drop one, one each (the user's call: 奶茶改成只有
 ## boss 掉落，回血改成 20); until then 1.2% of regular kills did too, about 9 a run in the live
 ## data's median run on top of the bosses', and each healed 30.
@@ -763,15 +767,23 @@ func _cell_of(point: Vector2) -> Vector2i:
 
 # --- Pickups & XP --------------------------------------------------------------------------
 
-## The new star, or null when the XP went into one already on the ground.
+## The new star where the enemy died. With MAX_PICKUPS already down, the star farthest from the
+## player goes and its XP comes into the new one: nothing is lost, the ones near keep coming.
 func _drop_xp(at: Vector2, value: int) -> Pickup:
 	if pickups.size() >= MAX_PICKUPS:
-		# Fold the XP into an existing star instead of piling up nodes in long runs.
-		for attempt in 8:
-			var existing := pickups[rng.randi() % pickups.size()]
-			if existing.kind == Pickup.Kind.XP:
-				existing.add_value(value)
-				return null
+		var farthest: Pickup = null
+		var farthest_sq := -1.0
+		for pickup in pickups:
+			if pickup.kind != Pickup.Kind.XP:
+				continue
+			var distance_sq := pickup.position.distance_squared_to(player.position)
+			if distance_sq > farthest_sq:
+				farthest_sq = distance_sq
+				farthest = pickup
+		if farthest != null:
+			value += farthest.value
+			pickups.erase(farthest)
+			farthest.queue_free()
 	return _drop(Pickup.Kind.XP, at, value)
 
 
