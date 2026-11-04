@@ -543,19 +543,21 @@ func _event_detail(id: String, damage_scale: float) -> String:
 		"sandstorm":
 			# Against the jobs' own walking speeds, so the wind reads as something to lean into.
 			var speeds := Jobs.ORDER.map(func(job_id: String) -> float: return Jobs.data(job_id)["speed"])
-			return "风一直往东刮：把你每秒吹走 %s（你自己每秒走 %s–%s），小怪每秒 %s，boss 减半" % [
-				_num(MapEvents.SAND_PLAYER_SPEED), _num(speeds.min()), _num(speeds.max()), _num(MapEvents.SAND_CROWD_SPEED)]
+			return "风一直往东刮：把你和怪都每秒吹走 %s（你自己每秒走 %s–%s）" % [
+				_num(MapEvents.SAND_SPEED), _num(speeds.min()), _num(speeds.max())]
 		"rain":
-			return "每 %s 秒在你身边 %s 内开一个水坑（半径 %s–%s，最多同时 %d 个）；在水坑里你慢 %s，小怪慢 %s，boss 只慢一半那么多；雨停 %s 秒后水坑干" % [
+			return "每 %s 秒在你身边 %s 内开一个水坑（半径 %s–%s，最多同时 %d 个）；在水坑里你和怪都慢 %s；雨停 %s 秒后水坑干" % [
 				_num(MapEvents.RAIN_PUDDLE_GAP), _num(MapEvents.RAIN_REACH), _num(MapEvents.RAIN_PUDDLE_RADIUS[0]), _num(MapEvents.RAIN_PUDDLE_RADIUS[1]),
-				MapEvents.RAIN_MAX_PUDDLES, _percent(MapEvents.RAIN_PLAYER_SLOW), _percent(1.0 - MapEvents.RAIN_CROWD_SLOW), _num(MapEvents.RAIN_DRY)]
+				MapEvents.RAIN_MAX_PUDDLES, _percent(MapEvents.RAIN_SLOW), _num(MapEvents.RAIN_DRY)]
 		"fog":
 			return "只有身边 %s 内看得清，再往外 %s 慢慢变浓（boss 的红色预警照样看得见）；小怪慢 %s，boss 只慢一半那么多；起雾、散雾各 %s 秒" % [
 				_num(MapEvents.FOG_CLEAR), _num(MapEvents.FOG_SOFT), _percent(1.0 - MapEvents.FOG_CROWD_SLOW), _num(MapEvents.FOG_FADE)]
 		"heat":
-			return "站在外面每 %s 秒掉 %s 血（护甲照减）；身边同时有 %d 个蓝色冷气圈（半径 %s，离你 %s–%s），站进去不掉，每个 %s 秒后换地方" % [
-				_num(MapEvents.HEAT_TICK), _hit(MapEvents.HEAT_DAMAGE * damage_scale), MapEvents.HEAT_SPOTS, _num(MapEvents.HEAT_SPOT_RADIUS),
-				_num(MapEvents.HEAT_SPOT_REACH[0]), _num(MapEvents.HEAT_SPOT_REACH[1]), _num(MapEvents.HEAT_SPOT_LIFE)]
+			var bounds: Rect2 = Maps.script_of("sg").BOUNDS
+			var patches := roundi(bounds.get_area() / (MapEvents.HEAT_SCREEN.x * MapEvents.HEAT_SCREEN.y) * MapEvents.HEAT_PER_SCREEN)
+			return "热浪一来，全图随机铺上约 %d 块烫脚的地面（每局不同，一屏约 %s 块，半径 %s–%s）：先预热 %s 秒（橙色虚线圈，不烫），之后不动，一直烫到热浪结束；站在上面的你和怪每 %s 秒都掉 %s 血（你这边护甲照减）" % [
+				patches, _num(MapEvents.HEAT_PER_SCREEN), _num(MapEvents.HEAT_PATCH_RADIUS[0]), _num(MapEvents.HEAT_PATCH_RADIUS[1]),
+				_num(MapEvents.HEAT_WARM), _num(MapEvents.HEAT_TICK), _hit(MapEvents.HEAT_DAMAGE * damage_scale)]
 	if id != "":
 		push_warning("dump: no site wording for map event %s" % id)
 	return ""

@@ -36,9 +36,9 @@ const BOSSES := ["forms", "apac_cut", "parachute_boss", "kaya_boss"]
 const MOB_SWAPS := {}
 ## The Bug outbreak is the hawker centre at lunch: every seat round you reserved with tissues.
 const RING_SWAPS := {}
-## The map's weather (MapEvents): 热浪 (out in the heat you lose health; cool air-conditioned spots appear round you).
-const MAP_EVENT := {"id": "heat", "at": 300.0, "seconds": 20.0, "text": "热浪来了！外面待着会掉血，躲进冷气里",
-	"name": "热浪", "hint": "躲进蓝色冷气圈，外面会掉血"}
+## The map's weather (MapEvents): 热浪 (scorching patches of tarmac open round you and burn whoever stands on them, the crowd too; .92).
+const MAP_EVENT := {"id": "heat", "at": 300.0, "seconds": 20.0, "text": "热浪来了！地面烫脚，别踩红色的地方",
+	"name": "热浪", "hint": "红色的地面烫人也烫怪，别踩，把怪引上去"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "onenorth"
 ## The map (.77), as BayArea.BOUNDS: a square 1800 out every way from the start (2300 .77–.85). Outside it counts

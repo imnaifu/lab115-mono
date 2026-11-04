@@ -379,8 +379,10 @@ func stun(seconds: float, boss_share := BOSS_STUN_SCALE) -> void:
 
 ## Walks at `scale` of its speed for a while; bosses shrug off half the slowdown. Kept up by
 ## whatever slows it calling again while it stays inside.
-func slow(scale: float, seconds: float) -> void:
-	slow_scale = 1.0 - (1.0 - scale) * (0.5 if is_elite else 1.0)
+## `scale` is the speed left; a boss shrugs off half the slow, unless `whole` (weather that slows
+## everyone alike, .92).
+func slow(scale: float, seconds: float, whole := false) -> void:
+	slow_scale = 1.0 - (1.0 - scale) * (0.5 if is_elite and not whole else 1.0)
 	slow_left = maxf(slow_left, seconds)
 
 

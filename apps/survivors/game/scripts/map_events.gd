@@ -5,20 +5,26 @@ extends Node2D
 ##   the while until .34; the user found it hard on the eyes, so it no longer does),
 ##   each piece marked by a red circle a moment before it lands; it hurts whatever it lands on,
 ##   the crowd included, so dodging it can clear the way.
-## - "sandstorm" (北京 沙尘暴): for a while a wind blows everyone east (the crowd harder than the
-##   player) and the screen turns sandy.
+## - "sandstorm" (北京 沙尘暴): for a while a wind blows everyone east, the player, the crowd and the
+##   bosses alike (.92, the user: 改成对用户和怪一样的影响; the crowd 40 and the bosses 20 before,
+##   against the player's 28), and the screen turns sandy.
 ## - "rain" (西雅图 下雨, .34): for a while it rains, and puddles open up round the player; anyone
-##   standing in one is slowed (the crowd more than the player), so leading the crowd through
-##   them pays. They dry up a few seconds after the rain stops.
+##   standing in one is slowed, the player, the crowd and the bosses alike (.92; the crowd walked at
+##   50% and the bosses at 75% before, the player at 65%), so leading the crowd through them still
+##   pays. They dry up a few seconds after the rain stops.
 ## - "fog" (伦敦 大雾, .37): for a while a fog rolls in; only a ring round the player stays clear,
 ##   and the crowd, as lost in it as the player, walks slower. Since .88 (the user: 大雾没什么用;
 ##   picked 雾真的挡住) the fog hides what is in it, the crowd showing only as blurred shadows,
 ##   and it lies under a boss's red warnings, which stay in full view; until then it only paled
 ##   everything over (0.82) from 100 out, so it changed little.
-## - "heat" (新加坡 热浪, .38): for a while it's sweltering; out in the open the player loses a
-##   little health every second, and a few cool air-conditioned spots (a convenience store's
-##   doorway, a mall's) open round them, where they don't. The spots move on every few seconds,
-##   so the player can't settle in one while the crowd closes round.
+## - "heat" (新加坡 热浪, .38): for a while it's sweltering, and patches of scorching tarmac open
+##   up all over the map at once, laid at random each run and staying put, each warming up for a
+##   moment (shown, harmless) before it burns whoever stands on it, the player and the crowd
+##   alike, until the heat ends (the user: 发热地面不会消失，直到热浪结束; 不是身边，是全图固定;
+##   about six a screen, random each run), so leading the crowd over them pays. .92 (the
+##   user: 热浪重新设计; picked 烫脚的地面): until then the player alone lost health anywhere
+##   outside a few cool air-conditioned spots that moved on every few seconds, and the crowd was
+##   untouched.
 ## Drawn in the world over the enemies (the debris, the sand, the rain), under the HUD; puddles
 ## and cool spots on the ground under everyone.
 
@@ -32,8 +38,8 @@ const QUAKE_CROWD_DAMAGE := 40.0
 const QUAKE_DROP := 120.0
 const SAND_WIND := Vector2(0.99, 0.14)
 ## Pixels per second: the player is blown less than they walk (56-71).
-const SAND_PLAYER_SPEED := 28.0
-const SAND_CROWD_SPEED := 40.0
+## Everyone alike since .92.
+const SAND_SPEED := 28.0
 const SAND_TINT := Color(0.86, 0.72, 0.42, 0.3)
 const RAIN_PUDDLE_GAP := 0.45
 ## Puddles open within this of the player, at most RAIN_MAX_PUDDLES at once (the oldest goes).
@@ -45,8 +51,8 @@ const RAIN_SPREAD := 0.6
 const RAIN_DRY := 3.0
 ## In a puddle: the player loses this share of their walking speed; the crowd walks at this
 ## share of theirs (bosses shrug off half of it, Enemy.slow).
-const RAIN_PLAYER_SLOW := 0.35
-const RAIN_CROWD_SLOW := 0.5
+## The share of speed a puddle takes, from everyone alike since .92.
+const RAIN_SLOW := 0.35
 const RAIN_TINT := Color(0.32, 0.42, 0.58, 0.22)
 ## The fog: clear within FOG_CLEAR of the player, thickening over FOG_SOFT to FOG_ALPHA beyond;
 ## the crowd walks at FOG_CROWD_SLOW of its speed while it lasts (bosses shrug off half, Enemy.slow).
@@ -60,19 +66,22 @@ const FOG_COLOR := Color(0.8, 0.82, 0.85)
 const FOG_CROWD_SLOW := 0.75
 ## Seconds the fog takes to roll in and to lift.
 const FOG_FADE := 1.5
-## The heat: HEAT_DAMAGE every HEAT_TICK seconds outside a cool spot (times the map's damage, less
-## armour, like any hit); HEAT_SPOTS cool spots of HEAT_SPOT_RADIUS at a time, each opening
-## HEAT_SPOT_REACH from the player and lasting HEAT_SPOT_LIFE (fading in and out over
-## HEAT_SPOT_FADE), then another opens elsewhere.
-const HEAT_TICK := 1.0
+## The heat: as it starts, hot patches (radius HEAT_PATCH_RADIUS) are laid at random over the whole
+## map, HEAT_PER_SCREEN to every HEAT_SCREEN of it; they warm up for HEAT_WARM (drawn, harmless:
+## time to step off) and then burn until the heat ends, all fading together over HEAT_FADE after.
+## While it burns, everyone on it loses HEAT_DAMAGE every HEAT_TICK: the player times the map's damage, less armour,
+## like any hit; the crowd and the bosses the same amount (not in the damage ranking).
+const HEAT_PATCH_RADIUS := [30.0, 45.0]
+## About six on a landscape screen (the viewport, 640 by 360): some 340 over a 3600 map, about a
+## third of the ground.
+const HEAT_PER_SCREEN := 6.0
+const HEAT_SCREEN := Vector2(640.0, 360.0)
+const HEAT_WARM := 0.8
+const HEAT_FADE := 0.5
+const HEAT_TICK := 0.5
 const HEAT_DAMAGE := 3.0
-const HEAT_SPOTS := 3
-const HEAT_SPOT_RADIUS := 44.0
-const HEAT_SPOT_REACH := [110.0, 210.0]
-const HEAT_SPOT_LIFE := 7.0
-const HEAT_SPOT_FADE := 0.6
+const HEAT_ORANGE := Color("ff8a3d")
 const HEAT_TINT := Color(1.0, 0.55, 0.2, 0.16)
-const COOL := Color("8fd3ff")
 const PUDDLE := Color("7fa8c9")
 const DEBRIS := Color("8a909c")
 
@@ -91,9 +100,10 @@ var _puddles: Array[Vector2] = []
 var _puddle_radius := PackedFloat32Array()
 var _puddle_age := PackedFloat32Array()
 var _next_puddle := 0.0
-## Cool spots in the heat: where, and how long each has been open; the next heat tick.
-var _cool_spots: Array[Vector2] = []
-var _cool_age := PackedFloat32Array()
+## Hot patches in the heat: where, how big, how long each has been open; the next burn tick.
+var _hot_patches: Array[Vector2] = []
+var _hot_radius: Array[float] = []
+var _hot_age: Array[float] = []
 var _heat_tick := 0.0
 ## The puddles are drawn on the ground, under the crowd, unlike the rest of this node.
 var _ground: Node2D
@@ -123,10 +133,10 @@ func start(id: String, seconds: float) -> void:
 	_left = seconds
 	_seconds = seconds
 	_next_strike = 0.0
-	# The first tick of heat a moment after it starts, once the cool spots are there to reach.
-	_heat_tick = HEAT_TICK * 1.5
-	_cool_spots.clear()
-	_cool_age.resize(0)
+	_heat_tick = HEAT_TICK
+	_hot_patches.clear()
+	_hot_radius.clear()
+	_hot_age.clear()
 
 
 ## Seconds the weather itself has left (0 once over, even while debris or puddles linger): the
@@ -136,7 +146,7 @@ func weather_left() -> float:
 
 
 func active() -> bool:
-	return _left > 0.0 or not _strikes.is_empty() or not _puddles.is_empty() or not _cool_spots.is_empty()
+	return _left > 0.0 or not _strikes.is_empty() or not _puddles.is_empty() or not _hot_patches.is_empty()
 
 
 func _process(delta: float) -> void:
@@ -225,51 +235,64 @@ func _tick_rain(delta: float) -> void:
 				continue
 		var reach := _puddle_reach(i)
 		if game.player.position.distance_to(_puddles[i]) <= reach:
-			game.player.drift(-game.player.velocity * RAIN_PLAYER_SLOW)
+			game.player.drift(-game.player.velocity * RAIN_SLOW)
 		for enemy in game.query_enemies(_puddles[i], reach, false):
-			enemy.slow(RAIN_CROWD_SLOW, 0.2)
+			enemy.slow(1.0 - RAIN_SLOW, 0.2, true)
 
 
-## The heat: cool spots kept up round the player while it lasts (each moving on when its time is
-## up), and a little health lost every tick outside them. The spots go when the heat does.
+## The heat: hot patches laid over the whole map as it starts, each warming up and then burning
+## until the heat ends; every HEAT_TICK whoever stands on a burning one is hurt. After the heat they
+## fade out together over HEAT_FADE (_left runs on below 0 while the event is still active).
 func _tick_heat(delta: float) -> void:
-	if _left <= 0.0:
-		_cool_spots.clear()
-		_cool_age.resize(0)
+	for i in _hot_patches.size():
+		_hot_age[i] += delta
+	if _left <= -HEAT_FADE:
+		_hot_patches.clear()
+		_hot_radius.clear()
+		_hot_age.clear()
 		return
-	for i in range(_cool_spots.size() - 1, -1, -1):
-		_cool_age[i] += delta
-		if _cool_age[i] >= HEAT_SPOT_LIFE:
-			_cool_spots.remove_at(i)
-			_cool_age.remove_at(i)
-	while _cool_spots.size() < HEAT_SPOTS:
-		var at := game.player.position
-		# A few tries for a spot on land.
-		for attempt in 8:
-			at = game.player.position + Vector2.from_angle(game.rng.randf() * TAU) * game.rng.randf_range(HEAT_SPOT_REACH[0], HEAT_SPOT_REACH[1])
-			if not game.city.is_water(at):
-				break
-		# The first ones staggered (already partly through their time), so they don't all move on
-		# at once; later ones start fresh.
-		var head_start := HEAT_SPOT_LIFE * _cool_spots.size() / HEAT_SPOTS if _seconds - _left < 0.1 else 0.0
-		_cool_spots.append(at)
-		_cool_age.append(head_start)
+	if _left > 0.0 and _hot_patches.is_empty():
+		_lay_hot_patches()
 	_heat_tick -= delta
 	if _heat_tick > 0.0:
 		return
 	_heat_tick = HEAT_TICK
-	for i in _cool_spots.size():
-		if _cool_strength(i) > 0.0 and game.player.position.distance_to(_cool_spots[i]) <= HEAT_SPOT_RADIUS:
-			return
-	game.hurt_player(HEAT_DAMAGE * Maps.difficulty("damage"), "heat", "heat")
+	var player_burnt := false
+	# Each enemy once a tick, however many burning patches it stands on.
+	var burnt := {}
+	for i in _hot_patches.size():
+		if not _burning(i):
+			continue
+		if not player_burnt and game.player.position.distance_to(_hot_patches[i]) <= _hot_radius[i] + Player.HURT_RADIUS:
+			player_burnt = true
+		for enemy in game.query_enemies(_hot_patches[i], _hot_radius[i], false):
+			if burnt.has(enemy.get_instance_id()):
+				continue
+			burnt[enemy.get_instance_id()] = true
+			game.damage_enemy(enemy, HEAT_DAMAGE, Vector2.ZERO, "quake_debris")
+	if player_burnt:
+		game.hurt_player(HEAT_DAMAGE * Maps.difficulty("damage"), "heat", "heat")
 
 
-## How open a cool spot is (0 to 1): fading in when new, out before it moves on. The first ones
-## come in open, however far through their time they start.
-func _cool_strength(index: int) -> float:
-	var age := _cool_age[index]
-	var fading_in := age / HEAT_SPOT_FADE if age < HEAT_SPOT_FADE and _seconds - _left > HEAT_SPOT_FADE + 0.1 else 1.0
-	return clampf(minf(fading_in, (HEAT_SPOT_LIFE - age) / HEAT_SPOT_FADE), 0.0, 1.0)
+## The heat's patches, at random over the map's land (Maps.current.BOUNDS), all at once.
+func _lay_hot_patches() -> void:
+	var bounds: Rect2 = Maps.current.BOUNDS
+	var count := roundi(bounds.get_area() / (HEAT_SCREEN.x * HEAT_SCREEN.y) * HEAT_PER_SCREEN)
+	for n in count:
+		var at := bounds.get_center()
+		# A few tries for a spot on land.
+		for attempt in 8:
+			at = bounds.position + Vector2(game.rng.randf(), game.rng.randf()) * bounds.size
+			if not game.city.is_water(at):
+				break
+		_hot_patches.append(at)
+		_hot_radius.append(game.rng.randf_range(HEAT_PATCH_RADIUS[0], HEAT_PATCH_RADIUS[1]))
+		_hot_age.append(0.0)
+
+
+## Whether hot patch `index` burns now: past its warming up, and the heat not over.
+func _burning(index: int) -> bool:
+	return _hot_age[index] >= HEAT_WARM and _left > 0.0
 
 
 ## A puddle's size now: spreading when new, shrinking as it dries.
@@ -280,27 +303,36 @@ func _puddle_reach(index: int) -> float:
 
 
 func _draw_ground() -> void:
-	_draw_cool_spots()
+	_draw_hot_patches()
 	_draw_puddles()
 
 
-## The cool spots: pale blue rings on the ground, a snowflake in the middle, frost ticking round.
-func _draw_cool_spots() -> void:
-	var snowflake := Art.texture("icon_snowflake")
-	for i in _cool_spots.size():
-		var strength := _cool_strength(i)
-		if strength <= 0.0:
+## The hot patches: squashed like the puddles, lying on the ground. Warming up, a dashed orange
+## ring filling in (harmless); burning, glowing orange-red with heat wavering off it; then fading.
+func _draw_hot_patches() -> void:
+	# Only those on screen: there are hundreds over the map.
+	var half := game.view_half() + Vector2.ONE * HEAT_PATCH_RADIUS[1]
+	var view := Rect2(game.player.position - half, half * 2.0)
+	for i in _hot_patches.size():
+		if not view.has_point(_hot_patches[i]):
 			continue
-		var at := _cool_spots[i]
-		_ground.draw_set_transform(at, 0.0, Vector2(1.0, 0.62))
-		_ground.draw_circle(Vector2.ZERO, HEAT_SPOT_RADIUS, Color(COOL, 0.4 * strength))
-		_ground.draw_arc(Vector2.ZERO, HEAT_SPOT_RADIUS, 0.0, TAU, 40, Color(Art.LINK, 0.8 * strength), 2.0, true)
-		for tick in 8:
-			var from := _clock * 0.6 + TAU * tick / 8.0
-			_ground.draw_arc(Vector2.ZERO, HEAT_SPOT_RADIUS - 6.0, from, from + 0.25, 4, Color(1, 1, 1, 0.8 * strength), 2.0, true)
+		var age := _hot_age[i]
+		var radius := _hot_radius[i]
+		_ground.draw_set_transform(_hot_patches[i], 0.0, Vector2(1.0, 0.62))
+		if age < HEAT_WARM:
+			var warm := age / HEAT_WARM
+			_ground.draw_circle(Vector2.ZERO, radius * warm, Color(HEAT_ORANGE, 0.18))
+			for dash in 12:
+				var from := TAU * dash / 12.0
+				_ground.draw_arc(Vector2.ZERO, radius, from, from + 0.3, 4, Color(HEAT_ORANGE, 0.9), 2.0, true)
+		else:
+			# Full while the heat lasts, fading out after it.
+			var strength := clampf((HEAT_FADE + _left) / HEAT_FADE, 0.0, 1.0)
+			var flicker := 0.85 + 0.15 * sin(_clock * 9.0 + i)
+			_ground.draw_circle(Vector2.ZERO, radius, Color(Art.BOSS_RED.lerp(HEAT_ORANGE, 0.5), 0.45 * strength * flicker))
+			_ground.draw_circle(Vector2.ZERO, radius * 0.6, Color(HEAT_ORANGE.lightened(0.3), 0.5 * strength * flicker))
+			_ground.draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, Color(Art.BOSS_RED, 0.8 * strength), 2.0, true)
 		_ground.draw_set_transform(Vector2.ZERO)
-		var icon_size := Vector2.ONE * 18.0
-		_ground.draw_texture_rect(snowflake, Rect2(at - icon_size / 2.0, icon_size), false, Color(1, 1, 1, strength))
 
 
 func _draw_puddles() -> void:
@@ -319,13 +351,13 @@ func _draw_puddles() -> void:
 	_ground.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-## The wind: the player carried a little, the crowd more (bosses half as much).
+## The wind: everyone carried alike (.92; the crowd more and the bosses half as much before).
 func _blow(delta: float) -> void:
 	var wind := SAND_WIND.normalized()
-	game.player.drift(wind * SAND_PLAYER_SPEED)
+	game.player.drift(wind * SAND_SPEED)
 	for enemy in game.enemies:
 		if not enemy.dead:
-			enemy.position += wind * SAND_CROWD_SPEED * (0.5 if enemy.is_elite else 1.0) * delta
+			enemy.position += wind * SAND_SPEED * delta
 
 
 func _draw() -> void:
