@@ -5,10 +5,13 @@ extends BossAttack
 ##   lane, hitting the player once if its body passes over them, and shoving them out to the side.
 ## - "sweep": a fan towards the player fills in and goes off.
 ## - "leap": it jumps to where the player stood; the landing circle goes off as it lands.
-## - "slam": a circle round itself fills in and goes off, shoving the player out of it.
+## - "slam": it rushes up to the player (RUSH_SPEED, following them, at most RUSH_MAX), stopping
+##   body to body, then a circle round itself fills in and goes off, shoving the player out of it. .82 (the user:
+##   巨石应用这个怪太笨了，根本打不到人): until then the circle came wherever the boss stood, and as
+##   every boss is slower than every job it was nearly always far behind and the circle hit nothing.
 ## It stands while the shape fills, and a moment after (RECOVER) before walking on.
 
-enum Stage { DONE, WARN, ACT, RECOVER }
+enum Stage { DONE, RUSH, WARN, ACT, RECOVER }
 
 const DASH_SPEED := 300.0
 const RECOVER := 0.3
@@ -17,6 +20,13 @@ const LEAP_HEIGHT := 46.0
 const SHOVE := 170.0
 ## A lane is never shorter than this, even with a wall right in front.
 const MIN_RUN := 24.0
+## A slam's rush up to the player: how fast and how far at most. Quick enough to close in on a
+## running player (at most about 66), and the circle only comes once it stops, so its 1.1-1.2 s to
+## walk out of it are left as they were.
+const RUSH_SPEED := 200.0
+const RUSH_MAX := 150.0
+## Close enough: the gap between its body and the player's.
+const RUSH_CLOSE := 4.0
 
 var _stage := Stage.DONE
 var _direction := Vector2.RIGHT
@@ -60,7 +70,12 @@ func start() -> void:
 			_to = game.city.resolve(player().position, enemy.radius)
 			_zone = circle(_to, config["radius"], warn)
 		"slam":
-			_zone = circle(_from, config["radius"], warn)
+			# Up to the player first (tick), stopping body to body; already there, it slams at once.
+			if _gap_to_player() > RUSH_CLOSE:
+				_run = RUSH_MAX
+				_stage = Stage.RUSH
+			else:
+				_zone = circle(_from, config["radius"], warn)
 
 
 func busy() -> bool:
@@ -69,6 +84,22 @@ func busy() -> bool:
 
 func tick(delta: float) -> Vector2:
 	match _stage:
+		Stage.RUSH:
+			# After the player, not where they stood: aimed at a spot, it got there as they walked
+			# on and the circle missed again.
+			var gap := _gap_to_player()
+			if gap > RUSH_CLOSE and _run > 0.0:
+				_direction = (player().position - enemy.position).normalized()
+				# No further than the gap this frame, so it stops against the player, not past them.
+				var speed := minf(RUSH_SPEED, gap / maxf(delta, 0.001))
+				_run -= speed * delta
+				return _direction * speed
+			# There (or as far as it goes): the circle round where it stopped.
+			_from = enemy.position
+			_zone = circle(_from, config["radius"], config["warn"])
+			_stage = Stage.WARN
+			enemy.bracing = true
+			return Vector2.ZERO
 		Stage.WARN:
 			if form() == "leap":
 				# Up and across while the landing circle fills; down as it goes off.
@@ -112,6 +143,11 @@ func went_off(zone: Zone) -> void:
 			_shove_out(zone)
 			Sound.play("quake")
 			_recover()
+
+
+## The space between its body and the player's.
+func _gap_to_player() -> float:
+	return enemy.position.distance_to(player().position) - enemy.radius - Player.HURT_RADIUS
 
 
 ## Rushing down its lane (Enemy.is_charging).

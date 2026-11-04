@@ -44,7 +44,7 @@ const HINTS := {
 	"dash": "红带是它要冲的路线，横着躲开",
 	"sweep": "红色扇形要扫过来，退出扇形",
 	"leap": "红圈是它要落下的地方，走出去",
-	"slam": "它脚下的红圈填满就炸，退到圈外",
+	"slam": "它会冲到你跟前，脚下的红圈填满就炸，退到圈外",
 	"chain": "红圈一个接一个落在脚下，一直往前走",
 	"bigcircle": "脚下的大红圈要砸下来，赶紧走出去",
 	"bigsquare": "脚下的大红块要拍下来，赶紧走出去",
@@ -56,7 +56,7 @@ const HINTS := {
 	"spread": "扇形弹要来了，站到两发之间或走出扇形",
 	"ring": "一圈弹往外飞，钻缝躲开",
 	"spiral": "它边转边甩，顺着它转的方向走",
-	"homing": "慢弹会追着你，一直走别停",
+	"homing": "追踪弹比你快，贴近时急转弯甩掉它",
 }
 const KIND_NAMES := {"melee": "近战", "placed": "定点", "ranged": "远程"}
 
@@ -112,7 +112,7 @@ const KITS := {
 		"lines": {"arrive": "十年没拆过，谁敢动", "attack": ["全量重启"], "kill": "回滚失败", "death": "…终于拆成微服务了"},
 	},
 	"meeting_spam": {
-		"attacks": [{"kind": "ranged", "form": "homing", "name": "连环邀请", "warn": 0.6, "count": 3, "every": 0.4, "speed": 45.0, "turn": 100.0, "life": 4.0, "damage": 8.0}],
+		"attacks": [{"kind": "ranged", "form": "homing", "name": "连环邀请", "warn": 0.6, "count": 3, "every": 0.4, "speed": 85.0, "turn": 70.0, "life": 4.0, "damage": 8.0}],
 		"lines": {"arrive": "下一个会马上开始", "attack": ["已向你发送邀请"], "kill": "你已被加入 37 个会议", "death": "会议已取消"},
 	},
 	"pip": {

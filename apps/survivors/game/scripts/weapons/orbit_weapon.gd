@@ -1,9 +1,13 @@
 class_name OrbitWeapon
 extends Weapon
 ## Guard walls: each circles the player while nothing is near, and as soon as an enemy is within
-## GUARD_RADIUS of the player it flies at it and hits it, then goes for the next.
-## The one closest to the player goes first, so whatever gets in to the player is dealt with;
-## anything a wall brushes on its way is hit too. (Silicon Valley: 防火墙.) Survivor.io's guardian,
+## GUARD_RADIUS of the player it flies at the one closest to the player, slams it (and whatever else
+## its body covers there), and comes back until it may go again. (Silicon Valley: 防火墙.)
+## .82 (the user: 运维的攻击很奇怪，不要去卡不同的怪，而是固定攻击最近的，只卡频率; 都打最近的):
+## every wall goes for the same enemy, the closest to the player, and each wall slams once every
+## ATTACK_GAP seconds, the walls taking turns. Until .81 a wall could hurt an enemy only once every
+## 1.8 seconds (HIT_GAP), so after one hit it went for the second closest, then the third, the walls
+## split up across different enemies, and whatever they brushed on the way was hurt too. Survivor.io's guardian,
 ## turned into a guard dog. 零信任 (evolved with 降噪耳机): six walls, and whatever they hit is held
 ## still for a moment.
 ##
@@ -36,15 +40,11 @@ const IDLE_SPIN := 2.2
 const SPEED := 260.0
 const WALL_RADIUS := 11.0
 const WALL_RADIUS_PER_HARDER := 3.0
-## An enemy is hurt at most once every HIT_GAP seconds by the walls.
-## Per wall since .39, so a wall touching an enemy always hurts it unless that wall itself just
-## did; walls no longer queue for one shared gap, which made a five-wall build several times as
-## strong, so the gap went from 0.56 to what the balance fit asked for (1.35 in .39, 1.8 from .40,
-## where the ops still came out the strongest job).
-const HIT_GAP := 1.8
-## After hitting its target a wall drifts back this long before going again, so it doesn't grind
-## one enemy down every frame.
-const RECOVER_SECONDS := 0.43
+## Seconds between one wall's slams, times the player's cooldown (冷却 now counts for the walls too,
+## as for every other weapon). Set by a firewall-only probe to keep the damage a second of .79,
+## when an enemy could be hurt once every 1.8 s by each wall (HIT_GAP) and a wall rested 0.43 s
+## after each target.
+const ATTACK_GAP := 0.5
 const SIZE := 18.0
 const EVOLVED_COUNT := 6
 const EVOLVED_STUN := 0.4
@@ -53,15 +53,17 @@ const EVOLVED_STUN := 0.4
 class Wall:
 	var sprite: Sprite2D
 	var position := Vector2.ZERO
+	## Set while flying at an enemy; null while back by the player.
 	var target: Enemy
-	var recover_left := 0.0
-	## Enemy instance id -> when this wall last hurt it. Each wall keeps its own (.39): with one
-	## table for all the walls, a wall went through an enemy another had just hit and did nothing.
-	var last_hit := {}
+	## Until it may slam again.
+	var cooldown_left := 0.0
 
 
 var _walls: Array[Wall] = []
 var _clock := 0.0
+## When a wall last set off: the walls go one after another, a share of the gap apart, so with
+## several they hit the closest enemy in turn rather than all landing on it at once.
+var _last_launch := -INF
 
 
 ## The walls with `more` upgrades to 更多 and `harder` to 更硬 (the cards' numbers too).
@@ -91,63 +93,50 @@ func _process(delta: float) -> void:
 		_walls.append(wall)
 	var wall_radius: float = WALL_RADIUS * stats["size"]
 	var damage: float = stats["damage"] * damage_scale()
+	var gap := ATTACK_GAP * player.cooldown_scale
+	var closest := _closest_enemy(stats["radius"])
 	for i in _walls.size():
 		var wall := _walls[i]
-		if wall.recover_left > 0.0:
-			wall.recover_left -= delta
-		elif not _target_still_good(wall, stats["radius"]):
-			wall.target = _pick_target(wall, stats["radius"])
+		wall.cooldown_left -= delta
+		if wall.target != null and (not is_instance_valid(wall.target) or wall.target.dead):
+			wall.target = null
+		# Always the one closest to the player: a wall on its way switches if another gets closer.
+		if wall.target != null:
+			wall.target = closest
+		elif wall.cooldown_left <= 0.0 and closest != null and _clock - _last_launch >= gap / _walls.size():
+			wall.target = closest
+			_last_launch = _clock
 		var goal := player.position + Vector2.from_angle(_clock * IDLE_SPIN + TAU * i / _walls.size()) * IDLE_RADIUS
-		if wall.target != null and wall.recover_left <= 0.0:
+		if wall.target != null:
 			goal = wall.target.position
 		wall.position = wall.position.move_toward(goal, SPEED * delta)
 		wall.sprite.position = wall.position
 		wall.sprite.scale = Vector2.ONE * Art.scale_for(art, SIZE * stats["size"])
-		for enemy in game.query_enemies(wall.position, wall_radius):
-			var key := enemy.get_instance_id()
-			if _clock - wall.last_hit.get(key, -INF) < HIT_GAP:
-				continue
-			wall.last_hit[key] = _clock
+		if wall.target == null:
+			continue
+		var hit := game.query_enemies(wall.position, wall_radius)
+		if not wall.target in hit:
+			continue
+		# Reached it: one slam on everything under the wall, then back until the gap is up.
+		for enemy in hit:
 			game.damage_enemy(enemy, damage, Vector2.ZERO, id)
 			if evolved:
 				enemy.stun(EVOLVED_STUN)
-			if enemy == wall.target:
-				# Picked afresh after the pause: by then this one may be dead and gone.
-				wall.recover_left = RECOVER_SECONDS
-				wall.target = null
-		# Forget enemies not hit for a while, so the table doesn't grow over a run.
-		if wall.last_hit.size() > 200:
-			for key in wall.last_hit.keys():
-				if _clock - wall.last_hit[key] > HIT_GAP:
-					wall.last_hit.erase(key)
+		wall.target = null
+		wall.cooldown_left = gap
 
 
-## The wall's target is alive, still inside the guarded circle and not just hit (it waits out its
-## HIT_GAP while the wall goes for another). Takes the wall rather than the enemy: a freed enemy
-## can't be passed through an Enemy-typed argument.
-func _target_still_good(wall: Wall, radius: float) -> bool:
-	if not is_instance_valid(wall.target) or wall.target.dead:
-		return false
-	if wall.target.position.distance_squared_to(player.position) > radius * radius:
-		return false
-	return _clock - wall.last_hit.get(wall.target.get_instance_id(), -INF) >= HIT_GAP
-
-
-## The enemy inside the guarded circle closest to the player that no other wall is after and
-## that isn't waiting out its HIT_GAP, or null.
-func _pick_target(wall: Wall, radius: float) -> Enemy:
-	var taken := {}
-	for other in _walls:
-		if other != wall and is_instance_valid(other.target):
-			taken[other.target.get_instance_id()] = true
+## The enemy inside the guarded circle closest to the player, or null.
+func _closest_enemy(radius: float) -> Enemy:
 	var best: Enemy = null
 	var best_distance := INF
 	for enemy in game.query_enemies(player.position, radius):
-		var key := enemy.get_instance_id()
-		if taken.has(key) or _clock - wall.last_hit.get(key, -INF) < HIT_GAP:
+		if enemy.dead:
 			continue
 		var distance := enemy.position.distance_squared_to(player.position)
 		if distance < best_distance:
 			best_distance = distance
 			best = enemy
 	return best
+
+

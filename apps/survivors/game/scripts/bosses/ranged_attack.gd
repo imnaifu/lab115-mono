@@ -9,8 +9,10 @@ extends BossAttack
 ##   with `rings` > 1 another every `every` seconds, turned half a gap.
 ## - "spiral": it turns once round over `seconds`, throwing a bullet every `every` (from `arms`
 ##   sides at once), starting at the player and turning clockwise.
-## - "homing": `count` slow bullets, `every` seconds apart, each turning towards the player at up to
-##   `turn` degrees a second, gone after `life` seconds.
+## - "homing": `count` bullets, `every` seconds apart, each turning towards the player at up to
+##   `turn` degrees a second, gone after `life` seconds. Faster than any job since .82 (the user:
+##   连环会的子弹也太慢了; 45, under every job's 60-66, so walking on left them behind), and turning
+##   slower, so a sharp turn as they close in is what shakes them off.
 
 enum Stage { DONE, WARN, FIRE }
 
