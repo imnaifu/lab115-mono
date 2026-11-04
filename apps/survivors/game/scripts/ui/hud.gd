@@ -265,6 +265,8 @@ var _code_callback: JavaScriptObject
 var _code_field: LineEdit
 ## The web page's 昵称 dialog calls back into this (kept, or the browser drops it).
 var _name_callback: JavaScriptObject
+## The web page's 提意见 dialog (.94, survivorsCode.askText) calls back into this, kept the same way.
+var _feedback_callback: JavaScriptObject
 ## The banner for a landmark checked in at or an achievement earned, and the ones waiting.
 var _badge: PanelContainer
 var _badge_icon: TextureRect
@@ -2880,6 +2882,9 @@ func _show_end(victory: bool) -> void:
 	var advice := _end_advice(victory)
 	if not advice.is_empty():
 		left.add_child(_advice_card(advice))
+	var feedback := _end_feedback_row()
+	if feedback != null:
+		left.add_child(feedback)
 	var ranking := _damage_ranking()
 	if ranking != null:
 		right.add_child(ranking)
@@ -3152,6 +3157,15 @@ func _open_settings() -> void:
 		manage.add_theme_constant_override("icon_max_width", 18)
 		manage.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		general.append(_setting_row("云存档", "Cloud Save", manage, CLOUD_STATUS_TEXT[cloud.status]))
+		# 提意见 (.94) goes through the same server, so it shows where the cloud save does.
+		var feedback_note := UiKit.label("Bug、太难太简单、想要什么，都可以说。只有开发者能看到", 12, "muted")
+		feedback_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var write := UiKit.secondary_button("写几句", func() -> void: _ask_feedback("settings", feedback_note), 40.0)
+		write.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		var feedback_row := _setting_row("提意见", "Feedback", write, "")
+		feedback_row.add_child(feedback_note)
+		feedback_row.move_child(feedback_note, feedback_row.get_child_count() - 2)
+		general.append(feedback_row)
 	var switches: Array[Control] = []
 	_tilt_hint = null
 	if Tilt.available():
@@ -4097,6 +4111,113 @@ func _ask_name(done: Callable) -> void:
 				Cloud.shared().display_name, tr("确定"), tr("取消"), _name_callback)
 			return
 	_name_dialog(asked)
+
+
+## The result screen's 提意见 line (.94): right after a run is when there's most to say. Null
+## where the cloud save isn't in use (nothing to send it through).
+func _end_feedback_row() -> Control:
+	var cloud := Cloud.shared()
+	if cloud == null or cloud.status == Cloud.Status.OFF:
+		return null
+	var strip := UiKit.panel(UiKit.box(Art.PAPER_SUNK, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(12, 6, 12, 6)))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	strip.add_child(row)
+	var note := UiKit.label("这局有什么想说的？", 13, "strong", Art.INK)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	note.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(note)
+	row.add_child(UiKit.secondary_button("提意见", func() -> void: _ask_feedback("end", note), 34.0, 13))
+	return strip
+
+
+## Asks for a few lines of 提意见 (the page's own field on the web, as for the 昵称; a field of the
+## game's elsewhere) and sends them; `note` says how it went. Not opened while the cloud save is
+## off line, so nothing typed is lost.
+func _ask_feedback(where: String, note: Label) -> void:
+	if not Feedback.online():
+		_set_feedback_note(note, tr(Feedback.ERRORS["offline"]), false)
+		Telemetry.send_event("feedback", {"action": "offline", "where": where})
+		return
+	Telemetry.send_event("feedback", {"action": "open", "where": where})
+	var asked := func(text: String) -> void:
+		if text.strip_edges() == "":
+			return
+		_set_feedback_note(note, tr("正在发送…"), true)
+		var answer: Dictionary = await Feedback.send(text, where)
+		if answer.get("ok", false):
+			_set_feedback_note(note, tr("收到了，谢谢！每条都会看"), true)
+		else:
+			_set_feedback_note(note, tr(Feedback.error_text(answer)), false)
+	var title := tr("提意见")
+	var hint := tr("Bug、太难太简单、想要什么，都可以说。只有开发者能看到")
+	var placeholder := tr("比如：第一个 boss 太难了")
+	if OS.has_feature("web"):
+		var page := JavaScriptBridge.get_interface("survivorsCode")
+		if page != null:
+			_feedback_callback = JavaScriptBridge.create_callback(func(args: Array) -> void: asked.call(str(args[0])))
+			page.askText(title, hint, placeholder, Feedback.MAX_LENGTH, tr("发送"), tr("取消"), _feedback_callback)
+			return
+	_feedback_dialog(title, hint, placeholder, asked)
+
+
+## The 提意见 line's text: sent (ink) or not (red). The page may have been redrawn since.
+func _set_feedback_note(note: Label, text: String, ok: bool) -> void:
+	if not is_instance_valid(note):
+		return
+	note.text = text
+	note.add_theme_color_override("font_color", Art.INK if ok else Art.BOSS_RED)
+
+
+## A computer build's 提意见 dialog: a few lines and two buttons over the screen.
+func _feedback_dialog(title: String, hint: String, placeholder: String, asked: Callable) -> void:
+	var cover := ColorRect.new()
+	cover.color = Color(Art.INK, 0.45)
+	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cover.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Under the themed root: added to the layer itself, its text came out white (no theme there).
+	_root.add_child(cover)
+	var center := _centered(cover)
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(18, 16, 18, 16)))
+	center.add_child(card)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	card.add_child(column)
+	column.add_child(UiKit.label(title, 18, "heavy"))
+	var hint_label := UiKit.label(hint, 12, "muted")
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint_label.custom_minimum_size.x = 320
+	column.add_child(hint_label)
+	var field := TextEdit.new()
+	field.placeholder_text = placeholder
+	field.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	field.custom_minimum_size = Vector2(320, 120)
+	# Styled like the 存档码 field (_code_entry): Godot's default TextEdit is dark grey.
+	field.add_theme_stylebox_override("normal", UiKit.box(Art.PAPER_SUNK, Art.LINE_STRONG, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	field.add_theme_stylebox_override("focus", UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	field.add_theme_font_size_override("font_size", 15)
+	field.add_theme_color_override("font_color", Art.INK)
+	field.add_theme_color_override("font_placeholder_color", Art.LINE_STRONG)
+	field.add_theme_color_override("caret_color", Art.INK)
+	field.add_theme_color_override("background_color", Color.TRANSPARENT)
+	column.add_child(field)
+	# TextEdit has no max_length: cut what's past the limit as it's typed.
+	field.text_changed.connect(func() -> void:
+		if field.text.length() > Feedback.MAX_LENGTH:
+			field.text = field.text.left(Feedback.MAX_LENGTH)
+			field.set_caret_line(field.get_line_count() - 1)
+			field.set_caret_column(field.get_line(field.get_line_count() - 1).length()))
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 8)
+	column.add_child(buttons)
+	var send := func() -> void:
+		var text := field.text
+		cover.queue_free()
+		asked.call(text)
+	buttons.add_child(UiKit.primary_button("发送", send, 40.0, 15))
+	buttons.add_child(UiKit.secondary_button("取消", cover.queue_free, 40.0, 15))
+	field.grab_focus.call_deferred()
 
 
 ## A computer build's 昵称 dialog: a field and two buttons over the screen.

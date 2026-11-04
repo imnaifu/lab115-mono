@@ -49,6 +49,32 @@ ssh -L 7351:127.0.0.1:7351 mydev
 
 **删除只做标记**：玩家在游戏里「删除云存档」时账号和存档都留着，只多一个 `account` / `state` 存储对象（`deleted` 时间、`reason`：`player` 玩家删的，`redeemed` 换设备时被并掉的旧账号，带 `into`），存档码会被摘掉。要真删就在管理后台删那个账号。App 上架前要改成真删除（见 `game/DESIGN.md` 2.11）。
 
+**提意见**（`.94`）：玩家在游戏里写的意见存在 Nakama 存储的 `feedback` 集合，一条一个对象，属于发的那个玩家、但客户端读不到也改不了；在管理后台 Storage 里选 `feedback` 看。每条带 `where`（`settings` / `end`）和 `about`（版本、语言、设备、屏幕、地图、职业、已玩局数）。每人每天（UTC）最多 5 条，计数在 `feedback_quota`。规则见 `game/DESIGN.md` 2.15。
+
 **升级 Nakama**：改 compose 里的镜像版本号再部署；启动时会先跑 `nakama migrate up`。升之前先备份 `./data/nakama-db`。
 
 在 2026-10-27 之前，导出产物曾直接提交在 `public/` 里（约 90 MB 二进制留在 git 历史中）；现在 `public/` 只是本地导出的输出目录，已加入 `.gitignore`。
+
+## 渠道链接（`.94`）
+
+发到每个渠道的链接都带自己的 `from`，`game/tools/channel_report.py` 按它算每个渠道的设备数、次日 / 7 日内回访、人均局数、撑到 10:00 的比例：
+
+```bash
+python3 game/tools/channel_report.py --days 30
+```
+
+| 渠道 | 链接 |
+|---|---|
+| 小红书 | `https://survivors.lab115.com/?from=xhs` |
+| B 站 | `https://survivors.lab115.com/?from=bili` |
+| 即刻 | `https://survivors.lab115.com/?from=jike` |
+| V2EX | `https://survivors.lab115.com/?from=v2ex` |
+| 脉脉 | `https://survivors.lab115.com/?from=maimai` |
+| Reddit | `https://survivors.lab115.com/?from=reddit` |
+| Hacker News | `https://survivors.lab115.com/?from=hn` |
+| itch.io | `https://survivors.lab115.com/?from=itch` |
+| 战绩图二维码（游戏自带） | `?from=share` |
+
+- 根路径带参数会 302 到 `/play/` 并保留参数，所以这些链接直接进游戏、不经过官网；想先给人看官网就发不带参数的根路径，那样记成 `ref:<来源网站>` 或 `direct`。
+- 同一个渠道发多次想分开看，就加后缀：`xhs-1104`。`from` 最长 40 个字符，只用小写字母、数字和 `-`。
+- 只算浏览器**第一次**打开时的渠道（网页存在 localStorage 的 `survivors-source`，之后不再改），所以第二天直接打开也算在原渠道；`.94` 前就玩过的浏览器记成 `old`。字段说明见 `game/scripts/telemetry.gd` 顶部。

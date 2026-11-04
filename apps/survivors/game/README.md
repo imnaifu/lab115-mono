@@ -68,6 +68,7 @@ scripts/
 ├── settings.gd        # 存设置
 ├── progress.gd        # 局外成长的存档（user://progress.cfg）：打卡、成就、累计数据，两份存档的合并规则；测试机器人只记在内存里
 ├── cloud.gd           # 云存档：每台设备一个匿名 Nakama 账号、开局合并、存档后上传、存档码、删除（见下文「云存档」）
+├── feedback.gd        # 提意见（.94）：发到 Nakama 的 survivors_feedback，只有管理后台能看（DESIGN.md 2.15）
 ├── stamps.gd          # 打卡：地标 1/3/5/7/9 分钟开门，在圈里累计站满 10 秒（出圈倒退），永久小加成（.44 起每张地图 5 个）
 ├── stamp_rings.gd     # 地上的打卡圈：没开门是灰虚线写开门时间，开门后黄圈、边上转着进度
 ├── training.gd        # 培训（.44）：年终奖发的工资练基础属性，存档里记流水，按时间重放
@@ -96,6 +97,8 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 ```
 
 **平衡公式**（`.72`）：改数值前后各跑一次 `godot --headless --path . -s tools/dump_compendium.gd -- /tmp/compendium.json && python3 tools/balance.py /tmp/compendium.json`，它按 DESIGN.md 2.8 的固定公式算各地图新手 / 培训 / 打卡 / 练满的预测通关率；公式不改，只在用 `tests/balance_bot.gd` 重新校准时改它顶部的 `PARAMS`。
+
+**渠道报表**（`.94`）：`python3 tools/channel_report.py [--days 30]`，同样走只读查询脚本，按浏览器第一次打开时的渠道（`source`）出设备数、次日 / 7 日内回访、人均局数、撑到 10:00 的比例；每个渠道的链接见 `../README.md`「渠道链接」。
 
 **成就达成率**：每次发版前跑一次 `python3 tools/achievement_rates.py`，它经本机的只读查询脚本（`~/.claude/bin/umami-readonly-query`，走 SSH 读 Umami 的库）统计每个成就有多少玩家拿到，写进 `scripts/achievement_rates.gd`；玩家不满 30 人时游戏用 `achievements.gd` 的估计值。
 

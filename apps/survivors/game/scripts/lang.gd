@@ -1339,6 +1339,17 @@ const EN := {
 	"大促一来，全楼通宵": "Sale day: the whole building pulls an all-nighter",
 	"佛香阁立在万寿山上": "The Tower of Buddhist Incense on Longevity Hill",
 	"沙滩、椰树和度假村": "Beaches, palms and resorts",
+	# 提意见 (.94, Feedback).
+	"提意见": "Feedback",
+	"写几句": "Write",
+	"Bug、太难太简单、想要什么，都可以说。只有开发者能看到": "Bugs, too hard, too easy, wishes: say anything. Only the developer reads it",
+	"这局有什么想说的？": "Anything to say about this run?",
+	"比如：第一个 boss 太难了": "e.g. The first boss is too hard",
+	"发送": "Send",
+	"正在发送…": "Sending…",
+	"收到了，谢谢！每条都会看": "Got it, thanks! Every one gets read",
+	"写 2–500 个字吧": "Write 2–500 characters",
+	"今天已经收到你 5 条了，明天再来吧": "That's 5 from you today, come back tomorrow",
 	# The clear-time leaderboards (.78).
 	"昵称要 2–12 个字": "A name takes 2–12 characters",
 	"昵称里有不能用的符号": "That name has symbols it can't use",

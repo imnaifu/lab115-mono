@@ -68,6 +68,16 @@ extends RefCounted
 ## - share (.30): the result image. `open` from the game with `where` (end / pause); then from
 ##   the page's dialog share, shared / share_cancelled (the system share sheet's outcome), save,
 ##   close. A long press on the image (how WeChat saves) can't be seen.
+## - feedback (.94, Feedback, 提意见): `action` open (the field shown), sent, failed (with the
+##   server's `error`: length / too_many / offline), or offline (the button tapped while the cloud
+##   save hadn't signed in, so the field never opened); `where` is the entry (settings / end) and
+##   `length` the characters sent. Giving up is the opens less the sends. Never the text: that is
+##   on the server only (Storage → feedback in the Nakama console).
+## From .94 the page adds `source` to game_ready: where this browser first came from, for
+## tools/channel_report.py. The first visit's ?from= (one per channel, README「渠道链接」), else
+## `ref:<host>` of the page that linked here, else `direct`; `old` for a browser that already
+## played before .94 (its first visit unknown). Kept in localStorage `survivors-source`, never
+## changed after, so a player coming back without the link still counts for their channel.
 ## The page itself also reports script errors (js_error), see export_presets.cfg.
 ## A run still going when the page closes is saved as a snapshot every SNAPSHOT_SECONDS and
 ## sent as a "quit" by the page itself when it closes and again on the next visit (in-app
@@ -79,7 +89,7 @@ extends RefCounted
 ## A bare number from 64 on (the user: 版本去掉日期，只保留数字); up to 63 it was
 ## "2026-10-28.<n>" (the very first build plain "2026-10-28"), so to compare across both, read an
 ## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
-const VERSION := "93"
+const VERSION := "94"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.

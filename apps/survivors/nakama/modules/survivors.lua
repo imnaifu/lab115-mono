@@ -9,10 +9,17 @@ through the RPCs below, so the boards are authoritative: a client can't write a 
   survivors_submit      {map, ms, job, run}       -> {ok, rank, best_ms} | {error}
   survivors_board       {map}                     -> {records: [...], me: {...}|null, name}
   survivors_report      {user}                    -> {ok}
+  survivors_feedback    {text, where, context}    -> {ok} | {error}
 
 Names are the account's display name. One that enough players report (REPORTS_TO_HIDE) shows as
 匿名员工 until its owner picks a new one; the reports are kept in the storage collection
 name_reports (owned by the system user) for a look in the console.
+
+提意见 (.94, the user picked R4 of the money plan: 游戏内「提意见」入口): what a player types goes
+into the storage collection feedback, one object per message, owned by its player but readable and
+writable by no client (permission 0/0), so it is read in the console only (Storage → feedback). A
+player sends at most FEEDBACK_PER_DAY a day (UTC), counted in feedback_quota. When the cloud save's
+deletion becomes a real one (before the App), these go with the account.
 ]]
 
 local nk = require("nakama")
@@ -28,6 +35,12 @@ local NAME_MAX = 12
 local REPORTS_TO_HIDE = 3
 local HIDDEN_NAME = "匿名员工"
 local SYSTEM_USER = "00000000-0000-0000-0000-000000000000"
+local FEEDBACK_MIN = 2
+local FEEDBACK_MAX = 500
+local FEEDBACK_PER_DAY = 5
+-- What the game says about itself with a message (Hud._send_feedback), each cut to this many bytes.
+local FEEDBACK_CONTEXT = { version = 8, lang = 4, device = 24, screen = 16, map = 8, job = 16, runs = 8 }
+local FEEDBACK_WHERE = { settings = true, ["end"] = true }
 -- Not allowed in a name (lower-cased, as parts of it): pretending to be the game, and the
 -- commonest abuse; nothing short enough to sit inside ordinary names (sb, dick). Reports catch the rest.
 local BLOCKED = {
@@ -215,7 +228,43 @@ local function report(context, payload)
   return reply({ ok = true })
 end
 
+local function feedback(context, payload)
+  local entry = decode(payload)
+  local text = trim(tostring(entry.text or ""))
+  if length(text) < FEEDBACK_MIN or length(text) > FEEDBACK_MAX then
+    return reply({ error = "length" })
+  end
+  local where = tostring(entry.where or "")
+  if not FEEDBACK_WHERE[where] then
+    where = "other"
+  end
+  -- The day in UTC, as a number of days: a player's count starts over at midnight UTC.
+  local day = math.floor(nk.time() / 86400000)
+  local quota_key = { collection = "feedback_quota", key = "today", user_id = context.user_id }
+  local objects = nk.storage_read({ quota_key })
+  local quota = (objects[1] and objects[1].value) or {}
+  local count = quota.day == day and (quota.count or 0) or 0
+  if count >= FEEDBACK_PER_DAY then
+    return reply({ error = "too_many" })
+  end
+  local about = {}
+  local given = type(entry.context) == "table" and entry.context or {}
+  for key, limit in pairs(FEEDBACK_CONTEXT) do
+    if given[key] ~= nil then
+      about[key] = tostring(given[key]):sub(1, limit)
+    end
+  end
+  nk.storage_write({
+    { collection = "feedback", key = nk.uuid_v4(), user_id = context.user_id, permission_read = 0, permission_write = 0,
+      value = { text = text, where = where, about = about, name = display_name(context.user_id) } },
+    { collection = quota_key.collection, key = quota_key.key, user_id = context.user_id, permission_read = 0,
+      permission_write = 0, value = { day = day, count = count + 1 } },
+  })
+  return reply({ ok = true })
+end
+
 nk.register_rpc(set_name, "survivors_set_name")
 nk.register_rpc(submit, "survivors_submit")
 nk.register_rpc(board, "survivors_board")
 nk.register_rpc(report, "survivors_report")
+nk.register_rpc(feedback, "survivors_feedback")
