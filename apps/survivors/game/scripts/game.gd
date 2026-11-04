@@ -38,6 +38,10 @@ const RUN_SECONDS := 600.0
 ## ×1.5 +0.3 7%, ×2 +0.5 11%, nearly all in the first seconds, under a full floor. Bots dodge
 ## far better than people, so these numbers start there, to be checked on the runs' data.) No
 ## extra health: the board ranks speed, the pressure is on staying alive.
+## The relabelled crowd (Enemy.make_ally): how often one fighting another trades blows, and how far
+## it looks for one to go after.
+const ALLY_FIGHT_EVERY := 0.5
+const ALLY_SEEK := 400.0
 const OVERTIME_STEP := 30.0
 const OVERTIME_SPEED := 1.2
 const OVERTIME_SPEED_STEP := 0.05
@@ -197,6 +201,11 @@ var city: City
 var flow_field: FlowField
 var telemetry: Telemetry
 var perks: Perks
+## The job's 大招 (.81), and what it leaves out in the world: the designer's copies, the ops'
+## servers.
+var ultimates: Ultimates
+var clones: Array[PlayerClone] = []
+var turrets: Array[ServerTurret] = []
 var hud: Hud
 ## Boss attacks in flight (HostileShot), ticked here.
 var hostile_shots: Array[HostileShot] = []
@@ -276,6 +285,7 @@ func _ready() -> void:
 	spawner = Spawner.new(self)
 	telemetry = Telemetry.new(self)
 	perks = Perks.new(self)
+	ultimates = Ultimates.new(self)
 	player.add_weapon(Upgrades.create_weapon(Jobs.data(player.job)["weapon"]))
 
 	hud = Hud.new()
@@ -301,13 +311,14 @@ func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed >= RUN_SECONDS:
 		if left_at_end < 0:
-			left_at_end = enemies.size()
+			left_at_end = hostile_count()
 		var tier := overtime_tier()
 		if tier > _overtime_shown:
 			_overtime_shown = tier
 			var line: String = OVERTIME_LINES[mini(tier, OVERTIME_LINES.size()) - 1]
 			announce(tr(line) if tier == 1 else tr("%s · 暴躁 ×%d") % [tr(line), tier])
-		if enemies.is_empty():
+		# The relabelled crowd (the data scientist's 大招) doesn't count: it is on the player's side.
+		if hostile_count() == 0:
 			_end_run(true)
 			return
 	nap_left = maxf(0.0, nap_left - delta)
@@ -322,6 +333,7 @@ func _process(delta: float) -> void:
 	_tick_enemies(delta)
 	_tick_hostile_shots(delta)
 	perks.tick(delta)
+	_tick_ultimate_things(delta)
 	_tick_pickups(delta)
 	_check_player_contact()
 	stamps.tick(delta)
@@ -428,7 +440,9 @@ func query_enemies(center: Vector2, radius: float, attack := true) -> Array[Enem
 			if bucket == null:
 				continue
 			for enemy: Enemy in bucket:
-				if enemy.dead:
+				# The relabelled crowd (the data scientist's 大招) is on the player's side: nothing of
+				# theirs hits it and it hurts nobody of theirs.
+				if enemy.dead or enemy.ally_left > 0.0:
 					continue
 				var hit_distance := radius + (enemy.hit_radius if attack else enemy.radius)
 				if enemy.position.distance_squared_to(center) <= hit_distance * hit_distance:
@@ -440,7 +454,7 @@ func nearest_enemy(from: Vector2, max_distance: float) -> Enemy:
 	var best: Enemy = null
 	var best_distance_sq := max_distance * max_distance
 	for enemy in enemies:
-		if enemy.dead:
+		if enemy.dead or enemy.ally_left > 0.0:
 			continue
 		var distance_sq := enemy.position.distance_squared_to(from)
 		if distance_sq < best_distance_sq:
@@ -454,7 +468,7 @@ func visible_enemies() -> Array[Enemy]:
 	var half := view_half()
 	for enemy in enemies:
 		var offset := (enemy.position - player.position).abs()
-		if not enemy.dead and offset.x < half.x and offset.y < half.y:
+		if not enemy.dead and enemy.ally_left <= 0.0 and offset.x < half.x and offset.y < half.y:
 			visible.append(enemy)
 	return visible
 
@@ -474,8 +488,9 @@ func melee_impact(hits: int, hit_boss: bool) -> void:
 
 
 ## Nearly freezes the game for `seconds` (at most once every HITSTOP_GAP).
-func hitstop(seconds: float) -> void:
-	if Time.get_ticks_msec() < _next_hitstop_msec:
+## `force` for a 大招 going off, which mustn't be swallowed by a hit's hitstop just before.
+func hitstop(seconds: float, force := false) -> void:
+	if not force and Time.get_ticks_msec() < _next_hitstop_msec:
 		return
 	_next_hitstop_msec = Time.get_ticks_msec() + roundi(HITSTOP_GAP * 1000.0)
 	Engine.time_scale = HITSTOP_SPEED
@@ -641,6 +656,9 @@ func _tick_enemies(delta: float) -> void:
 				enemy.detour_left -= delta
 				around = flow_field.heading(enemy.position, true)
 		var heading := around if around != Vector2.ZERO else (target - enemy.position).normalized()
+		if enemy.ally_left > 0.0:
+			var foe := nearest_enemy(enemy.position, ALLY_SEEK)
+			heading = ((foe.position if foe != null else target) - enemy.position).normalized()
 		# A decoy close by draws it off the player (they stand right by the player, so no walls to
 		# go round in between).
 		var lure: Variant = _lure_for(enemy)
@@ -1108,6 +1126,65 @@ func decline_revive() -> void:
 	telemetry.on_revive(false)
 	state = State.PLAYING
 	_end_run(false)
+
+
+## The enemies still against the player (the relabelled ones are on their side).
+func hostile_count() -> int:
+	var count := 0
+	for enemy in enemies:
+		if enemy.ally_left <= 0.0:
+			count += 1
+	return count
+
+
+## The 大招's leftovers, every frame of play: the servers fire, a copy is hurt by what touches it
+## like the player, and the relabelled crowd turns on the rest (Enemy.make_ally): each one walks at
+## the nearest of the others, and touching one, each hurts the other by its own contact damage
+## every ALLY_FIGHT_EVERY; one whose health or time runs out is gone, no kill and no star.
+func _tick_ultimate_things(delta: float) -> void:
+	for i in range(turrets.size() - 1, -1, -1):
+		if not turrets[i].tick(delta):
+			turrets.remove_at(i)
+	for i in range(clones.size() - 1, -1, -1):
+		if not is_instance_valid(clones[i]) or clones[i].is_queued_for_deletion():
+			clones.remove_at(i)
+			continue
+		var clone := clones[i]
+		var strongest: Enemy = null
+		for enemy in query_enemies(clone.position, Player.HURT_RADIUS, false):
+			if enemy.lift <= 0.0 and (strongest == null or enemy.damage > strongest.damage):
+				strongest = enemy
+		if strongest != null:
+			clone.take_damage(strongest.damage * overtime_damage())
+	for enemy in enemies.duplicate():
+		if enemy.ally_left <= 0.0:
+			continue
+		enemy.ally_left -= delta
+		enemy.ally_fight_left -= delta
+		if enemy.ally_left <= 0.0 or enemy.hp <= 0.0:
+			_dismiss_ally(enemy)
+			continue
+		if enemy.ally_fight_left > 0.0:
+			continue
+		var foes := query_enemies(enemy.position, enemy.radius + 4.0, false)
+		if foes.is_empty():
+			continue
+		enemy.ally_fight_left = ALLY_FIGHT_EVERY
+		var foe := foes[0]
+		damage_enemy(foe, enemy.damage, (foe.position - enemy.position).normalized() * 40.0, Ultimates.SOURCE, true)
+		enemy.take_hit(foe.damage, (enemy.position - foe.position).normalized() * 40.0)
+		if enemy.hp <= 0.0:
+			_dismiss_ally(enemy)
+
+
+func _dismiss_ally(enemy: Enemy) -> void:
+	enemy.dead = true
+	enemy.ally_left = 0.0
+	enemies.erase(enemy)
+	Effects.poof(self, enemy.position, Enemy.ALLY_TINT)
+	# Freed at the next grid rebuild, as a kill is (_kill): the grid may still list it till then.
+	enemy.visible = false
+	_corpses.append(enemy)
 
 
 ## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear.

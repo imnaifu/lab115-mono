@@ -48,6 +48,10 @@ const BIG_ART := 40.0
 const HIT_SHARE := 0.36
 const CATCH_UP_NEAR := 60.0
 const CATCH_UP_FAR := 100.0
+## The data scientist's 大招 (Ultimates, .81): how long one stays on the player's side at most, and
+## its colour meanwhile.
+const ALLY_SECONDS := 20.0
+const ALLY_TINT := Color(0.55, 1.0, 0.55)
 ## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
 const BOSS_STUN_SCALE := 0.5
 const STUN_TINT := Color(0.72, 0.84, 1.0)
@@ -118,6 +122,10 @@ var _guard_left := 0.0
 var _arrived := false
 ## The bubble over its head and how long it stays.
 var _line := ""
+## On the player's side for this much longer (Game._tick_ultimate_things), 0 when it is not; and
+## the time to its next blow at the one it is fighting.
+var ally_left := 0.0
+var ally_fight_left := 0.0
 var _line_left := 0.0
 
 
@@ -400,6 +408,15 @@ func _spin_angle(delta: float) -> float:
 ## An attack's damage on this map (Maps.current.DIFFICULTY).
 static func _hits(amount: float) -> float:
 	return amount * Maps.difficulty("damage")
+
+
+## Turned to the player's side (改标签): green, no longer slowed or stunned.
+func make_ally() -> void:
+	ally_left = ALLY_SECONDS
+	slow_left = 0.0
+	stun_left = 0.0
+	_base_modulate = ALLY_TINT
+	_sprite.modulate = _base_modulate
 
 
 func _rest_modulate() -> Color:

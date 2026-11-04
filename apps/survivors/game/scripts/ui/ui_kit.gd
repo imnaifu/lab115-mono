@@ -142,6 +142,8 @@ static func round_button(art: String, action: Callable, diameter: float = 32.0, 
 	button.add_theme_stylebox_override("normal", box(Art.PAPER, Art.INK, OUTLINE, PILL, padding))
 	button.add_theme_stylebox_override("hover", box(Art.PAPER_SUNK, Art.INK, OUTLINE, PILL, padding))
 	button.add_theme_stylebox_override("pressed", box(Art.LINE, Art.INK, OUTLINE, PILL, padding))
+	# Round when it can't be pressed too (the 大招 once used), not the theme's square.
+	button.add_theme_stylebox_override("disabled", box(Art.PAPER_SUNK, Art.LINE_STRONG, OUTLINE, PILL, padding))
 	button.focus_mode = Control.FOCUS_NONE
 	return button
 

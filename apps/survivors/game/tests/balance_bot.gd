@@ -18,6 +18,9 @@ extends "res://tests/smoke_test.gd"
 const SEEK := 250.0
 ## Cards it takes, best first, among the passives (the rest it takes only when nothing better).
 const PASSIVE_ORDER := ["might", "haste", "vitality", "armor", "regen", "swiftness", "magnet"]
+## When it sets its 大招 off (_maybe_ultimate): under this share of its health, or a boss this close.
+const ULTIMATE_HP := 0.4
+const ULTIMATE_BOSS_NEAR := 90.0
 
 var _label := "base"
 var _player_bonus := {}
@@ -80,7 +83,22 @@ func _apply_bonus(player: Player) -> void:
 				player.cooldown_scale *= 1.0 - amount
 
 
+## Sets its 大招 off (Ultimates) as a player saving it would: low on health, a boss on top of it,
+## or the floor to clear after 10:00.
+func _maybe_ultimate() -> void:
+	if not _game.ultimates.ready():
+		return
+	var player := _game.player
+	var boss_near := false
+	for enemy in _game.query_enemies(player.position, ULTIMATE_BOSS_NEAR, false):
+		if enemy.is_elite:
+			boss_near = true
+	if player.hp < player.max_hp * ULTIMATE_HP or boss_near or _game.clearing():
+		_game.ultimates.cast()
+
+
 func _steer() -> Vector2:
+	_maybe_ultimate()
 	var player := _game.player
 	var escape := _zone_escape(player.position)
 	if escape != Vector2.ZERO:
@@ -210,6 +228,6 @@ func _pick_choice() -> int:
 func _report() -> int:
 	var code := super()
 	print("[balance] " + JSON.stringify({"label": _label, "job": _game.player.job, "map": Maps.current_id,
-		"result": _outcome(), "seconds": snappedf(_game.elapsed, 0.1), "level": _game.level,
+		"result": _outcome(), "seconds": snappedf(_game.elapsed, 0.1), "level": _game.level, "ult_at": _game.ultimates.used_at,
 		"bosses": _game.telemetry._bosses_killed, "killer": _game.telemetry.last_hurt_by}))
 	return code

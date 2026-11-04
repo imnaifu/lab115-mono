@@ -67,8 +67,9 @@ def jobs_section(data: dict) -> str:
 <p class="muted">{esc(job['pitch'])}</p></div></div>
 <p class="stats"><span>生命 <b>{number(job['hp'])}</b></span><span>护甲 <b>{number(job['armor'])}</b></span><span>移速 <b>{number(job['speed'])}</b></span></p>
 <p class="weapon">{art(weapon['art'], 28)}专属武器 <b>{esc(weapon['name'])}</b> {tag(kind)}</p>
+<p class="weapon">大招 <b>{esc(job['ultimate']['name'])}</b>（一局一次）：{esc(job['ultimate']['text'])}</p>
 <p class="quote">口头禅：{lines}</p></article>""")
-    return section("jobs", "职业", "开局选一个职业，带着它的专属武器上班。生命都是 100；近身打的护甲多一点，打得远的跑得快一点。",
+    return section("jobs", "职业", "开局选一个职业，带着它的专属武器上班。生命都是 100；近身打的护甲多一点，打得远的跑得快一点。每个职业还有一个大招，一局只能放一次（手机点右下角的按钮，电脑按空格），什么时候放自己挑。",
                    f'<div class="grid wide">{"".join(cards)}</div>')
 
 

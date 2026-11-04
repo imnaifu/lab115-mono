@@ -65,7 +65,8 @@ func _jobs() -> Array:
 	for id: String in Jobs.ORDER:
 		var job: Dictionary = Jobs.JOBS[id]
 		jobs.append({"id": id, "name": job["name"], "art": job["art"], "weapon": job["weapon"], "hp": job["hp"],
-			"armor": job["armor"], "speed": job["speed"], "pitch": job["pitch"], "lines": job["lines"]})
+			"armor": job["armor"], "speed": job["speed"], "pitch": job["pitch"], "lines": job["lines"],
+			"ultimate": Jobs.ultimate(id)})
 	return jobs
 
 

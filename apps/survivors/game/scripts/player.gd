@@ -71,6 +71,8 @@ var touch_direction := Vector2.ZERO
 var weapons: Array[Weapon] = []
 
 var _invuln_left := 0.0
+## The product manager's 大招 (今天必须上线, Ultimates): untouchable and faster for this long.
+var boost_left := 0.0
 var _shake_left := 0.0
 var _walk_phase := 0.0
 var _base_scale := 1.0
@@ -127,7 +129,8 @@ func _process(delta: float) -> void:
 	else:
 		var keys := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 		direction = (keys + touch_direction + Tilt.direction()).limit_length(1.0)
-	velocity = direction * move_speed
+	velocity = direction * move_speed * (Ultimates.BOOST_SPEED if boost_left > 0.0 else 1.0)
+	boost_left = maxf(0.0, boost_left - delta)
 	position = game.city.resolve(position + (velocity + _shove + _drift) * delta, BODY_RADIUS)
 	_drift = Vector2.ZERO
 	_shove = _shove.lerp(Vector2.ZERO, minf(1.0, SHOVE_DECAY * delta))
@@ -155,6 +158,9 @@ func _process(delta: float) -> void:
 	var blinking := _invuln_left > 0.0 and fmod(_invuln_left, 0.1) < 0.05
 	_sprite.modulate = Color(1, 0.45, 0.45) if _invuln_left > INVULN_SECONDS - HIT_FLASH_SECONDS \
 		else Color(1, 1, 1, 0.5 if blinking else 1.0)
+	# Gold while 今天必须上线 lasts, flickering in its last second.
+	if boost_left > 0.0 and (boost_left > 1.0 or fmod(boost_left, 0.2) < 0.1):
+		_sprite.modulate = Color(1.0, 0.85, 0.35)
 
 	if _shake_left > 0.0:
 		_shake_left -= delta
@@ -246,7 +252,7 @@ func get_weapon(weapon_id: String) -> Weapon:
 
 
 func take_damage(amount: float) -> void:
-	if _invuln_left > 0.0 or hp <= 0.0:
+	if _invuln_left > 0.0 or boost_left > 0.0 or hp <= 0.0:
 		return
 	var lost := minf(hp, maxf(1.0, amount - armor))
 	hp -= lost

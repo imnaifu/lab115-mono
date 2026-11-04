@@ -32,6 +32,9 @@ const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 const NEXT_BOSS_WARNING := 20.0
 ## How long before Game.RUN_SECONDS the 离下班 countdown shows.
 const CLEAR_WARNING := 30.0
+## The 大招 button (_build_ultimate_button): its size and its distance from the screen's corner.
+const ULTIMATE_SIZE := 58.0
+const ULTIMATE_MARGIN := 18.0
 ## 加班's alarm lights (_build_overtime): their reach in from each side (a share of the width),
 ## strength and sweep speed (radians a second) by tier.
 const ALARM_REACH := 0.32
@@ -113,6 +116,12 @@ var _next_boss_pill: Control
 var _next_boss_time: Label
 ## 离下班 0:23 in the last CLEAR_WARNING seconds, then 清场中 · 剩 37 until the last enemy is down
 ## (.78: nothing new comes after Game.RUN_SECONDS; the user: 10:00 到了给个提示).
+## The 大招 (Ultimates, .81): a round button low on the right with the job's face and the
+## ultimate's name, grey once used; and whether the first boss has brought its hint up yet.
+var _ultimate_button: Button
+var _ultimate_label: Label
+var _ultimate_hinted := false
+var _ultimate_job := ""
 var _clear_pill: Control
 var _clear_label: Label
 ## The result screen's line about the clear-time board (.78): its rank, or a button to pick a 昵称.
@@ -270,6 +279,7 @@ func _ready() -> void:
 	_joystick.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_joystick)
 	_build_top_bar()
+	_build_ultimate_button()
 	_build_toast()
 	_build_badge()
 	_build_bottom_hints()
@@ -340,6 +350,7 @@ func _process(delta: float) -> void:
 	_time_label.text = _clock_text(game.elapsed)
 	_kills_label.text = str(game.kills)
 	_update_next_boss()
+	_update_ultimate()
 	_update_clear_pill()
 	_update_weather()
 	_update_boss_bar()
@@ -449,6 +460,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.State.PLAYING:
 			if key == KEY_ESCAPE or key == KEY_P:
 				game.set_paused(true)
+			elif key == KEY_SPACE:
+				game.ultimates.cast()
 		Game.State.PAUSED:
 			if key == KEY_ESCAPE or key == KEY_P:
 				game.set_paused(false)
@@ -758,6 +771,50 @@ func _update_next_boss() -> void:
 		_next_boss_time.text = "0:%02d" % ceili(seconds_left)
 
 
+func _build_ultimate_button() -> void:
+	var holder := VBoxContainer.new()
+	holder.add_theme_constant_override("separation", 2)
+	holder.anchor_left = 1.0
+	holder.anchor_right = 1.0
+	holder.anchor_top = 1.0
+	holder.anchor_bottom = 1.0
+	holder.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	holder.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	holder.offset_right = -ULTIMATE_MARGIN
+	holder.offset_bottom = -ULTIMATE_MARGIN
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ultimate_button = UiKit.round_button(Jobs.data(game.player.job)["art"], game.ultimates.cast, ULTIMATE_SIZE)
+	_ultimate_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	holder.add_child(_ultimate_button)
+	_ultimate_label = UiKit.label(Jobs.ultimate(game.player.job)["name"], 11, "strong", Art.INK)
+	_ultimate_label.add_theme_constant_override("outline_size", 5)
+	_ultimate_label.add_theme_color_override("font_outline_color", Art.PAPER)
+	_ultimate_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	holder.add_child(_ultimate_label)
+	_root.add_child(holder)
+
+
+## Shown in play only; glowing while it can go off, grey and 已用 after. The first boss coming
+## says once how to set it off.
+func _update_ultimate() -> void:
+	var playing := game.state == Game.State.PLAYING
+	_ultimate_button.get_parent().visible = playing
+	if not playing:
+		return
+	# The job picked on the title screen, after the button was built.
+	if _ultimate_job != game.player.job:
+		_ultimate_job = game.player.job
+		_ultimate_button.icon = Art.texture(Jobs.data(_ultimate_job)["art"])
+	var used := game.ultimates.used
+	_ultimate_button.disabled = used
+	_ultimate_button.modulate = Color(1, 1, 1, 0.45) if used else Color.WHITE.lerp(Color(1.15, 1.1, 0.9), 0.5 + 0.5 * sin(_clock * 4.0))
+	_ultimate_label.text = tr("已用") if used else tr(Jobs.ultimate(game.player.job)["name"])
+	if not used and not _ultimate_hinted and game.enemies.any(func(enemy: Enemy) -> bool: return enemy.is_elite):
+		_ultimate_hinted = true
+		_show_toast(tr("危险时点右下角放大招「%s」，一局一次") % tr(Jobs.ultimate(game.player.job)["name"]) if Device.is_handheld() \
+			else tr("危险时按空格放大招「%s」，一局一次") % tr(Jobs.ultimate(game.player.job)["name"]))
+
+
 func _update_clear_pill() -> void:
 	var seconds_left := Game.RUN_SECONDS - game.elapsed
 	_clear_pill.visible = seconds_left <= CLEAR_WARNING
@@ -766,7 +823,7 @@ func _update_clear_pill() -> void:
 	if seconds_left > 0.0:
 		_clear_label.text = tr("离下班 %s · 之后不再来新怪") % ("0:%02d" % ceili(seconds_left))
 	else:
-		_clear_label.text = tr("加班中 · 剩 %d · 暴躁 ×%d") % [game.enemies.size(), game.overtime_tier()]
+		_clear_label.text = tr("加班中 · 剩 %d · 暴躁 ×%d") % [game.hostile_count(), game.overtime_tier()]
 
 
 func _update_boss_bar() -> void:
@@ -1446,6 +1503,8 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	var pitch := UiKit.label(job_data["pitch"], 12)
 	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(pitch)
+	# The job's 大招 (.81), by name: what it does is said in play and on the site.
+	column.add_child(UiKit.label(tr("大招「%s」· 一局一次") % tr(Jobs.ultimate(job_id)["name"]), 12, "strong", Art.BRAND_DEEP))
 	return card
 
 
