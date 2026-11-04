@@ -1364,6 +1364,7 @@ const EN := {
 	"举报": "Report",
 	"已举报，被举报多的名字会先藏起来": "Reported: names reported enough are hidden",
 	"排行榜": "Boards",
+	"看榜": "See board",
 	# The jobs' 大招 (.81).
 	"全量发布": "Ship It All",
 	"Shift+Enter！": "Shift+Enter!",

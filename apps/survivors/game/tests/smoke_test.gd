@@ -31,6 +31,7 @@ extends SceneTree
 ## to look at the evolutions), --map=sv|ldn|sea|sg|bj (play that map, locked or not), --stamps=N|all (start
 ## having checked in at the first N of the map's landmarks, or all of them),
 ## --collection=0|1|2|3 (with --shots, also screenshot the title's 收藏 page on that tab; 3 is 战绩),
+## --board (with --shots, also screenshot the title's 排行榜 page, .89),
 ## --map-picker[=city] (with --shots, also screenshot the title's map picker, with that
 ## city's card if given), --luck=N
 ## (start with that much luck, to see rarer cards), --cloud=local|<url>
@@ -90,6 +91,8 @@ var _stamps_before := 0
 ## The 打卡 · 成就 tab to screenshot at the title, or -1; and frames it has been open.
 var _collection_tab := -1
 var _collection_frames := 0
+var _board_page := false
+var _board_frames := 0
 var _map_picker := false
 var _map_picker_city := ""
 var _map_picker_frames := 0
@@ -163,6 +166,8 @@ func _initialize() -> void:
 			Maps.unlock_all = true
 		elif arg.begins_with("--stamps="):
 			_stamps_before = 1000 if value == "all" else int(value)
+		elif arg == "--board":
+			_board_page = true
 		elif arg.begins_with("--collection="):
 			_collection_tab = int(value)
 		elif arg == "--map-picker" or arg.begins_with("--map-picker="):
@@ -241,6 +246,15 @@ func _process(_delta: float) -> bool:
 					_save_shot("collection")
 					_game.hud._collection_open = false
 					_collection_tab = -1
+				if _board_page:
+					if _board_frames == 0:
+						_game.hud._open_board()
+					_board_frames += 1
+					if _board_frames < OVERLAY_SETTLE_FRAMES:
+						return false
+					_save_shot("board")
+					_game.hud._board_open = false
+					_board_page = false
 				if _map_picker:
 					if _map_picker_frames == 0:
 						_game.hud._open_map_picker()

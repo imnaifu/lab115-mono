@@ -219,6 +219,12 @@ var _settings_open := false
 var _collection_overlay: Control
 var _collection_holder: Control
 var _collection_open := false
+## The clear-time boards (.78) on a page of their own (.89, the user: 排行榜单独拿出去，放不下了; a
+## 收藏 tab .78–.88): opened from the trophy by the title screen's map button and from the result
+## screen's board line.
+var _board_overlay: Control
+var _board_holder: Control
+var _board_open := false
 var _collection_tab := 0
 ## The page's scrolling list, whose position a redraw of the same tab keeps.
 var _collection_scroll: ScrollContainer
@@ -309,6 +315,8 @@ func _ready() -> void:
 	_world_holder = _full(_world_overlay)
 	_training_overlay = _overlay(Art.PAPER_SOFT)
 	_training_holder = _full(_training_overlay)
+	_board_overlay = _overlay(Art.PAPER_SOFT)
+	_board_holder = _full(_board_overlay)
 	# Last, so it opens on top of the title or pause screen it was opened from.
 	_settings_overlay = _overlay(Art.PAPER_SOFT)
 	_settings_holder = _full(_settings_overlay)
@@ -404,6 +412,9 @@ func _process(delta: float) -> void:
 		_collection_open = false
 		_world_open = false
 		_training_open = false
+	if state != Game.State.TITLE and state != Game.State.ENDED:
+		_board_open = false
+	_board_overlay.visible = _board_open
 	_collection_overlay.visible = _collection_open
 	_world_overlay.visible = _world_open
 	_training_overlay.visible = _training_open
@@ -444,6 +455,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _settings_open:
 		if key == KEY_ESCAPE:
 			_close_settings()
+		return
+	if _board_open:
+		if key == KEY_ESCAPE:
+			_board_open = false
 		return
 	if _collection_open:
 		if key == KEY_ESCAPE:
@@ -1236,6 +1251,8 @@ func _map_button(portrait: bool) -> Control:
 	content.add_child(name)
 	button.add_child(content)
 	row.add_child(button)
+	# The boards (.89), by map like the button beside it.
+	row.add_child(UiKit.round_button("icon_trophy", _open_board, 36.0))
 	return row
 
 
@@ -3154,7 +3171,7 @@ func _open_collection(tab: int = -1) -> void:
 	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
 		"%s %d/%d" % [tr("成就"), earned, Achievements.shown().size()],
 		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()],
-		tr("战绩"), tr("排行榜")], _collection_tab, _open_collection, Art.PAPER_SUNK)
+		tr("战绩")], _collection_tab, _open_collection, Art.PAPER_SUNK)
 	tabs.custom_minimum_size.x = 330.0
 	if portrait:
 		column.add_child(tabs)
@@ -3180,8 +3197,6 @@ func _open_collection(tab: int = -1) -> void:
 			_fill_achievements(body, portrait)
 		2:
 			_fill_bestiary(body, portrait)
-		4:
-			_fill_board(body, portrait)
 		_:
 			_fill_history(body)
 	_focus(back)
@@ -3986,6 +4001,8 @@ func _show_board_row(text: String, ask_name: bool) -> void:
 	row.add_child(note)
 	if ask_name:
 		row.add_child(UiKit.secondary_button("起昵称", func() -> void: _ask_name(_on_end_name), 34.0, 13))
+	elif Leaderboard.online():
+		row.add_child(UiKit.secondary_button("看榜", _open_board, 34.0, 13))
 	_board_row.add_child(strip)
 
 
@@ -4046,7 +4063,43 @@ func _name_dialog(asked: Callable) -> void:
 	field.grab_focus.call_deferred()
 
 
-## The 收藏 page's 排行榜 tab: a map's board (the map in use first), the player's 昵称, and a
+## The 排行榜 page: header and back, then a map's board (_fill_board). Redrawn in place as the
+## board comes back from the server.
+func _open_board() -> void:
+	if not _board_open:
+		_board_answer = {}
+		_board_note = ""
+		_board_map = Maps.current_id
+		Telemetry.send_event("leaderboard", {"action": "open"})
+	_board_open = true
+	_clear(_board_holder)
+	var portrait := _is_portrait()
+	var page := _page(Vector4(16, 20, 16, 16) if portrait else Vector4(24, 14, 24, 12))
+	_board_holder.add_child(page)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12 if portrait else 8)
+	page.add_child(column)
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	column.add_child(header)
+	var back := UiKit.round_button("ui_back", func() -> void: _board_open = false, 44.0, Art.INK)
+	header.add_child(back)
+	var title := UiKit.label("排行榜", 22, "heavy")
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(title)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
+	_fill_board(body, portrait)
+	_focus(back)
+
+
+## The 排行榜 page's body: a map's board (the map in use first), the player's 昵称, and a
 ## report button on every name but their own.
 func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	if _board_map == "":
@@ -4058,7 +4111,7 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	var maps := UiKit.segmented(names, Maps.ORDER.find(_board_map), func(index: int) -> void:
 		_board_map = Maps.ORDER[index]
 		_board_answer = {}
-		_open_collection(4), Art.PAPER_SUNK)
+		_open_board(), Art.PAPER_SUNK)
 	body.add_child(maps)
 	if not Leaderboard.online():
 		body.add_child(_collection_note(tr("连上云端后才能看排行榜")))
@@ -4073,7 +4126,7 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 		_ask_name(func(answer: Dictionary) -> void:
 			_board_note = "" if answer.get("ok", false) else Leaderboard.error_text(answer)
 			_board_answer = {}
-			_open_collection(4)), 34.0, 13))
+			_open_board()), 34.0, 13))
 	body.add_child(name_row)
 	if _board_note != "":
 		body.add_child(_collection_note(_board_note))
@@ -4099,10 +4152,10 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 
 func _load_board(map_id: String) -> void:
 	var answer: Dictionary = await Leaderboard.board(map_id)
-	if not _collection_open or _collection_tab != 4 or _board_map != map_id:
+	if not _board_open or _board_map != map_id:
 		return
 	_board_answer = answer if not answer.is_empty() else {"error": "offline"}
-	_open_collection(4)
+	_open_board()
 
 
 ## One line of a board: rank, job, name, time; a report button on others' names.
@@ -4132,7 +4185,7 @@ func _board_line(record: Dictionary) -> Control:
 		row.add_child(UiKit.secondary_button("举报", func() -> void:
 			await Leaderboard.report(user)
 			_board_note = tr("已举报，被举报多的名字会先藏起来")
-			_open_collection(4), 28.0, 11))
+			_open_board(), 28.0, 11))
 	return strip
 
 
