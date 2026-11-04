@@ -1,6 +1,6 @@
 class_name BomberWeapon
 extends Weapon
-## Drones that fly out over the thickest crowd on screen, drop a bomb on it (its shadow shows where
+## Drones that fly out over the thickest crowd within REACH of the player, drop a bomb on it (its shadow shows where
 ## it lands) and fly on to the next; they never ram anything. Since .35 a drone follows the enemy
 ## in the middle of that crowd rather than flying to where it stood, and drops where it will be
 ## when the bomb lands (the user: by the time a bomb went off the crowd had walked on). (Silicon Valley: 无人机.) Vampire
@@ -25,6 +25,11 @@ const FALL_SECONDS := 0.35
 const PUSH := 60.0
 ## Spots sampled when looking for the thickest crowd.
 const CANDIDATES := 8
+## Only crowds this close to the player (.84, the user: 无人机，拉会等等这些被动，都在人物附近而不是全屏去放，
+## 不然星星太远了不好捡; 150 as 云端部署's RANGE): until then any enemy on screen, up to about 360 away
+## on a landscape screen, so the stars of what they killed lay at its edge, far from the 40 the player
+## picks up from. With nobody that close, the drones stay by the player.
+const REACH := 150.0
 const HOVER_RADIUS := 22.0
 const SIZE := 18.0
 const EVOLVED_BOMBLETS := 3
@@ -153,12 +158,14 @@ func _blast(bomb: Bomb) -> void:
 			_drop(bomb.at + offset, bomb.damage * BOMBLET_SHARE, bomb.radius * 0.7, true)
 
 
-## The on-screen enemy with the most others within `radius` of it, clear of where the other
-## drones are headed; null with nobody on screen.
+## The enemy within REACH of the player with the most others within `radius` of it, clear of where
+## the other drones are headed; null with nobody that close.
 func _busiest_enemy(radius: float) -> Enemy:
 	var best: Enemy = null
 	var best_count := 0
-	for enemy in game.random_visible_enemies(CANDIDATES):
+	var near := game.query_enemies(player.position, REACH)
+	near.shuffle()
+	for enemy in near.slice(0, CANDIDATES):
 		var taken := false
 		for other in _drones:
 			if (_alive(other.target) and other.target == enemy) or (other.goal != null and (other.goal as Vector2).distance_to(enemy.position) < radius * 1.5):

@@ -1,6 +1,6 @@
 class_name ZoneWeapon
 extends Weapon
-## Meetings called where the crowd is thickest: for a few seconds everything inside the room
+## Meetings called where the crowd within REACH of the player is thickest: for a few seconds everything inside the room
 ## walks slower and keeps taking damage. (Silicon Valley: 拉会.) Vampire Survivors' Santa Water,
 ## with a slow.
 
@@ -24,6 +24,10 @@ const SLOW := 0.6
 const COOLDOWN := 4.0
 ## Spots sampled when looking for the thickest crowd.
 const CANDIDATES := 10
+## Only crowds this close to the player (.84, the user: 无人机，拉会等等这些被动，都在人物附近而不是全屏去放，
+## 不然星星太远了不好捡; 150 as 云端部署's RANGE): until then anywhere on screen, so the stars of what a
+## room killed lay far off. With nobody that close no room is called, and it tries again shortly.
+const REACH := 150.0
 const ICON_SIZE := 18.0
 const COLOR := Color("5b9cff")
 
@@ -94,12 +98,14 @@ func _process(delta: float) -> void:
 	_floor.queue_redraw()
 
 
-## The on-screen spot with the most enemies within `radius`, away from rooms already open; null
-## with nobody on screen.
+## The spot within REACH of the player with the most enemies within `radius`, away from rooms
+## already open; null with nobody that close.
 func _busiest_spot(radius: float) -> Variant:
 	var best: Variant = null
 	var best_count := 0
-	for enemy in game.random_visible_enemies(CANDIDATES):
+	var near := game.query_enemies(player.position, REACH)
+	near.shuffle()
+	for enemy in near.slice(0, CANDIDATES):
 		var taken := false
 		for room in _rooms:
 			if room.center.distance_to(enemy.position) < radius * 1.5:

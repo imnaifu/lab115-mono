@@ -1,17 +1,18 @@
 class_name PokeWeapon
 extends Weapon
 ## Pokes at the nearest enemy in reach, or the way the player faces with none there: it pokes
-## whether or not anything is around (the user's call), each poke hitting the first enemy along a
-## long narrow line. (Silicon Valley: 抽样, the data scientist's sampling needle, from .49: always
+## whether or not anything is around (the user's call), each poke hitting every enemy along a
+## long narrow line (.84; only the first one on it before). (Silicon Valley: 抽样, the data scientist's sampling needle, from .49: always
 ## taking the nearest is convenience sampling. Until then it was drawn as the designer's stylus,
 ## called 数位笔 while the designer carried it, .14-.40, and 埋点 after.) Hades' Eternal Spear's
 ## jabs; the stapler and the network cable were folded into it. Facing alone missed nearly
 ## everything: players run away from the crowd, so the bot's designer poked at empty air and died
 ## at 1:33.
-## 全量数据 (evolved with 人脉名片): twelve directions at once, every line a fifth longer.
+## 全量数据 (evolved with 人脉名片): eight directions at once, every line a fifth longer (twelve until
+## .84, when the pokes began to pierce).
 ##
 ## The data scientist's own weapon, so it levels up along two directions (Upgrades.BRANCHES):
-## 分层抽样 pokes more ways at once (front, then back, then the four sides and in between), 加大样本量
+## 分层抽样 pokes more ways at once (one more each time, up to five, spread evenly), 加大样本量
 ## pokes more times each round. Either way each upgrade also hits harder. It starts as one poke one
 ## way.
 ##
@@ -21,7 +22,9 @@ extends Weapon
 ##
 ## A poke went through everything on its line and pushed it back (40) until .39: the user's call
 ## for every job's own weapon was no piercing, knockback or stun, so the jobs differ only in how
-## they deal damage. Piercing a whole line made this the strongest job by far.
+## they deal damage. Piercing a whole line made this the strongest job by far. .84 (the user: 数据改成
+## 穿透伤害，然后方向升级减少，1=>2=>3=>4 这样最多四个; then 12345): it pierces again, without the
+## push, and the directions go 1, 2, 3, 4, 5 (1, 2, 4, 6, 8 before) with the damage set again for it.
 
 ## .74 (the user: 回车和抽样成长伤害加高；抽样改成 +2，频率调整下，略低一点): +2 a level (+1 before) and a
 ## round every 0.72 s (0.68): one target a jab, it fell behind the weapons that hit a crowd late
@@ -35,10 +38,10 @@ const DAMAGE_PER_UPGRADE := 2.0
 const LENGTH := 80.0
 const WIDTH := 10.0
 ## Directions at once by upgrades to 分层抽样, spread evenly round the first.
-const DIRECTIONS := [1, 2, 4, 6, 8]
+const DIRECTIONS := [1, 2, 3, 4, 5]
 ## Aims at the nearest enemy this close.
 const AIM_RANGE := 120.0
-const EVOLVED_DIRECTIONS := 12
+const EVOLVED_DIRECTIONS := 8
 const EVOLVED_LENGTH := 1.2
 
 var _pokes_left := 0
@@ -82,9 +85,9 @@ func _process(delta: float) -> void:
 
 
 ## One poke every way at once, the first at the nearest enemy (or straight ahead). Each way finds
-## the first enemy on its line, which runs from the tip (Jab.HOLD out) to the poke's length, and
-## hurts it when the drop lands on it (Jab.FLY_SECONDS later), so the hit is seen where and when it
-## happens. Until .39 the line started at the player's centre, so one enemy pressed against the
+## every enemy on its line, which runs from the tip (Jab.HOLD out) to the poke's length, and hurts
+## them when the drop lands at its end (Jab.FLY_SECONDS later). Until .84 it hurt only the first one
+## on the line, when the drop landed on it. Until .39 the line started at the player's centre, so one enemy pressed against the
 ## player was the first on most of the ways at once, hit by pokes drawn pointing elsewhere; and the
 ## damage came the moment of the poke, a tenth of a second before the drop got there.
 func _poke_all_ways() -> void:
@@ -96,8 +99,7 @@ func _poke_all_ways() -> void:
 	var aim := player.facing if target == null else (target.position - player.position).normalized()
 	for i in ways:
 		var direction := aim.rotated(TAU * i / ways)
-		var first: Enemy = null
-		var first_along := INF
+		var on_line: Array = []
 		for enemy in game.query_enemies(player.position + direction * length / 2.0, length / 2.0 + WIDTH):
 			var offset := enemy.position - player.position
 			var along := offset.dot(direction)
@@ -105,28 +107,29 @@ func _poke_all_ways() -> void:
 			var nearest := direction * clampf(along, Jab.HOLD, length)
 			if offset.distance_to(nearest) > WIDTH / 2.0 + enemy.hit_radius:
 				continue
-			if along < first_along:
-				first_along = along
-				first = enemy
+			on_line.append(enemy)
 		var jab := Jab.new()
-		jab.setup(art, player.position, direction, clampf(first_along, 0.0, length) if first != null else length)
-		if first != null:
-			jab.landed.connect(_land.bind(first, damage))
+		# Through everything on it, so the drop always flies the whole line.
+		jab.setup(art, player.position, direction, length)
+		if not on_line.is_empty():
+			jab.landed.connect(_land.bind(on_line, damage))
 		add_child(jab)
 
 
-## The drop of a poke got to `target` (an Enemy): it is hurt now, if still there. Untyped because
-## an enemy freed while the drop flew arrives as a freed Object, which an `Enemy` parameter rejected
-## before this check could run: an engine error each time, thousands a run (.43).
-func _land(target: Variant, damage: float) -> void:
-	if not is_instance_valid(target):
-		return
-	var enemy: Enemy = target
-	if enemy.dead:
-		return
-	game.damage_enemy(enemy, damage, Vector2.ZERO, id)
-	_landed += 1
-	_landed_boss = _landed_boss or enemy.is_elite
+## The drop of a poke got to the end of its line: everything that was on it (`targets`) is hurt
+## now, if still there. Untyped because an enemy freed while the drop flew is a freed Object, which
+## an `Enemy`-typed value rejected before this check could run: an engine error each time,
+## thousands a run (.43).
+func _land(targets: Array, damage: float) -> void:
+	for target: Variant in targets:
+		if not is_instance_valid(target):
+			continue
+		var enemy: Enemy = target
+		if enemy.dead:
+			continue
+		game.damage_enemy(enemy, damage, Vector2.ZERO, id)
+		_landed += 1
+		_landed_boss = _landed_boss or enemy.is_elite
 
 
 ## One poke as drawn: the needle, held at the player's side, jabs a little way out and back while
