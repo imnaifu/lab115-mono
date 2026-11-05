@@ -1,0 +1,237 @@
+/* ==========================================================================
+   rednote.lab115.com — RedNote Exporter's home page.
+
+   The extension's own look, not lab115.com's: the red, the warm off-white and
+   the ink are the tokens of branding/v2/index.html, which drew the store
+   screenshots this page shows. Keeping them the same makes the page, the store
+   listing and the popup read as one product. LIGHT ONLY, like the screenshots.
+
+   No web fonts: the system stack (PingFang on Apple, YaHei on Windows) is what
+   the screenshots were rendered in, and it costs nothing to load.
+   ========================================================================== */
+
+:root {
+  --brand: #ff2442;
+  --brand-deep: #e01735;
+  --tint: #ffe9ed;
+  --ink: #1d1d1f;
+  --ink-muted: #5f5f66;
+  --line: #ece8e4;
+  --bg: #fbf8f6;
+  --card: #ffffff;
+  --radius: 20px;
+  --wrap: 1120px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+    "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+
+:focus-visible { outline: 3px solid #2f6fb0; outline-offset: 3px; border-radius: 6px; }
+
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+@media (max-width: 600px) { .wrap { padding: 0 16px; } }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.site-header {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(251, 248, 246, 0.86);
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid transparent;
+}
+.site-header .wrap { display: flex; align-items: center; gap: 20px; height: 64px; }
+
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 17px; letter-spacing: -0.2px; }
+.brand img { width: 32px; height: 32px; }
+
+.nav { display: flex; align-items: center; gap: 22px; margin-left: auto; font-size: 15px; }
+.nav a { text-decoration: none; color: var(--ink-muted); }
+.nav a:hover { color: var(--ink); }
+.nav .lang {
+  border: 1px solid var(--line); border-radius: 99px; padding: 3px 12px;
+  color: var(--ink); font-weight: 600; font-size: 14px; background: var(--card);
+}
+/* The section links are a convenience; on a phone the header keeps only the
+   language switch so nothing wraps. */
+@media (max-width: 700px) { .nav .sec { display: none; } }
+
+/* ── Buttons and pills ──────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  border-radius: 99px; padding: 14px 26px;
+  font-weight: 700; font-size: 17px; text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.btn-primary { background: var(--brand); color: #fff; box-shadow: 0 8px 24px -8px rgba(255, 36, 66, 0.55); }
+.btn-primary:hover { background: var(--brand-deep); transform: translateY(-1px); }
+.btn-ghost { color: var(--ink); background: var(--card); border: 1px solid var(--line); }
+.btn-ghost:hover { border-color: #d6d0ca; }
+.btn svg { width: 20px; height: 20px; }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--brand); background: var(--tint);
+  border-radius: 99px; padding: 5px 14px;
+  font-size: 14px; font-weight: 700;
+}
+.tag svg { width: 16px; height: 16px; }
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+
+.hero { position: relative; overflow: hidden; padding: 56px 0 72px; }
+/* The same two glows as the store screenshots. */
+.hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(900px 600px at 92% 0%, rgba(255, 36, 66, 0.13), transparent 60%),
+    radial-gradient(700px 500px at 0% 100%, rgba(255, 36, 66, 0.06), transparent 60%);
+}
+.hero .wrap { position: relative; display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; align-items: center; }
+
+/* keep-all: Chinese lines break only at the comma or a space, never mid-phrase
+   (「一键 / 保存」); overflow-wrap is the safety net on very narrow screens. */
+.hero h1 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.22; font-weight: 800; letter-spacing: -1px; margin-top: 20px; word-break: keep-all; overflow-wrap: anywhere; }
+.hero h1 .red { display: block; color: var(--brand); }
+.hero .lead { font-size: 19px; color: var(--ink-muted); margin-top: 20px; max-width: 34em; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.hero .note { margin-top: 14px; font-size: 14px; color: var(--ink-muted); }
+
+.trust { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 28px; font-size: 15px; font-weight: 600; }
+.trust li { display: flex; align-items: center; gap: 8px; list-style: none; }
+.trust svg { width: 18px; height: 18px; color: var(--brand); }
+
+.shot {
+  border-radius: var(--radius); overflow: hidden;
+  background: var(--card);
+  box-shadow: 0 30px 60px -30px rgba(60, 20, 30, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+.shot img { width: 100%; height: auto; }
+
+@media (max-width: 860px) {
+  .hero { padding: 32px 0 56px; }
+  .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
+  .hero .lead { font-size: 17px; }
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+
+section { padding: 72px 0; }
+section.alt { background: var(--card); }
+.section-head { text-align: center; max-width: 40em; margin: 0 auto 48px; }
+.section-head h2 { font-size: clamp(28px, 3.6vw, 38px); line-height: 1.25; font-weight: 800; letter-spacing: -0.6px; }
+.section-head p { color: var(--ink-muted); margin-top: 12px; font-size: 17px; }
+
+/* One feature: copy beside its screenshot, sides alternating. */
+.feature { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.feature + .feature { margin-top: 88px; }
+.feature.flip .copy { order: 2; }
+.feature h3 { font-size: clamp(26px, 3.2vw, 36px); line-height: 1.25; font-weight: 800; letter-spacing: -0.6px; margin-top: 16px; }
+.feature h3 .red { display: block; color: var(--brand); }
+.feature p { color: var(--ink-muted); font-size: 17px; margin-top: 16px; }
+
+.points { list-style: none; margin-top: 24px; display: grid; gap: 14px; }
+.points li { display: flex; align-items: center; gap: 14px; font-weight: 600; }
+.points .ic {
+  flex: none; width: 36px; height: 36px; border-radius: 10px;
+  display: grid; place-items: center; background: var(--tint); color: var(--brand);
+}
+.points svg { width: 18px; height: 18px; }
+
+@media (max-width: 860px) {
+  section { padding: 56px 0; }
+  .feature { grid-template-columns: 1fr; gap: 28px; }
+  .feature.flip .copy { order: 0; }
+  .feature + .feature { margin-top: 64px; }
+}
+
+/* ── Steps ───────────────────────────────────────────────────────────────── */
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: step; list-style: none; }
+.steps li {
+  background: var(--bg); border-radius: var(--radius); padding: 28px 26px;
+  counter-increment: step;
+}
+.steps li::before {
+  content: counter(step);
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 99px;
+  background: var(--brand); color: #fff; font-weight: 800; font-size: 18px;
+}
+.steps h3 { font-size: 19px; margin-top: 18px; }
+.steps p { color: var(--ink-muted); margin-top: 6px; font-size: 15px; }
+@media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
+
+/* ── FAQ ─────────────────────────────────────────────────────────────────── */
+
+.faq { max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
+.faq details { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 0 22px; }
+.faq summary {
+  cursor: pointer; list-style: none; padding: 18px 0;
+  font-weight: 700; font-size: 17px; display: flex; justify-content: space-between; gap: 16px;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--brand); font-size: 22px; line-height: 1; transition: transform 0.2s; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { color: var(--ink-muted); padding-bottom: 20px; margin-top: -4px; }
+
+/* ── Privacy band and closing CTA ───────────────────────────────────────── */
+
+.privacy-band { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; list-style: none; }
+.privacy-band li { background: var(--bg); border-radius: var(--radius); padding: 26px; }
+.privacy-band svg { width: 28px; height: 28px; color: var(--brand); }
+.privacy-band h3 { font-size: 18px; margin-top: 14px; }
+.privacy-band p { color: var(--ink-muted); font-size: 15px; margin-top: 6px; }
+.privacy-more { text-align: center; margin-top: 28px; }
+.privacy-more a { color: var(--brand); font-weight: 600; }
+@media (max-width: 760px) { .privacy-band { grid-template-columns: 1fr; } }
+
+.closing { text-align: center; }
+.closing img { width: 72px; height: 72px; margin: 0 auto; }
+.closing h2 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.6px; margin-top: 20px; }
+.closing p { color: var(--ink-muted); margin-top: 10px; }
+.closing .btn { margin-top: 28px; }
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+
+.site-footer { border-top: 1px solid var(--line); padding: 32px 0 40px; font-size: 14px; color: var(--ink-muted); }
+.site-footer .row { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; }
+.site-footer .row a { text-decoration: none; }
+.site-footer .row a:hover { color: var(--ink); text-decoration: underline; }
+.site-footer .made { margin-left: auto; }
+.site-footer .disclaimer { margin-top: 14px; font-size: 13px; }
+@media (max-width: 600px) { .site-footer .made { margin-left: 0; } }
+
+/* ── Prose (privacy policy) ─────────────────────────────────────────────── */
+
+.prose { max-width: 760px; margin: 0 auto; padding: 48px 0 80px; }
+.prose h1 { font-size: clamp(30px, 4vw, 40px); font-weight: 800; letter-spacing: -0.6px; line-height: 1.25; }
+.prose .updated { color: var(--ink-muted); margin-top: 8px; font-size: 15px; }
+.prose h2 { font-size: 22px; margin-top: 40px; letter-spacing: -0.3px; }
+.prose p, .prose li { color: #3a3a40; margin-top: 12px; }
+.prose ul { padding-left: 1.3em; }
+.prose li { margin-top: 8px; }
+.prose code { font-size: 0.92em; background: var(--tint); color: var(--brand-deep); padding: 1px 6px; border-radius: 6px; }
+.prose a { color: var(--brand); }
+.prose .summary { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; margin-top: 28px; }
+.prose .summary p { margin-top: 0; }

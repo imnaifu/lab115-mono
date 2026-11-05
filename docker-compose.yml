@@ -181,6 +181,29 @@ services:
       # Next.js listens on 3000 inside the container
       - traefik.http.services.madlibs.loadbalancer.server.port=3000
 
+  # RedNote Exporter's home page and the privacy policy its Chrome Web Store listing links to.
+  # The extension itself lives in apps/note-exp; this is only the static site in its site/ folder.
+  rednote:
+    build:
+      context: ./apps/note-exp/site
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.rednote-http.entryPoints=http
+      - traefik.http.routers.rednote-http.rule=Host(`rednote.lab115.com`)
+      - traefik.http.routers.rednote-http.middlewares=redirect-to-https
+      # HTTPS router
+      - traefik.http.routers.rednote-https.entryPoints=https
+      - traefik.http.routers.rednote-https.rule=Host(`rednote.lab115.com`)
+      - traefik.http.routers.rednote-https.tls=true
+      - traefik.http.routers.rednote-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.rednote-https.middlewares=gzip
+      # nginx listens on 80 inside the container
+      - traefik.http.services.rednote.loadbalancer.server.port=80
+
   # 大厂幸存者 (Big Tech Survivors), a Godot game (apps/survivors/game/). The image exports it to a web build and
   # serves that with nginx, so building it downloads Godot (apps/survivors/README.md).
   survivors:

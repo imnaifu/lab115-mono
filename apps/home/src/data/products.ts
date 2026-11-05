@@ -22,6 +22,6 @@ export const PRODUCTS: Product[] = [
   {
     id: "rednote-exporter",
     name: "RedNote Exporter",
-    url: "https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm",
+    url: "https://rednote.lab115.com",
   },
 ];

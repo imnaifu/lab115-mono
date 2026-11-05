@@ -1,0 +1,285 @@
+<!doctype html>
+<!--
+  English home page (/en/). The Chinese one is ../index.html; the two share one
+  structure, so a change to one belongs in the other. Copy follows DESC.en.md
+  and branding/v2/index.html, and every feature claim was checked against src/.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RedNote Exporter - Xiaohongshu Image &amp; Video Downloader, Export Notes to CSV</title>
+  <meta name="description" content="Free Chrome extension: download every image and video from a RedNote (Xiaohongshu) post in one click — watermark-free video when available — and export the home feed, search results or a profile to CSV. No login, everything stays in your browser.">
+  <link rel="canonical" href="https://rednote.lab115.com/en/">
+  <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/">
+  <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/en/">
+  <link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/">
+  <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/img/icon128.png">
+  <meta name="theme-color" content="#fbf8f6">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RedNote Exporter">
+  <meta property="og:title" content="RedNote Exporter - Save RedNote images &amp; videos, export notes to CSV">
+  <meta property="og:description" content="Download a RedNote post's images and video in one click, and export note lists to CSV. Free, no login, 100% local.">
+  <meta property="og:url" content="https://rednote.lab115.com/en/">
+  <meta property="og:image" content="https://rednote.lab115.com/img/og-en.jpg">
+  <meta property="og:image:width" content="1400">
+  <meta property="og:image:height" content="560">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="stylesheet" href="/style.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://rednote.lab115.com/en/#app",
+        "name": "RedNote Exporter",
+        "alternateName": "小红书导出工具",
+        "url": "https://rednote.lab115.com/en/",
+        "applicationCategory": "BrowserApplication",
+        "operatingSystem": "Chrome",
+        "description": "Download every image and video from a RedNote (Xiaohongshu) post in one click, and export the home feed, search results or a profile's notes to CSV.",
+        "image": "https://rednote.lab115.com/img/icon128.png",
+        "inLanguage": "en",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "installUrl": "https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm",
+        "sameAs": ["https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm"],
+        "publisher": { "@type": "Organization", "name": "LAB115", "url": "https://lab115.com" }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "Is it free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. There are no paid features and no account to create." } },
+          { "@type": "Question", "name": "Are the videos always watermark-free?", "acceptedAnswer": { "@type": "Answer", "text": "The extension downloads the watermark-free original whenever it is available. For the occasional post where it isn't, it falls back to the regular video stream, which may carry a watermark." } },
+          { "@type": "Question", "name": "Why are some CSV columns empty?", "acceptedAnswer": { "@type": "Answer", "text": "Only search results return the full collect, comment and share counts and the publish time; the home feed and profile pages return the like count only. Columns RedNote didn't return are left empty rather than filled with 0, so a blank cell means \"not provided\", not a count of zero." } },
+          { "@type": "Question", "name": "Where are the captured notes kept?", "acceptedAnswer": { "@type": "Answer", "text": "Only in the current tab. Closing the tab or clicking Clear discards them. Exported CSVs and downloaded files go to your own Downloads folder and are never uploaded anywhere." } },
+          { "@type": "Question", "name": "Which sites and browsers are supported?", "acceptedAnswer": { "@type": "Answer", "text": "Both xiaohongshu.com and rednote.com. It is built for Chrome; Chromium-based browsers such as Edge and Brave can usually install it from the Chrome Web Store too." } }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/en/">
+        <img src="/img/icon.svg" alt="" width="32" height="32">
+        <span>RedNote Exporter</span>
+      </a>
+      <nav class="nav" aria-label="Page">
+        <a class="sec" href="#features">Features</a>
+        <a class="sec" href="#how">How it works</a>
+        <a class="sec" href="#faq">FAQ</a>
+        <a class="lang" href="/" hreflang="zh-CN" lang="zh-CN">中文</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <div>
+          <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#chrome"/></svg>Free Chrome extension</span>
+          <h1 id="hero-title">Save RedNote images &amp; videos.<span class="red">Export note lists to CSV.</span></h1>
+          <p class="lead">Open a post and grab every image and the video into one folder. Scroll the home feed, a search or a profile, and every note you pass is collected, ready to export as a spreadsheet.</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">
+              <svg aria-hidden="true"><use href="/img/icons.svg#chrome"/></svg>Add to Chrome
+            </a>
+            <a class="btn btn-ghost" href="#how">See how it works</a>
+          </div>
+          <ul class="trust">
+            <li><svg aria-hidden="true"><use href="/img/icons.svg#lock"/></svg>No sign-up</li>
+            <li><svg aria-hidden="true"><use href="/img/icons.svg#shield"/></svg>No data collected</li>
+            <li><svg aria-hidden="true"><use href="/img/icons.svg#globe"/></svg>Works on RedNote &amp; Xiaohongshu</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <img src="/img/en-hero.webp" width="620" height="540" alt="The extension's two tabs: Export Note List with 128 notes captured, and Download Single Post with a post's video and images selected" fetchpriority="high">
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="alt" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="features-title">Two tools, one job each</h2>
+          <p>Save a single post's images and video, or turn a whole page of notes into a spreadsheet.</p>
+        </div>
+
+        <article class="feature">
+          <div class="copy">
+            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#download"/></svg>Download Single Post</span>
+            <h3>Every image &amp; video,<span class="red">saved in one click</span></h3>
+            <p>Open any RedNote post, tick what you want, and download it all into a single folder.</p>
+            <ul class="points">
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#video"/></svg></span>Watermark-free original video when available</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#image"/></svg></span>Works on image posts and video posts</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#check"/></svg></span>Pick only the files you need</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/img/en-01-post-download.webp" width="712" height="745" loading="lazy" alt="The Download Single Post tab listing a post's video and all of its images, each with a checkbox">
+          </div>
+        </article>
+
+        <article class="feature flip">
+          <div class="copy">
+            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#folder"/></svg>Auto-organized</span>
+            <h3>One post,<span class="red">one tidy folder</span></h3>
+            <p>Each download goes into a folder named after the time and the post title, with files numbered in order.</p>
+            <ul class="points">
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#folder"/></svg></span>Folder named by time + post title</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#list"/></svg></span>Files numbered image-1, image-2…</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#check"/></svg></span>Never overwrites existing files</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/img/en-02-one-folder.webp" width="712" height="745" loading="lazy" alt="A Downloads folder named after the time and post title, holding video-1.mp4 and image-1 to image-9">
+          </div>
+        </article>
+
+        <article class="feature">
+          <div class="copy">
+            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#list"/></svg>Export Note List</span>
+            <h3>Scroll as usual,<span class="red">export CSV anytime</span></h3>
+            <p>Browse the home feed, search results or a profile — every note you scroll past is captured and de-duplicated.</p>
+            <ul class="points">
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#search"/></svg></span>Home feed · Search · Profiles</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#check"/></svg></span>Auto de-dup with a live count</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#heart"/></svg></span>Titles, authors and engagement data</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/img/en-03-note-list.webp" width="712" height="745" loading="lazy" alt="The Export Note List tab: 128 notes captured, each with title, author, like, collect and comment counts and a date">
+          </div>
+        </article>
+
+        <article class="feature flip">
+          <div class="copy">
+            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#file"/></svg>CSV spreadsheet</span>
+            <h3>A clean spreadsheet,<span class="red">ready to analyze</span></h3>
+            <p>Opens straight in Excel, Numbers or Google Sheets — handy for content research and competitor tracking.</p>
+            <ul class="points">
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#file"/></svg></span>Title, author, publish date</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#heart"/></svg></span>Likes · collects · comments · shares</li>
+              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#link"/></svg></span>Cover, profile and all image links</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/img/en-04-csv.webp" width="712" height="745" loading="lazy" alt="The exported CSV open in a spreadsheet, with Title, Author Name, Publish Time, Like Count and Collect Count columns">
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="how-title">Three steps. Nothing leaves your browser.</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <h3>Open RedNote</h3>
+            <p>The home feed, search results, a profile, or any post.</p>
+          </li>
+          <li>
+            <h3>Click the icon</h3>
+            <p>Choose Export Note List or Download Single Post. On a list, keep scrolling to collect more notes.</p>
+          </li>
+          <li>
+            <h3>Export or download</h3>
+            <p>Click Export CSV for the spreadsheet, or tick images and video and download them. Clear starts over.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="alt" aria-labelledby="privacy-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="privacy-title">Your data stays on your computer</h2>
+        </div>
+        <ul class="privacy-band">
+          <li>
+            <svg aria-hidden="true"><use href="/img/icons.svg#lock"/></svg>
+            <h3>No account</h3>
+            <p>The extension has no sign-up and never reads your RedNote account details.</p>
+          </li>
+          <li>
+            <svg aria-hidden="true"><use href="/img/icons.svg#cloudoff"/></svg>
+            <h3>No external servers</h3>
+            <p>Capturing, exporting and downloading all happen in your browser. Nothing is sent to us or anyone else.</p>
+          </li>
+          <li>
+            <svg aria-hidden="true"><use href="/img/icons.svg#shield"/></svg>
+            <h3>Public content only</h3>
+            <p>It only reads notes already visible on the RedNote page you are browsing.</p>
+          </li>
+        </ul>
+        <p class="privacy-more"><a href="/en/privacy/">Read the full privacy policy →</a></p>
+      </div>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="faq-title">FAQ</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Is it free?</summary>
+            <p>Yes. There are no paid features and no account to create.</p>
+          </details>
+          <details>
+            <summary>Are the videos always watermark-free?</summary>
+            <p>The extension downloads the watermark-free original whenever it is available. For the occasional post where it isn't, it falls back to the regular video stream, which may carry a watermark.</p>
+          </details>
+          <details>
+            <summary>Why are some CSV columns empty?</summary>
+            <p>Only search results return the full collect, comment and share counts and the publish time; the home feed and profile pages return the like count only. Columns RedNote didn't return are left empty rather than filled with 0, so a blank cell means “not provided”, not a count of zero.</p>
+          </details>
+          <details>
+            <summary>Where are the captured notes kept?</summary>
+            <p>Only in the current tab. Closing the tab or clicking Clear discards them. Exported CSVs and downloaded files go to your own Downloads folder and are never uploaded anywhere.</p>
+          </details>
+          <details>
+            <summary>Which sites and browsers are supported?</summary>
+            <p>Both xiaohongshu.com and rednote.com. It is built for Chrome; Chromium-based browsers such as Edge and Brave can usually install it from the Chrome Web Store too.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt closing" aria-labelledby="closing-title">
+      <div class="wrap">
+        <img src="/img/icon.svg" alt="" width="72" height="72">
+        <h2 id="closing-title">Give it a try</h2>
+        <p>Once installed, open any RedNote post and click the extension icon.</p>
+        <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">
+          <svg aria-hidden="true"><use href="/img/icons.svg#chrome"/></svg>Add to Chrome
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="row">
+        <a href="/en/privacy/">Privacy policy</a>
+        <a href="mailto:help@lab115.com">Feedback: help@lab115.com</a>
+        <a href="/" hreflang="zh-CN" lang="zh-CN">中文</a>
+        <span class="made">Made by <a href="https://lab115.com/en">LAB115</a></span>
+      </div>
+      <p class="disclaimer">RedNote Exporter is not affiliated with, endorsed by or authorized by RedNote (Xiaohongshu). It only handles publicly visible content and is intended for personal and research use.</p>
+    </div>
+  </footer>
+</body>
+</html>
