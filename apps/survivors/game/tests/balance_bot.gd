@@ -228,6 +228,6 @@ func _pick_choice() -> int:
 func _report() -> int:
 	var code := super()
 	print("[balance] " + JSON.stringify({"label": _label, "job": _game.player.job, "map": Maps.current_id,
-		"result": _outcome(), "seconds": snappedf(_game.elapsed, 0.1), "level": _game.level, "ult_at": _game.ultimates.used_at,
+		"result": _outcome(), "seconds": snappedf(_game.elapsed, 0.1), "level": _game.level, "ult_at": _game.ultimates.used_at, "ults": _game.ultimates.casts,
 		"bosses": _game.telemetry._bosses_killed, "killer": _game.telemetry.last_hurt_by}))
 	return code

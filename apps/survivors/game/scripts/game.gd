@@ -578,6 +578,7 @@ func announce(text: String) -> void:
 func _kill(enemy: Enemy) -> void:
 	enemy.dead = true
 	kills += 1
+	ultimates.on_killed(enemy)
 	achievements.on_killed(enemy.type_name)
 	enemies.erase(enemy)
 	telemetry.on_enemy_killed(enemy)

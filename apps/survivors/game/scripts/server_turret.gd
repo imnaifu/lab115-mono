@@ -6,7 +6,8 @@ extends Node2D
 ## Nothing goes after it: the crowd walks to the player as ever. Game owns it (Game.turrets).
 
 const SIZE := 38.0
-const SECONDS := 20.0
+## 10 since .95 (the user, with kills charging it: 大招都整体削弱，因为放的次数多了; 运维 10s); 20 before.
+const SECONDS := 10.0
 const RANGE := 260.0
 const FIRE_EVERY := 0.5
 const SHELL_SECONDS := 0.3

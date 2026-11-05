@@ -7,7 +7,8 @@ extends Player
 ## strays past LEASH, and keeps a little to one side otherwise. Gone after SECONDS or when its
 ## health runs out. Game owns it (Game.clones) and hurts it on contact like the player.
 
-const SECONDS := 15.0
+## 5 since .95 (the user, with kills charging it: 大招都整体削弱，因为放的次数多了; 设计师 5s); 15 before.
+const SECONDS := 5.0
 ## How far from the player it may wander before heading back, and where it stands otherwise.
 const LEASH := 200.0
 const BESIDE := 70.0

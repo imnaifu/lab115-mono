@@ -120,17 +120,20 @@ var _next_boss_pill: Control
 var _next_boss_time: Label
 ## 离下班 0:23 in the last CLEAR_WARNING seconds, then 清场中 · 剩 37 until the last enemy is down
 ## (.78: nothing new comes after Game.RUN_SECONDS; the user: 10:00 到了给个提示).
-## The 大招 (Ultimates, .81): a round button with the job's face and the ultimate's name, grey once
-## used, top right under the pause button (.83, the user: 大招放上面，下面不好按; at the bottom
-## right in .81-.82); and whether the first boss has brought its hint up yet.
+## The 大招 (Ultimates, .81): a round button with the job's face and the ultimate's name, top
+## right under the pause button (.83, the user: 大招放上面，下面不好按; at the bottom right in
+## .81-.82); grey while it charges (.95, kills fill it; grey once used before); and whether its
+## first filling up has brought the hint up yet (the first boss did until .95).
 var _ultimate_button: Button
 var _ultimate_label: Label
 var _ultimate_hinted := false
 var _ultimate_job := ""
 ## While a 大招 lasts (.93): a gold ring round the button running down with it, and the label
-## counting (无敌 3.2, 自己人 ×12) instead of 已用.
+## counting (无敌 3.2, 自己人 ×12). While it charges (.95): a pale ring filling up, and the label
+## the share (63%).
 var _ultimate_ring: Control
 var _ultimate_ring_share := 0.0
+var _ultimate_ring_color := Art.PAPER
 ## The top bar's right-hand column (kills and pause, the district), where the 大招 button sits.
 var _top_right: VBoxContainer
 var _clear_pill: Control
@@ -820,6 +823,7 @@ func _build_ultimate_button() -> void:
 	_ultimate_ring.draw.connect(_draw_ultimate_ring)
 	_ultimate_button.add_child(_ultimate_ring)
 	game.ultimates.went_off.connect(_on_ultimate_went_off)
+	game.ultimates.charged.connect(_on_ultimate_charged)
 	_ultimate_label = UiKit.label(Jobs.ultimate(game.player.job)["name"], 11, "strong", Art.INK)
 	_ultimate_label.add_theme_constant_override("outline_size", 5)
 	_ultimate_label.add_theme_color_override("font_outline_color", Art.PAPER)
@@ -828,8 +832,7 @@ func _build_ultimate_button() -> void:
 	_top_right.add_child(holder)
 
 
-## Shown in play only; glowing while it can go off, grey and 已用 after. The first boss coming
-## says once how to set it off.
+## Shown in play only; glowing while it can go off, grey while it charges.
 func _update_ultimate() -> void:
 	var playing := game.state == Game.State.PLAYING
 	_ultimate_button.get_parent().visible = playing
@@ -839,37 +842,49 @@ func _update_ultimate() -> void:
 	if _ultimate_job != game.player.job:
 		_ultimate_job = game.player.job
 		_ultimate_button.icon = Art.texture(Jobs.data(_ultimate_job)["art"])
-	var used := game.ultimates.used
+	var can_go := game.ultimates.ready()
 	var ultimate := Jobs.ultimate(game.player.job)
 	var left := game.ultimates.seconds_left()
-	_ultimate_button.disabled = used
-	_ultimate_button.modulate = Color.WHITE if left > 0.0 else Color(1, 1, 1, 0.45) if used \
-		else Color.WHITE.lerp(Color(1.15, 1.1, 0.9), 0.5 + 0.5 * sin(_clock * 4.0))
-	var share := clampf(left / maxf(game.ultimates.duration(), 0.001), 0.0, 1.0)
-	if share != _ultimate_ring_share:
+	_ultimate_button.disabled = not can_go
+	_ultimate_button.modulate = Color.WHITE.lerp(Color(1.15, 1.1, 0.9), 0.5 + 0.5 * sin(_clock * 4.0)) if can_go \
+		else Color.WHITE if left > 0.0 else Color(1, 1, 1, 0.45)
+	# The gold ring runs down while one lasts; otherwise a pale one fills as kills charge it.
+	var share := clampf(left / maxf(game.ultimates.duration(), 0.001), 0.0, 1.0) if left > 0.0 \
+		else 0.0 if can_go else game.ultimates.charge_share()
+	var ring_color := UltimateTimer.SHIELD_COLOR if left > 0.0 else Art.PAPER
+	if share != _ultimate_ring_share or ring_color != _ultimate_ring_color:
 		_ultimate_ring_share = share
+		_ultimate_ring_color = ring_color
 		_ultimate_ring.queue_redraw()
 	if left > 0.0:
 		_ultimate_label.text = "%s ×%d" % [tr(ultimate["timer"]), game.ultimates.allies()] if game.player.job == "data_scientist" \
 			else UltimateTimer.count_text(ultimate["timer"], left)
 	else:
-		_ultimate_label.text = tr("已用") if used else tr(ultimate["name"])
-	if not used and not _ultimate_hinted and game.enemies.any(func(enemy: Enemy) -> bool: return enemy.is_elite):
-		_ultimate_hinted = true
-		# What it does under where it is (.93): the name alone told nobody anything. Two lines, so
-		# it fits a phone.
-		var where := tr("危险时点右上角放大招「%s」，一局一次") if Device.is_handheld() else tr("危险时按空格放大招「%s」，一局一次")
-		_show_toast(where % tr(ultimate["name"]) + "\n" + tr(ultimate["brief"]), ULTIMATE_HINT_SECONDS)
+		_ultimate_label.text = tr(ultimate["name"]) if can_go else "%d%%" % floori(game.ultimates.charge_share() * 100.0)
 
 
-## The gold ring round the 大招 button while it lasts, running down clockwise from the top.
+## The ring round the 大招 button, clockwise from the top: gold running down while it lasts, pale
+## filling up while it charges.
 func _draw_ultimate_ring() -> void:
 	if _ultimate_ring_share <= 0.0:
 		return
 	var middle := _ultimate_ring.size / 2.0
 	var radius := ULTIMATE_SIZE / 2.0 + 1.0
 	_ultimate_ring.draw_arc(middle, radius, 0.0, TAU, 48, Art.INK, 6.0, true)
-	_ultimate_ring.draw_arc(middle, radius, -PI / 2.0, -PI / 2.0 + TAU * _ultimate_ring_share, 48, UltimateTimer.SHIELD_COLOR, 4.0, true)
+	_ultimate_ring.draw_arc(middle, radius, -PI / 2.0, -PI / 2.0 + TAU * _ultimate_ring_share, 48, _ultimate_ring_color, 4.0, true)
+
+
+## Full again (.95): 大招充好了 over the player each time, and the first time how to set it off and
+## what it does (.93: the name alone told nobody anything; two lines, so it fits a phone).
+func _on_ultimate_charged() -> void:
+	Effects.callout(game, game.player.position + Vector2(0.0, -44.0), tr("大招充好了！"), Art.BRAND, 14)
+	Sound.play("ultimate")
+	if _ultimate_hinted:
+		return
+	_ultimate_hinted = true
+	var ultimate := Jobs.ultimate(game.player.job)
+	var where := tr("大招充好了：点右上角放「%s」") if Device.is_handheld() else tr("大招充好了：按空格放「%s」")
+	_show_toast(where % tr(ultimate["name"]) + "\n" + tr(ultimate["brief"]), ULTIMATE_HINT_SECONDS)
 
 
 ## The banner as it goes off (.93): the job's face, 大招「name」 and what it does in a line, ahead
@@ -1599,7 +1614,7 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	# The job's 大招 (.81) and since .93 what it does in a line (the user: 每个职业的技能都给个教学或者
 	# 提示啥的吧): the name alone said nothing.
 	var ultimate := Jobs.ultimate(job_id)
-	var ultimate_line := UiKit.label(tr("大招「%s」（一局一次）：%s") % [tr(ultimate["name"]), tr(ultimate["brief"])], 12, "strong", Art.BRAND_DEEP)
+	var ultimate_line := UiKit.label(tr("大招「%s」（击杀充能）：%s") % [tr(ultimate["name"]), tr(ultimate["brief"])], 12, "strong", Art.BRAND_DEEP)
 	ultimate_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(ultimate_line)
 	return card

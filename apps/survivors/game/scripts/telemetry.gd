@@ -89,7 +89,7 @@ extends RefCounted
 ## A bare number from 64 on (the user: 版本去掉日期，只保留数字); up to 63 it was
 ## "2026-10-28.<n>" (the very first build plain "2026-10-28"), so to compare across both, read an
 ## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
-const VERSION := "94"
+const VERSION := "95"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -170,8 +170,10 @@ func start() -> void:
 		"left_at_end": _game.left_at_end,
 		# The 加班 tier the run ended in (0 before 10:00, Game.overtime_tier).
 		"overtime": _game.overtime_tier(),
-		# When the 大招 went off (Ultimates, .81), -1 when it didn't.
+		# When the 大招 first went off (Ultimates, .81), -1 when it didn't; since .95 kills charge it
+		# and `ults` is how many times it went off.
 		"ult_at": snappedf(_game.ultimates.used_at, 0.1),
+		"ults": _game.ultimates.casts,
 		"job": _game.player.job,
 		"map": Maps.current_id,
 		"device": "phone" if Device.is_handheld() else "desktop",
