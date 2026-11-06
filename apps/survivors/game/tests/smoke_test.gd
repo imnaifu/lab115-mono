@@ -234,7 +234,7 @@ func _process(_delta: float) -> bool:
 					_salary_before = 0
 				if _meta_full:
 					_meta_full = false
-					for map_id: String in Maps.ORDER:
+					for map_id: String in Maps.ALL:
 						for id: String in Maps.script_of(map_id).STAMPS:
 							Progress.add_stamp(id)
 					Progress.add_salary("smoke-meta", 1000000)
@@ -544,13 +544,24 @@ func _report() -> int:
 	if _game.level > 3 and _from_minute == 0 and not _reroll_checked:
 		problems.append("never got to check 刷新")
 	# Each map's bosses as strong and as quick as their slot says (.78: .76 changed only the slots).
-	for map_id: String in Maps.ORDER:
+	for map_id: String in Maps.ALL:
 		var bosses: Array = Maps.script_of(map_id).BOSSES
 		for slot in bosses.size():
 			var data: Dictionary = Spawner.ENEMY_TYPES[bosses[slot]]
 			var stats: Dictionary = BossKits.SLOT_STATS[slot]
 			if data["hp"] != stats["hp"] or data["speed"] != stats["speed"]:
 				problems.append("%s isn't as its slot (BossKits.SLOT_STATS)" % bosses[slot])
+	# The run's draws (.99): the weather one of the maps', each boss one of its slot's.
+	var weathers := Maps.ALL.map(func(map_id: String) -> String: return Maps.script_of(map_id).MAP_EVENT["id"])
+	if not weathers.has(_game.spawner.weather["id"]):
+		problems.append("weather %s isn't any map's" % _game.spawner.weather["id"])
+	for roll: String in _game.spawner.boss_rolls().split(","):
+		var boss_id := roll.get_slice(":", 1)
+		var slot := BossKits.SLOT_AT.find(float(roll.get_slice(":", 0)))
+		if slot < 0 or BossKits.slot_of(boss_id) != slot:
+			problems.append("boss %s drawn at the wrong time" % roll)
+	print("[smoke] weather=%s parcels opened=%d rooms won/lost=%d/%d forms=%d" % [_game.spawner.weather["id"],
+		_game.map_objects.parcels_opened, _game.map_objects.rooms_won, _game.map_objects.rooms_lost, _game.signed_forms])
 	if not problems.is_empty():
 		printerr("[smoke] FAIL: %s" % ", ".join(problems))
 		return 1

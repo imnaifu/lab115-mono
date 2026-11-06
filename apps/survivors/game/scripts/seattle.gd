@@ -35,7 +35,7 @@ const MOB_SWAPS := {}
 ## The Bug outbreak is a same-day delivery here: a ring of parcels.
 const RING_SWAPS := {}
 ## The map's weather (MapEvents): 下雨 (puddles that slow everyone).
-const MAP_EVENT := {"id": "rain", "at": 300.0, "seconds": 20.0, "text": "西雅图又下雨了！水坑里走不快",
+const MAP_EVENT := {"id": "rain", "at": 300.0, "seconds": 20.0, "text": "下雨了！水坑里走不快",
 	"name": "下雨", "hint": "水坑里走不快，把怪引进去"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "slu"

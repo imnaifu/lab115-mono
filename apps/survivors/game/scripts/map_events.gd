@@ -51,8 +51,9 @@ const RAIN_SPREAD := 0.6
 const RAIN_DRY := 3.0
 ## In a puddle: the player loses this share of their walking speed; the crowd walks at this
 ## share of theirs (bosses shrug off half of it, Enemy.slow).
-## The share of speed a puddle takes, from everyone alike since .92.
-const RAIN_SLOW := 0.35
+## The share of speed a puddle takes, from everyone alike since .92. 0.2 since .99 (the user:
+## 下雨的减速太多了，不用减速那么多; 0.35 until then).
+const RAIN_SLOW := 0.2
 const RAIN_TINT := Color(0.32, 0.42, 0.58, 0.22)
 ## The fog: clear within FOG_CLEAR of the player, thickening over FOG_SOFT to FOG_ALPHA beyond;
 ## the crowd walks at FOG_CROWD_SLOW of its speed while it lasts (bosses shrug off half, Enemy.slow).

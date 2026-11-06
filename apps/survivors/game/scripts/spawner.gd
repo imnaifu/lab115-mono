@@ -221,13 +221,42 @@ const EVENTS := [
 var _game: Game
 var _spawn_budget := 0.0
 var _next_event := 0
-## This run's schedule, in time order: the same every run on a map.
+## This run's schedule, in time order. Since .99 the weather and the bosses are drawn per run
+## (weather, the boss at each slot), the rings stay where they are.
 var _events: Array[Dictionary] = []
+## This run's weather (.99, the user picked 天气随机): one of every map's MAP_EVENT, drawn evenly,
+## at the time and for as long as its map has it (5:00, 20 seconds on all of them).
+var weather: Dictionary = {}
 
 
 func _init(game: Game) -> void:
 	_game = game
+	weather = _draw_weather()
 	_events = _plan_events()
+
+
+## Every map's weather, built or hidden (Maps.ALL), one drawn at random: 硅谷 alone is on offer
+## since .99, and the other four maps' weathers come to it this way.
+func _draw_weather() -> Dictionary:
+	var pool: Array[Dictionary] = []
+	for map_id: String in Maps.ALL:
+		pool.append(Maps.script_of(map_id).MAP_EVENT)
+	return pool[_game.rng.randi() % pool.size()]
+
+
+## The boss at each slot (BossKits.SLOT_AT) this run (.99, the user picked boss 随机): one of every
+## map's boss at that place in its line-up. A slot's bosses are as strong and quick as each other
+## (BossKits.SLOT_STATS, the smoke test checks), so only their attacks differ.
+func _draw_bosses() -> Array[String]:
+	var bosses: Array[String] = []
+	for slot in BossKits.SLOT_AT.size():
+		var pool: Array[String] = []
+		for map_id: String in Maps.ALL:
+			var line_up: Array = Maps.script_of(map_id).BOSSES
+			if slot < line_up.size():
+				pool.append(line_up[slot])
+		bosses.append(pool[_game.rng.randi() % pool.size()])
+	return bosses
 
 
 ## Spawns per second: never under MIN_RATE (1 at the start, where the ease-in alone gave about
@@ -252,7 +281,8 @@ static func rate_at(seconds: float, map_spawn: float) -> float:
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
 ## (3.5x by the ten-minute mark), times the map's (Maps: longer working weeks are harder).
 func hp_scale() -> float:
-	return hp_scale_at(_game.elapsed, Maps.difficulty("hp"))
+	# The 加班申请 signed so far (.99) on top: enemies already out keep their health.
+	return hp_scale_at(_game.elapsed, Maps.difficulty("hp")) * _game.form_health_scale()
 
 
 ## hp_scale() `seconds` into a run on a map whose enemies have `map_hp` times the health.
@@ -315,8 +345,8 @@ func boss_rolls() -> String:
 	return ",".join(parts)
 
 
-## The map's schedule: the rings (its own in place of 硅谷's, RING_SWAPS), its weather and its four
-## bosses, the last one's arrival worded as the final test.
+## The run's schedule: the rings (the map's own in place of 硅谷's, RING_SWAPS), the weather drawn
+## for it and its four bosses drawn slot by slot (.99), the last one's arrival worded as the final test.
 func _plan_events() -> Array[Dictionary]:
 	var events: Array[Dictionary] = []
 	var rings: Dictionary = Maps.current.RING_SWAPS
@@ -328,15 +358,19 @@ func _plan_events() -> Array[Dictionary]:
 			event["text"] = rings[event["type"]]["text"].trim_suffix("！") + " ×2！" if twice else rings[event["type"]]["text"]
 			event["type"] = rings[event["type"]]["type"]
 		events.append(event)
-	var map_event: Dictionary = Maps.current.MAP_EVENT
-	events.append({"at": map_event["at"], "kind": "map_event", "id": map_event["id"], "seconds": map_event["seconds"],
-		"count": 0, "text": map_event["text"]})
-	var bosses: Array = Maps.current.BOSSES
+	events.append({"at": weather["at"], "kind": "map_event", "id": weather["id"], "seconds": weather["seconds"],
+		"count": 0, "text": weather["text"]})
+	var bosses := _draw_bosses()
 	for slot in bosses.size():
 		events.append({"at": BossKits.SLOT_AT[slot], "kind": "elite", "type": bosses[slot], "count": 1,
 			"text": "最后的考验：%s" if slot == bosses.size() - 1 else "首领出现：%s"})
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
 	return events
+
+
+## A crowd enemy of the moment, by the time's mix (a meeting room's elites, MapObjects).
+func crowd_type() -> String:
+	return _pick_type()
 
 
 func _pick_type() -> String:

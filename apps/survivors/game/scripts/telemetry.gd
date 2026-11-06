@@ -61,6 +61,11 @@ extends RefCounted
 ##   From .96 (刷新): run_end's `rerolls`, how many level-ups the player redrew (Game.reroll_upgrade);
 ##   the redrawn cards count in `offered` too. The ranks bought are in run_start's `training`
 ##   (reroll:N), the run having Player.BASE_REROLLS + N.
+##   From .99 (the weather and bosses drawn per run, things on the map): run_end's `weather` (the
+##   MAP_EVENT id drawn: quake / rain / fog / heat / sandstorm), `parcels` (快递 opened), `rooms_won`
+##   and `rooms_lost` (紧急会议室 cleared in time or not), `forms` (加班申请 signed) and `desks` (工位
+##   cards taken, id:rarity in order, e.g. might:1,haste:3). `boss_rolls` now differs run to run
+##   again. Bosses no longer drop a 珍珠奶茶; parcels hold them.
 ## - cloud_action (.30): the cloud save and its page (设置 → 云存档), `action` with a `result`: connect
 ##   (once per page when the first sync settles: synced / offline, `ms`, `merged` when the cloud
 ##   brought progress), open (the 云存档 page, with its `status`), code (a 存档码 made: ok /
@@ -92,7 +97,7 @@ extends RefCounted
 ## A bare number from 64 on (the user: 版本去掉日期，只保留数字); up to 63 it was
 ## "2026-10-28.<n>" (the very first build plain "2026-10-28"), so to compare across both, read an
 ## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
-const VERSION := "98"
+const VERSION := "99"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -111,6 +116,8 @@ var _offered := {}
 var _chests := PackedStringArray()
 ## The card ids of the upgrades year-end bonuses applied (.46).
 var _chest_upgrades := PackedStringArray()
+## 工位 cards taken this run (.99), id:rarity.
+var _desks := PackedStringArray()
 ## Upgrades got by rarity tier (Upgrades.RARITIES), picked (and from chests until .44).
 var _rarities := PackedInt32Array([0, 0, 0, 0, 0])
 ## Level-ups where luck added a card (Upgrades.lucky_card).
@@ -256,6 +263,10 @@ func on_offer(choices: Array) -> void:
 		_offered[card] = _offered.get(card, 0) + 1
 
 
+func on_desk(choice: Dictionary) -> void:
+	_desks.append("%s:%d" % [choice["id"], choice.get("rarity", 0)])
+
+
 func on_lucky_card() -> void:
 	_lucky_cards += 1
 
@@ -348,6 +359,12 @@ func _summary(result: String) -> Dictionary:
 		"new_stamps": ",".join(_game.stamps.new_ids),
 		"new_achievements": ",".join(_game.achievements.new_ids),
 		"boss_rolls": _game.spawner.boss_rolls().left(MAX_TEXT),
+		"weather": _game.spawner.weather["id"],
+		"parcels": _game.map_objects.parcels_opened,
+		"rooms_won": _game.map_objects.rooms_won,
+		"rooms_lost": _game.map_objects.rooms_lost,
+		"forms": _game.signed_forms,
+		"desks": ",".join(_desks).left(MAX_TEXT),
 	}
 	if _revive != "":
 		data["revive"] = _revive

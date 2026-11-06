@@ -14,16 +14,26 @@ extends RefCounted
 ## world map like Kingdom Rush's campaign) lists them in that order and opens them one by one: a
 ## map opens once the one before it has been won.
 
-const ORDER := ["sv", "ldn", "sea", "sg", "bj"]
+## Since .99 only 硅谷 is on offer (the user: 先把其他地图都藏起来，只用硅谷一张地图; 地图不用选择):
+## the other four are built and kept (ALL) but no run starts on them, and the title screen has no
+## map button. To bring one back, put it back here, in ORDER's place by difficulty
+## (.34–.98: ["sv", "ldn", "sea", "sg", "bj"]).
+const ORDER := ["sv"]
+## Every map built, on offer or not: for looking things up that outlive a map being hidden (a
+## landmark's bonus checked in at on 北京 still counts, an old run on it still reads P12) and for
+## the smoke test, which still plays them all (--map=).
+const ALL := ["sv", "ldn", "sea", "sg", "bj"]
 ## Open from the first run, whatever unlocked() says: all of them for now (.34), at the user's call
 ## (the one-by-one rule is in, but every map stays open while they are being tested). 北京 has
 ## been open from the start since .25.
 const OPEN_FROM_START := ["sv", "ldn", "sea", "sg", "bj"]
 ## Cities still to come, listed in the map picker as 敬请期待 (WorldMap.CITIES has their names).
-const COMING_SOON := ["blr"]
+## Empty while only 硅谷 is on offer (.99; was ["blr"]), so neither the picker nor the site
+## promises another city.
+const COMING_SOON := []
 ## The whole route, easiest first (.38, for the map picker, MapList): the playable maps (ORDER)
-## with the cities still to come in their places.
-const ROUTE := ["sv", "ldn", "sea", "sg", "blr", "bj"]
+## with the cities still to come in their places. Just 硅谷 from .99 (was sv, ldn, sea, sg, blr, bj).
+const ROUTE := ["sv"]
 
 static var current: GDScript = BayArea
 static var current_id := "sv"
@@ -54,13 +64,18 @@ static func script_of(id: String) -> GDScript:
 
 ## Makes `id` the map the world is built from (before City is).
 static func use(id: String) -> void:
-	current_id = id if ORDER.has(id) else "sv"
+	# ALL, not ORDER: saved() has already kept players to the maps on offer, and the smoke test
+	# plays a hidden one on purpose.
+	current_id = id if ALL.has(id) else "sv"
 	current = script_of(current_id)
 
 
 ## The map picked last on this device, if it is still open to it; else 硅谷.
 static func saved() -> String:
 	var id: String = Settings.get_value("map", "sv")
+	# A hidden map (one picked before .99) falls back to 硅谷; the smoke test's --map= may pick any.
+	if unlock_all and ALL.has(id):
+		return id
 	return id if ORDER.has(id) and unlocked(id) else "sv"
 
 
@@ -108,9 +123,10 @@ static func stamps_on(id: String) -> int:
 
 
 ## A landmark's entry on whichever map it stands on (its bonus follows the player everywhere);
-## empty for an id no map has.
+## empty for an id no map has. Every map built (ALL), not only those on offer: a bonus earned on a
+## map hidden since keeps counting (.99).
 static func stamp(id: String) -> Dictionary:
-	for map_id: String in ORDER:
+	for map_id: String in ALL:
 		var stamps: Dictionary = script_of(map_id).STAMPS
 		if stamps.has(id):
 			return stamps[id]

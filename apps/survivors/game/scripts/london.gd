@@ -38,9 +38,9 @@ const BOSSES := ["committee", "redundancy", "gdpr", "scone_boss"]
 const MOB_SWAPS := {}
 ## The Bug outbreak is a queue here: a ring of patient Britons.
 const RING_SWAPS := {}
-## The map's weather (MapEvents): 伦敦大雾 (you only see round yourself, and the crowd slows down in it).
-const MAP_EVENT := {"id": "fog", "at": 300.0, "seconds": 20.0, "text": "伦敦起大雾了！看不远，怪也走得慢",
-	"name": "伦敦大雾", "hint": "只看得清身边，怪也走得慢"}
+## The map's weather (MapEvents): 大雾 (you only see round yourself, and the crowd slows down in it); 伦敦大雾 until .99, named for no city since any map's weather can come to 硅谷.
+const MAP_EVENT := {"id": "fog", "at": 300.0, "seconds": 20.0, "text": "起大雾了！看不远，怪也走得慢",
+	"name": "大雾", "hint": "只看得清身边，怪也走得慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "kx"
 ## The map (.77), as BayArea.BOUNDS: a square 1800 out every way from the start (2300 .77–.85). Outside it counts

@@ -202,7 +202,8 @@ static func create_attacks(type_id: String, enemy: Enemy) -> Array[BossAttack]:
 
 ## Which slot (0–3) a boss comes in on its map, or -1.
 static func slot_of(type_id: String) -> int:
-	for map_id: String in Maps.ORDER:
+	# Every map's, hidden or not: since .99 any map's boss can come to 硅谷 at its slot.
+	for map_id: String in Maps.ALL:
 		var index: int = (Maps.script_of(map_id).BOSSES as Array).find(type_id)
 		if index >= 0:
 			return index

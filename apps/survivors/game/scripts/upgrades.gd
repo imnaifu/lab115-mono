@@ -336,10 +336,52 @@ static func stat_step(passive_id: String, rarity: int) -> float:
 	return snappedf(STAT_STEPS[passive_id] * RARITIES[rarity]["scale"], STEP_SNAP.get(passive_id, 1.0))
 
 
+## 工位充电 (.99, MapObjects): a charged desk offers DESK_CHOICES stat cards to pick one from,
+## each a stat passive's step at a rarity times DESK_SHARE (伤害 +5% on a 普通 card), added to the
+## player outright: no passive slot, no level. A plain desk rolls rarity by luck like a level-up;
+## a golden one only 史诗 or 传说 (GOLDEN_DESK_LEGENDARY of the time 传说).
+const DESK_SHARE := 0.5
+const DESK_CHOICES := 3
+const GOLDEN_DESK_LEGENDARY := 0.3
+
+
+## A charged desk's cards (DESK_SHARE): three different stats, none for luck once it's capped.
+func desk_choices(golden: bool) -> Array:
+	var ids: Array = STAT_STEPS.keys()
+	if _game.player.luck >= Player.MAX_LUCK:
+		ids.erase("luck")
+	var choices := []
+	while choices.size() < DESK_CHOICES and not ids.is_empty():
+		var passive_id: String = ids.pop_at(_game.rng.randi() % ids.size())
+		var choice := {"kind": "desk", "id": passive_id, "level": 0, "max": 0,
+			"name": PASSIVES[passive_id]["name"], "art": PASSIVES[passive_id]["art"]}
+		if golden:
+			choice["rarity"] = 4 if _game.rng.randf() < GOLDEN_DESK_LEGENDARY else 3
+		else:
+			var weights := PackedFloat32Array()
+			for tier in RARITIES.size():
+				weights.append(RARITIES[tier]["weight"] * luck_factor(_game.player.luck, tier))
+			choice["rarity"] = _game.rng.rand_weighted(weights)
+		choice["step"] = desk_step(passive_id, choice["rarity"])
+		choice["text"] = _stat_text(passive_id, choice["step"])
+		choices.append(choice)
+	return choices
+
+
+## A desk card's step: the stat passive's at that rarity, times DESK_SHARE, rounded as cards are.
+static func desk_step(passive_id: String, rarity: int) -> float:
+	return snappedf(STAT_STEPS[passive_id] * RARITIES[rarity]["scale"] * DESK_SHARE, STEP_SNAP.get(passive_id, 1.0))
+
+
 ## A stat passive's card text with its step at that rarity: 「所有伤害 +12%」. Translated.
 static func passive_text(passive_id: String, rarity: int) -> String:
+	return _stat_text(passive_id, stat_step(passive_id, rarity))
+
+
+## A stat passive's card text for a given step (a level-up's or a desk's). Translated.
+static func _stat_text(passive_id: String, step: float) -> String:
 	var text := TranslationServer.translate(PASSIVES[passive_id]["text"])
-	var amount := _amount_text(stat_step(passive_id, rarity))
+	var amount := _amount_text(step)
 	var amounts: Array = []
 	for i in text.count("%s"):
 		amounts.append(amount)
@@ -522,6 +564,9 @@ func apply(choice: Dictionary) -> void:
 				perk_bonus[choice["id"]] = perk_bonus.get(choice["id"], 0.0) + rarity["bonus"]
 		"heal":
 			player.heal(30.0)
+		"desk":
+			# Straight onto the player, no passive level: a desk's step is already worked out.
+			apply_stat(player, choice["id"], choice["step"])
 
 
 ## A stat passive's step at the card's rarity (stat_step).
@@ -591,6 +636,8 @@ func numbers(choice: Dictionary) -> String:
 			return " · ".join(parts)
 		"passive":
 			return _passive_numbers(choice["id"], next_level, choice.get("rarity", 0))
+		"desk":
+			return _passive_numbers(choice["id"], 0, choice.get("rarity", 0), choice["step"])
 	return ""
 
 
@@ -658,10 +705,13 @@ func _shown_stat(stat_key: String, value: Variant, damage_bonus: float) -> Strin
 
 ## A passive's total before and after a card: a stat passive's step at the card's rarity, a table
 ## perk from the level it is at to `next_level` (more than one up on a rarer card).
-func _passive_numbers(passive_id: String, next_level: int, rarity: int = 0) -> String:
+func _passive_numbers(passive_id: String, next_level: int, rarity: int = 0, given_step := -1.0) -> String:
 	var player := _game.player
 	var current: int = passive_levels.get(passive_id, 0)
 	var step := stat_step(passive_id, rarity) if STAT_STEPS.has(passive_id) else 0.0
+	# A desk card's own step (desk_choices), smaller than a level-up's.
+	if given_step >= 0.0:
+		step = given_step
 	match passive_id:
 		"might":
 			return _step("伤害", "+%d%%" % roundi((player.might - 1.0) * 100.0), "+%d%%" % roundi((player.might - 1.0 + step / 100.0) * 100.0))

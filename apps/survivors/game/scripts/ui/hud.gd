@@ -732,7 +732,8 @@ func _build_top_bar() -> void:
 	weather_row.add_theme_constant_override("separation", 4)
 	weather_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_weather_pill.add_child(weather_row)
-	var map_event: Dictionary = Maps.current.MAP_EVENT
+	# The run's weather, drawn from every map's (Spawner.weather, .99).
+	var map_event: Dictionary = game.spawner.weather
 	# The weather's own icon (.37): a quake's rock, rain, sand, fog.
 	weather_row.add_child(UiKit.icon("event_" + map_event["id"], 13))
 	weather_row.add_child(UiKit.label(map_event.get("name", ""), 10, "strong", Art.LINK))
@@ -1306,7 +1307,9 @@ func _show_title() -> void:
 	# 培训 (.44): where year-end bonuses' and achievements' 工资 is spent on the base stats.
 	tiles.add_child(_home_tile("moneybag", "培训", tr("工资 ¥%d") % maxi(Training.balance(), 0), _open_training, tile_width))
 	tiles.add_child(_home_tile("star_gold", "成就", "%d/%d" % [Achievements.earned_count(), Achievements.shown().size()], _open_awards, tile_width))
-	tiles.add_child(_home_tile("icon_trophy", "排行榜", tr("每图一个榜"), _open_board, tile_width))
+	# One board while only 硅谷 is on offer (.99), so not 每图一个榜.
+	var board_status := tr("每图一个榜") if Maps.ORDER.size() > 1 else tr("比谁通关快")
+	tiles.add_child(_home_tile("icon_trophy", "排行榜", board_status, _open_board, tile_width))
 	if TestMode.on:
 		column.add_child(UiKit.gap(8 if portrait else 4))
 		column.add_child(_test_row())
@@ -1367,7 +1370,12 @@ func _home_tile(art: String, title: String, status: String, action: Callable, wi
 	var icon := UiKit.icon(art, 30)
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	content.add_child(icon)
-	var name_label := UiKit.label(title, 14, "heavy", Art.INK)
+	# Smaller when the name doesn't fit the tile (English Achievements ran past its edges).
+	var shown_title := tr(title)
+	var title_size := 14
+	while title_size > 10 and Art.font(900).get_string_size(shown_title, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size).x > width - 12.0:
+		title_size -= 1
+	var name_label := UiKit.label(title, title_size, "heavy", Art.INK)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(name_label)
 	var status_label := UiKit.label(status, 11, "muted")
@@ -1404,7 +1412,9 @@ func _open_depart() -> void:
 	column.add_child(UiKit.gap(20 if portrait else 8))
 	column.add_child(_job_picker(portrait))
 	column.add_child(UiKit.gap(16 if portrait else 8))
-	column.add_child(_map_button(portrait))
+	# The map button only while there is more than one map to pick (.99, the user: 地图不用选择).
+	if Maps.ORDER.size() > 1:
+		column.add_child(_map_button(portrait))
 	# 返聘 saved from earlier (.43, bought in 培训 since .44): said here, as they carry into the run.
 	var revives := Progress.revives_left()
 	if revives > 0:
@@ -2021,10 +2031,12 @@ func _show_level_up(choices: Array, lucky: bool = false) -> void:
 	column.add_theme_constant_override("separation", 0)
 	_cards_holder.add_child(column)
 
-	column.add_child(UiKit.kicker("PROMOTED", Art.BRAND_SOFT))
+	# A charged desk's cards (MapObjects, .99) come up on this panel too, worded as the desk's.
+	var desk := game.desk_offer
+	column.add_child(UiKit.kicker("DESK" if desk else "PROMOTED", Art.BRAND_SOFT))
 	# Every level-up is a promotion to the next grade (.33). `game.level` already counts the
 	# level-ups still banked, so name the one this panel is for.
-	var title := UiKit.label(tr("升职！%s") % Maps.rank_of(game.level - game.queued_level_ups + 1), 28, "display", Art.PAPER)
+	var title := UiKit.label(tr("工位充好电了") if desk else tr("升职！%s") % Maps.rank_of(game.level - game.queued_level_ups + 1), 28, "display", Art.PAPER)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
 	var sub_row := HBoxContainer.new()
@@ -2040,7 +2052,7 @@ func _show_level_up(choices: Array, lucky: bool = false) -> void:
 		sub_row.add_child(UiKit.icon(milestone["art"], 18))
 	if lucky:
 		sub_row.add_child(UiKit.icon("koi", 18))
-	var sub_text := "选一张带走"
+	var sub_text := "选一项带走，这局一直有效" if desk else "选一张带走"
 	if not milestone.is_empty():
 		sub_text = "专属武器升级，运气好还多一张！选一张带走" if lucky else "专属武器升级！选一张带走"
 	elif lucky:
@@ -2076,8 +2088,10 @@ func _show_level_up(choices: Array, lucky: bool = false) -> void:
 	hint_row.add_child(UiKit.icon("ui_info", 14))
 	hint_row.add_child(UiKit.label(hint_text, 12, "body", Art.PAPER))
 	column.add_child(UiKit.gap(18 if portrait else 12))
-	column.add_child(_reroll_row())
-	column.add_child(UiKit.gap(10 if portrait else 8))
+	# No 刷新 for a desk's cards (Game.can_reroll), so no greyed button either.
+	if not desk:
+		column.add_child(_reroll_row())
+		column.add_child(UiKit.gap(10 if portrait else 8))
 	column.add_child(hint)
 
 	_level_up_overlay.visible = true
@@ -2132,11 +2146,14 @@ func _make_card(choice: Dictionary, index: int, portrait: bool, narrow: bool, cr
 	content.add_theme_constant_override("margin_bottom", int(edge + (UiKit.SHADOW_DROP if recommended else 0)))
 	card.add_child(content)
 
-	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT if fresh else Art.PAPER_SUNK
+	var fill := Art.MINT_LIGHT if kind in ["passive", "desk"] else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT if fresh else Art.PAPER_SUNK
 	var well := UiKit.well(choice["art"], (48.0 if crowded else 60.0) if portrait else (44.0 if narrow else 52.0), fill)
 	var name_label := UiKit.label(_card_name(choice), 17 if portrait else 15, "heavy")
 	var badge: Control = null
-	if fresh:
+	if kind == "desk":
+		# Not a passive: no slot, no level (Upgrades.desk_choices).
+		badge = UiKit.tag("工位", Art.MINT_LIGHT, Art.GREEN_INK)
+	elif fresh:
 		badge = UiKit.tag("新武器", Art.SKY_LIGHT, Art.LINK) if kind == "weapon" else UiKit.tag("被动", Art.MINT_LIGHT, Art.GREEN_INK)
 	elif choice.has("branch_level"):
 		# A job weapon's direction card: that direction's own level (.35).
@@ -2727,7 +2744,7 @@ func _chest_upgrade_row(item: Dictionary) -> Control:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row_panel.add_child(row)
 	var kind: String = item["kind"]
-	var fill := Art.MINT_LIGHT if kind == "passive" else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT
+	var fill := Art.MINT_LIGHT if kind in ["passive", "desk"] else Art.PINK_LIGHT if kind == "heal" else Art.SKY_LIGHT
 	row.add_child(UiKit.well(item["art"], 40, fill, UiKit.RADIUS_SM))
 	var text := VBoxContainer.new()
 	text.add_theme_constant_override("separation", 1)
@@ -2913,6 +2930,8 @@ func _show_pause() -> void:
 		["运气", str(roundi(player.luck))],
 		["返聘（本局已用）" if game.revived else "返聘", str(Progress.revives_left())],
 		["刷新（本局还剩）", str(player.rerolls)],
+		# 加班申请 signed this run (.99): enemy health and bonus pay both up.
+		["加班申请", "×%d" % game.signed_forms],
 	]:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 0)
@@ -3116,7 +3135,9 @@ func _show_end(victory: bool) -> void:
 func _earned_row() -> Control:
 	var parts := PackedStringArray()
 	if game.salary_earned > 0:
-		parts.append(tr("工资 +¥%d") % game.salary_earned)
+		# With the 加班申请 signed (.99), which made it bigger.
+		parts.append(tr("工资 +¥%d") % game.salary_earned if game.signed_forms == 0 \
+			else tr("工资 +¥%d（加班申请 ×%d）") % [game.salary_earned, game.signed_forms])
 	var stamp_names := PackedStringArray()
 	for id in game.stamps.new_ids:
 		stamp_names.append(tr(Maps.current.STAMPS[id]["name"]))
@@ -3542,22 +3563,30 @@ func _fill_profile(body: VBoxContainer, portrait: bool) -> void:
 	# The trophies at a glance, on a strip that opens the 成就 page (the list is there). Narrow
 	# enough for an upright phone: anything wider than the screen widens the whole page.
 	var strip := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, 1, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
-	var trophies := HBoxContainer.new()
-	trophies.add_theme_constant_override("separation", 6)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 6)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_child(line)
+	# Wrapping onto a second line when the tier names are long (English: Platinum 0/1 Gold 0/17…).
+	var trophies := HFlowContainer.new()
+	trophies.add_theme_constant_override("h_separation", 10)
+	trophies.add_theme_constant_override("v_separation", 6)
+	trophies.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	trophies.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.add_child(trophies)
+	line.add_child(trophies)
 	for count: Array in Achievements.tier_counts():
 		var tier: Dictionary = Achievements.TIERS[count[0]]
 		var cell := HBoxContainer.new()
 		cell.add_theme_constant_override("separation", 3)
-		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(UiKit.tag(tr(tier["name"]), tier["color"], Art.PAPER))
 		var tally := UiKit.label("%d/%d" % [count[1], count[2]], 12, "strong", Art.INK)
 		tally.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		cell.add_child(tally)
 		trophies.add_child(cell)
-	trophies.add_child(UiKit.label("›", 16, "heavy", Art.INK_MUTED))
+	var more := UiKit.label("›", 16, "heavy", Art.INK_MUTED)
+	more.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(more)
 	var tap := Button.new()
 	tap.flat = true
 	tap.focus_mode = Control.FOCUS_NONE
@@ -3615,7 +3644,7 @@ func _fill_profile(body: VBoxContainer, portrait: bool) -> void:
 		jobs.add_child(cell)
 	body.add_child(jobs)
 
-	body.add_child(UiKit.label("各地图", 13, "strong", Art.INK_MUTED))
+	body.add_child(UiKit.label("各地图" if Maps.ORDER.size() > 1 else "地图", 13, "strong", Art.INK_MUTED))
 	for map_id: String in Maps.ORDER:
 		body.add_child(_map_record_row(map_id, int(map_wins.get(map_id, 0)), entries))
 
@@ -3735,12 +3764,13 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 			var counted := Achievements.progress(entry["id"])
 			# With how many players have it, the way game stores show it.
 			var lines := [tr(entry["text"]), Achievements.rate_text(entry["id"])]
-			# Its prize (.96): to come, or paid; one earned before .96 was never paid, so says nothing.
+			# Its prize (.96), always shown (.99, the user: 成就拿到了之后，怎么就不展示金钱了，也要展示啊),
+			# with 已入账 once paid; one earned before .96 wasn't paid (不用补发), so it's just the amount.
 			var prize := Achievements.prize_of(entry["id"])
-			if not done:
-				lines.append(tr("奖金 ¥%d") % prize)
-			elif Progress.has_salary(Achievements.salary_id(entry["id"])):
+			if done and Progress.has_salary(Achievements.salary_id(entry["id"])):
 				lines.append(tr("奖金 ¥%d 已入账") % prize)
+			else:
+				lines.append(tr("奖金 ¥%d") % prize)
 			var tier := Achievements.tier_of(entry["id"])
 			var badge := [tr(tier["name"]), tier["color"]]
 			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), lines, done, counted if not done else [], portrait, badge))
@@ -3852,8 +3882,9 @@ func _history_details(entry: Dictionary) -> Control:
 
 
 func _fill_bestiary(body: VBoxContainer, portrait: bool) -> void:
-	body.add_child(_collection_note(tr("遇到过的怪会收进图鉴；每张图 4 个 boss，招式固定")))
-	for group: Dictionary in Bestiary.GROUPS:
+	# Bosses drawn per run since .99 (Spawner._draw_bosses), listed by the time they come.
+	body.add_child(_collection_note(tr("遇到过的怪会收进图鉴；每局 2:00、4:00、6:00、8:00 各从 5 个 boss 里抽一个")))
+	for group: Dictionary in Bestiary.shown_groups():
 		body.add_child(UiKit.label(group["name"], 13, "strong", Art.INK_MUTED))
 		var grid := GridContainer.new()
 		grid.columns = 1 if portrait else 2
@@ -4748,7 +4779,8 @@ func _open_board() -> void:
 func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	if _board_map == "":
 		_board_map = Maps.current_id
-	body.add_child(_collection_note(tr("每张地图一个榜：通关的（撑过 10:00、清完场上的怪）按用时排在前面，越短越前；没通关但撑过 1 分钟的按撑了多久排在后面。每人留自己最好的一次")))
+	body.add_child(_collection_note(tr("每张地图一个榜：通关的（撑过 10:00、清完场上的怪）按用时排在前面，越短越前；没通关但撑过 1 分钟的按撑了多久排在后面。每人留自己最好的一次") \
+		if Maps.ORDER.size() > 1 else tr("通关的（撑过 10:00、清完场上的怪）按用时排在前面，越短越前；没通关但撑过 1 分钟的按撑了多久排在后面。每人留自己最好的一次")))
 	var names: Array = []
 	for map_id: String in Maps.ORDER:
 		names.append(tr(Maps.script_of(map_id).NAME))
@@ -4756,7 +4788,9 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 		_board_map = Maps.ORDER[index]
 		_board_answer = {}
 		_open_board(), Art.PAPER_SUNK)
-	body.add_child(maps)
+	# No tabs with a single map on offer (.99): one 硅谷 tab says nothing.
+	if Maps.ORDER.size() > 1:
+		body.add_child(maps)
 	if not Leaderboard.online():
 		body.add_child(_collection_note(tr("连上云端后才能看排行榜")))
 		return

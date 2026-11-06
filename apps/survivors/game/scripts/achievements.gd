@@ -11,7 +11,7 @@ extends RefCounted
 ## by hand from how hard it is, not from the live rates, so a tier doesn't shift as they come in).
 ## `goal` marks the ones counted up across runs (progress() says how far along).
 const LIST := [
-	{"id": "all_clear", "tier": "platinum", "art": "moneybag", "group": "生存", "name": "财务自由", "text": "全职业、全地图通关，地标全打卡，图鉴收齐"},
+	{"id": "all_clear", "tier": "platinum", "art": "moneybag", "group": "生存", "name": "财务自由", "text": "全职业通关，地标全打卡，图鉴收齐"},
 	{"id": "first_day", "tier": "bronze", "art": "coffee", "group": "生存", "name": "第一天上班", "text": "打完第一局"},
 	{"id": "probation", "tier": "bronze", "art": "stock_options", "group": "生存", "name": "转正", "text": "一局撑过 5 分钟"},
 	{"id": "ipo", "tier": "silver", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑过 10 分钟，再清完场上的怪"},
@@ -102,11 +102,23 @@ static func data(id: String) -> Dictionary:
 	return {}
 
 
+## The achievements that belong to one map other than 硅谷 (its 敲钟 and 全部打卡), by map id.
+const MAP_OF := {
+	"win_london": "ldn", "win_seattle": "sea", "win_singapore": "sg", "win_beijing": "bj",
+	"ldn_stamps_all": "ldn", "sea_stamps_all": "sea", "sg_stamps_all": "sg", "bj_stamps_all": "bj",
+}
+
+
 ## The achievements in play, as the 成就 page lists and counts them: LIST without those for a
-## feature that is switched off (技术升级 while Upgrades.EVOLUTION_ON is false). One already
-## earned stays in the save, just out of the list and the count.
+## feature that is switched off (技术升级 while Upgrades.EVOLUTION_ON is false) or for a map not on
+## offer (.99: all but 硅谷's). One already earned stays in the save, just out of the list and the
+## count.
 static func shown() -> Array:
-	return LIST.filter(func(entry: Dictionary) -> bool: return Upgrades.EVOLUTION_ON or entry["id"] != "first_evolve")
+	return LIST.filter(func(entry: Dictionary) -> bool:
+		if entry["id"] == "first_evolve" and not Upgrades.EVOLUTION_ON:
+			return false
+		# A hidden map's own (敲钟, 全部打卡) can't be earned while no run is on it (.99).
+		return not MAP_OF.has(entry["id"]) or Maps.ORDER.has(MAP_OF[entry["id"]]))
 
 
 ## How many of shown() this device has earned.

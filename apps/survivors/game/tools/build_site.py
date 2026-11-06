@@ -137,7 +137,7 @@ def stats_section(data: dict) -> str:
     cards.append(f"""<article class="card stat"><h3>受击无敌 <span class="start">{number(stats['invuln_seconds'])} 秒</span></h3>
 <p class="muted">挨一下之后这么久不再扣血，被一群怪围住也不会一下掉光。不能升级。</p></article>""")
     return section("stats", "属性", "主角就这几项属性，局里按暂停能看到当前的数。开局的生命、护甲、移速看职业；之后靠被动往上加（卡越稀有加得越多，见"
-                   '<a href="#upgrades">升级</a>）。局外还有两样永久加成，哪张地图拿的在所有地图都算：打卡，每个地标给一项；'
+                   '<a href="#upgrades">升级</a>）。局外还有两样永久加成：打卡，每个地标给一项；'
                    '<a href="#training">培训</a>，用年终奖和红包发的工资练。',
                    f'<div class="grid wide">{"".join(cards)}</div>')
 
@@ -292,7 +292,7 @@ def drops_section(data: dict) -> str:
 
     small = [
         card("star_blue", "经验星星", f"每只怪都掉，走近才会吸过来，攒够就升级。地上超过 {drops['max_pickups']} 个时，新掉的经验并进已有的星星。"),
-        card("boba", "珍珠奶茶", f"只有 boss 掉，每个 boss 一杯，普通怪不掉。捡到回 {number(drops['heal_amount'])} 生命。"),
+        card("boba", "珍珠奶茶", f"只在地上的快递里开出来，boss 和普通怪都不掉。捡到回 {number(drops['heal_amount'])} 生命。"),
         card("magnet", "磁铁", f"升到 {drops['magnet_from_level']} 级以后，普通怪有 {percent(drops['magnet_chance'])} 的几率掉。捡到时屏幕里的星星一起飞过来（屏幕外的不算）。"),
         card("nap", "午休", f"升到 {drops['nap_from_level']} 级以后，普通怪有 {percent(drops['nap_chance'])} 的几率掉。捡到时全图的怪原地定住 {number(drops['nap_seconds'])} 秒，boss 也一样，这期间新来的怪也定住；定住的怪贴身照样扣血，boss 已经落地的圈照样会炸。"),
         card("red_packet", "红包", f"从开局起，普通怪有 {percent(drops['red_packet_chance'])} 的几率掉。捡到发工资 "
@@ -311,8 +311,34 @@ def drops_section(data: dict) -> str:
 <p class="muted">送的升级当场生效：从身上已有、还没满级的武器和被动里随机挑一个，升一级，稀有度按绩效定；身上的都满了才出新的。工资看绩效，也看是第几个 boss（按出场顺序 2:00 / 4:00 / 6:00 / 8:00，不按打死的先后），越后面的发得越多，都是 66、88 结尾的吉利数，存进存档，在<a href="#training">培训</a>里花。开出哪档绩效和运气无关。</p></article>"""
     rehire_card = card("rehire", "返聘", f"不是掉的，在<a href=\"#training\">培训</a>里买，¥{data['training']['revive_price']} 一个，存进存档，攒多少个都行。被裁（生命归零）时弹窗问你用不用："
                        f"用就回到 {percent(revive['hp'])} 生命、{number(revive['invuln'])} 秒无敌，身边的怪被震开；不用就下班，返聘留着。每局最多用一个。")
-    return section("drops", "掉落", "打怪会掉东西，走近就捡；boss 必掉珍珠奶茶，打掉还自动开年终奖。",
+    return section("drops", "掉落", "打怪会掉东西，走近就捡；打掉 boss 自动开年终奖。地上还有快递、会议室这些，见<a href=\"#objects\">地图上的东西</a>。",
                    f'<div class="grid">{"".join(small)}</div><div class="grid wide">{chest_card}{rehire_card}</div>')
+
+
+def objects_section(data: dict) -> str:
+    """The things laid about the map at random each run (.99, MapObjects), with their numbers."""
+    objects = data["map_objects"]
+    loot_names = {"red_packet": "红包", "heal": "珍珠奶茶", "magnet": "磁铁", "nap": "午休", "xp": "一把经验"}
+    loot_total = sum(entry[1] for entry in objects["parcel_loot"])
+    loot = "、".join(f"{loot_names[entry[0]]} {percent(entry[1] / loot_total)}" for entry in objects["parcel_loot"])
+
+    def card(art_name: str, title: str, body: str) -> str:
+        return f"""<article class="card"><div class="head">{art(art_name, 48, title)}<div><h3>{esc(title)}</h3>
+<p class="muted">{body}</p></div></div></article>"""
+
+    cards = [
+        card("parcel", "快递", f"地上一直有 {objects['parcels']} 个，碰一下就开，一定有东西：{loot}。"
+             f"经验是 {objects['parcel_xp']} 点，每过一分钟多 {objects['parcel_xp_per_minute']} 点。开掉一个，{number(objects['parcel_respawn'])} 秒后在别处补一个。"),
+        card("meeting_room", "紧急会议室", f"每局 {objects['rooms']} 间。站进圈里就开会：四周围上来 {objects['room_elites']} 个金色精英（当时的小怪，生命 ×{number(objects['room_elite_health'])}），"
+             f"{number(objects['room_seconds'])} 秒内全打掉就开一个年终奖（按第 1 个 boss 的工资，也送一个升级）；没打完，精英留下，什么都不给。"),
+        card("paper", "加班申请", f"每局 {objects['forms']} 张。站进圈里 {number(objects['form_sign'])} 秒签字，签了不能撤："
+             f"之后来的怪生命 +{percent(objects['form_health'])}，这局的年终奖和红包 +{percent(objects['form_reward'])}；每签一张再叠一次。"),
+        card("monitors", "工位", f"每局 {objects['desks']} 个，{percent(objects['golden_desk_chance'])} 的局再多一个金色的。在圈里累计站满 {number(objects['desk_charge'])} 秒（出圈会往回退），"
+             f"三选一拿一项属性：伤害、冷却、生命、护甲、移速、拾取、运气、回血里随机三项，数值是同名被动一级的 {percent(objects['desk_share'])}，稀有度照升级卡的规则抽，不占被动格；"
+             f"金色工位三张都是史诗或传说（传说 {percent(objects['golden_desk_legendary'])}）。"),
+    ]
+    return section("objects", "地图上的东西", "每局随机放在地图上，位置每局不同。",
+                   f'<div class="grid">{"".join(cards)}</div>')
 
 
 def training_section(data: dict) -> str:
@@ -330,7 +356,7 @@ def training_section(data: dict) -> str:
     how = f"""<article class="card"><h3>工资和退款</h3><ul>
 <li>工资主要从年终奖来，拿到<a href="#achievements">成就</a>也按档发一笔：绩效 {rating_letters} 分别发 {salaries}（第 1 / 2 / 3 / 4 个 boss，越后面的越多，都是 66、88 结尾的吉利数），boss 打得越多挣得越多；普通怪偶尔掉<b>红包</b>，一个 ¥{min(data["drops"]["red_packet_salary"])}–{max(data["drops"]["red_packet_salary"])}（见<a href="#drops">掉落</a>）</li>
 <li>工资存进存档，一局结束也不清零，在首页的「培训」里花</li>
-<li>练的等级每局开局都带着，在所有地图都算，和打卡的加成叠加</li>
+<li>练的等级每局开局都带着，和打卡的加成叠加</li>
 <li>「刷新」不是属性：每级让每局多刷新 1 次升级卡（默认 1 次，练满 6 次，见<a href="#upgrades">升级</a>）</li>
 <li>「全部退款」把练等级花掉的工资全部退回，可以重新分配</li>
 <li>这里还卖<b>返聘</b>：¥{training['revive_price']} 一个，被裁时可以选择回来（见<a href="#drops">掉落</a>），用掉就没了，退款不退</li></ul></article>"""
@@ -342,9 +368,12 @@ def difficulty_section(data: dict) -> str:
     pacing = data["pacing"]
     minute_rows = "".join(f"<tr><td>{minute['minute']}:00</td><td>{number(round(minute['rate'], 1))}</td><td>×{number(round(minute['hp'], 2))}</td></tr>"
                           for minute in pacing["minutes"])
+    # The map's own health multiplier (硅谷 ×1.25 since .99) on top of the minute's in the table.
+    map_hp = data["maps"][0]["difficulty"]["hp"]
+    map_hp_note = f"；表里是每分钟的倍率，地图本身还要再 ×{number(map_hp)}" if map_hp != 1.0 else ""
     curve_card = f"""<article class="card"><h3>怪越来越多、越来越抗打</h3>
 <div class="scroll"><table class="nums"><tr><th>时间</th><th>每秒刷怪</th><th>怪物生命</th></tr>{minute_rows}</table></div>
-<p class="muted">怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样。场上到了 {pacing['max_alive']} 只就先停刷。</p></article>"""
+<p class="muted">怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样{map_hp_note}。场上到了 {pacing['max_alive']} 只就先停刷。</p></article>"""
 
     start, wave_rows = 0.0, []
     for wave in pacing["waves"]:
@@ -356,15 +385,15 @@ def difficulty_section(data: dict) -> str:
     waves_card = f"""<article class="card"><h3>什么时候出什么小怪</h3><ol class="timeline">{"".join(wave_rows)}</ol>
 <p class="muted">另外还有包围圈：{rings}。</p></article>"""
 
-    slot_rows = "".join(f"<tr><td>{clock(slot['at'])}{' 最后一战' if index == len(pacing['boss_slots']) - 1 else ''}</td><td>{number(round(slot['hp_then']))}</td>"
+    slot_rows = "".join(f"<tr><td>{clock(slot['at'])}{' 最后一战' if index == len(pacing['boss_slots']) - 1 else ''}</td><td>{number(round(slot['hp_then'] * map_hp))}</td>"
                         f"<td>{number(slot['damage'])}</td><td>{slot['xp']}</td></tr>" for index, slot in enumerate(pacing["boss_slots"]))
     bosses_card = f"""<article class="card"><h3>boss 排期</h3>
-<p class="muted">每张地图 4 个 boss，2:00、4:00、6:00、8:00 各来一个，是这张地图自己的（见<a href="#maps">地图</a>）。出场顺序、招式、节奏每局都一样，没有随机：
+<p class="muted">一局 4 个 boss，2:00、4:00、6:00、8:00 各来一个，每个时间点从 5 个 boss 里随机抽一个：同一时间点的生命、速度、伤害一样，招式不同（见<a href="#bestiary">怪物图鉴</a>）。
 boss 朝你走 {number(pacing['walk_seconds'])} 秒（在屏幕里才算），出一招，再走，一直循环。攻击只有三类：近战（它自己冲、扫、跳、砸）、定点（地上出红色区域，到时间炸）、远程（发子弹）。
 前三个各是一类；最后一战两类两招轮流出，{clock(pacing['phase_two_at'])} 进二阶段：近战更宽更远、定点范围更大、远程更密。没打死的 boss 不会走，下一个照样到点来，场上最多同时 4 个。</p>
 <div class="scroll"><table class="nums"><tr><th>时间</th><th>出场生命</th><th>伤害</th><th>经验</th></tr>{slot_rows}</table></div>
-<p class="muted">出场生命已经乘上那一刻的生命倍率，是硅谷的数；别的地图再乘上<a href="#maps">地图</a>的倍率。伤害是碰到它的伤害，招式的伤害见<a href="#bestiary">怪物图鉴</a>。</p></article>"""
-    return section("difficulty", "难度", "一局越往后越难：怪越刷越多、越来越抗打，每两分钟来一个 boss。下面是硅谷的数，别的地图按地图卡上的倍率再乘。",
+<p class="muted">出场生命已经乘上那一刻的生命倍率和地图的倍率。伤害是碰到它的伤害，招式的伤害见<a href="#bestiary">怪物图鉴</a>。</p></article>"""
+    return section("difficulty", "难度", "一局越往后越难：怪越刷越多、越来越抗打，每两分钟来一个 boss。",
                    f'<div class="grid wide">{curve_card}{waves_card}{bosses_card}</div>')
 
 
@@ -413,23 +442,28 @@ def map_plan(game_map: dict) -> str:
 
 def maps_section(data: dict) -> str:
     cards = []
-    for index, game_map in enumerate(data["maps"]):
+    for game_map in data["maps"]:
         difficulty = game_map["difficulty"]
         hard = "基准难度" if difficulty["hp"] <= 1.0 else f"怪物生命 ×{number(difficulty['hp'])} · 伤害 ×{number(difficulty['damage'])} · 刷怪 ×{number(difficulty['spawn'])}"
         event = game_map["event"]
+        # The weather is drawn per run from every map's since .99 (Spawner._draw_weather).
+        weathers = "".join(f"<li><b>{esc(weather['name'])}</b>：{esc(weather['detail'])}</li>" for weather in data["weathers"])
         cards.append(f"""<article class="card map">
 <h3>{esc(game_map['name'])} <span class="stars" title="难度 {game_map['stars']} 星">{"★" * game_map['stars']}<span class="off">{"★" * (game_map['max_stars'] - game_map['stars'])}</span></span></h3>
 {map_plan(game_map)}
 <p class="muted">{esc(hard)} · 职级 {esc(game_map['rank_prefix'])}1、{esc(game_map['rank_prefix'])}2…</p>
 <p><b>分区</b>：{esc('、'.join(game_map['districts']))}</p>
-<p><b>地图事件 · {esc(event['name'])}</b>（{clock(event['at'])} 起，持续 {number(event['seconds'])} 秒）：{esc(event['text'])}<br>{esc(event['detail'])}<br><span class="muted">{esc(event['hint'])}</span></p>
-<p><b>boss</b>：{esc(' → '.join(boss['name'] for boss in game_map['bosses'][:-1]))}　<b>最后一战</b>：{esc(game_map['finale'])}</p>
-<p><a href="#stamps-{esc(game_map['id'])}">{len(game_map['stamps'])} 个打卡点 ›</a>　<a href="#bestiary" data-tab="{index}">本地怪物 ›</a></p></article>""")
+<p><b>天气</b>（{clock(event['at'])} 起，持续 {number(event['seconds'])} 秒，每局从 {len(data['weathers'])} 种里随机抽一种）：</p><ul>{weathers}</ul>
+<p><b>boss</b>：2:00、4:00、6:00、8:00 各从 5 个里随机抽一个，见<a href="#bestiary">怪物图鉴</a></p>
+<p><a href="#stamps-{esc(game_map['id'])}">{len(game_map['stamps'])} 个打卡点 ›</a>　<a href="#bestiary">怪物 ›</a></p></article>""")
+    # Only 硅谷 is on offer since .99 (Maps.ORDER), so the text speaks of the one map and the
+    # 还在装修 line goes when nothing is coming (Maps.COMING_SOON empty).
     soon = "、".join(COMING_SOON_NAMES.get(city, city) for city in data["coming_soon"])
-    return section("maps", "地图", "按难度排，星越多越难（1–3 星）：通关一张开下一张。每张地图都是一块空旷的方形地，四边是栅栏，哪里都能走；"
-                   "地上只有 5 个打卡点：中间是总部在这座城市的大厂，四个角是城市地标。每张地图有自己的分区、4 个 boss 和天气事件。"
-                   "路上的车和火车（地铁）不扣血，只会把人和怪推到路边；火车来之前铁轨会先闪。",
-                   f'<div class="grid wide">{"".join(cards)}</div><p class="muted soon">还在装修：{esc(soon)}</p>')
+    soon_line = f'<p class="muted soon">还在装修：{esc(soon)}</p>' if soon else ""
+    return section("maps", "地图", "现在只有硅谷一张地图：一块空旷的方形地，四边是栅栏，哪里都能走；"
+                   "地上只有 5 个打卡点：中间是 Goggle 总部，四个角是湾区地标。5:00 来一次天气，天气和 4 个 boss 每局随机抽；地上还随机放着<a href=\"#objects\">快递、会议室这些</a>。"
+                   "路上的车和火车不扣血，只会把人和怪推到路边；火车来之前铁轨会先闪。",
+                   f'<div class="grid wide">{"".join(cards)}</div>{soon_line}')
 
 
 def stamps_section(data: dict) -> str:
@@ -438,7 +472,7 @@ def stamps_section(data: dict) -> str:
         cards = "".join(f"""<article class="card stamp">{art(s['art'], 72, s['name'])}<h4>{esc(s['name'])}</h4>
 <p class="muted">{clock(s['opens'])} 开门 · {esc(s['note'])}</p><p class="bonus">{esc(s['bonus'])}</p></article>""" for s in game_map["stamps"])
         blocks.append(f'<h3 class="sub" id="stamps-{esc(game_map["id"])}">{esc(game_map["name"])}</h3><div class="grid stamps">{cards}</div>')
-    return section("stamps", "打卡点", "每张地图 5 个打卡点（中间是本城大厂的总部，四角是城市地标），一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（中间的先开，再从西北角顺时针），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。每个地标给一点永久加成，这一局和以后每一局都带着，哪张地图打的卡在所有地图都生效；打过的地标不再有圈。",
+    return section("stamps", "打卡点", "地图上 5 个打卡点（中间是大厂总部，四角是城市地标），一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（中间的先开，再从西北角顺时针），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。每个地标给一点永久加成，这一局和以后每一局都带着；打过的地标不再有圈。",
                    "".join(blocks))
 
 
@@ -455,8 +489,8 @@ def bestiary_section(data: dict) -> str:
         panels.append(f'<div class="panel" data-panel="{index}"><div class="grid wide">{elites}</div></div>')
     total = sum(len(group["enemies"]) for group in groups)
     speeds = [job["speed"] for job in data["jobs"]]
-    return section("bestiary", "怪物图鉴", f"一共 {total} 种。小怪每张地图都一样；boss 每张地图 4 个，2:00、4:00、6:00、8:00 各一个，招式固定、没有随机。"
-                   f"boss 的生命和伤害已经按它所在地图的倍率算好（伤害还要减去你的护甲）；距离是游戏里的像素，人物每秒走 {number(min(speeds))}–{number(max(speeds))}。",
+    return section("bestiary", "怪物图鉴", f"一共 {total} 种。boss 一局 4 个，2:00、4:00、6:00、8:00 各从 5 个里随机抽一个，招式固定。"
+                   f"boss 的伤害还要减去你的护甲；距离是游戏里的像素，人物每秒走 {number(min(speeds))}–{number(max(speeds))}。",
                    f'<h3 class="sub">小怪</h3><div class="grid">{mobs}</div><h3 class="sub">boss</h3><div class="tabs">{"".join(tabs)}</div>{"".join(panels)}')
 
 
@@ -534,10 +568,10 @@ def how_section(data: dict) -> str:
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
-<li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉自动开「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
-<li>10:00 下班：不再来新怪，清完场上剩下的就敲钟上市（清场时倒下也算失败）；之后进入「加班」，怪走得更快，每 30 秒更暴躁、打人更疼，越拖越危险；从开局到清完的用时上每张地图的排行榜；没通关的局撑过 1 分钟也上榜，按撑了多久排在所有通关的后面</li></ul>
+<li>每两分钟来一个 boss，一局 4 个、每局随机抽，打掉自动开「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
+<li>10:00 下班：不再来新怪，清完场上剩下的就敲钟上市（清场时倒下也算失败）；之后进入「加班」，怪走得更快，每 30 秒更暴躁、打人更疼，越拖越危险；从开局到清完的用时上排行榜；没通关的局撑过 1 分钟也上榜，按撑了多久排在所有通关的后面</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
-<article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（boss 是每张地图自己的，见<a href="#maps">地图</a>）：</p><ol class="timeline">{rows}</ol></article>
+<article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（5:00 的天气和每个 boss 是谁每局随机）：</p><ol class="timeline">{rows}</ol></article>
 </div>""")
 
 
@@ -645,7 +679,7 @@ show(0);
 
 def build(data: dict, art_dir: pathlib.Path) -> str:
     body = "".join([how_section(data), jobs_section(data), stats_section(data), weapons_section(data), passives_section(data),
-                    upgrades_section(data), drops_section(data), training_section(data), maps_section(data), difficulty_section(data), stamps_section(data), bestiary_section(data),
+                    upgrades_section(data), drops_section(data), objects_section(data), training_section(data), maps_section(data), difficulty_section(data), stamps_section(data), bestiary_section(data),
                     achievements_section(data), faq_section(data)])
     hero_arts = "".join(art(name, 56) for name in [data["jobs"][0]["art"], "bug", "meeting", "deadline", "ai_boss", "chest", "bell"])
     page = f"""<!doctype html>
@@ -657,7 +691,7 @@ def build(data: dict, art_dir: pathlib.Path) -> str:
 <meta name="theme-color" content="#f7c948">
 <style>{STYLE}</style></head><body>
 <nav class="top"><div class="inner"><span class="brand">大厂幸存者</span>
-<a class="link" href="#how">怎么玩</a><a class="link" href="#jobs">职业</a><a class="link" href="#stats">属性</a><a class="link" href="#weapons">武器</a><a class="link" href="#passives">被动</a><a class="link" href="#upgrades">升级</a><a class="link" href="#drops">掉落</a><a class="link" href="#training">培训</a><a class="link" href="#maps">地图</a><a class="link" href="#difficulty">难度</a><a class="link" href="#stamps">打卡点</a><a class="link" href="#bestiary">图鉴</a><a class="link" href="#achievements">成就</a><a class="link" href="#faq">问答</a>
+<a class="link" href="#how">怎么玩</a><a class="link" href="#jobs">职业</a><a class="link" href="#stats">属性</a><a class="link" href="#weapons">武器</a><a class="link" href="#passives">被动</a><a class="link" href="#upgrades">升级</a><a class="link" href="#drops">掉落</a><a class="link" href="#objects">地图上的东西</a><a class="link" href="#training">培训</a><a class="link" href="#maps">地图</a><a class="link" href="#difficulty">难度</a><a class="link" href="#stamps">打卡点</a><a class="link" href="#bestiary">图鉴</a><a class="link" href="#achievements">成就</a><a class="link" href="#faq">问答</a>
 <a class="play" href="{PLAY_URL}">开始玩</a></div></nav>
 <main><header class="hero"><div class="hero-art">{hero_arts}</div>
 <h1>大厂幸存者</h1><div class="en">BIG TECH SURVIVORS</div>

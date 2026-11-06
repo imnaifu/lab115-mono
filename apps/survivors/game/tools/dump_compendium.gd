@@ -37,6 +37,15 @@ func _initialize() -> void:
 		"coming_soon": Maps.COMING_SOON,
 		"achievements": _achievements(),
 		"events": _events(),
+		# .99: the weather drawn per run from every map's, and the things laid about the map.
+		"weathers": _weathers(),
+		"map_objects": {"parcels": MapObjects.PARCELS, "parcel_respawn": MapObjects.PARCEL_RESPAWN,
+			"parcel_loot": MapObjects.PARCEL_LOOT, "parcel_xp": MapObjects.PARCEL_XP, "parcel_xp_per_minute": MapObjects.PARCEL_XP_PER_MINUTE,
+			"rooms": MapObjects.ROOMS, "room_elites": MapObjects.ROOM_ELITES, "room_seconds": MapObjects.ROOM_SECONDS,
+			"room_elite_health": MapObjects.ROOM_ELITE_HEALTH, "forms": MapObjects.FORMS, "form_sign": MapObjects.FORM_SIGN,
+			"form_health": Game.FORM_HEALTH, "form_reward": Game.FORM_REWARD, "desks": MapObjects.DESKS,
+			"golden_desk_chance": MapObjects.GOLDEN_DESK_CHANCE, "desk_charge": MapObjects.DESK_CHARGE,
+			"desk_share": Upgrades.DESK_SHARE, "golden_desk_legendary": Upgrades.GOLDEN_DESK_LEGENDARY},
 		"stats": _stats(),
 		"rarities": _rarities(),
 		"luck": _luck(), "max_luck": Player.MAX_LUCK,
@@ -118,7 +127,8 @@ func _passives() -> Array:
 
 func _enemy_groups() -> Array:
 	var groups := []
-	for group: Dictionary in Bestiary.GROUPS:
+	# The groups still met (.99: a hidden map's bosses aren't listed on the site).
+	for group: Dictionary in Bestiary.shown_groups():
 		var enemies := []
 		for id: String in group["ids"]:
 			var type: Dictionary = Spawner.ENEMY_TYPES[id]
@@ -194,6 +204,17 @@ func _bonus_text(bonus: Array) -> String:
 	if kind == "regen":
 		shown = str(amount)
 	return Stamps.BONUSES[kind] % shown
+
+
+## Every map's weather, any of which a run can draw (Spawner._draw_weather, .99), worded for 硅谷's damage.
+func _weathers() -> Array:
+	var weathers := []
+	for map_id: String in Maps.ALL:
+		var event: Dictionary = Maps.script_of(map_id).MAP_EVENT
+		weathers.append({"id": event["id"], "name": event.get("name", ""), "hint": event.get("hint", ""),
+			"at": event.get("at", 0.0), "seconds": event.get("seconds", 0.0),
+			"detail": _event_detail(event["id"], Maps.current.DIFFICULTY["damage"])})
+	return weathers
 
 
 ## A run's schedule: the rings (Spawner.EVENTS) and the four bosses' times (each map's own bosses).
@@ -374,15 +395,12 @@ const PHASE_KEYS := {
 }
 
 
-## A boss's strength on its own map (BossKits.SLOT_STATS through ENEMY_TYPES): health as it comes in
+## A boss's strength on the map in use (BossKits.SLOT_STATS through ENEMY_TYPES): health as it comes in
 ## (the minute's and the map's multipliers, Spawner.hp_scale_at), contact damage (the map's), and
 ## each attack in numbers, its hits at the map's damage (Enemy._hits).
 func _add_boss_numbers(entry: Dictionary, id: String, slot: int) -> void:
-	# Its map by its BOSSES (entry["maps"] holds names, and Maps.script_of falls back to 硅谷 on those).
-	var difficulty := {"hp": 1.0, "damage": 1.0}
-	for map_id: String in Maps.ORDER:
-		if (Maps.script_of(map_id).BOSSES as Array).has(id):
-			difficulty = Maps.script_of(map_id).DIFFICULTY
+	# The map on offer's: since .99 every boss is drawn to fight there, whichever map it's from.
+	var difficulty: Dictionary = Maps.current.DIFFICULTY
 	var at: float = BossKits.SLOT_AT[slot] if slot >= 0 else 0.0
 	entry["hp_then"] = entry["hp"] * Spawner.hp_scale_at(at, difficulty["hp"])
 	entry["contact"] = entry["damage"] * difficulty["damage"]

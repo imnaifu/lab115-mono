@@ -24,7 +24,10 @@ const NAME := "硅谷"
 ## DIFFICULTY says how much: enemy health, contact and move damage, and the spawn rate, as
 ## multiples. 硅谷 is the baseline.
 const STARS := 1
-const DIFFICULTY := {"hp": 1.0, "damage": 1.0, "spawn": 1.0}
+## Enemy health ×1.25 since .99 (the user: 怪的强度也加一下，平衡一下; picked 小怪和 boss 一起加):
+## to offset what the parcels, meeting rooms and desks (MapObjects) give, about +1.0 logit in a
+## usual run by DESIGN.md 2.8's formula, against 4.3 × ln 1.25 = 0.96. 1.0 until then.
+const DIFFICULTY := {"hp": 1.25, "damage": 1.0, "spawn": 1.0}
 ## The job grades the run's level reads as (Maps.rank_of): Google-style here, L1, L2…
 const RANK_PREFIX := "L"
 ## Its four bosses, at 2:00, 4:00, 6:00 and 8:00 (.45, BossKits): Deadline（近战）、主库宕机（定点）、AI 大模型（远程）、老板画饼（定点 + 远程）.

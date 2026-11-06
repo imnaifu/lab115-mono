@@ -80,9 +80,27 @@ const NOTES := {
 }
 
 
+## The groups as the 图鉴 shows them (.99): the crowd, then every boss by the slot it comes at
+## (2:00 / 4:00 / 6:00 / 8:00), since each run draws its boss at a slot from every map's
+## (Spawner._draw_bosses) and 硅谷 alone is on offer. GROUPS (by map) still sorts them for the
+## career's boss count.
+static func shown_groups() -> Array:
+	var groups: Array = [GROUPS[0]]
+	for slot in BossKits.SLOT_AT.size():
+		var ids: Array = []
+		for map_id: String in Maps.ALL:
+			var line_up: Array = Maps.script_of(map_id).BOSSES
+			if slot < line_up.size():
+				ids.append(line_up[slot])
+		var at := roundi(BossKits.SLOT_AT[slot])
+		groups.append({"name": "%d:%02d boss" % [at / 60, at % 60], "ids": ids})
+	return groups
+
+
+## The enemies of shown_groups(), what the 图鉴 counts.
 static func ids() -> PackedStringArray:
 	var all := PackedStringArray()
-	for group: Dictionary in GROUPS:
+	for group: Dictionary in shown_groups():
 		all.append_array(group["ids"])
 	return all
 
@@ -103,11 +121,10 @@ static func kills(id: String) -> int:
 	return (Progress.stat("kills_by_type", {}) as Dictionary).get(id, 0)
 
 
-## The maps an enemy turns up on: a boss on its own map's (BOSSES), the crowd everywhere.
-static func maps_of(id: String) -> PackedStringArray:
+## The maps an enemy turns up on: since .99 every map on offer, bosses too (drawn at their slot
+## from every map's); until then a boss only on its own map's (BOSSES).
+static func maps_of(_id: String) -> PackedStringArray:
 	var names := PackedStringArray()
 	for map_id: String in Maps.ORDER:
-		var map := Maps.script_of(map_id)
-		if not BossKits.has(id) or (map.BOSSES as Array).has(id):
-			names.append(TranslationServer.translate(map.NAME))
+		names.append(TranslationServer.translate(Maps.script_of(map_id).NAME))
 	return names

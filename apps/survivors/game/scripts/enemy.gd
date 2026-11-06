@@ -56,6 +56,9 @@ const ALLY_TINT := Color(0.55, 1.0, 0.55)
 ## Bosses shake off a stun (the stand-up perk) in this fraction of the time.
 const BOSS_STUN_SCALE := 0.5
 const STUN_TINT := Color(0.72, 0.84, 1.0)
+## A meeting room's elite (make_champion): gold, a quarter bigger.
+const CHAMPION_TINT := Color(1.0, 0.82, 0.35)
+const CHAMPION_SCALE := 1.25
 ## Above the crowd (0) and under the effects (10): a red shape is never hidden under the crowd.
 const TELEGRAPH_Z := 5
 const BUBBLE_FONT := 10
@@ -420,6 +423,16 @@ func make_ally() -> void:
 	stun_left = 0.0
 	_base_modulate = ALLY_TINT
 	_sprite.modulate = _base_modulate
+
+
+## A 紧急会议室's elite (MapObjects, .99): `health_times` the health, a size bigger, gilded.
+func make_champion(health_times: float) -> void:
+	max_hp *= health_times
+	hp = max_hp
+	_base_modulate = CHAMPION_TINT
+	_sprite.modulate = _base_modulate
+	_base_scale *= CHAMPION_SCALE
+	_sprite.scale = Vector2.ONE * _base_scale
 
 
 func _rest_modulate() -> Color:

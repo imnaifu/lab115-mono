@@ -81,9 +81,10 @@ const DETOUR_HOLD_SECONDS := 0.6
 ## went into some star already down anywhere on the map, so late in a run stars stopped dropping
 ## where things died).
 const MAX_PICKUPS := 500
-## What a 珍珠奶茶 heals. Since .48 only bosses drop one, one each (the user's call: 奶茶改成只有
-## boss 掉落，回血改成 20); until then 1.2% of regular kills did too, about 9 a run in the live
-## data's median run on top of the bosses', and each healed 30.
+## What a 珍珠奶茶 heals. Since .99 it comes only in the parcels on the ground (MapObjects; the
+## user: 奶茶放到快递里面，boss 不用了). .48–.98 only bosses dropped one, one each (the user's call:
+## 奶茶改成只有 boss 掉落，回血改成 20); until then 1.2% of regular kills did too, about 9 a run in
+## the live data's median run on top of the bosses', and each healed 30.
 const HEAL_AMOUNT := 20.0
 ## XP for the first level-ups, cheaper than the curve in xp_to_next() (5, 11, 17, 23) so a new run
 ## gets its first upgrades quickly; from level 5 on the curve applies.
@@ -108,6 +109,10 @@ const NAP_SECONDS := 3.0
 ## one from the start, so even a run over before its first boss earns a little.
 const RED_PACKET_DROP_CHANCE := 0.005
 const RED_PACKET_SALARY := [6, 8, 16, 18]
+## A 加班申请 (.99, MapObjects): enemy health from then on, and 年终奖 and 红包 pay, up by these per
+## form signed (FORM_HEALTH works out at −0.41 logit a form by DESIGN.md 2.8's formula).
+const FORM_HEALTH := 0.1
+const FORM_REWARD := 0.3
 ## A boss's year-end bonus (年终奖, a chest) opens on a performance rating, which decides how much
 ## 工资 it pays (`salary`: since .70 one amount per boss, the 2:00 / 4:00 / 6:00 / 8:00 boss in turn,
 ## chest_salary; .63–.69 one amount a rating; before, one of several at random), kept in the
@@ -238,8 +243,15 @@ var _next_taunt_at := 0.0
 var decoys: Array[Vector2] = []
 ## What this run adds to 局外成长: landmarks checked in at, achievements earned.
 var stamps: Stamps
+## The parcels, meeting rooms, 加班申请 forms and desks laid about the map each run (.99).
+var map_objects: MapObjects
+## 加班申请 signed this run (MapObjects, .99): each makes enemies spawned from then on
+## FORM_HEALTH sturdier and the year-end bonuses and 红包 FORM_REWARD richer.
+var signed_forms := 0
+## Whether the cards on screen are a charged desk's (MapObjects) rather than a level-up's.
+var desk_offer := false
 var achievements: Achievements
-## The map's own event while it runs (湾区地震, 沙尘暴; the Spawner starts it).
+## The run's weather while it runs (湾区地震, 狂风…; the Spawner draws and starts it).
 var map_events: MapEvents
 
 
@@ -291,6 +303,9 @@ func _ready() -> void:
 	var stamp_rings := StampRings.new()
 	stamp_rings.game = self
 	add_child(stamp_rings)
+	map_objects = MapObjects.new()
+	map_objects.game = self
+	add_child(map_objects)
 
 	upgrades = Upgrades.new(self)
 	spawner = Spawner.new(self)
@@ -348,6 +363,7 @@ func _process(delta: float) -> void:
 	_tick_pickups(delta)
 	_check_player_contact()
 	stamps.tick(delta)
+	map_objects.tick(delta)
 	achievements.tick(delta)
 
 
@@ -628,9 +644,11 @@ func _kill(enemy: Enemy) -> void:
 		# if the run ends first (the tree stays paused) it never opens.
 		# Which of the map's bosses it was decides the 工资 (.70); a boss from outside the line-up
 		# (测试模式, --boss) pays as the first.
-		var boss_slot := maxi(Maps.current.BOSSES.find(enemy.type_name), 0)
+		# Its slot, not its place in the map's BOSSES: since .99 any map's boss can come at a slot.
+		var boss_slot := maxi(BossKits.slot_of(enemy.type_name), 0)
 		get_tree().create_timer(BOSS_CHEST_DELAY, false).timeout.connect(_open_chest.bind(boss_slot))
-		_drop(Pickup.Kind.HEAL, enemy.position, 1)
+		# No 珍珠奶茶 from a boss since .99 (the user: 奶茶放到快递里面，boss 不用了): it comes in the
+		# parcels on the ground (MapObjects) instead; .48–.98 every boss dropped one.
 	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet, a 午休 or a 红包.
 	else:
 		if _rare_drop_due(MAGNET_DROP_CHANCE, MAGNET_FROM_LEVEL):
@@ -852,10 +870,12 @@ func _collect(pickup: Pickup) -> void:
 		Pickup.Kind.RED_PACKET:
 			Sound.play("payout")
 			red_packets += 1
-			Progress.add_salary("%s-rp-%d" % [run_id, red_packets], pickup.value)
-			salary_earned += pickup.value
-			Effects.callout(self, player.position + Vector2(0.0, -22.0), "+¥%d" % pickup.value, Art.RED, 13)
-			announce(tr("红包！工资 +¥%d") % pickup.value)
+			# More for each 加班申请 signed (.99).
+			var paid := roundi(pickup.value * reward_scale())
+			Progress.add_salary("%s-rp-%d" % [run_id, red_packets], paid)
+			salary_earned += paid
+			Effects.callout(self, player.position + Vector2(0.0, -22.0), "+¥%d" % paid, Art.RED, 13)
+			announce(tr("红包！工资 +¥%d") % paid)
 
 
 ## A 午休 (NAP_SECONDS): every enemy on the map stops where it is, bosses for the whole time too,
@@ -923,7 +943,8 @@ func _offer_level_up() -> void:
 ## Whether the level-up on screen can be redrawn (刷新, .96): a 刷新 left this run, and something to
 ## redraw (only 摸鱼一会儿 is left once everything is maxed, and it would come back the same).
 func can_reroll() -> bool:
-	if state != State.LEVEL_UP or player.rerolls <= 0:
+	# A desk's cards aren't a level-up's to redraw (like a year-end bonus's upgrade).
+	if state != State.LEVEL_UP or player.rerolls <= 0 or desk_offer:
 		return false
 	return current_choices.any(func(choice: Dictionary) -> bool: return choice["kind"] != "heal")
 
@@ -947,6 +968,9 @@ func reroll_upgrade() -> void:
 func choose_upgrade(index: int) -> void:
 	if state != State.LEVEL_UP or index < 0 or index >= current_choices.size():
 		return
+	if desk_offer:
+		_take_desk(current_choices[index])
+		return
 	upgrades.apply(current_choices[index])
 	telemetry.on_pick(current_choices[index])
 	queued_level_ups -= 1
@@ -956,6 +980,63 @@ func choose_upgrade(index: int) -> void:
 	inventory_changed.emit()
 	# Several level-ups can be banked at once (big gems, chests); offer them back to back.
 	_offer_level_up()
+
+
+# --- Things on the map (MapObjects, .99) -------------------------------------------------
+
+## What the 年终奖 and 红包 pay this run: up FORM_REWARD for each 加班申请 signed.
+func reward_scale() -> float:
+	return 1.0 + FORM_REWARD * signed_forms
+
+
+## Enemy health from now on: up FORM_HEALTH for each 加班申请 signed (Spawner.hp_scale).
+func form_health_scale() -> float:
+	return 1.0 + FORM_HEALTH * signed_forms
+
+
+## A 加班申请 signed (MapObjects): harder and better paid from now on, and said so.
+func sign_form() -> void:
+	signed_forms += 1
+	Sound.play("alarm")
+	announce(tr("加班申请 ×%d：怪 +%d%% 血，年终奖和红包 +%d%%") % [signed_forms,
+		roundi(FORM_HEALTH * signed_forms * 100.0), roundi(FORM_REWARD * signed_forms * 100.0)])
+	inventory_changed.emit()
+
+
+## A charged desk (MapObjects): its cards on the level-up panel, the game held meanwhile. Waits
+## for a free moment when a level-up, chest or anything else is on screen.
+func offer_desk(golden: bool) -> void:
+	if state != State.PLAYING:
+		map_objects.desk_waiting.append(golden)
+		return
+	desk_offer = true
+	current_choices = upgrades.desk_choices(golden)
+	state = State.LEVEL_UP
+	get_tree().paused = true
+	Sound.play("level_up")
+	level_up_offered.emit(current_choices, false)
+
+
+## The desk card picked: added to the player; then whatever level-ups were banked meanwhile.
+func _take_desk(choice: Dictionary) -> void:
+	upgrades.apply(choice)
+	telemetry.on_desk(choice)
+	desk_offer = false
+	Sound.play("pick")
+	state = State.PLAYING
+	get_tree().paused = false
+	inventory_changed.emit()
+	_offer_level_up()
+
+
+## A meeting room cleared in time (MapObjects): a year-end bonus at the first boss's pay.
+func open_meeting_bonus() -> void:
+	_open_chest(0)
+
+
+## A pickup put down by something on the map (a parcel's contents, MapObjects).
+func drop(kind: Pickup.Kind, at: Vector2, value: int) -> Pickup:
+	return _drop_xp(at, value) if kind == Pickup.Kind.XP else _drop(kind, at, value)
 
 
 # --- Year-end bonuses (boss chests) ------------------------------------------------------
@@ -972,7 +1053,8 @@ func _open_chest(boss_slot: int = 0) -> void:
 	var funding_round: Dictionary = FUNDING_ROUNDS[_roll_rating()]
 	_chests_opened += 1
 	var chest_id := "%s-%d" % [run_id, _chests_opened]
-	var salary := chest_salary(funding_round, boss_slot)
+	# More for each 加班申请 signed (.99).
+	var salary := roundi(chest_salary(funding_round, boss_slot) * reward_scale())
 	Progress.add_salary(chest_id, salary)
 	salary_earned += salary
 	var item := upgrades.chest_upgrade(funding_round["rarity"])
@@ -1110,9 +1192,9 @@ func _fast_forward(minute: int) -> void:
 	announce(tr("测试模式：从 %d:00 开始，职级已升到 %s") % [minute, Maps.rank_of(level)])
 
 
-## 测试模式 (the pause screen's buttons): the map's weather now.
+## 测试模式 (the pause screen's buttons): the run's weather now.
 func test_weather() -> void:
-	var map_event: Dictionary = Maps.current.MAP_EVENT
+	var map_event: Dictionary = spawner.weather
 	start_map_event(map_event)
 	announce(map_event["text"])
 

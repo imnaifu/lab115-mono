@@ -33,9 +33,9 @@ const BOSSES := ["juanwang", "ppt", "elimination", "annual_party"]
 const MOB_SWAPS := {}
 ## The Bug outbreak is 西二旗's rush hour here.
 const RING_SWAPS := {}
-## The map's weather (MapEvents): 沙尘暴 (a wind blowing everyone east).
-const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "沙尘暴来了！风往东刮，站稳了",
-	"name": "沙尘暴", "hint": "风往东刮，逆风走慢"}
+## The map's weather (MapEvents): 狂风 (a wind blowing everyone east); 沙尘暴 until .99 (the user: 沙尘暴就叫狂风啥的就行, as it now blows over 硅谷 too).
+const MAP_EVENT := {"id": "sandstorm", "at": 300.0, "seconds": 20.0, "text": "狂风来了！风往东刮，站稳了",
+	"name": "狂风", "hint": "风往东刮，逆风走慢"}
 ## The district whose office blocks line a company campus wherever it stands (City._place_row).
 const CAMPUS_DISTRICT := "houchang"
 ## The map (.77), as BayArea.BOUNDS: a square 1800 out every way from the start (2300 .77–.85). Outside it counts
