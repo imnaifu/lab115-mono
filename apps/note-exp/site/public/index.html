@@ -30,7 +30,8 @@
   <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
 
-  <link rel="stylesheet" href="/style.css?v=2">
+  <link rel="stylesheet" href="/sokosoko.css?v=3">
+  <link rel="stylesheet" href="/style.css?v=3">
 
   <script type="application/ld+json">
   {
@@ -67,219 +68,188 @@
   </script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <a class="brand" href="/">
-        <img src="/img/icon.svg" alt="" width="32" height="32">
-        <span>RedNote Exporter</span>
-      </a>
-      <nav class="nav" aria-label="Page">
-        <a class="sec" href="#features">Features</a>
-        <a class="sec" href="#how">How it works</a>
-        <a class="sec" href="#faq">FAQ</a>
-        <a class="lang" href="/zh/" hreflang="zh-CN" lang="zh-CN">中文</a>
-      </nav>
+  <header class="sk-header">
+    <a class="sk-logo" href="/"><img src="/img/icon.svg" alt="" width="28" height="28">RedNote Exporter</a>
+    <nav aria-label="Page"><ul class="sk-nav"><li><a href="#features">Features</a></li><li><a href="#preview">Preview</a></li><li><a href="#how">How it works</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+    <div class="hdr-actions">
+      <a class="sk-btn sk-btn--secondary sk-btn--sm" href="/zh/" hreflang="zh-CN" lang="zh-CN">中文</a>
+      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a>
     </div>
   </header>
 
   <main>
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="wrap">
-        <div>
-          <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#chrome"/></svg>Free Chrome extension</span>
-          <h1 id="hero-title">Save RedNote images &amp; videos.<br><mark>Export note lists to CSV.</mark></h1>
-          <p class="lead">Open a post and grab every image and the video into one folder. Scroll the home feed, a search or a profile, and every note you pass is collected, ready to export as a spreadsheet.</p>
-          <div class="cta">
-            <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">
-              <svg aria-hidden="true"><use href="/img/icons.svg#chrome"/></svg>Add to Chrome
-            </a>
-            <a class="btn btn-ghost" href="#how">See how it works</a>
-          </div>
-          <ul class="trust">
-            <li><svg aria-hidden="true"><use href="/img/icons.svg#lock"/></svg>No sign-up</li>
-            <li><svg aria-hidden="true"><use href="/img/icons.svg#shield"/></svg>No data collected</li>
-            <li><svg aria-hidden="true"><use href="/img/icons.svg#globe"/></svg>Works on RedNote &amp; Xiaohongshu</li>
-          </ul>
+    <section class="sk-hero" aria-labelledby="hero-title">
+      <span class="sk-hero__blob" style="width:220px;height:220px;background:var(--fill-sky);left:-60px;top:-40px"></span>
+      <span class="sk-hero__blob" style="width:140px;height:140px;background:var(--brand);right:80px;bottom:-50px"></span>
+      <span class="sk-hero__blob" style="width:90px;height:90px;background:var(--fill-mint);right:-20px;top:40px"></span>
+      <h1 class="sk-hero__title" id="hero-title">RedNote, saved in <mark>one&nbsp;click</mark></h1>
+      <p class="sk-hero__sub">Download a post's images &amp; video · Export note lists to CSV<br>Free · No sign-up · Runs entirely in your browser</p>
+      <div class="cta">
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a>
+        <a class="sk-btn sk-btn--secondary" href="#how">See how it works</a>
+      </div>
+      <div class="sk-tags"><span class="sk-tag">#Watermark-free video</span><span class="sk-tag">#Home feed</span><span class="sk-tag">#Search</span><span class="sk-tag">#Profiles</span><span class="sk-tag">#CSV export</span></div>
+    </section>
+
+    <section class="sk-section" id="features" aria-labelledby="features-title">
+      <div class="sk-container">
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="features-title">What it does</h2><span class="sk-h2-sub" aria-hidden="true">FEATURES</span></div>
+        <div class="card-grid card-grid--4"><article class="art-card"><div class="sk-card__well" style="background:var(--fill-sky)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<rect x="28" y="10" width="38" height="70" rx="7" fill="#fff"/>
+<rect x="34" y="18" width="26" height="30" rx="3" fill="var(--well)"/>
+<circle cx="53" cy="26" r="3.5" fill="var(--brand)"/>
+<path d="M34 46 43 35l6 6 4-4 7 8v1H34Z" fill="var(--fill-mint)"/>
+<path d="M35 57h20M35 64h13"/>
+<circle cx="66" cy="70" r="13" fill="var(--brand)"/>
+<path d="M66 63v13m-5-5 5 5 5-5"/>
+</svg></div><h3>Download a whole post</h3><p>Tick the images and video you want — the watermark-free original video when available.</p></article><article class="art-card"><div class="sk-card__well" style="background:var(--fill-yellow)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M14 30a4 4 0 0 1 4-4h18l6 6h36a4 4 0 0 1 4 4v38a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4Z" fill="var(--brand-deep)"/>
+<rect x="26" y="20" width="24" height="28" rx="3" fill="var(--fill-pink)" transform="rotate(-8 38 34)"/>
+<rect x="46" y="18" width="24" height="28" rx="3" fill="var(--fill-sky)" transform="rotate(7 58 32)"/>
+<path d="M12 44a4 4 0 0 1 4-4h64a4 4 0 0 1 4 4l-3 30a4 4 0 0 1-4 4H19a4 4 0 0 1-4-4Z" fill="var(--brand)"/>
+<path d="M40 58h16"/>
+</svg></div><h3>One folder per post</h3><p>Named after the time and post title, files numbered in order, nothing overwritten.</p></article><article class="art-card"><div class="sk-card__well" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<rect x="18" y="12" width="52" height="70" rx="6" fill="#fff"/>
+<rect x="24" y="19" width="13" height="15" rx="2.5" fill="var(--fill-pink)"/><path d="M43 23h20M43 30h12"/>
+<rect x="24" y="40" width="13" height="15" rx="2.5" fill="var(--fill-sky)"/><path d="M43 44h20M43 51h12"/>
+<rect x="24" y="61" width="13" height="15" rx="2.5" fill="var(--fill-lilac)"/><path d="M43 65h14"/>
+<circle cx="70" cy="70" r="13" fill="var(--brand)"/>
+<path d="M70 63v13m-5-5 5 5 5-5"/>
+</svg></div><h3>Capture as you scroll</h3><p>Home feed, search or a profile — every note you pass is collected and de-duplicated.</p></article><article class="art-card"><div class="sk-card__well" style="background:var(--fill-lilac)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<rect x="12" y="18" width="64" height="56" rx="5" fill="#fff"/>
+<path d="M12 23a5 5 0 0 1 5-5h54a5 5 0 0 1 5 5v9H12Z" fill="var(--fill-mint)"/>
+<path d="M12 46h64M12 60h64M34 18v56M56 18v56"/>
+<circle cx="74" cy="72" r="13" fill="var(--brand)"/>
+<path d="M68 77v-4M74 77v-9M80 77v-6"/>
+</svg></div><h3>Export to CSV</h3><p>Opens in Excel, Numbers or Google Sheets with titles, authors and engagement data.</p></article></div>
+      </div>
+    </section>
+
+    <section class="sk-section sk-section--soft" id="preview" aria-labelledby="preview-title">
+      <div class="sk-container">
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="preview-title">See it in action</h2><span class="sk-h2-sub" aria-hidden="true">PREVIEW</span></div>
+        <div class="pv" data-tabs>
+          <div class="sk-tabs pv-tabs" role="tablist" aria-label="Screens"><button class="sk-tab" role="tab" id="tab-post" aria-controls="pv-post" aria-selected="true">Single post</button><button class="sk-tab" role="tab" id="tab-folder" aria-controls="pv-folder" aria-selected="false">Auto-organized</button><button class="sk-tab" role="tab" id="tab-list" aria-controls="pv-list" aria-selected="false">Note list</button><button class="sk-tab" role="tab" id="tab-csv" aria-controls="pv-csv" aria-selected="false">CSV</button></div>
+          <div class="pv-panel" role="tabpanel" id="pv-post" aria-labelledby="tab-post">
+          <div class="pv-shot"><img src="/img/en-01-post-download.webp?v=3" width="712" height="745" alt="The Download Single Post tab listing a post's video and all of its images, each with a checkbox"></div>
+          <div class="pv-copy"><h3>Every image &amp; video, saved in <mark>one&nbsp;click</mark></h3><p>Open any RedNote post, tick what you want, and download it all into a single folder.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Watermark-free original video when available</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Works on image posts and video posts</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Pick only the files you need</li></ul>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a></div>
+        </div><div class="pv-panel" role="tabpanel" id="pv-folder" aria-labelledby="tab-folder">
+          <div class="pv-shot"><img src="/img/en-02-one-folder.webp?v=3" width="712" height="745" loading="lazy" alt="A Downloads folder named after the time and post title, holding video-1.mp4 and image-1 to image-9"></div>
+          <div class="pv-copy"><h3>One post, <mark>one&nbsp;tidy</mark> folder</h3><p>Each download goes into a folder named after the time and the post title, with files numbered in order.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Folder named by time + post title</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Files numbered image-1, image-2…</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Never overwrites existing files</li></ul>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a></div>
+        </div><div class="pv-panel" role="tabpanel" id="pv-list" aria-labelledby="tab-list">
+          <div class="pv-shot"><img src="/img/en-03-note-list.webp?v=3" width="712" height="745" loading="lazy" alt="The Export Note List tab: 128 notes captured, each with title, author, like, collect and comment counts and a date"></div>
+          <div class="pv-copy"><h3>Scroll as usual, export <mark>anytime</mark></h3><p>Browse the home feed, search results or a profile — every note you scroll past is captured and de-duplicated.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Home feed · Search · Profiles</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Auto de-dup with a live count</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Titles, authors and engagement data</li></ul>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a></div>
+        </div><div class="pv-panel" role="tabpanel" id="pv-csv" aria-labelledby="tab-csv">
+          <div class="pv-shot"><img src="/img/en-04-csv.webp?v=3" width="712" height="745" loading="lazy" alt="The exported CSV open in a spreadsheet, with Title, Author Name, Publish Time, Like Count and Collect Count columns"></div>
+          <div class="pv-copy"><h3>A clean spreadsheet, <mark>ready</mark> to analyze</h3><p>Opens straight in Excel, Numbers or Google Sheets — handy for content research and competitor tracking.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Title, author, publish date</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Likes · collects · comments · shares</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>Cover, profile and all image links</li></ul>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a></div>
         </div>
-        <div class="shot">
-          <img src="/img/en-hero.webp?v=2" width="620" height="540" alt="The extension's two tabs: Export Note List with 128 notes captured, and Download Single Post with a post's video and images selected" fetchpriority="high">
         </div>
       </div>
     </section>
 
-    <section id="features" class="alt" aria-labelledby="features-title">
-      <div class="wrap">
-        <div class="section-head">
-          <h2 id="features-title">Two tools, one job each</h2>
-          <p>Save a single post's images and video, or turn a whole page of notes into a spreadsheet.</p>
-        </div>
-
-        <article class="feature">
-          <div class="copy">
-            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#download"/></svg>Download Single Post</span>
-            <h3>Every image &amp; video,<br><mark>saved in one click</mark></h3>
-            <p>Open any RedNote post, tick what you want, and download it all into a single folder.</p>
-            <ul class="points">
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#video"/></svg></span>Watermark-free original video when available</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#image"/></svg></span>Works on image posts and video posts</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#check"/></svg></span>Pick only the files you need</li>
-            </ul>
-          </div>
-          <div class="shot">
-            <img src="/img/en-01-post-download.webp?v=2" width="712" height="745" loading="lazy" alt="The Download Single Post tab listing a post's video and all of its images, each with a checkbox">
-          </div>
-        </article>
-
-        <article class="feature flip">
-          <div class="copy">
-            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#folder"/></svg>Auto-organized</span>
-            <h3>One post,<br><mark>one tidy folder</mark></h3>
-            <p>Each download goes into a folder named after the time and the post title, with files numbered in order.</p>
-            <ul class="points">
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#folder"/></svg></span>Folder named by time + post title</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#list"/></svg></span>Files numbered image-1, image-2…</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#check"/></svg></span>Never overwrites existing files</li>
-            </ul>
-          </div>
-          <div class="shot">
-            <img src="/img/en-02-one-folder.webp?v=2" width="712" height="745" loading="lazy" alt="A Downloads folder named after the time and post title, holding video-1.mp4 and image-1 to image-9">
-          </div>
-        </article>
-
-        <article class="feature">
-          <div class="copy">
-            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#list"/></svg>Export Note List</span>
-            <h3>Scroll as usual,<br><mark>export CSV anytime</mark></h3>
-            <p>Browse the home feed, search results or a profile — every note you scroll past is captured and de-duplicated.</p>
-            <ul class="points">
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#search"/></svg></span>Home feed · Search · Profiles</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#check"/></svg></span>Auto de-dup with a live count</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#heart"/></svg></span>Titles, authors and engagement data</li>
-            </ul>
-          </div>
-          <div class="shot">
-            <img src="/img/en-03-note-list.webp?v=2" width="712" height="745" loading="lazy" alt="The Export Note List tab: 128 notes captured, each with title, author, like, collect and comment counts and a date">
-          </div>
-        </article>
-
-        <article class="feature flip">
-          <div class="copy">
-            <span class="tag"><svg aria-hidden="true"><use href="/img/icons.svg#file"/></svg>CSV spreadsheet</span>
-            <h3>A clean spreadsheet,<br><mark>ready to analyze</mark></h3>
-            <p>Opens straight in Excel, Numbers or Google Sheets — handy for content research and competitor tracking.</p>
-            <ul class="points">
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#file"/></svg></span>Title, author, publish date</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#heart"/></svg></span>Likes · collects · comments · shares</li>
-              <li><span class="ic"><svg aria-hidden="true"><use href="/img/icons.svg#link"/></svg></span>Cover, profile and all image links</li>
-            </ul>
-          </div>
-          <div class="shot">
-            <img src="/img/en-04-csv.webp?v=2" width="712" height="745" loading="lazy" alt="The exported CSV open in a spreadsheet, with Title, Author Name, Publish Time, Like Count and Collect Count columns">
-          </div>
-        </article>
+    <section class="sk-section" id="how" aria-labelledby="how-title">
+      <div class="sk-container">
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="how-title">Three steps</h2><span class="sk-h2-sub" aria-hidden="true">HOW IT WORKS</span></div>
+        <ol class="card-grid card-grid--3"><li class="art-card"><div class="sk-card__well" style="background:var(--fill-sky)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<rect x="8" y="16" width="80" height="64" rx="6" fill="#fff"/>
+<path d="M8 22a6 6 0 0 1 6-6h68a6 6 0 0 1 6 6v6H8Z" fill="var(--fill-sky)"/>
+<circle cx="16" cy="22" r="1.5" fill="var(--art-line)" stroke="none"/><circle cx="22" cy="22" r="1.5" fill="var(--art-line)" stroke="none"/><circle cx="28" cy="22" r="1.5" fill="var(--art-line)" stroke="none"/>
+<rect x="16" y="35" width="18" height="22" rx="3" fill="var(--fill-pink)"/>
+<rect x="39" y="35" width="18" height="30" rx="3" fill="var(--fill-mint)"/>
+<rect x="62" y="35" width="18" height="17" rx="3" fill="var(--fill-yellow)"/>
+<rect x="16" y="62" width="18" height="11" rx="3" fill="var(--fill-lilac)"/>
+<rect x="62" y="57" width="18" height="16" rx="3" fill="var(--fill-sky)"/>
+</svg></div><span class="step-no">1</span><h3>Open RedNote</h3><p>The home feed, search results, a profile, or any post.</p></li><li class="art-card"><div class="sk-card__well" style="background:var(--fill-pink)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<rect x="8" y="18" width="80" height="26" rx="13" fill="#fff"/>
+<path d="M20 31h28"/>
+<rect x="58" y="22" width="18" height="18" rx="5" fill="var(--fill-pink)"/>
+<circle cx="67" cy="32" r="5" fill="#d94b5c" stroke-width="2"/>
+<rect x="12" y="52" width="46" height="32" rx="5" fill="#fff"/>
+<path d="M18 61h14" stroke="var(--brand)" stroke-width="4"/><path d="M38 61h14M18 71h34M18 78h22"/>
+<path d="M66 40v26l6-6 5 11 5-2-5-11h8Z" fill="#fff"/>
+</svg></div><span class="step-no">2</span><h3>Click the icon</h3><p>Choose Export Note List or Download Single Post. On a list, keep scrolling to collect more notes.</p></li><li class="art-card"><div class="sk-card__well" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M14 16h28l12 12v48a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4Z" fill="#fff"/>
+<path d="M42 16v12h12M17 42h30M17 53h30M17 64h30M30 36v34"/>
+<rect x="50" y="26" width="30" height="36" rx="4" fill="var(--fill-pink)" transform="rotate(9 65 44)"/>
+<rect x="44" y="32" width="30" height="36" rx="4" fill="var(--fill-sky)"/>
+<circle cx="66" cy="41" r="3" fill="var(--brand)"/>
+<path d="M44 62 53 51l6 6 4-4 11 10v1H44Z" fill="var(--fill-mint)"/>
+<circle cx="74" cy="74" r="12" fill="var(--brand)"/>
+<path d="M74 67v13m-5-5 5 5 5-5"/>
+</svg></div><span class="step-no">3</span><h3>Export or download</h3><p>Click Export CSV for the spreadsheet, or tick images and video and download them. Clear starts over.</p></li></ol>
       </div>
     </section>
 
-    <section id="how" aria-labelledby="how-title">
-      <div class="wrap">
-        <div class="section-head">
-          <h2 id="how-title">Three steps. Nothing leaves your browser.</h2>
-        </div>
-        <ol class="steps">
-          <li>
-            <h3>Open RedNote</h3>
-            <p>The home feed, search results, a profile, or any post.</p>
-          </li>
-          <li>
-            <h3>Click the icon</h3>
-            <p>Choose Export Note List or Download Single Post. On a list, keep scrolling to collect more notes.</p>
-          </li>
-          <li>
-            <h3>Export or download</h3>
-            <p>Click Export CSV for the spreadsheet, or tick images and video and download them. Clear starts over.</p>
-          </li>
-        </ol>
+    <section class="sk-section sk-section--soft" aria-labelledby="privacy-title">
+      <div class="sk-container">
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="privacy-title">Your data stays with you</h2><span class="sk-h2-sub" aria-hidden="true">PRIVACY</span></div>
+        <ul class="priv"><li><span class="sk-cat__disc" style="background:var(--fill-yellow)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M34 44V34a14 14 0 0 1 28 0v10"/>
+<rect x="24" y="44" width="48" height="36" rx="7" fill="var(--brand)"/>
+<circle cx="48" cy="58" r="4.5" fill="var(--art-line)" stroke="none"/><path d="M48 61v8"/>
+</svg></span><h3>No account</h3><p>The extension has no sign-up and never reads your RedNote account details.</p></li><li><span class="sk-cat__disc" style="background:var(--fill-sky)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M30 70h36a13 13 0 0 0 2-26 18 18 0 0 0-34-4 15 15 0 0 0-4 30Z" fill="#fff"/>
+<path d="M20 22 76 78" stroke-width="3.5"/>
+</svg></span><h3>No external servers</h3><p>Capturing, exporting and downloading all happen in your browser. Nothing is sent to us or anyone else.</p></li><li><span class="sk-cat__disc" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M48 14 74 24v20c0 18-11 31-26 37-15-6-26-19-26-37V24Z" fill="#fff"/>
+<path d="M36 47l8 8 16-17" stroke-width="3"/>
+</svg></span><h3>Public content only</h3><p>It only reads notes already visible on the RedNote page you are browsing.</p></li></ul>
+        <p class="more"><a class="sk-btn sk-btn--ghost" href="/privacy/">Read the full privacy policy <svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></p>
       </div>
     </section>
 
-    <section class="alt" aria-labelledby="privacy-title">
-      <div class="wrap">
-        <div class="section-head">
-          <h2 id="privacy-title">Your data stays on your computer</h2>
-        </div>
-        <ul class="privacy-band">
-          <li>
-            <svg aria-hidden="true"><use href="/img/icons.svg#lock"/></svg>
-            <h3>No account</h3>
-            <p>The extension has no sign-up and never reads your RedNote account details.</p>
-          </li>
-          <li>
-            <svg aria-hidden="true"><use href="/img/icons.svg#cloudoff"/></svg>
-            <h3>No external servers</h3>
-            <p>Capturing, exporting and downloading all happen in your browser. Nothing is sent to us or anyone else.</p>
-          </li>
-          <li>
-            <svg aria-hidden="true"><use href="/img/icons.svg#shield"/></svg>
-            <h3>Public content only</h3>
-            <p>It only reads notes already visible on the RedNote page you are browsing.</p>
-          </li>
-        </ul>
-        <p class="privacy-more"><a href="/privacy/">Read the full privacy policy →</a></p>
+    <section class="sk-section" id="faq" aria-labelledby="faq-title">
+      <div class="sk-container">
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="faq-title">Questions</h2><span class="sk-h2-sub" aria-hidden="true">FAQ</span></div>
+        <div class="faq"><details><summary>Is it free?</summary><p>Yes. There are no paid features and no account to create.</p></details><details><summary>Are the videos always watermark-free?</summary><p>The extension downloads the watermark-free original whenever it is available. For the occasional post where it isn't, it falls back to the regular video stream, which may carry a watermark.</p></details><details><summary>Why are some CSV columns empty?</summary><p>Only search results return the full collect, comment and share counts and the publish time; the home feed and profile pages return the like count only. Columns RedNote didn't return are left empty rather than filled with 0, so a blank cell means “not provided”, not a count of zero.</p></details><details><summary>Where are the captured notes kept?</summary><p>Only in the current tab. Closing the tab or clicking Clear discards them. Exported CSVs and downloaded files go to your own Downloads folder and are never uploaded anywhere.</p></details><details><summary>Which sites and browsers are supported?</summary><p>Both xiaohongshu.com and rednote.com. It is built for Chrome; Chromium-based browsers such as Edge and Brave can usually install it from the Chrome Web Store too.</p></details></div>
       </div>
     </section>
 
-    <section id="faq" aria-labelledby="faq-title">
-      <div class="wrap">
-        <div class="section-head">
-          <h2 id="faq-title">FAQ</h2>
-        </div>
-        <div class="faq">
-          <details>
-            <summary>Is it free?</summary>
-            <p>Yes. There are no paid features and no account to create.</p>
-          </details>
-          <details>
-            <summary>Are the videos always watermark-free?</summary>
-            <p>The extension downloads the watermark-free original whenever it is available. For the occasional post where it isn't, it falls back to the regular video stream, which may carry a watermark.</p>
-          </details>
-          <details>
-            <summary>Why are some CSV columns empty?</summary>
-            <p>Only search results return the full collect, comment and share counts and the publish time; the home feed and profile pages return the like count only. Columns RedNote didn't return are left empty rather than filled with 0, so a blank cell means “not provided”, not a count of zero.</p>
-          </details>
-          <details>
-            <summary>Where are the captured notes kept?</summary>
-            <p>Only in the current tab. Closing the tab or clicking Clear discards them. Exported CSVs and downloaded files go to your own Downloads folder and are never uploaded anywhere.</p>
-          </details>
-          <details>
-            <summary>Which sites and browsers are supported?</summary>
-            <p>Both xiaohongshu.com and rednote.com. It is built for Chrome; Chromium-based browsers such as Edge and Brave can usually install it from the Chrome Web Store too.</p>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section class="alt closing" aria-labelledby="closing-title">
-      <div class="wrap">
+    <section class="sk-section sk-section--soft closing" aria-labelledby="closing-title">
+      <div class="sk-container">
         <img src="/img/icon.svg" alt="" width="72" height="72">
-        <h2 id="closing-title">Give it a try</h2>
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="closing-title">Give it a try</h2></div>
         <p>Once installed, open any RedNote post and click the extension icon.</p>
-        <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">
-          <svg aria-hidden="true"><use href="/img/icons.svg#chrome"/></svg>Add to Chrome
-        </a>
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="row">
-        <a href="/privacy/">Privacy policy</a>
-        <a href="mailto:help@lab115.com">Feedback: help@lab115.com</a>
-        <a href="/zh/" hreflang="zh-CN" lang="zh-CN">中文</a>
-        <span class="made">Made by <a href="https://lab115.com">LAB115</a></span>
-      </div>
-      <p class="disclaimer">RedNote Exporter is not affiliated with, endorsed by or authorized by RedNote (Xiaohongshu). It only handles publicly visible content and is intended for personal and research use.</p>
+  <footer class="sk-footer">
+    <div class="sk-footer__cols">
+      <div><a class="sk-logo" href="/"><img src="/img/icon.svg" alt="" width="28" height="28">RedNote Exporter</a><p class="foot-desc">A free Chrome extension that saves RedNote images and videos and exports note lists to CSV.</p></div>
+      <div><h4>Product</h4><ul><li><a href="#features">Features</a></li><li><a href="#preview">Preview</a></li><li><a href="#how">How it works</a></li></ul></div><div><h4>Help</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="/privacy/">Privacy policy</a></li><li><a href="mailto:help@lab115.com">help@lab115.com</a></li></ul></div><div><h4>More</h4><ul><li><a href="https://lab115.com">Made by LAB115</a></li><li><a href="/zh/" hreflang="zh-CN" lang="zh-CN">中文</a></li></ul></div>
     </div>
+    <div class="sk-footer__base"><span>RedNote Exporter is not affiliated with, endorsed by or authorized by RedNote (Xiaohongshu). It only handles publicly visible content and is intended for personal and research use.</span><span>© 2026 LAB115</span></div>
   </footer>
+  <script>
+    // Preview tabs: without JS every panel simply stacks; with it, one shows at a time.
+    document.documentElement.classList.add("js");
+    document.querySelectorAll("[data-tabs]").forEach(function (root) {
+      var tabs = Array.prototype.slice.call(root.querySelectorAll("[role=tab]"));
+      function show(tab) {
+        tabs.forEach(function (t) {
+          var on = t === tab;
+          t.setAttribute("aria-selected", on);
+          t.tabIndex = on ? 0 : -1;
+          document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+        });
+      }
+      tabs.forEach(function (t, i) {
+        t.addEventListener("click", function () { show(t); });
+        t.addEventListener("keydown", function (e) {
+          var step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+          if (!step) return;
+          var next = tabs[(i + step + tabs.length) % tabs.length];
+          show(next); next.focus();
+        });
+      });
+      show(tabs[0]);
+    });
+  </script>
 </body>
 </html>

@@ -34,6 +34,8 @@
         --fill-sky: #bcdcf2;
         --fill-mint: #bfe3cf;
         --fill-lilac: #d9d1f2;
+        --fill-pink: #f6c6cf;
+        --fill-yellow: #fdf1cc;
         --display: "Nunito", "PingFang SC", "Helvetica Neue", sans-serif;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -59,8 +61,8 @@
       .brandrow .name { font: 800 22px/1 var(--display); }
       .pill { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--on-brand); background: var(--brand); border-radius: 99px; padding: 4px 12px; }
       .tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; letter-spacing: .04em; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 99px; padding: 6px 16px; margin-bottom: 20px; }
-      h1 { font: 800 52px/1.3 var(--display); letter-spacing: .01em; }
-      .en h1 { font-size: 46px; }
+      h1 { font: 700 50px/1.35 var(--display); letter-spacing: .02em; }
+      .en h1 { font-size: 44px; }
       .sub { font-size: 19px; line-height: 1.7; color: var(--ink-muted); margin-top: 22px; }
       .en .sub { font-size: 18px; line-height: 1.6; }
       .bullets { margin-top: 30px; display: flex; flex-direction: column; gap: 16px; }
@@ -98,17 +100,17 @@
       .row .st { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--ink-muted); margin-top: 6px; }
       .row .st span { display: inline-flex; align-items: center; gap: 4px; }
       .photo { position: relative; overflow: hidden; }
-      .sel { box-shadow: 0 0 0 3px var(--brand-deep); }
-      .check { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%; background: var(--brand); border: 2px solid var(--brand-deep); color: var(--on-brand); display: flex; align-items: center; justify-content: center; }
+      .sel { box-shadow: 0 0 0 4px var(--brand-soft), 0 0 0 5.5px var(--brand-deep); }
+      .check { position: absolute; top: 6px; right: 6px; z-index: 2; width: 20px; height: 20px; border-radius: 50%; background: var(--brand); border: 2px solid var(--brand-deep); color: var(--on-brand); display: flex; align-items: center; justify-content: center; }
       .num { position: absolute; left: 4px; top: 4px; min-width: 18px; text-align: center; font: 800 10px/16px var(--display); color: var(--ink); background: rgba(255, 255, 255, 0.92); border-radius: 99px; padding: 0 6px; }
 
       /* floating result card (export / download done sheet) */
       .card { position: absolute; background: var(--paper); border-radius: 20px; padding: 26px 26px 22px; text-align: center; box-shadow: 0 12px 32px rgba(47, 53, 66, 0.16), 0 0 0 1px var(--line); }
       .okc { width: 56px; height: 56px; border-radius: 50%; background: var(--success-soft); color: var(--success); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
       .card .h { font-weight: 700; font-size: 17px; margin-bottom: 14px; }
-      .chip { display: flex; align-items: center; gap: 8px; background: var(--paper-sunk); border-radius: 12px; padding: 10px 12px; font-size: 13px; text-align: left; }
+      .chip { display: flex; align-items: center; gap: 8px; background: var(--success-soft); border-radius: 12px; padding: 10px 12px; font-size: 13px; text-align: left; }
       .chip span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .chip .ci { flex: none; display: flex; color: var(--ink-muted); }
+      .chip .ci { flex: none; display: flex; color: var(--success); }
 
       /* spreadsheet */
       table { border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
@@ -122,9 +124,9 @@
       /* step cards (s5) */
       .steps { position: absolute; left: 88px; right: 88px; top: 248px; display: flex; gap: 28px; }
       .step { flex: 1; background: var(--paper); border-radius: 20px; padding: 26px 26px 28px; border: 1px solid var(--line); }
-      .step .ill { height: 172px; border-radius: 12px; background: var(--paper-sunk); position: relative; overflow: hidden; margin-bottom: 22px; }
+      .step .ill { height: 172px; border-radius: 12px; background: var(--paper-sunk); position: relative; overflow: hidden; margin-bottom: 22px; display: flex; align-items: center; justify-content: center; }
       .step .k { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: var(--on-brand); font: 800 17px/1 var(--display); margin-bottom: 12px; }
-      .step .tt { font: 800 22px/1.3 var(--display); }
+      .step .tt { font: 700 22px/1.3 var(--display); }
       .step .ss { font-size: 15px; color: var(--ink-muted); margin-top: 8px; line-height: 1.55; }
       .trust { position: absolute; left: 0; right: 0; bottom: 64px; display: flex; justify-content: center; gap: 14px; }
       .trust div { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--ink); background: var(--paper); border-radius: 99px; padding: 11px 20px; border: 1px solid var(--line); }
@@ -173,17 +175,31 @@
 
       // The extension icon (icons/icon.svg), inlined so it scales crisply.
       const logo = (size) => `
-        <svg width="${size}" height="${size}" viewBox="6 6 116 116" >
-          <rect x="6" y="6" width="116" height="116" rx="30" fill="#FF2442"/>
-          <g transform="rotate(-30 64 64)">
-            <ellipse cx="64" cy="64" rx="36" ry="21" fill="#fff"/>
-            <circle cx="52" cy="60" r="2.1" fill="#FF2442" fill-opacity=".5"/>
-            <circle cx="66" cy="68" r="2.1" fill="#FF2442" fill-opacity=".5"/>
-            <circle cx="78" cy="59" r="2.1" fill="#FF2442" fill-opacity=".5"/>
-          </g>
-          <path d="M92 36 C 98 28 90 22 84 27 C 88 31 88 36 92 36 Z" fill="#36C06A"/>
-          <path d="M92 36 C 96 42 102 40 102 33 C 98 32 95 33 92 36 Z" fill="#36C06A"/>
+        <svg width="${size}" height="${size}" viewBox="4 4 120 120" fill="none" stroke="#2f3542" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="120" height="120" rx="30" fill="#f6c6cf" stroke="none"/>
+  <g transform="translate(58 60) scale(.72) translate(-66 -62)">
+    
+    <path d="M88 34C92 26 100 24 107 27C102 33 94 36 88 34Z" fill="#bfe3cf" stroke-width="5"/>
+    <path d="M88 34C96 30 98 22 95 15C89 20 86 28 88 34Z" fill="#bfe3cf" stroke-width="5"/>
+    <path d="M18 80c-4-20 14-40 42-46 30-6 52 4 56 22 4 20-16 38-46 44-26 5-48-2-52-20Z" fill="#d94b5c" stroke-width="6"/>
+    
+    <circle cx="48" cy="61" r="3.8" fill="#2f3542" stroke="none"/>
+    <circle cx="70" cy="68" r="3.8" fill="#2f3542" stroke="none"/>
+    <circle cx="84" cy="52" r="3.8" fill="#2f3542" stroke="none"/>
+  </g>
+  <circle cx="92" cy="92" r="19" fill="#f7c948" stroke-width="5.5"/>
+  <path d="M92 82v20m-8-8 8 8 8-8" stroke-width="5.5"/>
         </svg>`;
+
+      // The site's single-line illustrations (site/public, build script), one ink
+      // line over flat pastel fills.
+      const ART_OPEN = '<svg viewBox="0 0 96 96" fill="none" stroke="#2f3542" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="height:84%;width:auto">';
+      const ART = {
+        browser: `<rect x="8" y="16" width="80" height="64" rx="6" fill="#fff"/><path d="M8 22a6 6 0 0 1 6-6h68a6 6 0 0 1 6 6v6H8Z" fill="var(--fill-sky)"/><circle cx="16" cy="22" r="1.5" fill="#2f3542" stroke="none"/><circle cx="22" cy="22" r="1.5" fill="#2f3542" stroke="none"/><circle cx="28" cy="22" r="1.5" fill="#2f3542" stroke="none"/><rect x="16" y="35" width="18" height="22" rx="3" fill="var(--fill-pink)"/><rect x="39" y="35" width="18" height="30" rx="3" fill="var(--fill-mint)"/><rect x="62" y="35" width="18" height="17" rx="3" fill="var(--fill-yellow)"/><rect x="16" y="62" width="18" height="11" rx="3" fill="var(--fill-lilac)"/><rect x="62" y="57" width="18" height="16" rx="3" fill="var(--fill-sky)"/>`,
+        click: `<rect x="8" y="18" width="80" height="26" rx="13" fill="#fff"/><path d="M20 31h28"/><rect x="58" y="22" width="18" height="18" rx="5" fill="var(--fill-pink)"/><circle cx="67" cy="32" r="5" fill="#d94b5c" stroke-width="2"/><rect x="12" y="52" width="46" height="32" rx="5" fill="#fff"/><path d="M18 61h14" stroke="var(--brand)" stroke-width="4"/><path d="M38 61h14M18 71h34M18 78h22"/><path d="M66 40v26l6-6 5 11 5-2-5-11h8Z" fill="#fff"/>`,
+        saved: `<path d="M14 16h28l12 12v48a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4Z" fill="#fff"/><path d="M42 16v12h12M17 42h30M17 53h30M17 64h30M30 36v34"/><rect x="50" y="26" width="30" height="36" rx="4" fill="var(--fill-pink)" transform="rotate(9 65 44)"/><rect x="44" y="32" width="30" height="36" rx="4" fill="var(--fill-sky)"/><circle cx="66" cy="41" r="3" fill="var(--brand)"/><path d="M44 62 53 51l6 6 4-4 11 10v1H44Z" fill="var(--fill-mint)"/><circle cx="74" cy="74" r="12" fill="var(--brand)"/><path d="M74 67v13m-5-5 5 5 5-5"/>`,
+      };
+      const art = (name) => `${ART_OPEN}${ART[name]}</svg>`;
 
       // Abstract "photo" fills: soft layered gradients that read as blurred
       // lifestyle shots without using anyone's real image.
@@ -228,30 +244,30 @@
           ],
           s1: {
             tag: ["download", "下载单帖资源"],
-            h1: ["图片和视频", "一键全部保存"],
+            h1: "图片和视频，<br><mark>一键</mark>全部保存",
             sub: "打开任意一篇笔记，勾选想要的图片和视频，点一下就下载到同一个文件夹。",
             bullets: [["video", "视频优先下载无水印原片"], ["image", "图文笔记、视频笔记都支持"], ["check", "只勾选你需要的那几张"]],
           },
           s2: {
             tag: ["folder", "自动整理"],
-            h1: ["一篇笔记", "一个文件夹"],
+            h1: "一篇笔记，<br><mark>一个</mark>文件夹",
             sub: "文件夹按下载时间和笔记标题命名，视频和图片按顺序编号，不用再一张张重命名。",
             bullets: [["folder", "下载时间 + 标题，自动建文件夹"], ["list", "image-1、image-2… 按原顺序编号"], ["check", "重名自动加序号，不覆盖旧文件"]],
           },
           s3: {
             tag: ["list", "导出笔记列表"],
-            h1: ["边刷边采集", "随时导出 CSV"],
+            h1: "边刷边采集，<br><mark>随时</mark>导出 CSV",
             sub: "在首页推荐、搜索结果或用户主页正常往下滑，看过的笔记会被自动收集并去重。",
             bullets: [["search", "首页推荐 · 搜索结果 · 用户主页"], ["check", "自动去重，实时显示采集数量"], ["heart", "标题、作者、互动数据一起带上"]],
           },
           s4: {
             tag: ["file", "CSV 表格"],
-            h1: ["导出就是", "一张整齐的表"],
+            h1: "导出就是<br><mark>一张</mark>整齐的表",
             sub: "Excel、Numbers、Google 表格直接打开，中文不乱码，做选题分析、竞品整理都顺手。",
             bullets: [["file", "标题、作者、发布时间"], ["heart", "点赞 · 收藏 · 评论 · 分享"], ["link", "封面、作者主页、全部图片链接"]],
           },
           s5: {
-            title: "三步上手，全程在本地完成",
+            title: "三步上手，全程<mark>在本地</mark>完成",
             steps: [
               ["打开小红书", "首页推荐、搜索结果、用户主页，或任意一篇笔记"],
               ["点击扩展图标", "切换到「导出笔记列表」或「下载单帖资源」"],
@@ -260,10 +276,11 @@
             trust: [["lock", "插件无需注册登录"], ["shield", "不收集任何数据"], ["cloudoff", "不连接外部服务器"], ["globe", "中英双语界面"]],
           },
           marquee: {
-            h1: ["小红书图片视频，一键保存", "笔记列表，一键导出 CSV"],
+            h1: "小红书笔记，<mark>一键</mark>带走",
+            sub: "图片视频一键下载 · 笔记列表导出 CSV",
             chips: [["video", "视频优先无水印原片"], ["list", "首页 · 搜索 · 主页"], ["shield", "本地处理，不上传"]],
           },
-          small: ["小红书导出", "图片视频下载 · 笔记导出 CSV"],
+          small: ["小红书<mark>导出</mark>", "图片视频下载 · 笔记导出 CSV"],
           post: { title: "秋天第一件风衣的 5 套通勤穿搭", author: "盐系小柯", time: "2026-09-28" },
           videoUnit: "个视频", imageUnit: "张图片", videoWord: "视频", imagesWord: "图片",
           deselAll: "取消全选", dlSel: (n) => `下载选中 · ${n}`,
@@ -292,30 +309,30 @@
           ],
           s1: {
             tag: ["download", "Download Single Post"],
-            h1: ["Every image & video,", "saved in one click"],
+            h1: "Every image &amp; video,<br>saved in <mark>one&nbsp;click</mark>",
             sub: "Open any RedNote post, tick what you want, and download it all into a single folder.",
             bullets: [["video", "Watermark-free original video when available"], ["image", "Works on image posts and video posts"], ["check", "Pick only the files you need"]],
           },
           s2: {
             tag: ["folder", "Auto-organized"],
-            h1: ["One post,", "one tidy folder"],
+            h1: "One post,<br><mark>one tidy</mark> folder",
             sub: "Each download goes into a folder named after the time and the post title, with files numbered in order.",
             bullets: [["folder", "Folder named by time + post title"], ["list", "Files numbered image-1, image-2…"], ["check", "Never overwrites existing files"]],
           },
           s3: {
             tag: ["list", "Export Note List"],
-            h1: ["Scroll as usual,", "export CSV anytime"],
+            h1: "Scroll as usual,<br>export <mark>anytime</mark>",
             sub: "Browse the home feed, search results or a profile — every note you scroll past is captured and de-duplicated.",
             bullets: [["search", "Home feed · Search · Profiles"], ["check", "Auto de-dup with a live count"], ["heart", "Titles, authors and engagement data"]],
           },
           s4: {
             tag: ["file", "CSV spreadsheet"],
-            h1: ["A clean spreadsheet,", "ready to analyze"],
+            h1: "A clean spreadsheet,<br><mark>ready</mark> to analyze",
             sub: "Opens straight in Excel, Numbers or Google Sheets — handy for content research and competitor tracking.",
             bullets: [["file", "Title, author, publish date"], ["heart", "Likes · collects · comments · shares"], ["link", "Cover, profile and all image links"]],
           },
           s5: {
-            title: "Three steps. Nothing leaves your browser.",
+            title: "Three steps. Nothing leaves <mark>your browser</mark>.",
             steps: [
               ["Open RedNote", "The home feed, search results, a profile, or any post"],
               ["Click the icon", "Choose Export Note List or Download Single Post"],
@@ -324,10 +341,11 @@
             trust: [["lock", "No sign-up"], ["shield", "No data collected"], ["cloudoff", "No external servers"], ["globe", "English & Chinese UI"]],
           },
           marquee: {
-            h1: ["Save RedNote images & videos.", "Export note lists to CSV."],
+            h1: "RedNote, saved in<br><mark>one&nbsp;click</mark>",
+            sub: "Download a post\u2019s images &amp; video · Export note lists to CSV",
             chips: [["folder", "One folder per post"], ["list", "Feed · Search · Profiles"], ["shield", "100% local"]],
           },
-          small: ["RedNote Exporter", "Image & video download · CSV export"],
+          small: ["RedNote <mark>Exporter</mark>", "Image & video download · CSV export"],
           post: { title: "5 easy fall trench coat looks", author: "saltyko", time: "2026-09-28" },
           videoUnit: "video", imageUnit: "images", videoWord: "Video", imagesWord: "Images",
           deselAll: "Deselect", dlSel: (n) => `Download · ${n}`,
@@ -347,7 +365,7 @@
         <div class="copy" style="top:${top}px">
           <div class="brandrow">${logo(54)}<span class="name">${T.brand}</span><span class="pill">${T.ext}</span></div>
           <div class="tag">${ic(c.tag[0], 17, 2.2)}${c.tag[1]}</div>
-          <h1>${c.h1[0]}<br><mark>${c.h1[1]}</mark></h1>
+          <h1>${c.h1}</h1>
           <p class="sub">${c.sub}</p>
           <div class="bullets">${c.bullets.map(([i, t]) => `<div class="bullet"><span class="bi">${ic(i, 19, 2)}</span>${t}</div>`).join("")}</div>
         </div>`;
@@ -385,14 +403,14 @@
             </div>
             <div style="font-weight:700;font-size:14px;line-height:22px;margin:12px 0 12px">${p.title}</div>
             <div style="font-size:12px;color:var(--ink-muted);margin-bottom:10px"><b style="font:800 12px var(--display);color:var(--ink)">1</b> ${T.videoUnit} · <b style="font:800 12px var(--display);color:var(--ink)">9</b> ${T.imageUnit}</div>
-            ${photo(0, "height:136px;border-radius:6px;", `
+            ${photo(0, "height:136px;border-radius:6px;margin:0 4px;", `
               <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(47,53,66,.55);color:#fff;display:flex;align-items:center;justify-content:center;padding-left:2px">${ic("play", 20, 0, 'fill="currentColor"')}</span>
               <span style="position:absolute;right:6px;bottom:6px;font:700 11px/18px var(--display);color:#fff;background:rgba(47,53,66,.7);border-radius:99px;padding:0 8px">01:24</span>
               <span style="position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:18px;color:var(--on-brand);background:var(--brand);border-radius:99px;padding:0 8px">${ic("video", 12)}${T.videoWord}</span>
               <span class="check">${ic("check", 12, 3)}</span>`, "sel")}
             <div style="display:flex;justify-content:space-between;font:700 11.5px var(--display);color:var(--ink-muted);margin-top:8px"><span>1080×1920</span><span>38.2 MB</span></div>
-            <div style="font-size:12px;font-weight:700;color:var(--ink-muted);margin:16px 0 10px">${T.imagesWord}</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${imgs}</div>
+            <div style="font-size:12px;font-weight:500;letter-spacing:.12em;color:var(--ink-muted);margin:16px 0 8px">${T.imagesWord}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:4px">${imgs}</div>
           </div>`;
         const foot = `
           <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink);padding-left:4px"><span style="width:18px;height:18px;border-radius:4px;background:var(--brand);border:2px solid var(--brand-deep);color:var(--on-brand);display:flex;align-items:center;justify-content:center">${ic("check", 12, 3)}</span>${T.deselAll}</span>
@@ -424,7 +442,7 @@
             <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px"><b style="font:800 32px/1 var(--display)">128</b><span style="font-size:13px;font-weight:700;color:var(--ink-muted)">${T.unit}</span></div>
             <div style="font-size:12px;color:var(--ink-muted);margin-top:4px">${T.dedup}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;padding:12px 16px 6px;font-size:12px;color:var(--ink-muted)">${ic("arrowdown", 14)}${T.pageHint}</div>
+          <div style="display:flex;align-items:flex-start;gap:10px;margin:12px 16px 6px;padding:10px 14px;border-radius:12px;background:var(--brand-soft);font-size:13px;line-height:20px;color:var(--ink)">${ic("arrowdown", 18)}${T.pageHint}</div>
           ${rows}`;
         const foot = `
           <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--ink-muted)">${ic("file", 15)}<b style="font:800 13px var(--display);color:var(--ink)">128</b> ${T.unit}</span>
@@ -526,37 +544,16 @@
 
         s5: () => {
           const ill = [
-            // 1: a RedNote page
-            `<div style="position:absolute;left:22px;right:22px;top:20px;bottom:-10px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:12px;display:flex;gap:8px">
-               ${[0, 1, 2].map((c) => `<div style="flex:1;display:flex;flex-direction:column;gap:8px">${photo(c * 2 + 1, `height:${[70, 92, 60][c]}px;border-radius:6px`)}${photo(c * 2 + 2, `height:${[80, 54, 96][c]}px;border-radius:6px`)}</div>`).join("")}
-             </div>`,
-            // 2: toolbar with the extension icon being clicked
-            `<div style="position:absolute;left:22px;right:22px;top:26px;height:46px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;align-items:center;gap:12px;padding:0 14px">
-               <div style="flex:1;height:22px;border-radius:6px;background:#f1efed"></div>
-               <span style="color:#a5a5ab">${ic("puzzle", 20, 1.8)}</span>
-               <span style="position:relative;display:flex;border-radius:9px;box-shadow:0 0 0 4px var(--brand)">${logo(30)}</span>
-             </div>
-             <span style="position:absolute;right:30px;top:62px;color:#1d1d1f;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))">${ic("cursor", 28, 1.2, 'stroke="#fff"')}</span>
-             <div style="position:absolute;left:22px;right:22px;top:96px;height:60px;background:#fff;border-radius:10px 10px 0 0;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;align-items:flex-end;gap:10px;padding:0 10px;white-space:nowrap;font-size:11px">
-               <div style="flex:1;color:var(--ink);font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:700;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:10px;border-bottom:3px solid var(--brand)">${ic("list", 13)}${T.tabList}</div>
-               <div style="flex:1;color:var(--ink-muted);font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:700;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:13px">${ic("download", 13)}${T.tabPost}</div>
-             </div>`,
-            // 3: saved files
-            `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px">
-               <div style="width:84px;height:104px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--success)">${ic("file", 34, 1.6)}<b style="font:800 13px var(--display);color:var(--success)">CSV</b></div>
-               <div style="position:relative;width:104px;height:104px">
-                 ${photo(4, "position:absolute;left:0;top:10px;width:76px;height:88px;border-radius:8px;transform:rotate(-8deg);box-shadow:0 6px 16px rgba(0,0,0,.12)")}
-                 ${photo(1, "position:absolute;left:26px;top:4px;width:76px;height:88px;border-radius:8px;transform:rotate(6deg);box-shadow:0 6px 16px rgba(0,0,0,.14)", `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff">${ic("play", 26, 0, 'fill="currentColor"')}</span>`)}
-               </div>
-               <span style="position:absolute;right:20px;bottom:18px;width:44px;height:44px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:flex;align-items:center;justify-content:center">${ic("download", 20, 2.4)}</span>
-             </div>`,
+            ["browser", "var(--fill-sky)"],
+            ["click", "var(--fill-pink)"],
+            ["saved", "var(--fill-mint)"],
           ];
           return `
             <div class="abs" style="left:0;right:0;top:70px;display:flex;flex-direction:column;align-items:center;gap:18px">
               <div class="brandrow" style="margin:0">${logo(46)}<span class="name">${T.brand}</span><span class="pill">${T.ext}</span></div>
-              <div style="font:800 ${LANG === "zh" ? 44 : 42}px/1.4 var(--display);letter-spacing:.01em"><mark>${T.s5.title}</mark></div>
+              <div style="font:700 ${LANG === "zh" ? 44 : 42}px/1.4 var(--display);letter-spacing:.02em">${T.s5.title}</div>
             </div>
-            <div class="steps">${T.s5.steps.map(([tt, ss], i) => `<div class="step"><div class="ill">${ill[i]}</div><div class="k">${i + 1}</div><div class="tt">${tt}</div><div class="ss">${ss}</div></div>`).join("")}</div>
+            <div class="steps">${T.s5.steps.map(([tt, ss], i) => `<div class="step"><div class="ill" style="background:${ill[i][1]}">${art(ill[i][0])}</div><div class="k">${i + 1}</div><div class="tt">${tt}</div><div class="ss">${ss}</div></div>`).join("")}</div>
             <div class="trust">${T.s5.trust.map(([i, t]) => `<div>${ic(i, 19, 2)}${t}</div>`).join("")}</div>`;
         },
 
@@ -564,7 +561,7 @@
           <div class="abs" style="right:-90px;top:-110px;width:280px;height:280px;border-radius:50%;background:var(--brand-soft)"></div>
           <div class="abs" style="left:36px;top:0;bottom:0;right:28px;display:flex;flex-direction:column;justify-content:center">
             ${logo(78)}
-            <div style="font:800 ${LANG === "zh" ? 40 : 36}px/1.2 var(--display);margin-top:22px"><mark>${T.small[0]}</mark></div>
+            <div style="font:700 ${LANG === "zh" ? 40 : 36}px/1.3 var(--display);margin-top:22px">${T.small[0]}</div>
             <div style="font-size:${LANG === "zh" ? 19 : 17}px;font-weight:700;color:var(--ink-muted);margin-top:12px">${T.small[1]}</div>
           </div>`,
 
@@ -573,8 +570,9 @@
           return `
             <div class="abs" style="left:88px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center">
               <div class="brandrow" style="margin-bottom:28px">${logo(58)}<span class="name" style="font-size:24px">${T.brand}</span><span class="pill">${T.ext}</span></div>
-              <div style="font:800 ${LANG === "zh" ? 48 : 40}px/1.32 var(--display);letter-spacing:.01em">${m.h1[0]}<br><mark>${m.h1[1]}</mark></div>
-              <div style="display:flex;gap:10px;margin-top:32px;flex-wrap:wrap">${m.chips.map(([i, t]) => `<span style="display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;border-radius:99px;padding:9px 16px;box-shadow:0 0 0 1px var(--line)"><span style="color:var(--ink)">${ic(i, 17, 2.2)}</span>${t}</span>`).join("")}</div>
+              <div style="font:700 ${LANG === "zh" ? 50 : 46}px/1.35 var(--display);letter-spacing:.02em">${m.h1}</div>
+              <div style="font-size:19px;line-height:1.6;color:var(--ink-muted);margin-top:14px">${m.sub}</div>
+              <div style="display:flex;gap:10px;margin-top:28px;flex-wrap:wrap">${m.chips.map(([i, t]) => `<span style="display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;border-radius:99px;padding:9px 16px;box-shadow:0 0 0 1px var(--line)"><span style="color:var(--ink)">${ic(i, 17, 2.2)}</span>${t}</span>`).join("")}</div>
             </div>
             ${popup(listTab(), 790, 72, 0.92)}
             ${popup(postTab(), 1000, 36, 0.92)}`;

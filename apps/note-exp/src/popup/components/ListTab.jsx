@@ -1,12 +1,12 @@
 import Icon from './Icon.jsx';
 import NoteRow from './NoteRow.jsx';
-import { Spinner, Btn, Progress, Overlay, Sheet, SheetIcon, EmptyState } from './ui.jsx';
+import { Spinner, Btn, Progress, Overlay, Sheet, SheetIcon, EmptyState, Notice } from './ui.jsx';
 
 export default function ListTab({ L, s }) {
   if (s.sPhase === 'nopage') {
     return (
       <EmptyState
-        icon="inbox"
+        art="browser"
         title={L.nopageT}
         sub={L.nopageS}
         btn={L.nopageBtn}
@@ -37,10 +37,9 @@ export default function ListTab({ L, s }) {
         <div className="text-[12px] text-ink-muted mt-1">{L.dedup(s.received, s.duplicates)}</div>
       </div>
 
-      <div className="flex items-center gap-2 px-4 pt-3 pb-1.5 text-[12px] text-ink-muted leading-snug">
-        <Icon name="arrowdown" size={14} />
+      <Notice icon="arrowdown" className="mx-4 mt-3 mb-1.5">
         {L.pageHint}
-      </div>
+      </Notice>
 
       {/* live preview list */}
       <div>
@@ -69,12 +68,13 @@ export default function ListTab({ L, s }) {
               <>
                 <SheetIcon ok />
                 <div className="font-bold text-[16px] mb-3">{L.exportDone}</div>
-                <div className="flex items-center gap-2 bg-paper-sunk rounded-md px-3 py-2.5 text-[13px] text-ink mt-1.5">
-                  <Icon name="file" size={16} className="text-ink-muted" />
-                  <span className="flex-1 text-left truncate">{s.exportedName}</span>
-                  <b className="text-ink-muted font-bold">{L.rows(s.total)}</b>
-                </div>
-                <div className="text-[12px] text-ink-muted mt-2">{L.savedTo}</div>
+                <Notice icon="file" tone="success" className="mt-1.5">
+                  <div className="flex gap-2">
+                    <span className="flex-1 truncate">{s.exportedName}</span>
+                    <b className="font-bold">{L.rows(s.total)}</b>
+                  </div>
+                  <div className="text-[12px] text-ink-muted">{L.savedTo}</div>
+                </Notice>
                 <div className="flex gap-2.5 mt-4">
                   <Btn kind="primary" className="flex-1" onClick={() => s.setSPhase('capturing')}>
                     {L.done}

@@ -38,6 +38,14 @@
   --success: #276b43;
   --success-soft: #e3f4ea;
   --scrim: rgba(28, 31, 38, 0.48);
+  /* illustration palette: art-line on flat pastel fills */
+  --art-line: #2f3542;
+  --well: #f3efe6;
+  --fill-sky: #bcdcf2;
+  --fill-mint: #bfe3cf;
+  --fill-pink: #f6c6cf;
+  --fill-lilac: #d9d1f2;
+  --fill-yellow: #fdf1cc;
   --shadow-pop: 0 12px 32px rgba(47, 53, 66, 0.16);
   --shadow-sheet: 0 -8px 24px rgba(47, 53, 66, 0.12);
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);

@@ -23,6 +23,10 @@ export default {
         success: token('success'),
         'success-soft': token('success-soft'),
         scrim: token('scrim'),
+        well: token('well'),
+        'fill-sky': token('fill-sky'),
+        'fill-mint': token('fill-mint'),
+        'fill-yellow': token('fill-yellow'),
       },
       fontFamily: {
         // Nunito ships with the extension (Latin only); CJK falls through to the sans stack.

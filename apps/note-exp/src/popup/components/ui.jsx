@@ -1,4 +1,5 @@
 import Icon from './Icon.jsx';
+import Illust from './Illust.jsx';
 
 export function Spinner({ size = 16 }) {
   return (
@@ -72,22 +73,39 @@ export function SheetIcon({ ok }) {
   );
 }
 
-// Empty / not-on-the-right-page state: a round well, a short title, one way out.
-export function EmptyState({ icon, warn, title, sub, btn, onBtn }) {
+// Empty / not-on-the-right-page state (Sokosoko EmptyState): a 120px well with an
+// illustration, a short title, one way out.
+export function EmptyState({ art, title, sub, btn, onBtn }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center px-7 py-12 h-full gap-1.5">
-      <span
-        className={`w-[88px] h-[88px] rounded-full flex items-center justify-center mb-2 ${
-          warn ? 'bg-brand-soft text-ink' : 'bg-paper-sunk text-ink-muted'
-        }`}
-      >
-        <Icon name={icon} size={36} stroke={1.8} />
+    <div className="flex flex-col items-center justify-center text-center px-7 py-10 h-full gap-2">
+      <span className="w-[120px] h-[120px] rounded-full bg-well flex items-center justify-center mb-2">
+        <Illust name={art} className="w-[76px] h-[76px]" />
       </span>
-      <div className="font-bold text-[16px] leading-[24px] text-ink">{title}</div>
-      <div className="text-[13px] leading-[21px] text-ink-muted mb-3 max-w-[260px]">{sub}</div>
+      <div className="font-bold text-[17px] leading-[26px] text-ink">{title}</div>
+      <div className="text-[14px] leading-[22px] text-ink-muted mb-3 max-w-[280px]">{sub}</div>
       <Btn kind="secondary" onClick={onBtn}>
         {btn}
       </Btn>
     </div>
   );
+}
+
+// Inline notice (Sokosoko Notice). `tone` picks the soft ground and icon colour.
+const TONES = {
+  brand: ['bg-brand-soft', 'text-ink'],
+  success: ['bg-success-soft', 'text-success'],
+};
+export function Notice({ icon, tone = 'brand', children, className = '' }) {
+  const [ground, iconColor] = TONES[tone];
+  return (
+    <div className={`flex gap-2.5 items-start px-3.5 py-2.5 rounded-md text-[13px] leading-[20px] text-ink text-left ${ground} ${className}`}>
+      <Icon name={icon} size={18} className={`mt-px ${iconColor}`} />
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
+
+// Uppercase-style section label (Sokosoko sk-label).
+export function Label({ children, className = '' }) {
+  return <div className={`text-[12px] leading-[18px] font-medium tracking-[0.12em] uppercase text-ink-muted ${className}`}>{children}</div>;
 }

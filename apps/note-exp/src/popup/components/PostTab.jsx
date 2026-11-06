@@ -1,20 +1,21 @@
 import Icon from './Icon.jsx';
 import PhotoThumb from './PhotoThumb.jsx';
-import { Btn, Progress, Overlay, Sheet, SheetIcon, EmptyState } from './ui.jsx';
+import { Btn, Progress, Overlay, Sheet, SheetIcon, EmptyState, Notice, Label } from './ui.jsx';
 
 function Asset({ selected, onClick, children, thumb }) {
   return (
-    <button onClick={onClick} aria-pressed={selected} className="relative block w-full text-left group">
-      <div
-        className={`overflow-hidden rounded-sm transition-shadow duration-[120ms] ${
-          selected ? 'shadow-[0_0_0_3px_var(--brand-deep)]' : ''
-        }`}
-      >
-        {thumb}
-      </div>
+    // Pick card, styled like Sokosoko's format choice: picked = brand-deep border on brand-soft.
+    <button
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`relative block w-full text-left p-1 rounded-md border-[1.5px] transition-colors duration-[120ms] ${
+        selected ? 'border-brand-deep bg-brand-soft' : 'border-line bg-paper hover:border-line-strong'
+      }`}
+    >
+      <div className="overflow-hidden rounded-sm">{thumb}</div>
       {/* round check: yellow with an ink tick when picked, a white ring otherwise */}
       <span
-        className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center border-2 transition-colors duration-[120ms] ${
+        className={`absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center border-2 transition-colors duration-[120ms] ${
           selected ? 'bg-brand border-brand-deep text-on-brand' : 'bg-[rgba(255,255,255,0.88)] border-line-strong'
         }`}
       >
@@ -30,7 +31,7 @@ export default function PostTab({ L, s }) {
 
   // No video note captured yet (or not on a post page).
   if (s.pPhase === 'error' || !post) {
-    return <EmptyState icon="alert" warn title={L.errT} sub={L.errS} btn={L.errBtn} onBtn={() => s.setPPhase('ready')} />;
+    return <EmptyState art="post" title={L.errT} sub={L.errS} btn={L.errBtn} onBtn={() => s.setPPhase('ready')} />;
   }
 
   // Use the first image (the cover frame) as the video poster when available.
@@ -87,7 +88,7 @@ export default function PostTab({ L, s }) {
             </PhotoThumb>
           }
         >
-          <div className="flex justify-between font-display font-bold text-[11.5px] text-ink-muted mt-1.5">
+          <div className="flex justify-between font-display font-bold text-[11.5px] text-ink-muted mt-1 px-1">
             <span>{post.video.resolution}</span>
             <span>{post.video.size}</span>
           </div>
@@ -97,8 +98,8 @@ export default function PostTab({ L, s }) {
       {/* images */}
       {post.images.length > 0 && (
         <>
-          <div className="text-[12px] font-bold text-ink-muted mt-4 mb-2.5">{L.imagesWord}</div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <Label className="mt-4 mb-2">{L.imagesWord}</Label>
+          <div className="grid grid-cols-3 gap-2">
             {post.images.map((im, i) => (
               <Asset
                 key={i}
@@ -126,10 +127,9 @@ export default function PostTab({ L, s }) {
               <>
                 <SheetIcon ok />
                 <div className="font-bold text-[16px] mb-3">{L.savedN(s.selCount)}</div>
-                <div className="flex items-center gap-2 bg-paper-sunk rounded-md px-3 py-2.5 text-[13px] text-ink mt-1.5">
-                  <Icon name="folder" size={16} className="text-ink-muted" />
-                  <span className="flex-1 text-left truncate">{L.savedPath(s.dlFolder)}</span>
-                </div>
+                <Notice icon="folder" tone="success" className="mt-1.5">
+                  <span className="block truncate">{L.savedPath(s.dlFolder)}</span>
+                </Notice>
                 <div className="flex gap-2.5 mt-4">
                   <Btn kind="primary" className="flex-1" onClick={() => s.setPPhase('ready')}>
                     {L.done}
