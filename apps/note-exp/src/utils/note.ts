@@ -120,6 +120,7 @@ export function parseNoteToPostData(
     authorUrl,
     imageUrls,
     noteUrl,
+    noteId,
   };
 }
 

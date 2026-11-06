@@ -15,8 +15,11 @@ export interface PostData {
   authorUrl: string;
   imageUrls: string[]; // each element will be its own column
   // Link to the note's detail page (with xsec_token). Used by the popup UI
-  // (note row link); exported as the "Note URL" column without the token.
+  // (note row link) and exported as the "Note URL" column.
   noteUrl: string;
+  // The note's permanent id — the only identifier that never expires, unlike
+  // the token in noteUrl. Exported as the first column.
+  noteId: string;
 }
 
 /**
@@ -40,6 +43,7 @@ function escapeCSVField(field: string): string {
 
 function postToCSVRow(data: PostData): string {
   return [
+    escapeCSVField(data.noteId ?? ""),
     escapeCSVField(data.title),
     escapeCSVField(data.authorName),
     escapeCSVField(data.publishTime),
@@ -49,9 +53,9 @@ function postToCSVRow(data: PostData): string {
     escapeCSVField(data.sharedCount),
     escapeCSVField(data.coverUrl),
     escapeCSVField(data.authorUrl),
-    // Export the bare note link: the xsec_token query is session-scoped noise
-    // in a spreadsheet. The popup still opens the tokenized noteUrl.
-    escapeCSVField((data.noteUrl ?? "").split("?")[0]),
+    // Keep xsec_token: XHS blocks /explore/<id> without it (error 300031).
+    // The token may expire, which is why Note ID is exported too.
+    escapeCSVField(data.noteUrl ?? ""),
     // All image URLs in a single cell, one per line (escapeCSVField quotes it)
     escapeCSVField((data.imageUrls ?? []).join("\n")),
   ].join(",");
@@ -63,6 +67,7 @@ function postToCSVRow(data: PostData): string {
  */
 export function convertToCSV(listData: PostData[]): string {
   const headers = [
+    "Note ID",
     "Title",
     "Author Name",
     "Publish Time",
@@ -72,9 +77,8 @@ export function convertToCSV(listData: PostData[]): string {
     "Shared Count",
     "Cover URL",
     "Author URL",
-    // Added after the existing URL columns (not next to Title) so sheets
-    // built on the old column order keep lining up; Image URLs stays last
-    // because its cell is multi-line.
+    // Grouped with the other URL columns; Image URLs stays last because its
+    // cell is multi-line.
     "Note URL",
     "Image URLs",
   ];

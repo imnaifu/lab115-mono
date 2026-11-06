@@ -25,9 +25,13 @@ you export the collected notes on demand.
 
 ## Exported columns
 
-`Title`, `Author Name`, `Publish Time`, `Like Count`, `Collect Count`,
-`Comment Count`, `Shared Count`, `Cover URL`, `Author URL`, `Note URL`, and
-`Image URLs` (all image links in one cell, one per line).
+`Note ID`, `Title`, `Author Name`, `Publish Time`, `Like Count`,
+`Collect Count`, `Comment Count`, `Shared Count`, `Cover URL`, `Author URL`,
+`Note URL`, and `Image URLs` (all image links in one cell, one per line).
+
+`Note URL` carries the `xsec_token` the list API issued — Xiaohongshu refuses
+to open a note link without it — and that token may expire. `Note ID` is the
+permanent identifier to fall back on.
 
 Counts are exported as plain numbers. Xiaohongshu only returns abbreviated
 values from 10,000 up (`1.6万`, `48.6K`), so those are expanded to an
