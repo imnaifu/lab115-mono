@@ -30,6 +30,9 @@ const BONUSES := {
 const PLAIN_BONUSES := ["max_hp", "regen", "luck"]
 
 signal checked_in(id: String)
+## A landmark not checked in at yet has just opened (the HUD's banner, which waits its turn and
+## holds still under a dialog, unlike the one-line announcements that replace each other).
+signal opened(id: String)
 
 ## Checked in at this run, in order (the result screen and the run's data).
 var new_ids := PackedStringArray()
@@ -86,7 +89,7 @@ func tick(delta: float) -> void:
 			_announced[id] = true
 			# Not for one a run started past (测试模式's later start): only as it opens.
 			if _game.elapsed - open_at(id) < 1.0:
-				_game.announce(tr("%s 开门了，去打卡！") % tr(Maps.current.STAMPS[id]["name"]))
+				opened.emit(id)
 		var held: float = _held.get(id, 0.0)
 		if _game.player.position.distance_to(ring_center(id)) <= RADIUS:
 			_inside = id

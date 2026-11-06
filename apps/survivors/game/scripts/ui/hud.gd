@@ -363,6 +363,7 @@ func _ready() -> void:
 	game.revive_offered.connect(_show_revive)
 	game.boss_move.connect(_on_boss_move)
 	game.stamps.checked_in.connect(_on_checked_in)
+	game.stamps.opened.connect(_on_stamp_opened)
 	game.achievements.unlocked.connect(_on_achievement)
 	if Cloud.shared() != null:
 		Cloud.shared().changed.connect(_on_cloud_changed)
@@ -1031,6 +1032,9 @@ func _show_toast(text: String, hold := 1.8) -> void:
 	if _toast_tween != null:
 		_toast_tween.kill()
 	_toast_tween = create_tween()
+	# The HUD runs while paused, so without this a line said just before a level-up ran out unseen
+	# behind the cards: it waits under the dialog and goes on after.
+	_toast_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	_toast_tween.tween_property(_toast, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_toast_tween.tween_interval(hold)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.5)
@@ -1067,6 +1071,13 @@ func _build_badge() -> void:
 func _on_checked_in(id: String) -> void:
 	var stamp: Dictionary = Maps.current.STAMPS[id]
 	_queue_badge([stamp["art"], tr("打卡成功") + " · " + Stamps.bonus_text(id), tr(stamp["name"]), Art.HP_RED, true])
+
+
+## A landmark opening: a banner (its picture, 开门了 · 去打卡 in the rings' yellow, its name) rather
+## than an announcement, which anything picked up a moment later used to replace.
+func _on_stamp_opened(id: String) -> void:
+	var stamp: Dictionary = Maps.current.STAMPS[id]
+	_queue_badge([stamp["art"], tr("开门了 · 去打卡"), tr(stamp["name"]), Art.BRAND_DEEP, false, "alarm"])
 
 
 func _on_achievement(id: String) -> void:
@@ -1116,6 +1127,8 @@ func _next_badge() -> void:
 	if sound != "":
 		Sound.play(sound)
 	_badge_tween = create_tween()
+	# Held still under a dialog (level-up, chest, pause), as the announcements are.
+	_badge_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	if stamp:
 		# Slammed down: big, then hard onto the page.
 		_badge_tween.tween_property(_badge, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -1272,8 +1285,8 @@ func _show_title() -> void:
 
 	# The name and the buttons sit in the middle of what's left, a little above it.
 	column.add_child(UiKit.filler())
-	column.add_child(UiKit.kicker("BIG TECH SURVIVORS"))
-	column.add_child(UiKit.gap(6))
+	# No kicker over the name (.98, the user: 上面那个灰色中英文版本都去掉吧): in English it said the
+	# same thing twice.
 	_title_heading = _heading("大厂幸存者", TITLE_SIZE if portrait else 40)
 	column.add_child(_title_heading)
 	column.add_child(UiKit.gap(40 if portrait else 18))

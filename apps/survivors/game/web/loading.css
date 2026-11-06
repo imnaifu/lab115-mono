@@ -1,0 +1,490 @@
+/* The loading page (.98, the user: 做个酷炫的加载页面): drawn over Godot's own status overlay
+   (#status, from the export's HTML shell) while the engine and the game package download. The
+   game's name with its highlighter, the programmer running at the head of the progress bar with
+   a bug, a red dot and a 404 ghost chasing, stars to pick up along the way, and a tip. Colours
+   are the game's (Art: INK, PAPER_SOFT, BRAND...), so it hands over to the home screen on the
+   same cream ground. loading.js builds it; tools/export_web.sh copies this folder next to the
+   page as loading/, with the art and Nunito. */
+
+@font-face {
+	font-family: "Survivors Nunito";
+	/* Nunito.ttf is the game's subset, variable in weight (tools/subset_fonts.py). */
+	src: url("loading/Nunito.ttf") format("truetype");
+	font-weight: 200 1000;
+	font-display: swap;
+}
+
+:root {
+	--ld-ink: #2f3542;
+	--ld-ink-muted: #666b7a;
+	--ld-paper: #ffffff;
+	--ld-paper-soft: #faf7f0;
+	--ld-paper-sunk: #f3efe6;
+	--ld-brand: #f7c948;
+	--ld-brand-deep: #e0a91b;
+	--ld-sky: rgba(188, 220, 242, 0.45);
+	--ld-mint: rgba(191, 227, 207, 0.5);
+	--ld-danger: #b23344;
+	--ld-font: "Survivors Nunito", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+body {
+	background-color: var(--ld-paper-soft);
+}
+
+#status {
+	background-color: var(--ld-paper-soft);
+	overflow: hidden;
+	font-family: var(--ld-font);
+	color: var(--ld-ink);
+}
+
+/* Godot's own picture and bar: the picture isn't shown, and the bar stays in the page (the shell
+   writes the progress into it, loading.js reads it back) but out of sight. */
+#status-splash {
+	display: none !important;
+}
+
+#status-progress {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* What the shell shows when the game can't start: a card, as the game's dialogs are. */
+#status-notice {
+	position: relative;
+	z-index: 2;
+	max-width: 420px;
+	margin: 24px 24px 0;
+	padding: 16px 20px;
+	background: var(--ld-paper);
+	border: 2px solid var(--ld-ink);
+	border-radius: 20px;
+	box-shadow: 0 4px 0 var(--ld-ink);
+	color: var(--ld-danger);
+	font: 600 15px/1.5 var(--ld-font);
+}
+
+/* The two soft circles of the home screen (Hud._show_title), so the page it turns into
+   doesn't jump. */
+.ld-blob {
+	position: absolute;
+	border-radius: 50%;
+	pointer-events: none;
+}
+
+.ld-blob-sky {
+	width: 280px;
+	height: 280px;
+	left: -120px;
+	top: 32%;
+	background: var(--ld-sky);
+}
+
+.ld-blob-mint {
+	width: 240px;
+	height: 240px;
+	right: -100px;
+	top: 8%;
+	background: var(--ld-mint);
+}
+
+.ld {
+	position: relative;
+	z-index: 1;
+	width: min(88%, 560px);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+/* --- The name --------------------------------------------------------------------------- */
+
+.ld-title {
+	position: relative;
+	margin: 0 0 44px;
+	padding: 0 6px;
+	font-weight: 900;
+	font-size: 52px;
+	line-height: 1.1;
+	letter-spacing: 2px;
+	text-align: center;
+	white-space: nowrap;
+}
+
+.ld-en .ld-title {
+	font-size: clamp(30px, 9.5vw, 56px);
+	letter-spacing: 0;
+}
+
+/* The highlighter under the bottom of the letters, swept on after they land. */
+.ld-title::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0.08em;
+	height: 0.36em;
+	border-radius: 4px;
+	background: var(--ld-brand);
+	transform: scaleX(0);
+	transform-origin: left center;
+	animation: ld-sweep 0.5s cubic-bezier(0.3, 0.7, 0.3, 1) 0.65s forwards;
+}
+
+.ld-letter {
+	position: relative;
+	display: inline-block;
+	opacity: 0;
+	transform: translateY(-28px) scale(1.3);
+	animation: ld-drop 0.42s cubic-bezier(0.3, 1.6, 0.5, 1) forwards;
+	animation-delay: calc(var(--i) * 70ms);
+}
+
+.ld-space {
+	display: inline-block;
+	width: 0.28em;
+}
+
+@keyframes ld-drop {
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes ld-sweep {
+	to {
+		transform: scaleX(1);
+	}
+}
+
+/* --- The race along the bar ------------------------------------------------------------- */
+
+.ld-race {
+	width: 100%;
+	display: flex;
+	align-items: flex-end;
+	gap: 12px;
+}
+
+.ld-course {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+}
+
+/* Where the runners and the stars are, above the bar; they're cut off at its ends. */
+.ld-lane {
+	position: relative;
+	height: 70px;
+	overflow: hidden;
+}
+
+/* --p, 0 to 1, is set by loading.js. The pack's front (the programmer) is at the head of the
+   fill, and never further back than his own width, so he's always in sight. */
+.ld-pack {
+	position: absolute;
+	bottom: 0;
+	left: max(56px, calc(var(--p, 0) * 100%));
+	transform: translateX(-100%);
+	display: flex;
+	align-items: flex-end;
+	gap: 6px;
+}
+
+.ld-runner {
+	display: block;
+	width: 32px;
+	height: 32px;
+	animation: ld-bob 0.36s ease-in-out infinite alternate;
+}
+
+.ld-runner:nth-child(1) {
+	animation-delay: -0.1s;
+}
+
+.ld-runner:nth-child(2) {
+	animation-delay: -0.25s;
+}
+
+/* The 404 ghost floats rather than runs. */
+.ld-runner.ld-ghost {
+	animation: ld-float 1.1s ease-in-out infinite alternate;
+}
+
+.ld-hero {
+	position: relative;
+	width: 52px;
+	height: 52px;
+	margin-left: 10px;
+}
+
+.ld-hero img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	transform-origin: 50% 90%;
+	animation: ld-run 0.3s ease-in-out infinite alternate;
+}
+
+/* Dust kicked up behind him. */
+.ld-puff {
+	position: absolute;
+	left: 2px;
+	bottom: 4px;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: #e6e0d4;
+	opacity: 0;
+	animation: ld-puff 0.6s ease-out infinite;
+}
+
+.ld-puff + .ld-puff {
+	animation-delay: 0.3s;
+}
+
+@keyframes ld-run {
+	from {
+		transform: translateY(0) rotate(6deg);
+	}
+	to {
+		transform: translateY(-7px) rotate(10deg);
+	}
+}
+
+@keyframes ld-bob {
+	from {
+		transform: translateY(0) rotate(-6deg);
+	}
+	to {
+		transform: translateY(-5px) rotate(6deg);
+	}
+}
+
+@keyframes ld-float {
+	from {
+		transform: translateY(-2px);
+	}
+	to {
+		transform: translateY(-12px);
+	}
+}
+
+@keyframes ld-puff {
+	from {
+		opacity: 0.9;
+		transform: translate(0, 0) scale(0.6);
+	}
+	to {
+		opacity: 0;
+		transform: translate(-22px, -6px) scale(1.4);
+	}
+}
+
+/* The stars waiting along the way; each one goes up and away as the programmer reaches it. */
+.ld-star {
+	position: absolute;
+	bottom: 24px;
+	width: 20px;
+	height: 20px;
+	margin-left: -10px;
+	animation: ld-twinkle 0.9s ease-in-out infinite alternate;
+}
+
+.ld-star.ld-got {
+	animation: ld-collect 0.5s ease-out forwards;
+}
+
+@keyframes ld-twinkle {
+	from {
+		transform: translateY(0) scale(1);
+	}
+	to {
+		transform: translateY(-5px) scale(1.12);
+	}
+}
+
+@keyframes ld-collect {
+	from {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-34px) scale(1.8);
+	}
+}
+
+/* The bar: a chunky pill in the game's outline, filling with stripes on the move. */
+.ld-bar {
+	position: relative;
+	height: 22px;
+	box-sizing: border-box;
+	border: 3px solid var(--ld-ink);
+	border-radius: 999px;
+	background: var(--ld-paper-sunk);
+	overflow: hidden;
+}
+
+.ld-fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: calc(var(--p, 0) * 100%);
+	background-color: var(--ld-brand);
+	background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(224, 169, 27, 0.55) 8px 16px);
+	background-size: 22.6px 22.6px;
+	animation: ld-stripes 0.6s linear infinite;
+}
+
+@keyframes ld-stripes {
+	to {
+		background-position: 22.6px 0;
+	}
+}
+
+.ld-pct {
+	min-width: 3.4em;
+	margin-bottom: -2px;
+	font-weight: 900;
+	font-size: 22px;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+/* --- The tip under it ------------------------------------------------------------------- */
+
+.ld-tip {
+	min-height: 2.9em;
+	margin-top: 22px;
+	padding: 0 8px;
+	color: var(--ld-ink-muted);
+	font-weight: 600;
+	font-size: 15px;
+	line-height: 1.45;
+	text-align: center;
+	transition: opacity 0.25s;
+}
+
+.ld-tip b {
+	margin-right: 6px;
+	padding: 1px 9px;
+	border-radius: 999px;
+	background: var(--ld-brand);
+	color: var(--ld-ink);
+	font-size: 12px;
+	font-weight: 800;
+	vertical-align: 1px;
+}
+
+.ld-tip.ld-fade {
+	opacity: 0;
+}
+
+/* When the game can't start, the notice says why; the race stops. */
+.ld-failed .ld-race,
+.ld-failed .ld-tip {
+	display: none;
+}
+
+/* A big screen (a computer): everything larger, so it doesn't sit small in the middle. */
+@media (min-width: 900px) and (min-height: 640px) {
+	.ld {
+		width: min(70%, 680px);
+	}
+
+	.ld-title,
+	.ld-en .ld-title {
+		margin-bottom: 56px;
+		font-size: 76px;
+	}
+
+	.ld-lane {
+		height: 96px;
+	}
+
+	.ld-pack {
+		left: max(76px, calc(var(--p, 0) * 100%));
+		gap: 8px;
+	}
+
+	.ld-runner {
+		width: 44px;
+		height: 44px;
+	}
+
+	.ld-hero {
+		width: 72px;
+		height: 72px;
+	}
+
+	.ld-star {
+		bottom: 34px;
+		width: 26px;
+		height: 26px;
+		margin-left: -13px;
+	}
+
+	.ld-bar {
+		height: 28px;
+	}
+
+	.ld-pct {
+		font-size: 30px;
+	}
+
+	.ld-tip {
+		margin-top: 28px;
+		font-size: 18px;
+	}
+
+	.ld-tip b {
+		font-size: 14px;
+	}
+
+	.ld-blob-sky {
+		width: 420px;
+		height: 420px;
+		left: -160px;
+	}
+
+	.ld-blob-mint {
+		width: 340px;
+		height: 340px;
+		right: -130px;
+	}
+}
+
+/* A short screen (a phone on its side): everything closer together. */
+@media (max-height: 460px) {
+	.ld-title {
+		margin-bottom: 20px;
+		font-size: 40px;
+	}
+
+	.ld-tip {
+		margin-top: 12px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#status .ld *,
+	#status .ld *::before {
+		animation: none !important;
+	}
+
+	.ld-letter {
+		opacity: 1;
+		transform: none;
+	}
+
+	.ld-title::before {
+		transform: none;
+	}
+}

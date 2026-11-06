@@ -16,6 +16,12 @@ godot --headless --path . --export-release Web "$out/index.html"
 # rather than as a credits line in the UI.
 mkdir -p "$out/licenses"
 cp assets/fonts/Nunito-OFL.txt assets/fonts/NotoSansSC-OFL.txt "$out/licenses/"
+# The loading page (web/, linked from export_presets.cfg's html/head_include): its script and
+# style, the art the race along the bar is drawn with, and Nunito for the numbers and the name.
+mkdir -p "$out/loading"
+cp web/loading.css web/loading.js "$out/loading/"
+cp assets/art/coder.svg assets/art/bug.svg assets/art/ping.svg assets/art/ghost404.svg assets/art/star_gold.svg "$out/loading/"
+cp assets/fonts/Nunito.ttf "$out/loading/"
 # PWA is off, but browsers from the PWA days still run its caching worker; this replacement
 # clears it out (see the file). Keep it until nobody can still have the old one.
 cp tools/service_worker_removal.js "$out/index.service.worker.js"

@@ -582,7 +582,7 @@ const EN := {
 	"成就达成": "Achievement unlocked",
 	"地标按时开门，站进圈里满 10 秒就能打卡，每个地标都送一点永久加成": "Landmarks open on the clock; stay in the ring for 10 seconds to check in. Each gives a small bonus for good",
 	# The check-in rings and their opening times (Stamps, StampRings, .68)
-	"%s 开门了，去打卡！": "%s is open: go check in!",
+	"开门了 · 去打卡": "Now open · go check in",
 	"%s 开门": "Opens at %s",
 	"打卡中 %d/%d": "Checking in %d/%d",
 	"已获得：": "Bonuses so far: ",
@@ -1437,6 +1437,10 @@ const EN := {
 	"免疫": "Immune",
 }
 
+## localStorage key the loading page reads the language from (web/loading.js; as Device's
+## orientation key).
+const LANGUAGE_KEY := "survivors-language"
+
 static var _registered := false
 
 
@@ -1464,6 +1468,10 @@ static func apply(code: String) -> void:
 	TranslationServer.set_locale(code)
 	# On the web this is the tab title.
 	DisplayServer.window_set_title(TranslationServer.translate("大厂幸存者"))
+	# Mirrored for the loading page (web/loading.js), which shows the name before the game, and
+	# its saved settings, can be read.
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("try { localStorage.setItem('%s', '%s'); } catch (error) {}" % [LANGUAGE_KEY, code], true)
 
 
 static func choose(code: String) -> void:
