@@ -30,7 +30,9 @@ extends SceneTree
 ## low-health bar; they can't die), --job=coder|pm|designer|ops|data_scientist (play as that job; not saved), --evolve (start with every weapon the job can carry evolved,
 ## to look at the evolutions), --map=sv|ldn|sea|sg|bj (play that map, locked or not), --stamps=N|all (start
 ## having checked in at the first N of the map's landmarks, or all of them),
-## --collection=0|1|2|3 (with --shots, also screenshot the title's 收藏 page on that tab; 3 is 战绩),
+## --collection=0|1|2|3|4 (with --shots, also screenshot a page from home, .96: 0 成就, 1 打卡, 2 个人 ·
+## 生涯, 3 个人 · 战绩, 4 个人 · 图鉴; one 收藏 page with 打卡 / 成就 / 图鉴 / 战绩 tabs until .96),
+## --depart (with --shots, also screenshot the 出发 page, .96),
 ## --board (with --shots, also screenshot the title's 排行榜 page, .89),
 ## --map-picker[=city] (with --shots, also screenshot the title's map picker, with that
 ## city's card if given), --luck=N
@@ -64,6 +66,10 @@ var _restarts := 0
 var _level_up_frames := 0
 var _end_frames := 0
 var _level_up_shot_taken := false
+## 刷新 (.96), checked once, at the first level-up where the job's own pair is due: what went wrong
+## ("" when fine), and whether it ran at all.
+var _reroll_problem := ""
+var _reroll_checked := false
 var _title_frames := 0
 var _pause_at := -1.0
 var _pause_frames := 0
@@ -91,6 +97,8 @@ var _stamps_before := 0
 ## The 打卡 · 成就 tab to screenshot at the title, or -1; and frames it has been open.
 var _collection_tab := -1
 var _collection_frames := 0
+var _depart_page := false
+var _depart_frames := 0
 var _board_page := false
 var _board_frames := 0
 var _map_picker := false
@@ -170,6 +178,8 @@ func _initialize() -> void:
 			_board_page = true
 		elif arg.begins_with("--collection="):
 			_collection_tab = int(value)
+		elif arg == "--depart":
+			_depart_page = true
 		elif arg == "--map-picker" or arg.begins_with("--map-picker="):
 			_map_picker = true
 			_map_picker_city = value if arg.contains("=") else ""
@@ -237,9 +247,21 @@ func _process(_delta: float) -> bool:
 					return false
 				if _title_frames == OVERLAY_SETTLE_FRAMES:
 					_save_shot("title")
+				if _depart_page:
+					if _depart_frames == 0:
+						_game.hud._open_depart()
+					_depart_frames += 1
+					if _depart_frames < OVERLAY_SETTLE_FRAMES:
+						return false
+					_save_shot("depart")
+					_game.hud._close_depart()
+					_depart_page = false
 				if _collection_tab >= 0:
 					if _collection_frames == 0:
-						_game.hud._open_collection(_collection_tab)
+						if _collection_tab < 2:
+							_game.hud._open_awards(_collection_tab)
+						else:
+							_game.hud._open_profile(_collection_tab - 2)
 					_collection_frames += 1
 					if _collection_frames < OVERLAY_SETTLE_FRAMES:
 						return false
@@ -331,6 +353,8 @@ func _process(_delta: float) -> bool:
 					return false
 				_save_shot("level_up")
 				_level_up_shot_taken = true
+			if not _reroll_checked and _game.current_choices.any(func(c: Dictionary) -> bool: return c.get("milestone", false)):
+				_check_reroll()
 			_game.choose_upgrade(_pick_choice())
 			_upgrades_taken += 1
 		Game.State.CHEST:
@@ -513,6 +537,12 @@ func _report() -> int:
 	# The kill check above already covers the fresh run working after a restart.
 	if _restart_at >= 0.0 and _restarts == 0:
 		problems.append("restart never happened")
+	if _reroll_problem != "":
+		problems.append(_reroll_problem)
+	# The job's pair is first due at level 3 (skipped when a test starts later): past it, the check
+	# must have run.
+	if _game.level > 3 and _from_minute == 0 and not _reroll_checked:
+		problems.append("never got to check 刷新")
 	# Each map's bosses as strong and as quick as their slot says (.78: .76 changed only the slots).
 	for map_id: String in Maps.ORDER:
 		var bosses: Array = Maps.script_of(map_id).BOSSES
@@ -533,3 +563,33 @@ func _outcome() -> String:
 		return "timeout"
 	# Won only when the field was cleared after Game.RUN_SECONDS (.78).
 	return "victory" if _game.won else "died"
+
+
+## 刷新 on a level-up with the job's pair due: as many cards again, the pair still there, one 刷新
+## spent each time, and none once they're all spent.
+func _check_reroll() -> void:
+	_reroll_checked = true
+	var count := _game.current_choices.size()
+	var left := _game.player.rerolls
+	if left < 1 or not _game.can_reroll():
+		_reroll_problem = "刷新: none to use at the start (%d)" % left
+		return
+	while _game.player.rerolls > 0:
+		var before := _game.player.rerolls
+		_game.reroll_upgrade()
+		var pair := _game.current_choices.filter(func(c: Dictionary) -> bool: return c.get("milestone", false))
+		if _game.player.rerolls != before - 1:
+			_reroll_problem = "刷新: %d left after one from %d" % [_game.player.rerolls, before]
+		elif _game.current_choices.size() != count:
+			_reroll_problem = "刷新: %d cards after, %d before" % [_game.current_choices.size(), count]
+		elif pair.is_empty():
+			_reroll_problem = "刷新: the job's pair went"
+		if _reroll_problem != "":
+			return
+	if _game.can_reroll():
+		_reroll_problem = "刷新: still allowed with none left"
+		return
+	_game.reroll_upgrade()
+	if _game.player.rerolls != 0:
+		_reroll_problem = "刷新: went below none"
+	print("[smoke] 刷新 OK: %d used, %d cards each time" % [left, count])

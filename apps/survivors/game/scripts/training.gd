@@ -16,18 +16,32 @@ extends RefCounted
 ## on both. A rank bought twice offline past the top is ignored, costing nothing.
 
 ## Ordered as the 培训 page lists them. `step` per rank; `ranks` the most; `price` of rank 1.
-## All of it costs ¥101,000 since .79: about 65 runs with all four bosses down (¥1,496 of year-end
-## bonuses on average since .70, and about ¥60 of 红包). ¥139,500 in .75–.78, ¥130,000 in .71–.74.
+## All of it costs ¥146,000 since .96: about 94 runs with all four bosses down (¥1,496 of year-end
+## bonuses on average since .70, and about ¥60 of 红包). ¥101,000 in .79–.95 (about 65 runs),
+## ¥139,500 in .75–.78, ¥130,000 in .71–.74.
 const STATS := [
 	{"id": "max_hp", "name": "生命上限", "art": "dumbbell", "step": 10.0, "ranks": 5, "price": 1500},
 	{"id": "might", "name": "伤害", "art": "coffee", "step": 0.03, "ranks": 5, "price": 1000},
 	{"id": "haste", "name": "冷却", "art": "monitors", "step": 0.03, "ranks": 4, "price": 3000},
-	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.05, "ranks": 2, "price": 2500},
-	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.2, "ranks": 2, "price": 1500},
+	{"id": "speed", "name": "移速", "art": "scooter", "step": 0.03, "ranks": 4, "price": 2000},
+	{"id": "magnet", "name": "拾取范围", "art": "card", "step": 0.1, "ranks": 4, "price": 1000},
 	{"id": "armor", "name": "护甲", "art": "headphones", "step": 0.5, "ranks": 3, "price": 2000},
-	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.1, "ranks": 3, "price": 5000},
-	{"id": "luck", "name": "运气", "art": "koi", "step": 10.0, "ranks": 3, "price": 3000},
+	{"id": "regen", "name": "每秒回血", "art": "plant", "step": 0.1, "ranks": 4, "price": 5000},
+	{"id": "luck", "name": "运气", "art": "koi", "step": 5.0, "ranks": 5, "price": 1500},
+	{"id": "reroll", "name": "刷新", "art": "reroll", "step": 1.0, "ranks": 5, "price": 2000},
 ]
+## .96 (the user: 新加刷新的能力，每局默认一次，可以培训来加升级次数，最多 6 次): 刷新 redraws a level-up's
+## cards (Game.reroll_upgrade); a run has Player.BASE_REROLLS of them and each rank one more, so six
+## at the top. Not in the balance formula (DESIGN.md 2.8), which has no term for picking better cards.
+## Same .96 (the user: 移动速度每级 +3% 改成四级，加 12%，价钱略微调低): 移速 +3% a rank, four ranks,
+## the first ¥2,000; it was +5% a rank, two ranks, from ¥2,500 (.75–.95). Ranks already bought stay
+## bought and now give +3% each. And (the user: 拾取范围一级 +10%，最多 4 级，价格也略微调低点) 拾取
+## +10% a rank, four ranks, the first ¥1,000: the same +40% at the top as +20% × 2 from ¥1,500 did;
+## ranks already bought give +10% each now. And (the user: 每秒回血0.1 最多四级) 回血 has a fourth rank
+## (¥12,500), +0.4 at the top; a 4th rank bought before .75, skipped since (state()), counts again,
+## at what it cost then. And (the user: 运气一级 +5 最多 5 级，每级价格也调低) 运气 +5 a rank, five
+## ranks, the first ¥1,500 (¥1,500–4,500, each under what the same rank cost before): +25 at the
+## top; it was +10 a rank, three ranks, from ¥3,000 (+30). Ranks already bought give +5 each now.
 ## .75 (the user: 加一下培训的数值，都凑个整吧, then 移速 +5、拾取 +20; 冷却 -3%、护甲 2000、回血改最多三级
 ## 价格 5000、移动速度和生命加点钱、冷却改 3000): a rank gives 生命 +10, 伤害 +3%, 冷却 -3%, 移速 +5%,
 ## 拾取 +20%, 护甲 +0.5, 回血 +0.1, 运气 +10 (were +6, +3%, -2%, +3%, +15%, +0.6, +0.06, +6), and the
@@ -49,9 +63,10 @@ const REVIVE_PRICE := 18880
 const TEXTS := {
 	"max_hp": "最大生命 +%s", "might": "伤害 +%s%%", "haste": "冷却 -%s%%", "speed": "移速 +%s%%",
 	"magnet": "拾取范围 +%s%%", "armor": "护甲 +%s", "regen": "每秒回血 +%s", "luck": "运气 +%s",
+	"reroll": "刷新 +%s 次",
 }
 ## Stats whose amount is a plain number rather than a fraction shown as a percent.
-const PLAIN := ["max_hp", "armor", "regen", "luck"]
+const PLAIN := ["max_hp", "armor", "regen", "luck", "reroll"]
 
 
 static func stat(id: String) -> Dictionary:
@@ -175,6 +190,8 @@ static func apply(player: Player) -> void:
 				player.regen += amount
 			"luck":
 				player.luck += amount
+			"reroll":
+				player.rerolls += int(amount)
 
 
 ## `id` at `ranks` ranks with its name, as the 官网 shows it: 伤害 +15%.

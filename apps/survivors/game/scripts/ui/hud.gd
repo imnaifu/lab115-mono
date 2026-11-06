@@ -179,6 +179,12 @@ var _joystick: Joystick
 var _touch_index := -1
 var _title_overlay: Control
 var _title_holder: Control
+## The 出发 page (.96): over the home screen, still Game.State.TITLE.
+var _depart_overlay: Control
+var _depart_holder: Control
+var _depart_open := false
+## Open the 出发 page when the scene comes back (a map picked there with 只换地图 restarts the scene).
+static var reopen_depart := false
 var _title_heading: Control
 var _level_up_overlay: Control
 var _cards_holder: CenterContainer
@@ -230,12 +236,15 @@ var _collection_overlay: Control
 var _collection_holder: Control
 var _collection_open := false
 ## The clear-time boards (.78) on a page of their own (.89, the user: 排行榜单独拿出去，放不下了; a
-## 收藏 tab .78–.88): opened from the trophy by the title screen's map button and from the result
-## screen's board line.
+## 收藏 tab .78–.88): opened from the home screen's 排行榜 tile (.96; the trophy by the map button
+## .89–.95) and from the result screen's board line.
 var _board_overlay: Control
 var _board_holder: Control
 var _board_open := false
 var _collection_tab := 0
+## Which page the collection overlay is (.96): "awards" (成就: 成就 and 打卡, from the home screen's
+## tile) or "profile" (个人: 生涯, 战绩 and 图鉴, from its chip). One page, 收藏, until .96.
+var _collection_kind := "awards"
 ## The page's scrolling list, whose position a redraw of the same tab keeps.
 var _collection_scroll: ScrollContainer
 ## 战绩 opened to show their details (run ids), on the collection page's 战绩 tab.
@@ -309,6 +318,8 @@ func _ready() -> void:
 	_title_overlay = _overlay(Art.PAPER_SOFT)
 	_title_holder = _full(_title_overlay)
 	_add_corner_version(_title_overlay)
+	_depart_overlay = _overlay(Art.PAPER_SOFT)
+	_depart_holder = _full(_depart_overlay)
 	# Dialogs that pause play darken the world; the result and settings are pages of their own.
 	_level_up_overlay = _overlay(Art.SCRIM)
 	_cards_holder = _centered(_level_up_overlay)
@@ -336,6 +347,8 @@ func _ready() -> void:
 	# Opened from the settings, over them.
 	_save_overlay = _overlay(Art.PAPER_SOFT)
 	_save_holder = _full(_save_overlay)
+	_depart_open = reopen_depart
+	reopen_depart = false
 	_show_title()
 
 	game.inventory_changed.connect(_refresh_inventory)
@@ -430,6 +443,8 @@ func _process(delta: float) -> void:
 		_collection_open = false
 		_world_open = false
 		_training_open = false
+		_depart_open = false
+	_depart_overlay.visible = _depart_open
 	if state != Game.State.TITLE and state != Game.State.ENDED:
 		_board_open = false
 	_board_overlay.visible = _board_open
@@ -490,10 +505,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		if key == KEY_ESCAPE:
 			_close_training()
 		return
+	if _depart_open:
+		if key == KEY_ESCAPE:
+			_close_depart()
+		elif key == KEY_LEFT or key == KEY_A:
+			_step_job(-1)
+		elif key == KEY_RIGHT or key == KEY_D:
+			_step_job(1)
+		elif key == KEY_ENTER or key == KEY_KP_ENTER or key == KEY_SPACE:
+			game.start_run()
+		return
 	match game.state:
 		Game.State.TITLE:
+			# Home: on to the 出发 page (.96; the run started from here before).
 			if key == KEY_ENTER or key == KEY_KP_ENTER or key == KEY_SPACE:
-				game.start_run()
+				_open_depart()
 		Game.State.PLAYING:
 			if key == KEY_ESCAPE or key == KEY_P:
 				game.set_paused(true)
@@ -507,6 +533,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.State.LEVEL_UP:
 			if key >= KEY_1 and key <= KEY_9:
 				_pick(key - KEY_1)
+			elif key == KEY_R:
+				_reroll()
 		Game.State.CHEST:
 			if key == KEY_ENTER or key == KEY_KP_ENTER or key == KEY_SPACE:
 				_on_chest_button()
@@ -1041,7 +1069,8 @@ func _on_achievement(id: String) -> void:
 	var entry := Achievements.data(id)
 	# With its tier, in the tier's colour: 成就达成 · 黄金.
 	var tier := Achievements.tier_of(id)
-	_queue_badge([entry["art"], tr("成就达成") + " · " + tr(tier["name"]), tr(entry["name"]), tier["color"], false])
+	# And the 工资 it paid (.96): 成就达成 · 黄金 · ¥800.
+	_queue_badge([entry["art"], tr("成就达成") + " · " + tr(tier["name"]) + " · ¥%d" % Achievements.prize_of(id), tr(entry["name"]), tier["color"], false])
 
 
 ## `badge` is [art, line, name, colour, whether it's a stamp, and optionally the sound ("" for none)].
@@ -1208,6 +1237,11 @@ func _build_vignette() -> void:
 
 # --- Title ---------------------------------------------------------------------------------
 
+## The home screen (.96, the user: 点击开始游戏后，再选择职业; 战绩拿出来放首页，首页重新整理下; 做个个人页
+## …入口放首页，打卡和成就放一起，单独一个入口): the 个人 chip (top left) and 设置 (top right), the name,
+## 开始搬砖 (to the 出发 page, where the job and the map are picked), and three tiles for what to come
+## back to: 培训 (工资 to spend), 成就 (打卡 too) and 排行榜. Until .96 the jobs, the map, 培训 / 收藏 /
+## 设置 buttons and a two-line pitch were all on it.
 func _show_title() -> void:
 	_clear(_title_holder)
 	var portrait := _is_portrait()
@@ -1215,27 +1249,146 @@ func _show_title() -> void:
 	_title_holder.add_child(_blob(Art.FILL_SKY, 0.45, 140.0, Vector2(-40.0, 120.0), false))
 	_title_holder.add_child(_blob(Art.FILL_MINT, 0.5, 120.0, Vector2(-50.0, 40.0), true))
 
-	var page := _page(Vector4(24, 56, 24, 24) if portrait else Vector4(24, 20, 24, 14))
+	var page := _page(Vector4(16, 16, 16, 24) if portrait else Vector4(24, 12, 24, 14))
 	_title_holder.add_child(page)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 0)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	page.add_child(column)
 
+	var corners := HBoxContainer.new()
+	corners.add_theme_constant_override("separation", 8)
+	corners.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(corners)
+	corners.add_child(_profile_chip())
+	corners.add_child(UiKit.filler())
+	var settings := UiKit.round_button("gear", _open_settings, 44.0)
+	settings.tooltip_text = tr("设置")
+	corners.add_child(settings)
+
+	# The name and the buttons sit in the middle of what's left, a little above it.
+	column.add_child(UiKit.filler())
 	column.add_child(UiKit.kicker("BIG TECH SURVIVORS"))
 	column.add_child(UiKit.gap(6))
 	_title_heading = _heading("大厂幸存者", TITLE_SIZE if portrait else 40)
 	column.add_child(_title_heading)
-	var pitch := UiKit.label("躲开 Bug、会议和 Deadline\n撑过 10 分钟、清完场就能敲钟上市" if portrait else "躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市！", 15 if portrait else 13)
-	pitch.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(UiKit.gap(12 if portrait else 6))
-	column.add_child(pitch)
-	column.add_child(UiKit.gap(16 if portrait else 8))
+	column.add_child(UiKit.gap(40 if portrait else 18))
+
+	var start := UiKit.primary_button("开始搬砖", _open_depart, 60.0 if portrait else 50.0, 21)
+	start.custom_minimum_size.x = 312.0 if portrait else 300.0
+	start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(start)
+	column.add_child(UiKit.gap(18 if portrait else 12))
+
+	var tiles := HBoxContainer.new()
+	tiles.alignment = BoxContainer.ALIGNMENT_CENTER
+	tiles.add_theme_constant_override("separation", 8)
+	tiles.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(tiles)
+	var tile_width := 98.0 if portrait else 96.0
+	# 培训 (.44): where year-end bonuses' and achievements' 工资 is spent on the base stats.
+	tiles.add_child(_home_tile("moneybag", "培训", tr("工资 ¥%d") % maxi(Training.balance(), 0), _open_training, tile_width))
+	tiles.add_child(_home_tile("star_gold", "成就", "%d/%d" % [Achievements.earned_count(), Achievements.shown().size()], _open_awards, tile_width))
+	tiles.add_child(_home_tile("icon_trophy", "排行榜", tr("每图一个榜"), _open_board, tile_width))
+	if TestMode.on:
+		column.add_child(UiKit.gap(8 if portrait else 4))
+		column.add_child(_test_row())
+	var below := UiKit.filler()
+	below.size_flags_stretch_ratio = 1.4
+	column.add_child(below)
+	# Rebuilt on every orientation change, mid-run too, when the title is hidden; and twice in a
+	# frame can happen, so only a start button still on screen takes the focus.
+	if game.state == Game.State.TITLE:
+		(func() -> void:
+			if is_instance_valid(start) and start.is_inside_tree() and not _depart_open:
+				_focus(start)).call_deferred()
+	_fit_title()
+	if _depart_open:
+		_open_depart()
+
+
+## The home screen's way into the 个人 page: the job's face, the 昵称 (or 我的 without one) and ›.
+func _profile_chip() -> Button:
+	var chip := UiKit.secondary_button("", _open_profile, 44.0, 14)
+	var cloud := Cloud.shared()
+	var shown_name := cloud.display_name if cloud != null and cloud.display_name != "" else tr("我的")
+	var content := HBoxContainer.new()
+	content.add_theme_constant_override("separation", 6)
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.offset_left = 6
+	content.offset_right = -12
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(UiKit.icon(Jobs.data(game.player.job)["art"], 30))
+	var label := UiKit.label(shown_name + "  ›", 14, "strong", Art.INK)
+	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	content.add_child(label)
+	chip.add_child(content)
+	# Wide enough for the face and the name: the button doesn't size itself to a child.
+	chip.custom_minimum_size.x = 30.0 + 6.0 + 18.0 + Art.font(700).get_string_size(shown_name + "  ›", HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+	chip.tooltip_text = tr("个人")
+	return chip
+
+
+## A home-screen tile: an icon, its name and one line of where things stand (工资 ¥23000, 9/28).
+func _home_tile(art: String, title: String, status: String, action: Callable, width: float) -> Button:
+	var tile := Button.new()
+	tile.custom_minimum_size = Vector2(width, 92.0)
+	tile.focus_mode = Control.FOCUS_ALL
+	tile.add_theme_stylebox_override("normal", UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_CARD))
+	tile.add_theme_stylebox_override("hover", UiKit.box(Art.PAPER_SUNK, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_CARD))
+	tile.add_theme_stylebox_override("pressed", UiKit.box(Art.LINE, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_CARD))
+	tile.add_theme_stylebox_override("focus", UiKit.focus_ring(UiKit.RADIUS_CARD))
+	tile.pressed.connect(action)
+	tile.pressed.connect(func() -> void: Sound.play("click"))
+	var content := VBoxContainer.new()
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 2)
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tile.add_child(content)
+	var icon := UiKit.icon(art, 30)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	content.add_child(icon)
+	var name_label := UiKit.label(title, 14, "heavy", Art.INK)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(name_label)
+	var status_label := UiKit.label(status, 11, "muted")
+	status_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.clip_text = true
+	content.add_child(status_label)
+	return tile
+
+
+## The 出发 page (.96), from 开始搬砖: the five jobs and the picked one's card, the map (its picker
+## opens over this page and, picking 只换地图, comes back to it), the 返聘 saved, and 上班 to start.
+## The title state still: closing it goes back home.
+func _open_depart() -> void:
+	if game.state != Game.State.TITLE:
+		return
+	_depart_open = true
+	_clear(_depart_holder)
+	var portrait := _is_portrait()
+	var page := _page(Vector4(16, 20, 16, 24) if portrait else Vector4(24, 12, 24, 12))
+	_depart_holder.add_child(page)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.add_child(column)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	column.add_child(header)
+	header.add_child(UiKit.round_button("ui_back", _close_depart, 44.0, Art.INK))
+	var title := UiKit.label("选职业", 22, "heavy")
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(title)
+	column.add_child(UiKit.gap(20 if portrait else 8))
 	column.add_child(_job_picker(portrait))
-	column.add_child(UiKit.gap(14 if portrait else 8))
+	column.add_child(UiKit.gap(16 if portrait else 8))
 	column.add_child(_map_button(portrait))
-	# 返聘 saved from 绩效 S year-end bonuses (.43): said here, since they carry from run to run.
+	# 返聘 saved from earlier (.43, bought in 培训 since .44): said here, as they carry into the run.
 	var revives := Progress.revives_left()
 	if revives > 0:
 		var rehire := HBoxContainer.new()
@@ -1244,67 +1397,37 @@ func _show_title() -> void:
 		rehire.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		rehire.add_child(UiKit.icon("rehire", 18))
 		rehire.add_child(UiKit.label(tr("返聘 ×%d · 被裁时可以选择回来，每局一次") % revives, 12, "strong", Art.GREEN_INK))
-		column.add_child(UiKit.gap(8 if portrait else 4))
+		column.add_child(UiKit.gap(10 if portrait else 4))
 		column.add_child(rehire)
 	if TestMode.on:
 		column.add_child(UiKit.gap(8 if portrait else 4))
 		column.add_child(_test_row())
-	column.add_child(UiKit.gap(20 if portrait else 10))
-
-	var start := UiKit.primary_button("开始搬砖", game.start_run, 56.0 if portrait else 48.0, 20)
-	start.custom_minimum_size.x = 312.0 if portrait else 160.0
-	start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var settings := _settings_button()
-	settings.custom_minimum_size.x = 104.0 if portrait else 94.0
-	settings.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var collection := UiKit.secondary_button("收藏", _open_collection)
-	collection.icon = Art.texture("star_gold")
-	collection.add_theme_constant_override("icon_max_width", 18)
-	collection.custom_minimum_size.x = 104.0 if portrait else 100.0
-	# 培训 (.44): where year-end bonuses' 工资 is spent on the base stats.
-	var training := UiKit.secondary_button("培训", _open_training)
-	training.icon = Art.texture("moneybag")
-	training.add_theme_constant_override("icon_max_width", 18)
-	training.custom_minimum_size.x = 104.0 if portrait else 100.0
-	if portrait:
-		column.add_child(start)
-		column.add_child(UiKit.gap(12))
-		var more := HBoxContainer.new()
-		more.alignment = BoxContainer.ALIGNMENT_CENTER
-		more.add_theme_constant_override("separation", 8)
-		more.add_child(training)
-		more.add_child(collection)
-		more.add_child(settings)
-		column.add_child(more)
-	else:
-		var buttons := HBoxContainer.new()
-		buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-		buttons.add_theme_constant_override("separation", 10)
-		buttons.add_child(start)
-		buttons.add_child(training)
-		buttons.add_child(collection)
-		buttons.add_child(settings)
-		column.add_child(buttons)
-
 	column.add_child(UiKit.filler())
+
+	var go := UiKit.primary_button("上班", game.start_run, 56.0 if portrait else 48.0, 20)
+	go.custom_minimum_size.x = 312.0 if portrait else 240.0
+	go.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(go)
+	column.add_child(UiKit.gap(12 if portrait else 6))
 	var hint := HBoxContainer.new()
 	hint.alignment = BoxContainer.ALIGNMENT_CENTER
 	hint.add_theme_constant_override("separation", 8)
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint.add_child(UiKit.icon("ui_hand", 18, Art.INK_MUTED))
-	var hint_label := UiKit.label("按住屏幕任意处拖动来走位，武器会自动攻击" if Device.is_handheld() else "WASD 或方向键走位，武器会自动攻击", 12, "muted")
+	var hint_label := UiKit.label("按住屏幕任意处拖动来走位，武器会自动攻击" if Device.is_handheld() else "WASD 或方向键走位，武器会自动攻击；左右键换职业，回车上班", 12, "muted")
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint_label.custom_minimum_size = Vector2(minf(280.0, _root.size.x - 80.0), 0)
+	hint_label.custom_minimum_size = Vector2(minf(300.0, _root.size.x - 80.0), 0)
 	hint.add_child(hint_label)
 	column.add_child(hint)
-	# Rebuilt on every orientation change, mid-run too, when the title is hidden; and twice in a
-	# frame can happen, so only a start button still on screen takes the focus.
-	if game.state == Game.State.TITLE:
-		(func() -> void:
-			if is_instance_valid(start) and start.is_inside_tree():
-				_focus(start)).call_deferred()
-	_fit_title()
+	(func() -> void:
+		if is_instance_valid(go) and go.is_inside_tree():
+			_focus(go)).call_deferred()
+	_fit_to_screen(_depart_holder)
 
+
+func _close_depart() -> void:
+	_depart_open = false
+	_show_title()
 
 ## The map in use, with its stars (how hard it is: 北京 ★★★; until .60 its working week) and its
 ## landmark, on a button that opens the map picker to pick another (.38; .34–.37 a world map,
@@ -1333,8 +1456,7 @@ func _map_button(portrait: bool) -> Control:
 	content.add_child(name)
 	button.add_child(content)
 	row.add_child(button)
-	# The boards (.89), by map like the button beside it.
-	row.add_child(UiKit.round_button("icon_trophy", _open_board, 36.0))
+	# The boards' trophy (.89–.95) sat beside it; since .96 排行榜 is a home-screen tile.
 	return row
 
 
@@ -1502,7 +1624,10 @@ func _show_map_card(id: String) -> void:
 	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(start)
 	if id != Maps.current_id:
-		var switch := UiKit.secondary_button("只换地图", func() -> void: game.change_map(id), 44.0, 13)
+		var switch := UiKit.secondary_button("只换地图", func() -> void:
+			# Back on the 出发 page it was picked from once the scene has restarted on the map.
+			reopen_depart = _depart_open
+			game.change_map(id), 44.0, 13)
 		actions.add_child(switch)
 
 
@@ -1631,6 +1756,7 @@ func _pick_job(job_id: String) -> void:
 		return
 	game.set_job(job_id)
 	Sound.play("click")
+	# The 出发 page redrawn with it (and home behind, whose chip shows the job's face).
 	_show_title()
 
 
@@ -1795,7 +1921,11 @@ func _training_row(entry: Dictionary) -> Control:
 	name_row.add_child(UiKit.label(entry["name"], 14, "strong"))
 	name_row.add_child(UiKit.level_dots(rank, top, rank < top))
 	var gives: String
-	if rank >= top:
+	if id == "reroll":
+		# Counted per run, the free one included (Player.BASE_REROLLS): 每局 1 次 reads plainer than +0.
+		var per_run := Player.BASE_REROLLS + rank
+		gives = tr("已练满，每局 %d 次") % per_run if rank >= top else tr("每局 %d 次 → 下一级 %d 次") % [per_run, per_run + 1]
+	elif rank >= top:
 		gives = tr("已练满 %s") % Training.amount_value(id, rank)
 	elif rank > 0:
 		gives = tr("现在 %s → 下一级 %s") % [Training.amount_value(id, rank), Training.amount_value(id, rank + 1)]
@@ -1929,6 +2059,8 @@ func _show_level_up(choices: Array, lucky: bool = false) -> void:
 	hint_row.add_child(UiKit.icon("ui_info", 14))
 	hint_row.add_child(UiKit.label(hint_text, 12, "body", Art.PAPER))
 	column.add_child(UiKit.gap(18 if portrait else 12))
+	column.add_child(_reroll_row())
+	column.add_child(UiKit.gap(10 if portrait else 8))
 	column.add_child(hint)
 
 	_level_up_overlay.visible = true
@@ -2104,6 +2236,41 @@ func _pick(index: int) -> void:
 	if game.state != Game.State.LEVEL_UP or Time.get_ticks_msec() < _accept_picks_at:
 		return
 	game.choose_upgrade(index)
+
+
+## The level-up's 刷新 button (.96): 刷新 ×N while the run has some left (R on a keyboard), greyed
+## at ×0 with a line saying 培训 adds more (while it still can), so players find where they come from.
+func _reroll_row() -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	var left := game.player.rerolls
+	var text := tr("刷新 ×%d") % left
+	if not Device.is_handheld():
+		text += "  (R)"
+	var button := UiKit.secondary_button(text, _reroll, 36.0, 13)
+	button.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	button.icon = Art.texture("reroll")
+	button.add_theme_constant_override("icon_max_width", 20)
+	button.focus_mode = Control.FOCUS_NONE
+	button.disabled = not game.can_reroll()
+	# The theme's disabled button is dark grey, lost on the level-up's dark scrim: a sunk paper pill
+	# with muted text instead, still readable as 刷新 ×0.
+	button.add_theme_stylebox_override("disabled", UiKit.box(Art.PAPER_SUNK, Art.LINE_STRONG, UiKit.OUTLINE, UiKit.PILL, Vector4(14, 0, 14, 0)))
+	button.add_theme_color_override("font_disabled_color", Art.INK_MUTED)
+	button.add_theme_color_override("icon_disabled_color", Color(1, 1, 1, 0.5))
+	row.add_child(button)
+	if left <= 0 and not Training.maxed("reroll"):
+		row.add_child(UiKit.label("培训里能加次数", 12, "body", Art.BRAND_SOFT))
+	return row
+
+
+## Redraws the level-up's cards (Game.reroll_upgrade), which shows the panel again; ignored for
+## PICK_DELAY_MS after it appears, like a pick, so a tap meant for dodging doesn't spend one.
+func _reroll() -> void:
+	if game.state != Game.State.LEVEL_UP or Time.get_ticks_msec() < _accept_picks_at:
+		return
+	game.reroll_upgrade()
 
 
 func _hover(card: Control, entered: bool) -> void:
@@ -2728,6 +2895,7 @@ func _show_pause() -> void:
 		["护甲 · 回血", "%s · %s/s" % [Upgrades._amount_text(player.armor), Upgrades._amount_text(player.regen)]],
 		["运气", str(roundi(player.luck))],
 		["返聘（本局已用）" if game.revived else "返聘", str(Progress.revives_left())],
+		["刷新（本局还剩）", str(player.rerolls)],
 	]:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 0)
@@ -2883,7 +3051,8 @@ func _show_end(victory: bool) -> void:
 		card_column.add_child(caption)
 		stats.add_child(card)
 
-	if victory:
+	# A clear, or (.96) a run that lasted Leaderboard.MIN_SECONDS, goes on the map's board.
+	if not Leaderboard.pending.is_empty():
 		_board_row = VBoxContainer.new()
 		_board_row.add_theme_constant_override("separation", 6)
 		left.add_child(_board_row)
@@ -3165,13 +3334,9 @@ func _open_settings() -> void:
 		general.append(_setting_row("屏幕方向", "", UiKit.segmented(["跟随手机", "横屏"], 1 if landscape else 0, _on_orientation_picked, Art.PAPER_SUNK), "选「横屏」后竖着拿手机，整个游戏会转 90°"))
 	# The cloud save's state, and its own page (存档码, another device's code, deleting); not in a
 	# build that doesn't use it.
+	# The cloud save's row moved to the 个人 page in .96 (the user: 云存档放个人).
 	var cloud := Cloud.shared()
 	if cloud != null and cloud.status != Cloud.Status.OFF:
-		var manage := UiKit.secondary_button("管理存档", _open_save_page, 40.0)
-		manage.icon = Art.texture("floppy")
-		manage.add_theme_constant_override("icon_max_width", 18)
-		manage.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		general.append(_setting_row("云存档", "Cloud Save", manage, CLOUD_STATUS_TEXT[cloud.status]))
 		# 提意见 (.94) goes through the same server, so it shows where the cloud save does.
 		var feedback_note := UiKit.label("Bug、太难太简单、想要什么，都可以说。只有开发者能看到", 12, "muted")
 		feedback_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -3234,8 +3399,21 @@ func _open_settings() -> void:
 	_fit_to_screen(_settings_holder)
 
 
-## The 收藏 page: every landmark (checked in at or still to find, with where it is and what it
+## The 成就 and 个人 pages (one 收藏 page until .96): every landmark (checked in at or still to find, with where it is and what it
 ## gives), every achievement (with progress for the counted ones) and the 图鉴, on three tabs.
+## The 成就 page (.96): achievements (with their 工资 prizes) and landmarks, side by side tabs.
+func _open_awards(tab: int = 0) -> void:
+	_collection_kind = "awards"
+	_open_collection(tab)
+
+
+## The 个人 page (.96): who the player is and how they've done (生涯), their runs (战绩), the
+## 怪物图鉴 and, under 生涯, the cloud save.
+func _open_profile(tab: int = 0) -> void:
+	_collection_kind = "profile"
+	_open_collection(tab)
+
+
 func _open_collection(tab: int = -1) -> void:
 	# Redrawn in place (the cloud bringing progress) it stays scrolled where it was.
 	var kept_scroll := 0
@@ -3257,7 +3435,8 @@ func _open_collection(tab: int = -1) -> void:
 	column.add_child(header)
 	var back := UiKit.round_button("ui_back", func() -> void: _collection_open = false, 44.0, Art.INK)
 	header.add_child(back)
-	var title := UiKit.label("收藏", 22, "heavy")
+	var profile := _collection_kind == "profile"
+	var title := UiKit.label("个人" if profile else "成就", 22, "heavy")
 	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
@@ -3266,11 +3445,14 @@ func _open_collection(tab: int = -1) -> void:
 		stamped += Maps.stamps_on(map_id)
 	# Only the achievements in play (a switched-off feature's one is hidden even if earned).
 	var earned := Achievements.earned_count()
-	var tabs := UiKit.segmented(["%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()],
-		"%s %d/%d" % [tr("成就"), earned, Achievements.shown().size()],
-		"%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()],
-		tr("战绩")], _collection_tab, _open_collection, Art.PAPER_SUNK)
-	tabs.custom_minimum_size.x = 330.0
+	var names: Array
+	if profile:
+		names = [tr("生涯"), tr("战绩"), "%s %d/%d" % [tr("图鉴"), Bestiary.seen_count(), Bestiary.ids().size()]]
+	else:
+		names = ["%s %d/%d" % [tr("成就"), earned, Achievements.shown().size()],
+			"%s %d/%d" % [tr("打卡"), stamped, Maps.stamp_count()]]
+	var tabs := UiKit.segmented(names, _collection_tab, _open_collection, Art.PAPER_SUNK)
+	tabs.custom_minimum_size.x = 300.0
 	if portrait:
 		column.add_child(tabs)
 	else:
@@ -3288,16 +3470,195 @@ func _open_collection(tab: int = -1) -> void:
 	body.add_theme_constant_override("separation", 10)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(body)
-	match _collection_tab:
-		0:
+	match [_collection_kind, _collection_tab]:
+		["awards", 1]:
 			_fill_stamps(body, portrait)
-		1:
+		["awards", _]:
 			_fill_achievements(body, portrait)
-		2:
+		["profile", 1]:
+			_fill_history(body)
+		["profile", 2]:
 			_fill_bestiary(body, portrait)
 		_:
-			_fill_history(body)
+			_fill_profile(body, portrait)
 	_focus(back)
+
+
+## The 个人 page's 生涯 (.96): face, 昵称 and how long they've been at it; the trophies (to the 成就
+## page); the totals kept across runs; wins by job and by map; and the cloud save (moved here from
+## 设置, the user: 云存档放个人).
+func _fill_profile(body: VBoxContainer, portrait: bool) -> void:
+	var cloud := Cloud.shared()
+	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.INK, UiKit.OUTLINE, UiKit.RADIUS_CARD, Vector4(12, 10, 12, 10)))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	card.add_child(row)
+	row.add_child(UiKit.well(Jobs.data(game.player.job)["art"], 56.0, Art.BRAND_SOFT))
+	var who := VBoxContainer.new()
+	who.add_theme_constant_override("separation", 2)
+	who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	who.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(who)
+	var has_name := Leaderboard.has_name()
+	var name_label := UiKit.label(cloud.display_name if has_name else tr("还没有昵称"), 18, "heavy", Art.INK if has_name else Art.INK_MUTED)
+	name_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	name_label.clip_text = true
+	who.add_child(name_label)
+	# 入职: when 第一天上班 was earned (the first run's end); the save keeps the earliest time.
+	var runs := int(Progress.stat("runs", 0))
+	var since := Progress.achievement_time("first_day")
+	var tenure := tr("共 %d 局") % runs
+	if since > 0:
+		var days := floori((Time.get_unix_time_from_system() - since) / 86400.0) + 1
+		tenure = tr("入职第 %d 天 · 共 %d 局") % [days, runs]
+	var tenure_label := UiKit.label(tenure, 12, "muted")
+	tenure_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	who.add_child(tenure_label)
+	if Leaderboard.online():
+		var rename := UiKit.secondary_button("改昵称" if has_name else "起昵称", func() -> void:
+			_ask_name(func(_answer: Dictionary) -> void: _open_profile(0)), 34.0, 13)
+		rename.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(rename)
+	body.add_child(card)
+
+	# The trophies at a glance, on a strip that opens the 成就 page (the list is there). Narrow
+	# enough for an upright phone: anything wider than the screen widens the whole page.
+	var strip := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, 1, UiKit.RADIUS_MD, Vector4(10, 8, 10, 8)))
+	var trophies := HBoxContainer.new()
+	trophies.add_theme_constant_override("separation", 6)
+	trophies.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_child(trophies)
+	for count: Array in Achievements.tier_counts():
+		var tier: Dictionary = Achievements.TIERS[count[0]]
+		var cell := HBoxContainer.new()
+		cell.add_theme_constant_override("separation", 3)
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cell.add_child(UiKit.tag(tr(tier["name"]), tier["color"], Art.PAPER))
+		var tally := UiKit.label("%d/%d" % [count[1], count[2]], 12, "strong", Art.INK)
+		tally.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		cell.add_child(tally)
+		trophies.add_child(cell)
+	trophies.add_child(UiKit.label("›", 16, "heavy", Art.INK_MUTED))
+	var tap := Button.new()
+	tap.flat = true
+	tap.focus_mode = Control.FOCUS_NONE
+	for look in ["normal", "hover", "pressed", "focus"]:
+		tap.add_theme_stylebox_override(look, StyleBoxEmpty.new())
+	tap.pressed.connect(func() -> void: _open_awards(0))
+	strip.add_child(tap)
+	body.add_child(strip)
+
+	# Totals over every run (Achievements.finish keeps them), then the best of the runs still kept.
+	var entries := RunHistory.entries()
+	var longest := 0
+	for entry: Dictionary in entries:
+		longest = maxi(longest, int(entry.get("seconds", 0)))
+	var wins_by_job: Dictionary = Progress.stat("wins", {})
+	var map_wins: Dictionary = Progress.stat("map_wins", {})
+	var wins := 0
+	for count: Variant in map_wins.values():
+		wins += int(count)
+	# Bosses: every 怪物图鉴 group after the first (小怪), the maps' four each.
+	var boss_kills := 0
+	for group: Dictionary in Bestiary.GROUPS.slice(1):
+		for type_id: String in group["ids"]:
+			boss_kills += Bestiary.kills(type_id)
+	body.add_child(UiKit.label("生涯数据", 13, "strong", Art.INK_MUTED))
+	var grid := GridContainer.new()
+	grid.columns = 3 if portrait else 5
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	for stat: Array in [
+		["局数", str(runs)],
+		["通关", str(wins)],
+		["累计击杀", str(int(Progress.stat("kills", 0)))],
+		["打掉 boss", str(boss_kills)],
+		["最长存活", _clock_text(longest) if longest > 0 else "-"],
+	]:
+		grid.add_child(_stat_cell(stat[0], stat[1]))
+	body.add_child(grid)
+
+	body.add_child(UiKit.label("各职业通关", 13, "strong", Art.INK_MUTED))
+	var jobs := HBoxContainer.new()
+	jobs.add_theme_constant_override("separation", 6)
+	for job_id: String in Jobs.ORDER:
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 0)
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var face := UiKit.icon(Jobs.data(job_id)["art"], 34)
+		face.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		cell.add_child(face)
+		var count := UiKit.label("×%d" % int(wins_by_job.get(job_id, 0)), 13, "strong", Art.INK)
+		count.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cell.add_child(count)
+		jobs.add_child(cell)
+	body.add_child(jobs)
+
+	body.add_child(UiKit.label("各地图", 13, "strong", Art.INK_MUTED))
+	for map_id: String in Maps.ORDER:
+		body.add_child(_map_record_row(map_id, int(map_wins.get(map_id, 0)), entries))
+
+	if cloud != null and cloud.status != Cloud.Status.OFF:
+		body.add_child(UiKit.label("云存档", 13, "strong", Art.INK_MUTED))
+		var manage := UiKit.secondary_button("管理存档", _open_save_page, 40.0)
+		manage.icon = Art.texture("floppy")
+		manage.add_theme_constant_override("icon_max_width", 18)
+		manage.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		var rows: Array[Control] = [_setting_row("云存档", "Cloud Save", manage, CLOUD_STATUS_TEXT[cloud.status])]
+		body.add_child(_settings_card(rows))
+
+
+## A number with its caption under it, on a soft card (the 个人 page's totals).
+func _stat_cell(caption: String, value: String) -> Control:
+	var cell := UiKit.panel(UiKit.box(Art.PAPER_SOFT, Color.TRANSPARENT, 0, UiKit.RADIUS_MD, Vector4(10, 6, 10, 6)))
+	cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 0)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cell.add_child(column)
+	var number := UiKit.label(value, 17, "display")
+	number.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	column.add_child(number)
+	column.add_child(UiKit.label(caption, 11, "muted"))
+	return cell
+
+
+## A map on the 个人 page: its landmark, name, how many clears, and the best of the kept runs there
+## (the fastest clear, or the longest run when none was won), as the boards put it.
+func _map_record_row(map_id: String, wins: int, entries: Array) -> Control:
+	var strip := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, 1, UiKit.RADIUS_MD, Vector4(10, 6, 10, 6)))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_child(row)
+	row.add_child(UiKit.icon(MapList.icon_of(map_id), MAP_ICON))
+	var name := UiKit.label(Maps.label_of(map_id), 13, "strong", Art.INK)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(name)
+	var fastest := 0
+	var longest := 0
+	for entry: Dictionary in entries:
+		if str(entry.get("map", "")) != map_id:
+			continue
+		var seconds := int(entry.get("seconds", 0))
+		if entry.get("result", "") == "win":
+			fastest = seconds if fastest == 0 else mini(fastest, seconds)
+		else:
+			longest = maxi(longest, seconds)
+	var best := "-"
+	if fastest > 0:
+		best = Leaderboard.record_text(fastest * 1000, true)
+	elif longest > 0:
+		best = Leaderboard.record_text(longest * 1000, false)
+	var numbers := UiKit.label(tr("通关 %d 次 · 最好 %s") % [wins, best], 12, "muted")
+	numbers.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	numbers.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(numbers)
+	return strip
 
 
 func _fill_stamps(body: VBoxContainer, portrait: bool) -> void:
@@ -3356,6 +3717,12 @@ func _fill_achievements(body: VBoxContainer, portrait: bool) -> void:
 			var counted := Achievements.progress(entry["id"])
 			# With how many players have it, the way game stores show it.
 			var lines := [tr(entry["text"]), Achievements.rate_text(entry["id"])]
+			# Its prize (.96): to come, or paid; one earned before .96 was never paid, so says nothing.
+			var prize := Achievements.prize_of(entry["id"])
+			if not done:
+				lines.append(tr("奖金 ¥%d") % prize)
+			elif Progress.has_salary(Achievements.salary_id(entry["id"])):
+				lines.append(tr("奖金 ¥%d 已入账") % prize)
 			var tier := Achievements.tier_of(entry["id"])
 			var badge := [tr(tier["name"]), tier["color"]]
 			grid.add_child(_collection_card(entry["art"], tr(entry["name"]), lines, done, counted if not done else [], portrait, badge))
@@ -3731,7 +4098,7 @@ func _save_buttons(buttons: Array) -> HBoxContainer:
 
 
 ## Status changes (the settings and the 云存档 page show it), and progress another device added
-## (the 收藏 page's counts, the title screen's map lock).
+## (the 成就 and 个人 pages' counts, the title screen's map lock).
 func _on_cloud_changed(progress_merged: bool) -> void:
 	if progress_merged and game.state == Game.State.TITLE:
 		_show_title()
@@ -4067,18 +4434,19 @@ func _pop_in(node: Control, delay: float) -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-## Sends the run just won to its board when the player has a 昵称, and says how it went.
+## Sends the run just ended to its board (won, or since .96 lasted a minute) when the player has a
+## 昵称, and says how it went.
 func _send_clear() -> void:
 	if not Leaderboard.online():
 		_show_board_row(tr("连上云端后才能上排行榜"), false)
 		return
 	if not Leaderboard.has_name():
-		_show_board_row(tr("起个昵称，这次的用时就能上%s榜") % tr(Maps.current.NAME), true)
+		_show_board_row(tr("起个昵称，这次的成绩就能上%s榜") % tr(Maps.current.NAME), true)
 		return
 	_show_board_row(tr("正在上榜…"), false)
 	var answer: Dictionary = await Leaderboard.submit()
 	if answer.get("ok", false):
-		_show_board_row(tr("%s榜第 %d 名 · 最好 %s") % [tr(Maps.current.NAME), Leaderboard.last_rank, Leaderboard.time_text(Leaderboard.last_best_ms)], false)
+		_show_board_row(tr("%s榜第 %d 名 · 最好 %s") % [tr(Maps.current.NAME), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared)], false)
 	else:
 		_show_board_row(Leaderboard.error_text(answer), not Leaderboard.has_name())
 
@@ -4122,7 +4490,7 @@ func _ask_name(done: Callable) -> void:
 		var page := JavaScriptBridge.get_interface("survivorsCode")
 		if page != null:
 			_name_callback = JavaScriptBridge.create_callback(func(args: Array) -> void: asked.call(str(args[0])))
-			page.askName(tr("起个昵称"), tr("排行榜上显示的名字，2–12 个字，以后能在「收藏 → 排行榜」里改"), tr("比如：摸鱼的程序员"),
+			page.askName(tr("起个昵称"), tr("排行榜上显示的名字，2–12 个字，以后能在个人页或排行榜里改"), tr("比如：摸鱼的程序员"),
 				Cloud.shared().display_name, tr("确定"), tr("取消"), _name_callback)
 			return
 	_name_dialog(asked)
@@ -4309,7 +4677,7 @@ func _open_board() -> void:
 func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	if _board_map == "":
 		_board_map = Maps.current_id
-	body.add_child(_collection_note(tr("每张地图一个榜：撑过 10:00、清完场上的怪，按开局到清完的用时排，越短越前。每人留自己最好的一次")))
+	body.add_child(_collection_note(tr("每张地图一个榜：通关的（撑过 10:00、清完场上的怪）按用时排在前面，越短越前；没通关但撑过 1 分钟的按撑了多久排在后面。每人留自己最好的一次")))
 	var names: Array = []
 	for map_id: String in Maps.ORDER:
 		names.append(tr(Maps.script_of(map_id).NAME))
@@ -4382,7 +4750,9 @@ func _board_line(record: Dictionary) -> Control:
 	shown_name.clip_text = true
 	shown_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(shown_name)
-	var time := UiKit.label(Leaderboard.time_text(int(record.get("ms", 0))), 14, "display")
+	# A run not won (.96) in muted type: 撑到 7:42 under the clear times.
+	var cleared: bool = record.get("cleared", true)
+	var time := UiKit.label(Leaderboard.record_text(int(record.get("ms", 0)), cleared), 14 if cleared else 13, "display" if cleared else "strong", Art.INK if cleared else Art.INK_MUTED)
 	time.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	row.add_child(time)
 	if not mine:

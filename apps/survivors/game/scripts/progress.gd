@@ -62,6 +62,11 @@ static func achievement_ids() -> PackedStringArray:
 	return _keys("achievements")
 
 
+## When `id` was earned (unix seconds; the earliest across devices), 0 if it wasn't.
+static func achievement_time(id: String) -> int:
+	return int(_load().get_value("achievements", id, 0))
+
+
 static func add_achievement(id: String) -> void:
 	_load().set_value("achievements", id, int(Time.get_unix_time_from_system()))
 	_save()
@@ -90,6 +95,11 @@ static func salary_total() -> int:
 	for id in _keys("salary"):
 		total += int(_load().get_value("salary", id))
 	return total
+
+
+## Whether 工资 `id` was ever paid (an achievement's prize, `ach-<id>`, .96).
+static func has_salary(id: String) -> bool:
+	return _load().has_section_key("salary", id)
 
 
 ## 工资 from a year-end bonus, `id` its own (the run's id and the chest's number), saved at once.

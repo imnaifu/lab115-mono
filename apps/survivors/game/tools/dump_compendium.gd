@@ -208,13 +208,14 @@ func _events() -> Array:
 	return events
 
 
-## The ones the 收藏 page shows (Achievements.shown: not a switched-off feature's), each with how
-## many players have it as the page words it.
+## The ones the 成就 page shows (Achievements.shown: not a switched-off feature's), each with how
+## many players have it as the page words it, and its 工资 prize (.96).
 func _achievements() -> Array:
 	var achievements := []
 	for entry: Dictionary in Achievements.shown():
 		var item := entry.duplicate()
 		item["rate"] = Achievements.rate_text(entry["id"])
+		item["prize"] = Achievements.prize_of(entry["id"])
 		achievements.append(item)
 	return achievements
 

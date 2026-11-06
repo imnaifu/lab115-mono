@@ -163,6 +163,8 @@ var perk_bonus := {}
 var _game: Game
 ## Level-ups offered so far this run (for NEW_WEAPONS_GUARANTEED).
 var _offers := 0
+## The guaranteed new weapons the last offer had, so a 刷新 of it (reroll) has them too.
+var _last_guaranteed := 0
 
 
 func _init(game: Game) -> void:
@@ -213,9 +215,15 @@ static func create_weapon(weapon_id: String) -> Weapon:
 
 ## The cards for the level-up to `for_level`. At JOB_WEAPON_LEVELS the job's own weapon's pair of
 ## direction cards comes first, marked `milestone`, and the rest are rolled as usual without it.
-func roll_choices(count: int, for_level: int = 0) -> Array:
-	var guaranteed: int = NEW_WEAPONS_GUARANTEED[_offers] if _offers < NEW_WEAPONS_GUARANTEED.size() else 0
-	_offers += 1
+## `reroll` (刷新, .96) redraws the offer just made for the same level: it isn't a level-up of its
+## own, so it keeps that offer's guaranteed new weapons rather than moving on to the next's, and the
+## job's pair, due by level, comes back as it was.
+func roll_choices(count: int, for_level: int = 0, reroll: bool = false) -> Array:
+	var guaranteed := _last_guaranteed
+	if not reroll:
+		guaranteed = NEW_WEAPONS_GUARANTEED[_offers] if _offers < NEW_WEAPONS_GUARANTEED.size() else 0
+		_offers += 1
+		_last_guaranteed = guaranteed
 	var job_pair := _job_pair_due(for_level)
 	var picked := _roll(count - job_pair.size(), guaranteed, "" if job_pair.is_empty() else job_pair[0]["id"])
 	if not job_pair.is_empty():

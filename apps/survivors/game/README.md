@@ -79,7 +79,7 @@ scripts/
 ├── telemetry.gd       # 匿名对局数据，发到 stats.lab115.com 的 Umami（见下文「对局数据」）
 ├── boss_pointers.gd   # 屏幕边缘指向屏幕外 boss 和已开门地标的箭头
 ├── pickup.gd / projectile.gd / effects.gd
-├── ui/hud.gd          # HUD（顶栏、boss 条和倒计时、触屏摇杆、底部提示、打卡 / 成就弹条）和开始 / 培训 / 收藏（打卡、成就、图鉴、存档）/ 升级 / 年终奖开箱 / 返聘 / 暂停 / 结算 / 设置画面
+├── ui/hud.gd          # HUD（顶栏、boss 条和倒计时、触屏摇杆、底部提示、打卡 / 成就弹条）和首页 / 出发 / 培训 / 成就（成就、打卡）/ 个人（生涯、战绩、图鉴、云存档）/ 排行榜 / 升级 / 年终奖开箱 / 返聘 / 暂停 / 结算 / 设置画面
 ├── ui/ui_kit.gd       # 界面控件：按钮、卡片、分段选择、开关、标签、等级点（照设计画布）
 ├── ui/share_card.gd   # 结算页的战绩图
 ├── ui/departures.gd   # 选目的地的出发大屏（.38）：一行一座城，点选、新开放时翻牌
@@ -113,9 +113,9 @@ assets/soco-st/        # soco-st 的楼（入库；tools/fetch_soco_st.sh 记录
 线上每一局都会匿名上报到自建的 Umami（stats.lab115.com，和 daily 共用一个实例），用来看难度和平衡：
 - `game_ready`：每次打开页面、开始画面出来时发一次，带 `load_ms`（从开始加载页面算起的毫秒数）。有浏览量没有它的，就是加载时流失的人；`.30` 起还带 `from`、`runs_before`、`lang`，好按来源和新老玩家看谁在开始画面就走了。
 - `run_start`：职业（`job`）、设备（手机 / 电脑）、屏幕尺寸、横竖屏、语言、陀螺仪 / 音效 / 音乐开关、这台设备之前玩过几局、`from`（链接上的 `?from=`，战绩图二维码带进来的是 `share`），页面打开后的第一局还带 `page_ms`（开局时距离打开页面多久）；`.19` 起带 `stamps`、`achievements`（这台设备打过几个卡、拿了几个成就：打卡有永久加成，比强度时要按它分开看），`.20` 起带 `map`（`sv` 硅谷 / `bj` 北京），`.28` 起带 `cloud`（这台设备云存档的状态：`synced` / `offline` / `connecting` / `disabled` / `off`，用来看微信等内置浏览器里连不连得上；不带账号），`.30` 起带 `page_run`（这一局是这次打开页面的第几局，2 以上就是「再来一局」）。
-- `run_end`：职业（`job`）、结局（`win` / `died` / `restart` 从暂停页重开或结算页回主页（`.46` 前叫换职业） / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、进化了的武器（`evolved`）、各武器伤害占比（`dmg_*`，百分比，只有打出过伤害的才有）、选卡顺序（专属武器的方向卡记成 `prd:b` 这样）、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（年终奖开出的绩效：`angel` / `series_a` / `ipo` 是绩效 B / A / S，沿用钱袋时代的 id）、`.46` 起的 `chest_upgrades`（年终奖送的升级，按顺序的卡 id，写法同 `picks`）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率；`.19` 起带 `new_stamps`、`new_achievements`（这局新打卡的地标和新拿的成就，逗号分隔），`.20` 起带 `map`，`.21` 起带 `boss_rolls`（这局的 boss 排期：出场秒数、种类、`+` 额外招式、`!` 词条，如 `62:layoff+quake!996`），`.27` 起带 `luck`（结束时的运气）、`rarities`（这局拿到的升级按稀有度计数，普通,优秀,稀有,史诗,传说，如 `14,5,2,1,0`）和 `lucky_cards`（运气多给了一张卡的升级次数）。每局带一个随机 id，用来去重。
+- `run_end`：职业（`job`）、结局（`win` / `died` / `restart` 从暂停页重开或结算页回主页（`.46` 前叫换职业） / `quit` 中途关页面）、存活秒数、等级、击杀、最后伤到玩家的怪（死了就是凶手）和那一下是怎么打中的（`killer_how`：contact / charge / bullet / pie）、武器和被动等级、进化了的武器（`evolved`）、各武器伤害占比（`dmg_*`，百分比，只有打出过伤害的才有）、选卡顺序（专属武器的方向卡记成 `prd:b` 这样）、`offered`（每张卡被拿出来几次，和选卡顺序一起算选中率）、`chests`（年终奖开出的绩效：`angel` / `series_a` / `ipo` 是绩效 B / A / S，沿用钱袋时代的 id）、`.46` 起的 `chest_upgrades`（年终奖送的升级，按顺序的卡 id，写法同 `picks`）、每 30 秒一个「秒:等级/血量/敌人数」的时间线、遇到和打掉的 boss 数、结束时所在的区（`district`）、平均和最差帧率；`.19` 起带 `new_stamps`、`new_achievements`（这局新打卡的地标和新拿的成就，逗号分隔），`.20` 起带 `map`，`.21` 起带 `boss_rolls`（这局的 boss 排期：出场秒数、种类、`+` 额外招式、`!` 词条，如 `62:layoff+quake!996`），`.27` 起带 `luck`（结束时的运气）、`rarities`（这局拿到的升级按稀有度计数，普通,优秀,稀有,史诗,传说，如 `14,5,2,1,0`）和 `lucky_cards`（运气多给了一张卡的升级次数），`.96` 起带 `rerolls`（这局刷新了几次升级卡，刷出来的卡也算进 `offered`；买了几级刷新在 `run_start` 的 `training` 里，如 `reroll:2`）。每局带一个随机 id，用来去重。
 - `load_abandoned`（`.30`，网页发）：游戏还没加载出来（没到 `game_ready`）页面就被切走或关掉，带 `ms`（等了多久）和 `progress`（下载到百分之几，不知道时是 -1）。手机只是临时切到别的 App 也会发，同一个 `page` 后面有 `game_ready` 的就是回来了。连统计脚本都还没加载好时存进 localStorage，下次打开再补发。
-- `cloud_action`（`.30`）：云存档和「设置 → 云存档」页，`action` 加 `result`：`connect`（每次打开页面第一次同步完时一条：`synced` / `offline`，带 `ms`、`merged` 云端有没有带来进度）、`open`（打开「存档」页，带 `status`）、`code`（生成存档码：`ok` / `offline`）、`copy`（点了「复制」）、`copied`（网页浮层里的复制按钮：`ok` / `hold`，`hold` 是只能长按复制）、`redeem`（输入存档码：`ok` / `invalid` / `not_found` / `offline`，`previous` 是换之前的账号）、`redeem_cancelled`（输入框点了取消）、`delete`（`ok` / `offline`，`account` 是被删的那个）、`enable`。
+- `cloud_action`（`.30`）：云存档和「个人 → 云存档」页（`.96` 前在「设置」里），`action` 加 `result`：`connect`（每次打开页面第一次同步完时一条：`synced` / `offline`，带 `ms`、`merged` 云端有没有带来进度）、`open`（打开「存档」页，带 `status`）、`code`（生成存档码：`ok` / `offline`）、`copy`（点了「复制」）、`copied`（网页浮层里的复制按钮：`ok` / `hold`，`hold` 是只能长按复制）、`redeem`（输入存档码：`ok` / `invalid` / `not_found` / `offline`，`previous` 是换之前的账号）、`redeem_cancelled`（输入框点了取消）、`delete`（`ok` / `offline`，`account` 是被删的那个）、`enable`。
 - `share`（`.30`）：战绩图。`open` 由游戏发，带 `where`（`end` 结算页 / `pause` 暂停页）；之后网页浮层发 `share`（点了分享）、`shared` / `share_cancelled`（系统分享面板的结果）、`save`、`close`。微信里长按图片保存看不到。
 - `js_error`：网页和引擎的脚本错误（引擎的错误经 `console.error` 打出来），每次打开页面最多 5 条。
 
@@ -181,7 +181,7 @@ godot --headless --fixed-fps 60 --path . -s tests/smoke_test.gd -- --seconds=60 
 godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --lang=zh --seconds=80 --god --die-at=75 --pause-at=40 --shots=/tmp/shots --shot-every=30
 ```
 
-玩北京 / 西雅图 / 伦敦 / 新加坡：`--map=bj` / `--map=sea` / `--map=ldn` / `--map=sg`（不管解锁没有）。开局马上来这张图的天气：`--weather`；截选目的地页：`--departures`，带某座城的登机牌 `--departures=sea`（配 `--shots`）。看「打卡 · 成就」页：`--stamps=N`（开局前先打卡当前地图的前 N 个地标，`all` 是全部）配 `--collection=0`（打卡页）或 `--collection=1`（成就页）。机器人的打卡和成就只记在内存里，不会写进你本机的存档。
+玩北京 / 西雅图 / 伦敦 / 新加坡：`--map=bj` / `--map=sea` / `--map=ldn` / `--map=sg`（不管解锁没有）。开局马上来这张图的天气：`--weather`；截选目的地页：`--departures`，带某座城的登机牌 `--departures=sea`（配 `--shots`）。看首页进去的各页（`.96`）：`--stamps=N`（开局前先打卡当前地图的前 N 个地标，`all` 是全部）配 `--collection=0`（成就 · 成就）、`1`（成就 · 打卡）、`2`（个人 · 生涯）、`3`（个人 · 战绩）、`4`（个人 · 图鉴）；`--depart` 截出发页。机器人的打卡和成就只记在内存里，不会写进你本机的存档。
 
 ```bash
 godot --always-on-top --fixed-fps 60 --path . -s tests/smoke_test.gd -- --window=405x720 --handheld --seconds=3 --stamps=7 --collection=0 --shots=/tmp/shots

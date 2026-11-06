@@ -169,6 +169,8 @@ var level := 1
 var xp := 0
 var queued_level_ups := 0
 var current_choices: Array = []
+## Whether luck added a card to the level-up on screen; a 刷新 of it (reroll_upgrade) keeps it.
+var _offer_lucky := false
 ## Total damage dealt per weapon id, for the end-of-run ranking.
 var damage_by_source := {}
 ## When (`elapsed`) each source first dealt damage, for its damage per second (dps_of, .46).
@@ -892,18 +894,42 @@ func add_xp(amount: int) -> void:
 func _offer_level_up() -> void:
 	if state != State.PLAYING or queued_level_ups <= 0:
 		return
-	var lucky := upgrades.lucky_card()
+	_offer_lucky = upgrades.lucky_card()
 	# The level this offer is for: `level` has already counted every banked level-up.
-	current_choices = upgrades.roll_choices(upgrades.choice_count(lucky), level - queued_level_ups + 1)
+	current_choices = upgrades.roll_choices(upgrades.choice_count(_offer_lucky), level - queued_level_ups + 1)
 	# Only a card that really came out counts (a near-empty pool may not fill the extra slot).
-	lucky = lucky and current_choices.size() > upgrades.choice_count()
+	_offer_lucky = _offer_lucky and current_choices.size() > upgrades.choice_count()
 	telemetry.on_offer(current_choices)
-	if lucky:
+	if _offer_lucky:
 		telemetry.on_lucky_card()
 	state = State.LEVEL_UP
 	get_tree().paused = true
 	Sound.play("level_up")
-	level_up_offered.emit(current_choices, lucky)
+	level_up_offered.emit(current_choices, _offer_lucky)
+
+
+## Whether the level-up on screen can be redrawn (刷新, .96): a 刷新 left this run, and something to
+## redraw (only 摸鱼一会儿 is left once everything is maxed, and it would come back the same).
+func can_reroll() -> bool:
+	if state != State.LEVEL_UP or player.rerolls <= 0:
+		return false
+	return current_choices.any(func(choice: Dictionary) -> bool: return choice["kind"] != "heal")
+
+
+## 刷新 (.96, the user: 新加刷新的能力，每局默认一次): spends one of the run's Player.rerolls and
+## redraws the level-up on screen, as many cards as before (luck's extra one stays), the job's
+## pair kept when it was due (Upgrades.roll_choices with `reroll`). Rarities are rolled again too.
+func reroll_upgrade() -> void:
+	if not can_reroll():
+		return
+	player.rerolls -= 1
+	telemetry.on_reroll()
+	var count := upgrades.choice_count(_offer_lucky)
+	current_choices = upgrades.roll_choices(count, level - queued_level_ups + 1, true)
+	_offer_lucky = _offer_lucky and current_choices.size() > upgrades.choice_count()
+	telemetry.on_offer(current_choices)
+	Sound.play("level_up")
+	level_up_offered.emit(current_choices, _offer_lucky)
 
 
 func choose_upgrade(index: int) -> void:
@@ -1018,6 +1044,10 @@ func change_job() -> void:
 func _record_given_up() -> void:
 	if state == State.PLAYING or state == State.PAUSED:
 		RunHistory.record(self, "quit")
+		# On its board too once it lasted a minute (.96, the user: 下班也算), sent now since no result
+		# screen follows; not awaited: it finishes on the Cloud node, which outlives the scene.
+		if Leaderboard.record_run(self, false) and Leaderboard.online() and Leaderboard.has_name():
+			Leaderboard.submit()
 
 
 ## Leaves the title screen.
@@ -1235,10 +1265,9 @@ func _end_run(victory: bool) -> void:
 		return
 	state = State.ENDED
 	won = victory
-	# A clear goes on its map's board (Leaderboard; the result screen sends it, and asks for a 昵称
-	# first when there is none).
-	if victory:
-		Leaderboard.record_win(self)
+	# A clear, or from .96 a run that lasted a minute, goes on its map's board (Leaderboard; the
+	# result screen sends it, and asks for a 昵称 first when there is none).
+	Leaderboard.record_run(self, victory)
 	get_tree().paused = true
 	# Before the run's data goes out and the result screen is built: both list what it earned.
 	achievements.finish(victory)

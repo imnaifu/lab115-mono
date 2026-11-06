@@ -45,11 +45,15 @@ const GROUPS := ["生存", "战斗", "职业", "打卡", "彩蛋"]
 ## Achievement tiers (.31, the user's call: like trophies), hardest first, with their colours.
 ## Platinum is the one all_clear alone (.42, the user's call: everything, like a trophy list's
 ## platinum); 万人斩, 京城通 and 全图鉴 were platinum until then and are gold now.
+## `prize` (.96, the user: 成就也加钱，按奖杯加钱; 200，400，800，8888): 工资 paid the moment one of
+## the tier is earned, for 培训, kept in the save as `ach-<id>` (Progress.add_salary) so a second
+## device merging the save never pays it twice. Achievements earned before .96 weren't paid
+## after (the user: 不用补发). All of them: ¥25,488 (技术升级, hidden, another ¥200).
 const TIERS := {
-	"platinum": {"name": "白金", "color": Color("6c8ebf")},
-	"gold": {"name": "黄金", "color": Color("d49a12")},
-	"silver": {"name": "白银", "color": Color("8a909c")},
-	"bronze": {"name": "青铜", "color": Color("b8733a")},
+	"platinum": {"name": "白金", "color": Color("6c8ebf"), "prize": 8888},
+	"gold": {"name": "黄金", "color": Color("d49a12"), "prize": 800},
+	"silver": {"name": "白银", "color": Color("8a909c"), "prize": 400},
+	"bronze": {"name": "青铜", "color": Color("b8733a"), "prize": 200},
 }
 ## The 成就 page says how many players have each (rate()): from the live data (AchievementRates,
 ## written by tools/achievement_rates.py at each release) once it holds MIN_PLAYERS players; until
@@ -330,5 +334,19 @@ func _unlock(id: String) -> void:
 	if Progress.has_achievement(id) or data(id).is_empty():
 		return
 	Progress.add_achievement(id)
+	# Its tier's 工资, saved at once like a year-end bonus's, and counted in the run's 本局收获.
+	var prize := prize_of(id)
+	Progress.add_salary(salary_id(id), prize)
+	_game.salary_earned += prize
 	new_ids.append(id)
 	unlocked.emit(id)
+
+
+## The 工资 earning `id` pays (its tier's `prize`).
+static func prize_of(id: String) -> int:
+	return int(tier_of(id)["prize"])
+
+
+## The save's 工资 entry for `id`'s prize: there only if it was earned from .96 on.
+static func salary_id(id: String) -> String:
+	return "ach-" + id

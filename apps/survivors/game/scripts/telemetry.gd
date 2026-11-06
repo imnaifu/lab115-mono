@@ -58,6 +58,9 @@ extends RefCounted
 ##   picked cards only, so it compares with .44 and .45).
 ##   From .61 (午休 and 红包 drop from regular kills): run_end's `naps` and `red_packets`, how many
 ##   were picked up; `salary` counts what the 红包 paid too.
+##   From .96 (刷新): run_end's `rerolls`, how many level-ups the player redrew (Game.reroll_upgrade);
+##   the redrawn cards count in `offered` too. The ranks bought are in run_start's `training`
+##   (reroll:N), the run having Player.BASE_REROLLS + N.
 ## - cloud_action (.30): the cloud save and its page (设置 → 云存档), `action` with a `result`: connect
 ##   (once per page when the first sync settles: synced / offline, `ms`, `merged` when the cloud
 ##   brought progress), open (the 云存档 page, with its `status`), code (a 存档码 made: ok /
@@ -89,7 +92,7 @@ extends RefCounted
 ## A bare number from 64 on (the user: 版本去掉日期，只保留数字); up to 63 it was
 ## "2026-10-28.<n>" (the very first build plain "2026-10-28"), so to compare across both, read an
 ## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
-const VERSION := "95"
+const VERSION := "96"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -112,6 +115,8 @@ var _chest_upgrades := PackedStringArray()
 var _rarities := PackedInt32Array([0, 0, 0, 0, 0])
 ## Level-ups where luck added a card (Upgrades.lucky_card).
 var _lucky_cards := 0
+## Level-ups redrawn with a 刷新 (.96, Game.reroll_upgrade).
+var _rerolls := 0
 ## The revive dialog's outcome ("used" / "declined") and when, if the player got to it.
 var _revive := ""
 var _revive_at := 0
@@ -255,6 +260,10 @@ func on_lucky_card() -> void:
 	_lucky_cards += 1
 
 
+func on_reroll() -> void:
+	_rerolls += 1
+
+
 func on_chest(round_id: String, item: Dictionary) -> void:
 	_chests.append(round_id)
 	_chest_upgrades.append(_card_id(item))
@@ -326,6 +335,7 @@ func _summary(result: String) -> Dictionary:
 		"luck": roundi(player.luck),
 		"rarities": ",".join(Array(_rarities).map(func(count: int) -> String: return str(count))),
 		"lucky_cards": _lucky_cards,
+		"rerolls": _rerolls,
 		"evolved": ",".join(evolved),
 		"district": Maps.current.district_of(Vector2i((player.position / City.BLOCK).floor())),
 		"timeline": ";".join(_timeline).left(MAX_TEXT),

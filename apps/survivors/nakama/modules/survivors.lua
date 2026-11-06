@@ -2,12 +2,18 @@
 大厂幸存者's server side (.78, the user: 加个排行榜，列出最短通关时间; 玩家自己起昵称; 每张地图一个榜).
 
 A run is won by clearing the floor after 10:00 (game/DESIGN.md 2.1); its time, from the start to
-the last enemy down, goes on its map's board, shortest first, best per player. Everything goes
+the last enemy down, goes on its map's board, shortest first, best per player. From .96 (the user:
+没完成也记入榜，只要超过 1min 都算) a run that wasn't won goes on too once it lasted a minute, under
+every clear, the longest first: its score is SURVIVED_FROM minus how long it lasted, so one board
+kept ascending still ranks every clear (10:00-30:00) above every other run. Everything goes
 through the RPCs below, so the boards are authoritative: a client can't write a record itself.
 
   survivors_set_name    {name}                    -> {ok, name} | {error}
-  survivors_submit      {map, ms, job, run}       -> {ok, rank, best_ms} | {error}
+  survivors_submit      {map, ms, job, run, cleared} -> {ok, rank, best_ms, best_cleared} | {error}
   survivors_board       {map}                     -> {records: [...], me: {...}|null, name}
+
+`cleared` missing counts as true (a client before .96 sent clears only). A record comes back with
+`ms` (the clear time, or how long the run lasted) and `cleared`.
   survivors_report      {user}                    -> {ok}
   survivors_feedback    {text, where, context}    -> {ok} | {error}
 
@@ -29,6 +35,10 @@ local JOBS = { coder = true, pm = true, designer = true, ops = true, data_scient
 -- A clear can't come before 10:00 (nothing is won earlier) and one past 30:00 is no time worth ranking.
 local MIN_MS = 600000
 local MAX_MS = 1800000
+-- A run not won counts from a minute on (.96), as SURVIVED_FROM - its length: 8,200,000-9,940,000,
+-- all above any clear's score, the longer the lower.
+local SURVIVE_MIN_MS = 60000
+local SURVIVED_FROM = 10000000
 local BOARD_SIZE = 50
 local NAME_MIN = 2
 local NAME_MAX = 12
@@ -55,7 +65,8 @@ local function board_id(map)
 end
 
 for map, _ in pairs(MAPS) do
-  -- Ascending (the shortest clear on top), keeping each player's best; no reset; ranks on.
+  -- Ascending (the shortest clear on top, then the longest runs not won), keeping each player's
+  -- best; no reset; ranks on.
   local ok, err = pcall(nk.leaderboard_create, board_id(map), true, "asc", "best", nil, { map = map }, true)
   if not ok then
     nk.logger_warn(("leaderboard %s: %s"):format(board_id(map), tostring(err)))
@@ -145,6 +156,14 @@ local function set_name(context, payload)
   return reply({ ok = true, name = name })
 end
 
+-- What a record's score stands for: {ms, cleared}.
+local function decoded(score)
+  if score > MAX_MS then
+    return SURVIVED_FROM - score, false
+  end
+  return score, true
+end
+
 local function own_record(map, user_id)
   local _, owner_records = nk.leaderboard_records_list(board_id(map), { user_id }, 1, nil, 0)
   return owner_records and owner_records[1] or nil
@@ -153,16 +172,20 @@ end
 local function submit(context, payload)
   local entry = decode(payload)
   local map, ms, job = entry.map, tonumber(entry.ms), entry.job
-  if not MAPS[map] or not JOBS[job] or ms == nil or ms < MIN_MS or ms > MAX_MS then
+  local cleared = entry.cleared ~= false
+  local lowest = cleared and MIN_MS or SURVIVE_MIN_MS
+  if not MAPS[map] or not JOBS[job] or ms == nil or ms < lowest or ms > MAX_MS then
     return reply({ error = "invalid" })
   end
   if display_name(context.user_id) == "" then
     return reply({ error = "no_name" })
   end
-  nk.leaderboard_record_write(board_id(map), context.user_id, nil, math.floor(ms), 0,
+  local score = cleared and math.floor(ms) or SURVIVED_FROM - math.floor(ms)
+  nk.leaderboard_record_write(board_id(map), context.user_id, nil, score, 0,
     { job = job, run = tostring(entry.run or "") })
   local record = own_record(map, context.user_id)
-  return reply({ ok = true, rank = record and record.rank or 0, best_ms = record and record.score or ms })
+  local best_ms, best_cleared = decoded(record and record.score or score)
+  return reply({ ok = true, rank = record and record.rank or 0, best_ms = best_ms, best_cleared = best_cleared })
 end
 
 local function board(context, payload)
@@ -189,7 +212,8 @@ local function board(context, payload)
       name = HIDDEN_NAME
     end
     local metadata = record.metadata or {}
-    return { rank = record.rank, user = record.owner_id, name = name, ms = record.score,
+    local ms, cleared = decoded(record.score)
+    return { rank = record.rank, user = record.owner_id, name = name, ms = ms, cleared = cleared,
       job = metadata.job or "", me = record.owner_id == context.user_id }
   end
   local rows = {}

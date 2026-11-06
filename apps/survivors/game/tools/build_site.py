@@ -244,7 +244,8 @@ def upgrades_section(data: dict) -> str:
 <li>升一级要的经验：前 4 级 {" / ".join(str(amount) for amount in xp[:4])}，之后每级多要 {early_step}，{late_from} 级以后每级多要 {late_step}（全表见下）</li>
 <li>从头升到 {"、".join(f"L{level} 一共要 {amount}" for level, amount in reach.items())}</li>
 <li>等级就是职级：{ranks}</li>
-<li>每次升级三选一，运气好多一张；专属武器第 {job_levels} 级必出</li></ul>
+<li>每次升级三选一，运气好多一张；专属武器第 {job_levels} 级必出</li>
+<li>不想要这几张可以<b>刷新</b>换一批（张数不变，到点必出的专属武器那两张留着）：每局默认 1 次，<a href="#training">培训</a>每级多 1 次，最多 6 次，用完这局就没了</li></ul>
 <div class="scroll tall"><table class="nums"><thead><tr><th>等级</th><th>升下一级要</th><th>从 L1 累计</th></tr></thead><tbody>{"".join(xp_rows)}</tbody></table></div></article>"""
 
     rows = []
@@ -327,9 +328,10 @@ def training_section(data: dict) -> str:
 <div class="scroll"><table class="nums"><tr><th>属性</th><th>每级</th><th>级数</th><th>每级价格</th><th>练满</th></tr>{rows}</table></div>
 <p class="muted">每升一级比上一级多第 1 级价格的一半（第 1 / 2 / 3 / 4 / 5 级是第 1 级的 1 / 1.5 / 2 / 2.5 / 3 倍），练别的项不会让它变贵。全部练满一共 ¥{training['full_cost']:,}。</p></article>"""
     how = f"""<article class="card"><h3>工资和退款</h3><ul>
-<li>工资主要从年终奖来：绩效 {rating_letters} 分别发 {salaries}（第 1 / 2 / 3 / 4 个 boss，越后面的越多，都是 66、88 结尾的吉利数），boss 打得越多挣得越多；普通怪偶尔掉<b>红包</b>，一个 ¥{min(data["drops"]["red_packet_salary"])}–{max(data["drops"]["red_packet_salary"])}（见<a href="#drops">掉落</a>）</li>
-<li>工资存进存档，一局结束也不清零，在开始画面的「培训」里花</li>
+<li>工资主要从年终奖来，拿到<a href="#achievements">成就</a>也按档发一笔：绩效 {rating_letters} 分别发 {salaries}（第 1 / 2 / 3 / 4 个 boss，越后面的越多，都是 66、88 结尾的吉利数），boss 打得越多挣得越多；普通怪偶尔掉<b>红包</b>，一个 ¥{min(data["drops"]["red_packet_salary"])}–{max(data["drops"]["red_packet_salary"])}（见<a href="#drops">掉落</a>）</li>
+<li>工资存进存档，一局结束也不清零，在首页的「培训」里花</li>
 <li>练的等级每局开局都带着，在所有地图都算，和打卡的加成叠加</li>
+<li>「刷新」不是属性：每级让每局多刷新 1 次升级卡（默认 1 次，练满 6 次，见<a href="#upgrades">升级</a>）</li>
 <li>「全部退款」把练等级花掉的工资全部退回，可以重新分配</li>
 <li>这里还卖<b>返聘</b>：¥{training['revive_price']} 一个，被裁时可以选择回来（见<a href="#drops">掉落</a>），用掉就没了，退款不退</li></ul></article>"""
     return section("training", "培训", "参考吸血鬼幸存者的局外商店：年终奖和红包发的工资攒下来，用来永久升级基础属性。",
@@ -496,10 +498,16 @@ def achievements_section(data: dict) -> str:
             continue
         tier, color = TIERS.get(item["tier"], ("", "#ddd"))
         cards.append(f"""<article class="card small">{art(item['art'], 44, item['name'])}<h4>{esc(item['name'])} <span class="tier" style="background:{color}">{esc(tier)}</span></h4>
-<p class="muted">{esc(item['text'])}</p><p class="rate">{esc(item['rate'])}</p></article>""")
+<p class="muted">{esc(item['text'])}</p><p class="rate">奖金 ¥{item['prize']:,} · {esc(item['rate'])}</p></article>""")
     shown = [item for item in data["achievements"] if not item.get("hidden")]
     counts = " · ".join(f"{name} {sum(1 for item in shown if item['tier'] == tier_id)} 个" for tier_id, (name, _) in TIERS.items())
-    return section("achievements", "成就", f"一共 {len(shown)} 个，按难度分档：{counts}。只是徽章，不给加成。达成率是游戏里显示的数。",
+    # Each tier's prize, as the cards say (Achievements.TIERS `prize`, .96).
+    prizes = {}
+    for item in shown:
+        prizes.setdefault(item["tier"], item["prize"])
+    prize_text = " / ".join(f"{name} ¥{prizes[tier_id]:,}" for tier_id, (name, _) in TIERS.items() if tier_id in prizes)
+    total = sum(item["prize"] for item in shown)
+    return section("achievements", "成就", f"一共 {len(shown)} 个，按难度分档：{counts}。不给属性加成，拿到时按档发一笔工资（{prize_text}，全部 ¥{total:,}），在<a href=\"#training\">培训</a>里花。达成率是游戏里显示的数。",
                    f'<div class="grid">{"".join(cards)}</div>')
 
 
@@ -508,9 +516,9 @@ def faq_section(data: dict) -> str:
     items = [
         ("要注册吗？", "不用。打开就能玩，也不用登录。"),
         ("进度存在哪？", "存在这个浏览器里，同时自动传一份到云端。打卡、成就、工资、培训和返聘一有变化就存，中途关掉页面也不丢；图鉴和累计数据在一局结束时存。"),
-        ("换手机、换浏览器怎么办？", "在游戏里的「设置 → 云存档」拿到 12 位存档码，在新设备上输入，两边的进度会合并在一起。"),
-        ("清了浏览器数据，或者微信把存储清了，进度会丢吗？", "本机那份会丢，云端那份还在，但要输入存档码才能找回来。所以最好先在「设置 → 云存档」里把存档码记下来。"),
-        ("不想要云存档了？", "「设置 → 云存档」里可以删除云存档，存档码当场作废，本机的进度保留。"),
+        ("换手机、换浏览器怎么办？", "在游戏里的「个人 → 云存档」拿到 12 位存档码，在新设备上输入，两边的进度会合并在一起。"),
+        ("清了浏览器数据，或者微信把存储清了，进度会丢吗？", "本机那份会丢，云端那份还在，但要输入存档码才能找回来。所以最好先在「个人 → 云存档」里把存档码记下来。"),
+        ("不想要云存档了？", "「个人 → 云存档」里可以删除云存档，存档码当场作废，本机的进度保留。"),
         ("分享战绩有奖励吗？", "没有。结算页能生成战绩图，转发不给任何奖励。"),
     ]
     rows = "".join(f"<details><summary>{esc(question)}</summary><p>{esc(answer)}</p></details>" for question, answer in items)
@@ -527,7 +535,7 @@ def how_section(data: dict) -> str:
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
 <li>每两分钟来一个 boss，每张地图 4 个、招式固定，打掉自动开「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
-<li>10:00 下班：不再来新怪，清完场上剩下的就敲钟上市（清场时倒下也算失败）；之后进入「加班」，怪走得更快，每 30 秒更暴躁、打人更疼，越拖越危险；从开局到清完的用时上每张地图的排行榜</li></ul>
+<li>10:00 下班：不再来新怪，清完场上剩下的就敲钟上市（清场时倒下也算失败）；之后进入「加班」，怪走得更快，每 30 秒更暴躁、打人更疼，越拖越危险；从开局到清完的用时上每张地图的排行榜；没通关的局撑过 1 分钟也上榜，按撑了多久排在所有通关的后面</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
 <article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（boss 是每张地图自己的，见<a href="#maps">地图</a>）：</p><ol class="timeline">{rows}</ol></article>
 </div>""")
