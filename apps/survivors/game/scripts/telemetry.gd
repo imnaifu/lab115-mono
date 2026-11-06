@@ -97,7 +97,10 @@ extends RefCounted
 ## A bare number from 64 on (the user: 版本去掉日期，只保留数字); up to 63 it was
 ## "2026-10-28.<n>" (the very first build plain "2026-10-28"), so to compare across both, read an
 ## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
-const VERSION := "99"
+## A standard major.minor.patch from 0.0.1 (the user: 版本改下，用标准版本形式; picked 0.0.1): the
+## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
+## dated ones before came first.
+const VERSION := "0.0.1"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
