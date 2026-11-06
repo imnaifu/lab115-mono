@@ -14,8 +14,8 @@ export interface PostData {
   coverUrl: string;
   authorUrl: string;
   imageUrls: string[]; // each element will be its own column
-  // Link to the note's detail page. Used by the popup UI (note row link); not
-  // emitted as a CSV column, so the export format is unchanged.
+  // Link to the note's detail page (with xsec_token). Used by the popup UI
+  // (note row link); exported as the "Note URL" column without the token.
   noteUrl: string;
 }
 
@@ -49,6 +49,9 @@ function postToCSVRow(data: PostData): string {
     escapeCSVField(data.sharedCount),
     escapeCSVField(data.coverUrl),
     escapeCSVField(data.authorUrl),
+    // Export the bare note link: the xsec_token query is session-scoped noise
+    // in a spreadsheet. The popup still opens the tokenized noteUrl.
+    escapeCSVField((data.noteUrl ?? "").split("?")[0]),
     // All image URLs in a single cell, one per line (escapeCSVField quotes it)
     escapeCSVField((data.imageUrls ?? []).join("\n")),
   ].join(",");
@@ -69,6 +72,10 @@ export function convertToCSV(listData: PostData[]): string {
     "Shared Count",
     "Cover URL",
     "Author URL",
+    // Added after the existing URL columns (not next to Title) so sheets
+    // built on the old column order keep lining up; Image URLs stays last
+    // because its cell is multi-line.
+    "Note URL",
     "Image URLs",
   ];
 

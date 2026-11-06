@@ -26,8 +26,12 @@ you export the collected notes on demand.
 ## Exported columns
 
 `Title`, `Author Name`, `Publish Time`, `Like Count`, `Collect Count`,
-`Comment Count`, `Shared Count`, `Cover URL`, `Author URL`, and
+`Comment Count`, `Shared Count`, `Cover URL`, `Author URL`, `Note URL`, and
 `Image URLs` (all image links in one cell, one per line).
+
+Counts are exported as plain numbers. Xiaohongshu only returns abbreviated
+values from 10,000 up (`1.6万`, `48.6K`), so those are expanded to an
+approximate figure (`16000`, `48600`) — the exact count isn't available.
 
 Not every source returns every column. Only the search API returns the full
 `interact_info` and the `publish_time` corner tag; the homepage feed (`/` and

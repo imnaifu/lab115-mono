@@ -16,7 +16,31 @@ import { normalizePublishTime } from "./datetime";
  */
 function toCountText(value: any): string {
   if (value === undefined || value === null) return "";
-  return String(value);
+  return normalizeCount(String(value));
+}
+
+// Multipliers for the abbreviated display units XHS uses: 万/亿 on
+// xiaohongshu.com, K/M on rednote.com.
+const COUNT_UNITS: Record<string, number> = {
+  万: 1e4,
+  亿: 1e8,
+  k: 1e3,
+  m: 1e6,
+};
+
+/**
+ * The API returns counters as display strings, not integers: "1,937" below
+ * 10k, and "1.6万" / "48.6K" (sometimes with a trailing "+") above it. Turn
+ * them into plain digits so the CSV column is numeric and sortable. Values at
+ * or above 10k are therefore approximate — the API never sends the exact
+ * figure. Anything we don't recognise is kept as-is rather than dropped.
+ */
+function normalizeCount(text: string): string {
+  const compact = text.replace(/[,\s+]/g, "");
+  const match = compact.match(/^(\d+(?:\.\d+)?)(万|亿|k|m)?$/i);
+  if (!match) return text.trim();
+  const unit = match[2] ? COUNT_UNITS[match[2].toLowerCase()] : 1;
+  return String(Math.round(Number(match[1]) * unit));
 }
 
 /**
