@@ -101,7 +101,7 @@ extends RefCounted
 ## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
 ## dated ones before came first. A small change bumps the last number, a big one the middle one
 ## (the user: 小改动加小的，大改动加中的).
-const VERSION := "0.1.1"
+const VERSION := "0.1.2"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
