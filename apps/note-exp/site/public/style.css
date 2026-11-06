@@ -14,6 +14,12 @@
 @font-face { font-family: "Nunito"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/nunito-latin-700-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-style: normal; font-weight: 800; font-display: swap; src: url("/fonts/nunito-latin-800-normal.woff2") format("woff2"); }
 
+/* Brand swapped from the system's yellow to the logo red. Overridden here so
+   sokosoko.css stays a verbatim copy. #d03e50 is the logo's #d94b5c deepened
+   so white on-brand text reaches 4.5:1; the highlight bar sits under ink text,
+   so it uses the logo tile's pink instead of red. */
+:root { --brand: #d03e50; --brand-deep: #b3303f; --brand-soft: #fde6e8; --on-brand: #ffffff; --highlight: #f6c6cf; }
+
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body { font-size: 15px; line-height: 26px; }

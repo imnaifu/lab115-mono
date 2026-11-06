@@ -20,8 +20,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sokosoko tokens (light theme only). brand yellow is a fill, never a text
-   colour: text on it is on-brand. */
+/* Sokosoko tokens (light theme only), with the brand swapped from yellow to the
+   logo red. #d03e50 is the logo's #d94b5c deepened just enough for white
+   on-brand text to reach 4.5:1 (4.68); ink on red would only be 2.6:1. */
 :root {
   --paper: #ffffff;
   --paper-soft: #faf7f0;
@@ -30,10 +31,10 @@
   --line-strong: #8a909c;
   --ink: #2f3542;
   --ink-muted: #666b7a;
-  --brand: #f7c948;
-  --brand-deep: #e0a91b;
-  --brand-soft: #fdf1cc;
-  --on-brand: #2f3542;
+  --brand: #d03e50;
+  --brand-deep: #b3303f;
+  --brand-soft: #fde6e8;
+  --on-brand: #ffffff;
   --link: #2f6fb0;
   --success: #276b43;
   --success-soft: #e3f4ea;

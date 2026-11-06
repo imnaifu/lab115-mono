@@ -60,7 +60,7 @@ export default function PostTab({ L, s }) {
       </div>
       <div className="font-bold text-[14px] leading-[22px] mt-3 mb-3">{post.title}</div>
 
-      {/* counts in ink: brand yellow is a fill, never a text colour */}
+      {/* counts in ink: brand red is a fill, never a text colour */}
       <div className="text-[12px] text-ink-muted mb-2.5">
         <b className="font-display font-extrabold text-ink">{post.video ? 1 : 0}</b> {L.videoUnit} ·{' '}
         <b className="font-display font-extrabold text-ink">{post.images.length}</b> {L.imageUnit}

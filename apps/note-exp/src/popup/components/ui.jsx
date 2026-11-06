@@ -18,8 +18,8 @@ export function Stat({ icon, children }) {
   );
 }
 
-// Everything you press is a pill. One yellow primary per view; text on yellow is
-// on-brand ink, never white.
+// Everything you press is a pill. One red primary per view; text on red is
+// on-brand white (ink on red fails contrast).
 const KINDS = {
   primary: 'bg-brand text-on-brand border-transparent hover:bg-brand-deep active:translate-y-px',
   secondary: 'bg-paper text-ink border-line-strong hover:bg-paper-sunk',
