@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Hand-written: four pages, each listed with its other-language twin. -->
+<!-- Hand-written: four pages, each listed with its other-language twin. English is the default (root), Chinese is under /zh/. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://rednote.lab115.com/</loc>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/"/>
   </url>
   <url>
-    <loc>https://rednote.lab115.com/en/</loc>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/en/"/>
+    <loc>https://rednote.lab115.com/zh/</loc>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/"/>
   </url>
   <url>
     <loc>https://rednote.lab115.com/privacy/</loc>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/privacy/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/en/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/privacy/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/privacy/"/>
   </url>
   <url>
-    <loc>https://rednote.lab115.com/en/privacy/</loc>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/privacy/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/en/privacy/"/>
+    <loc>https://rednote.lab115.com/zh/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rednote.lab115.com/privacy/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/privacy/"/>
   </url>
 </urlset>

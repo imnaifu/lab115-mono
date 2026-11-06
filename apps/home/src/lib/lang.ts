@@ -1,8 +1,12 @@
 /**
  * The reader's language, carried in the URL.
  *
- * THE DEFAULT LANGUAGE IS UNPREFIXED and the other one is not: Chinese is `/`,
- * English is `/en`. Both used to be prefixed, with the bare path redirected by the
+ * THE DEFAULT LANGUAGE IS UNPREFIXED and the other one is not: English is `/`,
+ * Chinese is `/zh`. (It was the other way round until the Chrome Web Store
+ * listing started showing `lab115.com` as the extension's verified publisher —
+ * the people who click through from there are mostly not Chinese readers, so
+ * the bare domain now answers in English and legacy `/en` 308s to it.)
+ * Both used to be prefixed, with the bare path redirected by the
  * proxy to whatever Accept-Language asked for, and that arrangement had two faults
  * that compound.
  *
@@ -19,19 +23,19 @@
  * self-canonical, and nothing offers Google a second address to prefer.
  * `detectLang` below is kept but no longer decides where anyone lands.
  *
- * THE COST: an English speaker who types the bare domain gets the Chinese title
+ * THE COST: a Chinese speaker who types the bare domain gets the English title
  * and description. The page itself shows only the wordmark, so that is all they
  * miss, and there is no language switch on it any more. That is the trade — any
  * server-side negotiation on `/` rebuilds the alias this removes.
  *
- * Same contract as apps/daily, deliberately: the two sites link to each other, the
- * same report named pages on both, and they were fixed the same way.
+ * Same URL contract as apps/daily (unprefixed default, no negotiation), but the
+ * default differs: daily is a Chinese-first site and keeps `zh` at `/`.
  */
 export const LANGS = ["zh", "en"] as const;
 
 export type Lang = (typeof LANGS)[number];
 
-export const DEFAULT_LANG: Lang = "zh";
+export const DEFAULT_LANG: Lang = "en";
 
 export function isLang(value: string | undefined): value is Lang {
   return value === "zh" || value === "en";
@@ -51,7 +55,7 @@ export function href(lang: Lang, path: string): string {
 /**
  * The bare path behind a language-prefixed one — the inverse of `href`.
  *
- * `proxy.ts` needs it to turn a legacy `/zh` back into `/`, and it lives here so
+ * `proxy.ts` needs it to turn a legacy `/en` back into `/`, and it lives here so
  * the prefix rules are stated once.
  */
 export function barePath(path: string): string {

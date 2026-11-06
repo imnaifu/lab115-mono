@@ -6,8 +6,8 @@ import { renderOgCard } from "@/lib/og";
  *
  * OUTSIDE THE PAGE TREE, where it used to live as `/[lang]/og.png`. It had to
  * move: `proxy.ts` skips any path ending in a file extension, so a
- * language-prefixed image route is unreachable now that Chinese is served
- * unprefixed and reaching `/[lang]/…` needs the rewrite that matcher denies to
+ * language-prefixed image route is unreachable now that the default language is
+ * served unprefixed and reaching `/[lang]/…` needs the rewrite that matcher denies to
  * dotted paths. Carrying the language as an ordinary path segment sidesteps it,
  * and it is what apps/daily does — see `ogUrl` in its lib/links.
  *

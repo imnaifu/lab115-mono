@@ -66,9 +66,10 @@ export async function generateMetadata(): Promise<Metadata> {
        * apps/daily had the identical tag and the identical symptom on three pages.
        *
        * THE REDIRECT WENT TOO, which is what makes this simple rather than a
-       * mitigation. The default language is unprefixed now, so `/` is the Chinese
-       * page — there is no negotiating URL left anywhere to name. `x-default` and
-       * `zh` therefore point at the same URL, which is a documented configuration
+       * mitigation. The default language is unprefixed now, so `/` is the default
+       * language's page (English since the default flipped — see lib/lang.ts) —
+       * there is no negotiating URL left anywhere to name. `x-default` and the
+       * default language therefore point at the same URL, which is a documented configuration
        * and not a workaround: it says that a reader who asked for nothing in
        * particular gets the page they actually land on.
        */

@@ -9,18 +9,18 @@ import { barePath, DEFAULT_LANG, isLang } from "@/lib/lang";
  *
  * AFTER THE `www` REDIRECT BELOW, three rules, and the order matters:
  *
- *   `/zh/…`   308 to the unprefixed form. The default language is unprefixed now
- *             — see lib/lang.ts — so every one of these is a legacy URL.
- *   `/en/…`   through, with `x-lang: en`.
- *   anything  REWRITTEN to `/zh/…`, with `x-lang: zh`. A rewrite, not a redirect:
+ *   `/en/…`   308 to the unprefixed form. The default language (English) is
+ *             unprefixed — see lib/lang.ts — so every one of these is a legacy URL.
+ *   `/zh/…`   through, with `x-lang: zh`.
+ *   anything  REWRITTEN to `/en/…`, with `x-lang: en`. A rewrite, not a redirect:
  *             the URL bar keeps saying `/` while the App Router matches
  *             `src/app/[lang]`. That is what lets the page tree stay where it is.
  *
  * WHAT IS GONE: the Accept-Language negotiation that used to decide where `/` sent
  * you. It is what made the bare URL a second address for the Chinese page and put
  * `lab115.com/zh` in Search Console as a duplicate whose canonical Google had
- * overridden. apps/daily lost the same redirect for the same reason. The cost — an
- * English speaker typing the bare domain gets Chinese — is accepted deliberately;
+ * overridden. apps/daily lost the same redirect for the same reason. The cost — a
+ * Chinese speaker typing the bare domain gets English — is accepted deliberately;
  * lib/lang.ts carries the full account.
  *
  * This is also where `<html lang>` comes from. The root layout renders that
@@ -84,7 +84,7 @@ export default function proxy(request: NextRequest): NextResponse {
   if (isLang(first)) return NextResponse.next({ request: { headers } });
 
   const url = request.nextUrl.clone();
-  // `/` becomes `/zh`, not `/zh/`.
+  // `/` becomes `/en`, not `/en/`.
   url.pathname = pathname === "/" ? `/${DEFAULT_LANG}` : `/${DEFAULT_LANG}${pathname}`;
   return NextResponse.rewrite(url, { request: { headers } });
 }

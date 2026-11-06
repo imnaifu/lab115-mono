@@ -1,17 +1,19 @@
 <!doctype html>
 <!--
-  隐私政策（中文）。这页是填进 Chrome 应用商店后台的隐私政策地址，每一条都要和
-  src/ 的实际行为一致：扩展改了权限、存储或网络行为，这里和 ../en/privacy/ 要一起改。
+  Privacy policy (English). This is the privacy URL given to the Chrome Web
+  Store, so every line must match what src/ actually does: a change to the
+  extension's permissions, storage or network behaviour means a change here and
+  in ../zh/privacy/ as well.
 -->
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>隐私政策 - 小红书导出工具 RedNote Exporter</title>
-  <meta name="description" content="小红书导出工具（RedNote Exporter）不收集、不存储、不传输任何个人数据，所有处理都在你的浏览器里完成。">
+  <title>Privacy Policy - RedNote Exporter</title>
+  <meta name="description" content="RedNote Exporter collects, stores and transmits no personal data. Everything happens inside your browser.">
   <link rel="canonical" href="https://rednote.lab115.com/privacy/">
-  <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/privacy/">
-  <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/en/privacy/">
+  <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/privacy/">
+  <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/privacy/">
   <link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/privacy/">
   <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
@@ -23,70 +25,70 @@
     <div class="wrap">
       <a class="brand" href="/">
         <img src="/img/icon.svg" alt="" width="32" height="32">
-        <span>小红书导出工具</span>
+        <span>RedNote Exporter</span>
       </a>
-      <nav class="nav" aria-label="页面导航">
-        <a class="lang" href="/en/privacy/" hreflang="en" lang="en">EN</a>
+      <nav class="nav" aria-label="Page">
+        <a class="lang" href="/zh/privacy/" hreflang="zh-CN" lang="zh-CN">中文</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
     <article class="prose">
-      <h1>隐私政策</h1>
-      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 4 日</p>
+      <h1>Privacy Policy</h1>
+      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 4, 2026</p>
 
       <div class="summary">
-        <p><strong>简单说：</strong>本扩展不收集、不存储、不传输任何个人数据。它没有服务器，没有账号体系，也没有统计或追踪代码。所有处理都在你自己的浏览器里完成。</p>
+        <p><strong>In short:</strong> this extension collects, stores and transmits no personal data. It has no server, no accounts, and no analytics or tracking code. Everything happens inside your own browser.</p>
       </div>
 
-      <h2>扩展会读取什么</h2>
-      <p>只有当你打开 xiaohongshu.com 或 rednote.com 的页面时，扩展才会运行，并且只读取这些页面本身加载的笔记数据：</p>
+      <h2>What the extension reads</h2>
+      <p>The extension runs only on xiaohongshu.com and rednote.com pages, and only reads the note data those pages load themselves:</p>
       <ul>
-        <li><strong>笔记列表</strong>：首页推荐、搜索结果、用户主页加载出来的笔记，包括标题、作者、发布时间、互动数（点赞、收藏、评论、分享）、封面和图片链接。</li>
-        <li><strong>单篇笔记</strong>：当前打开的笔记的图片链接、视频链接和基本信息，用于下载。</li>
+        <li><strong>Note lists</strong> — notes loaded by the home feed, search results and profile pages: title, author, publish time, engagement counts (likes, collects, comments, shares), cover and image links.</li>
+        <li><strong>A single post</strong> — the image links, video links and basic details of the post you have open, so they can be downloaded.</li>
       </ul>
-      <p>这些都是页面上本来就公开可见的内容。扩展不会读取你的小红书账号信息、私信、Cookie 或密码，也不会自己向小红书发起额外请求，只是读取页面在你浏览时已经收到的数据。</p>
+      <p>All of this is content already publicly visible on the page. The extension does not read your RedNote account details, messages, cookies or passwords, and it never sends requests of its own to RedNote — it only reads data the page has already received while you browse.</p>
 
-      <h2>数据存在哪里</h2>
+      <h2>Where data is kept</h2>
       <ul>
-        <li>采集到的笔记只保存在当前标签页的内存里。关闭标签页、刷新页面或点「清空」后就会丢弃。</li>
-        <li>你点「导出 CSV」或「下载」时，文件直接由浏览器保存到你电脑的下载文件夹。图片和视频由浏览器从小红书的图片、视频服务器直接下载，不经过我们。</li>
-        <li>扩展只在本地记住一项设置：你选择的界面语言（中文或 English）。</li>
-      </ul>
-
-      <h2>我们不做的事</h2>
-      <ul>
-        <li>不把任何数据发送到我们或任何第三方的服务器。</li>
-        <li>不使用统计、广告或追踪工具。</li>
-        <li>不出售、不出租、不分享任何数据。</li>
-        <li>不在后台主动采集。只有你在浏览小红书页面时，扩展才会处理该页面的数据。</li>
+        <li>Captured notes live only in the memory of the current tab. Closing or reloading the tab, or clicking Clear, discards them.</li>
+        <li>When you click Export CSV or Download, your browser saves the files straight to your Downloads folder. Images and video are fetched by your browser directly from RedNote's media servers, never through us.</li>
+        <li>The only thing the extension remembers locally is one setting: the interface language you picked (中文 or English).</li>
       </ul>
 
-      <h2>权限说明</h2>
+      <h2>What we don't do</h2>
       <ul>
-        <li><code>downloads</code>：把你选中的图片、视频保存到下载文件夹，并按「时间 + 笔记标题」放进同一个子文件夹。</li>
-        <li><strong>访问 xiaohongshu.com 和 rednote.com（含 edith、so 子域名）</strong>：在这些页面上运行，读取页面加载的笔记数据。扩展不会在其他网站上运行。</li>
+        <li>We do not send any data to our servers or to any third party.</li>
+        <li>We do not use analytics, advertising or tracking tools.</li>
+        <li>We do not sell, rent or share any data.</li>
+        <li>We do not collect anything in the background. The extension only handles a RedNote page while you are browsing it.</li>
       </ul>
 
-      <h2>你下载的内容</h2>
-      <p>通过本扩展下载或导出的内容版权归原作者所有。请仅用于个人和研究用途，并遵守小红书的用户协议和相关法律。本扩展与小红书（RED / RedNote）官方无任何关联或授权。</p>
+      <h2>Permissions</h2>
+      <ul>
+        <li><code>downloads</code> — saves the images and video you select to your Downloads folder, grouped into one sub-folder named after the time and post title.</li>
+        <li><strong>Access to xiaohongshu.com and rednote.com</strong> (including the edith and so subdomains) — lets the extension run on those pages and read the note data they load. It does not run on any other site.</li>
+      </ul>
 
-      <h2>政策变更</h2>
-      <p>如果扩展的数据处理方式发生变化，我们会更新这一页并修改上面的日期。</p>
+      <h2>Content you download</h2>
+      <p>Content downloaded or exported with this extension remains the property of its original authors. Please use it for personal and research purposes only, and follow RedNote's terms of service and applicable law. RedNote Exporter is not affiliated with, endorsed by or authorized by RedNote (Xiaohongshu).</p>
 
-      <h2>联系我们</h2>
-      <p>对隐私有任何疑问，请发邮件到 <a href="mailto:help@lab115.com">help@lab115.com</a>。</p>
+      <h2>Changes to this policy</h2>
+      <p>If the way the extension handles data ever changes, we will update this page and the date above.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about privacy? Email <a href="mailto:help@lab115.com">help@lab115.com</a>.</p>
     </article>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
       <div class="row">
-        <a href="/">首页</a>
-        <a href="mailto:help@lab115.com">反馈：help@lab115.com</a>
-        <a href="/en/privacy/" hreflang="en" lang="en">English</a>
-        <span class="made"><a href="https://lab115.com">LAB115</a> 出品</span>
+        <a href="/">Home</a>
+        <a href="mailto:help@lab115.com">Feedback: help@lab115.com</a>
+        <a href="/zh/privacy/" hreflang="zh-CN" lang="zh-CN">中文</a>
+        <span class="made">Made by <a href="https://lab115.com">LAB115</a></span>
       </div>
     </div>
   </footer>

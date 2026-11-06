@@ -8,7 +8,7 @@ import { SITE } from "@/lib/config";
 import { JsonLd, organization, website } from "@/lib/seo";
 
 /**
- * The complete set of languages, so `/` and `/en` are the only paths that
+ * The complete set of languages, so `/` and `/zh` are the only paths that
  * resolve. They still render per request rather than at build time — the root
  * layout reads the `x-lang` header, and `headers()` makes the whole tree
  * dynamic. That is the price of one `<html lang>` for a bilingual site, and
@@ -22,7 +22,7 @@ export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
 }
 
-/** Anything outside `/` and `/en` is not a page here. */
+/** Anything outside `/` and `/zh` is not a page here. */
 export const dynamicParams = false;
 
 export default async function HomePage({
