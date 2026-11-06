@@ -37,7 +37,8 @@ const MAP_ICON := 26.0
 ## How long the 昵称 dialog waits after the last keystroke before asking the server (.97).
 const NAME_CHECK_DELAY := 0.4
 ## The 大招 button's size (_build_ultimate_button).
-const ULTIMATE_SIZE := 48.0
+## 40 since 0.1.0 (the user: 大招改小一点); 48 until then.
+const ULTIMATE_SIZE := 40.0
 ## How long the first-boss hint saying what the 大招 does stays up: longer than a toast, it's a
 ## sentence to read.
 const ULTIMATE_HINT_SECONDS := 4.0
@@ -665,6 +666,12 @@ func _build_top_bar() -> void:
 			grid.add_child(slot)
 			slot_list.append(slot)
 			_fill_slot(slot, "", 0, Art.PAPER)
+	# The whole map under the slots (0.1.0): left, so the 大招 button keeps its place on the right
+	# (the user: 大招放原位，小地图放左边).
+	var minimap := Minimap.new()
+	minimap.game = game
+	minimap.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	slots.add_child(minimap)
 
 	# XP, the clock and the boss readouts, top centre, stacked so a hidden one takes no room.
 	_center_column = VBoxContainer.new()
@@ -2918,7 +2925,13 @@ func _show_pause() -> void:
 	stat_grid.add_theme_constant_override("h_separation", 10)
 	stat_grid.add_theme_constant_override("v_separation", 6)
 	stat_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stats.add_child(stat_grid)
+	# The minimap's colours under the numbers (0.1.0): what each dot is.
+	var stats_column := VBoxContainer.new()
+	stats_column.add_theme_constant_override("separation", 8)
+	stats_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats.add_child(stats_column)
+	stats_column.add_child(stat_grid)
+	stats_column.add_child(Minimap.legend())
 	# Health as it is now only: the cap shows on the bar under the player anyway.
 	for stat: Array in [
 		["生命", str(ceili(player.hp))],

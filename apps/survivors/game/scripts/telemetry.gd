@@ -99,8 +99,9 @@ extends RefCounted
 ## old one's number after its last dot. Kept a string: the page and version.txt take it as text.
 ## A standard major.minor.patch from 0.0.1 (the user: 版本改下，用标准版本形式; picked 0.0.1): the
 ## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
-## dated ones before came first.
-const VERSION := "0.0.1"
+## dated ones before came first. A small change bumps the last number, a big one the middle one
+## (the user: 小改动加小的，大改动加中的).
+const VERSION := "0.1.0"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.

@@ -337,7 +337,7 @@ def objects_section(data: dict) -> str:
              f"三选一拿一项属性：伤害、冷却、生命、护甲、移速、拾取、运气、回血里随机三项，数值是同名被动一级的 {percent(objects['desk_share'])}，稀有度照升级卡的规则抽，不占被动格；"
              f"金色工位三张都是史诗或传说（传说 {percent(objects['golden_desk_legendary'])}）。"),
     ]
-    return section("objects", "地图上的东西", "每局随机放在地图上，位置每局不同。",
+    return section("objects", "地图上的东西", "每局随机放在地图上，位置每局不同。左上角的小地图用圆点标出来：自己墨色、打卡点黄色、boss 红色、快递棕色、会议室蓝色（开会中闪红）、加班申请紫色、工位绿色（金色工位金色）；小怪不画。",
                    f'<div class="grid">{"".join(cards)}</div>')
 
 

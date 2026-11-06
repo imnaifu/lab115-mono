@@ -98,6 +98,11 @@ func _ready() -> void:
 		_add("desk", true)
 
 
+## Everything laid about the map still there, for the minimap (read only).
+func things() -> Array[Dictionary]:
+	return _things
+
+
 func _process(_delta: float) -> void:
 	queue_redraw()
 	_labels.queue_redraw()
