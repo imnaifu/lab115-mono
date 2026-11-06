@@ -18,21 +18,21 @@ export default function NoteRow({ n, L }) {
   return (
     <Wrapper
       {...wrapperProps}
-      className="flex gap-[9px] px-3.5 py-[9px] border-b border-line hover:bg-[#fafafb] cursor-pointer"
+      className="flex gap-2.5 px-4 py-2.5 border-b border-line hover:bg-paper-soft transition-colors duration-[120ms] cursor-pointer"
     >
-      {/* real cover thumbnail; falls back to a gradient if it fails to load */}
-      <PhotoThumb seed={(n.title || '').length} src={n.cover} className="w-[46px] h-[60px] shrink-0 rounded" />
+      {/* real cover thumbnail; falls back to a flat pastel well if it fails to load */}
+      <PhotoThumb seed={(n.title || '').length} src={n.cover} className="w-12 h-16 shrink-0 rounded-sm" />
       <div className="flex-1 min-w-0">
-        <div className="text-[12.5px] font-semibold text-ink truncate">{n.title}</div>
-        <div className="flex items-center gap-1.5 text-[11px] text-ink2 mt-1">
-          <PhotoThumb seed={(n.author || '').length} className="w-3.5 h-3.5 rounded-full" />
+        <div className="text-[13px] leading-[20px] font-medium text-ink truncate">{n.title}</div>
+        <div className="flex items-center gap-1.5 text-[12px] text-ink-muted mt-0.5">
+          <PhotoThumb seed={(n.author || '').length} className="w-4 h-4 rounded-full" />
           <span className="truncate">{n.author}</span>
         </div>
-        <div className="flex items-center gap-[9px] text-[10.5px] text-ink2 mt-1.5">
+        <div className="flex items-center gap-2.5 text-[11.5px] text-ink-muted mt-1.5">
           <Stat icon="heart">{statText(n.likes, L)}</Stat>
           <Stat icon="star">{statText(n.collects, L)}</Stat>
           <Stat icon="comment">{statText(n.comments, L)}</Stat>
-          <span className="text-ink3 ml-auto">{n.time || '—'}</span>
+          <span className="ml-auto">{n.time || '—'}</span>
         </div>
       </div>
     </Wrapper>

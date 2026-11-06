@@ -6,114 +6,129 @@
     <!--
       Chrome Web Store assets, rendered by render.sh with headless Chrome.
       One template for every asset: ?lang=zh|en&id=s1..s5|small|marquee.
-      The popup mock mirrors src/popup (dark header + tabs, same strings and
-      icons) so the screenshots match what users actually see. All covers,
+      The popup mock mirrors src/popup (Sokosoko: white header, yellow tab
+      underline, same strings and icons) so the screenshots match what users actually see. All covers,
       names and numbers are made up — no real RedNote users or photos.
     -->
     <style>
+      /* Sokosoko tokens — the same values as src/popup/index.css and the site's
+         style.css. Yellow is a fill (ink text on it), never a text colour. */
+      @font-face { font-family: "Nunito"; font-weight: 700; src: url("../../src/popup/fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Nunito"; font-weight: 800; src: url("../../src/popup/fonts/nunito-latin-800-normal.woff2") format("woff2"); }
       :root {
-        --brand: #ff2442;
-        --tint: #ffe9ed;
-        --ink: #1d1d1f;
-        --ink2: #8a8a90;
-        --ink3: #b6b6bc;
-        --line: #efeff1;
-        --header: #18181d;
-        --bg: #fbf8f6;
+        --paper: #ffffff;
+        --paper-soft: #faf7f0;
+        --paper-sunk: #f3efe6;
+        --line: #e6e0d4;
+        --line-strong: #8a909c;
+        --ink: #2f3542;
+        --ink-muted: #666b7a;
+        --brand: #f7c948;
+        --brand-deep: #e0a91b;
+        --brand-soft: #fdf1cc;
+        --on-brand: #2f3542;
+        --highlight: #f7c948;
+        --link: #2f6fb0;
+        --success: #276b43;
+        --success-soft: #e3f4ea;
+        --fill-sky: #bcdcf2;
+        --fill-mint: #bfe3cf;
+        --fill-lilac: #d9d1f2;
+        --display: "Nunito", "PingFang SC", "Helvetica Neue", sans-serif;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { overflow: hidden; background: var(--bg); }
+      html, body { overflow: hidden; background: var(--paper-soft); }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+        font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
         color: var(--ink);
         -webkit-font-smoothing: antialiased;
       }
       svg { display: block; flex-shrink: 0; }
-      .canvas { position: relative; overflow: hidden; background: var(--bg); }
-      .glow {
-        position: absolute; inset: 0; pointer-events: none;
-        background:
-          radial-gradient(900px 600px at 92% 4%, rgba(255, 36, 66, 0.13), transparent 60%),
-          radial-gradient(700px 500px at 0% 100%, rgba(255, 36, 66, 0.06), transparent 60%);
-      }
+      .canvas { position: relative; overflow: hidden; background: var(--paper-soft); }
+      /* Two flat pastel discs instead of glows — no gradients in this system. */
+      .glow { position: absolute; inset: 0; pointer-events: none; }
+      .glow::before, .glow::after { content: ""; position: absolute; border-radius: 50%; }
+      .glow::before { width: 760px; height: 760px; right: -200px; top: -300px; background: var(--brand-soft); }
+      .glow::after { width: 360px; height: 360px; left: -150px; bottom: -190px; background: var(--fill-sky); opacity: .55; }
       .abs { position: absolute; }
+      mark { color: inherit; background: linear-gradient(transparent 62%, var(--highlight) 62%); padding: 0 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 
       /* ---------- left copy column ---------- */
       .copy { position: absolute; left: 88px; top: 0; bottom: 0; width: 470px; display: flex; flex-direction: column; justify-content: center; }
       .brandrow { display: flex; align-items: center; gap: 14px; margin-bottom: 30px; }
-      .brandrow .name { font-size: 21px; font-weight: 700; letter-spacing: -0.2px; }
-      .pill { font-size: 13px; font-weight: 700; color: #fff; background: var(--brand); border-radius: 99px; padding: 4px 11px; }
-      .tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; color: var(--brand); background: var(--tint); border-radius: 99px; padding: 7px 15px; margin-bottom: 20px; }
-      h1 { font-size: 54px; line-height: 1.16; font-weight: 800; letter-spacing: -1.2px; }
-      h1 .red { color: var(--brand); display: block; }
-      .en h1 { font-size: 48px; letter-spacing: -1.4px; }
-      .sub { font-size: 19px; line-height: 1.7; color: #6b6b72; margin-top: 22px; }
+      .brandrow .name { font: 800 22px/1 var(--display); }
+      .pill { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--on-brand); background: var(--brand); border-radius: 99px; padding: 4px 12px; }
+      .tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; letter-spacing: .04em; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 99px; padding: 6px 16px; margin-bottom: 20px; }
+      h1 { font: 800 52px/1.3 var(--display); letter-spacing: .01em; }
+      .en h1 { font-size: 46px; }
+      .sub { font-size: 19px; line-height: 1.7; color: var(--ink-muted); margin-top: 22px; }
       .en .sub { font-size: 18px; line-height: 1.6; }
       .bullets { margin-top: 30px; display: flex; flex-direction: column; gap: 16px; }
-      .bullet { display: flex; align-items: center; gap: 14px; font-size: 18px; font-weight: 600; color: #3a3a40; }
-      .bullet .bi { width: 38px; height: 38px; border-radius: 10px; background: var(--tint); color: var(--brand); display: flex; align-items: center; justify-content: center; }
+      .bullet { display: flex; align-items: center; gap: 14px; font-size: 18px; font-weight: 700; color: var(--ink); }
+      .bullet .bi { width: 42px; height: 42px; border-radius: 50%; background: var(--fill-sky); color: var(--ink); display: flex; align-items: center; justify-content: center; }
+      .bullet:nth-child(2) .bi { background: var(--fill-mint); }
+      .bullet:nth-child(3) .bi { background: var(--fill-lilac); }
 
       /* ---------- generic window chrome ---------- */
-      .win { position: absolute; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -20px rgba(40, 20, 25, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05); }
+      .win { position: absolute; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 32px rgba(47, 53, 66, 0.16), 0 0 0 1px var(--line); }
       .winbar { height: 40px; background: #f3f2f1; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid #e8e6e4; }
       .dot { width: 11px; height: 11px; border-radius: 50%; }
       .url { margin-left: 14px; flex: 1; min-width: 0; height: 24px; border-radius: 6px; background: #fff; font-size: 12px; color: #9a9aa0; display: flex; align-items: center; padding: 0 10px; white-space: nowrap; overflow: hidden; }
       .wintitle { margin-left: 12px; font-size: 13px; font-weight: 600; color: #55555c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
       /* ---------- popup mock (mirrors src/popup) ---------- */
-      .popup { width: 400px; height: 600px; background: #fff; display: flex; flex-direction: column; font-size: 12px; position: absolute; overflow: hidden; border-radius: 12px; box-shadow: 0 40px 80px -24px rgba(40, 10, 20, 0.38), 0 0 0 1px rgba(0, 0, 0, 0.06); transform-origin: top left; }
-      .ph { display: flex; align-items: center; justify-content: space-between; background: var(--header); padding: 9px 14px; }
-      .ph .b { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 700; font-size: 13px; }
-      .lang { display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 99px; padding: 2px; gap: 1px; }
-      .lang span { padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; color: #9a9aa2; }
-      .lang span.on { background: rgba(255, 255, 255, 0.16); color: #fff; }
-      .tabs { display: flex; background: var(--header); padding: 0 14px; }
-      .tabs div { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 12px; padding: 4px 0 9px; color: #8b8b92; }
-      .tabs div.on { color: #fff; }
-      .tabs div.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.5px; background: var(--brand); }
+      .popup { width: 400px; height: 600px; background: var(--paper); display: flex; flex-direction: column; font-size: 13px; position: absolute; overflow: hidden; border-radius: 14px; box-shadow: 0 12px 32px rgba(47, 53, 66, 0.18), 0 0 0 1px var(--line); transform-origin: top left; }
+      .ph { display: flex; align-items: center; justify-content: space-between; background: var(--paper); height: 52px; padding: 0 16px; flex: none; }
+      .ph .b { display: flex; align-items: center; gap: 8px; color: var(--ink); font: 800 15px/1 var(--display); }
+      .lang { display: flex; background: var(--paper-sunk); border-radius: 99px; padding: 3px; gap: 2px; }
+      .lang span { min-width: 34px; height: 26px; display: flex; align-items: center; justify-content: center; padding: 0 10px; border-radius: 99px; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+      .lang span.on { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+      .tabs { display: flex; gap: 20px; background: var(--paper); padding: 0 16px; border-bottom: 1px solid var(--line); flex: none; }
+      .tabs div { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; font-size: 13px; height: 44px; margin-bottom: -1px; border-bottom: 3px solid transparent; color: var(--ink-muted); white-space: nowrap; }
+      .tabs div.on { color: var(--ink); border-bottom-color: var(--brand); }
       .pbody { flex: 1; overflow: hidden; position: relative; }
-      .pfoot { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid var(--line); }
-      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 13px; height: 32px; padding: 0 16px; border-radius: 6px; }
-      .btn.p { background: var(--brand); color: #fff; }
-      .btn.s { background: #f1f1f3; color: var(--ink); }
-      .muted { color: var(--ink2); }
-      .row { display: flex; gap: 9px; padding: 9px 14px; border-bottom: 1px solid var(--line); }
-      .row .t { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .row .a { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink2); margin-top: 4px; }
-      .row .st { display: flex; align-items: center; gap: 9px; font-size: 10.5px; color: var(--ink2); margin-top: 6px; }
-      .row .st span { display: inline-flex; align-items: center; gap: 3px; }
+      .pfoot { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); flex: none; }
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; font-size: 13px; letter-spacing: .04em; height: 36px; padding: 0 16px; border-radius: 99px; border: 2px solid transparent; white-space: nowrap; }
+      .btn.p { background: var(--brand); color: var(--on-brand); }
+      .btn.s { background: var(--paper); color: var(--ink); border-color: var(--line-strong); }
+      .muted { color: var(--ink-muted); }
+      .row { display: flex; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+      .row .t { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row .a { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+      .row .st { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--ink-muted); margin-top: 6px; }
+      .row .st span { display: inline-flex; align-items: center; gap: 4px; }
       .photo { position: relative; overflow: hidden; }
-      .sel { outline: 2.5px solid var(--brand); outline-offset: -2.5px; }
-      .check { position: absolute; top: 6px; right: 6px; width: 19px; height: 19px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
-      .num { position: absolute; left: 4px; top: 4px; font-size: 9px; font-weight: 700; color: rgba(255, 255, 255, 0.92); background: rgba(0, 0, 0, 0.3); border-radius: 3px; padding: 0 4px; line-height: 1.35; }
+      .sel { box-shadow: 0 0 0 3px var(--brand-deep); }
+      .check { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%; background: var(--brand); border: 2px solid var(--brand-deep); color: var(--on-brand); display: flex; align-items: center; justify-content: center; }
+      .num { position: absolute; left: 4px; top: 4px; min-width: 18px; text-align: center; font: 800 10px/16px var(--display); color: var(--ink); background: rgba(255, 255, 255, 0.92); border-radius: 99px; padding: 0 6px; }
 
       /* floating result card (export / download done sheet) */
-      .card { position: absolute; background: #fff; border-radius: 18px; padding: 26px 26px 22px; text-align: center; box-shadow: 0 40px 80px -24px rgba(40, 10, 20, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05); }
-      .okc { width: 54px; height: 54px; border-radius: 50%; background: var(--tint); color: var(--brand); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+      .card { position: absolute; background: var(--paper); border-radius: 20px; padding: 26px 26px 22px; text-align: center; box-shadow: 0 12px 32px rgba(47, 53, 66, 0.16), 0 0 0 1px var(--line); }
+      .okc { width: 56px; height: 56px; border-radius: 50%; background: var(--success-soft); color: var(--success); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
       .card .h { font-weight: 700; font-size: 17px; margin-bottom: 14px; }
-      .chip { display: flex; align-items: center; gap: 8px; background: #f6f6f8; border-radius: 7px; padding: 10px 12px; font-size: 13px; text-align: left; }
+      .chip { display: flex; align-items: center; gap: 8px; background: var(--paper-sunk); border-radius: 12px; padding: 10px 12px; font-size: 13px; text-align: left; }
       .chip span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .chip .ci { flex: none; display: flex; color: var(--ink2); }
+      .chip .ci { flex: none; display: flex; color: var(--ink-muted); }
 
       /* spreadsheet */
       table { border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
       th, td { border-right: 1px solid #e7e7ea; border-bottom: 1px solid #e7e7ea; padding: 0 9px; height: 33px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
       th { background: #f6f6f7; color: #8a8a90; font-weight: 600; font-size: 11.5px; height: 26px; text-align: center; }
       td.rn { background: #f6f6f7; color: #8a8a90; text-align: center; font-size: 11.5px; }
-      tr.hdr td { font-weight: 700; background: #fff4f5; color: #b0102a; }
+      tr.hdr td { font-weight: 700; background: var(--brand-soft); color: var(--ink); }
       td.n { text-align: right; font-variant-numeric: tabular-nums; }
-      td.l { color: #2f6fd6; }
+      td.l { color: var(--link); }
 
       /* step cards (s5) */
       .steps { position: absolute; left: 88px; right: 88px; top: 248px; display: flex; gap: 28px; }
-      .step { flex: 1; background: #fff; border-radius: 20px; padding: 26px 26px 28px; box-shadow: 0 20px 50px -24px rgba(40, 10, 20, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.04); }
-      .step .ill { height: 172px; border-radius: 14px; background: #f7f4f2; position: relative; overflow: hidden; margin-bottom: 22px; }
-      .step .k { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; font-size: 15px; margin-bottom: 12px; }
-      .step .tt { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
-      .step .ss { font-size: 15px; color: #6b6b72; margin-top: 8px; line-height: 1.55; }
+      .step { flex: 1; background: var(--paper); border-radius: 20px; padding: 26px 26px 28px; border: 1px solid var(--line); }
+      .step .ill { height: 172px; border-radius: 12px; background: var(--paper-sunk); position: relative; overflow: hidden; margin-bottom: 22px; }
+      .step .k { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: var(--on-brand); font: 800 17px/1 var(--display); margin-bottom: 12px; }
+      .step .tt { font: 800 22px/1.3 var(--display); }
+      .step .ss { font-size: 15px; color: var(--ink-muted); margin-top: 8px; line-height: 1.55; }
       .trust { position: absolute; left: 0; right: 0; bottom: 64px; display: flex; justify-content: center; gap: 14px; }
-      .trust div { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #3a3a40; background: #fff; border-radius: 99px; padding: 11px 20px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06); }
-      .trust svg { color: var(--brand); }
+      .trust div { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--ink); background: var(--paper); border-radius: 99px; padding: 11px 20px; border: 1px solid var(--line); }
+      .trust svg { color: var(--ink); }
     </style>
   </head>
   <body>
@@ -157,8 +172,8 @@
         `<svg width="${size}" height="${size}" viewBox="0 0 24 24" ${/fill=/.test(extra) ? "" : 'fill="none"'} ${/stroke=/.test(extra) ? "" : 'stroke="currentColor"'} stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" ${extra}>${PATHS[name]}</svg>`;
 
       // The extension icon (icons/icon.svg), inlined so it scales crisply.
-      const logo = (size, shadow = true) => `
-        <svg width="${size}" height="${size}" viewBox="6 6 116 116" style="${shadow ? "filter: drop-shadow(0 8px 18px rgba(255,36,66,.35));" : ""}">
+      const logo = (size) => `
+        <svg width="${size}" height="${size}" viewBox="6 6 116 116" >
           <rect x="6" y="6" width="116" height="116" rx="30" fill="#FF2442"/>
           <g transform="rotate(-30 64 64)">
             <ellipse cx="64" cy="64" rx="36" ry="21" fill="#fff"/>
@@ -332,19 +347,19 @@
         <div class="copy" style="top:${top}px">
           <div class="brandrow">${logo(54)}<span class="name">${T.brand}</span><span class="pill">${T.ext}</span></div>
           <div class="tag">${ic(c.tag[0], 17, 2.2)}${c.tag[1]}</div>
-          <h1>${c.h1[0]}<span class="red">${c.h1[1]}</span></h1>
+          <h1>${c.h1[0]}<br><mark>${c.h1[1]}</mark></h1>
           <p class="sub">${c.sub}</p>
           <div class="bullets">${c.bullets.map(([i, t]) => `<div class="bullet"><span class="bi">${ic(i, 19, 2)}</span>${t}</div>`).join("")}</div>
         </div>`;
 
       const popupShell = (tab, body, foot) => `
         <div class="ph">
-          <div class="b">${logo(22, false)}${T.brand}</div>
+          <div class="b">${logo(24)}${T.brand}</div>
           <div class="lang"><span class="${LANG === "zh" ? "on" : ""}">中</span><span class="${LANG === "en" ? "on" : ""}">EN</span></div>
         </div>
         <div class="tabs">
-          <div class="${tab === "list" ? "on" : ""}">${ic("list", 15)}${T.tabList}</div>
-          <div class="${tab === "post" ? "on" : ""}">${ic("download", 15)}${T.tabPost}</div>
+          <div class="${tab === "list" ? "on" : ""}">${ic("list", 16)}${T.tabList}</div>
+          <div class="${tab === "post" ? "on" : ""}">${ic("download", 16)}${T.tabPost}</div>
         </div>
         <div class="pbody">${body}</div>
         ${foot ? `<div class="pfoot">${foot}</div>` : ""}`;
@@ -356,32 +371,32 @@
       const postTab = () => {
         const p = T.post;
         const imgs = Array.from({ length: 9 }, (_, i) =>
-          photo(i + 2, "aspect-ratio:1;border-radius:4px;", `<span class="num">${i + 1}</span><span class="check">${ic("check", 12, 3)}</span>`, "sel"),
+          photo(i + 2, "aspect-ratio:1;border-radius:6px;", `<span class="num">${i + 1}</span><span class="check">${ic("check", 12, 3)}</span>`, "sel"),
         ).join("");
         const body = `
-          <div style="padding:14px">
+          <div style="padding:16px">
             <div style="display:flex;align-items:center;gap:10px">
-              ${photo(6, "width:34px;height:34px;border-radius:50%")}
+              ${photo(6, "width:36px;height:36px;border-radius:50%")}
               <div style="flex:1;min-width:0">
                 <div style="font-weight:700;font-size:13px">${p.author}</div>
-                <div style="font-size:11px;color:var(--ink3)">${p.time}</div>
+                <div style="font-size:12px;color:var(--ink-muted)">${p.time}</div>
               </div>
-              <span style="color:var(--ink2)">${ic("link", 15)}</span>
+              <span style="color:var(--ink);width:36px;height:36px;display:flex;align-items:center;justify-content:center">${ic("link", 16)}</span>
             </div>
-            <div style="font-weight:600;font-size:13.5px;line-height:1.35;margin:10px 0 14px">${p.title}</div>
-            <div style="font-size:12px;color:var(--ink2);margin-bottom:10px"><b style="color:var(--brand)">1</b> ${T.videoUnit} · <b style="color:var(--brand)">9</b> ${T.imageUnit}</div>
-            ${photo(0, "height:132px;border-radius:4px;", `
-              <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;display:flex;align-items:center;justify-content:center;padding-left:2px">${ic("play", 20, 0, 'fill="currentColor"')}</span>
-              <span style="position:absolute;right:6px;bottom:6px;font-size:10px;font-weight:600;color:#fff;background:rgba(0,0,0,.5);border-radius:3px;padding:2px 6px">01:24</span>
-              <span style="position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:2px;font-size:10px;font-weight:700;color:#fff;background:var(--brand);border-radius:3px;padding:2px 6px">${ic("video", 12)}${T.videoWord}</span>
+            <div style="font-weight:700;font-size:14px;line-height:22px;margin:12px 0 12px">${p.title}</div>
+            <div style="font-size:12px;color:var(--ink-muted);margin-bottom:10px"><b style="font:800 12px var(--display);color:var(--ink)">1</b> ${T.videoUnit} · <b style="font:800 12px var(--display);color:var(--ink)">9</b> ${T.imageUnit}</div>
+            ${photo(0, "height:136px;border-radius:6px;", `
+              <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(47,53,66,.55);color:#fff;display:flex;align-items:center;justify-content:center;padding-left:2px">${ic("play", 20, 0, 'fill="currentColor"')}</span>
+              <span style="position:absolute;right:6px;bottom:6px;font:700 11px/18px var(--display);color:#fff;background:rgba(47,53,66,.7);border-radius:99px;padding:0 8px">01:24</span>
+              <span style="position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:18px;color:var(--on-brand);background:var(--brand);border-radius:99px;padding:0 8px">${ic("video", 12)}${T.videoWord}</span>
               <span class="check">${ic("check", 12, 3)}</span>`, "sel")}
-            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink2);margin-top:6px"><span>1080×1920</span><span>38.2 MB</span></div>
-            <div style="font-size:11px;font-weight:600;color:var(--ink2);margin:16px 0 10px">${T.imagesWord}</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">${imgs}</div>
+            <div style="display:flex;justify-content:space-between;font:700 11.5px var(--display);color:var(--ink-muted);margin-top:8px"><span>1080×1920</span><span>38.2 MB</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--ink-muted);margin:16px 0 10px">${T.imagesWord}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${imgs}</div>
           </div>`;
         const foot = `
-          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink2)">${ic("check", 13)}${T.deselAll}</span>
-          <span class="btn p" style="margin-left:auto">${ic("download", 15)}${T.dlSel(10)}</span>`;
+          <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink);padding-left:4px"><span style="width:18px;height:18px;border-radius:4px;background:var(--brand);border:2px solid var(--brand-deep);color:var(--on-brand);display:flex;align-items:center;justify-content:center">${ic("check", 12, 3)}</span>${T.deselAll}</span>
+          <span class="btn p" style="margin-left:auto">${ic("download", 16)}${T.dlSel(10)}</span>`;
         return popupShell("post", body, foot);
       };
 
@@ -389,36 +404,32 @@
       const listTab = () => {
         const rows = T.notes.map((n, i) => `
           <div class="row">
-            ${photo(i + 3, "width:46px;height:60px;border-radius:4px;flex-shrink:0")}
+            ${photo(i + 3, "width:48px;height:64px;border-radius:6px;flex-shrink:0")}
             <div style="flex:1;min-width:0">
               <div class="t">${n[0]}</div>
-              <div class="a">${photo(i + 5, "width:14px;height:14px;border-radius:50%")}<span>${n[1]}</span></div>
+              <div class="a">${photo(i + 5, "width:16px;height:16px;border-radius:50%")}<span>${n[1]}</span></div>
               <div class="st">
                 <span>${ic("heart", 12)}${n[2]}</span><span>${ic("star", 12)}${n[3]}</span><span>${ic("comment", 12)}${n[4]}</span>
-                <span style="margin-left:auto;color:var(--ink3)">${n[5]}</span>
+                <span style="margin-left:auto">${n[5]}</span>
               </div>
             </div>
           </div>`).join("");
         const body = `
-          <div style="display:flex;align-items:center;gap:7px;padding:11px 14px 3px;font-size:11.5px;color:var(--ink2);background:#f7f7f8">
-            <span style="width:7px;height:7px;border-radius:50%;background:#1bc46a;box-shadow:0 0 0 3px rgba(27,196,106,.18)"></span><b style="font-weight:600">${T.connected}</b>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:11px 14px;border-bottom:1px solid var(--line);background:#f7f7f8">
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--ink2)">${T.captured}</div>
-              <div style="display:flex;align-items:baseline;gap:5px;margin-top:2px"><b style="font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1">128</b><span style="font-size:13px;font-weight:600;color:var(--ink2)">${T.unit}</span></div>
-              <div style="font-size:11.5px;color:var(--ink3);margin-top:2px">${T.dedup}</div>
+          <div style="padding:12px 16px 14px;background:var(--paper-soft);border-bottom:1px solid var(--line)">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ink-muted)"><span style="width:8px;height:8px;border-radius:50%;background:var(--success)"></span>${T.connected}</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink);background:var(--brand-soft);padding:4px 10px;border-radius:99px"><span style="width:8px;height:8px;border-radius:50%;background:var(--brand-deep)"></span>${T.capturing}</div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--brand);background:var(--tint);padding:5px 10px;border-radius:99px">
-              <span style="width:7px;height:7px;border-radius:50%;background:var(--brand)"></span>${T.capturing}
-            </div>
+            <div style="font-size:12px;font-weight:500;color:var(--ink-muted);margin-top:8px">${T.captured}</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px"><b style="font:800 32px/1 var(--display)">128</b><span style="font-size:13px;font-weight:700;color:var(--ink-muted)">${T.unit}</span></div>
+            <div style="font-size:12px;color:var(--ink-muted);margin-top:4px">${T.dedup}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:7px;padding:10px 16px 4px;font-size:11.5px;color:var(--ink2)"><span style="color:var(--ink3)">${ic("arrowdown", 13)}</span>${T.pageHint}</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 16px 6px;font-size:12px;color:var(--ink-muted)">${ic("arrowdown", 14)}${T.pageHint}</div>
           ${rows}`;
         const foot = `
-          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink2)">${ic("file", 13)}128 ${T.unit}</span>
-          <span class="btn s" style="margin-left:auto">${ic("x", 15)}${T.clear}</span>
-          <span class="btn p">${ic("arrowdown", 15)}${T.exportCsv}</span>`;
+          <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--ink-muted)">${ic("file", 15)}<b style="font:800 13px var(--display);color:var(--ink)">128</b> ${T.unit}</span>
+          <span class="btn s" style="margin-left:auto">${ic("x", 16)}${T.clear}</span>
+          <span class="btn p">${ic("arrowdown", 16)}${T.exportCsv}</span>`;
         return popupShell("list", body, foot);
       };
 
@@ -430,7 +441,7 @@
           content = `<div style="display:flex;height:100%">
             ${photo(0, "width:58%;height:100%")}
             <div style="flex:1;padding:22px">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">${photo(6, "width:36px;height:36px;border-radius:50%")}<div style="height:10px;width:90px;border-radius:5px;background:#e9e7e6"></div><div style="margin-left:auto;height:28px;width:64px;border-radius:99px;background:var(--brand);opacity:.85"></div></div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">${photo(6, "width:36px;height:36px;border-radius:50%")}<div style="height:10px;width:90px;border-radius:5px;background:#e9e7e6"></div><div style="margin-left:auto;height:28px;width:64px;border-radius:99px;background:#e9e7e6"></div></div>
               ${[92, 80, 96, 70, 88, 60].map((wd) => `<div style="height:9px;width:${wd}%;border-radius:5px;background:#eeecea;margin-bottom:12px"></div>`).join("")}
             </div></div>`;
         } else {
@@ -443,7 +454,7 @@
         return `<div class="win" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;opacity:.95">
           <div class="winbar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">${urlText}</span></div>
           <div style="height:calc(100% - 40px);overflow:hidden">${content}</div>
-          <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(251,248,246,.55),rgba(251,248,246,0) 45%)"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(250,247,240,.55),rgba(250,247,240,0) 45%)"></div>
         </div>`;
       };
 
@@ -508,8 +519,8 @@
             <div class="card" style="left:580px;top:560px;width:360px">
               <div class="okc">${ic("check", 26, 2.6)}</div>
               <div class="h">${T.exportDone}</div>
-              <div class="chip"><span class="ci">${ic("file", 16)}</span><span>2026-10-15 14-35-21 rednote-notes.csv</span><b style="color:var(--ink2);font-weight:600">${T.rows}</b></div>
-              <div style="font-size:12.5px;color:var(--ink2);margin-top:9px">${T.savedTo}</div>
+              <div class="chip"><span class="ci">${ic("file", 16)}</span><span>2026-10-15 14-35-21 rednote-notes.csv</span><b style="color:var(--ink-muted);font-weight:700">${T.rows}</b></div>
+              <div style="font-size:12.5px;color:var(--ink-muted);margin-top:9px">${T.savedTo}</div>
             </div>`;
         },
 
@@ -523,49 +534,47 @@
             `<div style="position:absolute;left:22px;right:22px;top:26px;height:46px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;align-items:center;gap:12px;padding:0 14px">
                <div style="flex:1;height:22px;border-radius:6px;background:#f1efed"></div>
                <span style="color:#a5a5ab">${ic("puzzle", 20, 1.8)}</span>
-               <span style="position:relative;display:flex;border-radius:9px;box-shadow:0 0 0 4px rgba(255,36,66,.18)">${logo(30, false)}</span>
+               <span style="position:relative;display:flex;border-radius:9px;box-shadow:0 0 0 4px var(--brand)">${logo(30)}</span>
              </div>
              <span style="position:absolute;right:30px;top:62px;color:#1d1d1f;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))">${ic("cursor", 28, 1.2, 'stroke="#fff"')}</span>
-             <div style="position:absolute;left:22px;right:22px;top:96px;height:60px;background:var(--header);border-radius:10px 10px 0 0;display:flex;align-items:flex-end;padding:0 10px;white-space:nowrap;font-size:11px">
-               <div style="flex:1;color:#fff;font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:600;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:10px;border-bottom:2.5px solid var(--brand)">${ic("list", 13)}${T.tabList}</div>
-               <div style="flex:1;color:#8b8b92;font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:600;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:12px">${ic("download", 13)}${T.tabPost}</div>
+             <div style="position:absolute;left:22px;right:22px;top:96px;height:60px;background:#fff;border-radius:10px 10px 0 0;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;align-items:flex-end;gap:10px;padding:0 10px;white-space:nowrap;font-size:11px">
+               <div style="flex:1;color:var(--ink);font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:700;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:10px;border-bottom:3px solid var(--brand)">${ic("list", 13)}${T.tabList}</div>
+               <div style="flex:1;color:var(--ink-muted);font-size:${LANG === "zh" ? 11.5 : 10.5}px;font-weight:700;display:flex;align-items:center;gap:5px;justify-content:center;padding-bottom:13px">${ic("download", 13)}${T.tabPost}</div>
              </div>`,
             // 3: saved files
             `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px">
-               <div style="width:84px;height:104px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#1f9d55">${ic("file", 34, 1.6)}<b style="font-size:13px;color:#1f9d55">CSV</b></div>
+               <div style="width:84px;height:104px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--success)">${ic("file", 34, 1.6)}<b style="font:800 13px var(--display);color:var(--success)">CSV</b></div>
                <div style="position:relative;width:104px;height:104px">
                  ${photo(4, "position:absolute;left:0;top:10px;width:76px;height:88px;border-radius:8px;transform:rotate(-8deg);box-shadow:0 6px 16px rgba(0,0,0,.12)")}
                  ${photo(1, "position:absolute;left:26px;top:4px;width:76px;height:88px;border-radius:8px;transform:rotate(6deg);box-shadow:0 6px 16px rgba(0,0,0,.14)", `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff">${ic("play", 26, 0, 'fill="currentColor"')}</span>`)}
                </div>
-               <span style="position:absolute;right:20px;bottom:18px;width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(255,36,66,.35)">${ic("download", 20, 2.4)}</span>
+               <span style="position:absolute;right:20px;bottom:18px;width:44px;height:44px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:flex;align-items:center;justify-content:center">${ic("download", 20, 2.4)}</span>
              </div>`,
           ];
           return `
             <div class="abs" style="left:0;right:0;top:70px;display:flex;flex-direction:column;align-items:center;gap:18px">
               <div class="brandrow" style="margin:0">${logo(46)}<span class="name">${T.brand}</span><span class="pill">${T.ext}</span></div>
-              <div style="font-size:${LANG === "zh" ? 46 : 42}px;font-weight:800;letter-spacing:-1.2px">${T.s5.title}</div>
+              <div style="font:800 ${LANG === "zh" ? 44 : 42}px/1.4 var(--display);letter-spacing:.01em"><mark>${T.s5.title}</mark></div>
             </div>
             <div class="steps">${T.s5.steps.map(([tt, ss], i) => `<div class="step"><div class="ill">${ill[i]}</div><div class="k">${i + 1}</div><div class="tt">${tt}</div><div class="ss">${ss}</div></div>`).join("")}</div>
             <div class="trust">${T.s5.trust.map(([i, t]) => `<div>${ic(i, 19, 2)}${t}</div>`).join("")}</div>`;
         },
 
         small: () => `
-          <div class="abs" style="left:0;top:0;right:0;bottom:0;background:
-              radial-gradient(260px 200px at 100% 0%, rgba(255,36,66,.16), transparent 70%),
-              radial-gradient(240px 180px at 0% 100%, rgba(255,36,66,.08), transparent 70%)"></div>
+          <div class="abs" style="right:-90px;top:-110px;width:280px;height:280px;border-radius:50%;background:var(--brand-soft)"></div>
           <div class="abs" style="left:36px;top:0;bottom:0;right:28px;display:flex;flex-direction:column;justify-content:center">
             ${logo(78)}
-            <div style="font-size:${LANG === "zh" ? 40 : 36}px;font-weight:800;letter-spacing:-1px;margin-top:22px;line-height:1.1">${T.small[0]}</div>
-            <div style="font-size:${LANG === "zh" ? 19 : 17}px;font-weight:600;color:var(--brand);margin-top:12px">${T.small[1]}</div>
+            <div style="font:800 ${LANG === "zh" ? 40 : 36}px/1.2 var(--display);margin-top:22px"><mark>${T.small[0]}</mark></div>
+            <div style="font-size:${LANG === "zh" ? 19 : 17}px;font-weight:700;color:var(--ink-muted);margin-top:12px">${T.small[1]}</div>
           </div>`,
 
         marquee: () => {
           const m = T.marquee;
           return `
             <div class="abs" style="left:88px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center">
-              <div class="brandrow" style="margin-bottom:28px">${logo(58)}<span class="name" style="font-size:23px">${T.brand}</span><span class="pill">${T.ext}</span></div>
-              <div style="font-size:${LANG === "zh" ? 48 : 44}px;font-weight:800;letter-spacing:-1.3px;line-height:1.22">${m.h1[0]}<br><span style="color:var(--brand)">${m.h1[1]}</span></div>
-              <div style="display:flex;gap:10px;margin-top:32px;flex-wrap:wrap">${m.chips.map(([i, t]) => `<span style="display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:#3a3a40;background:#fff;border-radius:99px;padding:9px 16px;box-shadow:0 0 0 1px rgba(0,0,0,.06)"><span style="color:var(--brand)">${ic(i, 17, 2.2)}</span>${t}</span>`).join("")}</div>
+              <div class="brandrow" style="margin-bottom:28px">${logo(58)}<span class="name" style="font-size:24px">${T.brand}</span><span class="pill">${T.ext}</span></div>
+              <div style="font:800 ${LANG === "zh" ? 48 : 40}px/1.32 var(--display);letter-spacing:.01em">${m.h1[0]}<br><mark>${m.h1[1]}</mark></div>
+              <div style="display:flex;gap:10px;margin-top:32px;flex-wrap:wrap">${m.chips.map(([i, t]) => `<span style="display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;border-radius:99px;padding:9px 16px;box-shadow:0 0 0 1px var(--line)"><span style="color:var(--ink)">${ic(i, 17, 2.2)}</span>${t}</span>`).join("")}</div>
             </div>
             ${popup(listTab(), 790, 72, 0.92)}
             ${popup(postTab(), 1000, 36, 0.92)}`;
@@ -580,7 +589,7 @@
       root.className = "canvas " + LANG;
       root.style.width = W + "px";
       root.style.height = H + "px";
-      root.innerHTML = `<div class="glow"></div>${(scenes[ID] || scenes.s1)()}`;
+      root.innerHTML = `${ID === "small" ? "" : '<div class="glow"></div>'}${(scenes[ID] || scenes.s1)()}`;
     </script>
   </body>
 </html>

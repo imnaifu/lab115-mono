@@ -6,6 +6,7 @@ export const STR = {
     brand: "小红书导出工具",
     tabList: "导出笔记列表",
     tabPost: "下载单帖资源",
+    openNote: "打开原帖",
     demoH: "跳转到状态 · 演示",
     demoSearch: [
       ["nopage", "未检测到页面"],
@@ -67,6 +68,7 @@ export const STR = {
     brand: "RedNote Exporter",
     tabList: "Export Note List",
     tabPost: "Download Single Post",
+    openNote: "Open the post",
     demoH: "Jump to state · Demo",
     demoSearch: [
       ["nopage", "No page"],

@@ -7,20 +7,22 @@ const TABS = [
 
 export default function Tabs({ L, tab, setTab }) {
   return (
-    <nav className="flex bg-header px-3.5 shrink-0">
+    <nav role="tablist" className="flex bg-paper px-4 gap-5 shrink-0 border-b border-line">
       {TABS.map(([key, strKey, icon]) => {
         const active = tab === key;
         return (
           <button
             key={key}
+            role="tab"
+            aria-selected={active}
             onClick={() => setTab(key)}
-            className={`relative flex-1 flex items-center justify-center gap-1.5 font-semibold text-[12px] pt-1 pb-[9px] transition ${
-              active ? 'text-white' : 'text-[#8b8b92]'
+            // -mb-px lets the 3px underline sit on top of the nav's hairline
+            className={`flex-1 flex items-center justify-center gap-1.5 font-bold text-[13px] h-11 -mb-px border-b-[3px] transition-colors duration-[120ms] ${
+              active ? 'text-ink border-brand' : 'text-ink-muted border-transparent hover:text-ink'
             }`}
           >
-            <Icon name={icon} size={15} />
+            <Icon name={icon} size={16} />
             {L[strKey]}
-            {active && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-brand" />}
           </button>
         );
       })}

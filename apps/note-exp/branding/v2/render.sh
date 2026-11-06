@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Renders every Chrome Web Store asset from index.html with headless Chrome.
 # Output: out/<lang>/<name>.png — 24-bit PNG with no alpha (store requirement).
+# --allow-file-access-from-files lets the page load Nunito from src/popup/fonts
+# (Chrome blocks @font-face over file:// otherwise); --run-all-compositor-stages-
+# before-draw waits for every tile to raster, without it pale strips can appear.
 # Usage: bash render.sh            (all assets)
 #        bash render.sh zh s1      (one asset)
 set -euo pipefail
@@ -24,7 +27,7 @@ render() {
   local lang=$1 id=$2 name=$3 width=$4 height=$5
   local out="out/$lang/$name.png"
   mkdir -p "out/$lang"
-  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --allow-file-access-from-files --run-all-compositor-stages-before-draw \
     --window-size="$width,$height" --virtual-time-budget=2000 \
     --screenshot="$PWD/$out" "$PAGE?lang=$lang&id=$id" >/dev/null 2>&1
   # Chrome's PNG carries an alpha channel; a JPEG round-trip flattens it, then

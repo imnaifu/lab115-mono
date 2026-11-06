@@ -12,7 +12,7 @@ function Popup() {
   const s = usePopup();
 
   return (
-    <div className="w-[400px] h-[600px] flex flex-col bg-white text-ink text-[12px] font-sans overflow-hidden relative antialiased">
+    <div className="w-[400px] h-[600px] flex flex-col bg-paper text-ink text-[13px] font-sans overflow-hidden relative antialiased">
       <Header L={L} lang={lang} setLang={setLang} />
       <Tabs L={L} tab={s.tab} setTab={s.setTab} />
 
@@ -22,10 +22,10 @@ function Popup() {
 
       {/* list footer — only while capturing and there is something to export */}
       {s.tab === 'list' && s.sPhase === 'capturing' && s.total > 0 && (
-        <footer className="flex items-center gap-2.5 px-3.5 py-[11px] shrink-0 border-t border-line">
-          <div className="flex items-center gap-1.5 text-[12px] text-ink2 font-semibold">
-            <Icon name="file" size={13} />
-            {s.total} {L.unit}
+        <footer className="flex items-center gap-2 px-4 py-2.5 shrink-0 border-t border-line bg-paper">
+          <div className="flex items-center gap-1.5 text-[13px] text-ink-muted font-bold">
+            <Icon name="file" size={15} />
+            <b className="font-display font-extrabold text-ink">{s.total}</b> {L.unit}
           </div>
           <Btn kind="secondary" icon="x" className="ml-auto" onClick={s.runClear}>
             {L.clear}
@@ -38,12 +38,20 @@ function Popup() {
 
       {/* post footer */}
       {s.tab === 'post' && s.pPhase === 'ready' && (
-        <footer className="flex items-center gap-2.5 px-3.5 py-[11px] shrink-0 border-t border-line">
+        <footer className="flex items-center gap-2 px-4 py-2.5 shrink-0 border-t border-line bg-paper">
+          {/* select-all as a checkbox (Sokosoko Choice): yellow box with an ink tick when on */}
           <button
             onClick={() => s.selectAll(!s.allSel)}
-            className="flex items-center gap-1.5 text-[12px] font-semibold text-ink2 hover:text-brand px-1 py-1.5 rounded transition"
+            aria-pressed={s.allSel}
+            className="flex items-center gap-2 text-[13px] font-bold text-ink h-9 pl-1 pr-2 rounded-full hover:bg-paper-sunk transition-colors duration-[120ms]"
           >
-            <Icon name={s.allSel ? 'check' : 'image'} size={13} />
+            <span
+              className={`w-[18px] h-[18px] rounded-xs border-2 flex items-center justify-center ${
+                s.allSel ? 'bg-brand border-brand-deep text-on-brand' : 'bg-paper border-line-strong'
+              }`}
+            >
+              {s.allSel && <Icon name="check" size={12} stroke={3} />}
+            </span>
             {s.allSel ? L.deselAll : L.selAll}
           </button>
           <Btn kind="primary" icon="download" className="ml-auto" disabled={!s.selCount} onClick={s.runDownload}>

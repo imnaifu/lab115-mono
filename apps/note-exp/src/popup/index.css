@@ -1,11 +1,48 @@
+/* Nunito is bundled, not fetched: the popup must work offline and the privacy
+   policy promises the extension talks to no outside server. Latin subset only;
+   Chinese text uses the system face (PingFang / YaHei). */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/nunito-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./fonts/nunito-latin-800-normal.woff2') format('woff2');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Sokosoko tokens (light theme only). brand yellow is a fill, never a text
+   colour: text on it is on-brand. */
 :root {
-  /* Re-theme the whole UI from here. brand-tint is a soft wash of the accent. */
-  --brand: #ff2442;
-  --brand-tint: #ffe9ed;
+  --paper: #ffffff;
+  --paper-soft: #faf7f0;
+  --paper-sunk: #f3efe6;
+  --line: #e6e0d4;
+  --line-strong: #8a909c;
+  --ink: #2f3542;
+  --ink-muted: #666b7a;
+  --brand: #f7c948;
+  --brand-deep: #e0a91b;
+  --brand-soft: #fdf1cc;
+  --on-brand: #2f3542;
+  --link: #2f6fb0;
+  --success: #276b43;
+  --success-soft: #e3f4ea;
+  --scrim: rgba(28, 31, 38, 0.48);
+  --shadow-pop: 0 12px 32px rgba(47, 53, 66, 0.16);
+  --shadow-sheet: 0 -8px 24px rgba(47, 53, 66, 0.12);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  color-scheme: light;
 }
 
 html,
@@ -16,10 +53,17 @@ body {
 body {
   width: 400px;
   height: 600px;
+  background: var(--paper);
+  color: var(--ink);
 }
 #root {
   width: 100%;
   height: 100%;
+}
+
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 /* scroll area */
@@ -27,13 +71,14 @@ body {
   width: 7px;
 }
 .rx-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.14);
+  background: rgba(47, 53, 66, 0.18);
   border-radius: 4px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-/* animations */
+/* animations — no bounce; the only loops are the spinner and the breathing
+   "capturing" dot, which both mean "still working". */
 @keyframes rx-rot {
   to {
     transform: rotate(360deg);
@@ -42,34 +87,22 @@ body {
 .rx-spin {
   animation: rx-rot 0.8s linear infinite;
 }
-@keyframes rx-ping {
-  0% {
-    box-shadow: 0 0 0 0 rgba(27, 196, 106, 0.45);
-  }
-  70%,
-  100% {
-    box-shadow: 0 0 0 5px rgba(27, 196, 106, 0);
-  }
-}
-.rx-ping-dot {
-  animation: rx-ping 1.8s ease-out infinite;
-}
-@keyframes rx-blink {
+@keyframes rx-breathe {
   50% {
-    opacity: 0.25;
+    opacity: 0.4;
   }
 }
 .rx-pulse-dot {
-  animation: rx-blink 1s ease-in-out infinite;
+  animation: rx-breathe 1.4s var(--ease-standard) infinite;
 }
 @keyframes rx-rise {
   from {
-    transform: translateY(40px);
+    transform: translateY(32px);
     opacity: 0.6;
   }
 }
 .rx-rise {
-  animation: rx-rise 0.26s cubic-bezier(0.2, 0.8, 0.25, 1);
+  animation: rx-rise 280ms var(--ease-out);
 }
 @keyframes rx-fade {
   from {
@@ -77,5 +110,14 @@ body {
   }
 }
 .rx-fade {
-  animation: rx-fade 0.18s ease;
+  animation: rx-fade 180ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }
