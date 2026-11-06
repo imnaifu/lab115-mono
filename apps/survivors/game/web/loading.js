@@ -13,7 +13,7 @@
 			tips: [
 				'站进黄色的圈里满 10 秒就能打卡，加成永久有效',
 				'地标在 1、3、5、7、9 分钟开门',
-				'大招靠击杀充能，充满了点右上角就能放',
+				'技能靠击杀充能，充满了点右上角就能放',
 				'撑到 10:00 下班，清完场上的怪才算通关',
 				'打掉 boss 开年终奖，发的工资拿去培训',
 				'每局能刷新一次升级卡，培训能加次数',
@@ -30,7 +30,7 @@
 			tips: [
 				'Stand in a yellow ring for 10 seconds to check in: the bonus is yours for good',
 				'Landmarks open at 1, 3, 5, 7 and 9 minutes',
-				'Kills charge your ultimate; tap the button top right when it\'s full',
+				'Kills charge your skill; tap the button top right when it\'s full',
 				'Clock out at 10:00, then clear the floor to win',
 				'Beat a boss to open its year-end bonus, and spend the pay on Training',
 				'One reroll of the level-up cards a run; Training adds more',

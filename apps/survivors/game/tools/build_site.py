@@ -67,9 +67,9 @@ def jobs_section(data: dict) -> str:
 <p class="muted">{esc(job['pitch'])}</p></div></div>
 <p class="stats"><span>生命 <b>{number(job['hp'])}</b></span><span>护甲 <b>{number(job['armor'])}</b></span><span>移速 <b>{number(job['speed'])}</b></span></p>
 <p class="weapon">{art(weapon['art'], 28)}专属武器 <b>{esc(weapon['name'])}</b> {tag(kind)}</p>
-<p class="weapon">大招 <b>{esc(job['ultimate']['name'])}</b>（击杀充能）：{esc(job['ultimate']['text'])}</p>
+<p class="weapon">技能 <b>{esc(job['ultimate']['name'])}</b>（击杀充能）：{esc(job['ultimate']['text'])}</p>
 <p class="quote">口头禅：{lines}</p></article>""")
-    return section("jobs", "职业", "开局选一个职业，带着它的专属武器上班。生命都是 100；近身打的护甲多一点，打得远的跑得快一点。每个职业还有一个大招，开局是空的，靠打怪充能：一只小怪 1 点、一个 boss 20 点，攒满 500 点放一次，生效期间不充（手机点右上角的按钮，电脑按空格），什么时候放自己挑；放的时候屏幕上方写着它干什么，持续的大招按钮上有倒计时。",
+    return section("jobs", "职业", "开局选一个职业，带着它的专属武器上班。生命都是 100；近身打的护甲多一点，打得远的跑得快一点。每个职业还有一个技能，开局是空的，靠打怪充能：一只小怪 1 点、一个 boss 20 点，攒满 500 点放一次，生效期间不充（手机点右上角的按钮，电脑按空格），什么时候放自己挑；放的时候画面先停一下、播一段技能动画再生效，屏幕上方写着它干什么，持续的技能按钮上有倒计时。",
                    f'<div class="grid wide">{"".join(cards)}</div>')
 
 

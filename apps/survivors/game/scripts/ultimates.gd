@@ -6,8 +6,12 @@ extends RefCounted
 ## 改成 20充能): it starts empty, each kill adds a point and a boss BOSS_CHARGE, and at
 ## CHARGE_FULL it can go off again, from empty. It doesn't charge while one lasts (no second copy
 ## or server on top of the first, and the data scientist's turned crowd can't refill it); a 返聘
-## doesn't fill it. Going off it freezes the game a moment (Game.hitstop), shouts the job's line
-## and does its job's thing; `went_off` brings up the HUD's banner saying what it does. Until .93
+## doesn't fill it. Set off, the game stands still for SkillCutIn.SECONDS (Game.freeze; 0.1.1, the
+## user: 点了后，暂停一下，做一个动画特效，然后再继续) while `winding_up` has the HUD play the
+## cut-in with the job's face, the skill's name and the job's line; then, as the game moves again,
+## it does its job's thing and `went_off` brings up the HUD's banner saying what it does. Until
+## 0.1.1 it only slowed the game 0.3 s and shouted the line over the player's head; since 0.1.1 the
+## game calls it 技能, not 大招 (the user: 不要叫大招，全改，叫技能). Until .93
 ## every job's also threw a yellow ring round the player that meant nothing (the user: 一开始有个
 ## 黄圈是什么意思); now only the data scientist's draws one, as far as it reaches. What lasts has an
 ## UltimateTimer over it and the HUD's button counts it down (`seconds_left`):
@@ -34,8 +38,9 @@ const TURRET_DAMAGE_SCALE := 1.0
 ## 150 and 10 at most since .95 (the same; 数据改 150，最多 10); 180 and 40 before.
 const RELABEL_RADIUS := 150.0
 const RELABEL_MAX := 10
-const CAST_HITSTOP := 0.3
 const SOURCE := "ultimate"
+## The ring round the player as it goes off, after the cut-in: only a flourish, it does nothing.
+const GO_OFF_RING := 90.0
 ## The product manager's shield round the player, a little wider than the body.
 const SHIELD_RADIUS := 26.0
 ## Points to fill it (.95): a kill is one, a boss BOSS_CHARGE. A cleared run kills about 2,150
@@ -44,6 +49,9 @@ const SHIELD_RADIUS := 26.0
 const CHARGE_FULL := 500.0
 const BOSS_CHARGE := 20.0
 
+## Set off: the game stands still and the HUD plays the cut-in (SkillCutIn).
+signal winding_up
+## Going off, after the cut-in.
 signal went_off
 ## It just filled up (the HUD says so).
 signal charged
@@ -80,7 +88,8 @@ func on_killed(enemy: Enemy) -> void:
 		charged.emit()
 
 
-## Sets the job's 大招 off once it is full, and empties it.
+## Sets the job's 技能 off once it is full, and empties it: the cut-in first, the game standing
+## still, then the thing itself (_go_off).
 func cast() -> void:
 	if not ready():
 		return
@@ -88,12 +97,18 @@ func cast() -> void:
 	casts += 1
 	if used_at < 0.0:
 		used_at = _game.elapsed
-	var player := _game.player
-	var ultimate := Jobs.ultimate(player.job)
-	_game.hitstop(CAST_HITSTOP, true)
-	# High enough to clear the countdown over the player's head (UltimateTimer).
-	Effects.callout(_game, player.position + Vector2(0.0, -44.0), _game.tr(ultimate["line"]), Art.BRAND, 16)
 	Sound.play("standup")
+	winding_up.emit()
+	_game.freeze(SkillCutIn.SECONDS, _go_off)
+
+
+func _go_off() -> void:
+	# Left for the title meanwhile (quit from the pause screen): nothing to go off in.
+	if _game.state == Game.State.TITLE or _game.state == Game.State.ENDED:
+		return
+	var player := _game.player
+	Effects.ring(_game, player.position, GO_OFF_RING, Art.BRAND)
+	player.shake(0.12, 3.0)
 	match player.job:
 		"coder":
 			_release()

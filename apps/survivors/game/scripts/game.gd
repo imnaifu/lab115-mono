@@ -236,6 +236,8 @@ var _corpses: Array[Enemy] = []
 ## Whether this device has been told that stars are XP (shown once, on the first drop ever).
 var _star_hint_done := false
 var _next_hitstop_msec := 0
+## Standing still for a 技能 going off (freeze): no hit-stop may start or end meanwhile.
+var _frozen := false
 ## Run time (`elapsed`) before which the job's weapon keeps quiet.
 var _next_taunt_at := 0.0
 ## Where the outsourced workers stand this frame (SquadWeapon sets it): enemies near one go for it
@@ -515,15 +517,34 @@ func melee_impact(hits: int, hit_boss: bool) -> void:
 
 
 ## Nearly freezes the game for `seconds` (at most once every HITSTOP_GAP).
-## `force` for a 大招 going off, which mustn't be swallowed by a hit's hitstop just before.
-func hitstop(seconds: float, force := false) -> void:
-	if not force and Time.get_ticks_msec() < _next_hitstop_msec:
+func hitstop(seconds: float) -> void:
+	if _frozen or Time.get_ticks_msec() < _next_hitstop_msec:
 		return
 	_next_hitstop_msec = Time.get_ticks_msec() + roundi(HITSTOP_GAP * 1000.0)
 	Engine.time_scale = HITSTOP_SPEED
-	# Counted in real time: game time hardly moves meanwhile. Bound to Engine rather than to the
-	# game, so a scene reloaded in between can't leave the game slowed down.
-	get_tree().create_timer(seconds, true, false, true).timeout.connect(Engine.set.bind(&"time_scale", 1.0))
+	# Counted in real time: game time hardly moves meanwhile. A scene reloaded in between drops
+	# the call, and _ready puts the speed back anyway.
+	get_tree().create_timer(seconds, true, false, true).timeout.connect(_end_hitstop)
+
+
+func _end_hitstop() -> void:
+	# A hit-stop begun just before a 技能 must not let the game go on halfway through its cut-in.
+	if not _frozen:
+		Engine.time_scale = 1.0
+
+
+## The game standing quite still for `seconds` of real time, then `then` (0.1.1: a 技能 going off,
+## SkillCutIn). The wait is paused with the tree, so the pause screen opened meanwhile holds it.
+func freeze(seconds: float, then: Callable) -> void:
+	_frozen = true
+	Engine.time_scale = 0.0
+	get_tree().create_timer(seconds, false, false, true).timeout.connect(_thaw.bind(then))
+
+
+func _thaw(then: Callable) -> void:
+	_frozen = false
+	Engine.time_scale = 1.0
+	then.call()
 
 
 ## `silent` skips the hit sound, for damage that ticks constantly (the Wi-Fi field) and would

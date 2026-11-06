@@ -1440,12 +1440,13 @@ const EN := {
 	"重新标注！": "Relabelled!",
 	"身边最多 10 只小怪变成自己人，去打别的怪，伤害不变，死了就没了，最多 20 秒": "Up to 10 nearby enemies switch sides and fight the rest as hard as before, until they fall or 20 s pass",
 	# .95: kills charge it (once a run before).
-	"大招充好了！": "Ultimate ready!",
-	"大招充好了：点右上角放「%s」": "Ultimate ready: tap the button top right for %s",
-	"大招充好了：按空格放「%s」": "Ultimate ready: press Space for %s",
+	"技能充好了！": "Skill ready!",
+	"技能充好了：点右上角放「%s」": "Skill ready: tap the button top right for %s",
+	"技能充好了：按空格放「%s」": "Skill ready: press Space for %s",
 	# .93: what each does in a line (banner, job card, first-boss hint) and the countdown's word.
-	"大招「%s」（击杀充能）：%s": "Ultimate (kills charge it): %s. %s",
-	"大招「%s」": "Ultimate: %s",
+	# 0.1.1: called 技能 rather than 大招 (the user: 不要叫大招，全改，叫技能).
+	"技能「%s」（击杀充能）：%s": "Skill (kills charge it): %s. %s",
+	"技能「%s」": "Skill: %s",
 	"朝 12 个钟点方向各射一个回车键，穿透所有怪": "An Enter key towards each hour of a clock, through everything",
 	"5 秒无敌，移速 +50%": "Untouchable for 5 s, 50% faster",
 	"分身带着你的全部武器，最多 5 秒": "A copy of you with all your weapons, up to 5 s",

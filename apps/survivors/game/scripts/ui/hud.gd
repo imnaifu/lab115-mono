@@ -39,6 +39,9 @@ const NAME_CHECK_DELAY := 0.4
 ## The 大招 button's size (_build_ultimate_button).
 ## 40 since 0.1.0 (the user: 大招改小一点); 48 until then.
 const ULTIMATE_SIZE := 40.0
+## Room between the district over it and the 技能 button (0.1.1, the user: 大招位置稍微往下一点，和地图
+## 名字靠太近了): on top of the column's own 6.
+const ULTIMATE_GAP := 12.0
 ## How long the first-boss hint saying what the 大招 does stays up: longer than a toast, it's a
 ## sentence to read.
 const ULTIMATE_HINT_SECONDS := 4.0
@@ -137,6 +140,8 @@ var _ultimate_job := ""
 var _ultimate_ring: Control
 var _ultimate_ring_share := 0.0
 var _ultimate_ring_color := Art.PAPER
+## The cut-in playing while a 技能 is set off (0.1.1), freed when it is over.
+var _cut_in: SkillCutIn
 ## The top bar's right-hand column (kills and pause, the district), where the 大招 button sits.
 var _top_right: VBoxContainer
 var _clear_pill: Control
@@ -855,6 +860,8 @@ func _build_ultimate_button() -> void:
 	holder.add_theme_constant_override("separation", 2)
 	holder.size_flags_horizontal = Control.SIZE_SHRINK_END
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# In the holder, so it goes with the button when that is hidden.
+	holder.add_child(UiKit.gap(ULTIMATE_GAP))
 	_ultimate_button = UiKit.round_button(Jobs.data(game.player.job)["art"], game.ultimates.cast, ULTIMATE_SIZE)
 	_ultimate_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	holder.add_child(_ultimate_button)
@@ -863,6 +870,7 @@ func _build_ultimate_button() -> void:
 	_ultimate_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ultimate_ring.draw.connect(_draw_ultimate_ring)
 	_ultimate_button.add_child(_ultimate_ring)
+	game.ultimates.winding_up.connect(_play_cut_in)
 	game.ultimates.went_off.connect(_on_ultimate_went_off)
 	game.ultimates.charged.connect(_on_ultimate_charged)
 	_ultimate_label = UiKit.label(Jobs.ultimate(game.player.job)["name"], 11, "strong", Art.INK)
@@ -877,6 +885,9 @@ func _build_ultimate_button() -> void:
 func _update_ultimate() -> void:
 	var playing := game.state == Game.State.PLAYING
 	_ultimate_button.get_parent().visible = playing
+	# Under the pause screen opened halfway through, it waits unseen (SkillCutIn).
+	if is_instance_valid(_cut_in):
+		_cut_in.visible = playing
 	if not playing:
 		return
 	# The job picked on the title screen, after the button was built.
@@ -918,21 +929,28 @@ func _draw_ultimate_ring() -> void:
 ## Full again (.95): 大招充好了 over the player each time, and the first time how to set it off and
 ## what it does (.93: the name alone told nobody anything; two lines, so it fits a phone).
 func _on_ultimate_charged() -> void:
-	Effects.callout(game, game.player.position + Vector2(0.0, -44.0), tr("大招充好了！"), Art.BRAND, 14)
+	Effects.callout(game, game.player.position + Vector2(0.0, -44.0), tr("技能充好了！"), Art.BRAND, 14)
 	Sound.play("ultimate")
 	if _ultimate_hinted:
 		return
 	_ultimate_hinted = true
 	var ultimate := Jobs.ultimate(game.player.job)
-	var where := tr("大招充好了：点右上角放「%s」") if Device.is_handheld() else tr("大招充好了：按空格放「%s」")
+	var where := tr("技能充好了：点右上角放「%s」") if Device.is_handheld() else tr("技能充好了：按空格放「%s」")
 	_show_toast(where % tr(ultimate["name"]) + "\n" + tr(ultimate["brief"]), ULTIMATE_HINT_SECONDS)
+
+
+## Set off (0.1.1): the cut-in over the HUD while the game stands still (SkillCutIn).
+func _play_cut_in() -> void:
+	_cut_in = SkillCutIn.new()
+	_root.add_child(_cut_in)
+	_cut_in.play(game.player.job, _root.size)
 
 
 ## The banner as it goes off (.93): the job's face, 大招「name」 and what it does in a line, ahead
 ## of any landmark or achievement waiting.
 func _on_ultimate_went_off() -> void:
 	var ultimate := Jobs.ultimate(game.player.job)
-	_queue_badge([Jobs.data(game.player.job)["art"], tr("大招「%s」") % tr(ultimate["name"]), tr(ultimate["brief"]), Art.BRAND_DEEP, false, ""], true)
+	_queue_badge([Jobs.data(game.player.job)["art"], tr("技能「%s」") % tr(ultimate["name"]), tr(ultimate["brief"]), Art.BRAND_DEEP, false, ""], true)
 
 
 func _update_clear_pill() -> void:
@@ -1773,7 +1791,7 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	# The job's 大招 (.81) and since .93 what it does in a line (the user: 每个职业的技能都给个教学或者
 	# 提示啥的吧): the name alone said nothing.
 	var ultimate := Jobs.ultimate(job_id)
-	var ultimate_line := UiKit.label(tr("大招「%s」（击杀充能）：%s") % [tr(ultimate["name"]), tr(ultimate["brief"])], 12, "strong", Art.BRAND_DEEP)
+	var ultimate_line := UiKit.label(tr("技能「%s」（击杀充能）：%s") % [tr(ultimate["name"]), tr(ultimate["brief"])], 12, "strong", Art.BRAND_DEEP)
 	ultimate_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(ultimate_line)
 	return card
