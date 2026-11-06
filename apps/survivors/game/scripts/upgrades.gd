@@ -36,13 +36,22 @@ const JOB_WEAPON_LEVELS := [3, 6, 10, 15, 20, 25]
 ## user's ask (was 45 / 32 / 15 / 6 / 2). .73 (the user: 数值被动改成 1，1.2，1.4，1.6，2): 优秀 and 稀有
 ## scale a stat passive's step ×1.2 and ×1.4 (were ×1.15 and ×1.3); the bonuses didn't change.
 ## `colour` is how the year-end bonus dialog and the site name a tier (.46: 绩效 B 送绿色升级).
+## .97 (the user: 升级稀有度整体调低点，目前太容易拿了; 数值被动啥的也调低; picked plan C + 甲): weights
+## 74 / 19 / 5 / 1.6 / 0.4 (were 65 / 24 / 8 / 2.5 / 0.5 from .40), luck lifting them half as much
+## (luck_factor), scales ×1 / 1.15 / 1.3 / 1.45 / 1.75 (were ×1 / 1.2 / 1.4 / 1.6 / 2 from .73) and
+## bonuses +0 / 3 / 6 / 9 / 15% (were +0 / 4 / 8 / 12 / 20%). A common card gives what it did.
+## Odds of at least one blue-or-better card in three: luck 0 30% → 20%, 50 53% → 29%, 100 72% →
+## 39%, 170 88% → 54%; a stat passive card at luck 50 gives about ×1.07 its common step (×1.17).
 const RARITIES := [
-	{"id": "common", "name": "普通", "colour": "白色", "weight": 65.0, "scale": 1.0, "bonus": 0.0},
-	{"id": "uncommon", "name": "优秀", "colour": "绿色", "weight": 24.0, "scale": 1.2, "bonus": 0.04},
-	{"id": "rare", "name": "稀有", "colour": "蓝色", "weight": 8.0, "scale": 1.4, "bonus": 0.08},
-	{"id": "epic", "name": "史诗", "colour": "紫色", "weight": 2.5, "scale": 1.6, "bonus": 0.12},
-	{"id": "legendary", "name": "传说", "colour": "橙色", "weight": 0.5, "scale": 2.0, "bonus": 0.2},
+	{"id": "common", "name": "普通", "colour": "白色", "weight": 74.0, "scale": 1.0, "bonus": 0.0},
+	{"id": "uncommon", "name": "优秀", "colour": "绿色", "weight": 19.0, "scale": 1.15, "bonus": 0.03},
+	{"id": "rare", "name": "稀有", "colour": "蓝色", "weight": 5.0, "scale": 1.3, "bonus": 0.06},
+	{"id": "epic", "name": "史诗", "colour": "紫色", "weight": 1.6, "scale": 1.45, "bonus": 0.09},
+	{"id": "legendary", "name": "传说", "colour": "橙色", "weight": 0.4, "scale": 1.75, "bonus": 0.15},
 ]
+## What each point of luck adds to a rarer tier's chance, per tier, compounding (luck_factor).
+## 0.005 since .97 (the user's plan C), 0.01 before.
+const LUCK_PER_POINT := 0.005
 ## The passives that add a number, by how much at common rarity (percent for the multipliers);
 ## the card text has it as %s. The rest are table perks.
 const STAT_STEPS := {"might": 10.0, "armor": 1.0, "vitality": 20.0, "swiftness": 8.0, "haste": 8.0,
@@ -263,13 +272,14 @@ func _passive_open(passive_id: String, level: int) -> bool:
 	return level < max_level("passive", passive_id)
 
 
-## How much likelier `luck` makes a tier past the first: each point 1% per tier, compounding
-## (luck 50: green ×1.5, blue ×2.25, purple ×3.4, orange ×5.1), so it lifts the rare end most.
-## Luck itself stops at Player.MAX_LUCK (.60), where 优秀 is just under 普通.
+## How much likelier `luck` makes a tier past the first: each point LUCK_PER_POINT per tier,
+## compounding (luck 50: green ×1.25, blue ×1.56, purple ×1.95, orange ×2.44), so it lifts the rare
+## end most. Half what it was until .97 (1% a point: luck 50 gave green ×1.5 … orange ×5.1). Luck
+## itself stops at Player.MAX_LUCK (.60): there 普通 is still the likeliest (52%, then 25 / 12 / 7 / 3).
 ## Card rarity (RARITIES) uses it; a year-end bonus's 绩效 (Game.FUNDING_ROUNDS) did until .43, when
 ## its odds were fixed, and its upgrade's rarity comes from that 绩效 (.46), not luck.
 static func luck_factor(luck: float, tier: int) -> float:
-	return pow(1.0 + maxf(luck, 0.0) / 100.0, tier)
+	return pow(1.0 + LUCK_PER_POINT * maxf(luck, 0.0), tier)
 
 
 ## Rolls `choice`'s rarity by the player's luck and words the card for it.

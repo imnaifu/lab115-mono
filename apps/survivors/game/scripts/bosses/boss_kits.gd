@@ -112,7 +112,10 @@ const KITS := {
 		"lines": {"arrive": "十年没拆过，谁敢动", "attack": ["全量重启"], "kill": "回滚失败", "death": "…终于拆成微服务了"},
 	},
 	"meeting_spam": {
-		"attacks": [{"kind": "ranged", "form": "homing", "name": "连环邀请", "warn": 0.6, "count": 3, "every": 0.4, "speed": 85.0, "turn": 70.0, "life": 4.0, "damage": 8.0}],
+		# .97 (the user: 连环会这个 boss 子弹太难躲了; picked 甲): turning 70 → 50° a second (a sidestep
+		# shakes one off: it curves round about 97 px, not 70) and gone after 3 s, not 4. Still
+		# faster than any job, so running straight on is still caught.
+		"attacks": [{"kind": "ranged", "form": "homing", "name": "连环邀请", "warn": 0.6, "count": 3, "every": 0.4, "speed": 85.0, "turn": 50.0, "life": 3.0, "damage": 8.0}],
 		"lines": {"arrive": "下一个会马上开始", "attack": ["已向你发送邀请"], "kill": "你已被加入 37 个会议", "death": "会议已取消"},
 	},
 	"pip": {

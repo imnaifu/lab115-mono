@@ -14,12 +14,17 @@ through the RPCs below, so the boards are authoritative: a client can't write a 
 
 `cleared` missing counts as true (a client before .96 sent clears only). A record comes back with
 `ms` (the clear time, or how long the run lasted) and `cleared`.
-  survivors_report      {user}                    -> {ok}
+  survivors_name_check  {name}                    -> {ok} | {error}
   survivors_feedback    {text, where, context}    -> {ok} | {error}
 
-Names are the account's display name. One that enough players report (REPORTS_TO_HIDE) shows as
-匿名员工 until its owner picks a new one; the reports are kept in the storage collection
-name_reports (owned by the system user) for a look in the console.
+Names are the account's display name. From .97 (the user: 去掉改昵称逻辑，新建昵称需要全局唯一，输入的
+时候校验) a player picks one once and keeps it, and no two players share one, ignoring case and
+spaces (name_key): survivors_name_check answers as the player types, survivors_set_name checks
+again and claims the name in the storage collection names (key name_key, owned by the system
+user, written only if it isn't there, so of two players taking a name at once one gets it). A
+name picked before .97 has no claim, so the users table is looked at too. 举报 (.78-.96, three
+reports hid a name as 匿名员工 until it was changed) is gone with changing names (the user: 去掉);
+the storage collection name_reports it filled is left as it was.
 
 提意见 (.94, the user picked R4 of the money plan: 游戏内「提意见」入口): what a player types goes
 into the storage collection feedback, one object per message, owned by its player but readable and
@@ -42,7 +47,6 @@ local SURVIVED_FROM = 10000000
 local BOARD_SIZE = 50
 local NAME_MIN = 2
 local NAME_MAX = 12
-local REPORTS_TO_HIDE = 3
 local HIDDEN_NAME = "匿名员工"
 local SYSTEM_USER = "00000000-0000-0000-0000-000000000000"
 local FEEDBACK_MIN = 2
@@ -114,11 +118,6 @@ local function name_problem(name)
   return nil
 end
 
--- A user id as Nakama writes them (8-4-4-4-12 hex digits), checked before a lookup that throws.
-local function is_user_id(text)
-  return type(text) == "string" and text:match("^%x+%-%x+%-%x+%-%x+%-%x+$") ~= nil and #text == 36
-end
-
 local function display_name(user_id)
   local ok, account = pcall(nk.account_get_id, user_id)
   if not ok or account == nil then
@@ -127,32 +126,51 @@ local function display_name(user_id)
   return account.user.display_name or ""
 end
 
-local function reports_of(user_ids)
-  local reads = {}
-  for _, id in ipairs(user_ids) do
-    table.insert(reads, { collection = "name_reports", key = id, user_id = SYSTEM_USER })
-  end
-  local hidden = {}
-  if #reads == 0 then
-    return hidden
-  end
-  for _, object in ipairs(nk.storage_read(reads)) do
-    if object.value.count ~= nil and object.value.count >= REPORTS_TO_HIDE then
-      hidden[object.key] = true
-    end
-  end
-  return hidden
+-- What makes two names the same one: case and spaces don't count.
+local function name_key(name)
+  return (name:lower():gsub("%s", ""))
 end
 
-local function set_name(context, payload)
-  local name = trim(tostring(decode(payload).name or ""))
-  local problem = name_problem(name)
+-- Whether someone other than `user_id` has `name`: a claim since .97, or a display name from before
+-- (compared the same way in the database, which lowers more than ASCII).
+local function name_taken(name, user_id)
+  local claims = nk.storage_read({ { collection = "names", key = name_key(name), user_id = SYSTEM_USER } })
+  if claims[1] ~= nil and claims[1].value.user ~= user_id then
+    return true
+  end
+  local rows = nk.sql_query("SELECT 1 FROM users WHERE lower(regexp_replace(display_name, '\\s', '', 'g')) = lower(regexp_replace($1, '\\s', '', 'g')) AND id <> $2::uuid LIMIT 1", { name, user_id })
+  return #rows > 0
+end
+
+-- What's wrong with `name` for this player, or nil: its form (name_problem), or someone has it.
+local function name_refusal(name, user_id)
+  return name_problem(name) or (name_taken(name, user_id) and "taken" or nil)
+end
+
+local function name_check(context, payload)
+  local problem = name_refusal(trim(tostring(decode(payload).name or "")), context.user_id)
   if problem ~= nil then
     return reply({ error = problem })
   end
+  return reply({ ok = true })
+end
+
+local function set_name(context, payload)
+  if display_name(context.user_id) ~= "" then
+    return reply({ error = "has_name" })
+  end
+  local name = trim(tostring(decode(payload).name or ""))
+  local problem = name_refusal(name, context.user_id)
+  if problem ~= nil then
+    return reply({ error = problem })
+  end
+  -- Written only if no one has claimed it (version "*"): of two taking it at once, one fails here.
+  local claimed = pcall(nk.storage_write, { { collection = "names", key = name_key(name), user_id = SYSTEM_USER,
+    value = { user = context.user_id, name = name }, version = "*", permission_read = 0, permission_write = 0 } })
+  if not claimed then
+    return reply({ error = "taken" })
+  end
   nk.account_update_id(context.user_id, nil, nil, name, nil, nil, nil, nil)
-  -- A new name starts clean.
-  nk.storage_delete({ { collection = "name_reports", key = context.user_id, user_id = SYSTEM_USER } })
   return reply({ ok = true, name = name })
 end
 
@@ -205,10 +223,9 @@ local function board(context, payload)
       names[user.user_id] = user.display_name or ""
     end
   end
-  local hidden = reports_of(ids)
   local function row(record)
     local name = names[record.owner_id] or ""
-    if hidden[record.owner_id] or name == "" then
+    if name == "" then
       name = HIDDEN_NAME
     end
     local metadata = record.metadata or {}
@@ -231,25 +248,6 @@ local function board(context, payload)
     answer.records = rows
   end
   return reply(answer)
-end
-
-local function report(context, payload)
-  local target = tostring(decode(payload).user or "")
-  if not is_user_id(target) or target == context.user_id then
-    return reply({ error = "invalid" })
-  end
-  local objects = nk.storage_read({ { collection = "name_reports", key = target, user_id = SYSTEM_USER } })
-  local value = (objects[1] and objects[1].value) or { count = 0, by = {}, name = "" }
-  value.by = value.by or {}
-  -- Each player counts once against a name.
-  if not value.by[context.user_id] then
-    value.by[context.user_id] = true
-    value.count = (value.count or 0) + 1
-    value.name = display_name(target)
-    nk.storage_write({ { collection = "name_reports", key = target, user_id = SYSTEM_USER, value = value,
-      permission_read = 0, permission_write = 0 } })
-  end
-  return reply({ ok = true })
 end
 
 local function feedback(context, payload)
@@ -290,5 +288,9 @@ end
 nk.register_rpc(set_name, "survivors_set_name")
 nk.register_rpc(submit, "survivors_submit")
 nk.register_rpc(board, "survivors_board")
-nk.register_rpc(report, "survivors_report")
+nk.register_rpc(name_check, "survivors_name_check")
+-- Nakama's own account update would set a display name past survivors_set_name's checks (unique,
+-- once, blocked words); the game never calls it (.97), so it is turned away (a before hook
+-- returning nil rejects the request).
+nk.register_req_before(function(_context, _payload) return nil end, "UpdateAccount")
 nk.register_rpc(feedback, "survivors_feedback")

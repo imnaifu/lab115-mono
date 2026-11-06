@@ -21,6 +21,8 @@ const ERRORS := {
 	"characters": "昵称里有不能用的符号",
 	"blocked": "这个昵称不能用，换一个吧",
 	"no_name": "先起个昵称才能上榜",
+	"taken": "已经有人叫这个了，换一个吧",
+	"has_name": "已经起过昵称了，起了就不能改",
 	"invalid": "没交上去，再试一次",
 	"offline": "没连上云端，稍后再试",
 }
@@ -71,7 +73,14 @@ static func submit() -> Dictionary:
 	return answer
 
 
-## Sets the player's 昵称; the server checks it (length, symbols, blocked words).
+## Whether `name` would do as this player's 昵称 ({ok} or {error}: length, characters, blocked,
+## taken), asked as they type it (.97). Nothing is kept.
+static func check_name(name: String) -> Dictionary:
+	return await Cloud.shared().call_rpc("survivors_name_check", {"name": name.strip_edges()})
+
+
+## Sets the player's 昵称, once (.97: a second time is has_name); the server checks it (length,
+## symbols, blocked words, and no one else has it, ignoring case and spaces).
 static func set_name(name: String) -> Dictionary:
 	var answer := await Cloud.shared().call_rpc("survivors_set_name", {"name": name.strip_edges()})
 	if answer.get("ok", false):
@@ -82,12 +91,6 @@ static func set_name(name: String) -> Dictionary:
 ## A map's board: {records: [{rank, user, name, ms, cleared, job, me}], me: {...} or null, name}.
 static func board(map_id: String) -> Dictionary:
 	return await Cloud.shared().call_rpc("survivors_board", {"map": map_id})
-
-
-## Reports a name on the boards (enough reports hide it as 匿名员工).
-static func report(user_id: String) -> Dictionary:
-	Telemetry.send_event("leaderboard", {"action": "report"})
-	return await Cloud.shared().call_rpc("survivors_report", {"user": user_id})
 
 
 ## The error said to the player.

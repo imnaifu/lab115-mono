@@ -34,6 +34,8 @@ const NEXT_BOSS_WARNING := 20.0
 const CLEAR_WARNING := 30.0
 ## The landmark on the title screen's map button (_map_button), fitted inside this square.
 const MAP_ICON := 26.0
+## How long the 昵称 dialog waits after the last keystroke before asking the server (.97).
+const NAME_CHECK_DELAY := 0.4
 ## The 大招 button's size (_build_ultimate_button).
 const ULTIMATE_SIZE := 48.0
 ## How long the first-boss hint saying what the 大招 does stays up: longer than a toast, it's a
@@ -277,6 +279,8 @@ var _code_callback: JavaScriptObject
 var _code_field: LineEdit
 ## The web page's 昵称 dialog calls back into this (kept, or the browser drops it).
 var _name_callback: JavaScriptObject
+## The web 昵称 dialog's check as the player types (.97), kept alive like _name_callback.
+var _name_check_callback: JavaScriptObject
 ## The web page's 提意见 dialog (.94, survivorsCode.askText) calls back into this, kept the same way.
 var _feedback_callback: JavaScriptObject
 ## The banner for a landmark checked in at or an achievement earned, and the ones waiting.
@@ -3514,11 +3518,12 @@ func _fill_profile(body: VBoxContainer, portrait: bool) -> void:
 	var tenure_label := UiKit.label(tenure, 12, "muted")
 	tenure_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	who.add_child(tenure_label)
-	if Leaderboard.online():
-		var rename := UiKit.secondary_button("改昵称" if has_name else "起昵称", func() -> void:
+	# Picked once (.97): only asked for while there's none.
+	if Leaderboard.online() and not has_name:
+		var pick := UiKit.secondary_button("起昵称", func() -> void:
 			_ask_name(func(_answer: Dictionary) -> void: _open_profile(0)), 34.0, 13)
-		rename.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		row.add_child(rename)
+		pick.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(pick)
 	body.add_child(card)
 
 	# The trophies at a glance, on a strip that opens the 成就 page (the list is there). Narrow
@@ -4480,20 +4485,36 @@ func _on_end_name(answer: Dictionary) -> void:
 
 
 ## Asks for a 昵称 (the page's own field on the web, where the game's fields bring up no keyboard
-## on a phone; a field of the game's elsewhere) and sets it; `done` gets the server's answer.
+## on a phone; a field of the game's elsewhere) and sets it; `done` gets the server's answer once
+## it's set. Picked once and for good, unique (.97, the user: 去掉改昵称逻辑，新建昵称需要全局唯一，
+## 输入的时候校验): the server is asked as the player types (a pause of NAME_CHECK_DELAY), the line
+## under the field says whether it's free, 确定 waits for a yes, and the dialog stays up when the
+## server turns it down on 确定 (taken in the meantime), saying why.
 func _ask_name(done: Callable) -> void:
-	var asked := func(text: String) -> void:
-		if text.strip_edges() == "":
-			return
-		done.call(await Leaderboard.set_name(text))
 	if OS.has_feature("web"):
 		var page := JavaScriptBridge.get_interface("survivorsCode")
 		if page != null:
-			_name_callback = JavaScriptBridge.create_callback(func(args: Array) -> void: asked.call(str(args[0])))
-			page.askName(tr("起个昵称"), tr("排行榜上显示的名字，2–12 个字，以后能在个人页或排行榜里改"), tr("比如：摸鱼的程序员"),
-				Cloud.shared().display_name, tr("确定"), tr("取消"), _name_callback)
+			_name_check_callback = JavaScriptBridge.create_callback(func(args: Array) -> void:
+				var value := str(args[0])
+				var answer: Dictionary = await Leaderboard.check_name(value)
+				page.nameStatus(value, _name_status_text(answer), answer.get("ok", false), false))
+			_name_callback = JavaScriptBridge.create_callback(func(args: Array) -> void:
+				var value := str(args[0])
+				var answer: Dictionary = await Leaderboard.set_name(value)
+				if answer.get("ok", false):
+					page.nameStatus(value, "", true, true)
+					done.call(answer)
+				else:
+					page.nameStatus(value, Leaderboard.error_text(answer), false, false))
+			page.askName(tr("起个昵称"), tr("排行榜上显示的名字，2–12 个字，不能和别人重复，起了就不能改"), tr("比如：摸鱼的程序员"),
+				tr("确定"), tr("取消"), _name_callback, _name_check_callback)
 			return
-	_name_dialog(asked)
+	_name_dialog(done)
+
+
+## What the 昵称 dialog says under the field for a check's answer: 可以用, or why not.
+func _name_status_text(answer: Dictionary) -> String:
+	return tr("可以用") if answer.get("ok", false) else Leaderboard.error_text(answer)
 
 
 ## The result screen's 提意见 line (.94): right after a run is when there's most to say. Null
@@ -4604,7 +4625,7 @@ func _feedback_dialog(title: String, hint: String, placeholder: String, asked: C
 
 
 ## A computer build's 昵称 dialog: a field and two buttons over the screen.
-func _name_dialog(asked: Callable) -> void:
+func _name_dialog(done: Callable) -> void:
 	var cover := ColorRect.new()
 	cover.color = Color(Art.INK, 0.45)
 	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -4617,24 +4638,61 @@ func _name_dialog(asked: Callable) -> void:
 	column.add_theme_constant_override("separation", 10)
 	card.add_child(column)
 	column.add_child(UiKit.label("起个昵称", 18, "heavy"))
+	var hint := UiKit.label("排行榜上显示的名字，2–12 个字，不能和别人重复，起了就不能改", 12, "muted")
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size.x = 240.0
+	column.add_child(hint)
 	var field := LineEdit.new()
-	field.text = Cloud.shared().display_name
 	field.placeholder_text = tr("比如：摸鱼的程序员")
 	field.max_length = 12
 	field.custom_minimum_size = Vector2(240, 40)
 	column.add_child(field)
+	var status := UiKit.label("", 12, "strong", Art.INK_MUTED)
+	status.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	column.add_child(status)
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 8)
 	column.add_child(buttons)
+	var say := func(text: String, good: bool) -> void:
+		status.text = text
+		status.add_theme_color_override("font_color", Art.GREEN_INK if good else Art.BOSS_RED)
+	# Which edit the last check was for: an answer for older text is dropped.
+	var edits := [0]
+	# Connected below, once `submit` exists (a lambda keeps what a variable held when it was made).
+	var ok := UiKit.primary_button("确定", func() -> void: pass, 40.0, 15)
+	ok.disabled = true
 	var submit := func() -> void:
-		var text := field.text
-		cover.queue_free()
-		asked.call(text)
+		if ok.disabled:
+			return
+		ok.disabled = true
+		var answer: Dictionary = await Leaderboard.set_name(field.text)
+		if not is_instance_valid(cover):
+			return
+		if answer.get("ok", false):
+			cover.queue_free()
+			done.call(answer)
+		else:
+			say.call(Leaderboard.error_text(answer), false)
+	field.text_changed.connect(func(text: String) -> void:
+		edits[0] += 1
+		var edit: int = edits[0]
+		ok.disabled = true
+		status.text = ""
+		if text.strip_edges() == "":
+			return
+		await get_tree().create_timer(NAME_CHECK_DELAY, true).timeout
+		if edits[0] != edit or not is_instance_valid(cover):
+			return
+		var answer: Dictionary = await Leaderboard.check_name(text)
+		if edits[0] != edit or not is_instance_valid(cover):
+			return
+		say.call(_name_status_text(answer), answer.get("ok", false))
+		ok.disabled = not answer.get("ok", false))
+	ok.pressed.connect(submit)
 	field.text_submitted.connect(func(_text: String) -> void: submit.call())
-	buttons.add_child(UiKit.primary_button("确定", submit, 40.0, 15))
+	buttons.add_child(ok)
 	buttons.add_child(UiKit.secondary_button("取消", cover.queue_free, 40.0, 15))
 	field.grab_focus.call_deferred()
-
 
 ## The 排行榜 page: header and back, then a map's board (_fill_board). Redrawn in place as the
 ## board comes back from the server.
@@ -4672,8 +4730,8 @@ func _open_board() -> void:
 	_focus(back)
 
 
-## The 排行榜 page's body: a map's board (the map in use first), the player's 昵称, and a
-## report button on every name but their own.
+## The 排行榜 page's body: a map's board (the map in use first) and the player's 昵称 (起昵称 while
+## there's none).
 func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	if _board_map == "":
 		_board_map = Maps.current_id
@@ -4695,11 +4753,13 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	var name_label := UiKit.label(name_text, 13, "strong", Art.INK)
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_row.add_child(name_label)
-	name_row.add_child(UiKit.secondary_button("改昵称" if Leaderboard.has_name() else "起昵称", func() -> void:
-		_ask_name(func(answer: Dictionary) -> void:
-			_board_note = "" if answer.get("ok", false) else Leaderboard.error_text(answer)
-			_board_answer = {}
-			_open_board()), 34.0, 13))
+	# Picked once (.97): 起昵称 while there's none, nothing after.
+	if not Leaderboard.has_name():
+		name_row.add_child(UiKit.secondary_button("起昵称", func() -> void:
+			_ask_name(func(_answer: Dictionary) -> void:
+				_board_note = ""
+				_board_answer = {}
+				_open_board()), 34.0, 13))
 	body.add_child(name_row)
 	if _board_note != "":
 		body.add_child(_collection_note(_board_note))
@@ -4731,7 +4791,7 @@ func _load_board(map_id: String) -> void:
 	_open_board()
 
 
-## One line of a board: rank, job, name, time; a report button on others' names.
+## One line of a board: rank, job, name, time.
 func _board_line(record: Dictionary) -> Control:
 	var mine: bool = record.get("me", false)
 	var strip := UiKit.panel(UiKit.box(Art.BRAND_SOFT if mine else Art.PAPER, Art.INK if mine else Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(10, 6, 10, 6)))
@@ -4755,12 +4815,7 @@ func _board_line(record: Dictionary) -> Control:
 	var time := UiKit.label(Leaderboard.record_text(int(record.get("ms", 0)), cleared), 14 if cleared else 13, "display" if cleared else "strong", Art.INK if cleared else Art.INK_MUTED)
 	time.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	row.add_child(time)
-	if not mine:
-		var user := str(record.get("user", ""))
-		row.add_child(UiKit.secondary_button("举报", func() -> void:
-			await Leaderboard.report(user)
-			_board_note = tr("已举报，被举报多的名字会先藏起来")
-			_open_board(), 28.0, 11))
+	# 举报 (.78–.96) is gone with changing names (.97, the user: 去掉).
 	return strip
 
 

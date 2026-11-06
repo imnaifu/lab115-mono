@@ -13,7 +13,7 @@ extends RefCounted
 
 const CELL := 16.0
 ## Cells per side. 72 * 16 = 1152 px: a little over the circle enemies are kept within
-## (Game.RELOCATE_DISTANCE is 560 from the player).
+## (Game.relocate_distance: 460 from the player since .97, 560 before; a little more on a wide screen).
 const SPAN := 72
 ## Walls are padded by this when marking cells blocked, so a cell is open only where an
 ## ordinary enemy fits. Bosses are a little wider, and lean on wall sliding for the rest.

@@ -66,7 +66,12 @@ const BOSS_KNOCKBACK := 320.0
 ## lookup in query_enemies.
 const MAX_HIT_RADIUS := 28.0
 ## Enemies left this far behind are moved back in front of the player so pressure never drops.
-const RELOCATE_DISTANCE := 560.0
+## 460 since .97 (560 before): with a slower crowd (Spawner.ENEMY_TYPES) the ones left behind come
+## round again sooner, so there's always some on the player's heels. Never nearer than where enemies
+## come in (relocate_distance), or a fresh one would be moved on and on.
+const RELOCATE_DISTANCE := 460.0
+## How much past the far corner of where enemies come in (offscreen_point) the relocation starts.
+const RELOCATE_PAST_SPAWN := 30.0
 ## An enemy that starts going round a building keeps to the flow field this long. "Straight is
 ## fine" only means some grid path runs straight there, not that the direct line is clear;
 ## without this, one rounding a corner flipped between the two every frame and stood still.
@@ -546,6 +551,12 @@ func _taunt() -> void:
 ## A point just outside the visible screen in the given direction from the player, or, if
 ## that is water, the first of the opposite and the two sideways directions that is land:
 ## nothing walks out of the sea.
+## How far behind an enemy is moved round again: RELOCATE_DISTANCE, or past the corners of where
+## enemies come in on a wide screen.
+func relocate_distance() -> float:
+	return maxf(RELOCATE_DISTANCE, (view_half() + Vector2(SPAWN_MARGIN, SPAWN_MARGIN)).length() + RELOCATE_PAST_SPAWN)
+
+
 func offscreen_point(direction: Vector2) -> Vector2:
 	var half := view_half() + Vector2(SPAWN_MARGIN, SPAWN_MARGIN)
 	var first_try := Vector2.ZERO
@@ -650,7 +661,8 @@ func _rebuild_grid() -> void:
 
 func _tick_enemies(delta: float) -> void:
 	var target := player.position
-	var relocate_sq := RELOCATE_DISTANCE * RELOCATE_DISTANCE
+	var relocate := relocate_distance()
+	var relocate_sq := relocate * relocate
 	for enemy in enemies:
 		var separation := Vector2.ZERO if enemy.ghostly else _separation(enemy)
 		# Ghosts drift through walls; everyone else takes the way round when one is in the way.

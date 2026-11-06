@@ -41,8 +41,9 @@ const BOSS_SPEED_FLOOR := 46.0
 const SLOWEST_BOSS_SPEED := 22.0
 const BOSS_SPEED_SPREAD := 0.25
 const BOSS_MAX_SPEED := 54.0
-## The fastest the crowd walks in 加班 (Game.overtime_speed), under the slowest job's 60.
-const OVERTIME_CROWD_MAX := 57.0
+## The fastest the crowd walks in 加班 (Game.overtime_speed), under the slowest job's 60. 46 since
+## .97, with the crowd ×0.8 (57 before).
+const OVERTIME_CROWD_MAX := 46.0
 ## See hit_radius.
 const BIG_ART := 40.0
 const HIT_SHARE := 0.36

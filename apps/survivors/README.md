@@ -29,7 +29,7 @@ CI 跑不了 Godot，`npm run build` 只做 `check-project.mjs` 里的静态检�
 
 `.28` 起游戏的云存档存在自建的 [Nakama](https://github.com/heroiclabs/nakama)（开源游戏服务器，Apache-2.0）上：根目录 `docker-compose.yml` 的 `nakama`（固定 `heroiclabs/nakama:3.41.0`，有 arm64 镜像）和 `nakama-db`（`postgres:16-alpine`，数据在 `./data/nakama-db`，和 Umami 的库分开）。游戏从浏览器直接调它（Nakama 对任何来源都开 CORS，会话是请求头里的 token，不用 cookie），Traefik 把 `nakama.lab115.com` 转到 7350。机制和界面见 `game/DESIGN.md` 2.11，客户端代码 `game/scripts/cloud.gd`，本地测试见 `game/README.md`「云存档」。
 
-**服务端脚本**（`.78`）：`nakama/modules/survivors.lua` 是游戏的服务端逻辑（每张地图一个排行榜：通关的按用时，`.96` 起没通关但撑过 1 分钟的按撑了多久排在后面；交成绩、昵称、举报，规则见 `game/DESIGN.md` 2.13）。compose 的 `nakama` 用 `nakama/Dockerfile` 构建（`FROM heroiclabs/nakama:3.41.0`，把 `modules/` 拷进 `/nakama/data/modules`），改了脚本要重新部署才生效。启动日志里有 `Registered Lua runtime RPC function invocation` 四行（`survivors_set_name` / `survivors_submit` / `survivors_board` / `survivors_report`）就是加载上了。
+**服务端脚本**（`.78`）：`nakama/modules/survivors.lua` 是游戏的服务端逻辑（每张地图一个排行榜：通关的按用时，`.96` 起没通关但撑过 1 分钟的按撑了多久排在后面；交成绩、昵称（`.97` 起只能起一次、全局唯一），规则见 `game/DESIGN.md` 2.13）。compose 的 `nakama` 用 `nakama/Dockerfile` 构建（`FROM heroiclabs/nakama:3.41.0`，把 `modules/` 拷进 `/nakama/data/modules`），改了脚本要重新部署才生效。启动日志里有 `Registered Lua runtime RPC function invocation` 五行（`survivors_set_name` / `survivors_name_check` / `survivors_submit` / `survivors_board` / `survivors_feedback`）和一行 `Before function invocation`（`updateaccount`）就是加载上了。
 
 **Coolify 里要有 2 个环境变量**：`NAKAMA_SECRET`，用 `openssl rand -hex 24` 生成（只有字母和数字，拼进数据库地址也不用转义）；`NAKAMA_CONSOLE_PASSWORD`，管理后台的登录密码，单独一个（后台在网页上登录，这个密码泄露了也拿不到任何密钥）。缺了哪个 `nakama` 都会在启动时报错退出（`:?` 检查）、`nakama-db` 也不会初始化，不会带着 Nakama 文档里公开的默认密钥跑起来（那样任何人都能冒充任何玩家）。
 
