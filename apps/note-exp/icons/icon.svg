@@ -1,6 +1,7 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#2f3542" stroke-linecap="round" stroke-linejoin="round">
   <rect x="4" y="4" width="120" height="120" rx="30" fill="#f6c6cf" stroke="none"/>
-  <g transform="translate(58 60) scale(.72) translate(-66 -62)">
+  <!-- potato + leaves centred on the tile (no badge to make room for) -->
+  <g transform="translate(64 64) scale(.86) translate(-67 -58)">
     <!-- two leaves, mirror images of each other across the 45° diagonal through the stem point -->
     <path d="M88 34C92 26 100 24 107 27C102 33 94 36 88 34Z" fill="#bfe3cf" stroke-width="5"/>
     <path d="M88 34C96 30 98 22 95 15C89 20 86 28 88 34Z" fill="#bfe3cf" stroke-width="5"/>
@@ -10,6 +11,4 @@
     <circle cx="70" cy="68" r="3.8" fill="#2f3542" stroke="none"/>
     <circle cx="84" cy="52" r="3.8" fill="#2f3542" stroke="none"/>
   </g>
-  <circle cx="92" cy="92" r="19" fill="#f7c948" stroke-width="5.5"/>
-  <path d="M92 82v20m-8-8 8 8 8-8" stroke-width="5.5"/>
 </svg>
