@@ -14,7 +14,10 @@ const COUNT := [1, 2, 2, 2, 3]
 ## share of the damage went from about 7% to 24%, the user asked for it a little weaker.
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 12 / 12 / 16 / 16 / 21, blasts 26–36. Bombs go on the thickest
 ## crowd: about 450 a second alone at full level at 8:00, now about 300.
-const DAMAGE := [12.0, 12.0, 14.0, 16.0, 16.0]
+## +1 every level from 0.3.6 (the user: 无人机伤害略加一点点; 12 / 12 / 14 / 16 / 16 until then), the
+## steps on the cards (+2, +2) the same. Alone and standing still it was 3rd of the ten shared
+## weapons then: 244 a second at level 2 at 4:00, 676 at level 5 at 8:00.
+const DAMAGE := [13.0, 13.0, 15.0, 17.0, 17.0]
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): blasts up to 30 (36 before).
 const BLAST_RADIUS := [26.0, 26.0, 28.0, 28.0, 30.0]
 ## Was 180 until .35, slow enough for the crowd to walk out from under the bomb.
