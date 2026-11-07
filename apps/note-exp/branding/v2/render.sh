@@ -38,7 +38,7 @@ render() {
   echo "$out $(sips -g pixelWidth -g pixelHeight -g hasAlpha "$out" | awk 'NR>1{printf "%s ", $2}')"
 }
 
-for lang in zh en; do
+for lang in zh zh_TW en ko ja vi; do
   for asset in "${ASSETS[@]}"; do
     read -r id name width height <<<"$asset"
     if [[ $# -eq 0 || ( "$1" == "$lang" && "$2" == "$id" ) ]]; then

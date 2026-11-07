@@ -40,6 +40,52 @@ img { max-width: 100%; height: auto; }
   .sk-nav { gap: var(--space-4); }
 }
 
+/* ── Language menu ─────────────────────────────────────────────────────── */
+/* A <details> of plain links: opens without JS, and crawlers can follow every
+   language version. build.py adds a small script that closes it on Escape or
+   an outside click. */
+.lang-menu { position: relative; }
+.lang-menu > summary { list-style: none; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-h-sm); padding: var(--space-1) var(--space-3); border: 2px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--paper); color: var(--ink); font: 700 13px/20px var(--font-sans); letter-spacing: .02em; cursor: pointer; white-space: nowrap; }
+.lang-menu > summary::-webkit-details-marker { display: none; }
+.lang-menu > summary:hover { background: var(--paper-sunk); }
+.lang-menu > summary svg { flex: none; color: var(--ink-muted); }
+.lang-menu[open] > summary .chev { transform: rotate(180deg); }
+.lang-menu ul { position: absolute; right: 0; top: calc(100% + var(--space-2)); z-index: var(--z-dropdown); min-width: 168px; margin: 0; padding: var(--space-2); list-style: none; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); }
+.lang-menu li a { display: block; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink); font-size: 14px; line-height: 22px; text-decoration: none; }
+.lang-menu li a:hover { background: var(--paper-sunk); }
+.lang-menu li a[aria-current="page"] { background: var(--brand-soft); font-weight: 700; }
+
+/* ── Per-language faces ─────────────────────────────────────────────────── */
+/* The system stacks are Simplified Chinese faces: they would draw Japanese
+   kanji in Chinese shapes, Korean wants a Hangul face first, and Vietnamese
+   tone marks are in neither PingFang nor the Latin-only Nunito subset, so
+   Vietnamese uses the system UI face throughout. */
+html:lang(zh-TW) {
+  --font-sans: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-display: "Nunito", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+html:lang(ja) {
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  --font-display: "Nunito", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+}
+html:lang(ko) {
+  --font-sans: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  --font-display: "Nunito", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  word-break: keep-all; /* Korean wraps between words, not inside them */
+}
+html:lang(vi) {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+/* Japanese breaks at phrase boundaries instead of inside words (ワン|クリック). */
+html:lang(ja) { word-break: auto-phrase; }
+/* Language names in the menu, footer and 404 carry their own lang attribute:
+   draw each in its own face, whatever the page language is. */
+[lang="zh-TW"]:not(html) { font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; }
+[lang="ja"]:not(html) { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif; }
+[lang="ko"]:not(html) { font-family: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif; }
+[lang="vi"]:not(html) { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+
 /* ── Hero (sk-hero) ─────────────────────────────────────────────────────── */
 
 .sk-hero .cta { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; margin-bottom: var(--space-5); }
@@ -140,6 +186,7 @@ html:not(.js) .pv-panel + .pv-panel { margin-top: var(--space-7); }
 /* ── Footer (sk-footer) ─────────────────────────────────────────────────── */
 
 .foot-desc { margin: var(--space-3) 0 0; max-width: 300px; }
+.foot-made { margin: var(--space-2) 0 0; }
 .sk-footer__base { gap: var(--space-2) var(--space-6); }
 .sk-footer__base span:first-child { flex: 1 1 420px; }
 

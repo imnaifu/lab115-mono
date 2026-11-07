@@ -5,8 +5,8 @@
     <title>RedNote Exporter · Store assets</title>
     <!--
       Chrome Web Store assets, rendered by render.sh with headless Chrome.
-      One template for every asset: ?lang=zh|en&id=s1..s5|small|marquee.
-      The popup mock mirrors src/popup (Sokosoko: white header, yellow tab
+      One template for every asset: ?lang=zh|zh_TW|en|ko|ja|vi&id=s1..s5|small|marquee.
+      The popup mock mirrors src/popup (Sokosoko: white header, red tab
       underline, same strings and icons) so the screenshots match what users actually see. All covers,
       names and numbers are made up — no real RedNote users or photos.
     -->
@@ -45,6 +45,13 @@
         color: var(--ink);
         -webkit-font-smoothing: antialiased;
       }
+      /* Per-language faces: Traditional Chinese, Japanese and Korean need their
+         own CJK fonts (Japanese kanji must not take Chinese shapes); Vietnamese
+         tone marks are missing from PingFang and our Latin-only Nunito subset. */
+      body.zh_TW { --display: "Nunito", "PingFang TC", "Helvetica Neue", sans-serif; font-family: "PingFang TC", -apple-system, sans-serif; }
+      body.ja { --display: "Nunito", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif; font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", -apple-system, sans-serif; }
+      body.ko { --display: "Nunito", "Apple SD Gothic Neo", sans-serif; font-family: "Apple SD Gothic Neo", -apple-system, sans-serif; word-break: keep-all; }
+      body.vi { --display: -apple-system, "Helvetica Neue", sans-serif; font-family: -apple-system, "Helvetica Neue", sans-serif; }
       svg { display: block; flex-shrink: 0; }
       .canvas { position: relative; overflow: hidden; background: var(--paper-soft); }
       /* Two flat pastel discs instead of glows — no gradients in this system. */
@@ -62,9 +69,9 @@
       .pill { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--on-brand); background: var(--brand); border-radius: 99px; padding: 4px 12px; }
       .tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 700; letter-spacing: .04em; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 99px; padding: 6px 16px; margin-bottom: 20px; }
       h1 { font: 700 50px/1.35 var(--display); letter-spacing: .02em; }
-      .en h1 { font-size: 44px; }
+      .wide h1 { font-size: 44px; }
       .sub { font-size: 19px; line-height: 1.7; color: var(--ink-muted); margin-top: 22px; }
-      .en .sub { font-size: 18px; line-height: 1.6; }
+      .wide .sub { font-size: 18px; line-height: 1.6; }
       .bullets { margin-top: 30px; display: flex; flex-direction: column; gap: 16px; }
       .bullet { display: flex; align-items: center; gap: 14px; font-size: 18px; font-weight: 700; color: var(--ink); }
       .bullet .bi { width: 42px; height: 42px; border-radius: 50%; background: var(--fill-sky); color: var(--ink); display: flex; align-items: center; justify-content: center; }
@@ -82,9 +89,9 @@
       .popup { width: 400px; height: 600px; background: var(--paper); display: flex; flex-direction: column; font-size: 13px; position: absolute; overflow: hidden; border-radius: 14px; box-shadow: 0 12px 32px rgba(47, 53, 66, 0.18), 0 0 0 1px var(--line); transform-origin: top left; }
       .ph { display: flex; align-items: center; justify-content: space-between; background: var(--paper); height: 52px; padding: 0 16px; flex: none; }
       .ph .b { display: flex; align-items: center; gap: 8px; color: var(--ink); font: 800 15px/1 var(--display); }
-      .lang { display: flex; background: var(--paper-sunk); border-radius: 99px; padding: 3px; gap: 2px; }
-      .lang span { min-width: 34px; height: 26px; display: flex; align-items: center; justify-content: center; padding: 0 10px; border-radius: 99px; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
-      .lang span.on { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+      /* the popup's language menu: globe + current language + chevron in a pill */
+      .lang { display: flex; align-items: center; gap: 6px; width: 132px; height: 30px; padding: 0 10px; border-radius: 99px; background: var(--paper-sunk); color: var(--ink-muted); }
+      .lang .t { flex: 1; font-size: 12px; font-weight: 700; color: var(--ink); white-space: nowrap; }
       .tabs { display: flex; gap: 20px; background: var(--paper); padding: 0 16px; border-bottom: 1px solid var(--line); flex: none; }
       .tabs div { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; font-size: 13px; height: 44px; margin-bottom: -1px; border-bottom: 3px solid transparent; color: var(--ink-muted); white-space: nowrap; }
       .tabs div.on { color: var(--ink); border-bottom-color: var(--brand); }
@@ -138,7 +145,13 @@
     <script>
       // ---------------------------------------------------------------- params
       const params = new URLSearchParams(location.search);
-      const LANG = params.get("lang") === "en" ? "en" : "zh";
+      const LANGS = ["zh", "zh_TW", "en", "ko", "ja", "vi"];
+      const LANG = LANGS.includes(params.get("lang")) ? params.get("lang") : "zh";
+      // Chinese and Japanese set denser than Latin or Hangul copy, so they keep
+      // the larger headline sizes; the rest get the "wide" sizes.
+      const CJK = ["zh", "zh_TW", "ja"].includes(LANG);
+      // The popup's language menu shows each language by its own name.
+      const LABELS = { zh: "简体中文", zh_TW: "繁體中文", en: "English", ko: "한국어", ja: "日本語", vi: "Tiếng Việt" };
       const ID = params.get("id") || "s1";
       const SIZES = { small: [440, 280], marquee: [1400, 560] };
       const [W, H] = SIZES[ID] || [1280, 800];
@@ -164,6 +177,7 @@
         lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
         shield: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/>',
         cloudoff: '<path d="M3 3l18 18"/><path d="M8.5 6.3A6 6 0 0 1 17.6 10 4 4 0 0 1 20 17"/><path d="M16.5 18H7a4.5 4.5 0 0 1-1.6-8.7"/>',
+        chevrondown: '<path d="M6 9l6 6 6-6"/>',
         globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/>',
         puzzle: '<path d="M9 4.5a2 2 0 1 1 4 0V6h3.5a1.5 1.5 0 0 1 1.5 1.5V11h-1.5a2 2 0 1 0 0 4H18v3.5a1.5 1.5 0 0 1-1.5 1.5H13v-1.5a2 2 0 1 0-4 0V20H5.5A1.5 1.5 0 0 1 4 18.5V15h1.5a2 2 0 1 0 0-4H4V7.5A1.5 1.5 0 0 1 5.5 6H9z"/>',
         cursor: '<path d="M5 3l6.5 17 2.2-7.3L21 10.5z" fill="currentColor"/>',
@@ -271,7 +285,7 @@
               ["点击扩展图标", "切换到「导出笔记列表」或「下载单帖资源」"],
               ["导出或下载", "CSV 表格和图片视频直接保存到你的电脑"],
             ],
-            trust: [["lock", "插件无需注册登录"], ["shield", "不收集任何数据"], ["cloudoff", "不连接外部服务器"], ["globe", "中英双语界面"]],
+            trust: [["lock", "插件无需注册登录"], ["shield", "不收集任何数据"], ["cloudoff", "不连接外部服务器"], ["globe", "6 种语言界面"]],
           },
           marquee: {
             h1: "小红书笔记，<mark>一键</mark>带走",
@@ -290,6 +304,7 @@
           savedN: "已保存 10 个文件", downloads: "下载",
           folder: "2026-10-15 14-32-08 秋天第一件风衣的 5 套通勤穿搭",
           searchQ: "秋季穿搭",
+          finder: ["个人收藏", "文稿", "图片"],
         },
         en: {
           brand: "RedNote Exporter",
@@ -336,7 +351,7 @@
               ["Click the icon", "Choose Export Note List or Download Single Post"],
               ["Export or download", "The CSV, images and video are saved to your computer"],
             ],
-            trust: [["lock", "No sign-up"], ["shield", "No data collected"], ["cloudoff", "No external servers"], ["globe", "English & Chinese UI"]],
+            trust: [["lock", "No sign-up"], ["shield", "No data collected"], ["cloudoff", "No external servers"], ["globe", "6-language UI"]],
           },
           marquee: {
             h1: "RedNote, saved in<br><mark>one&nbsp;click</mark>",
@@ -355,6 +370,271 @@
           savedN: "Saved 10 files", downloads: "Downloads",
           folder: "2026-10-15 14-32-08 5 easy fall trench coat looks",
           searchQ: "fall outfits",
+          finder: ["Favorites", "Documents", "Pictures"],
+        },
+        zh_TW: {
+          brand: "小紅書匯出工具",
+          ext: "Chrome 擴充功能",
+          tabList: "匯出筆記列表",
+          tabPost: "下載單篇資源",
+          notes: [
+            ["秋天第一件風衣的 5 套通勤穿搭", "鹽系小柯", "4.4萬", "1.3萬", "883", "2026-09-28"],
+            ["小個子梨形身材的秋冬穿搭法則", "今天也很會穿", "4.8萬", "1.7萬", "1.4k", "2026-10-02"],
+            ["週末去哪兒｜杭州 8 家小眾咖啡館", "阿梨在路上", "2.1萬", "9.6k", "512", "2026-10-06"],
+            ["一人食晚餐｜15 分鐘搞定三菜一湯", "廚房小林", "3.2萬", "2.4萬", "1.1k", "2026-10-09"],
+            ["新手入門底片相機，這些坑別踩", "慢門日記", "1.6萬", "8.8k", "640", "2026-10-11"],
+            ["租屋改造｜500 元讓出租屋變溫馨", "住進光裡", "6.7萬", "5.1萬", "2.3k", "2026-10-12"],
+            ["秋冬保養順序，一張圖講清楚", "成分黨小周", "2.9萬", "3.6萬", "970", "2026-10-13"],
+          ],
+          s1: {
+            tag: ["download", "下載單篇資源"],
+            h1: "圖片和影片，<br><mark>一鍵</mark>全部儲存",
+            sub: "打開任意一篇筆記，勾選想要的圖片和影片，點一下就下載到同一個資料夾。",
+            bullets: [["video", "影片優先下載無浮水印原檔"], ["image", "圖文筆記、影片筆記都支援"], ["check", "只勾選你需要的那幾張"]],
+          },
+          s2: {
+            tag: ["folder", "自動整理"],
+            h1: "一篇筆記，<br><mark>一個</mark>資料夾",
+            sub: "資料夾依下載時間和筆記標題命名，影片和圖片依序編號，不用再一張張重新命名。",
+            bullets: [["folder", "下載時間 + 標題，自動建立資料夾"], ["list", "image-1、image-2… 依原順序編號"], ["check", "同名自動加序號，不覆蓋舊檔案"]],
+          },
+          s3: {
+            tag: ["list", "匯出筆記列表"],
+            h1: "邊滑邊收集，<br><mark>隨時</mark>匯出 CSV",
+            sub: "在首頁推薦、搜尋結果或使用者主頁正常往下滑，看過的筆記會自動收集並去除重複。",
+            bullets: [["search", "首頁推薦 · 搜尋結果 · 使用者主頁"], ["check", "自動去重，即時顯示收集數量"], ["heart", "標題、作者、互動數據一起帶上"]],
+          },
+          s4: {
+            tag: ["file", "CSV 表格"],
+            h1: "匯出就是<br><mark>一張</mark>整齊的表",
+            sub: "Excel、Numbers、Google 試算表直接開啟，中文不亂碼，做選題分析、競品整理都順手。",
+            bullets: [["file", "標題、作者、發布時間"], ["heart", "按讚 · 收藏 · 留言 · 分享"], ["link", "封面、作者主頁、全部圖片連結"]],
+          },
+          s5: {
+            title: "三步上手，全程<mark>在本機</mark>完成",
+            steps: [
+              ["打開小紅書", "首頁推薦、搜尋結果、使用者主頁，或任意一篇筆記"],
+              ["點擊擴充功能圖示", "切換到「匯出筆記列表」或「下載單篇資源」"],
+              ["匯出或下載", "CSV 表格和圖片影片直接儲存到你的電腦"],
+            ],
+            trust: [["lock", "不需註冊登入"], ["shield", "不收集任何資料"], ["cloudoff", "不連線外部伺服器"], ["globe", "6 種語言介面"]],
+          },
+          marquee: {
+            h1: "小紅書筆記，<mark>一鍵</mark>帶走",
+            sub: "圖片影片一鍵下載 · 筆記列表匯出 CSV",
+            chips: [["video", "影片優先無浮水印原檔"], ["list", "首頁 · 搜尋 · 主頁"], ["shield", "本機處理，不上傳"]],
+          },
+          small: ["小紅書<mark>匯出</mark>", "圖片影片下載 · 筆記匯出 CSV"],
+          post: { title: "秋天第一件風衣的 5 套通勤穿搭", author: "鹽系小柯", time: "2026-09-28" },
+          videoUnit: "部影片", imageUnit: "張圖片", videoWord: "影片", imagesWord: "圖片",
+          deselAll: "取消全選", dlSel: (n) => `下載所選 · ${n}`,
+          connected: "已連線", captured: "已收集", unit: "則", capturing: "收集中…",
+          dedup: "已接收 140 · 略過 12 則重複",
+          pageHint: "在網頁上繼續往下捲動，新載入的筆記會自動收集",
+          clear: "清空", exportCsv: "匯出 CSV",
+          exportDone: "匯出完成", rows: "128 列", savedTo: "已儲存到「下載」資料夾",
+          savedN: "已儲存 10 個檔案", downloads: "下載",
+          folder: "2026-10-15 14-32-08 秋天第一件風衣的 5 套通勤穿搭",
+          searchQ: "秋季穿搭",
+          finder: ["喜好項目", "文件", "圖片"],
+        },
+        ko: {
+          brand: "RedNote Exporter",
+          ext: "Chrome 확장 프로그램",
+          tabList: "노트 목록 내보내기",
+          tabPost: "게시물 다운로드",
+          notes: [
+            ["가을 트렌치코트 출근룩 5가지", "솔티코", "4.4만", "1.3만", "883", "2026-09-28"],
+            ["키 작은 하체 통통 체형 가을 코디법", "오늘도옷잘입기", "4.8만", "1.7만", "1.4천", "2026-10-02"],
+            ["주말 어디 가지 | 항저우 숨은 카페 8곳", "배여행중", "2.1만", "9.6천", "512", "2026-10-06"],
+            ["혼밥 저녁 | 15분 만에 반찬 셋 국 하나", "주방린", "3.2만", "2.4만", "1.1천", "2026-10-09"],
+            ["필름 카메라 입문, 이것만은 피하세요", "느린셔터", "1.6만", "8.8천", "640", "2026-10-11"],
+            ["월세방 꾸미기 | 10만 원으로 아늑하게", "빛속으로", "6.7만", "5.1만", "2.3천", "2026-10-12"],
+            ["가을·겨울 스킨케어 순서, 한 장 정리", "성분덕후주", "2.9만", "3.6만", "970", "2026-10-13"],
+          ],
+          s1: {
+            tag: ["download", "게시물 다운로드"],
+            h1: "이미지와 동영상,<br><mark>한 번에</mark> 모두 저장",
+            sub: "게시물을 열고 원하는 이미지와 동영상을 선택하면 한 폴더에 바로 다운로드됩니다.",
+            bullets: [["video", "워터마크 없는 원본 동영상 우선"], ["image", "이미지·동영상 게시물 모두 지원"], ["check", "필요한 파일만 골라서 저장"]],
+          },
+          s2: {
+            tag: ["folder", "자동 정리"],
+            h1: "게시물 하나에<br><mark>폴더 하나</mark>",
+            sub: "폴더 이름은 다운로드 시간과 게시물 제목으로 정해지고, 파일에는 순서대로 번호가 붙습니다.",
+            bullets: [["folder", "다운로드 시간 + 제목으로 폴더 생성"], ["list", "image-1, image-2… 원래 순서대로"], ["check", "같은 이름은 번호를 붙여 덮어쓰지 않음"]],
+          },
+          s3: {
+            tag: ["list", "노트 목록 내보내기"],
+            h1: "스크롤만 하면 수집,<br><mark>언제든</mark> CSV로",
+            sub: "홈 피드, 검색 결과, 프로필을 평소처럼 스크롤하면 본 노트가 자동으로 수집되고 중복은 제거됩니다.",
+            bullets: [["search", "홈 피드 · 검색 결과 · 프로필"], ["check", "자동 중복 제거, 실시간 개수 표시"], ["heart", "제목, 작성자, 반응 데이터까지"]],
+          },
+          s4: {
+            tag: ["file", "CSV 표"],
+            h1: "내보내면 바로<br><mark>깔끔한</mark> 표",
+            sub: "Excel, Numbers, Google 스프레드시트에서 바로 열립니다. 콘텐츠 분석과 경쟁사 정리에 유용합니다.",
+            bullets: [["file", "제목, 작성자, 게시 시간"], ["heart", "좋아요 · 저장 · 댓글 · 공유"], ["link", "커버, 프로필, 모든 이미지 링크"]],
+          },
+          s5: {
+            title: "세 단계, 모든 처리는 <mark>브라우저 안에서</mark>",
+            steps: [
+              ["샤오홍슈 열기", "홈 피드, 검색 결과, 프로필 또는 아무 게시물"],
+              ["아이콘 클릭", "「노트 목록 내보내기」 또는 「게시물 다운로드」 선택"],
+              ["내보내기·다운로드", "CSV와 이미지, 동영상이 컴퓨터에 저장됩니다"],
+            ],
+            trust: [["lock", "가입 불필요"], ["shield", "데이터 수집 없음"], ["cloudoff", "외부 서버 없음"], ["globe", "6개 언어 지원"]],
+          },
+          marquee: {
+            h1: "샤오홍슈 노트,<br><mark>한 번에</mark> 저장",
+            sub: "이미지·동영상 다운로드 · 노트 목록 CSV 내보내기",
+            chips: [["video", "워터마크 없는 원본 우선"], ["list", "피드 · 검색 · 프로필"], ["shield", "로컬 처리, 업로드 없음"]],
+          },
+          small: ["샤오홍슈 <mark>다운로더</mark>", "이미지·동영상 저장 · CSV 내보내기"],
+          post: { title: "가을 트렌치코트 출근룩 5가지", author: "솔티코", time: "2026-09-28" },
+          videoUnit: "동영상", imageUnit: "이미지", videoWord: "동영상", imagesWord: "이미지",
+          deselAll: "선택 해제", dlSel: (n) => `다운로드 · ${n}`,
+          connected: "연결됨", captured: "수집됨", unit: "개", capturing: "수집 중…",
+          dedup: "140개 받음 · 중복 12개 건너뜀",
+          pageHint: "페이지를 계속 아래로 스크롤하면 새로 불러온 노트가 자동으로 수집됩니다",
+          clear: "지우기", exportCsv: "CSV 내보내기",
+          exportDone: "내보내기 완료", rows: "128행", savedTo: "다운로드 폴더에 저장됨",
+          savedN: "파일 10개 저장됨", downloads: "다운로드",
+          folder: "2026-10-15 14-32-08 가을 트렌치코트 출근룩 5가지",
+          searchQ: "가을 코디",
+          finder: ["즐겨찾기", "문서", "사진"],
+        },
+        ja: {
+          brand: "RedNote Exporter",
+          ext: "Chrome 拡張機能",
+          tabList: "ノート一覧を出力",
+          tabPost: "投稿をダウンロード",
+          notes: [
+            ["秋のトレンチコート通勤コーデ 5 選", "しおこ", "4.4万", "1.3万", "883", "2026-09-28"],
+            ["低身長・下半身太めさんの秋冬コーデ術", "今日もおしゃれ", "4.8万", "1.7万", "1,400", "2026-10-02"],
+            ["週末おでかけ｜杭州の隠れ家カフェ 8 軒", "旅するなし", "2.1万", "9,600", "512", "2026-10-06"],
+            ["ひとりごはん｜15 分で一汁三菜", "キッチン林", "3.2万", "2.4万", "1,100", "2026-10-09"],
+            ["フィルムカメラ入門、ここに注意", "スローシャッター", "1.6万", "8,800", "640", "2026-10-11"],
+            ["賃貸アレンジ｜1 万円で部屋を居心地よく", "光の中へ", "6.7万", "5.1万", "2,300", "2026-10-12"],
+            ["秋冬スキンケアの順番を 1 枚で解説", "成分オタク周", "2.9万", "3.6万", "970", "2026-10-13"],
+          ],
+          s1: {
+            tag: ["download", "投稿をダウンロード"],
+            h1: "画像も動画も、<br><mark>ワンクリック</mark>で保存",
+            sub: "投稿を開いて、欲しい画像と動画にチェックを入れるだけ。1 つのフォルダにまとめてダウンロードします。",
+            bullets: [["video", "透かしなしの元動画を優先"], ["image", "画像投稿にも動画投稿にも対応"], ["check", "必要なファイルだけ選べる"]],
+          },
+          s2: {
+            tag: ["folder", "自動で整理"],
+            h1: "1 投稿に、<br><mark>1 フォルダ</mark>",
+            sub: "フォルダ名はダウンロード時刻と投稿タイトル。ファイルには順番どおりに番号が付きます。",
+            bullets: [["folder", "時刻 + タイトルでフォルダを自動作成"], ["list", "image-1、image-2… 元の順番で番号付け"], ["check", "同名ファイルは番号を付けて上書きしない"]],
+          },
+          s3: {
+            tag: ["list", "ノート一覧を出力"],
+            h1: "スクロールで収集、<br><mark>いつでも</mark> CSV に",
+            sub: "ホーム、検索結果、プロフィールを普段どおりスクロールすると、見たノートが自動で収集され、重複も除かれます。",
+            bullets: [["search", "ホーム · 検索結果 · プロフィール"], ["check", "重複を自動で除去、件数をリアルタイム表示"], ["heart", "タイトル、投稿者、反応数もまとめて"]],
+          },
+          s4: {
+            tag: ["file", "CSV 表"],
+            h1: "出力すれば<br><mark>きれいな</mark>表に",
+            sub: "Excel、Numbers、Google スプレッドシートでそのまま開けます。企画の分析や競合リサーチに便利です。",
+            bullets: [["file", "タイトル、投稿者、投稿日時"], ["heart", "いいね · 保存 · コメント · シェア"], ["link", "カバー、プロフィール、全画像のリンク"]],
+          },
+          s5: {
+            title: "3 ステップ、すべて<mark>ブラウザ内</mark>で完結",
+            steps: [
+              ["小紅書を開く", "ホーム、検索結果、プロフィール、または任意の投稿"],
+              ["アイコンをクリック", "「ノート一覧を出力」か「投稿をダウンロード」を選択"],
+              ["出力・ダウンロード", "CSV と画像・動画がパソコンに保存されます"],
+            ],
+            trust: [["lock", "登録不要"], ["shield", "データを収集しません"], ["cloudoff", "外部サーバーなし"], ["globe", "6 言語に対応"]],
+          },
+          marquee: {
+            h1: "小紅書のノートを、<br><mark>ワンクリック</mark>で保存",
+            sub: "画像・動画をダウンロード · ノート一覧を CSV 出力",
+            chips: [["video", "透かしなしの元動画を優先"], ["list", "ホーム · 検索 · プロフィール"], ["shield", "ローカル処理、アップロードなし"]],
+          },
+          small: ["小紅書<mark>保存</mark>ツール", "画像・動画の保存 · CSV 出力"],
+          post: { title: "秋のトレンチコート通勤コーデ 5 選", author: "しおこ", time: "2026-09-28" },
+          videoUnit: "本の動画", imageUnit: "枚の画像", videoWord: "動画", imagesWord: "画像",
+          deselAll: "選択を解除", dlSel: (n) => `ダウンロード · ${n}`,
+          connected: "接続済み", captured: "収集済み", unit: "件", capturing: "収集中…",
+          dedup: "140 件受信 · 重複 12 件をスキップ",
+          pageHint: "ページを下にスクロールすると、新しく読み込まれたノートが自動で収集されます",
+          clear: "クリア", exportCsv: "CSV を出力",
+          exportDone: "出力が完了しました", rows: "128 行", savedTo: "ダウンロードフォルダに保存しました",
+          savedN: "10 個のファイルを保存しました", downloads: "ダウンロード",
+          folder: "2026-10-15 14-32-08 秋のトレンチコート通勤コーデ 5 選",
+          searchQ: "秋コーデ",
+          finder: ["よく使う項目", "書類", "ピクチャ"],
+        },
+        vi: {
+          brand: "RedNote Exporter",
+          ext: "Tiện ích Chrome",
+          tabList: "Xuất danh sách ghi chú",
+          tabPost: "Tải bài viết",
+          notes: [
+            ["5 cách phối áo trench đi làm mùa thu", "saltyko", "44k", "13k", "883", "2026-09-28"],
+            ["Phối đồ thu đông cho dáng người quả lê", "mac.dep.moi.ngay", "48k", "17k", "1.4k", "2026-10-02"],
+            ["Cuối tuần đi đâu | 8 quán cà phê ở Hàng Châu", "le.tren.duong", "21k", "9.6k", "512", "2026-10-06"],
+            ["Bữa tối một người | 3 món 1 canh 15 phút", "bep.nha.lam", "32k", "24k", "1.1k", "2026-10-09"],
+            ["Nhập môn máy ảnh film: tránh những lỗi này", "man.trap.cham", "16k", "8.8k", "640", "2026-10-11"],
+            ["Cải tạo phòng trọ ấm cúng dưới 1,5 triệu", "song.trong.nang", "67k", "51k", "2.3k", "2026-10-12"],
+            ["Thứ tự skincare thu đông trong một hình", "skin.notes", "29k", "36k", "970", "2026-10-13"],
+          ],
+          s1: {
+            tag: ["download", "Tải bài viết"],
+            h1: "Mọi ảnh &amp; video,<br>lưu chỉ <mark>một&nbsp;cú&nbsp;nhấp</mark>",
+            sub: "Mở bất kỳ bài Xiaohongshu nào, chọn những gì bạn muốn và tải tất cả vào một thư mục.",
+            bullets: [["video", "Ưu tiên video gốc không logo"], ["image", "Hỗ trợ cả bài ảnh và bài video"], ["check", "Chỉ chọn những tệp bạn cần"]],
+          },
+          s2: {
+            tag: ["folder", "Tự động sắp xếp"],
+            h1: "Một bài viết,<br><mark>một thư mục</mark>",
+            sub: "Mỗi lần tải vào một thư mục đặt tên theo thời gian và tiêu đề bài, tệp được đánh số theo thứ tự.",
+            bullets: [["folder", "Thư mục theo thời gian + tiêu đề"], ["list", "Tệp đánh số image-1, image-2…"], ["check", "Không bao giờ ghi đè tệp cũ"]],
+          },
+          s3: {
+            tag: ["list", "Xuất danh sách ghi chú"],
+            h1: "Cuộn là thu thập,<br>xuất <mark>bất cứ lúc nào</mark>",
+            sub: "Lướt trang chủ, kết quả tìm kiếm hoặc trang cá nhân — mọi ghi chú bạn lướt qua đều được thu thập và loại trùng.",
+            bullets: [["search", "Trang chủ · Tìm kiếm · Trang cá nhân"], ["check", "Tự loại trùng, đếm theo thời gian thực"], ["heart", "Tiêu đề, tác giả và số tương tác"]],
+          },
+          s4: {
+            tag: ["file", "Bảng CSV"],
+            h1: "Bảng tính gọn gàng,<br><mark>sẵn sàng</mark> phân tích",
+            sub: "Mở ngay trong Excel, Numbers hoặc Google Sheets — tiện cho nghiên cứu nội dung và theo dõi đối thủ.",
+            bullets: [["file", "Tiêu đề, tác giả, ngày đăng"], ["heart", "Thích · lưu · bình luận · chia sẻ"], ["link", "Ảnh bìa, trang tác giả, mọi liên kết ảnh"]],
+          },
+          s5: {
+            title: "Ba bước. Không gì rời khỏi <mark>trình duyệt</mark>.",
+            steps: [
+              ["Mở Xiaohongshu", "Trang chủ, kết quả tìm kiếm, trang cá nhân hoặc một bài viết"],
+              ["Nhấp vào biểu tượng", "Chọn Xuất danh sách ghi chú hoặc Tải bài viết"],
+              ["Xuất hoặc tải xuống", "CSV, ảnh và video được lưu vào máy tính của bạn"],
+            ],
+            trust: [["lock", "Không cần đăng ký"], ["shield", "Không thu thập dữ liệu"], ["cloudoff", "Không máy chủ ngoài"], ["globe", "Giao diện 6 ngôn ngữ"]],
+          },
+          marquee: {
+            h1: "Lưu Xiaohongshu chỉ với<br><mark>một&nbsp;cú&nbsp;nhấp</mark>",
+            sub: "Tải ảnh &amp; video của bài viết · Xuất danh sách ghi chú ra CSV",
+            chips: [["folder", "Mỗi bài một thư mục"], ["list", "Trang chủ · Tìm kiếm · Cá nhân"], ["shield", "Xử lý 100% cục bộ"]],
+          },
+          small: ["Tải <mark>Xiaohongshu</mark>", "Tải ảnh & video · Xuất CSV"],
+          post: { title: "5 cách phối áo trench đi làm mùa thu", author: "saltyko", time: "2026-09-28" },
+          videoUnit: "video", imageUnit: "ảnh", videoWord: "Video", imagesWord: "Ảnh",
+          deselAll: "Bỏ chọn", dlSel: (n) => `Tải xuống · ${n}`,
+          connected: "Đã kết nối", captured: "Đã thu thập", unit: "ghi chú", capturing: "Đang thu thập…",
+          dedup: "Đã nhận 140 · bỏ qua 12 trùng lặp",
+          pageHint: "Tiếp tục cuộn trang xuống — ghi chú mới tải sẽ được thu thập tự động",
+          clear: "Xóa", exportCsv: "Xuất CSV",
+          exportDone: "Đã xuất xong", rows: "128 dòng", savedTo: "Đã lưu vào thư mục Tải xuống",
+          savedN: "Đã lưu 10 tệp", downloads: "Downloads",
+          folder: "2026-10-15 14-32-08 5 cách phối áo trench đi làm mùa thu",
+          searchQ: "phối đồ mùa thu",
+          finder: ["Mục ưa thích", "Tài liệu", "Hình ảnh"],
         },
       }[LANG];
 
@@ -371,7 +651,7 @@
       const popupShell = (tab, body, foot) => `
         <div class="ph">
           <div class="b">${logo(24)}${T.brand}</div>
-          <div class="lang"><span class="${LANG === "zh" ? "on" : ""}">中</span><span class="${LANG === "en" ? "on" : ""}">EN</span></div>
+          <div class="lang">${ic("globe", 14)}<span class="t">${LABELS[LANG]}</span>${ic("chevrondown", 14)}</div>
         </div>
         <div class="tabs">
           <div class="${tab === "list" ? "on" : ""}">${ic("list", 16)}${T.tabList}</div>
@@ -491,10 +771,10 @@
                 <span class="wintitle" style="display:flex;align-items:center;gap:7px;color:#3a3a40"><span style="color:#5b9bf3">${ic("folder", 16, 2, 'fill="#cfe2fd"')}</span>${T.folder}</span></div>
               <div style="display:flex;height:calc(100% - 40px)">
                 <div style="width:132px;background:#f6f5f4;border-right:1px solid #ebe9e7;padding:16px 12px;font-size:12.5px;color:#6b6b72;display:flex;flex-direction:column;gap:12px">
-                  <div style="font-size:11px;color:#a5a5ab;font-weight:600">${LANG === "zh" ? "个人收藏" : "Favorites"}</div>
+                  <div style="font-size:11px;color:#a5a5ab;font-weight:600">${T.finder[0]}</div>
                   <div style="display:flex;align-items:center;gap:6px;background:#e7e5e3;border-radius:6px;padding:5px 7px;color:#2b2b30;font-weight:600">${ic("download", 14)}${T.downloads}</div>
-                  <div style="display:flex;align-items:center;gap:6px;padding:0 7px">${ic("folder", 14)}${LANG === "zh" ? "文稿" : "Documents"}</div>
-                  <div style="display:flex;align-items:center;gap:6px;padding:0 7px">${ic("image", 14)}${LANG === "zh" ? "图片" : "Pictures"}</div>
+                  <div style="display:flex;align-items:center;gap:6px;padding:0 7px">${ic("folder", 14)}${T.finder[1]}</div>
+                  <div style="display:flex;align-items:center;gap:6px;padding:0 7px">${ic("image", 14)}${T.finder[2]}</div>
                 </div>
                 <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:22px 8px;padding:24px 18px;align-content:start">${tiles}</div>
               </div>
@@ -511,9 +791,12 @@
         s4: () => {
           const headers = ["Title", "Author Name", "Publish Time", "Like Count", "Collect Count", "Comment Count", "Shared Count", "Cover URL"];
           const widths = [36, 214, 110, 98, 80, 92, 104, 96, 140];
+          // The CSV holds plain integers; the mock list shows each language's
+          // short forms (4.4w, 4.4萬, 4.4万, 4.4만, 9.6천, 44k, 1,400).
+          const UNITS = { w: 1e4, "萬": 1e4, "万": 1e4, "만": 1e4, k: 1e3, "천": 1e3 };
           const toNum = (s) => {
-            if (LANG === "zh") return s.endsWith("w") ? String(Math.round(parseFloat(s) * 10000)) : s.endsWith("k") ? String(Math.round(parseFloat(s) * 1000)) : s;
-            return s.endsWith("k") ? String(Math.round(parseFloat(s) * 1000)) : s;
+            const [, num, unit] = s.replace(/,/g, "").match(/^([\d.]+)(\D*)$/);
+            return UNITS[unit] ? String(Math.round(parseFloat(num) * UNITS[unit])) : num;
           };
           const shares = ["1204", "2310", "865", "3011", "742", "6120", "4475"];
           const body = T.notes.map((n, i) => `<tr><td class="rn">${i + 2}</td><td>${n[0]}</td><td>${n[1]}</td><td>${n[5]}</td><td class="n">${toNum(n[2])}</td><td class="n">${toNum(n[3])}</td><td class="n">${toNum(n[4])}</td><td class="n">${shares[i]}</td><td class="l">https://sns-webpic-qc.xhscdn.com/…</td></tr>`).join("");
@@ -549,7 +832,7 @@
           return `
             <div class="abs" style="left:0;right:0;top:70px;display:flex;flex-direction:column;align-items:center;gap:18px">
               <div class="brandrow" style="margin:0">${logo(46)}<span class="name">${T.brand}</span><span class="pill">${T.ext}</span></div>
-              <div style="font:700 ${LANG === "zh" ? 44 : 42}px/1.4 var(--display);letter-spacing:.02em">${T.s5.title}</div>
+              <div style="font:700 ${CJK ? 44 : 42}px/1.4 var(--display);letter-spacing:.02em">${T.s5.title}</div>
             </div>
             <div class="steps">${T.s5.steps.map(([tt, ss], i) => `<div class="step"><div class="ill" style="background:${ill[i][1]}">${art(ill[i][0])}</div><div class="k">${i + 1}</div><div class="tt">${tt}</div><div class="ss">${ss}</div></div>`).join("")}</div>
             <div class="trust">${T.s5.trust.map(([i, t]) => `<div>${ic(i, 19, 2)}${t}</div>`).join("")}</div>`;
@@ -559,8 +842,8 @@
           <div class="abs" style="right:-90px;top:-110px;width:280px;height:280px;border-radius:50%;background:var(--brand-soft)"></div>
           <div class="abs" style="left:36px;top:0;bottom:0;right:28px;display:flex;flex-direction:column;justify-content:center">
             ${logo(78)}
-            <div style="font:700 ${LANG === "zh" ? 40 : 36}px/1.3 var(--display);margin-top:22px">${T.small[0]}</div>
-            <div style="font-size:${LANG === "zh" ? 19 : 17}px;font-weight:700;color:var(--ink-muted);margin-top:12px">${T.small[1]}</div>
+            <div style="font:700 ${CJK ? 40 : 36}px/1.3 var(--display);margin-top:22px">${T.small[0]}</div>
+            <div style="font-size:${CJK ? 19 : 17}px;font-weight:700;color:var(--ink-muted);margin-top:12px">${T.small[1]}</div>
           </div>`,
 
         marquee: () => {
@@ -568,7 +851,7 @@
           return `
             <div class="abs" style="left:88px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center">
               <div class="brandrow" style="margin-bottom:28px">${logo(58)}<span class="name" style="font-size:24px">${T.brand}</span><span class="pill">${T.ext}</span></div>
-              <div style="font:700 ${LANG === "zh" ? 50 : 46}px/1.35 var(--display);letter-spacing:.02em">${m.h1}</div>
+              <div style="font:700 ${CJK ? 50 : 46}px/1.35 var(--display);letter-spacing:.02em">${m.h1}</div>
               <div style="font-size:19px;line-height:1.6;color:var(--ink-muted);margin-top:14px">${m.sub}</div>
               <div style="display:flex;gap:10px;margin-top:28px;flex-wrap:wrap">${m.chips.map(([i, t]) => `<span style="display:inline-flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;border-radius:99px;padding:9px 16px;box-shadow:0 0 0 1px var(--line)"><span style="color:var(--ink)">${ic(i, 17, 2.2)}</span>${t}</span>`).join("")}</div>
             </div>
@@ -580,7 +863,8 @@
       // ----------------------------------------------------------------- mount
       document.documentElement.style.width = W + "px";
       document.documentElement.style.height = H + "px";
-      document.body.className = LANG;
+      document.body.className = LANG + (CJK ? "" : " wide");
+      document.documentElement.lang = LANG === "zh" ? "zh-CN" : LANG.replace("_", "-");
       const root = document.getElementById("root");
       root.className = "canvas " + LANG;
       root.style.width = W + "px";
