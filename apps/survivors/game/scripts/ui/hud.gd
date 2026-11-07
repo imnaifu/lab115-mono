@@ -162,7 +162,7 @@ var _clear_label: Label
 var _board_row: VBoxContainer
 ## The 收藏 page's 排行榜 tab (.78): which map's board, and what came back for it.
 var _board_map := ""
-## Whether it shows the 无尽模式 boards (Game.endless, 0.1.3).
+## Whether it shows the 无尽模式 boards (Game.endless, 0.2.0).
 var _board_endless := false
 var _board_answer := {}
 var _board_note := ""
@@ -991,7 +991,7 @@ func _update_clear_pill() -> void:
 	_clear_pill.visible = seconds_left <= CLEAR_WARNING
 	if not _clear_pill.visible:
 		return
-	# 无尽模式 (0.1.3) has no floor to clear: more keep coming.
+	# 无尽模式 (0.2.0) has no floor to clear: more keep coming.
 	if seconds_left > 0.0:
 		_clear_label.text = tr("离下班 %s · 之后怪越来越多" if game.endless else "离下班 %s · 之后不再来新怪") % ("0:%02d" % ceili(seconds_left))
 	elif game.endless:
@@ -1447,7 +1447,7 @@ func _home_tile(art: String, title: String, status: String, action: Callable, wi
 	return tile
 
 
-## The 出发 page's 普通 / 无尽 switch (Game.set_endless, 0.1.3) and a line on what the picked one is.
+## The 出发 page's 普通 / 无尽 switch (Game.set_endless, 0.2.0) and a line on what the picked one is.
 func _mode_picker(portrait: bool) -> Control:
 	var holder := VBoxContainer.new()
 	holder.add_theme_constant_override("separation", 4)
@@ -3178,7 +3178,7 @@ func _show_end(victory: bool) -> void:
 		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		body.add_child(right)
 
-	# 无尽模式 never wins (0.1.3): one past 10:00 reads as overtime done, not a project folded.
+	# 无尽模式 never wins (0.2.0): one past 10:00 reads as overtime done, not a project folded.
 	var endless_out := game.endless and game.elapsed >= Game.RUN_SECONDS
 	left.add_child(UiKit.kicker("IPO DAY" if victory else "ENDLESS" if game.endless else "GAME OVER"))
 	var title := UiKit.label("敲钟上市！" if victory else "通宵加班！" if endless_out else "项目黄了…", 30, "heavy")
@@ -3323,7 +3323,7 @@ func _culprit_row(victory: bool) -> Control:
 ## The next run's one tip after a loss, as [headline, detail]: what most likely went wrong (the
 ## live data's early deaths were mostly one-weapon builds).
 func _end_advice(victory: bool) -> Array:
-	# A 无尽模式 run past 10:00 (0.1.3) only ever ends this way: nothing to put right.
+	# A 无尽模式 run past 10:00 (0.2.0) only ever ends this way: nothing to put right.
 	if victory or (game.endless and game.elapsed >= Game.RUN_SECONDS):
 		return []
 	var weapons := game.player.weapons.size()
@@ -4913,7 +4913,7 @@ func _open_board() -> void:
 func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	if _board_map == "":
 		_board_map = Maps.current_id
-	# 普通 / 无尽 (0.1.3): each mode its own boards.
+	# 普通 / 无尽 (0.2.0): each mode its own boards.
 	body.add_child(UiKit.segmented([tr("普通模式"), tr("无尽模式")], 1 if _board_endless else 0, func(index: int) -> void:
 		_board_endless = index == 1
 		_board_answer = {}

@@ -40,7 +40,7 @@ const LIST := [
 	{"id": "sg_stamps_all", "tier": "gold", "art": "mbs", "group": "打卡", "name": "新加坡通", "text": "新加坡 5 个地标全部打卡", "goal": 5},
 	{"id": "bj_stamps_all", "tier": "gold", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 5 个地标全部打卡", "goal": 5},
 	{"id": "train_hit", "tier": "bronze", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
-	# 无尽模式 (Game.endless, 0.1.3, the user: 加更多的成就; picked 无尽撑到 11 / 12 / 15 分钟).
+	# 无尽模式 (Game.endless, 0.2.0, the user: 加更多的成就; picked 无尽撑到 11 / 12 / 15 分钟).
 	{"id": "endless_11", "tier": "bronze", "art": "deadline", "group": "无尽", "name": "加班", "text": "无尽模式撑到 11:00"},
 	{"id": "endless_12", "tier": "silver", "art": "night_page", "group": "无尽", "name": "通宵", "text": "无尽模式撑到 12:00"},
 	{"id": "endless_15", "tier": "gold", "art": "icon_infinity", "group": "无尽", "name": "996", "text": "无尽模式撑到 15:00"},

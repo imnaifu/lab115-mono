@@ -1420,7 +1420,7 @@ const EN := {
 	"连上云端后才能看排行榜": "The boards need the cloud save connected",
 	"我的昵称：%s": "My name: %s",
 	"还没有昵称，起一个才能上榜": "No name yet: pick one to go on the boards",
-	# 无尽模式 (0.1.3)
+	# 无尽模式 (0.2.0)
 	"普通模式": "Normal",
 	"无尽模式": "Endless",
 	"10:00 后怪越来越多，一直打到倒下，比谁撑得久": "Past 10:00 they keep coming, more and more, until you go down: last the longest",

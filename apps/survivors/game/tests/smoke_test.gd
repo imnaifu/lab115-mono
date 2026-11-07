@@ -22,7 +22,7 @@ extends SceneTree
 ## next to the player at the start, e.g. --boss=deadline,pie_boss to watch their attacks),
 ## --from=M (start the run at minute M, as 测试模式 does: e.g. --from=8 --boss=pie_boss to see a
 ## last boss reach its second phase at 9:00; --seconds still counts from the start),
-## --endless (play 无尽模式, Game.endless, 0.1.3; not saved; past 10:00 the report checks the crowd
+## --endless (play 无尽模式, Game.endless, 0.2.0; not saved; past 10:00 the report checks the crowd
 ## kept coming and the run wasn't won),
 ## --weather (start the map's weather as the run starts, as 测试模式's 天气 button does),
 ## --share (with --shots, also render the end screen's result image into the shots directory, or
@@ -549,7 +549,7 @@ func _report() -> int:
 		problems.append("restart never happened")
 	if _reroll_problem != "":
 		problems.append(_reroll_problem)
-	# 无尽模式 (0.1.3): no win, and past 10:00 the crowd keeps coming, so in half a minute more die
+	# 无尽模式 (0.2.0): no win, and past 10:00 the crowd keeps coming, so in half a minute more die
 	# than were left at the clock-out (the usual mode can't kill more than were left, bar summons).
 	if _endless:
 		if _game.won:

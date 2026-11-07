@@ -50,7 +50,7 @@ static func record(game: Game, result: String) -> void:
 		"damage": sources.slice(0, TOP_SOURCES),
 		"evolved": evolved,
 		"version": Telemetry.VERSION,
-		# 无尽模式 (0.1.3): listed with its mode; runs before have no key and were the usual one.
+		# 无尽模式 (0.2.0): listed with its mode; runs before have no key and were the usual one.
 		"endless": game.endless,
 	})
 

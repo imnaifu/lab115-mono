@@ -101,7 +101,7 @@ extends RefCounted
 ## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
 ## dated ones before came first. A small change bumps the last number, a big one the middle one
 ## (the user: 小改动加小的，大改动加中的).
-const VERSION := "0.2.1"
+const VERSION := "0.2.2"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -186,7 +186,7 @@ func start() -> void:
 		"left_at_end": _game.left_at_end,
 		# The 加班 tier the run ended in (0 before 10:00, Game.overtime_tier).
 		"overtime": _game.overtime_tier(),
-		# normal or endless (无尽模式, Game.endless, 0.1.3; runs before were all normal).
+		# normal or endless (无尽模式, Game.endless, 0.2.0; runs before were all normal).
 		"mode": "endless" if _game.endless else "normal",
 		# When the 大招 first went off (Ultimates, .81), -1 when it didn't; since .95 kills charge it
 		# and `ults` is how many times it went off.

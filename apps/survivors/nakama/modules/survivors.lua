@@ -8,10 +8,10 @@ every clear, the longest first: its score is SURVIVED_FROM minus how long it las
 kept ascending still ranks every clear (10:00-30:00) above every other run. Everything goes
 through the RPCs below, so the boards are authoritative: a client can't write a record itself.
 
-无尽模式 (0.1.3, the user: 改成无尽模式，新加，原来的模式不动) has a board of its own per map,
+无尽模式 (0.2.0, the user: 改成无尽模式，新加，原来的模式不动) has a board of its own per map,
 endless_<map>: the score is how long the run lasted (1:00-60:00), the longest first, best per
 player; a record there is `cleared` when it lasted 10:00. A call with mode "endless" goes to it;
-without one (every client before 0.1.3) to the clear board, as before.
+without one (every client before 0.2.0) to the clear board, as before.
 
   survivors_set_name    {name}                    -> {ok, name} | {error}
   survivors_submit      {map, ms, job, run, cleared, mode} -> {ok, rank, best_ms, best_cleared} | {error}
@@ -49,7 +49,7 @@ local MAX_MS = 1800000
 -- all above any clear's score, the longer the lower.
 local SURVIVE_MIN_MS = 60000
 local SURVIVED_FROM = 10000000
--- 无尽模式 (0.1.3): an endless run can't be scored past this, and is `cleared` from MIN_MS on.
+-- 无尽模式 (0.2.0): an endless run can't be scored past this, and is `cleared` from MIN_MS on.
 local ENDLESS_MAX_MS = 3600000
 local BOARD_SIZE = 50
 local NAME_MIN = 2

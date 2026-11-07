@@ -9,10 +9,11 @@ extends RefCounted
 ## and phones 200 (WebAssembly on a phone's slower CPU needs the smaller crowd).
 const MAX_ALIVE := 200
 const RING_RADIUS := 210.0
-## The first minutes spawn fewer enemies than the curve says (60% at the start, back to the full
-## rate by 3:00), so the lone starting weapon isn't swamped before the first upgrades land.
+## The first minutes spawn fewer enemies than the curve says (90% at the start, back to the full
+## rate by 3:00), so the lone starting weapon isn't swamped before the first upgrades land. 60%
+## until 0.2.2 (the user: 前期怪多一点点，这样升级快一点; picked 每秒至少 1.5、开局 90% of three).
 const EASE_IN_SECONDS := 180.0
-const EASE_IN_START := 0.6
+const EASE_IN_START := 0.9
 ## How much tougher every enemy gets a minute (.40: 0.2 until then; the user wanted it harder
 ## after .39 made it much easier). The first minute's Bug still takes two of a job weapon's 7s.
 const HP_PER_MINUTE := 0.25
@@ -24,10 +25,11 @@ const EARLY_GROWTH := 0.55
 const LATE_GROWTH := 0.45
 const LATE_FROM_MINUTE := 5.0
 ## The fewest spawns a second, before the map's multiple (66, the user: 每秒刷怪从 1/1s 开始，不要
-## 0.5): the eased-in curve starts at 0.48 and passes 1 only at about 1:00, so the first minute
-## is held at 1 a second and the rest of the curve is unchanged.
-const MIN_RATE := 1.0
-## 无尽模式 (Game.endless, 0.1.3, the user picked ×1.5 起，每 30 秒再加): past Game.RUN_SECONDS the
+## 0.5). 1.5 from 0.2.2 (1 until then; see EASE_IN_START): the eased-in curve starts at 0.72 and
+## passes 1.5 only at about 1:30, so it is held there until then; 2:00 1.84 (1.65 before), 2:30
+## 2.14 (2.03), from 3:00 the same as ever. The first three minutes spawn 314 (260 before, +21%).
+const MIN_RATE := 1.5
+## 无尽模式 (Game.endless, 0.2.0, the user picked ×1.5 起，每 30 秒再加): past Game.RUN_SECONDS the
 ## curve is multiplied by OVERTIME_SPAWN, OVERTIME_SPAWN_STEP more each 加班 tier after the first
 ## (Game.OVERTIME_STEP): 8.7 a second at 10:00, 10.4 at 10:30, 12.5 at 11:00. MAX_ALIVE still caps
 ## the floor, so once it is full more spawning only refills it faster. The usual mode spawns
@@ -266,7 +268,7 @@ func _draw_bosses() -> Array[String]:
 	return bosses
 
 
-## Spawns per second: never under MIN_RATE (1 at the start, where the ease-in alone gave about
+## Spawns per second: never under MIN_RATE (1.5 at the start since 0.2.2, 1 until then, where the ease-in alone gave about
 ## 0.5 until 66; see EASE_IN_SECONDS), 3.55 by 5:00, then
 ## growing more slowly (LATE_GROWTH), 5.8 by the ten-minute mark. Kept lower than the crowd the
 ## game first had (9 a second by the end), since the bosses carry more of the pressure. .53–.58

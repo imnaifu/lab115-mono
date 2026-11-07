@@ -51,7 +51,7 @@ const OVERTIME_UNCAP_TIER := 3
 const OVERTIME_CAP_STEP := 3.0
 ## What each new tier says (the first is the clock-out itself); past the list, the last one.
 const OVERTIME_LINES := ["下班时间到！不再来新怪，清完场上的就上市", "老板还没走…怪更暴躁了", "全员加班！怪越来越暴躁", "通宵了！再不清完要出事"]
-## 无尽模式 (0.1.3, the user: 十分钟后继续出怪，只不过数量上再多一些; 改成无尽模式，新加，原来的模式不动):
+## 无尽模式 (0.2.0, the user: 十分钟后继续出怪，只不过数量上再多一些; 改成无尽模式，新加，原来的模式不动):
 ## picked on the 出发 page (Settings "endless"), open from the first run. The same run until
 ## RUN_SECONDS; from there the crowd keeps coming, more of it (Spawner.OVERTIME_SPAWN), with the
 ## same 加班 tiers, and the run ends only when the player goes down or clocks out. Kept apart

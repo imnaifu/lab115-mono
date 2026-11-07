@@ -11,7 +11,7 @@ extends RefCounted
 ## keeps both on one board, see survivors.lua): one that died at the result screen, one given up
 ## from the pause screen (重新开始, 下班) right away when there's a 昵称, and not otherwise (there is
 ## no result screen to ask for one).
-## 无尽模式 (Game.endless, 0.1.3) has boards of its own (the server's endless_<map>): every run that
+## 无尽模式 (Game.endless, 0.2.0) has boards of its own (the server's endless_<map>): every run that
 ## lasted MIN_SECONDS, ranked by how long, the longest first, each player's best; a record there is
 ## `cleared` when it lasted Game.RUN_SECONDS. The usual boards never see an endless run.
 
@@ -59,7 +59,7 @@ static func record_run(game: Game, cleared: bool) -> bool:
 		return false
 	pending = {"map": Maps.current_id, "ms": roundi(game.elapsed * 1000.0), "job": game.player.job,
 		"run": game.run_id, "cleared": cleared}
-	# Only an endless run says its mode: a server before 0.1.3 took no `mode` and ranks it as usual.
+	# Only an endless run says its mode: a server before 0.2.0 took no `mode` and ranks it as usual.
 	if game.endless:
 		pending["mode"] = "endless"
 	return true
