@@ -59,6 +59,25 @@ const OVERTIME_LINES := ["下班时间到！不再来新怪，清完场上的就
 ## nothing on the clear boards; it has its own boards ranking how long a run lasted (Leaderboard)
 ## and its own achievements (Achievements.ENDLESS_MINUTES). Its lines for each new tier:
 const ENDLESS_LINES := ["下班时间到！怪越来越多，看你能撑多久", "老板还没走…怪更多更暴躁了", "全员加班！怪越来越多", "通宵了！看你还能撑多久"]
+## The 出发 page's demo (0.2.1, the user: 选职业下面只用职业名和武器和数值，然后下面加个能动的动画，模拟用户
+##在玩，要展示普通攻击和技能; picked 和局内一模一样的效果): while the page is up this very game plays
+## on behind it (`previewing`, still the title state), shown in a small view of its world under the
+## job card (Hud._preview_view): the picked job walks a loop round where it stands (PREVIEW_ROAM,
+## PREVIEW_LOOP_SECONDS), PREVIEW_CROWD of the first minute's crowd walk in from PREVIEW_RING
+## away, its own weapon fights them, and PREVIEW_CAST_GAP seconds after its 技能 is over it goes off
+## again (the real one, cut-in and all). It can't be hurt, nothing drops, the clock stands, nothing
+## is saved and the sound effects are hushed (Sound.hush); 上班 starts the run on a fresh scene.
+const PREVIEW_CROWD := 12
+const PREVIEW_SPAWN_EVERY := 0.3
+const PREVIEW_RING := 140.0
+## How near the half of the crowd already there when the demo starts stands (so the weapon is at
+## work at once, not after the first walk in).
+const PREVIEW_NEAR := Vector2(60.0, 120.0)
+const PREVIEW_ROAM := 36.0
+const PREVIEW_LOOP_SECONDS := 7.0
+const PREVIEW_FIRST_CAST := 3.0
+const PREVIEW_CAST_GAP := 3.0
+const PREVIEW_TYPES := ["bug", "ping"]
 ## Logical view sizes; project.godot's viewport size is the landscape one.
 const LANDSCAPE_VIEW := Vector2i(640, 360)
 const PORTRAIT_VIEW := Vector2i(360, 640)
@@ -183,6 +202,13 @@ var left_at_end := -1
 var won := false
 ## This run is 无尽模式 (ENDLESS_LINES), as last picked on the 出发 page.
 var endless := false
+## The 出发 page's demo is playing (PREVIEW_CROWD); `_previewed` once it has, so 上班 starts afresh.
+var previewing := false
+var _previewed := false
+var _preview_home := Vector2.ZERO
+var _preview_clock := 0.0
+var _preview_spawn_left := 0.0
+var _preview_cast_left := 0.0
 ## The 加班 tier last announced (0 before RUN_SECONDS).
 var _overtime_shown := 0
 var level := 1
@@ -345,6 +371,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if state == State.TITLE and previewing:
+		_tick_preview(delta)
+		return
 	if state != State.PLAYING:
 		return
 	elapsed += delta
@@ -549,6 +578,97 @@ func _end_hitstop() -> void:
 
 ## The game standing quite still for `seconds` of real time, then `then` (0.1.1: a 技能 going off,
 ## SkillCutIn). The wait is paused with the tree, so the pause screen opened meanwhile holds it.
+# --- The 出发 page's demo ------------------------------------------------------------------
+
+## The 出发 page came up (Hud._process): the game behind it plays the demo (PREVIEW_CROWD).
+func start_preview() -> void:
+	if state != State.TITLE or previewing:
+		return
+	previewing = true
+	_previewed = true
+	_preview_home = player.position
+	_preview_clock = 0.0
+	_preview_spawn_left = 0.0
+	_preview_cast_left = PREVIEW_FIRST_CAST
+	Sound.hush = true
+	get_tree().paused = false
+	_fill_preview()
+
+
+## The 出发 page went (back home, or 上班): the demo's crowd goes and the title stands still again.
+func stop_preview() -> void:
+	if not previewing:
+		return
+	previewing = false
+	_clear_preview()
+	Sound.hush = false
+	if state == State.TITLE:
+		get_tree().paused = true
+
+
+## Clears the demo's floor (a new job picked, or the demo over): its crowd, the skill's copy and
+## servers, the boost, the charge; the player back where it started.
+func _clear_preview() -> void:
+	# As a kill goes (_kill): hidden now, freed at the next grid rebuild, since a shot in flight
+	# may still hold one.
+	for enemy in enemies:
+		enemy.dead = true
+		enemy.visible = false
+		_corpses.append(enemy)
+	enemies.clear()
+	for turret in turrets:
+		if is_instance_valid(turret):
+			turret.queue_free()
+	turrets.clear()
+	for clone in clones:
+		if is_instance_valid(clone):
+			clone.queue_free()
+	clones.clear()
+	player.boost_left = 0.0
+	player.input_override = null
+	player.position = _preview_home
+	ultimates.charge = 0.0
+	ultimates.casts = 0
+	_preview_clock = 0.0
+	_preview_spawn_left = 0.0
+	_preview_cast_left = PREVIEW_FIRST_CAST
+	if previewing:
+		_fill_preview()
+
+
+## Half the demo's crowd at once, near (PREVIEW_NEAR), the rest walking in after.
+func _fill_preview() -> void:
+	for i in PREVIEW_CROWD / 2:
+		var away := rng.randf_range(PREVIEW_NEAR.x, PREVIEW_NEAR.y)
+		spawn_enemy(PREVIEW_TYPES[rng.randi() % PREVIEW_TYPES.size()], player.position + random_direction() * away)
+
+
+## A frame of the demo: what a frame of play does for the crowd and the skill, minus the spawner,
+## the clock, touching the player, pickups, landmarks, map objects, achievements and the run's data.
+func _tick_preview(delta: float) -> void:
+	_preview_clock += delta
+	# A slow figure of eight round the start, so the weapons that aim where the player faces sweep.
+	var phase := TAU * _preview_clock / PREVIEW_LOOP_SECONDS
+	var target := _preview_home + Vector2(sin(phase), sin(phase * 2.0) * 0.5) * PREVIEW_ROAM
+	var to_target := target - player.position
+	player.input_override = (to_target / PREVIEW_ROAM * 2.0).limit_length(1.0) if to_target.length() > 2.0 else Vector2.ZERO
+	_preview_spawn_left -= delta
+	if _preview_spawn_left <= 0.0 and hostile_count() < PREVIEW_CROWD:
+		_preview_spawn_left = PREVIEW_SPAWN_EVERY
+		spawn_enemy(PREVIEW_TYPES[rng.randi() % PREVIEW_TYPES.size()], player.position + random_direction() * PREVIEW_RING)
+	flow_field.update(delta, player.position)
+	_rebuild_grid()
+	_tick_enemies(delta)
+	_tick_ultimate_things(delta)
+	# The real 技能, again a little after the last one is over (servers, copy, allies, boost).
+	if ultimates.seconds_left() <= 0.0 and not _frozen:
+		_preview_cast_left -= delta
+		if _preview_cast_left <= 0.0:
+			_preview_cast_left = PREVIEW_CAST_GAP
+			ultimates.charge = Ultimates.CHARGE_FULL
+			ultimates.cast()
+
+
 func freeze(seconds: float, then: Callable) -> void:
 	_frozen = true
 	Engine.time_scale = 0.0
@@ -642,6 +762,14 @@ func announce(text: String) -> void:
 func _kill(enemy: Enemy) -> void:
 	enemy.dead = true
 	kills += 1
+	# The 出发 page's demo: the pop and the puff only, nothing charged, dropped or counted.
+	if previewing:
+		enemies.erase(enemy)
+		Effects.poof(self, enemy.position, enemy.color)
+		Effects.death_pop(self, enemy.body_sprite(), enemy.position, enemy.is_elite)
+		enemy.visible = false
+		_corpses.append(enemy)
+		return
 	ultimates.on_killed(enemy)
 	achievements.on_killed(enemy.type_name)
 	enemies.erase(enemy)
@@ -1144,6 +1272,9 @@ func set_job(job_id: String) -> void:
 	player.setup_job(job_id)
 	player.add_weapon(Upgrades.create_weapon(Jobs.data(job_id)["weapon"]))
 	inventory_changed.emit()
+	# The demo starts over with the new job: the last one's crowd, copy or servers go.
+	if previewing:
+		_clear_preview()
 
 
 ## The 出发 page's 普通 / 无尽 switch: remembered for next time; nothing else changes before the run.
@@ -1187,9 +1318,16 @@ func _record_given_up() -> void:
 			Leaderboard.submit()
 
 
-## Leaves the title screen.
+## Leaves the title screen. After the 出发 page's demo the run starts on a fresh scene, as 再来一局
+## does: the demo's kills, damage, skill and crowd would otherwise carry into it.
 func start_run() -> void:
 	if state != State.TITLE:
+		return
+	if _previewed:
+		stop_preview()
+		skip_title = true
+		get_tree().paused = false
+		get_tree().reload_current_scene()
 		return
 	state = State.PLAYING
 	get_tree().paused = false

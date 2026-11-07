@@ -71,7 +71,8 @@ func _init(game: Game) -> void:
 
 
 func ready() -> bool:
-	return charge >= CHARGE_FULL and _game.state == Game.State.PLAYING
+	# The 出发 page's demo (Game.previewing) sets it off on the title screen.
+	return charge >= CHARGE_FULL and (_game.state == Game.State.PLAYING or _game.previewing)
 
 
 ## Share of the way to the next one, 0 to 1.
@@ -104,7 +105,7 @@ func cast() -> void:
 
 func _go_off() -> void:
 	# Left for the title meanwhile (quit from the pause screen): nothing to go off in.
-	if _game.state == Game.State.TITLE or _game.state == Game.State.ENDED:
+	if (_game.state == Game.State.TITLE and not _game.previewing) or _game.state == Game.State.ENDED:
 		return
 	var player := _game.player
 	Effects.ring(_game, player.position, GO_OFF_RING, Art.BRAND)

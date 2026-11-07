@@ -109,6 +109,9 @@ const MOVE_SOUNDS := {
 }
 
 static var _instance: Sound
+## The 出发 page's demo is playing (Game.start_preview): its shots, hits and skill stay quiet; the
+## page's own clicks still sound.
+static var hush := false
 
 var _streams := {}
 var _voices: Array[AudioStreamPlayer] = []
@@ -287,6 +290,8 @@ func _notification(what: int) -> void:
 func _play(effect: String, pitch: float) -> void:
 	# Effects asked for in the first frame, before this node is in the tree, are dropped.
 	if not is_inside_tree() or not sfx_enabled():
+		return
+	if hush and effect != "click":
 		return
 	var spec: Dictionary = EFFECTS[effect]
 	var now := _now()

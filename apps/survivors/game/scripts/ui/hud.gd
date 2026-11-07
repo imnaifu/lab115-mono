@@ -142,6 +142,18 @@ var _ultimate_ring_share := 0.0
 var _ultimate_ring_color := Art.PAPER
 ## The cut-in playing while a 技能 is set off (0.1.1), freed when it is over.
 var _cut_in: SkillCutIn
+## The 出发 page's demo (Game.start_preview, 0.2.1): the view of the world under the job card, the
+## camera in it that follows the player, and the stage over it the skill's cut-in plays on.
+var _preview_camera: Camera2D
+var _preview_stage: Control
+## How large it is drawn on a phone held upright, and sideways (logical pixels).
+const PREVIEW_SIZE := Vector2(312, 168)
+const PREVIEW_SIZE_LANDSCAPE := Vector2(356, 132)
+## How much of the world it shows: the game's own 1:1 (under 1 would zoom out; 0.8 left the
+## people too small to make out on a phone).
+const PREVIEW_ZOOM := 1.0
+## The cut-in is built for the whole screen; in the view it plays this much smaller.
+const PREVIEW_CUT_IN_SCALE := 0.55
 ## The top bar's right-hand column (kills and pause, the district), where the 大招 button sits.
 var _top_right: VBoxContainer
 var _clear_pill: Control
@@ -458,6 +470,14 @@ func _process(delta: float) -> void:
 		_training_open = false
 		_depart_open = false
 	_depart_overlay.visible = _depart_open
+	# The demo plays while the 出发 page is up, however it was opened (_open_depart, or back from
+	# the map picker), and stops when it goes.
+	if _depart_open and state == Game.State.TITLE:
+		game.start_preview()
+	elif game.previewing:
+		game.stop_preview()
+	if is_instance_valid(_preview_camera):
+		_preview_camera.position = game.player.position
 	if state != Game.State.TITLE and state != Game.State.ENDED:
 		_board_open = false
 	_board_overlay.visible = _board_open
@@ -889,7 +909,7 @@ func _update_ultimate() -> void:
 	_ultimate_button.get_parent().visible = playing
 	# Under the pause screen opened halfway through, it waits unseen (SkillCutIn).
 	if is_instance_valid(_cut_in):
-		_cut_in.visible = playing
+		_cut_in.visible = playing or game.previewing
 	if not playing:
 		return
 	# The job picked on the title screen, after the button was built.
@@ -944,6 +964,17 @@ func _on_ultimate_charged() -> void:
 ## Set off (0.1.1): the cut-in over the HUD while the game stands still (SkillCutIn).
 func _play_cut_in() -> void:
 	_cut_in = SkillCutIn.new()
+	# The 出发 page's demo plays it in its view, smaller, as if that were the screen.
+	if game.previewing and is_instance_valid(_preview_stage):
+		var holder := Control.new()
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.scale = Vector2.ONE * PREVIEW_CUT_IN_SCALE
+		holder.size = _preview_stage.size / PREVIEW_CUT_IN_SCALE
+		_preview_stage.add_child(holder)
+		holder.add_child(_cut_in)
+		_cut_in.tree_exited.connect(holder.queue_free)
+		_cut_in.play(game.player.job, holder.size)
+		return
 	_root.add_child(_cut_in)
 	_cut_in.play(game.player.job, _root.size)
 
@@ -1751,7 +1782,12 @@ func _job_picker(portrait: bool) -> Control:
 	faces.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for job_id: String in Jobs.ORDER:
 		faces.add_child(_job_face(job_id, job_id == picked, face_size))
-	var detail := _job_detail(picked, portrait)
+	# The card and under it the demo (0.2.1, the user: 缩小职业卡、放在卡下面).
+	var detail := VBoxContainer.new()
+	detail.add_theme_constant_override("separation", 6)
+	detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	detail.add_child(_job_detail(picked, portrait))
+	detail.add_child(_preview_view(PREVIEW_SIZE if portrait else PREVIEW_SIZE_LANDSCAPE))
 	var holder: BoxContainer = VBoxContainer.new() if portrait else HBoxContainer.new()
 	holder.alignment = BoxContainer.ALIGNMENT_CENTER
 	holder.add_theme_constant_override("separation", 10 if portrait else 14)
@@ -1759,6 +1795,38 @@ func _job_picker(portrait: bool) -> Control:
 	holder.add_child(faces)
 	holder.add_child(detail)
 	return holder
+
+
+## The demo's view (Game.start_preview): the game's own world, seen by a camera of its own on the
+## player, in a rounded frame. Drawn at the screen's pixel density (the view's pixels times how
+## many real pixels a logical one is), then shrunk back, so it is as sharp as the game itself.
+func _preview_view(view_size: Vector2) -> Control:
+	var density := maxf(1.0, maxf(get_window().size.x, get_window().size.y) / maxf(_root.size.x, _root.size.y))
+	var frame := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(3, 3, 3, 3)))
+	frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var stage := Control.new()
+	stage.custom_minimum_size = view_size
+	stage.clip_contents = true
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(stage)
+	var container := SubViewportContainer.new()
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.scale = Vector2.ONE / density
+	stage.add_child(container)
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i((view_size * density).round())
+	viewport.world_2d = game.get_viewport().world_2d
+	viewport.gui_disable_input = true
+	viewport.canvas_item_default_texture_filter = get_viewport().canvas_item_default_texture_filter
+	container.add_child(viewport)
+	_preview_camera = Camera2D.new()
+	_preview_camera.zoom = Vector2.ONE * density * PREVIEW_ZOOM
+	_preview_camera.position = game.player.position
+	_preview_camera.process_mode = Node.PROCESS_MODE_ALWAYS
+	viewport.add_child(_preview_camera)
+	_preview_stage = stage
+	return frame
 
 
 func _job_face(job_id: String, picked: bool, face_size: float) -> Button:
@@ -1781,8 +1849,8 @@ func _job_face(job_id: String, picked: bool, face_size: float) -> Button:
 	return face
 
 
-## The picked job: name and its weapon's type, its own weapon, its build and how it plays.
-## Sideways there is height for four lines only: the build goes on the name's line.
+## The picked job: name and its weapon's type, its own weapon and its build (sideways the build goes
+## on the name's line).
 func _job_detail(job_id: String, portrait: bool) -> Control:
 	var job_data := Jobs.data(job_id)
 	var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(12, 8, 12, 8)))
@@ -1812,15 +1880,8 @@ func _job_detail(job_id: String, portrait: bool) -> Control:
 	weapon_row.add_child(UiKit.label(tr("专属武器：%s") % tr(weapon["name"]), 12, "strong"))
 	if portrait:
 		column.add_child(stats)
-	var pitch := UiKit.label(job_data["pitch"], 12)
-	pitch.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(pitch)
-	# The job's 大招 (.81) and since .93 what it does in a line (the user: 每个职业的技能都给个教学或者
-	# 提示啥的吧): the name alone said nothing.
-	var ultimate := Jobs.ultimate(job_id)
-	var ultimate_line := UiKit.label(tr("技能「%s」（击杀充能）：%s") % [tr(ultimate["name"]), tr(ultimate["brief"])], 12, "strong", Art.BRAND_DEEP)
-	ultimate_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(ultimate_line)
+	# 0.2.1 (the user: 选职业下面只用职业名和武器和数值): the pitch and the 技能 line (.81, .93) gave
+	# way to the demo under the card, which shows the weapon and the skill at work.
 	return card
 
 
