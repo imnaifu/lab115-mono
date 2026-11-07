@@ -13,9 +13,17 @@ endless_<map>: the score is how long the run lasted (1:00-60:00), the longest fi
 player; a record there is `cleared` when it lasted 10:00. A call with mode "endless" goes to it;
 without one (every client before 0.2.0) to the clear board, as before.
 
+Every board also has one per job (0.3.7, the user: 排行榜支持每个职业排行，两个模式都是): <board>_<job>,
+e.g. clear_sv_pm, endless_sv_coder, kept the same way (each player's best with that job). A run goes
+on its board and its job's; a board call with `job` reads the job's. A board keeps one record a
+player, so the job boards can't be made out of the boards as they were: at the first start with
+them (backfill_job_boards, once, guarded by a storage object) every record on a board was copied to
+its job's board, which gives each player their best run on the job they made it with; their best
+with any other job before then is lost.
+
   survivors_set_name    {name}                    -> {ok, name} | {error}
-  survivors_submit      {map, ms, job, run, cleared, mode} -> {ok, rank, best_ms, best_cleared} | {error}
-  survivors_board       {map, mode}               -> {records: [...], me: {...}|null, name}
+  survivors_submit      {map, ms, job, run, cleared, mode} -> {ok, rank, job_rank, best_ms, best_cleared} | {error}
+  survivors_board       {map, mode, job}          -> {records: [...], me: {...}|null, name}
 
 `cleared` missing counts as true (a client before .96 sent clears only). A record comes back with
 `ms` (the clear time, or how long the run lasted) and `cleared`.
@@ -72,8 +80,13 @@ local BLOCKED = {
   "法轮", "习近平", "共产党", "台独", "藏独", "疆独", "六四",
 }
 
-local function board_id(map, endless)
-  return (endless and "endless_" or "clear_") .. map
+-- A map's board (its 无尽模式 one when `endless`), or with `job` that job's (0.3.7).
+local function board_id(map, endless, job)
+  local id = (endless and "endless_" or "clear_") .. map
+  if job ~= nil then
+    id = id .. "_" .. job
+  end
+  return id
 end
 
 for map, _ in pairs(MAPS) do
@@ -88,6 +101,56 @@ for map, _ in pairs(MAPS) do
   if not ok then
     nk.logger_warn(("leaderboard %s: %s"):format(board_id(map, true), tostring(err)))
   end
+  -- Each job's, the same (0.3.7).
+  for job, _ in pairs(JOBS) do
+    for _, endless in ipairs({ false, true }) do
+      ok, err = pcall(nk.leaderboard_create, board_id(map, endless, job), true, endless and "desc" or "asc", "best", nil,
+        { map = map, mode = endless and "endless" or "normal", job = job }, true)
+      if not ok then
+        nk.logger_warn(("leaderboard %s: %s"):format(board_id(map, endless, job), tostring(err)))
+      end
+    end
+  end
+end
+
+-- The job boards' first fill (0.3.7): every record on every board copied to its job's board. Every
+-- Lua VM runs this file, so the first to write the marker (version "*": only if it isn't there)
+-- does it and the rest skip it; a later start finds the marker and does nothing.
+local function backfill_job_boards()
+  local claimed, claim_err = pcall(nk.storage_write, { { collection = "migrations", key = "job_boards", user_id = SYSTEM_USER,
+    value = { at = nk.time() }, version = "*", permission_read = 0, permission_write = 0 } })
+  if not claimed then
+    -- Done already (another VM or an earlier start), or the write failed: either way, say so.
+    nk.logger_debug("job boards backfill skipped: " .. tostring(claim_err))
+    return
+  end
+  local copied = 0
+  for map, _ in pairs(MAPS) do
+    for _, endless in ipairs({ false, true }) do
+      local cursor = nil
+      repeat
+        local ok, records, _, next_cursor = pcall(nk.leaderboard_records_list, board_id(map, endless), nil, 100, cursor, 0)
+        if not ok then
+          nk.logger_warn(("backfill %s: %s"):format(board_id(map, endless), tostring(records)))
+          break
+        end
+        for _, record in ipairs(records or {}) do
+          local job = (record.metadata or {}).job
+          if JOBS[job] then
+            nk.leaderboard_record_write(board_id(map, endless, job), record.owner_id, record.username, record.score, 0, record.metadata)
+            copied = copied + 1
+          end
+        end
+        cursor = next_cursor
+      until cursor == nil or cursor == ""
+    end
+  end
+  nk.logger_info(("job boards filled from the boards: %d records"):format(copied))
+end
+
+local backfilled, backfill_err = pcall(backfill_job_boards)
+if not backfilled then
+  nk.logger_warn("job boards backfill: " .. tostring(backfill_err))
 end
 
 local function reply(value)
@@ -198,8 +261,8 @@ local function decoded(score, endless)
   return score, true
 end
 
-local function own_record(map, user_id, endless)
-  local _, owner_records = nk.leaderboard_records_list(board_id(map, endless), { user_id }, 1, nil, 0)
+local function own_record(map, user_id, endless, job)
+  local _, owner_records = nk.leaderboard_records_list(board_id(map, endless, job), { user_id }, 1, nil, 0)
   return owner_records and owner_records[1] or nil
 end
 
@@ -222,20 +285,26 @@ local function submit(context, payload)
   else
     score = cleared and math.floor(ms) or SURVIVED_FROM - math.floor(ms)
   end
-  nk.leaderboard_record_write(board_id(map, endless), context.user_id, nil, score, 0,
-    { job = job, run = tostring(entry.run or "") })
+  local metadata = { job = job, run = tostring(entry.run or "") }
+  nk.leaderboard_record_write(board_id(map, endless), context.user_id, nil, score, 0, metadata)
+  -- And its job's board (0.3.7).
+  nk.leaderboard_record_write(board_id(map, endless, job), context.user_id, nil, score, 0, metadata)
   local record = own_record(map, context.user_id, endless)
+  local job_record = own_record(map, context.user_id, endless, job)
   local best_ms, best_cleared = decoded(record and record.score or score, endless)
-  return reply({ ok = true, rank = record and record.rank or 0, best_ms = best_ms, best_cleared = best_cleared })
+  return reply({ ok = true, rank = record and record.rank or 0, job_rank = job_record and job_record.rank or 0,
+    best_ms = best_ms, best_cleared = best_cleared })
 end
 
 local function board(context, payload)
   local asked = decode(payload)
   local map, endless = asked.map, asked.mode == "endless"
+  -- A job's board (0.3.7) when one is asked for; anything else is the whole board.
+  local job = JOBS[asked.job] and asked.job or nil
   if not MAPS[map] then
     return reply({ error = "invalid" })
   end
-  local records, owner_records = nk.leaderboard_records_list(board_id(map, endless), { context.user_id }, BOARD_SIZE, nil, 0)
+  local records, owner_records = nk.leaderboard_records_list(board_id(map, endless, job), { context.user_id }, BOARD_SIZE, nil, 0)
   records = records or {}
   local ids = {}
   for _, record in ipairs(records) do

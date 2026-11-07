@@ -1426,6 +1426,10 @@ const EN := {
 	"怪一直越来越多，打到倒下为止，比谁撑得久": "More and more keep coming until you go down: last the longest",
 	"撑到 10:00 下班，清完场上的怪才算通关": "Last to 10:00, then clear the floor to win",
 	"无尽加班！": "Endless Overtime!",
+	# Each job's board (0.3.7)
+	"全部": "All",
+	"还没人用%s上榜，第一个就是你": "No %s on this board yet: be the first",
+	"%s第 %d 名": "%s #%d",
 	"撑满 60 分钟！": "The Full Hour!",
 	"撑满": "Full hour",
 	# 打卡 again in every run (0.3.0)

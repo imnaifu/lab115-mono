@@ -14,6 +14,8 @@ extends RefCounted
 ## 无尽模式 (Game.endless, 0.2.0) has boards of its own (the server's endless_<map>): every run that
 ## lasted MIN_SECONDS, ranked by how long, the longest first, each player's best; a record there is
 ## `cleared` when it lasted Game.RUN_SECONDS. The usual boards never see an endless run.
+## Every board also has one per job (0.3.7, the user: 排行榜支持每个职业排行，两个模式都是): a run goes on
+## both (the server does it), and board() reads a job's when asked.
 
 ## How long a run not won must last to go on a board (.96).
 const MIN_SECONDS := 60.0
@@ -34,6 +36,8 @@ const ERRORS := {
 static var pending := {}
 ## Where the last submitted run stands on its board (its player's best there), 0 before.
 static var last_rank := 0
+## And on its job's board (0.3.7), 0 before.
+static var last_job_rank := 0
 static var last_best_ms := 0
 static var last_best_cleared := true
 
@@ -53,6 +57,7 @@ static func has_name() -> bool:
 ## Game._record_given_up); whether it does.
 static func record_run(game: Game, cleared: bool) -> bool:
 	last_rank = 0
+	last_job_rank = 0
 	last_best_ms = 0
 	if not cleared and game.elapsed < MIN_SECONDS:
 		pending = {}
@@ -72,6 +77,8 @@ static func submit() -> Dictionary:
 	var answer := await Cloud.shared().call_rpc("survivors_submit", pending)
 	if answer.get("ok", false):
 		last_rank = int(answer.get("rank", 0))
+		# A server before 0.3.7 doesn't say.
+		last_job_rank = int(answer.get("job_rank", 0))
 		last_best_ms = int(answer.get("best_ms", 0))
 		last_best_cleared = answer.get("best_cleared", true)
 		Telemetry.send_event("leaderboard", {"action": "submit", "map": pending["map"], "rank": last_rank, "mode": pending.get("mode", "normal")})
@@ -94,12 +101,14 @@ static func set_name(name: String) -> Dictionary:
 	return answer
 
 
-## A map's board (its 无尽模式 one when `endless`): {records: [{rank, user, name, ms, cleared, job,
-## me}], me: {...} or null, name}.
-static func board(map_id: String, endless: bool = false) -> Dictionary:
+## A map's board (its 无尽模式 one when `endless`, one job's with `job`): {records: [{rank, user, name,
+## ms, cleared, job, me}], me: {...} or null, name}.
+static func board(map_id: String, endless: bool = false, job: String = "") -> Dictionary:
 	var asked := {"map": map_id}
 	if endless:
 		asked["mode"] = "endless"
+	if job != "":
+		asked["job"] = job
 	return await Cloud.shared().call_rpc("survivors_board", asked)
 
 

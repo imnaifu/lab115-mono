@@ -166,6 +166,8 @@ var _board_row: VBoxContainer
 var _board_map := ""
 ## Whether it shows the 无尽模式 boards (Game.endless, 0.2.0).
 var _board_endless := false
+## The job whose board it shows (0.3.7), "" for the whole board.
+var _board_job := ""
 var _board_answer := {}
 var _board_note := ""
 ## The map's weather while it lasts (the map's MAP_EVENT, .34): its name, seconds left, what to do.
@@ -4623,7 +4625,11 @@ func _send_clear() -> void:
 	_show_board_row(tr("正在上榜…"), false)
 	var answer: Dictionary = await Leaderboard.submit()
 	if answer.get("ok", false):
-		_show_board_row(tr("%s榜第 %d 名 · 最好 %s") % [_board_name(), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared or game.endless)], false)
+		var line := tr("%s榜第 %d 名 · 最好 %s") % [_board_name(), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared or game.endless)]
+		# And among this job's (0.3.7; a server before says nothing).
+		if Leaderboard.last_job_rank > 0:
+			line += " · " + tr("%s第 %d 名") % [tr(Jobs.data(game.player.job)["name"]), Leaderboard.last_job_rank]
+		_show_board_row(line, false)
 	else:
 		_show_board_row(Leaderboard.error_text(answer), not Leaderboard.has_name())
 
@@ -4879,6 +4885,7 @@ func _open_board() -> void:
 		_board_note = ""
 		_board_map = Maps.current_id
 		_board_endless = game.endless
+		_board_job = ""
 		Telemetry.send_event("leaderboard", {"action": "open"})
 	_board_open = true
 	_clear(_board_holder)
@@ -4918,6 +4925,8 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 		_board_endless = index == 1
 		_board_answer = {}
 		_open_board(), Art.PAPER_SUNK))
+	# All jobs or one (0.3.7, the user: 排行榜支持每个职业排行，两个模式都是).
+	body.add_child(_board_job_picker())
 	if _board_endless:
 		body.add_child(_collection_note(tr("无尽模式按撑了多久排，越久越前；撑过 1 分钟就上榜。每人留自己最好的一次")))
 	else:
@@ -4954,7 +4963,7 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 		body.add_child(_collection_note(_board_note))
 	if _board_answer.is_empty():
 		body.add_child(_collection_note(tr("正在读取…")))
-		_load_board(_board_map, _board_endless)
+		_load_board(_board_map, _board_endless, _board_job)
 		return
 	if _board_answer.has("error"):
 		body.add_child(_collection_note(Leaderboard.error_text(_board_answer)))
@@ -4963,7 +4972,8 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	var listed: Variant = _board_answer.get("records", [])
 	var records: Array = listed if listed is Array else []
 	if records.is_empty():
-		body.add_child(_collection_note(tr("还没人上榜，第一个就是你")))
+		body.add_child(_collection_note(tr("还没人用%s上榜，第一个就是你") % tr(Jobs.data(_board_job)["name"]) if _board_job != "" \
+			else tr("还没人上榜，第一个就是你")))
 	for record: Dictionary in records:
 		body.add_child(_board_line(record))
 	var me: Variant = _board_answer.get("me")
@@ -4972,12 +4982,52 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 		body.add_child(_board_line(me))
 
 
-func _load_board(map_id: String, endless: bool) -> void:
-	var answer: Dictionary = await Leaderboard.board(map_id, endless)
-	if not _board_open or _board_map != map_id or _board_endless != endless:
+func _load_board(map_id: String, endless: bool, job: String) -> void:
+	var answer: Dictionary = await Leaderboard.board(map_id, endless, job)
+	if not _board_open or _board_map != map_id or _board_endless != endless or _board_job != job:
 		return
 	_board_answer = answer if not answer.is_empty() else {"error": "offline"}
 	_open_board()
+
+
+## The 排行榜 page's job row (0.3.7): 全部, then each job's face; the picked one in the brand's colour.
+func _board_job_picker() -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var choices: Array = [""]
+	choices.append_array(Jobs.ORDER)
+	for job_id: String in choices:
+		var picked := job_id == _board_job
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(52.0 if job_id == "" else 40.0, 40.0)
+		button.focus_mode = Control.FOCUS_NONE
+		var resting := UiKit.box(Art.BRAND_SOFT, Art.INK, UiKit.OUTLINE_HEAVY, UiKit.PILL) if picked \
+			else UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.PILL)
+		for state in ["normal", "hover", "pressed", "focus"]:
+			button.add_theme_stylebox_override(state, resting)
+		if job_id == "":
+			button.text = tr("全部")
+			button.add_theme_font_override("font", Art.font(700))
+			button.add_theme_font_size_override("font_size", 13)
+			button.add_theme_color_override("font_color", Art.INK)
+		else:
+			button.tooltip_text = tr(Jobs.data(job_id)["name"])
+			var centre := CenterContainer.new()
+			centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			centre.add_child(UiKit.icon(Jobs.JOBS[job_id]["art"], 32))
+			button.add_child(centre)
+		button.pressed.connect(func() -> void:
+			Sound.play("click")
+			if _board_job == job_id:
+				return
+			_board_job = job_id
+			_board_answer = {}
+			_open_board())
+		row.add_child(button)
+	return row
 
 
 ## One line of a board: rank, job, name, time.
