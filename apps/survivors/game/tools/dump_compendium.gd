@@ -75,8 +75,32 @@ func _jobs() -> Array:
 		var job: Dictionary = Jobs.JOBS[id]
 		jobs.append({"id": id, "name": job["name"], "art": job["art"], "weapon": job["weapon"], "hp": job["hp"],
 			"armor": job["armor"], "speed": job["speed"], "pitch": job["pitch"], "lines": job["lines"],
-			"ultimate": Jobs.ultimate(id)})
+			"ultimate": Jobs.ultimate(id), "ultimate_numbers": _ultimate_numbers(id)})
 	return jobs
+
+
+## A job's 技能 in numbers (Ultimates and what it makes), for the 官网 (0.3.8).
+func _ultimate_numbers(id: String) -> PackedStringArray:
+	var lines := PackedStringArray()
+	lines.append("充能：一只小怪 1 点、一个 boss %s 点，满 %s 点能放；放的时候画面停 %s 秒再生效" % [
+		_num(Ultimates.BOSS_CHARGE), _num(Ultimates.CHARGE_FULL), _num(SkillCutIn.SECONDS)])
+	match id:
+		"coder":
+			lines.append("朝 %d 个钟点方向，每个方向连发回车键一轮的数量（1–5 发，每发隔 %s 秒），一共 %d–%d 个；每个的伤害 = 回车键当前单发，速度 %s，穿透所有怪，飞到屏幕边" % [
+				Ultimates.KEYS, _num(AimedWeapon.BURST_GAP), Ultimates.KEYS, Ultimates.KEYS * (1 + Upgrades.BRANCH_MAX), _num(Ultimates.KEY_SPEED)])
+		"pm":
+			lines.append("%s 秒内不受任何伤害，移速 ×%s" % [_num(Ultimates.BOOST_SECONDS), _num(Ultimates.BOOST_SPEED)])
+		"designer":
+			lines.append("分身最多 %s 秒，带着放的那一刻的全部武器（外包团队除外）和属性，生命 = 你的最大生命，会被怪碰伤、死了就没了" % _num(PlayerClone.SECONDS))
+			lines.append("离分身 %s 内的小怪改追分身（boss 不上当）；分身自己躲开 %s 内的怪，离你超过 %s 就回来" % [
+				_num(PlayerClone.LURE_RADIUS), _num(PlayerClone.AVOID), _num(PlayerClone.LEASH)])
+		"ops":
+			lines.append("在脚下放一台服务器，存在 %s 秒，每 %s 秒朝 %s 内的怪打一炮（爆炸半径 %s），每炮伤害 = 防火墙当前伤害 ×%s" % [
+				_num(ServerTurret.SECONDS), _num(ServerTurret.FIRE_EVERY), _num(ServerTurret.RANGE), _num(ServerTurret.BLAST_RADIUS), _num(Ultimates.TURRET_DAMAGE_SCALE)])
+		"data_scientist":
+			lines.append("身边 %s 内最近的 %d 只小怪改成自己人（boss 不算），持续 %s 秒：去打 %s 内别的怪，每 %s 秒互相打一下（各按自己的接触伤害）" % [
+				_num(Ultimates.RELABEL_RADIUS), Ultimates.RELABEL_MAX, _num(Enemy.ALLY_SECONDS), _num(Game.ALLY_SEEK), _num(Game.ALLY_FIGHT_EVERY)])
+	return lines
 
 
 func _weapon_types() -> Dictionary:
@@ -91,7 +115,7 @@ func _weapons() -> Array:
 	for id: String in Upgrades.WEAPONS:
 		var weapon: Dictionary = Upgrades.WEAPONS[id]
 		var entry := {"id": id, "name": weapon["name"], "art": weapon["art"], "type": weapon["type"],
-			"job": weapon.get("job", ""), "levels": weapon["levels"]}
+			"job": weapon.get("job", ""), "levels": weapon["levels"], "detail": _weapon_detail(id)}
 		if Upgrades.BRANCHES.has(id):
 			entry["branches"] = Upgrades.BRANCHES[id]
 			entry["base"] = Upgrades.branch_stats(id, 0, 0)
@@ -107,6 +131,81 @@ func _weapons() -> Array:
 			entry["stats"] = stats
 		weapons.append(entry)
 	return weapons
+
+
+## Every number of a weapon for the 官网 (0.3.8, the user: 每个武器每个等级的属性都加到页面上；看下页面还有
+## 哪些数据没有的都补上，要详细数据): `rows`, [name, the value at each of the 5 levels] for a shared
+## weapon's tables; `fixed`, [name, value] for what no level changes (a job weapon's starting numbers
+## besides its directions'). Before any bonus, as the rest of the page.
+func _weapon_detail(id: String) -> Dictionary:
+	var rows := []
+	var fixed := []
+	match Upgrades.WEAPONS[id]["behavior"]:
+		"aimed":
+			fixed = [["出手间隔", "%s 秒（一轮连发几下，每下隔 %s 秒）" % [_num(0.5), _num(AimedWeapon.BURST_GAP)]],
+				["瞄准", "%s 内最近的怪，没有就朝面向" % _num(AimedWeapon.RANGE)], ["飞行速度", _num(AimedWeapon.SPEED)],
+				["每下", "只打中一只，不穿透、不击退"]]
+		"swing":
+			fixed = [["出手间隔", "%s 秒" % _num(SwingWeapon.COOLDOWN)], ["瞄准", "%s 内最近的怪，没有就朝面向" % _num(SwingWeapon.AIM_RANGE)],
+				["每次", "%s 秒扫过整个扇形，扇形里的怪都挨打" % _num(0.18)],
+				["升满", "范围 %s、角度 %s°" % [_num(SwingWeapon.BASE_RADIUS + SwingWeapon.RADIUS_PER_LONGER * Upgrades.BRANCH_MAX),
+					_num(SwingWeapon.BASE_ARC_DEGREES + SwingWeapon.ARC_PER_WIDER * Upgrades.BRANCH_MAX)]]]
+		"orbit":
+			fixed = [["出击", "每面墙每 %s 秒扑向离你最近的怪撞一下，墙身下的都挨打" % _num(OrbitWeapon.ATTACK_GAP)],
+				["守护范围", "%s，每升一级 +%s" % [_num(OrbitWeapon.BASE_GUARD_RADIUS), _num(OrbitWeapon.GUARD_PER_UPGRADE)]],
+				["墙的大小", "半径 %s，「更硬」每级 +%s" % [_num(OrbitWeapon.WALL_RADIUS), _num(OrbitWeapon.WALL_RADIUS_PER_HARDER)]],
+				["飞行速度", _num(OrbitWeapon.SPEED)]]
+		"guides":
+			fixed = [["出手间隔", "%s 秒画一组" % _num(GuideWeapon.COOLDOWN)], ["每组停留", "间隔的 3/4（%s 秒）" % _num(GuideWeapon.BASE_SECONDS)],
+				["伤害频率", "线上的怪每 %s 秒掉一次血" % _num(GuideWeapon.TICK)],
+				["线宽", "%s，「更粗」每级 +%s" % [_num(GuideWeapon.BASE_WIDTH), _num(GuideWeapon.WIDTH_PER_THICKER)]]]
+		"poke":
+			fixed = [["出手间隔", "%s 秒（一轮几针，每针隔 %s 秒）" % [_num(PokeWeapon.COOLDOWN), _num(PokeWeapon.POKE_GAP)]],
+				["瞄准", "%s 内最近的怪，没有就朝面向" % _num(PokeWeapon.AIM_RANGE)],
+				["每针", "长 %s、宽 %s 的一条线，线上的怪都挨打" % [_num(PokeWeapon.LENGTH), _num(PokeWeapon.WIDTH)]]]
+		"facing":
+			rows = [["伤害", FacingWeapon.DAMAGE], ["每次几份", FacingWeapon.COUNT], ["穿透", FacingWeapon.PIERCE], ["间隔（秒）", FacingWeapon.COOLDOWN]]
+			fixed = [["方向", "朝面向发出"], ["飞行速度", _num(FacingWeapon.SPEED)]]
+		"bomber":
+			rows = [["伤害", BomberWeapon.DAMAGE], ["架数", BomberWeapon.COUNT], ["爆炸半径", BomberWeapon.BLAST_RADIUS]]
+			fixed = [["投弹", "每架每 %s 秒一颗，落地前 %s 秒先出影子和红圈" % [_num(BomberWeapon.RELOAD), _num(BomberWeapon.FALL_SECONDS)]],
+				["目标", "身边 %s 内怪最密的地方，没有就在身边盘旋" % _num(BomberWeapon.REACH)], ["飞行速度", _num(BomberWeapon.SPEED)]]
+		"strike":
+			rows = [["伤害", StrikeWeapon.DAMAGE], ["每次几道", StrikeWeapon.COUNT], ["溅射半径", StrikeWeapon.SPLASH_RADIUS], ["间隔（秒）", StrikeWeapon.COOLDOWN]]
+			fixed = [["目标", "身边 %s 内随机的怪，必中" % _num(StrikeWeapon.RANGE)]]
+		"toss":
+			rows = [["伤害", TossWeapon.DAMAGE], ["每次几把", TossWeapon.COUNT], ["大小", TossWeapon.SIZE.map(func(v: float) -> String: return "×" + _num(v))]]
+			fixed = [["出手间隔", "%s 秒" % _num(2.2)], ["每把", "往上抛再落下，穿透所有怪，击退 40"]]
+		"aura":
+			rows = [["伤害", AuraWeapon.DAMAGE], ["半径", AuraWeapon.RADIUS], ["每几秒一次", AuraWeapon.TICK_SECONDS]]
+			fixed = [["范围", "以你为中心的一圈，跟着你走"]]
+		"trail":
+			rows = [["伤害", TrailWeapon.DAMAGE], ["线宽", TrailWeapon.WIDTH], ["留多久（秒）", TrailWeapon.LIFETIME]]
+			fixed = [["伤害频率", "线上的怪每 %s 秒掉一次血" % _num(TrailWeapon.TICK)],
+				["画圈", "走一圈把线首尾接上，圈里的怪一次受 %s 伤害" % _num(TrailWeapon.LOOP_DAMAGE)]]
+		"bounce":
+			rows = [["伤害", BounceWeapon.DAMAGE], ["个数", BounceWeapon.COUNT], ["速度", BounceWeapon.SPEED]]
+			fixed = [["命中", "穿透一切，同一只怪每 %s 秒最多挨一下" % _num(BounceWeapon.REHIT)],
+				["撞角", "撞进屏幕角落（离两条边都不到 %s）时炸半径 %s、%s 倍伤害" % [_num(BounceWeapon.CORNER_SNAP), _num(BounceWeapon.CORNER_RADIUS), _num(BounceWeapon.CORNER_DAMAGE)]],
+				["存在", "一直在屏幕里弹，不会消失"]]
+		"zone":
+			rows = [["伤害", ZoneWeapon.DAMAGE], ["同时几个会", ZoneWeapon.COUNT], ["半径", ZoneWeapon.RADIUS]]
+			fixed = [["出手间隔", "%s 秒" % _num(ZoneWeapon.COOLDOWN)], ["每个会", "开 %s 秒，圈里的怪每 %s 秒掉一次血、慢 %s" % [
+				_num(ZoneWeapon.LIFETIME), _num(ZoneWeapon.TICK), _percent(1.0 - ZoneWeapon.SLOW)]],
+				["开在哪", "身边 %s 内怪最密的地方" % _num(ZoneWeapon.REACH)]]
+		"squad":
+			rows = [["伤害", SquadWeapon.DAMAGE], ["人数", SquadWeapon.COUNT], ["每人生命", SquadWeapon.WORKER_HP]]
+			fixed = [["引怪", "离外包 %s 内的小怪改打外包（boss 不上当）" % _num(SquadWeapon.LURE_RADIUS)],
+				["还手", "每 %s 秒打一下碰着他的怪" % _num(SquadWeapon.ATTACK_GAP)], ["补人", "被打倒 %s 秒后补上" % _num(SquadWeapon.RESPAWN_SECONDS)]]
+		"ricochet":
+			rows = [["伤害", RicochetWeapon.DAMAGE], ["弹几次", RicochetWeapon.BOUNCES], ["每次几封", RicochetWeapon.COUNT], ["间隔（秒）", RicochetWeapon.COOLDOWN]]
+			fixed = [["瞄准", "%s 内最近的怪" % _num(RicochetWeapon.RANGE)], ["弹射", "每次跳到 %s 内下一只没挨过的怪" % _num(RicochetWeapon.JUMP_RANGE)],
+				["飞行速度", _num(RicochetWeapon.SPEED)]]
+	var shown_rows := []
+	for row: Array in rows:
+		var values: Array = row[1]
+		shown_rows.append([row[0], values.map(func(v: Variant) -> String: return v if v is String else _num(float(v)))])
+	return {"rows": shown_rows, "fixed": fixed}
 
 
 func _passives() -> Array:
