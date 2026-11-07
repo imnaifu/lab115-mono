@@ -9,11 +9,12 @@ extends RefCounted
 ## and phones 200 (WebAssembly on a phone's slower CPU needs the smaller crowd).
 const MAX_ALIVE := 200
 const RING_RADIUS := 210.0
-## The first minutes spawn fewer enemies than the curve says (90% at the start, back to the full
-## rate by 3:00), so the lone starting weapon isn't swamped before the first upgrades land. 60%
-## until 0.2.2 (the user: 前期怪多一点点，这样升级快一点; picked 每秒至少 1.5、开局 90% of three).
+## The first minutes could spawn fewer enemies than the curve says (EASE_IN_START at the start, back
+## to the full rate by 3:00). Off since 0.3.2 (the user: 开局也改成 1, after asking whether the
+## spawning is linear): the curve from the start, held at MIN_RATE until it passes it at about
+## 1:16, so it is straight lines all the way. 90% in 0.2.2–0.3.1 (前期怪多一点点), 60% before.
 const EASE_IN_SECONDS := 180.0
-const EASE_IN_START := 0.9
+const EASE_IN_START := 1.0
 ## How much tougher every enemy gets a minute (.40: 0.2 until then; the user wanted it harder
 ## after .39 made it much easier). The first minute's Bug still takes two of a job weapon's 7s.
 const HP_PER_MINUTE := 0.25
@@ -25,9 +26,8 @@ const EARLY_GROWTH := 0.55
 const LATE_GROWTH := 0.45
 const LATE_FROM_MINUTE := 5.0
 ## The fewest spawns a second, before the map's multiple (66, the user: 每秒刷怪从 1/1s 开始，不要
-## 0.5). 1.5 from 0.2.2 (1 until then; see EASE_IN_START): the eased-in curve starts at 0.72 and
-## passes 1.5 only at about 1:30, so it is held there until then; 2:00 1.84 (1.65 before), 2:30
-## 2.14 (2.03), from 3:00 the same as ever. The first three minutes spawn 314 (260 before, +21%).
+## 0.5). 1.5 from 0.2.2 (1 until then): the curve starts at 0.8 and passes 1.5 at about 1:16, so
+## it is held there until then; 1:30 1.63, 2:00 1.9, 2:30 2.18, from 3:00 the same as ever.
 const MIN_RATE := 1.5
 ## 无尽模式 (Game.endless): the curve simply goes on (0.3.0, the user: 无尽模式去掉十分钟的描述，就是怪一直
 ## 线性加下去; picked 沿用普通曲线一直延长): 5.8 a second at 10:00, 8.05 at 15:00, 10.3 at 20:00, health
