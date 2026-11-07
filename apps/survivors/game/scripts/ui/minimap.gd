@@ -35,8 +35,11 @@ var _clock := 0.0
 func _ready() -> void:
 	custom_minimum_size = Vector2.ONE * (MAP_SIZE + INSET * 2.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.bg_color = Color(Art.PAPER_SOFT, 0.92)
-	_frame.border_color = Art.INK
+	# See-through (0.3.3, the user: 打卡方向会被小地图挡住，小地图透明一点): the landmarks' and bosses'
+	# arrows at the screen's edge (BossPointers) show through it; the dots stay solid. 0.92 and a
+	# solid ink frame until then.
+	_frame.bg_color = Color(Art.PAPER_SOFT, 0.4)
+	_frame.border_color = Color(Art.INK, 0.45)
 	_frame.set_border_width_all(2)
 	_frame.set_corner_radius_all(10)
 	_frame.anti_aliasing = true
