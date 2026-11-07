@@ -11,6 +11,9 @@ extends RefCounted
 ## keeps both on one board, see survivors.lua): one that died at the result screen, one given up
 ## from the pause screen (重新开始, 下班) right away when there's a 昵称, and not otherwise (there is
 ## no result screen to ask for one).
+## 无尽模式 (Game.endless, 0.1.3) has boards of its own (the server's endless_<map>): every run that
+## lasted MIN_SECONDS, ranked by how long, the longest first, each player's best; a record there is
+## `cleared` when it lasted Game.RUN_SECONDS. The usual boards never see an endless run.
 
 ## How long a run not won must last to go on a board (.96).
 const MIN_SECONDS := 60.0
@@ -27,7 +30,7 @@ const ERRORS := {
 	"offline": "没连上云端，稍后再试",
 }
 
-## The last run not on its board yet: {map, ms, job, run, cleared}; empty when there is none.
+## The last run not on its board yet: {map, ms, job, run, cleared, mode}; empty when there is none.
 static var pending := {}
 ## Where the last submitted run stands on its board (its player's best there), 0 before.
 static var last_rank := 0
@@ -56,6 +59,9 @@ static func record_run(game: Game, cleared: bool) -> bool:
 		return false
 	pending = {"map": Maps.current_id, "ms": roundi(game.elapsed * 1000.0), "job": game.player.job,
 		"run": game.run_id, "cleared": cleared}
+	# Only an endless run says its mode: a server before 0.1.3 took no `mode` and ranks it as usual.
+	if game.endless:
+		pending["mode"] = "endless"
 	return true
 
 
@@ -68,7 +74,7 @@ static func submit() -> Dictionary:
 		last_rank = int(answer.get("rank", 0))
 		last_best_ms = int(answer.get("best_ms", 0))
 		last_best_cleared = answer.get("best_cleared", true)
-		Telemetry.send_event("leaderboard", {"action": "submit", "map": pending["map"], "rank": last_rank})
+		Telemetry.send_event("leaderboard", {"action": "submit", "map": pending["map"], "rank": last_rank, "mode": pending.get("mode", "normal")})
 		pending = {}
 	return answer
 
@@ -88,9 +94,13 @@ static func set_name(name: String) -> Dictionary:
 	return answer
 
 
-## A map's board: {records: [{rank, user, name, ms, cleared, job, me}], me: {...} or null, name}.
-static func board(map_id: String) -> Dictionary:
-	return await Cloud.shared().call_rpc("survivors_board", {"map": map_id})
+## A map's board (its 无尽模式 one when `endless`): {records: [{rank, user, name, ms, cleared, job,
+## me}], me: {...} or null, name}.
+static func board(map_id: String, endless: bool = false) -> Dictionary:
+	var asked := {"map": map_id}
+	if endless:
+		asked["mode"] = "endless"
+	return await Cloud.shared().call_rpc("survivors_board", asked)
 
 
 ## The error said to the player.

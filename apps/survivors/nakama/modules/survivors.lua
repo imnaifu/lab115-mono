@@ -8,9 +8,14 @@ every clear, the longest first: its score is SURVIVED_FROM minus how long it las
 kept ascending still ranks every clear (10:00-30:00) above every other run. Everything goes
 through the RPCs below, so the boards are authoritative: a client can't write a record itself.
 
+无尽模式 (0.1.3, the user: 改成无尽模式，新加，原来的模式不动) has a board of its own per map,
+endless_<map>: the score is how long the run lasted (1:00-60:00), the longest first, best per
+player; a record there is `cleared` when it lasted 10:00. A call with mode "endless" goes to it;
+without one (every client before 0.1.3) to the clear board, as before.
+
   survivors_set_name    {name}                    -> {ok, name} | {error}
-  survivors_submit      {map, ms, job, run, cleared} -> {ok, rank, best_ms, best_cleared} | {error}
-  survivors_board       {map}                     -> {records: [...], me: {...}|null, name}
+  survivors_submit      {map, ms, job, run, cleared, mode} -> {ok, rank, best_ms, best_cleared} | {error}
+  survivors_board       {map, mode}               -> {records: [...], me: {...}|null, name}
 
 `cleared` missing counts as true (a client before .96 sent clears only). A record comes back with
 `ms` (the clear time, or how long the run lasted) and `cleared`.
@@ -44,6 +49,8 @@ local MAX_MS = 1800000
 -- all above any clear's score, the longer the lower.
 local SURVIVE_MIN_MS = 60000
 local SURVIVED_FROM = 10000000
+-- 无尽模式 (0.1.3): an endless run can't be scored past this, and is `cleared` from MIN_MS on.
+local ENDLESS_MAX_MS = 3600000
 local BOARD_SIZE = 50
 local NAME_MIN = 2
 local NAME_MAX = 12
@@ -64,8 +71,8 @@ local BLOCKED = {
   "法轮", "习近平", "共产党", "台独", "藏独", "疆独", "六四",
 }
 
-local function board_id(map)
-  return "clear_" .. map
+local function board_id(map, endless)
+  return (endless and "endless_" or "clear_") .. map
 end
 
 for map, _ in pairs(MAPS) do
@@ -74,6 +81,11 @@ for map, _ in pairs(MAPS) do
   local ok, err = pcall(nk.leaderboard_create, board_id(map), true, "asc", "best", nil, { map = map }, true)
   if not ok then
     nk.logger_warn(("leaderboard %s: %s"):format(board_id(map), tostring(err)))
+  end
+  -- 无尽模式's: descending (the longest run on top), the same otherwise.
+  ok, err = pcall(nk.leaderboard_create, board_id(map, true), true, "desc", "best", nil, { map = map, mode = "endless" }, true)
+  if not ok then
+    nk.logger_warn(("leaderboard %s: %s"):format(board_id(map, true), tostring(err)))
   end
 end
 
@@ -174,44 +186,55 @@ local function set_name(context, payload)
   return reply({ ok = true, name = name })
 end
 
--- What a record's score stands for: {ms, cleared}.
-local function decoded(score)
+-- What a record's score stands for: {ms, cleared}. An endless board's score is the length itself.
+local function decoded(score, endless)
+  if endless then
+    return score, score >= MIN_MS
+  end
   if score > MAX_MS then
     return SURVIVED_FROM - score, false
   end
   return score, true
 end
 
-local function own_record(map, user_id)
-  local _, owner_records = nk.leaderboard_records_list(board_id(map), { user_id }, 1, nil, 0)
+local function own_record(map, user_id, endless)
+  local _, owner_records = nk.leaderboard_records_list(board_id(map, endless), { user_id }, 1, nil, 0)
   return owner_records and owner_records[1] or nil
 end
 
 local function submit(context, payload)
   local entry = decode(payload)
   local map, ms, job = entry.map, tonumber(entry.ms), entry.job
+  local endless = entry.mode == "endless"
   local cleared = entry.cleared ~= false
-  local lowest = cleared and MIN_MS or SURVIVE_MIN_MS
-  if not MAPS[map] or not JOBS[job] or ms == nil or ms < lowest or ms > MAX_MS then
+  local lowest = (cleared and not endless) and MIN_MS or SURVIVE_MIN_MS
+  local highest = endless and ENDLESS_MAX_MS or MAX_MS
+  if not MAPS[map] or not JOBS[job] or ms == nil or ms < lowest or ms > highest then
     return reply({ error = "invalid" })
   end
   if display_name(context.user_id) == "" then
     return reply({ error = "no_name" })
   end
-  local score = cleared and math.floor(ms) or SURVIVED_FROM - math.floor(ms)
-  nk.leaderboard_record_write(board_id(map), context.user_id, nil, score, 0,
+  local score
+  if endless then
+    score = math.floor(ms)
+  else
+    score = cleared and math.floor(ms) or SURVIVED_FROM - math.floor(ms)
+  end
+  nk.leaderboard_record_write(board_id(map, endless), context.user_id, nil, score, 0,
     { job = job, run = tostring(entry.run or "") })
-  local record = own_record(map, context.user_id)
-  local best_ms, best_cleared = decoded(record and record.score or score)
+  local record = own_record(map, context.user_id, endless)
+  local best_ms, best_cleared = decoded(record and record.score or score, endless)
   return reply({ ok = true, rank = record and record.rank or 0, best_ms = best_ms, best_cleared = best_cleared })
 end
 
 local function board(context, payload)
-  local map = decode(payload).map
+  local asked = decode(payload)
+  local map, endless = asked.map, asked.mode == "endless"
   if not MAPS[map] then
     return reply({ error = "invalid" })
   end
-  local records, owner_records = nk.leaderboard_records_list(board_id(map), { context.user_id }, BOARD_SIZE, nil, 0)
+  local records, owner_records = nk.leaderboard_records_list(board_id(map, endless), { context.user_id }, BOARD_SIZE, nil, 0)
   records = records or {}
   local ids = {}
   for _, record in ipairs(records) do
@@ -229,7 +252,7 @@ local function board(context, payload)
       name = HIDDEN_NAME
     end
     local metadata = record.metadata or {}
-    local ms, cleared = decoded(record.score)
+    local ms, cleared = decoded(record.score, endless)
     return { rank = record.rank, user = record.owner_id, name = name, ms = ms, cleared = cleared,
       job = metadata.job or "", me = record.owner_id == context.user_id }
   end

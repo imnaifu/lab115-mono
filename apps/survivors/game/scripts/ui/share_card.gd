@@ -66,6 +66,8 @@ const LATE_ROASTS := ["倒在了 IPO 前夜", "就差最后几分钟，可惜"]
 const MIDDLE_ROASTS := ["差一点就上市了，再融一轮？", "项目黄了，但经验还在"]
 ## Shared from the pause screen, mid-run.
 const ONGOING_ROASTS := ["还在搬砖，你能撑多久？", "人还在，项目也还在", "先截个图，万一待会儿没了"]
+## A 无尽模式 run that lasted past 10:00 (0.1.3), however it went down.
+const ENDLESS_ROASTS := ["老板都走了，你还在卷", "下班了还在加班，这就是福报", "通宵到天亮，工位就是家"]
 
 
 ## Lays the card out for the run `game` just finished, or with `ongoing` for the run so far (the
@@ -102,7 +104,9 @@ func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> vo
 	# The bell is the IPO's; a run that folded goes without.
 	if victory and not ongoing:
 		headline.add_child(UiKit.icon("bell", 40 * SCALE))
-	var headline_text := "还在搬砖…" if ongoing else "敲钟上市！" if victory else "项目黄了…"
+	# 无尽模式 never wins (0.1.3): past 10:00 its run is an all-nighter, not a folded project.
+	var endless_out := game.endless and game.elapsed >= Game.RUN_SECONDS
+	var headline_text := "还在搬砖…" if ongoing else "敲钟上市！" if victory else "通宵加班！" if endless_out else "项目黄了…"
 	headline.add_child(UiKit.label(headline_text, 32 * SCALE, "heavy"))
 
 	column.add_child(UiKit.gap(10 * SCALE))
@@ -113,6 +117,9 @@ func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> vo
 	# Past 10:00 the clock is the clear (.78): a win's time to the last enemy, or how many were left.
 	if victory and not ongoing:
 		sub = tr("撑满 10 分钟，清完场")
+	elif endless_out:
+		var over := seconds - roundi(Game.RUN_SECONDS)
+		sub = tr("无尽模式 · 下班后又撑了 %s") % ("%d:%02d" % [floori(over / 60.0), over % 60])
 	elif game.clearing():
 		sub = tr("清场时倒下，还剩 %d 只") % game.enemies.size()
 	column.add_child(_centered(UiKit.label(sub, 13 * SCALE, "muted")))
@@ -215,7 +222,9 @@ static func _total_damage(game: Game) -> float:
 
 static func _roast(game: Game, victory: bool, killer: String) -> String:
 	var lines: Array = WIN_ROASTS
-	if not victory:
+	if game.endless and game.elapsed >= Game.RUN_SECONDS:
+		lines = ENDLESS_ROASTS
+	elif not victory:
 		if KILLER_ROASTS.has(killer):
 			return KILLER_ROASTS[killer]
 		lines = EARLY_ROASTS if game.elapsed < 180.0 else LATE_ROASTS if game.elapsed >= 420.0 else MIDDLE_ROASTS

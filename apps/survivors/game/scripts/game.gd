@@ -51,6 +51,14 @@ const OVERTIME_UNCAP_TIER := 3
 const OVERTIME_CAP_STEP := 3.0
 ## What each new tier says (the first is the clock-out itself); past the list, the last one.
 const OVERTIME_LINES := ["下班时间到！不再来新怪，清完场上的就上市", "老板还没走…怪更暴躁了", "全员加班！怪越来越暴躁", "通宵了！再不清完要出事"]
+## 无尽模式 (0.1.3, the user: 十分钟后继续出怪，只不过数量上再多一些; 改成无尽模式，新加，原来的模式不动):
+## picked on the 出发 page (Settings "endless"), open from the first run. The same run until
+## RUN_SECONDS; from there the crowd keeps coming, more of it (Spawner.OVERTIME_SPAWN), with the
+## same 加班 tiers, and the run ends only when the player goes down or clocks out. Kept apart
+## from the usual mode (the user's call): never a win, so no map opened, no 敲钟 achievement and
+## nothing on the clear boards; it has its own boards ranking how long a run lasted (Leaderboard)
+## and its own achievements (Achievements.ENDLESS_MINUTES). Its lines for each new tier:
+const ENDLESS_LINES := ["下班时间到！怪越来越多，看你能撑多久", "老板还没走…怪更多更暴躁了", "全员加班！怪越来越多", "通宵了！看你还能撑多久"]
 ## Logical view sizes; project.godot's viewport size is the landscape one.
 const LANDSCAPE_VIEW := Vector2i(640, 360)
 const PORTRAIT_VIEW := Vector2i(360, 640)
@@ -173,6 +181,8 @@ var kills := 0
 ## (cleared): for the result screen, the leaderboard and the run's data.
 var left_at_end := -1
 var won := false
+## This run is 无尽模式 (ENDLESS_LINES), as last picked on the 出发 page.
+var endless := false
 ## The 加班 tier last announced (0 before RUN_SECONDS).
 var _overtime_shown := 0
 var level := 1
@@ -267,6 +277,7 @@ func _ready() -> void:
 	Cloud.setup()
 	_star_hint_done = Settings.get_value("star_hint_shown", false)
 	runs_before = Settings.get_value("runs_played", 0)
+	endless = Settings.get_value("endless", false)
 	rng.randomize()
 
 	# The world is built from the map, so it is settled before anything else.
@@ -343,17 +354,20 @@ func _process(delta: float) -> void:
 		var tier := overtime_tier()
 		if tier > _overtime_shown:
 			_overtime_shown = tier
-			var line: String = OVERTIME_LINES[mini(tier, OVERTIME_LINES.size()) - 1]
+			var lines: Array = ENDLESS_LINES if endless else OVERTIME_LINES
+			var line: String = lines[mini(tier, lines.size()) - 1]
 			announce(tr(line) if tier == 1 else tr("%s · 暴躁 ×%d") % [tr(line), tier])
 		# The relabelled crowd (the data scientist's 大招) doesn't count: it is on the player's side.
-		if hostile_count() == 0:
+		# 无尽模式 has no clear: it goes on until the player goes down.
+		if hostile_count() == 0 and not endless:
 			_end_run(true)
 			return
 	nap_left = maxf(0.0, nap_left - delta)
 	if not has_moved and player.velocity.length_squared() > 1.0:
 		has_moved = true
-	# Clearing up (past RUN_SECONDS) nothing spawns: no crowd, rings, weather or bosses.
-	if not clearing():
+	# Clearing up (past RUN_SECONDS) nothing spawns: no crowd, rings, weather or bosses. In 无尽模式
+	# the crowd keeps coming, faster (Spawner.overtime_spawn_at); the rest is all planned before.
+	if not clearing() or endless:
 		spawner.tick(delta)
 	telemetry.tick(delta)
 	flow_field.update(delta, player.position)
@@ -1132,6 +1146,14 @@ func set_job(job_id: String) -> void:
 	inventory_changed.emit()
 
 
+## The 出发 page's 普通 / 无尽 switch: remembered for next time; nothing else changes before the run.
+func set_endless(on: bool) -> void:
+	if state != State.TITLE:
+		return
+	endless = on
+	Settings.set_value("endless", on)
+
+
 ## The title screen's map picker: the city is built from the map, so the scene starts over on it
 ## (behind the title, which stays up).
 ## Switches to the map `map_id` (the scene is rebuilt for it); `start` goes straight into a run
@@ -1345,7 +1367,8 @@ func _dismiss_ally(enemy: Enemy) -> void:
 	_corpses.append(enemy)
 
 
-## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear.
+## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear (in 无尽模式
+## the crowd keeps coming; the 加班 tiers are the same).
 func clearing() -> bool:
 	return elapsed >= RUN_SECONDS
 

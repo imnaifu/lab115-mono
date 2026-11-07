@@ -40,8 +40,12 @@ const LIST := [
 	{"id": "sg_stamps_all", "tier": "gold", "art": "mbs", "group": "打卡", "name": "新加坡通", "text": "新加坡 5 个地标全部打卡", "goal": 5},
 	{"id": "bj_stamps_all", "tier": "gold", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 5 个地标全部打卡", "goal": 5},
 	{"id": "train_hit", "tier": "bronze", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
+	# 无尽模式 (Game.endless, 0.1.3, the user: 加更多的成就; picked 无尽撑到 11 / 12 / 15 分钟).
+	{"id": "endless_11", "tier": "bronze", "art": "deadline", "group": "无尽", "name": "加班", "text": "无尽模式撑到 11:00"},
+	{"id": "endless_12", "tier": "silver", "art": "night_page", "group": "无尽", "name": "通宵", "text": "无尽模式撑到 12:00"},
+	{"id": "endless_15", "tier": "gold", "art": "icon_infinity", "group": "无尽", "name": "996", "text": "无尽模式撑到 15:00"},
 ]
-const GROUPS := ["生存", "战斗", "职业", "打卡", "彩蛋"]
+const GROUPS := ["生存", "战斗", "职业", "打卡", "无尽", "彩蛋"]
 ## Achievement tiers (.31, the user's call: like trophies), hardest first, with their colours.
 ## Platinum is the one all_clear alone (.42, the user's call: everything, like a trophy list's
 ## platinum); 万人斩, 京城通 and 全图鉴 were platinum until then and are gold now.
@@ -67,11 +71,14 @@ const ESTIMATED_RATES := {
 	"first_evolve": 25.0, "full_kit": 30.0,
 	"win_coder": 8.0, "win_pm": 6.0, "win_designer": 5.0, "win_ops": 5.0, "win_data_scientist": 4.0,
 	"stamps_5": 30.0, "stamps_all": 25.0, "ldn_stamps_all": 8.0, "sea_stamps_all": 6.0, "sg_stamps_all": 5.0, "bj_stamps_all": 4.0, "train_hit": 40.0,
+	"endless_11": 8.0, "endless_12": 3.0, "endless_15": 0.5,
 }
 const SURVIVE_SECONDS := 300.0
 const UNTOUCHED_SECONDS := 180.0
 const KILLS_IN_A_RUN := 1000
 const CLOSE_CALL_HP := 10.0
+## 无尽模式's achievements by the second a run must reach (only in that mode, Game.endless).
+const ENDLESS_AT := {"endless_11": 660.0, "endless_12": 720.0, "endless_15": 900.0}
 ## Seconds between the checks tick() makes.
 const CHECK_GAP := 0.5
 
@@ -202,6 +209,10 @@ func tick(delta: float) -> void:
 	var player := _game.player
 	if _game.elapsed >= SURVIVE_SECONDS:
 		_unlock("probation")
+	if _game.endless:
+		for id: String in ENDLESS_AT:
+			if _game.elapsed >= ENDLESS_AT[id]:
+				_unlock(id)
 	if _game.elapsed >= UNTOUCHED_SECONDS and not _hurt:
 		_unlock("untouched")
 	if _game.kills >= KILLS_IN_A_RUN:

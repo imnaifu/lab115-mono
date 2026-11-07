@@ -22,6 +22,8 @@ extends SceneTree
 ## next to the player at the start, e.g. --boss=deadline,pie_boss to watch their attacks),
 ## --from=M (start the run at minute M, as 测试模式 does: e.g. --from=8 --boss=pie_boss to see a
 ## last boss reach its second phase at 9:00; --seconds still counts from the start),
+## --endless (play 无尽模式, Game.endless, 0.1.3; not saved; past 10:00 the report checks the crowd
+## kept coming and the run wasn't won),
 ## --weather (start the map's weather as the run starts, as 测试模式's 天气 button does),
 ## --share (with --shots, also render the end screen's result image into the shots directory, or
 ## with --pause-at the pause screen's run-so-far image),
@@ -81,6 +83,9 @@ var _perks := PackedStringArray()
 var _bosses := PackedStringArray()
 var _from_minute := 0
 var _weather := false
+var _endless := false
+## Kills by Game.RUN_SECONDS (-1 before): with --endless, more must die after it than were left.
+var _kills_at_clock := -1
 var _luck := 0.0
 var _chests := 0
 var _chest_frames := 0
@@ -157,6 +162,9 @@ func _initialize() -> void:
 			_from_minute = int(value)
 		elif arg == "--weather":
 			_weather = true
+		elif arg == "--endless":
+			_endless = true
+			Settings.overrides["endless"] = true
 		elif arg == "--share":
 			_share = true
 		elif arg.begins_with("--job="):
@@ -394,6 +402,8 @@ func _process(_delta: float) -> bool:
 				# Without a window there is nothing to capture; just exercise the pause screen once.
 				_pause_shot_taken = _shot_dir == ""
 	_peak_enemies = maxi(_peak_enemies, _game.enemies.size())
+	if _kills_at_clock < 0 and _game.elapsed >= Game.RUN_SECONDS:
+		_kills_at_clock = _game.kills
 	for at: int in REPORT_TIMES:
 		if _game.elapsed >= at and not _levels_at.has(at):
 			_levels_at[at] = _game.level
@@ -539,6 +549,14 @@ func _report() -> int:
 		problems.append("restart never happened")
 	if _reroll_problem != "":
 		problems.append(_reroll_problem)
+	# 无尽模式 (0.1.3): no win, and past 10:00 the crowd keeps coming, so in half a minute more die
+	# than were left at the clock-out (the usual mode can't kill more than were left, bar summons).
+	if _endless:
+		if _game.won:
+			problems.append("an endless run was won")
+		if _game.elapsed >= Game.RUN_SECONDS + 30.0 and _game.kills - _kills_at_clock <= _game.left_at_end:
+			problems.append("endless: only %d down after 10:00 with %d left then" % [_game.kills - _kills_at_clock, _game.left_at_end])
+		print("[smoke] endless: %d left at 10:00, %d down since, %d out now" % [_game.left_at_end, _game.kills - maxi(_kills_at_clock, 0), _game.enemies.size()])
 	# The job's pair is first due at level 3 (skipped when a test starts later): past it, the check
 	# must have run.
 	if _game.level > 3 and _from_minute == 0 and not _reroll_checked:

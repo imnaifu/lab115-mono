@@ -27,6 +27,13 @@ const LATE_FROM_MINUTE := 5.0
 ## 0.5): the eased-in curve starts at 0.48 and passes 1 only at about 1:00, so the first minute
 ## is held at 1 a second and the rest of the curve is unchanged.
 const MIN_RATE := 1.0
+## 无尽模式 (Game.endless, 0.1.3, the user picked ×1.5 起，每 30 秒再加): past Game.RUN_SECONDS the
+## curve is multiplied by OVERTIME_SPAWN, OVERTIME_SPAWN_STEP more each 加班 tier after the first
+## (Game.OVERTIME_STEP): 8.7 a second at 10:00, 10.4 at 10:30, 12.5 at 11:00. MAX_ALIVE still caps
+## the floor, so once it is full more spawning only refills it faster. The usual mode spawns
+## nothing then (Game._process).
+const OVERTIME_SPAWN := 1.5
+const OVERTIME_SPAWN_STEP := 0.25
 
 ## `size` is the art's frame height in logical pixels, `radius` the body used for hits and
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on
@@ -266,7 +273,8 @@ func _draw_bosses() -> Array[String]:
 ## spawned more on top from 5:00 on (+19% a minute, 12.3 a second by 10:00); .59 took that out
 ## (the user: 这个逻辑去掉), partly because MAX_ALIVE likely cut much of it off late in a run anyway.
 func spawn_rate() -> float:
-	return rate_at(_game.elapsed, Maps.difficulty("spawn"))
+	var rate := rate_at(_game.elapsed, Maps.difficulty("spawn"))
+	return rate * overtime_spawn_at(_game.elapsed) if _game.endless else rate
 
 
 ## spawn_rate() `seconds` into a run on a map spawning `map_spawn` times as many (static so the
@@ -276,6 +284,15 @@ static func rate_at(seconds: float, map_spawn: float) -> float:
 	var minutes := seconds / 60.0
 	var grown := EARLY_GROWTH * minf(minutes, LATE_FROM_MINUTE) + LATE_GROWTH * maxf(minutes - LATE_FROM_MINUTE, 0.0)
 	return maxf(MIN_RATE, (0.8 + grown) * ease_in) * map_spawn
+
+
+## How many times the curve spawns `seconds` into a 无尽模式 run: 1 until Game.RUN_SECONDS, then
+## OVERTIME_SPAWN, OVERTIME_SPAWN_STEP more each 加班 tier after (the tiers of Game.overtime_tier).
+static func overtime_spawn_at(seconds: float) -> float:
+	if seconds < Game.RUN_SECONDS:
+		return 1.0
+	var tier := 1 + floori((seconds - Game.RUN_SECONDS) / Game.OVERTIME_STEP)
+	return OVERTIME_SPAWN + OVERTIME_SPAWN_STEP * (tier - 1)
 
 
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
