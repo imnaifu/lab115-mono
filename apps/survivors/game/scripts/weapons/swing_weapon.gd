@@ -27,7 +27,10 @@ const BASE_DAMAGE := 7.0
 ## job's weapon (about 930 damage a second alone at 8:00 against the programmer's 360). Now +6 a
 ## level (+10 before), and each 更长 / 更宽 adds half what it did: +4 reach (+8), +15° (+22.5°, so
 ## four make 150° rather than a half circle). About 500 a second at full level at 8:00.
-const DAMAGE_PER_UPGRADE := 6.0
+## +7 from 0.3.5 (the user: 激光笔加强一点; picked +6 → +7 of three): four upgrades 31 → 35, full
+## 55 → 63, the opening 7 the same (the cards say +7: Upgrades.BRANCHES). Alone at 8:00 at full level it was about 1150 a second then,
+## with the ops' firewall 1190, the data scientist's 1130, the designer's 1030 (standing still).
+const DAMAGE_PER_UPGRADE := 7.0
 ## 60° to start with from .86 (the user: 范围调小一点, 60度开始: a longer, narrower beam), so four
 ## 更宽 reach 120°; 90° until .85 (narrowed from 120° at the user's request, so a swing reads as aimed).
 const BASE_ARC_DEGREES := 60.0
@@ -36,9 +39,10 @@ const BASE_ARC_DEGREES := 60.0
 const ARC_PER_WIDER := 15.0
 const MAX_ARC_DEGREES := 180.0
 ## 60 from .86 (the user: PM 的初始攻击距离加一点; 每次更长 +5): it reaches further, the product
-## manager being among the weakest jobs; 50 and +4 a 更长 until then. Full 更长 reaches 80.
-const BASE_RADIUS := 60.0
-const RADIUS_PER_LONGER := 5.0
+## manager being among the weakest jobs; 50 and +4 a 更长 until then. 65 and +6 a 更长 from 0.3.5
+## (the user, with 激光笔加强一点: 开局距离也加一点 → 开局65，升级+6), so full 更长 reaches 89 (80 before).
+const BASE_RADIUS := 65.0
+const RADIUS_PER_LONGER := 6.0
 const COOLDOWN := 0.85
 ## Swings at the nearest enemy this close, otherwise the way the player faces.
 const AIM_RANGE := 70.0
