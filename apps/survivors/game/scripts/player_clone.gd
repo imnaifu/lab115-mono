@@ -14,6 +14,11 @@ const LEASH := 200.0
 const BESIDE := 70.0
 ## Enemies nearer than this push its steering away.
 const AVOID := 110.0
+## Enemies this close go after it rather than the player, as the outsourced workers' (SquadWeapon,
+## 70); bosses don't fall for it either (Game._lure_for). It still steers away from them, so the
+## crowd it draws trails after it (0.2.3, the user: 复制图层的复制体也能吸引怪吗 → 100, boss 不上当,
+## 分身躲).
+const LURE_RADIUS := 100.0
 const FADE_SECONDS := 0.6
 
 var seconds_left := SECONDS

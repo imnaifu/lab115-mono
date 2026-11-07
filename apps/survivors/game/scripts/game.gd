@@ -67,8 +67,9 @@ const ENDLESS_LINES := ["下班时间到！怪越来越多，看你能撑多久"
 ## away, its own weapon fights them, and PREVIEW_CAST_GAP seconds after its 技能 is over it goes off
 ## again (the real one, cut-in and all). It can't be hurt, nothing drops, the clock stands, nothing
 ## is saved and the sound effects are hushed (Sound.hush); 上班 starts the run on a fresh scene.
-const PREVIEW_CROWD := 12
-const PREVIEW_SPAWN_EVERY := 0.3
+## 6 and 0.6 s from 0.2.3 (the user: demo 里面的怪少一点); 12 and 0.3 s until then.
+const PREVIEW_CROWD := 6
+const PREVIEW_SPAWN_EVERY := 0.6
 const PREVIEW_RING := 140.0
 ## How near the half of the crowd already there when the demo starts stands (so the weapon is at
 ## work at once, not after the first walk in).
@@ -872,17 +873,25 @@ func _tick_enemies(delta: float) -> void:
 			enemy.position = fresh_spot if enemy.ghostly else city.resolve(fresh_spot, enemy.radius)
 
 
-## The closest decoy within SquadWeapon.LURE_RADIUS of the enemy, or null; bosses ignore them.
+## The closest decoy within SquadWeapon.LURE_RADIUS of the enemy, or the designer's copy within
+## PlayerClone.LURE_RADIUS (0.2.3), or null; bosses ignore both.
 func _lure_for(enemy: Enemy) -> Variant:
-	if decoys.is_empty() or enemy.is_elite:
+	if (decoys.is_empty() and clones.is_empty()) or enemy.is_elite:
 		return null
 	var best: Variant = null
-	var best_distance := SquadWeapon.LURE_RADIUS * SquadWeapon.LURE_RADIUS
+	var best_distance := INF
 	for decoy in decoys:
 		var distance := decoy.distance_squared_to(enemy.position)
-		if distance < best_distance:
+		if distance < SquadWeapon.LURE_RADIUS * SquadWeapon.LURE_RADIUS and distance < best_distance:
 			best_distance = distance
 			best = decoy
+	for clone in clones:
+		if not is_instance_valid(clone) or clone.is_queued_for_deletion() or clone.hp <= 0.0:
+			continue
+		var distance := clone.position.distance_squared_to(enemy.position)
+		if distance < PlayerClone.LURE_RADIUS * PlayerClone.LURE_RADIUS and distance < best_distance:
+			best_distance = distance
+			best = clone.position
 	return best
 
 
