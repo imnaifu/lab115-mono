@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "小红书导出 - 图片视频下载、笔记列表导出 CSV (RedNote Exporter)",
+    "message": "小红书下载器 - 图片和无水印视频一键下载、笔记列表导出 CSV (RedNote Exporter)",
     "description": "Extension name shown in the browser and the Chrome Web Store."
   },
   "appDesc": {

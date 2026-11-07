@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Tải ảnh & video Xiaohongshu (Tiểu Hồng Thư, RedNote), xuất CSV",
+    "description": "Extension name shown in the browser and the Chrome Web Store."
+  },
+  "appDesc": {
+    "message": "Tải mọi ảnh và video của bài Xiaohongshu (RedNote) chỉ một cú nhấp, ưu tiên video gốc không logo; xuất danh sách ghi chú ra CSV",
+    "description": "Short description shown in the browser and the Chrome Web Store."
+  }
+}

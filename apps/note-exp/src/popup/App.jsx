@@ -39,7 +39,7 @@ function Popup() {
       {/* post footer */}
       {s.tab === 'post' && s.pPhase === 'ready' && (
         <footer className="flex items-center gap-2 px-4 py-2.5 shrink-0 border-t border-line bg-paper">
-          {/* select-all as a checkbox (Sokosoko Choice): yellow box with an ink tick when on */}
+          {/* select-all as a checkbox (Sokosoko Choice): red box with a white tick when on */}
           <button
             onClick={() => s.selectAll(!s.allSel)}
             aria-pressed={s.allSel}

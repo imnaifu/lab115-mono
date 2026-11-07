@@ -82,7 +82,7 @@ export function EmptyState({ art, title, sub, btn, onBtn }) {
         <Illust name={art} className="w-[76px] h-[76px]" />
       </span>
       <div className="font-bold text-[17px] leading-[26px] text-ink">{title}</div>
-      <div className="text-[14px] leading-[22px] text-ink-muted mb-3 max-w-[280px]">{sub}</div>
+      <div className="text-[14px] leading-[22px] text-ink-muted mb-3 max-w-[280px] [text-wrap:pretty]">{sub}</div>
       <Btn kind="secondary" onClick={onBtn}>
         {btn}
       </Btn>

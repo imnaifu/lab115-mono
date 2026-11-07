@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "샤오홍슈 다운로더 - 레드노트 이미지·동영상 저장, 노트 목록 CSV 내보내기",
+    "description": "Extension name shown in the browser and the Chrome Web Store."
+  },
+  "appDesc": {
+    "message": "샤오홍슈(RedNote) 게시물의 이미지와 동영상을 한 번에 다운로드(동영상은 워터마크 없는 원본 우선)하고, 피드·검색·프로필의 노트 목록을 CSV로 내보냅니다",
+    "description": "Short description shown in the browser and the Chrome Web Store."
+  }
+}

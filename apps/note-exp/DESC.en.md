@@ -13,6 +13,8 @@ Key Features
 
 • All data is processed locally in your browser
 
+• Interface in 6 languages — 简体中文, 繁體中文, English, 한국어, 日本語, Tiếng Việt — picked from your browser language
+
 ────────────────────
 How to Use
 ────────────────────

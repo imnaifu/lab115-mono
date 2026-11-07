@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "小紅書下載器 - 圖片和無浮水印影片一鍵下載、筆記列表匯出 CSV (RedNote Exporter)",
+    "description": "Extension name shown in the browser and the Chrome Web Store."
+  },
+  "appDesc": {
+    "message": "一鍵下載小紅書筆記的全部圖片與影片（影片優先無浮水印原檔），並將首頁推薦、搜尋結果、使用者主頁的筆記列表匯出為 CSV",
+    "description": "Short description shown in the browser and the Chrome Web Store."
+  }
+}

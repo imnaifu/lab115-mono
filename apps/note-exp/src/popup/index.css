@@ -70,7 +70,40 @@ body {
   height: 100%;
 }
 
-:where(a, button, input, [tabindex]):focus-visible {
+/* CJK face per UI language (<html lang> is set by LangProvider). The default
+   stacks are Simplified Chinese faces, which would draw Japanese kanji in
+   Chinese shapes; Korean wants a Hangul face first. */
+html:lang(zh-TW) .font-sans {
+  font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+html:lang(zh-TW) .font-display {
+  font-family: "Nunito", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+html:lang(ja) .font-sans {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+}
+html:lang(ja) .font-display {
+  font-family: "Nunito", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+}
+html:lang(ko) .font-sans {
+  font-family: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+}
+html:lang(ko) .font-display {
+  font-family: "Nunito", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+}
+/* Korean wraps at spaces between words, not inside them. */
+html:lang(ko) body {
+  word-break: keep-all;
+}
+/* Vietnamese stacks Latin letters with tone marks (ạ ế ở …): PingFang and our
+   Latin-only Nunito subset lack them, so glyphs would mix fonts mid-word. Use
+   the system UI face for everything, numbers and brand included. */
+html:lang(vi) .font-sans,
+html:lang(vi) .font-display {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+:where(a, button, input, select, [tabindex]):focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 2px;
 }

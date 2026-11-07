@@ -18,6 +18,8 @@ const PATHS = {
   video: '<rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="M15.5 10l6-3v10l-6-3z"/>',
   play: '<path d="M8 5v14l11-7z"/>',
   link: '<path d="M9 14a4 4 0 0 0 6 .5l2.5-2.5a4 4 0 0 0-5.7-5.7L10.5 7.7"/><path d="M15 10a4 4 0 0 0-6-.5L6.5 12a4 4 0 0 0 5.7 5.7L13.5 16.3"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/>',
+  chevrondown: '<path d="M6 9l6 6 6-6"/>',
 };
 
 export default function Icon({ name, size = 16, stroke = 2, fill = 'none', className = '' }) {
