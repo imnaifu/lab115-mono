@@ -16,7 +16,9 @@ extends RefCounted
 ## 黄圈是什么意思); now only the data scientist's draws one, as far as it reaches. What lasts has an
 ## UltimateTimer over it and the HUD's button counts it down (`seconds_left`):
 ## - 程序员 全量发布: KEYS Enter keys, one at each hour of a clock face, each the Enter key's own
-##   hit, through everything, out to the screen's edge.
+##   hit, through everything, out to the screen's edge; since 0.3.1 (the user: 程序员技能改成当前回车伤害，
+##   数量改成当前回车数量*12 → 12 个钟点，每个方向连发) as many rounds of them as the Enter key's own
+##   burst, AimedWeapon.BURST_GAP apart like it (1 to 5: 12 to 60 keys); one round until then.
 ## - 产品经理 今天必须上线: BOOST_SECONDS untouchable and BOOST_SPEED faster (Player.boost_left),
 ##   inside a gold shield; what it stops says 免疫 (Player.take_damage).
 ## - 设计师 复制图层: a PlayerClone with every weapon and stat, PlayerClone.SECONDS at most.
@@ -175,12 +177,26 @@ func _mark(host: Node2D, above: float, left_of: Callable, shield_radius := 0.0) 
 	host.add_child(timer)
 
 
-## 全量发布: a key towards each hour of the clock, 12 o'clock first.
+## 全量发布: a key towards each hour of the clock, 12 o'clock first, in as many rounds as the Enter
+## key's burst (its 更多), each the Enter key's own hit as it is now.
 func _release() -> void:
 	var player := _game.player
 	var enter := player.get_weapon("enter")
-	var hit: float = (AimedWeapon.branch_stats(enter.branch_a, enter.branch_b)["damage"] * enter.damage_scale()) if enter != null \
-		else AimedWeapon.BASE_DAMAGE * player.might
+	var stats := AimedWeapon.branch_stats(enter.branch_a, enter.branch_b) if enter != null else {}
+	var hit: float = (stats["damage"] * enter.damage_scale()) if enter != null else AimedWeapon.BASE_DAMAGE * player.might
+	var rounds: int = stats["count"] if enter != null else 1
+	_release_round(hit)
+	# The later rounds follow like the Enter key's own burst, from wherever the player is by then;
+	# pausable, so a level-up or the pause screen holds them too.
+	for round in range(1, rounds):
+		_game.get_tree().create_timer(AimedWeapon.BURST_GAP * round, false).timeout.connect(_release_round.bind(hit))
+
+
+## One key at each hour of the clock from where the player stands (_release).
+func _release_round(hit: float) -> void:
+	if _game.state == Game.State.ENDED:
+		return
+	var player := _game.player
 	var reach := _game.view_half().length() + 40.0
 	for i in KEYS:
 		var direction := Vector2.UP.rotated(TAU * i / KEYS)

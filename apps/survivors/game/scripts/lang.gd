@@ -1455,7 +1455,7 @@ const EN := {
 	# The jobs' 大招 (.81).
 	"全量发布": "Ship It All",
 	"Shift+Enter！": "Shift+Enter!",
-	"朝 12 个钟点方向各射出一个回车键，伤害和回车键一样，穿透所有怪": "An Enter key towards each of the 12 hours of a clock, as hard as an Enter hit, through everything",
+	"朝 12 个钟点方向各连发回车键，回车键一轮射几个这里就连发几个（12 到 60 个），伤害和回车键一样，穿透所有怪": "A burst of Enter keys towards each of the 12 hours of a clock, as many as the Enter key fires a round (12 to 60 in all), as hard as an Enter hit, through everything",
 	"今天必须上线": "Ship It Today",
 	"今天必须上线！": "Ship it today!",
 	"5 秒内不受伤害，移速 +50%": "Untouchable for 5 s, 50% faster",
@@ -1475,7 +1475,7 @@ const EN := {
 	# 0.1.1: called 技能 rather than 大招 (the user: 不要叫大招，全改，叫技能).
 	"技能「%s」（击杀充能）：%s": "Skill (kills charge it): %s. %s",
 	"技能「%s」": "Skill: %s",
-	"朝 12 个钟点方向各射一个回车键，穿透所有怪": "An Enter key towards each hour of a clock, through everything",
+	"朝 12 个钟点方向连发回车键，回车键一轮几个就连发几个，穿透所有怪": "A burst of Enter keys towards each hour of a clock, as many as the Enter key fires a round, through everything",
 	"5 秒无敌，移速 +50%": "Untouchable for 5 s, 50% faster",
 	"分身带着你的全部武器，还能引走身边的小怪，最多 5 秒": "A copy of you with all your weapons that draws the crowd near it, up to 5 s",
 	"服务器朝附近的怪开炮 10 秒": "A server shells nearby enemies for 10 s",

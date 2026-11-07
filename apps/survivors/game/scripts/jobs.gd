@@ -52,7 +52,7 @@ const JOBS := {
 ## while it lasts (none for the programmer's, over at once).
 ## Ultimates does the work.
 const ULTIMATES := {
-	"coder": {"name": "全量发布", "line": "Shift+Enter！", "brief": "朝 12 个钟点方向各射一个回车键，穿透所有怪", "timer": "", "text": "朝 12 个钟点方向各射出一个回车键，伤害和回车键一样，穿透所有怪"},
+	"coder": {"name": "全量发布", "line": "Shift+Enter！", "brief": "朝 12 个钟点方向连发回车键，回车键一轮几个就连发几个，穿透所有怪", "timer": "", "text": "朝 12 个钟点方向各连发回车键，回车键一轮射几个这里就连发几个（12 到 60 个），伤害和回车键一样，穿透所有怪"},
 	"pm": {"name": "今天必须上线", "line": "今天必须上线！", "brief": "5 秒无敌，移速 +50%", "timer": "无敌", "text": "5 秒内不受伤害，移速 +50%"},
 	"designer": {"name": "复制图层", "line": "Ctrl+J", "brief": "分身带着你的全部武器，还能引走身边的小怪，最多 5 秒", "timer": "分身", "text": "出现一个带着你全部武器和属性的分身，身边的小怪会去追它（boss 不上当），会自己躲怪，会受伤，最多 5 秒"},
 	"ops": {"name": "扩容", "line": "扩容！", "brief": "服务器朝附近的怪开炮 10 秒", "timer": "服务器", "text": "放下一台服务器，10 秒里朝附近的怪开炮，伤害和防火墙一样，怪不会打它"},
