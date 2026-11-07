@@ -115,7 +115,10 @@ const KITS := {
 		# .97 (the user: 连环会这个 boss 子弹太难躲了; picked 甲): turning 70 → 50° a second (a sidestep
 		# shakes one off: it curves round about 97 px, not 70) and gone after 3 s, not 4. Still
 		# faster than any job, so running straight on is still caught.
-		"attacks": [{"kind": "ranged", "form": "homing", "name": "连环邀请", "warn": 0.6, "count": 3, "every": 0.4, "speed": 85.0, "turn": 50.0, "life": 3.0, "damage": 8.0}],
+		# 0.3.4 (the user: 连环会这个再容易躲一点，现在子弹跟的太紧了; picked 慢一点 + 转得更慢): 85 → 72 a second, a
+		# touch over the fastest job's 66, and 50 → 40° a second, so more time to see them coming and a
+		# wider curve round (about 103 px).
+		"attacks": [{"kind": "ranged", "form": "homing", "name": "连环邀请", "warn": 0.6, "count": 3, "every": 0.4, "speed": 72.0, "turn": 40.0, "life": 3.0, "damage": 8.0}],
 		"lines": {"arrive": "下一个会马上开始", "attack": ["已向你发送邀请"], "kill": "你已被加入 37 个会议", "death": "会议已取消"},
 	},
 	"pip": {
