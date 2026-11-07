@@ -31,7 +31,7 @@ func _draw() -> void:
 	# Open landmarks not checked in at yet (Stamps, .68), under the bosses' arrows: the map has
 	# no minimap or arrows otherwise, and the corner ones are 40 seconds' walk away.
 	for id: String in Maps.current.STAMPS:
-		if Progress.has_stamp(id) or not game.stamps.is_open(id):
+		if game.stamps.done(id) or not game.stamps.is_open(id):
 			continue
 		var landmark_offset := game.stamps.ring_center(id) - center
 		if absf(landmark_offset.x) >= half.x or absf(landmark_offset.y) >= half.y:

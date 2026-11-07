@@ -49,7 +49,8 @@ local MAX_MS = 1800000
 -- all above any clear's score, the longer the lower.
 local SURVIVE_MIN_MS = 60000
 local SURVIVED_FROM = 10000000
--- 无尽模式 (0.2.0): an endless run can't be scored past this, and is `cleared` from MIN_MS on.
+-- 无尽模式 (0.2.0): an endless run can't be scored past this (an hour: the game ends one there, from
+-- 0.3.0), and is `cleared` from MIN_MS on.
 local ENDLESS_MAX_MS = 3600000
 local BOARD_SIZE = 50
 local NAME_MIN = 2

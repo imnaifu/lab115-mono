@@ -52,13 +52,16 @@ const OVERTIME_CAP_STEP := 3.0
 ## What each new tier says (the first is the clock-out itself); past the list, the last one.
 const OVERTIME_LINES := ["下班时间到！不再来新怪，清完场上的就上市", "老板还没走…怪更暴躁了", "全员加班！怪越来越暴躁", "通宵了！再不清完要出事"]
 ## 无尽模式 (0.2.0, the user: 十分钟后继续出怪，只不过数量上再多一些; 改成无尽模式，新加，原来的模式不动):
-## picked on the 出发 page (Settings "endless"), open from the first run. The same run until
-## RUN_SECONDS; from there the crowd keeps coming, more of it (Spawner.OVERTIME_SPAWN), with the
-## same 加班 tiers, and the run ends only when the player goes down or clocks out. Kept apart
-## from the usual mode (the user's call): never a win, so no map opened, no 敲钟 achievement and
-## nothing on the clear boards; it has its own boards ranking how long a run lasted (Leaderboard)
-## and its own achievements (Achievements.ENDLESS_MINUTES). Its lines for each new tier:
-const ENDLESS_LINES := ["下班时间到！怪越来越多，看你能撑多久", "老板还没走…怪更多更暴躁了", "全员加班！怪越来越多", "通宵了！看你还能撑多久"]
+## picked on the 出发 page (Settings "endless"), open from the first run. Since 0.3.0 (the user:
+## 无尽模式去掉十分钟的描述，就是怪一直线性加下去) it has no 10:00 at all: no clock-out, no clear and no
+## 加班 (clearing() and overtime_tier() stay off), the crowd's curve simply goes on and a boss comes
+## every two minutes after the fourth (Spawner.ENDLESS_BOSS_EVERY), until the player goes down or
+## clocks out. 0.2.0–0.2.3 played the usual run to 10:00 and then spawned 1.5 times more with the
+## 加班 tiers. Kept apart from the usual mode (the user's call): never a win, so no map opened, no
+## 敲钟 achievement and nothing on the clear boards; it has its own boards ranking how long a run
+## lasted (Leaderboard) and its own achievements (Achievements.ENDLESS_AT). It ends by itself at
+## ENDLESS_MAX_SECONDS (0.3.0, the user: 最多 60min 就好 → 60:00 自动结束), as 撑满, the server's longest.
+const ENDLESS_MAX_SECONDS := 3600.0
 ## The 出发 page's demo (0.2.1, the user: 选职业下面只用职业名和武器和数值，然后下面加个能动的动画，模拟用户
 ##在玩，要展示普通攻击和技能; picked 和局内一模一样的效果): while the page is up this very game plays
 ## on behind it (`previewing`, still the title state), shown in a small view of its world under the
@@ -378,26 +381,31 @@ func _process(delta: float) -> void:
 	if state != State.PLAYING:
 		return
 	elapsed += delta
-	if elapsed >= RUN_SECONDS:
+	# 无尽模式 has no clock-out (clearing()): it goes on until the player goes down, or the full hour.
+	if endless and elapsed >= ENDLESS_MAX_SECONDS:
+		elapsed = ENDLESS_MAX_SECONDS
+		# Checked now, not at the next of its half-second checks: the run ends this frame.
+		achievements.tick(Achievements.CHECK_GAP)
+		_end_run(false)
+		return
+	if clearing():
 		if left_at_end < 0:
 			left_at_end = hostile_count()
 		var tier := overtime_tier()
 		if tier > _overtime_shown:
 			_overtime_shown = tier
-			var lines: Array = ENDLESS_LINES if endless else OVERTIME_LINES
-			var line: String = lines[mini(tier, lines.size()) - 1]
+			var line: String = OVERTIME_LINES[mini(tier, OVERTIME_LINES.size()) - 1]
 			announce(tr(line) if tier == 1 else tr("%s · 暴躁 ×%d") % [tr(line), tier])
 		# The relabelled crowd (the data scientist's 大招) doesn't count: it is on the player's side.
-		# 无尽模式 has no clear: it goes on until the player goes down.
-		if hostile_count() == 0 and not endless:
+		if hostile_count() == 0:
 			_end_run(true)
 			return
 	nap_left = maxf(0.0, nap_left - delta)
 	if not has_moved and player.velocity.length_squared() > 1.0:
 		has_moved = true
-	# Clearing up (past RUN_SECONDS) nothing spawns: no crowd, rings, weather or bosses. In 无尽模式
-	# the crowd keeps coming, faster (Spawner.overtime_spawn_at); the rest is all planned before.
-	if not clearing() or endless:
+	# Clearing up (past RUN_SECONDS) nothing spawns: no crowd, rings, weather or bosses (无尽模式 never
+	# clears up: its crowd and its later bosses keep coming).
+	if not clearing():
 		spawner.tick(delta)
 	telemetry.tick(delta)
 	flow_field.update(delta, player.position)
@@ -1292,6 +1300,8 @@ func set_endless(on: bool) -> void:
 		return
 	endless = on
 	Settings.set_value("endless", on)
+	# Only 无尽模式 has bosses past the fourth.
+	spawner.replan()
 
 
 ## The title screen's map picker: the city is built from the map, so the scene starts over on it
@@ -1514,15 +1524,16 @@ func _dismiss_ally(enemy: Enemy) -> void:
 	_corpses.append(enemy)
 
 
-## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear (in 无尽模式
-## the crowd keeps coming; the 加班 tiers are the same).
+## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear. Never in
+## 无尽模式 (0.3.0), which has no 10:00.
 func clearing() -> bool:
-	return elapsed >= RUN_SECONDS
+	return elapsed >= RUN_SECONDS and not endless
 
 
-## The 加班 tier: 0 before RUN_SECONDS, then 1, 2, 3… every OVERTIME_STEP seconds.
+## The 加班 tier: 0 before RUN_SECONDS, then 1, 2, 3… every OVERTIME_STEP seconds; always 0 in
+## 无尽模式 (0.3.0: its pressure is the crowd growing, not 加班).
 func overtime_tier() -> int:
-	if elapsed < RUN_SECONDS:
+	if not clearing():
 		return 0
 	return 1 + floori((elapsed - RUN_SECONDS) / OVERTIME_STEP)
 
@@ -1545,6 +1556,11 @@ func overtime_cap_raise() -> float:
 	return OVERTIME_CAP_STEP * maxi(overtime_tier() - OVERTIME_UNCAP_TIER + 1, 0)
 
 
+## Whether this 无尽模式 run lasted the full hour (ENDLESS_MAX_SECONDS): it ended there by itself.
+func full_hour() -> bool:
+	return endless and elapsed >= ENDLESS_MAX_SECONDS
+
+
 func _end_run(victory: bool) -> void:
 	if state == State.ENDED:
 		return
@@ -1556,10 +1572,12 @@ func _end_run(victory: bool) -> void:
 	get_tree().paused = true
 	# Before the run's data goes out and the result screen is built: both list what it earned.
 	achievements.finish(victory)
-	telemetry.finish("win" if victory else "died")
-	RunHistory.record(self, "win" if victory else "died")
+	# A 无尽模式 run that lasted the full hour ended there, not by going down (0.3.0).
+	var result := "win" if victory else "full" if full_hour() else "died"
+	telemetry.finish(result)
+	RunHistory.record(self, result)
 	Sound.stop_music()
-	Sound.play("win" if victory else "lose")
+	Sound.play("win" if victory or full_hour() else "lose")
 	run_ended.emit(victory)
 
 

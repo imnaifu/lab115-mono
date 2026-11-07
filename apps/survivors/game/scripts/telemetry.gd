@@ -31,7 +31,8 @@ extends RefCounted
 ##   stands on this device (Cloud.STATUS_NAMES: off / connecting / synced / offline / disabled),
 ##   to see whether it gets through in-app browsers.
 ##   From .30, `page_run`: the run's number on this page (2 and up are 再来一局).
-## - run_end: `job`, `result` (win / died / restart / quit), seconds survived, level, kills, `killer`
+## - run_end: `job`, `result` (win / died / restart / quit, and from 0.3.0 full: a 无尽模式 run that
+##   lasted the full hour), seconds survived, level, kills, `killer`
 ##   (the last enemy type to hurt the player), weapons and perks with levels, each weapon's
 ##   damage share, the picks in order, `offered` (how often each card was offered, for pick
 ##   rates), `chests` (the ratings year-end bonuses landed on: angel / series_a / ipo, from .27 shown
@@ -101,7 +102,7 @@ extends RefCounted
 ## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
 ## dated ones before came first. A small change bumps the last number, a big one the middle one
 ## (the user: 小改动加小的，大改动加中的).
-const VERSION := "0.2.3"
+const VERSION := "0.3.0"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -364,6 +365,8 @@ func _summary(result: String) -> Dictionary:
 		"fps_worst": roundi(_fps_worst) if _fps_count > 0 else 0,
 		"device": "phone" if Device.is_handheld() else "desktop",
 		"new_stamps": ",".join(_game.stamps.new_ids),
+		# Landmarks checked in at this run, first time or again (0.3.0: every run can).
+		"checkins": _game.stamps.done_count(),
 		"new_achievements": ",".join(_game.achievements.new_ids),
 		"boss_rolls": _game.spawner.boss_rolls().left(MAX_TEXT),
 		"weather": _game.spawner.weather["id"],

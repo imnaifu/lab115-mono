@@ -14,6 +14,8 @@ const RESULTS := {
 	"win": ["通关", Color("4caf6a"), Color.WHITE],
 	"died": ["被裁", Art.BOSS_RED, Color.WHITE],
 	"quit": ["下班", Art.PAPER_SUNK, Art.INK_MUTED],
+	# A 无尽模式 run that lasted the full hour (Game.full_hour, 0.3.0).
+	"full": ["撑满", Color("4caf6a"), Color.WHITE],
 }
 
 

@@ -29,13 +29,20 @@ const LATE_FROM_MINUTE := 5.0
 ## passes 1.5 only at about 1:30, so it is held there until then; 2:00 1.84 (1.65 before), 2:30
 ## 2.14 (2.03), from 3:00 the same as ever. The first three minutes spawn 314 (260 before, +21%).
 const MIN_RATE := 1.5
-## 无尽模式 (Game.endless, 0.2.0, the user picked ×1.5 起，每 30 秒再加): past Game.RUN_SECONDS the
-## curve is multiplied by OVERTIME_SPAWN, OVERTIME_SPAWN_STEP more each 加班 tier after the first
-## (Game.OVERTIME_STEP): 8.7 a second at 10:00, 10.4 at 10:30, 12.5 at 11:00. MAX_ALIVE still caps
-## the floor, so once it is full more spawning only refills it faster. The usual mode spawns
-## nothing then (Game._process).
-const OVERTIME_SPAWN := 1.5
-const OVERTIME_SPAWN_STEP := 0.25
+## 无尽模式 (Game.endless): the curve simply goes on (0.3.0, the user: 无尽模式去掉十分钟的描述，就是怪一直
+## 线性加下去; picked 沿用普通曲线一直延长): 5.8 a second at 10:00, 8.05 at 15:00, 10.3 at 20:00, health
+## +25% a minute as ever, MAX_ALIVE unchanged. 0.2.0–0.2.3 jumped to 1.5 times the curve at 10:00
+## and 0.25 more every 30 seconds. And past the last of the four bosses (BossKits.SLOT_AT) one
+## more comes every ENDLESS_BOSS_EVERY seconds (the user picked 每 2 分钟接着来一个), any map's boss
+## at any slot, drawn evenly, as strong as its own slot times the health of the moment; planned up
+## to ENDLESS_BOSSES_UNTIL (Game.ENDLESS_MAX_SECONDS: a run ends there).
+const ENDLESS_BOSS_EVERY := 120.0
+const ENDLESS_BOSSES_UNTIL := 3600.0
+## 无尽模式's health grows faster later (0.3.0, the user: 20 后更快，30 后再更快, after the balance bot
+## with the crowd's curve alone lasted 14–60+ minutes once past 10:00, median about half an hour):
+## from each [minute, extra] on, `extra` more a minute on top of HP_PER_MINUTE: +25% a minute until
+## 20:00 (×6 then), +50% to 30:00 (×11), +100% after (×21 at 40:00, ×41 at 60:00).
+const ENDLESS_HP_STEPS := [[20.0, 0.25], [30.0, 0.5]]
 
 ## `size` is the art's frame height in logical pixels, `radius` the body used for hits and
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on
@@ -244,6 +251,13 @@ func _init(game: Game) -> void:
 	_events = _plan_events()
 
 
+## The 出发 page's 普通 / 无尽 switch flipped (Game.set_endless, on the title screen, nothing run yet):
+## the schedule again for the mode, since only 无尽模式 has bosses past the fourth.
+func replan() -> void:
+	_events = _plan_events()
+	_next_event = 0
+
+
 ## Every map's weather, built or hidden (Maps.ALL), one drawn at random: 硅谷 alone is on offer
 ## since .99, and the other four maps' weathers come to it this way.
 func _draw_weather() -> Dictionary:
@@ -275,8 +289,7 @@ func _draw_bosses() -> Array[String]:
 ## spawned more on top from 5:00 on (+19% a minute, 12.3 a second by 10:00); .59 took that out
 ## (the user: 这个逻辑去掉), partly because MAX_ALIVE likely cut much of it off late in a run anyway.
 func spawn_rate() -> float:
-	var rate := rate_at(_game.elapsed, Maps.difficulty("spawn"))
-	return rate * overtime_spawn_at(_game.elapsed) if _game.endless else rate
+	return rate_at(_game.elapsed, Maps.difficulty("spawn"))
 
 
 ## spawn_rate() `seconds` into a run on a map spawning `map_spawn` times as many (static so the
@@ -288,25 +301,22 @@ static func rate_at(seconds: float, map_spawn: float) -> float:
 	return maxf(MIN_RATE, (0.8 + grown) * ease_in) * map_spawn
 
 
-## How many times the curve spawns `seconds` into a 无尽模式 run: 1 until Game.RUN_SECONDS, then
-## OVERTIME_SPAWN, OVERTIME_SPAWN_STEP more each 加班 tier after (the tiers of Game.overtime_tier).
-static func overtime_spawn_at(seconds: float) -> float:
-	if seconds < Game.RUN_SECONDS:
-		return 1.0
-	var tier := 1 + floori((seconds - Game.RUN_SECONDS) / Game.OVERTIME_STEP)
-	return OVERTIME_SPAWN + OVERTIME_SPAWN_STEP * (tier - 1)
-
-
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
 ## (3.5x by the ten-minute mark), times the map's (Maps: longer working weeks are harder).
 func hp_scale() -> float:
 	# The 加班申请 signed so far (.99) on top: enemies already out keep their health.
-	return hp_scale_at(_game.elapsed, Maps.difficulty("hp")) * _game.form_health_scale()
+	return hp_scale_at(_game.elapsed, Maps.difficulty("hp"), _game.endless) * _game.form_health_scale()
 
 
-## hp_scale() `seconds` into a run on a map whose enemies have `map_hp` times the health.
-static func hp_scale_at(seconds: float, map_hp: float) -> float:
-	return (1.0 + seconds / 60.0 * HP_PER_MINUTE) * map_hp
+## hp_scale() `seconds` into a run on a map whose enemies have `map_hp` times the health (in
+## 无尽模式 when `endless`, ENDLESS_HP_STEPS).
+static func hp_scale_at(seconds: float, map_hp: float, endless := false) -> float:
+	var minutes := seconds / 60.0
+	var grown := minutes * HP_PER_MINUTE
+	if endless:
+		for step: Array in ENDLESS_HP_STEPS:
+			grown += maxf(minutes - step[0], 0.0) * step[1]
+	return (1.0 + grown) * map_hp
 
 
 func tick(delta: float) -> void:
@@ -355,11 +365,12 @@ func seconds_to_next_boss() -> float:
 	return -1.0
 
 
-## The run's bosses, for the run's data: seconds and type, e.g. 120:deadline,240:server_elite.
+## The run's bosses, for the run's data: seconds and type, e.g. 120:deadline,240:server_elite. The
+## four of every run only: 无尽模式's later ones (ENDLESS_BOSS_EVERY) are planned an hour ahead.
 func boss_rolls() -> String:
 	var parts := PackedStringArray()
 	for event in _events:
-		if event["kind"] == "elite":
+		if event["kind"] == "elite" and not event.get("extra", false):
 			parts.append("%d:%s" % [roundi(event["at"]), event["type"]])
 	return ",".join(parts)
 
@@ -381,8 +392,20 @@ func _plan_events() -> Array[Dictionary]:
 		"count": 0, "text": weather["text"]})
 	var bosses := _draw_bosses()
 	for slot in bosses.size():
+		# 无尽模式 has no last one.
+		var last := slot == bosses.size() - 1 and not _game.endless
 		events.append({"at": BossKits.SLOT_AT[slot], "kind": "elite", "type": bosses[slot], "count": 1,
-			"text": "最后的考验：%s" if slot == bosses.size() - 1 else "首领出现：%s"})
+			"text": "最后的考验：%s" if last else "首领出现：%s"})
+	if _game.endless:
+		var pool: Array[String] = []
+		for map_id: String in Maps.ALL:
+			for boss: String in Maps.script_of(map_id).BOSSES:
+				pool.append(boss)
+		var at: float = BossKits.SLOT_AT[-1] + ENDLESS_BOSS_EVERY
+		while at <= ENDLESS_BOSSES_UNTIL:
+			events.append({"at": at, "kind": "elite", "type": pool[_game.rng.randi() % pool.size()], "count": 1,
+				"text": "首领出现：%s", "extra": true})
+			at += ENDLESS_BOSS_EVERY
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
 	return events
 

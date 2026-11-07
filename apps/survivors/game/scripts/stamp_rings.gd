@@ -41,7 +41,7 @@ func _draw() -> void:
 		return
 	var reach := game.view_half() + Vector2.ONE * Stamps.RADIUS
 	for id: String in Maps.current.STAMPS:
-		if Progress.has_stamp(id):
+		if game.stamps.done(id):
 			continue
 		var center := game.stamps.ring_center(id)
 		var offset := center - game.player.position

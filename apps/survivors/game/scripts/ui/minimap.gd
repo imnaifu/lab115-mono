@@ -57,9 +57,9 @@ func _draw() -> void:
 	var half := game.view_half()
 	var view := Rect2(_to_map(game.player.position - half, area, bounds), half * 2.0 * area.size / bounds.size)
 	draw_rect(view.intersection(area), Color(Art.INK, 0.12))
-	# Landmarks: filled once open, a grey ring before; none once checked in at.
+	# Landmarks: filled once open, a grey ring before; none once checked in at this run.
 	for id: String in Maps.current.STAMPS:
-		if Progress.has_stamp(id):
+		if game.stamps.done(id):
 			continue
 		var at := _to_map(game.stamps.ring_center(id), area, bounds)
 		if game.stamps.is_open(id):

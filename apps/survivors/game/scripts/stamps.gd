@@ -2,10 +2,14 @@ class_name Stamps
 extends RefCounted
 ## 打卡: one of the map's landmarks (Maps.current.STAMPS) opens at its time in the run (OPEN_AT, by
 ## its place in STAMPS: nearest first), and from then on a ring lies on the ground in front of it;
-## standing in the ring for CHECK_IN_SECONDS all told checks in there for good (Progress). A stamp
-## comes down on the screen and the landmark's small bonus applies from then on, this run and every
-## run after, on every map: the first piece of 局外成长. It is all the reward there is (.68, the user:
-## 打卡只给局外永久奖励).
+## standing in the ring for CHECK_IN_SECONDS all told checks in there. The first time ever it is for
+## good (Progress): a stamp comes down on the screen and the landmark's small bonus applies from then
+## on, this run and every run after, on every map: the first piece of 局外成长. Since 0.3.0 (the user:
+## 打卡局内送东西，每局都可以打卡，成就在第一次打卡就解锁 → 就随机一个掉落物) every landmark can be checked in at
+## again in every run, and every check-in, the first one too, lays one of a parcel's things down
+## (MapObjects.drop_loot: a 红包, 珍珠奶茶, magnet, 午休 or stars); the bonus and the 打卡 achievements
+## still come with the first one only. .68–0.2.3 a landmark checked in at was done with for good
+## (no ring, no arrow), and the bonus was all the reward (the user then: 打卡只给局外永久奖励).
 ##
 ## Since .68 (the user: 1 3 5 7 9 开门；出圈倒退，不暂停，不清零): the landmarks open at 1:00, 3:00,
 ## 5:00, 7:00 and 9:00 and stay open; outside the ring the time stood there runs back down as fast
@@ -29,13 +33,17 @@ const BONUSES := {
 ## Kinds whose amount is a plain number rather than a fraction shown as a percent.
 const PLAIN_BONUSES := ["max_hp", "regen", "luck"]
 
-signal checked_in(id: String)
+## `first`: the first time ever (its bonus now on for good); `gift`: the MapObjects.PARCEL_LOOT
+## kind it laid down.
+signal checked_in(id: String, first: bool, gift: String)
 ## A landmark not checked in at yet has just opened (the HUD's banner, which waits its turn and
 ## holds still under a dialog, unlike the one-line announcements that replace each other).
 signal opened(id: String)
 
-## Checked in at this run, in order (the result screen and the run's data).
+## Checked in at for the first time this run, in order (the result screen and the run's data).
 var new_ids := PackedStringArray()
+## Checked in at this run, first time or not (0.3.0): done with until the next run.
+var _done := {}
 
 var _game: Game
 ## The landmark whose ring the player is standing in, or "".
@@ -70,6 +78,17 @@ func is_open(id: String) -> bool:
 	return _game.elapsed >= open_at(id)
 
 
+## Whether `id` has been checked in at this run (its ring, arrow and minimap dot are gone till the
+## next one).
+func done(id: String) -> bool:
+	return _done.has(id)
+
+
+## How many landmarks were checked in at this run, first time or not (the run's data).
+func done_count() -> int:
+	return _done.size()
+
+
 ## How far along checking in at `id` is, 0 to 1.
 func held_ratio(id: String) -> float:
 	return minf(_held.get(id, 0.0) / CHECK_IN_SECONDS, 1.0)
@@ -83,7 +102,7 @@ func progress() -> float:
 func tick(delta: float) -> void:
 	_inside = ""
 	for id: String in Maps.current.STAMPS:
-		if Progress.has_stamp(id) or not is_open(id):
+		if done(id) or not is_open(id):
 			continue
 		if not _announced.has(id):
 			_announced[id] = true
@@ -103,12 +122,17 @@ func tick(delta: float) -> void:
 
 func _check_in(id: String) -> void:
 	_held.erase(id)
+	_done[id] = true
 	if _inside == id:
 		_inside = ""
-	Progress.add_stamp(id)
-	new_ids.append(id)
-	apply_bonus(_game.player, id)
-	checked_in.emit(id)
+	var first := not Progress.has_stamp(id)
+	if first:
+		Progress.add_stamp(id)
+		new_ids.append(id)
+		apply_bonus(_game.player, id)
+	# At the player's feet, so it is picked up there and then.
+	var gift := _game.map_objects.drop_loot(_game.player.position)
+	checked_in.emit(id, first, gift)
 
 
 ## Every landmark checked in at so far, on any map, on a player starting a run.

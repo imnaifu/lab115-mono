@@ -32,6 +32,8 @@ const LEVEL_UP_CARD_MIN_WIDTH := 112.0
 const NEXT_BOSS_WARNING := 20.0
 ## How long before Game.RUN_SECONDS the 离下班 countdown shows.
 const CLEAR_WARNING := 30.0
+## What a landmark checked in at again laid down (Stamps.checked_in's gift, MapObjects.PARCEL_LOOT).
+const GIFT_NAMES := {"red_packet": "一个红包", "heal": "一杯珍珠奶茶", "magnet": "一块磁铁", "nap": "一次午休", "xp": "一把星星"}
 ## The landmark on the title screen's map button (_map_button), fitted inside this square.
 const MAP_ICON := 26.0
 ## How long the 昵称 dialog waits after the last keystroke before asking the server (.97).
@@ -441,7 +443,7 @@ func _process(delta: float) -> void:
 	# speed up again around every level-up).
 	var playing := game.state == Game.State.PLAYING
 	var dialog := game.state in [Game.State.PAUSED, Game.State.LEVEL_UP, Game.State.CHEST, Game.State.REVIVE]
-	var last_minute := (playing or dialog) and game.elapsed >= Game.RUN_SECONDS - 60.0
+	var last_minute := (playing or dialog) and game.elapsed >= Game.RUN_SECONDS - 60.0 and not game.endless
 	Sound.set_mix(dialog, danger if playing else 0.0, last_minute, game.overtime_tier())
 	_update_overtime()
 
@@ -988,14 +990,12 @@ func _on_ultimate_went_off() -> void:
 
 func _update_clear_pill() -> void:
 	var seconds_left := Game.RUN_SECONDS - game.elapsed
-	_clear_pill.visible = seconds_left <= CLEAR_WARNING
+	# 无尽模式 has no 10:00 (0.3.0): no countdown to it, no clearing after.
+	_clear_pill.visible = seconds_left <= CLEAR_WARNING and not game.endless
 	if not _clear_pill.visible:
 		return
-	# 无尽模式 (0.2.0) has no floor to clear: more keep coming.
 	if seconds_left > 0.0:
-		_clear_label.text = tr("离下班 %s · 之后怪越来越多" if game.endless else "离下班 %s · 之后不再来新怪") % ("0:%02d" % ceili(seconds_left))
-	elif game.endless:
-		_clear_label.text = tr("无尽加班 · 暴躁 ×%d") % game.overtime_tier()
+		_clear_label.text = tr("离下班 %s · 之后不再来新怪") % ("0:%02d" % ceili(seconds_left))
 	else:
 		_clear_label.text = tr("加班中 · 剩 %d · 暴躁 ×%d") % [game.hostile_count(), game.overtime_tier()]
 
@@ -1130,9 +1130,11 @@ func _build_badge() -> void:
 	_root.add_child(_badge)
 
 
-func _on_checked_in(id: String) -> void:
+## The first time ever the bonus it brings for good; after that (0.3.0) the thing it laid down.
+func _on_checked_in(id: String, first: bool, gift: String) -> void:
 	var stamp: Dictionary = Maps.current.STAMPS[id]
-	_queue_badge([stamp["art"], tr("打卡成功") + " · " + Stamps.bonus_text(id), tr(stamp["name"]), Art.HP_RED, true])
+	var line := Stamps.bonus_text(id) if first else tr("送你%s") % tr(GIFT_NAMES.get(gift, ""))
+	_queue_badge([stamp["art"], tr("打卡成功") + " · " + line, tr(stamp["name"]), Art.HP_RED, true])
 
 
 ## A landmark opening: a banner (its picture, 开门了 · 去打卡 in the rings' yellow, its name) rather
@@ -1464,7 +1466,7 @@ func _mode_picker(portrait: bool) -> Control:
 
 
 func _mode_note(endless: bool) -> String:
-	return "10:00 后怪越来越多，一直打到倒下，比谁撑得久" if endless else "撑到 10:00 下班，清完场上的怪才算通关"
+	return "怪一直越来越多，打到倒下为止，比谁撑得久" if endless else "撑到 10:00 下班，清完场上的怪才算通关"
 
 
 ## The 出发 page (.96), from 开始搬砖: the five jobs and the picked one's card, the map (its picker
@@ -3178,10 +3180,9 @@ func _show_end(victory: bool) -> void:
 		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		body.add_child(right)
 
-	# 无尽模式 never wins (0.2.0): one past 10:00 reads as overtime done, not a project folded.
-	var endless_out := game.endless and game.elapsed >= Game.RUN_SECONDS
+	# 无尽模式 never wins and only ends one way (0.3.0: no 10:00 to have passed).
 	left.add_child(UiKit.kicker("IPO DAY" if victory else "ENDLESS" if game.endless else "GAME OVER"))
-	var title := UiKit.label("敲钟上市！" if victory else "通宵加班！" if endless_out else "项目黄了…", 30, "heavy")
+	var title := UiKit.label("敲钟上市！" if victory else "撑满 60 分钟！" if game.full_hour() else "无尽加班！" if game.endless else "项目黄了…", 30, "heavy")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left.add_child(title)
 	var sub_text := tr("第 %d 局 · %s") % [game.runs_before + 1, tr(Jobs.data(game.player.job)["name"])]
@@ -3323,8 +3324,7 @@ func _culprit_row(victory: bool) -> Control:
 ## The next run's one tip after a loss, as [headline, detail]: what most likely went wrong (the
 ## live data's early deaths were mostly one-weapon builds).
 func _end_advice(victory: bool) -> Array:
-	# A 无尽模式 run past 10:00 (0.2.0) only ever ends this way: nothing to put right.
-	if victory or (game.endless and game.elapsed >= Game.RUN_SECONDS):
+	if victory:
 		return []
 	var weapons := game.player.weapons.size()
 	if weapons <= 2:
@@ -4623,7 +4623,7 @@ func _send_clear() -> void:
 	_show_board_row(tr("正在上榜…"), false)
 	var answer: Dictionary = await Leaderboard.submit()
 	if answer.get("ok", false):
-		_show_board_row(tr("%s榜第 %d 名 · 最好 %s") % [_board_name(), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared)], false)
+		_show_board_row(tr("%s榜第 %d 名 · 最好 %s") % [_board_name(), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared or game.endless)], false)
 	else:
 		_show_board_row(Leaderboard.error_text(answer), not Leaderboard.has_name())
 
@@ -5000,7 +5000,8 @@ func _board_line(record: Dictionary) -> Control:
 	shown_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(shown_name)
 	# A run not won (.96) in muted type: 撑到 7:42 under the clear times.
-	var cleared: bool = record.get("cleared", true)
+	# 无尽模式's board (0.3.0) is all how long a run lasted, every one in the bold 12:34.5.
+	var cleared: bool = record.get("cleared", true) or _board_endless
 	var time := UiKit.label(Leaderboard.record_text(int(record.get("ms", 0)), cleared), 14 if cleared else 13, "display" if cleared else "strong", Art.INK if cleared else Art.INK_MUTED)
 	time.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	row.add_child(time)

@@ -199,11 +199,17 @@ func _open_parcel(parcel: Dictionary) -> void:
 	_parcel_timers.append(PARCEL_RESPAWN)
 	Sound.play("pick")
 	Effects.poof(game, parcel["at"], Color("c8a06a"))
+	drop_loot(parcel["at"])
+
+
+## One thing from PARCEL_LOOT, drawn by its weights, laid down `at`; which kind it was. A parcel's,
+## and since 0.3.0 a landmark checked in at (Stamps._check_in, the user: 打卡局内送东西 → 就随机一个掉落物).
+func drop_loot(at: Vector2) -> String:
 	var weights := PackedFloat32Array()
 	for entry: Array in PARCEL_LOOT:
 		weights.append(entry[1])
-	var at: Vector2 = parcel["at"]
-	match PARCEL_LOOT[game.rng.rand_weighted(weights)][0]:
+	var kind: String = PARCEL_LOOT[game.rng.rand_weighted(weights)][0]
+	match kind:
 		"red_packet":
 			game.drop(Pickup.Kind.RED_PACKET, at, Game.RED_PACKET_SALARY[game.rng.randi() % Game.RED_PACKET_SALARY.size()])
 		"heal":
@@ -214,6 +220,7 @@ func _open_parcel(parcel: Dictionary) -> void:
 			game.drop(Pickup.Kind.NAP, at, 1)
 		"xp":
 			game.drop(Pickup.Kind.XP, at, PARCEL_XP + PARCEL_XP_PER_MINUTE * floori(game.elapsed / 60.0))
+	return kind
 
 
 ## Lays a `kind` down at a free spot (at least `away` from the player too), with its picture.
