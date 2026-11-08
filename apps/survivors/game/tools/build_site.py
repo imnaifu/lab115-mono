@@ -390,7 +390,7 @@ def difficulty_section(data: dict) -> str:
     map_hp_note = f"；表里是每分钟的倍率，地图本身还要再 ×{number(map_hp)}" if map_hp != 1.0 else ""
     curve_card = f"""<article class="card"><h3>怪越来越多、越来越抗打</h3>
 <div class="scroll"><table class="nums"><tr><th>时间</th><th>每秒刷怪</th><th>怪物生命</th></tr>{minute_rows}</table></div>
-<p class="muted">怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样{map_hp_note}。场上到了 {pacing['max_alive']} 只就先停刷。</p></article>"""
+<p class="muted">每秒刷怪每 30 秒多 0.225 只，一档一档往上涨（表里是每分钟开头那一档）。怪物生命每分钟 +{percent(pacing['hp_per_minute'])}，boss 也一样{map_hp_note}。场上到了 {pacing['max_alive']} 只就先停刷。</p></article>"""
 
     start, wave_rows = 0.0, []
     for wave in pacing["waves"]:

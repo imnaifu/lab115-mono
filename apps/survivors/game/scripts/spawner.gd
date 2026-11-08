@@ -9,28 +9,20 @@ extends RefCounted
 ## and phones 200 (WebAssembly on a phone's slower CPU needs the smaller crowd).
 const MAX_ALIVE := 200
 const RING_RADIUS := 210.0
-## The first minutes could spawn fewer enemies than the curve says (EASE_IN_START at the start, back
-## to the full rate by 3:00). Off since 0.3.2 (the user: 开局也改成 1, after asking whether the
-## spawning is linear): the curve from the start, held at MIN_RATE until it passes it at about
-## 1:16, so it is straight lines all the way. 90% in 0.2.2–0.3.1 (前期怪多一点点), 60% before.
-const EASE_IN_SECONDS := 180.0
-const EASE_IN_START := 1.0
+## Spawns a second, a staircase on a straight line (0.3.23, the user: 怪数量也改成线性增长，阶梯线性 →
+## 每 30 秒一档): SPAWN_START, and SPAWN_STEP more every SPAWN_STEP_SECONDS: 1.5 to start, 1.95 at
+## 1:00, 2.85 at 3:00, 3.75 at 5:00, 6.0 at 10:00, on and on in 无尽模式 (10.5 at 20:00), times the
+## map's. Up to 0.3.22 it was held at 1.5 until the curve 0.8 + 0.55 a minute passed it (about
+## 1:16), 0.45 a minute from 5:00 (5.8 at 10:00); the same from 5:00 within 0.25, a fifth more in
+## minutes 1–4. (66–0.2.1 it eased in from 60%, 0.2.2–0.3.1 from 90%; 66 floored it at 1 a second.)
+const SPAWN_START := 1.5
+const SPAWN_STEP := 0.225
+const SPAWN_STEP_SECONDS := 30.0
 ## How much tougher every enemy gets a minute (.40: 0.2 until then; the user wanted it harder
 ## after .39 made it much easier). The first minute's Bug still takes two of a job weapon's 7s.
 const HP_PER_MINUTE := 0.25
-## How much the spawn rate grows a minute (spawns a second): EARLY_GROWTH up to LATE_FROM_MINUTE,
-## LATE_GROWTH after (66, the user: 后期怪有点过分多了，稍微减一点; 0.55 all the way until then).
-## Only a little less spawned (7:00 -4%, 10:00 -8%), but late in a run more come than the player
-## kills, so the crowd that piles up shrinks by more than that.
-const EARLY_GROWTH := 0.55
-const LATE_GROWTH := 0.45
-const LATE_FROM_MINUTE := 5.0
-## The fewest spawns a second, before the map's multiple (66, the user: 每秒刷怪从 1/1s 开始，不要
-## 0.5). 1.5 from 0.2.2 (1 until then): the curve starts at 0.8 and passes 1.5 at about 1:16, so
-## it is held there until then; 1:30 1.63, 2:00 1.9, 2:30 2.18, from 3:00 the same as ever.
-const MIN_RATE := 1.5
 ## 无尽模式 (Game.endless): the curve simply goes on (0.3.0, the user: 无尽模式去掉十分钟的描述，就是怪一直
-## 线性加下去; picked 沿用普通曲线一直延长): 5.8 a second at 10:00, 8.05 at 15:00, 10.3 at 20:00, health
+## 线性加下去; picked 沿用普通曲线一直延长): 6.0 a second at 10:00, 8.25 at 15:00, 10.5 at 20:00 (0.3.23), health
 ## +25% a minute as ever, MAX_ALIVE unchanged. 0.2.0–0.2.3 jumped to 1.5 times the curve at 10:00
 ## and 0.25 more every 30 seconds. And past the last of the four bosses (BossKits.SLOT_AT) one
 ## more comes every ENDLESS_BOSS_EVERY seconds (the user picked 每 2 分钟接着来一个), any map's boss
@@ -282,10 +274,8 @@ func _draw_bosses() -> Array[String]:
 	return bosses
 
 
-## Spawns per second: never under MIN_RATE (1.5 at the start since 0.2.2, 1 until then, where the ease-in alone gave about
-## 0.5 until 66; see EASE_IN_SECONDS), 3.55 by 5:00, then
-## growing more slowly (LATE_GROWTH), 5.8 by the ten-minute mark. Kept lower than the crowd the
-## game first had (9 a second by the end), since the bosses carry more of the pressure. .53–.58
+## Spawns per second: the staircase of SPAWN_START (0.3.23), 6.0 by the ten-minute mark. Kept lower
+## than the crowd the game first had (9 a second by the end), since the bosses carry more of the pressure. .53–.58
 ## spawned more on top from 5:00 on (+19% a minute, 12.3 a second by 10:00); .59 took that out
 ## (the user: 这个逻辑去掉), partly because MAX_ALIVE likely cut much of it off late in a run anyway.
 func spawn_rate() -> float:
@@ -295,10 +285,7 @@ func spawn_rate() -> float:
 ## spawn_rate() `seconds` into a run on a map spawning `map_spawn` times as many (static so the
 ## 官网 can chart it).
 static func rate_at(seconds: float, map_spawn: float) -> float:
-	var ease_in := lerpf(EASE_IN_START, 1.0, minf(seconds / EASE_IN_SECONDS, 1.0))
-	var minutes := seconds / 60.0
-	var grown := EARLY_GROWTH * minf(minutes, LATE_FROM_MINUTE) + LATE_GROWTH * maxf(minutes - LATE_FROM_MINUTE, 0.0)
-	return maxf(MIN_RATE, (0.8 + grown) * ease_in) * map_spawn
+	return (SPAWN_START + SPAWN_STEP * floorf(seconds / SPAWN_STEP_SECONDS)) * map_spawn
 
 
 ## Enemy HP multiplier so late enemies keep up with upgraded weapons: 1 + HP_PER_MINUTE a minute
