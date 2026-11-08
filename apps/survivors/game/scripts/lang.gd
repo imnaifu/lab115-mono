@@ -1416,6 +1416,8 @@ const EN := {
 	"怪一直越来越多，打到倒下为止，比谁撑得久": "More and more keep coming until you go down: last the longest",
 	"撑到 10:00 下班，清完场上的怪才算通关": "Last to 10:00, then clear the floor to win",
 	"无尽加班！": "Endless Overtime!",
+	# Screensaver corner cut-in (0.3.15)
+	"等了一整个屏保的时间": "Worth the whole screensaver's wait",
 	# Achievements (0.3.14)
 	"年终奖拿到手软": "Bonus Overload",
 	"一局打掉 4 个 boss": "Beat 4 bosses in a run",

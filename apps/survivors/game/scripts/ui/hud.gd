@@ -897,6 +897,7 @@ func _build_ultimate_button() -> void:
 	_ultimate_ring.draw.connect(_draw_ultimate_ring)
 	_ultimate_button.add_child(_ultimate_ring)
 	game.ultimates.winding_up.connect(_play_cut_in)
+	game.corner_cut_in.connect(_play_corner_cut_in)
 	game.ultimates.went_off.connect(_on_ultimate_went_off)
 	game.ultimates.charged.connect(_on_ultimate_charged)
 	_ultimate_label = UiKit.label(Jobs.ultimate(game.player.job)["name"], 11, "strong", Art.INK)
@@ -963,6 +964,14 @@ func _on_ultimate_charged() -> void:
 	var ultimate := Jobs.ultimate(game.player.job)
 	var where := tr("技能充好了：点右上角放「%s」") if Device.is_handheld() else tr("技能充好了：按空格放「%s」")
 	_show_toast(where % tr(ultimate["name"]) + "\n" + tr(ultimate["brief"]), ULTIMATE_HINT_SECONDS)
+
+
+## The screensaver's logo in a corner (Game.on_screensaver_corner, 0.3.15): a 技能's cut-in, its
+## logo and words, as long as the game stands still for it.
+func _play_corner_cut_in() -> void:
+	_cut_in = SkillCutIn.new()
+	_root.add_child(_cut_in)
+	_cut_in.play_with(Upgrades.WEAPONS["screensaver"]["art"], tr("撞角了！"), tr("等了一整个屏保的时间"), _root.size, Game.CORNER_FREEZE)
 
 
 ## Set off (0.1.1): the cut-in over the HUD while the game stands still (SkillCutIn).

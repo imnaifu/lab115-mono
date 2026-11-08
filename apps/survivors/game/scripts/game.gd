@@ -14,6 +14,8 @@ signal chest_opened(funding_round: Dictionary, salary: int, item: Dictionary, bo
 signal boss_move(form: String)
 ## The player died holding a 返聘 (Progress.revives_left, `left` of them) they may spend.
 signal revive_offered(left: int)
+## The screensaver's logo hit a corner and the game stands still for its cut-in (on_screensaver_corner).
+signal corner_cut_in
 
 ## CHEST is a boss's year-end bonus being opened (the chest dialog in Hud). REVIVE is the player
 ## dead, asked whether to spend a 返聘 (the revive dialog in Hud).
@@ -278,6 +280,12 @@ var _star_hint_done := false
 var _next_hitstop_msec := 0
 ## Standing still for a 技能 going off (freeze): no hit-stop may start or end meanwhile.
 var _frozen := false
+## 撞角了 (0.3.15, the user: 屏保撞角暂停下，做个特效，类似技能): the game stands still CORNER_FREEZE seconds
+## for a cut-in like a 技能's, at most once every CORNER_CUT_IN_GAP seconds of play (three logos can
+## hit corners close together); in between a corner just blasts and says so, as before.
+const CORNER_FREEZE := 0.8
+const CORNER_CUT_IN_GAP := 20.0
+var _corner_cut_in_at := -INF
 ## Run time (`elapsed`) before which the job's weapon keeps quiet.
 var _next_taunt_at := 0.0
 ## Where the outsourced workers stand this frame (SquadWeapon sets it): enemies near one go for it
@@ -587,6 +595,18 @@ func _end_hitstop() -> void:
 
 ## The game standing quite still for `seconds` of real time, then `then` (0.1.1: a 技能 going off,
 ## SkillCutIn). The wait is paused with the tree, so the pause screen opened meanwhile holds it.
+## The screensaver's logo hit a corner (BounceWeapon, after its blast): the achievement, and the
+## cut-in (CORNER_FREEZE) unless one played lately, the game already stands still (a 技能's cut-in)
+## or it is the 出发 page's demo.
+func on_screensaver_corner() -> void:
+	achievements.on_corner()
+	if previewing or _frozen or state != State.PLAYING or elapsed - _corner_cut_in_at < CORNER_CUT_IN_GAP:
+		return
+	_corner_cut_in_at = elapsed
+	corner_cut_in.emit()
+	freeze(CORNER_FREEZE, func() -> void: pass)
+
+
 # --- The 出发 page's demo ------------------------------------------------------------------
 
 ## The 出发 page came up (Hud._process): the game behind it plays the demo (PREVIEW_CROWD).

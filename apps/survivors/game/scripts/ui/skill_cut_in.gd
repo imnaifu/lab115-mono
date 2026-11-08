@@ -29,6 +29,17 @@ var _face: Control
 
 ## Builds it over `area_size` (the HUD's root, turned or not) and plays it once, then frees itself.
 func play(job: String, area_size: Vector2) -> void:
+	var ultimate := Jobs.ultimate(job)
+	# The product manager's line is the skill's name shouted (今天必须上线！): said once is enough.
+	var line := tr(ultimate["line"])
+	if line.trim_suffix("！").trim_suffix("!") == tr(ultimate["name"]):
+		line = ""
+	play_with(Jobs.data(job)["art"], tr(ultimate["name"]), line, area_size, SECONDS)
+
+
+## The same with its own picture, words and length (0.3.15: the screensaver's logo hitting a
+## corner, Hud._play_corner_cut_in). `line` may be empty.
+func play_with(art: String, title: String, line: String, area_size: Vector2, seconds: float) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for cover: ColorRect in [_dim, _flash]:
@@ -40,7 +51,7 @@ func play(job: String, area_size: Vector2) -> void:
 	_slider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_slider.size = area_size
 	add_child(_slider)
-	_build_band(job, area_size)
+	_build_band(art, title, line, area_size)
 
 	var tween := create_tween()
 	# The game's clock stands at 0 meanwhile; this keeps to the real one.
@@ -53,7 +64,7 @@ func play(job: String, area_size: Vector2) -> void:
 	tween.parallel().tween_property(_slider, "position:x", 0.0, SLIDE_IN).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(_face, "scale", Vector2.ONE, SLIDE_IN + 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# Holds still in the middle, drifting a touch so it doesn't look stuck.
-	var hold := SECONDS - SLIDE_IN - SLIDE_OUT
+	var hold := seconds - SLIDE_IN - SLIDE_OUT
 	tween.tween_property(_slider, "position:x", area_size.x * 0.03, hold)
 	tween.tween_property(_slider, "position:x", width, SLIDE_OUT).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(_dim, "color:a", 0.0, SLIDE_OUT)
@@ -62,8 +73,7 @@ func play(job: String, area_size: Vector2) -> void:
 
 ## The tilted band across the middle: yellow with ink edges and speed lines, the face and the words
 ## in its middle.
-func _build_band(job: String, area_size: Vector2) -> void:
-	var ultimate := Jobs.ultimate(job)
+func _build_band(art: String, title: String, line: String, area_size: Vector2) -> void:
 	# Wider than the screen, so the tilt never shows its ends.
 	var overhang := area_size.y * 0.2 + 40.0
 	_band.position = Vector2(-overhang, (area_size.y - BAND_HEIGHT) / 2.0)
@@ -80,7 +90,7 @@ func _build_band(job: String, area_size: Vector2) -> void:
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_band.add_child(row)
-	_face = UiKit.well(Jobs.data(job)["art"], FACE_SIZE, Art.PAPER, UiKit.PILL)
+	_face = UiKit.well(art, FACE_SIZE, Art.PAPER, UiKit.PILL)
 	_face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_face.pivot_offset = Vector2.ONE * FACE_SIZE / 2.0
 	_face.scale = Vector2.ONE * 0.4
@@ -90,13 +100,11 @@ func _build_band(job: String, area_size: Vector2) -> void:
 	words.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(words)
-	var name_label := UiKit.label(tr(ultimate["name"]), 30, "display", Art.INK)
+	var name_label := UiKit.label(title, 30, "display", Art.INK)
 	name_label.add_theme_constant_override("outline_size", 8)
 	name_label.add_theme_color_override("font_outline_color", Art.PAPER)
 	words.add_child(name_label)
-	# The product manager's line is the skill's name shouted (今天必须上线！): said once is enough.
-	var line := tr(ultimate["line"])
-	if line.trim_suffix("！").trim_suffix("!") != tr(ultimate["name"]):
+	if line != "":
 		words.add_child(UiKit.label(line, 14, "strong", Art.INK))
 
 
