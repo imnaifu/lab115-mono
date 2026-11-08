@@ -1224,7 +1224,7 @@ const EN := {
 	"定点": "Ground",
 	"远程": "Ranged",
 	"红带是它要冲的路线，横着躲开": "The red lane is where it will charge: step sideways",
-	"红色扇形要扫过来，退出扇形": "The red fan is about to sweep: get out of it",
+	"红色扇形要扫过来，往侧边走出扇形": "The red fan is about to sweep: step out of it sideways",
 	"红圈是它要落下的地方，走出去": "The red circle is where it will land: walk out",
 	"它会冲到你跟前，脚下的红圈填满就炸，退到圈外": "It rushes up to you, and the circle under it blows when full: back out of it",
 	"红圈一个接一个落在脚下，一直往前走": "Circles drop under you one after another: keep walking",

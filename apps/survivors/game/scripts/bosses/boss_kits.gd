@@ -42,7 +42,7 @@ const SLOT_STATS := [
 ## (Hud) and in the 图鉴.
 const HINTS := {
 	"dash": "红带是它要冲的路线，横着躲开",
-	"sweep": "红色扇形要扫过来，退出扇形",
+	"sweep": "红色扇形要扫过来，往侧边走出扇形",
 	"leap": "红圈是它要落下的地方，走出去",
 	"slam": "它会冲到你跟前，脚下的红圈填满就炸，退到圈外",
 	"chain": "红圈一个接一个落在脚下，一直往前走",
@@ -92,7 +92,9 @@ const KITS := {
 		"lines": {"arrive": "此事需提交委员会审议", "attack": ["已经替你决定好了"], "kill": "全票通过", "death": "本次会议休会"},
 	},
 	"redundancy": {
-		"attacks": [{"kind": "melee", "form": "sweep", "name": "一刀切", "radius": 80.0, "angle": 100.0, "warn": 1.0, "damage": 15.0}],
+		# 0.3.16 (the user: 冗余通知 boss 的扇形宽度小点，长度长一点，这样可以侧边走位躲): 60° and 120 long
+		# (100° and 80 until then): a step aside in the second's warning clears it; backing off doesn't.
+		"attacks": [{"kind": "melee", "form": "sweep", "name": "一刀切", "radius": 120.0, "angle": 60.0, "warn": 1.0, "damage": 15.0}],
 		"lines": {"arrive": "Hi，约你 15 分钟聊聊", "attack": ["一刀切"], "kill": "请把工牌留在前台", "death": "这份通知发错人了"},
 	},
 	"gdpr": {
