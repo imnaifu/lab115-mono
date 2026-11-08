@@ -33,7 +33,7 @@ const NEXT_BOSS_WARNING := 20.0
 ## How long before Game.RUN_SECONDS the 离下班 countdown shows.
 const CLEAR_WARNING := 30.0
 ## What a landmark checked in at again laid down (Stamps.checked_in's gift, MapObjects.PARCEL_LOOT).
-const GIFT_NAMES := {"red_packet": "一个红包", "heal": "一杯珍珠奶茶", "magnet": "一块磁铁", "nap": "一次午休", "xp": "一把星星"}
+const GIFT_NAMES := {"red_packet": "一个红包", "heal": "一杯珍珠奶茶", "magnet": "一块磁铁", "nap": "一次午休"}
 ## The landmark on the title screen's map button (_map_button), fitted inside this square.
 const MAP_ICON := 26.0
 ## How long the 昵称 dialog waits after the last keystroke before asking the server (.97).
@@ -1135,7 +1135,8 @@ func _build_badge() -> void:
 ## The first time ever the bonus it brings for good; after that (0.3.0) the thing it laid down.
 func _on_checked_in(id: String, first: bool, gift: String) -> void:
 	var stamp: Dictionary = Maps.current.STAMPS[id]
-	var line := Stamps.bonus_text(id) if first else tr("送你%s") % tr(GIFT_NAMES.get(gift, ""))
+	# The stars always come with it (0.3.11): 送你星星和一个红包.
+	var line := Stamps.bonus_text(id) if first else tr("送你星星和%s") % tr(GIFT_NAMES.get(gift, ""))
 	_queue_badge([stamp["art"], tr("打卡成功") + " · " + line, tr(stamp["name"]), Art.HP_RED, true])
 
 

@@ -69,7 +69,15 @@ func _draw_open(id: String, center: Vector2) -> void:
 		# The rim filling clockwise from the top, thick, like the ring over the player's head.
 		draw_arc(center, Stamps.RADIUS - 4.0, -PI / 2.0, -PI / 2.0 + TAU * ratio, 64, Art.BRAND_DEEP, 8.0, true)
 	var seconds := floori(ratio * Stamps.CHECK_IN_SECONDS)
-	_label(center, tr("打卡中 %d/%d") % [seconds, roundi(Stamps.CHECK_IN_SECONDS)], Art.INK)
+	var total := roundi(Stamps.CHECK_IN_SECONDS)
+	# 打卡中 only while standing in it (0.3.11, the user: 打卡没进去的时候不要显示打卡中，进去才是打卡中，进去前
+	# 叫别的); outside, what to do, and how far it got if it was started.
+	if game.stamps.inside_id() == id:
+		_label(center, tr("打卡中 %d/%d") % [seconds, total], Art.INK)
+	elif seconds > 0:
+		_label(center, tr("打卡 %d/%d · 回圈里继续") % [seconds, total], Art.INK_MUTED)
+	else:
+		_label(center, tr("打卡点 · 站进圈 %d 秒") % total, Art.INK)
 
 
 func _label(center: Vector2, text: String, color: Color) -> void:

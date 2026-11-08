@@ -335,7 +335,7 @@ def drops_section(data: dict) -> str:
 def objects_section(data: dict) -> str:
     """The things laid about the map at random each run (.99, MapObjects), with their numbers."""
     objects = data["map_objects"]
-    loot_names = {"red_packet": "红包", "heal": "珍珠奶茶", "magnet": "磁铁", "nap": "午休", "xp": "一把经验"}
+    loot_names = {"red_packet": "红包", "heal": "珍珠奶茶", "magnet": "磁铁", "nap": "午休"}
     loot_total = sum(entry[1] for entry in objects["parcel_loot"])
     loot = "、".join(f"{loot_names[entry[0]]} {percent(entry[1] / loot_total)}" for entry in objects["parcel_loot"])
 
@@ -344,8 +344,8 @@ def objects_section(data: dict) -> str:
 <p class="muted">{body}</p></div></div></article>"""
 
     cards = [
-        card("parcel", "快递", f"地上一直有 {objects['parcels']} 个，碰一下就开，一定有东西：{loot}。"
-             f"经验是 {objects['parcel_xp']} 点，每过一分钟多 {objects['parcel_xp_per_minute']} 点。开掉一个，{number(objects['parcel_respawn'])} 秒后在别处补一个。"),
+        card("parcel", "快递", f"地上一直有 {objects['parcels']} 个，碰一下就开：一定有一把经验（{objects['parcel_xp']} 点，每过一分钟多 {objects['parcel_xp_per_minute']} 点），"
+             f"再加一样：{loot}。开掉一个，{number(objects['parcel_respawn'])} 秒后在别处补一个。"),
         card("meeting_room", "紧急会议室", f"每局 {objects['rooms']} 间。站进圈里就开会：四周围上来 {objects['room_elites']} 个金色精英（当时的小怪，生命 ×{number(objects['room_elite_health'])}），"
              f"{number(objects['room_seconds'])} 秒内全打掉就开一个年终奖（按第 1 个 boss 的工资，也送一个升级）；没打完，精英留下，什么都不给。"),
         card("paper", "加班申请", f"每局 {objects['forms']} 张。站进圈里 {number(objects['form_sign'])} 秒签字，签了不能撤："
@@ -489,7 +489,7 @@ def stamps_section(data: dict) -> str:
         cards = "".join(f"""<article class="card stamp">{art(s['art'], 72, s['name'])}<h4>{esc(s['name'])}</h4>
 <p class="muted">{clock(s['opens'])} 开门 · {esc(s['note'])}</p><p class="bonus">{esc(s['bonus'])}</p></article>""" for s in game_map["stamps"])
         blocks.append(f'<h3 class="sub" id="stamps-{esc(game_map["id"])}">{esc(game_map["name"])}</h3><div class="grid stamps">{cards}</div>')
-    return section("stamps", "打卡点", "地图上 5 个打卡点（中间是大厂总部，四角是城市地标），一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（中间的先开，再从西北角顺时针），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。第一次在某个地标打卡给一点永久加成，这一局和以后每一局都带着；每局都能再打，每次打卡都在脚边掉一样东西（红包、珍珠奶茶、磁铁、午休或星星，和快递里的一样），同一局里一个地标只能打一次。",
+    return section("stamps", "打卡点", "地图上 5 个打卡点（中间是大厂总部，四角是城市地标），一局里按 1:00、3:00、5:00、7:00、9:00 依次开门（中间的先开，再从西北角顺时针），开门后地上出现一个黄圈，在圈里累计站满 10 秒就算打卡；出了圈进度会往回退，退得和涨得一样快，回来接着涨。第一次在某个地标打卡给一点永久加成，这一局和以后每一局都带着；每局都能再打，每次打卡都在脚边掉一把经验和一样东西（红包、珍珠奶茶、磁铁或午休，和快递里的一样），同一局里一个地标只能打一次。",
                    "".join(blocks))
 
 

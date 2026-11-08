@@ -94,6 +94,11 @@ func held_ratio(id: String) -> float:
 	return minf(_held.get(id, 0.0) / CHECK_IN_SECONDS, 1.0)
 
 
+## The landmark whose ring the player is standing in, "" when none (StampRings' 打卡中, 0.3.11).
+func inside_id() -> String:
+	return _inside
+
+
 ## How far along checking in is (0 to 1), for the ring over the player; 0 when not in a ring.
 func progress() -> float:
 	return held_ratio(_inside) if _inside != "" else 0.0

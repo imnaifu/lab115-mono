@@ -3,7 +3,7 @@ extends Node2D
 ## Things laid about the map at random each run (.99, the user: 参考 Megabonk，给地图更多随机的设定;
 ## picked 快递, 紧急会议室, 加班申请 and 工位充电 from its pots and shrines):
 ## - 快递 (parcels, PARCELS on the map at a time): walking into one opens it (the user: 纸箱碰一下就开),
-##   and it always holds one thing (the user: 100% 有掉落，红包多一点), drawn by PARCEL_LOOT; the
+##   and it always holds stars and one thing (the user: 100% 有掉落，红包多一点), drawn by PARCEL_LOOT; the
 ##   map's only 珍珠奶茶 since .99 (the user: 奶茶放到快递里面，boss 不用了). Another turns up somewhere
 ##   else PARCEL_RESPAWN seconds after one is opened.
 ## - 紧急会议室 (meeting rooms, ROOMS a run): standing in one's ring for ROOM_ENTER starts a meeting:
@@ -26,8 +26,13 @@ const PARCEL_RESPAWN_AWAY := 500.0
 ## Opened when the player comes this close.
 const PARCEL_REACH := 20.0
 const PARCEL_SIZE := 24.0
-## What a parcel holds: [kind, weight]. 红包 the likeliest (the user: 红包多一点).
-const PARCEL_LOOT := [["red_packet", 40.0], ["heal", 20.0], ["magnet", 15.0], ["nap", 15.0], ["xp", 10.0]]
+## A parcel says what it is only this close (0.3.11): ten of them labelled at once would clutter.
+const PARCEL_LABEL_REACH := 160.0
+## What a parcel holds besides its stars: [kind, weight], one drawn every time. 红包 the likeliest
+## (the user: 红包多一点). Since 0.3.11 (the user: 快递经验必给，其他按概率给 → 经验必给，再必给一样别的) the
+## stars always come and one of these with them (44 / 22 / 17 / 17%); until then just one thing, the
+## stars one of five at 10%.
+const PARCEL_LOOT := [["red_packet", 40.0], ["heal", 20.0], ["magnet", 15.0], ["nap", 15.0]]
 ## A parcel's stars: this much XP plus this much a minute into the run.
 const PARCEL_XP := 4
 const PARCEL_XP_PER_MINUTE := 2
@@ -220,9 +225,12 @@ func _open_parcel(parcel: Dictionary) -> void:
 	drop_loot(parcel["at"])
 
 
-## One thing from PARCEL_LOOT, drawn by its weights, laid down `at`; which kind it was. A parcel's,
-## and since 0.3.0 a landmark checked in at (Stamps._check_in, the user: 打卡局内送东西 → 就随机一个掉落物).
+## A parcel's stars (PARCEL_XP) and one thing from PARCEL_LOOT, drawn by its weights, side by side
+## `at`; which thing it was. A parcel's, and since 0.3.0 a landmark checked in at (Stamps._check_in,
+## the user: 打卡局内送东西 → 就随机一个掉落物; the stars too since 0.3.11: 一起改，和快递一样).
 func drop_loot(at: Vector2) -> String:
+	game.drop(Pickup.Kind.XP, at + Vector2(-8.0, 0.0), PARCEL_XP + PARCEL_XP_PER_MINUTE * floori(game.elapsed / 60.0))
+	at += Vector2(8.0, 0.0)
 	var weights := PackedFloat32Array()
 	for entry: Array in PARCEL_LOOT:
 		weights.append(entry[1])
@@ -236,8 +244,6 @@ func drop_loot(at: Vector2) -> String:
 			game.drop(Pickup.Kind.MAGNET, at, 1)
 		"nap":
 			game.drop(Pickup.Kind.NAP, at, 1)
-		"xp":
-			game.drop(Pickup.Kind.XP, at, PARCEL_XP + PARCEL_XP_PER_MINUTE * floori(game.elapsed / 60.0))
 	return kind
 
 
@@ -334,23 +340,31 @@ func _draw() -> void:
 		var offset: Vector2 = thing["at"] - game.player.position
 		if absf(offset.x) > reach.x or absf(offset.y) > reach.y:
 			continue
+		# Each says what it is and what it's for, on two lines (0.3.11, the user: 紧急会议室是干啥的，地图上都标清楚).
 		match thing["kind"]:
+			"parcel":
+				if offset.length() <= PARCEL_LABEL_REACH:
+					_label(thing["at"], PARCEL_SIZE * 0.5 + 12.0, tr("快递 · 碰一下就开") + "\n" + tr("必有经验，还可能有红包 / 奶茶 / 磁铁 / 午休"), Color("a8743a"))
 			"room":
 				_draw_room(thing)
 			"form":
 				_draw_ring(thing["at"], FORM_RADIUS, thing["held"] / FORM_SIGN, Art.BOSS_RED, Art.PINK_LIGHT)
-				_label(thing["at"], FORM_RADIUS, tr("加班申请 · 怪 +%d%% 血 · 奖金 +%d%%") % [roundi(Game.FORM_HEALTH * 100.0), roundi(Game.FORM_REWARD * 100.0)], Art.BOSS_RED)
+				_label(thing["at"], FORM_RADIUS, tr("加班申请 · 站 %s 秒签字") % _seconds(FORM_SIGN) + "\n" \
+					+ tr("之后怪 +%d%% 血，年终奖和红包 +%d%%") % [roundi(Game.FORM_HEALTH * 100.0), roundi(Game.FORM_REWARD * 100.0)], Art.BOSS_RED)
 			"desk":
 				var color: Color = GOLD if thing["golden"] else Art.GREEN
 				_draw_ring(thing["at"], DESK_RADIUS, thing["held"] / DESK_CHARGE, color, Art.MINT_LIGHT)
 				var name := tr("金色工位") if thing["golden"] else tr("工位")
-				_label(thing["at"], DESK_RADIUS, tr("%s · 充电 %d/%d") % [name, floori(thing["held"]), roundi(DESK_CHARGE)], Art.GREEN_INK)
+				var what := tr("站满 %d 秒选一张史诗 / 传说属性卡") if thing["golden"] else tr("站满 %d 秒选一张属性卡")
+				_label(thing["at"], DESK_RADIUS, tr("%s · 充电 %d/%d") % [name, floori(thing["held"]), roundi(DESK_CHARGE)] + "\n" \
+					+ what % roundi(DESK_CHARGE), Art.GREEN_INK)
 
 
 func _draw_room(room: Dictionary) -> void:
 	if room["state"] == "idle":
 		_draw_ring(room["at"], ROOM_RADIUS, room["held"] / ROOM_ENTER, Art.LINK, Art.SKY_LIGHT)
-		_label(room["at"], ROOM_RADIUS, tr("紧急会议室 · 站进来开会"), Art.LINK)
+		_label(room["at"], ROOM_RADIUS, tr("紧急会议室 · 站进圈开会") + "\n" \
+			+ tr("%d 秒内打完 %d 个精英，开一份年终奖") % [roundi(ROOM_SECONDS), ROOM_ELITES], Art.LINK)
 		return
 	# The meeting on: the ring empties as the time runs out.
 	_draw_ring(room["at"], ROOM_RADIUS, room["left"] / ROOM_SECONDS, Art.BOSS_RED, Art.PINK_LIGHT)
@@ -372,8 +386,17 @@ func _label(center: Vector2, radius: float, text: String, color: Color) -> void:
 func _draw_labels() -> void:
 	var font := Art.font(700)
 	for label: Array in _label_queue:
-		var text: String = label[1]
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
-		var at: Vector2 = label[0] - Vector2(width / 2.0, 0.0)
-		_labels.draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, 4, Art.PAPER)
-		_labels.draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, label[2])
+		# Line by line, each centred (0.3.11: a name line and a what-it's-for line).
+		var lines: PackedStringArray = (label[1] as String).split("\n")
+		for i in lines.size():
+			var text := lines[i]
+			var size := FONT_SIZE if i == 0 else FONT_SIZE - 2
+			var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+			var at: Vector2 = label[0] + Vector2(-width / 2.0, i * (FONT_SIZE + 3.0))
+			_labels.draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Art.PAPER)
+			_labels.draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, label[2])
+
+
+## Seconds as a label says them: 2, 1.5.
+static func _seconds(value: float) -> String:
+	return str(roundi(value)) if is_equal_approx(value, roundf(value)) else str(snappedf(value, 0.1))
