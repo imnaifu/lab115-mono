@@ -138,6 +138,11 @@ func _refresh_texture() -> void:
 	_halo.scale = Vector2.ONE * (size * HALO_SCALE / _halo.texture.get_height())
 
 
+## The soft disc under every pickup, for others that glow the same way (MapObjects, 0.3.10).
+static func halo_texture() -> GradientTexture2D:
+	return _halo_glow()
+
+
 ## A soft white disc fading to nothing at the rim, tinted per kind by the halo's modulate.
 static func _halo_glow() -> GradientTexture2D:
 	if _halo_texture == null:

@@ -50,6 +50,19 @@ const DESK_RADIUS := 70.0
 const DESK_CHARGE := 8.0
 const DESK_SIZE := 34.0
 const GOLD := Color(1.0, 0.8, 0.25)
+## A glow under each thing (0.3.10, the user: 快递什么的加个发光之类的明显一点 → 快递那些加发光), the soft disc
+## the pickups lie on (Pickup.halo_texture): GLOW_SCALE times the thing's size, its kind's colour
+## (the minimap's, a little lighter; a golden desk's gold), swelling and shrinking by GLOW_PULSE and
+## brightening and dimming between GLOW_ALPHA, GLOW_SPEED radians a second; and every GLOW_FLASH_EVERY
+## seconds the thing itself flashes brighter for a moment, like the pickups' twinkle. Each its own
+## phase, so they don't pulse in step.
+const GLOW_SCALE := 2.6
+const GLOW_PULSE := 0.12
+const GLOW_ALPHA := Vector2(0.65, 1.0)
+const GLOW_SPEED := 2.4
+const GLOW_FLASH_EVERY := 3.0
+const GLOW_FLASH_SECONDS := 0.3
+const GLOW_COLORS := {"parcel": Color("ffc46b"), "room": Color("7fb2ff"), "form": Color("b48cff"), "desk": Color("6fd68a")}
 const KEEP_APART := 260.0
 const KEEP_FROM_STAMP := 320.0
 const KEEP_FROM_START := 350.0
@@ -62,6 +75,8 @@ var game: Game
 ## Every thing on the map: {kind: parcel / room / form / desk, at, sprite, held (seconds stood in
 ## its ring), and for a room `state` (idle / on), `left` (seconds) and `elites`; a desk `golden`}.
 var _things: Array[Dictionary] = []
+## Seconds of play, for the glows (GLOW_SPEED).
+var _glow_clock := 0.0
 ## Seconds until each opened parcel's replacement turns up.
 var _parcel_timers: Array[float] = []
 ## Desks charged while something else held the game (Game.offer_desk), offered in turn.
@@ -117,6 +132,9 @@ func tick(delta: float) -> void:
 		if _parcel_timers[i] <= 0.0:
 			_parcel_timers.remove_at(i)
 			_add("parcel", false, PARCEL_RESPAWN_AWAY)
+	_glow_clock += delta
+	for thing in _things:
+		_tick_glow(thing)
 	var player_at := game.player.position
 	for i in range(_things.size() - 1, -1, -1):
 		var thing := _things[i]
@@ -228,17 +246,32 @@ func _add(kind: String, golden := false, away := 0.0) -> void:
 	var at := _free_spot(away)
 	var thing := {"kind": kind, "at": at, "held": 0.0, "golden": golden, "state": "idle", "left": 0.0, "elites": []}
 	var sprite: Sprite2D
+	var size := PARCEL_SIZE
 	match kind:
 		"parcel":
 			sprite = Art.sprite("parcel", PARCEL_SIZE)
 		"room":
 			sprite = Art.sprite("meeting_room", ROOM_SIZE)
+			size = ROOM_SIZE
 		"form":
 			sprite = Art.sprite("paper", FORM_SIZE)
+			size = FORM_SIZE
 		"desk":
 			sprite = Art.sprite("monitors", DESK_SIZE)
+			size = DESK_SIZE
 			if golden:
 				sprite.modulate = GOLD
+	# The glow (GLOW_SCALE): over the rings drawn on this node, under the thing (added first, same z).
+	var halo := Sprite2D.new()
+	halo.texture = Pickup.halo_texture()
+	halo.modulate = GOLD if golden else GLOW_COLORS[kind]
+	halo.position = at
+	halo.z_index = 1
+	add_child(halo)
+	thing["halo"] = halo
+	thing["glow_scale"] = size * GLOW_SCALE / halo.texture.get_height()
+	thing["glow_phase"] = game.rng.randf() * TAU
+	thing["tint"] = sprite.modulate
 	sprite.position = at
 	# Just over the rings drawn on this node.
 	sprite.z_index = 1
@@ -250,7 +283,21 @@ func _add(kind: String, golden := false, away := 0.0) -> void:
 func _remove(index: int) -> void:
 	var sprite: Sprite2D = _things[index]["sprite"]
 	sprite.queue_free()
+	(_things[index]["halo"] as Sprite2D).queue_free()
 	_things.remove_at(index)
+
+
+## A thing's glow this frame (GLOW_SCALE): the halo swelling and brightening, the thing flashing now and then.
+func _tick_glow(thing: Dictionary) -> void:
+	var phase: float = thing["glow_phase"]
+	var wave := sin(_glow_clock * GLOW_SPEED + phase)
+	var halo: Sprite2D = thing["halo"]
+	halo.scale = Vector2.ONE * float(thing["glow_scale"]) * (1.0 + GLOW_PULSE * wave)
+	halo.modulate.a = lerpf(GLOW_ALPHA.x, GLOW_ALPHA.y, (wave + 1.0) / 2.0)
+	var since := fmod(_glow_clock + phase, GLOW_FLASH_EVERY)
+	var flash := clampf(1.0 - absf(since - GLOW_FLASH_SECONDS / 2.0) / (GLOW_FLASH_SECONDS / 2.0), 0.0, 1.0)
+	var tint: Color = thing["tint"]
+	(thing["sprite"] as Sprite2D).modulate = tint.lerp(Color(tint.r * 1.7, tint.g * 1.7, tint.b * 1.7, tint.a), flash)
 
 
 ## A random spot on the map clear of the rest (KEEP_*); after TRIES, the last one tried.
