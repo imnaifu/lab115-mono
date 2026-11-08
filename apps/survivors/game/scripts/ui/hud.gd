@@ -16,6 +16,8 @@ extends CanvasLayer
 const PICK_DELAY_MS := 300
 const SLOT_COUNT := 6
 const SLOT_SIZE := 19.0
+## Rows of SLOT_COUNT built for weapons and for passives: enough for 无尽模式's every passive (0.3.24).
+const SLOT_ROWS_MAX := 3
 ## The title screen's cast standing on a line: art, height, how high it hops from.
 const TITLE_SIZE := 44
 const LOW_HP_RATIO := 0.35
@@ -683,6 +685,8 @@ func _build_top_bar() -> void:
 	slots.add_theme_constant_override("separation", 3)
 	slots.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_top_bar.add_child(slots)
+	# As many slots as the run may carry, SLOT_COUNT a row: one row each, and in 无尽模式 (no limit,
+	# 0.3.24) more rows that show once there is something to put in them (_refresh_inventory).
 	for slot_list in [_weapon_slots, _passive_slots]:
 		var grid := GridContainer.new()
 		grid.columns = SLOT_COUNT
@@ -690,7 +694,9 @@ func _build_top_bar() -> void:
 		grid.add_theme_constant_override("v_separation", 3)
 		grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slots.add_child(grid)
-		for i in SLOT_COUNT:
+		# Built for the most either can hold in 无尽模式 (13 passives, 11 weapons: three rows), whatever
+		# the mode is now: the 出发 page can switch it after the HUD is up.
+		for i in SLOT_COUNT * SLOT_ROWS_MAX:
 			var slot := Panel.new()
 			slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
 			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1047,15 +1053,22 @@ func _recalibrate_tilt() -> void:
 
 func _refresh_inventory() -> void:
 	var weapons := game.player.weapons
-	for i in SLOT_COUNT:
+	for i in _weapon_slots.size():
 		var weapon: Weapon = weapons[i] if i < weapons.size() else null
 		_fill_slot(_weapon_slots[i], weapon.art if weapon else "", weapon.level if weapon else 0, Art.SKY_LIGHT, weapon != null and weapon.evolved,
 			Upgrades.level_text(weapon, true) if weapon else "")
+		_weapon_slots[i].visible = i < _slots_shown(weapons.size())
 	var passive_ids := game.upgrades.passive_levels.keys()
-	for i in SLOT_COUNT:
+	for i in _passive_slots.size():
 		var passive_id: String = passive_ids[i] if i < passive_ids.size() else ""
 		var art: String = Upgrades.PASSIVES[passive_id]["art"] if passive_id != "" else ""
 		_fill_slot(_passive_slots[i], art, game.upgrades.passive_levels.get(passive_id, 0), Art.MINT_LIGHT)
+		_passive_slots[i].visible = i < _slots_shown(passive_ids.size())
+
+
+## Slots shown for `count` things: full rows of SLOT_COUNT, one at least (0.3.24: 无尽模式 rows grow).
+static func _slots_shown(count: int) -> int:
+	return maxi(1, ceili(count / float(SLOT_COUNT))) * SLOT_COUNT
 
 
 ## A slot: the item's icon on its tint with the level on a small ink badge (a star once evolved,
@@ -3037,14 +3050,14 @@ func _show_pause() -> void:
 	var weapon_chips: Array = []
 	for weapon in game.player.weapons:
 		weapon_chips.append([Upgrades.weapon_name(weapon.id, weapon.evolved), Upgrades.level_text(weapon), weapon.art, weapon.evolved])
-	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), Jobs.MAX_WEAPONS], 12, "strong", Art.INK_MUTED))
+	build.add_child(UiKit.label(tr("武器 %d / %d") % [weapon_chips.size(), game.upgrades.weapon_limit()], 12, "strong", Art.INK_MUTED))
 	build.add_child(_chip_grid(weapon_chips, Art.SKY_LIGHT))
 	var passive_chips: Array = []
 	for passive_id: String in game.upgrades.passive_levels:
 		var passive: Dictionary = Upgrades.PASSIVES[passive_id]
 		passive_chips.append([passive["name"], game.upgrades.passive_levels[passive_id], passive["art"], false])
 	build.add_child(UiKit.gap(4))
-	build.add_child(UiKit.label(tr("被动 %d / %d") % [passive_chips.size(), Upgrades.MAX_PASSIVES], 12, "strong", Art.INK_MUTED))
+	build.add_child(UiKit.label(tr("被动 %d / %d") % [passive_chips.size(), game.upgrades.passive_limit()], 12, "strong", Art.INK_MUTED))
 	build.add_child(_chip_grid(passive_chips, Art.MINT_LIGHT))
 
 	var player := game.player

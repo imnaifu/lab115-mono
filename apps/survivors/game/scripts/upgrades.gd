@@ -427,6 +427,17 @@ func is_evolved(weapon_id: String) -> bool:
 	return weapon != null and weapon.evolved
 
 
+## How many weapons a run may carry: Jobs.MAX_WEAPONS, and in 无尽模式 every one its job can have
+## (0.3.24, the user: 无尽模式武器被动改成不限数量: the job's own and the ten shared ones).
+func weapon_limit() -> int:
+	return weapons_for(_game.player.job).size() if _game.endless else Jobs.MAX_WEAPONS
+
+
+## How many passives a run may carry: MAX_PASSIVES, every one of them in 无尽模式 (0.3.24).
+func passive_limit() -> int:
+	return PASSIVES.size() if _game.endless else MAX_PASSIVES
+
+
 ## `count` cards from the weighted pool, the first `new_weapons` of them weapons not yet carried
 ## (as many as there are), leaving out `skip_pair`'s pair (already on the table). The fallback
 ## card when the pool is empty.
@@ -434,7 +445,7 @@ func _roll(count: int, new_weapons: int, skip_pair: String = "") -> Array:
 	var pool: Array = []
 	var weights := PackedFloat32Array()
 	var player := _game.player
-	var slots_left := player.weapons.size() < Jobs.MAX_WEAPONS
+	var slots_left := player.weapons.size() < weapon_limit()
 	for weapon_id in weapons_for(player.job):
 		var weapon := player.get_weapon(weapon_id)
 		if weapon == null:
@@ -446,7 +457,7 @@ func _roll(count: int, new_weapons: int, skip_pair: String = "") -> Array:
 			# weapon stands in as one entry and comes out as its pair of direction cards.
 			pool.append({"kind": "pair", "id": weapon_id} if BRANCHES.has(weapon_id) else _choice("weapon", weapon_id, weapon.level + 1))
 			weights.append(3.0)
-	var passive_slots_full := passive_levels.size() >= MAX_PASSIVES
+	var passive_slots_full := passive_levels.size() >= passive_limit()
 	for passive_id: String in PASSIVES:
 		var current: int = passive_levels.get(passive_id, 0)
 		if current == 0 and passive_slots_full:
