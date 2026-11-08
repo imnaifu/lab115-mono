@@ -78,7 +78,9 @@ const KITS := {
 	"pie_boss": {
 		"attacks": [
 			{"kind": "placed", "form": "bigcircle", "name": "画饼", "radius": 60.0, "fuse": 1.8, "damage": 20.0},
-			{"kind": "ranged", "form": "ring", "name": "发期权", "warn": 0.6, "count": 16, "rings": 1, "every": 0.5, "speed": 70.0, "damage": 8.0},
+			# 0.3.12 (近战都能躲的): 10 bullets a ring (16), so the gaps are wide enough to stand in up close,
+			# and 0.8 s of warning (0.6).
+			{"kind": "ranged", "form": "ring", "name": "发期权", "warn": 0.8, "count": 10, "rings": 1, "every": 0.5, "speed": 70.0, "damage": 8.0},
 		],
 		"phase2": [{"radius": 80.0}, {"rings": 2}],
 		"lines": {"arrive": "等公司上市，你就财务自由了", "attack": ["这个饼很大", "人人有期权"], "phase2": "期权要再等四年",
@@ -94,7 +96,7 @@ const KITS := {
 		"lines": {"arrive": "Hi，约你 15 分钟聊聊", "attack": ["一刀切"], "kill": "请把工牌留在前台", "death": "这份通知发错人了"},
 	},
 	"gdpr": {
-		"attacks": [{"kind": "ranged", "form": "spread", "name": "群发告知书", "warn": 0.6, "count": 5, "step": 15.0, "speed": 110.0, "damage": 8.0}],
+		"attacks": [{"kind": "ranged", "form": "spread", "name": "群发告知书", "warn": 0.8, "count": 5, "step": 15.0, "speed": 110.0, "damage": 8.0}],
 		"lines": {"arrive": "你的数据要审查一下", "attack": ["请查收告知书"], "kill": "违规，罚款 4%", "death": "已依法删除"},
 	},
 	"scone_boss": {
@@ -118,7 +120,10 @@ const KITS := {
 		# 0.3.4 (the user: 连环会这个再容易躲一点，现在子弹跟的太紧了; picked 慢一点 + 转得更慢): 85 → 72 a second, a
 		# touch over the fastest job's 66, and 50 → 40° a second, so more time to see them coming and a
 		# wider curve round (about 103 px).
-		"attacks": [{"kind": "ranged", "form": "homing", "name": "连环邀请", "warn": 0.6, "count": 3, "every": 0.4, "speed": 72.0, "turn": 40.0, "life": 3.0, "damage": 8.0}],
+		# 0.3.12 (the user: boss 技能要改成近战都能躲的，不然太劣势了，比如跟踪的这个去掉): no homing any more. A
+		# job that fights up close had no time to shake off a bullet turning after it from point blank;
+		# now a red line first, then four invites straight down it, as the AI's 流式输出.
+		"attacks": [{"kind": "ranged", "form": "aimed", "name": "连环邀请", "warn": 0.8, "count": 4, "every": 0.15, "speed": 120.0, "damage": 8.0}],
 		"lines": {"arrive": "下一个会马上开始", "attack": ["已向你发送邀请"], "kill": "你已被加入 37 个会议", "death": "会议已取消"},
 	},
 	"pip": {
@@ -128,7 +133,8 @@ const KITS := {
 	"all_hands": {
 		"attacks": [
 			{"kind": "melee", "form": "dash", "name": "Day 1 冲刺", "width": 32.0, "length": 200.0, "warn": 1.0, "damage": 20.0},
-			{"kind": "ranged", "form": "ring", "name": "全员信", "warn": 0.6, "count": 20, "rings": 1, "every": 0.5, "speed": 80.0, "damage": 8.0},
+			# 0.3.12 (近战都能躲的): 12 a ring (20), 0.8 s of warning (0.6).
+			{"kind": "ranged", "form": "ring", "name": "全员信", "warn": 0.8, "count": 12, "rings": 1, "every": 0.5, "speed": 80.0, "damage": 8.0},
 		],
 		"phase2": [{"width": 48.0, "length": 280.0}, {"rings": 2}],
 		"lines": {"arrive": "今天依然是 Day 1", "attack": ["Bias for Action！", "请大家查收全员信"], "phase2": "明年我们要更节俭",
@@ -140,7 +146,7 @@ const KITS := {
 		"lines": {"arrive": "先把这几张表填一下", "attack": ["这格不能空着"], "kill": "材料不全，退回", "death": "审批通过"},
 	},
 	"apac_cut": {
-		"attacks": [{"kind": "ranged", "form": "spread", "name": "区域合并", "warn": 0.6, "count": 7, "step": 12.0, "speed": 120.0, "damage": 8.0}],
+		"attacks": [{"kind": "ranged", "form": "spread", "name": "区域合并", "warn": 0.8, "count": 7, "step": 12.0, "speed": 120.0, "damage": 8.0}],
 		"lines": {"arrive": "总部决定优化亚太区", "attack": ["合并团队"], "kill": "你的岗位转回国内了", "death": "优化已完成"},
 	},
 	"parachute_boss": {
@@ -150,7 +156,7 @@ const KITS := {
 	"kaya_boss": {
 		"attacks": [
 			{"kind": "placed", "form": "bigsquare", "name": "画吐司", "half": 55.0, "fuse": 1.8, "damage": 20.0},
-			{"kind": "ranged", "form": "spiral", "name": "抹咖椰", "warn": 0.6, "seconds": 2.0, "every": 0.08, "arms": 1, "speed": 90.0, "damage": 8.0},
+			{"kind": "ranged", "form": "spiral", "name": "抹咖椰", "warn": 0.8, "seconds": 2.0, "every": 0.08, "arms": 1, "speed": 90.0, "damage": 8.0},
 		],
 		"phase2": [{"half": 75.0}, {"arms": 2}],
 		"lines": {"arrive": "明年亚太区翻倍增长", "attack": ["这片吐司很大", "每个人都有份"], "phase2": "增长目标再加一倍",
@@ -158,7 +164,7 @@ const KITS := {
 	},
 	# 北京: 远程 → 定点 → 近战; the last 近战 + 定点.
 	"juanwang": {
-		"attacks": [{"kind": "ranged", "form": "spiral", "name": "内卷", "warn": 0.6, "seconds": 2.0, "every": 0.1, "arms": 1, "speed": 90.0, "damage": 6.0}],
+		"attacks": [{"kind": "ranged", "form": "spiral", "name": "内卷", "warn": 0.8, "seconds": 2.0, "every": 0.1, "arms": 1, "speed": 90.0, "damage": 6.0}],
 		"lines": {"arrive": "凌晨两点我还在线", "attack": ["卷起来"], "kill": "你被卷没了", "death": "…今天先卷到这"},
 	},
 	"ppt": {

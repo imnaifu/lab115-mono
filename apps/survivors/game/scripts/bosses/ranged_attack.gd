@@ -1,7 +1,9 @@
 class_name RangedAttack
 extends BossAttack
 ## 远程 (.45): bullets (HostileShot), after a wind-up of `warn` seconds, aimed at where the player
-## was when it began. The boss stands until the last is out; the bullets fly on.
+## was when it began. The boss stands until the last is out; the bullets fly on. Since 0.3.12 (the
+## user: boss 技能要改成近战都能躲的) every boss's wind-up is 0.8 s (0.6 for most until then), no boss
+## uses "homing" (连环会's became "aimed"; the code stays) and the rings have wider gaps.
 ## - "aimed": a thin red line from it through the player, then `count` bullets down it, `every`
 ##   seconds apart.
 ## - "spread": `count` thin lines fanning out `step` degrees apart, then a bullet down each.
