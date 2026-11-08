@@ -49,6 +49,13 @@ const ULTIMATE_GAP := 12.0
 ## How long the first-boss hint saying what the 大招 does stays up: longer than a toast, it's a
 ## sentence to read.
 const ULTIMATE_HINT_SECONDS := 4.0
+## Charged and waiting (0.3.25, the user: 技能满了后，一直闪，带电火花之类的闪): the button blinks this
+## many times a second, a full ring round it, and ULTIMATE_SPARKS little bolts crackle off the ring,
+## drawn anew every ULTIMATE_SPARK_SECONDS so they jump about.
+const ULTIMATE_BLINK_HZ := 3.0
+const ULTIMATE_SPARKS := 4
+const ULTIMATE_SPARK_SECONDS := 0.08
+const ULTIMATE_SPARK_COLOR := Color("8fe3ff")
 ## 加班's alarm lights (_build_overtime): their reach in from each side (a share of the width),
 ## strength and sweep speed (radians a second) by tier.
 const ALARM_REACH := 0.32
@@ -144,6 +151,12 @@ var _ultimate_job := ""
 var _ultimate_ring: Control
 var _ultimate_ring_share := 0.0
 var _ultimate_ring_color := Art.PAPER
+## Charged and waiting (ULTIMATE_BLINK_HZ): the bolts drawn now, when they were made, and dice of
+## their own so the game's (Game.rng) don't move with the HUD's frame rate.
+var _ultimate_full := false
+var _ultimate_sparks: Array[PackedVector2Array] = []
+var _ultimate_sparks_at := -INF
+var _spark_rng := RandomNumberGenerator.new()
 ## The cut-in playing while a 技能 is set off (0.1.1), freed when it is over.
 var _cut_in: SkillCutIn
 ## The 出发 page's demo (Game.start_preview, 0.2.1): the view of the world under the job card, the
@@ -932,8 +945,19 @@ func _update_ultimate() -> void:
 	var ultimate := Jobs.ultimate(game.player.job)
 	var left := game.ultimates.seconds_left()
 	_ultimate_button.disabled = not can_go
-	_ultimate_button.modulate = Color.WHITE.lerp(Color(1.15, 1.1, 0.9), 0.5 + 0.5 * sin(_clock * 4.0)) if can_go \
+	var full := can_go and left <= 0.0
+	_ultimate_button.modulate = Color.WHITE.lerp(Color(1.5, 1.4, 1.1), _ultimate_blink()) if full \
 		else Color.WHITE if left > 0.0 else Color(1, 1, 1, 0.45)
+	# Redrawn every frame while charged (the ring blinks), and once more as that ends to clear it.
+	if full:
+		# _clock going back is a new run's HUD; either way the bolts are due.
+		if _clock - _ultimate_sparks_at >= ULTIMATE_SPARK_SECONDS or _clock < _ultimate_sparks_at:
+			_ultimate_sparks_at = _clock
+			_make_ultimate_sparks()
+		_ultimate_ring.queue_redraw()
+	elif _ultimate_full:
+		_ultimate_ring.queue_redraw()
+	_ultimate_full = full
 	# The gold ring runs down while one lasts; otherwise a pale one fills as kills charge it.
 	var share := clampf(left / maxf(game.ultimates.duration(), 0.001), 0.0, 1.0) if left > 0.0 \
 		else 0.0 if can_go else game.ultimates.charge_share()
@@ -952,12 +976,55 @@ func _update_ultimate() -> void:
 ## The ring round the 大招 button, clockwise from the top: gold running down while it lasts, pale
 ## filling up while it charges.
 func _draw_ultimate_ring() -> void:
-	if _ultimate_ring_share <= 0.0:
-		return
 	var middle := _ultimate_ring.size / 2.0
 	var radius := ULTIMATE_SIZE / 2.0 + 1.0
+	if _ultimate_full:
+		_draw_ultimate_charged(middle, radius)
+		return
+	if _ultimate_ring_share <= 0.0:
+		return
 	_ultimate_ring.draw_arc(middle, radius, 0.0, TAU, 48, Art.INK, 6.0, true)
 	_ultimate_ring.draw_arc(middle, radius, -PI / 2.0, -PI / 2.0 + TAU * _ultimate_ring_share, 48, _ultimate_ring_color, 4.0, true)
+
+
+## 0 to 1 and back ULTIMATE_BLINK_HZ times a second: how bright the charged button is just now.
+func _ultimate_blink() -> float:
+	return 0.5 + 0.5 * sin(_clock * TAU * ULTIMATE_BLINK_HZ)
+
+
+## Charged and waiting: a full ring blinking between gold and white, and the bolts round it, inked,
+## with a white core and a spark where each ends.
+func _draw_ultimate_charged(middle: Vector2, radius: float) -> void:
+	var blink := _ultimate_blink()
+	_ultimate_ring.draw_arc(middle, radius, 0.0, TAU, 48, Art.INK, 6.0 + 2.0 * blink, true)
+	_ultimate_ring.draw_arc(middle, radius, 0.0, TAU, 48, Art.BRAND.lerp(Art.PAPER, blink), 4.0 + 2.0 * blink, true)
+	for bolt in _ultimate_sparks:
+		var points := PackedVector2Array()
+		for point in bolt:
+			points.append(middle + point)
+		# An ink edge like everything else's, or pale blue is lost on the light ground.
+		_ultimate_ring.draw_polyline(points, Art.INK, 4.5, true)
+		_ultimate_ring.draw_polyline(points, ULTIMATE_SPARK_COLOR, 2.5, true)
+		_ultimate_ring.draw_polyline(points, Art.PAPER, 1.0, true)
+		_ultimate_ring.draw_circle(points[points.size() - 1], 1.8, Art.PAPER)
+
+
+## New bolts (every ULTIMATE_SPARK_SECONDS): each starts on the ring somewhere random and zigzags
+## out 8-14 px, its kinks pushed a few px either side of the way out.
+func _make_ultimate_sparks() -> void:
+	_ultimate_sparks.clear()
+	var radius := ULTIMATE_SIZE / 2.0 + 1.0
+	for i in ULTIMATE_SPARKS:
+		var out := Vector2.from_angle(_spark_rng.randf() * TAU)
+		var side := out.orthogonal()
+		var length := _spark_rng.randf_range(8.0, 14.0)
+		var kinks := _spark_rng.randi_range(2, 3)
+		var bolt := PackedVector2Array([out * radius])
+		for step in range(1, kinks + 1):
+			var reach := radius + length * step / float(kinks + 1)
+			bolt.append(out * reach + side * _spark_rng.randf_range(-3.5, 3.5))
+		bolt.append(out * (radius + length))
+		_ultimate_sparks.append(bolt)
 
 
 ## Full again (.95): 大招充好了 over the player each time, and the first time how to set it off and
