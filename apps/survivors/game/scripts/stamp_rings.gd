@@ -66,7 +66,8 @@ func _draw_open(id: String, center: Vector2) -> void:
 	draw_circle(center, Stamps.RADIUS, Color(Art.BRAND_SOFT, 0.45))
 	draw_arc(center, Stamps.RADIUS, 0.0, TAU, 64, Color(Art.BRAND, 0.9), 3.0, true)
 	if ratio > 0.0:
-		# The rim filling clockwise from the top, thick, like the ring over the player's head.
+		# The rim filling clockwise from the top, thick (the only progress shown since 0.3.13, when the
+		# ring over the player's head went).
 		draw_arc(center, Stamps.RADIUS - 4.0, -PI / 2.0, -PI / 2.0 + TAU * ratio, 64, Art.BRAND_DEEP, 8.0, true)
 	var seconds := floori(ratio * Stamps.CHECK_IN_SECONDS)
 	var total := roundi(Stamps.CHECK_IN_SECONDS)

@@ -17,27 +17,39 @@ extends RefCounted
 const VESTING_SECONDS := 60.0
 ## Damage vested per minute, per level.
 const VESTING_MIGHT := 0.02
-const SCAPEGOAT_RADIUS := 70.0
-const SCAPEGOAT_MULTIPLIER := [3.0, 4.0, 5.0, 6.0, 8.0]
+## The most damage it vests in a run (0.3.13 (the user, after the passives were looked at: 都改): no cap until then, and 无尽模式 made it +10% a minute
+## for an hour, about +550% by the end).
+const VESTING_CAP := 1.0
+## 0.3.13 (the user, after the passives were looked at: 都改): 100 and ×4 / 5 / 6 / 8 / 10 (70 and ×3 / 4 / 5 / 6 / 8 until then): nobody took it, every
+## point of it hangs on being hit, so it reaches further and hits back harder for the hits it takes.
+const SCAPEGOAT_RADIUS := 100.0
+const SCAPEGOAT_MULTIPLIER := [4.0, 5.0, 6.0, 8.0, 10.0]
 const BLAST_CHANCE := [0.05, 0.08, 0.11, 0.14, 0.18]
 const BLAST_DAMAGE := [18.0, 24.0, 30.0, 36.0, 45.0]
 const BLAST_RADIUS := 36.0
 ## Blasts are queued and set off a few per frame, so a chain ripples outward instead of
 ## clearing the screen in one frame.
 const MAX_BLASTS_PER_FRAME := 6
-const TURRET_CHANCE := [0.02, 0.03, 0.04, 0.05, 0.06]
+## 0.3.13 (the user, after the passives were looked at: 都改): 5 / 7.5 / 10 / 12.5 / 15% (2–6% until then; with Turret.SHOT_DAMAGE 8 it added 1–3% to a
+## full build alone at 8:00).
+const TURRET_CHANCE := [0.05, 0.075, 0.1, 0.125, 0.15]
 const TURRET_SECONDS := 8.0
 const MAX_TURRETS := 4
 ## Every 10 s to start with since .35 (it was 14, 12, 10, 9, 8: the user found 14 s far too long
 ## to wait for).
 const STANDUP_EVERY := [10.0, 9.0, 8.0, 7.0, 6.0]
 const STANDUP_RADIUS := 100.0
-const STANDUP_DAMAGE := [10.0, 15.0, 20.0, 25.0, 30.0]
+## 0.3.13 (the user, after the passives were looked at: 都改): 15 / 22 / 30 / 37 / 45 (10–30 until then).
+const STANDUP_DAMAGE := [15.0, 22.0, 30.0, 37.0, 45.0]
 const STANDUP_STUN := 1.0
-const STANDUP_PUSH := 120.0
+## Only a jolt since 0.3.13 (the user, after the passives were looked at: 都改) (120 until then): it threw the crowd out of a close-in weapon's reach,
+## and the product manager's laser dealt about 5% less with it than without.
+const STANDUP_PUSH := 20.0
 
 var _game: Game
 var _vesting_left := VESTING_SECONDS
+## Damage vested by 股票期权 so far this run (VESTING_CAP).
+var _vested := 0.0
 var _standup_left := 0.0
 var _blasts: Array[Vector2] = []
 var _turrets: Array[Turret] = []
@@ -55,7 +67,11 @@ func tick(delta: float) -> void:
 		_vesting_left -= delta
 		if _vesting_left <= 0.0:
 			_vesting_left += VESTING_SECONDS
-			player.might += effect("stock", stock, _bonus("stock"))
+			# Up to VESTING_CAP in all (0.3.13).
+			var vested := minf(effect("stock", stock, _bonus("stock")), VESTING_CAP - _vested)
+			if vested > 0.0:
+				_vested += vested
+				player.might += vested
 
 	var standup := _level("standup")
 	if standup > 0:

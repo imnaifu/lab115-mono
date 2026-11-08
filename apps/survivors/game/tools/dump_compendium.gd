@@ -625,8 +625,8 @@ func _perk_levels(id: String) -> String:
 	var levels := range(Upgrades.max_level("passive", id))
 	match id:
 		"stock":
-			return "每撑过 %s 秒，伤害再 +%s" % [_num(Perks.VESTING_SECONDS),
-				_by_level(levels.map(func(index: int) -> String: return _percent(Perks.VESTING_MIGHT * (index + 1))))]
+			return "每撑过 %s 秒，伤害再 +%s，一局最多 +%s" % [_num(Perks.VESTING_SECONDS),
+				_by_level(levels.map(func(index: int) -> String: return _percent(Perks.VESTING_MIGHT * (index + 1)))), _percent(Perks.VESTING_CAP)]
 		"scapegoat":
 			return "挨一下打，把这下伤害的 ×%s 炸给身边 %s 内的怪" % [_by_level(_numbers(Perks.SCAPEGOAT_MULTIPLIER)), _num(Perks.SCAPEGOAT_RADIUS)]
 		"cost_cut":
@@ -637,7 +637,7 @@ func _perk_levels(id: String) -> String:
 				_by_level(Perks.TURRET_CHANCE.map(_percent)), _num(Perks.TURRET_SECONDS), _num(Turret.FIRE_EVERY), _num(Turret.RANGE),
 				_num(Turret.SHOT_DAMAGE), Perks.MAX_TURRETS]
 		"standup":
-			return "每 %s 秒开一次：身边 %s 内的怪受 %s 伤害，被震开、定住 %s 秒" % [
+			return "每 %s 秒开一次：身边 %s 内的怪受 %s 伤害、定住 %s 秒（只轻轻一震，不再推远）" % [
 				_by_level(_numbers(Perks.STANDUP_EVERY)), _num(Perks.STANDUP_RADIUS), _by_level(_numbers(Perks.STANDUP_DAMAGE)), _num(Perks.STANDUP_STUN)]
 	push_warning("dump: no site wording for perk %s" % id)
 	return ""

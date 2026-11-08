@@ -137,7 +137,7 @@ const BRANCHES := {
 
 const PASSIVES := {
 	"might": {"name": "冰美式", "art": "coffee", "text": "所有伤害 +%s%%"},
-	"armor": {"name": "降噪耳机", "art": "headphones", "text": "受到的伤害 -%s"},
+	"armor": {"name": "降噪耳机", "art": "headphones", "text": "每次挨打少掉 %s 血（小怪一下 5–18）"},
 	"vitality": {"name": "撸铁", "art": "dumbbell", "text": "最大生命 +%s，并回复 %s"},
 	"swiftness": {"name": "电动滑板", "art": "scooter", "text": "移动速度 +%s%%"},
 	"haste": {"name": "双屏显示器", "art": "monitors", "text": "武器冷却 -%s%%"},
@@ -145,11 +145,11 @@ const PASSIVES := {
 	"regen": {"name": "工位绿植", "art": "plant", "text": "每秒回复 %s 生命"},
 	"luck": {"name": "锦鲤", "art": "koi", "text": "运气 +%s：升级时可能多一张卡，卡更容易出稀有的"},
 	# The rest act rather than add a number; Perks runs them. `max` caps one below MAX_LEVEL.
-	"stock": {"name": "股票期权", "art": "stock_options", "text": "每撑过 1 分钟，伤害再 +2%（越早拿越赚）"},
+	"stock": {"name": "股票期权", "art": "stock_options", "text": "每撑过 1 分钟，伤害再 +2%（越早拿越赚，最多 +100%）"},
 	"scapegoat": {"name": "背锅侠", "art": "scapegoat", "text": "挨打时把锅甩出去，炸伤身边的怪"},
 	"cost_cut": {"name": "降本增效", "art": "cost_cut", "text": "打死的怪有几率爆炸，还能连环炸"},
 	"open_source": {"name": "开源项目", "art": "turret", "text": "打死怪有几率留下小炮台，自动打怪 8 秒"},
-	"standup": {"name": "站会", "art": "standup", "text": "每隔一阵开站会，震开并定住身边的怪"},
+	"standup": {"name": "站会", "art": "standup", "text": "每隔一阵开站会，伤到并定住身边的怪"},
 }
 
 ## The names the weapon stats go by on cards, most telling first; a card shows at most

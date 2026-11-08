@@ -40,8 +40,6 @@ const HURT_GLOW_SECONDS := 0.3
 ## Shoved by traffic: leans over (up to TILT radians) and back upright.
 const TILT := 0.5
 const TILT_SECONDS := 0.4
-## The ring filling over the player's head while checking in at a landmark (Stamps).
-const CHECK_IN_RING_RADIUS := 9.0
 
 var game: Game
 var job := Jobs.DEFAULT
@@ -103,8 +101,6 @@ var _shove_cooldown := 0.0
 var _hurt_left := 0.0
 var _tilt_left := 0.0
 var _tilt_way := 1.0
-## How full the check-in ring was when last drawn, to redraw only while it changes.
-var _check_in_drawn := 0.0
 var _shake_strength := 2.0
 
 
@@ -183,8 +179,6 @@ func _process(delta: float) -> void:
 	if hp > 0.0 and hp / max_hp < Hud.LOW_HP_RATIO:
 		_low_hp_clock += delta
 		queue_redraw()
-	if game.stamps.progress() != _check_in_drawn:
-		queue_redraw()
 
 
 ## The health bar's fill: green when full, yellow at half, red at the low-health line (the one
@@ -223,13 +217,8 @@ func _draw() -> void:
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE).x
 	var baseline := Vector2(-width / 2.0, bar.get_center().y + HP_FONT_SIZE * DIGIT_HEIGHT / 2.0)
 	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, HP_FONT_SIZE, Art.INK)
-	# Checking in at a landmark: a ring over the head filling up, a red stamp's colour.
-	_check_in_drawn = game.stamps.progress()
-	if _check_in_drawn > 0.0:
-		var ring_at := Vector2(0.0, -SIZE * 0.5 - CHECK_IN_RING_RADIUS - 4.0)
-		draw_circle(ring_at, CHECK_IN_RING_RADIUS + 2.0, Art.PAPER)
-		draw_arc(ring_at, CHECK_IN_RING_RADIUS, -PI / 2.0, -PI / 2.0 + TAU * _check_in_drawn, 32, Art.HP_RED, 3.0, true)
-		draw_arc(ring_at, CHECK_IN_RING_RADIUS + 2.0, 0.0, TAU, 32, Art.INK, 1.5, true)
+	# No ring over the head while checking in at a landmark since 0.3.13 (the user: 打卡不需要头上有
+	# 圈，地上有就行): the ring on the ground fills up and says 打卡中 6/10 (StampRings).
 
 
 static func _pill_style(color: Color, border: int) -> StyleBoxFlat:

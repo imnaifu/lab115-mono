@@ -8,7 +8,9 @@ const RANGE := 140.0
 const FIRE_EVERY := 0.45
 const SHOT_SPEED := 220.0
 const SHOT_SIZE := 8.0
-const SHOT_DAMAGE := 8.0
+## 12 from 0.3.13 (the user: 都改, after the passives were looked at; 8 until then), times the
+## player's damage as before.
+const SHOT_DAMAGE := 12.0
 const FADE_SECONDS := 0.4
 const SOURCE := "open_source"
 
