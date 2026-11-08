@@ -16,6 +16,9 @@ signal boss_move(form: String)
 signal revive_offered(left: int)
 ## The screensaver's logo hit a corner and the game stands still for its cut-in (on_screensaver_corner).
 signal corner_cut_in
+## A year-end bonus is about to open (a boss down, a meeting won): its cut-in, `art` / `title` / `line`
+## (Hud plays it while the game stands still, BONUS_CUT_IN_SECONDS; _bonus_after_cut_in).
+signal bonus_cut_in(art: String, title: String, line: String)
 
 ## CHEST is a boss's year-end bonus being opened (the chest dialog in Hud). REVIVE is the player
 ## dead, asked whether to spend a 返聘 (the revive dialog in Hud).
@@ -284,6 +287,9 @@ var _frozen := false
 ## for a cut-in like a 技能's, at most once every CORNER_CUT_IN_GAP seconds of play (three logos can
 ## hit corners close together); in between a corner just blasts and says so, as before.
 const CORNER_FREEZE := 0.8
+## A year-end bonus opens after a cut-in saying what earned it (0.3.19, the user: 紧急会议通过，boss
+## 死亡都暂停下，给个动画，然后再开年终奖，不然不知道为啥开了): the game stands still this long first.
+const BONUS_CUT_IN_SECONDS := 1.0
 const CORNER_CUT_IN_GAP := 20.0
 var _corner_cut_in_at := -INF
 ## Run time (`elapsed`) before which the job's weapon keeps quiet.
@@ -838,7 +844,9 @@ func _kill(enemy: Enemy) -> void:
 		# (测试模式, --boss) pays as the first.
 		# Its slot, not its place in the map's BOSSES: since .99 any map's boss can come at a slot.
 		var boss_slot := maxi(BossKits.slot_of(enemy.type_name), 0)
-		get_tree().create_timer(BOSS_CHEST_DELAY, false).timeout.connect(_open_chest.bind(boss_slot))
+		get_tree().create_timer(BOSS_CHEST_DELAY, false).timeout.connect(_bonus_after_cut_in.bind(
+			Spawner.ENEMY_TYPES[enemy.type_name]["art"], tr("%s被干掉了！") % tr(Spawner.ENEMY_TYPES[enemy.type_name]["name"]),
+			tr("年终奖到账，开箱"), boss_slot))
 		# No 珍珠奶茶 from a boss since .99 (the user: 奶茶放到快递里面，boss 不用了): it comes in the
 		# parcels on the ground (MapObjects) instead; .48–.98 every boss dropped one.
 	# Regular kills drop no 珍珠奶茶 since .48, only now and then a magnet, a 午休 or a 红包.
@@ -1231,7 +1239,18 @@ func _take_desk(choice: Dictionary) -> void:
 
 ## A meeting room cleared in time (MapObjects): a year-end bonus at the first boss's pay.
 func open_meeting_bonus() -> void:
-	_open_chest(0)
+	_bonus_after_cut_in("meeting_room", tr("会开完了！"), tr("%d 个精英都打完了，发年终奖") % MapObjects.ROOM_ELITES, 0)
+
+
+## A year-end bonus after its cut-in (BONUS_CUT_IN_SECONDS): the game stands still, the cut-in says
+## what earned it, then the chest opens. Straight to the chest (which waits its turn as ever) when the
+## game already stands still (a 技能's cut-in) or a dialog is up, or in the 出发 page's demo.
+func _bonus_after_cut_in(art: String, title: String, line: String, boss_slot: int) -> void:
+	if state != State.PLAYING or _frozen or previewing:
+		_open_chest(boss_slot)
+		return
+	bonus_cut_in.emit(art, title, line)
+	freeze(BONUS_CUT_IN_SECONDS, _open_chest.bind(boss_slot))
 
 
 ## A pickup put down by something on the map (a parcel's contents, MapObjects).

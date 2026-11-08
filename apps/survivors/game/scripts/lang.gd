@@ -191,7 +191,6 @@ const EN := {
 	"选一项带走，这局一直有效": "Take one; it lasts the run",
 	"会议中 %d 秒 · 还剩 %d 个": "Meeting · %d s · %d left",
 	"紧急会议！%d 秒内打掉 %d 个精英": "Emergency meeting! %d s to beat %d elites",
-	"会开完了！发奖金": "Meeting done! Bonus time",
 	"会没开完…精英还在": "Meeting ran over… the elites stay",
 	"已练满，每局 %d 次": "Maxed: %d a run",
 	"每局 %d 次 → 下一级 %d 次": "%d a run → next %d",
@@ -1441,6 +1440,11 @@ const EN := {
 	"5 个职业都在无尽模式撑到 20:00": "Reach 20:00 in Endless with all 5 jobs",
 	"大满贯": "Grand Slam",
 	"拿到其他所有成就": "Earn every other achievement",
+	# Year-end bonus cut-ins (0.3.19)
+	"%s被干掉了！": "%s is down!",
+	"年终奖到账，开箱": "Year-end bonus incoming",
+	"会开完了！": "Meeting over!",
+	"%d 个精英都打完了，发年终奖": "All %d elites beaten: here's a year-end bonus",
 	# Screensaver corner cut-in (0.3.15)
 	"等了一整个屏保的时间": "Worth the whole screensaver's wait",
 	# Achievements (0.3.14)

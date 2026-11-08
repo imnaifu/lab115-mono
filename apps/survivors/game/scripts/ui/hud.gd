@@ -898,6 +898,7 @@ func _build_ultimate_button() -> void:
 	_ultimate_button.add_child(_ultimate_ring)
 	game.ultimates.winding_up.connect(_play_cut_in)
 	game.corner_cut_in.connect(_play_corner_cut_in)
+	game.bonus_cut_in.connect(_play_bonus_cut_in)
 	game.ultimates.went_off.connect(_on_ultimate_went_off)
 	game.ultimates.charged.connect(_on_ultimate_charged)
 	_ultimate_label = UiKit.label(Jobs.ultimate(game.player.job)["name"], 11, "strong", Art.INK)
@@ -972,6 +973,13 @@ func _play_corner_cut_in() -> void:
 	_cut_in = SkillCutIn.new()
 	_root.add_child(_cut_in)
 	_cut_in.play_with(Upgrades.WEAPONS["screensaver"]["art"], tr("撞角了！"), tr("等了一整个屏保的时间"), _root.size, Game.CORNER_FREEZE)
+
+
+## Before a year-end bonus opens (Game._bonus_after_cut_in, 0.3.19): what earned it.
+func _play_bonus_cut_in(art: String, title: String, line: String) -> void:
+	_cut_in = SkillCutIn.new()
+	_root.add_child(_cut_in)
+	_cut_in.play_with(art, title, line, _root.size, Game.BONUS_CUT_IN_SECONDS)
 
 
 ## Set off (0.1.1): the cut-in over the HUD while the game stands still (SkillCutIn).

@@ -183,7 +183,7 @@ func _tick_room(room: Dictionary, distance: float, delta: float) -> bool:
 	if out == 0:
 		rooms_won += 1
 		Sound.play("payout")
-		game.announce(tr("会开完了！发奖金"))
+		# Said by the bonus's cut-in now (Game.open_meeting_bonus, 0.3.19), not a line at the top.
 		Effects.ring(game, room["at"], ROOM_RADIUS * 2.0, Art.BRAND)
 		# The first boss's year-end bonus (its pay and an upgrade), opened like one.
 		game.open_meeting_bonus()
