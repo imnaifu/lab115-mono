@@ -16,9 +16,9 @@ signal boss_move(form: String)
 signal revive_offered(left: int)
 ## The screensaver's logo hit a corner and the game stands still for its cut-in (on_screensaver_corner).
 signal corner_cut_in
-## A year-end bonus is about to open (a boss down, a meeting won): its cut-in, `art` / `title` / `line`
-## (Hud plays it while the game stands still, BONUS_CUT_IN_SECONDS; _bonus_after_cut_in).
-signal bonus_cut_in(art: String, title: String, line: String)
+## A moment worth stopping for (play_cut_in): its cut-in, `art` / `title` / `line`, which Hud plays
+## while the game stands still CUT_IN_SECONDS.
+signal cut_in(art: String, title: String, line: String)
 
 ## CHEST is a boss's year-end bonus being opened (the chest dialog in Hud). REVIVE is the player
 ## dead, asked whether to spend a 返聘 (the revive dialog in Hud).
@@ -287,9 +287,13 @@ var _frozen := false
 ## for a cut-in like a 技能's, at most once every CORNER_CUT_IN_GAP seconds of play (three logos can
 ## hit corners close together); in between a corner just blasts and says so, as before.
 const CORNER_FREEZE := 0.8
-## A year-end bonus opens after a cut-in saying what earned it (0.3.19, the user: 紧急会议通过，boss
-## 死亡都暂停下，给个动画，然后再开年终奖，不然不知道为啥开了): the game stands still this long first.
-const BONUS_CUT_IN_SECONDS := 1.0
+## The game stands still this long for a cut-in like a 技能's (play_cut_in): before a year-end bonus
+## opens (0.3.19, the user: 紧急会议通过，boss 死亡都暂停下，给个动画，然后再开年终奖，不然不知道为啥开了),
+## and since 0.3.20 (the user picked these: boss 出场、10:00 下班、通关、紧急会议开始、天气开始) as a boss
+## comes, at the clock-out, before the result screen of a clear, as a meeting starts and as the weather comes.
+const CUT_IN_SECONDS := 1.0
+## Waiting for a cut-in to end before the clear's (play_cut_in, the result screen after it).
+var _clear_pending := false
 const CORNER_CUT_IN_GAP := 20.0
 var _corner_cut_in_at := -INF
 ## Run time (`elapsed`) before which the job's weapon keeps quiet.
@@ -409,10 +413,20 @@ func _process(delta: float) -> void:
 		if tier > _overtime_shown:
 			_overtime_shown = tier
 			var line: String = OVERTIME_LINES[mini(tier, OVERTIME_LINES.size()) - 1]
-			announce(tr(line) if tier == 1 else tr("%s · 暴躁 ×%d") % [tr(line), tier])
+			# The clock-out itself as a cut-in (0.3.20); a line at the top when one can't play.
+			if tier > 1 or not play_cut_in("ach_stopwatch", tr("下班时间到！"), tr("不再来新怪，清完场上的就上市")):
+				announce(tr(line) if tier == 1 else tr("%s · 暴躁 ×%d") % [tr(line), tier])
 		# The relabelled crowd (the data scientist's 大招) doesn't count: it is on the player's side.
-		if hostile_count() == 0:
-			_end_run(true)
+		# Cleared: 敲钟上市 as a cut-in, then the result screen (0.3.20); while another cut-in still holds
+		# the game, this waits for it (the clock stands meanwhile, so the clear time is the same).
+		if hostile_count() == 0 and not _clear_pending:
+			if _frozen:
+				return
+			_clear_pending = true
+			if not play_cut_in("bell", tr("敲钟上市！"), tr("撑过 10:00，清完了场上的怪"), _end_run.bind(true)):
+				_end_run(true)
+			return
+		if _clear_pending:
 			return
 	nap_left = maxf(0.0, nap_left - delta)
 	if not has_moved and player.velocity.length_squared() > 1.0:
@@ -1242,15 +1256,22 @@ func open_meeting_bonus() -> void:
 	_bonus_after_cut_in("meeting_room", tr("会开完了！"), tr("%d 个精英都打完了，发年终奖") % MapObjects.ROOM_ELITES, 0)
 
 
-## A year-end bonus after its cut-in (BONUS_CUT_IN_SECONDS): the game stands still, the cut-in says
-## what earned it, then the chest opens. Straight to the chest (which waits its turn as ever) when the
-## game already stands still (a 技能's cut-in) or a dialog is up, or in the 出发 page's demo.
+## A year-end bonus after its cut-in: what earned it, then the chest. Straight to the chest (which
+## waits its turn as ever) when no cut-in can play (play_cut_in).
 func _bonus_after_cut_in(art: String, title: String, line: String, boss_slot: int) -> void:
-	if state != State.PLAYING or _frozen or previewing:
+	if not play_cut_in(art, title, line, _open_chest.bind(boss_slot)):
 		_open_chest(boss_slot)
-		return
-	bonus_cut_in.emit(art, title, line)
-	freeze(BONUS_CUT_IN_SECONDS, _open_chest.bind(boss_slot))
+
+
+## Stands the game still CUT_IN_SECONDS for a cut-in (`art`, `title`, `line`; Hud), then `then`.
+## False, and nothing happens, when one can't play: the game already stands still (a 技能's, a corner's
+## or another cut-in), a dialog is up, or it is the 出发 page's demo; the caller says it its usual way.
+func play_cut_in(art: String, title: String, line: String, then := Callable()) -> bool:
+	if state != State.PLAYING or _frozen or previewing:
+		return false
+	cut_in.emit(art, title, line)
+	freeze(CUT_IN_SECONDS, then if then.is_valid() else func() -> void: pass)
+	return true
 
 
 ## A pickup put down by something on the map (a parcel's contents, MapObjects).

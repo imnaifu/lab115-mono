@@ -206,7 +206,9 @@ func _start_meeting(room: Dictionary) -> void:
 		elites.append(enemy)
 	room["elites"] = elites
 	Sound.play("alarm")
-	game.announce(tr("紧急会议！%d 秒内打掉 %d 个精英") % [roundi(ROOM_SECONDS), ROOM_ELITES])
+	# A cut-in since 0.3.20 (the user picked 紧急会议开始), the line at the top when one can't play.
+	if not game.play_cut_in("meeting_room", tr("紧急会议！"), tr("%d 秒内打掉围上来的 %d 个精英，打完发年终奖") % [roundi(ROOM_SECONDS), ROOM_ELITES]):
+		game.announce(tr("紧急会议！%d 秒内打掉 %d 个精英") % [roundi(ROOM_SECONDS), ROOM_ELITES])
 
 
 ## A room's elites still against the player: not dead, not turned to the player's side.

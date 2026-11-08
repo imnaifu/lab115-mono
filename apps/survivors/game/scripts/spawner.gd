@@ -395,7 +395,8 @@ func _plan_events() -> Array[Dictionary]:
 		# 无尽模式 has no last one.
 		var last := slot == bosses.size() - 1 and not _game.endless
 		events.append({"at": BossKits.SLOT_AT[slot], "kind": "elite", "type": bosses[slot], "count": 1,
-			"text": "最后的考验：%s" if last else "首领出现：%s"})
+			# 0.3.20 (the user: 不要叫首领，改成互联网词汇): 空降 for a boss, 终面 for the last.
+			"text": "终面：%s" if last else "空降：%s"})
 	if _game.endless:
 		var pool: Array[String] = []
 		for map_id: String in Maps.ALL:
@@ -404,7 +405,7 @@ func _plan_events() -> Array[Dictionary]:
 		var at: float = BossKits.SLOT_AT[-1] + ENDLESS_BOSS_EVERY
 		while at <= ENDLESS_BOSSES_UNTIL:
 			events.append({"at": at, "kind": "elite", "type": pool[_game.rng.randi() % pool.size()], "count": 1,
-				"text": "首领出现：%s", "extra": true})
+				"text": "空降：%s", "extra": true})
 			at += ENDLESS_BOSS_EVERY
 	events.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["at"] < b["at"])
 	return events
@@ -444,4 +445,30 @@ func _run_event(event: Dictionary) -> void:
 		var line := tr(event["text"])
 		if event["kind"] == "elite":
 			line = line % tr(ENEMY_TYPES[event["type"]]["name"])
-		_game.announce(line)
+		# A boss and the weather come with a cut-in since 0.3.20, a ring still as a line at the top
+		# (stopping as it closes in would only leave less time to get out); a line too when no
+		# cut-in can play (Game.play_cut_in).
+		if not _cut_in_for(event, line):
+			_game.announce(line)
+
+
+## The cut-in for a boss coming (its face, 「XX空降了！」 or for the last 「XX来终面了！」, its arrival
+## line; no hint how to dodge, the user: 不用给提示) or the weather (its picture, its line split at the
+## first 「！」). False when it isn't one of those or no cut-in could play.
+func _cut_in_for(event: Dictionary, line: String) -> bool:
+	match event["kind"]:
+		"elite":
+			var type_id: String = event["type"]
+			var name := tr(ENEMY_TYPES[type_id]["name"])
+			var title := tr("%s来终面了！") % name if (event["text"] as String).begins_with("终面") else tr("%s空降了！") % name
+			var said := ""
+			if BossKits.has(type_id):
+				var arrive: String = BossKits.KITS[type_id]["lines"].get("arrive", "")
+				said = "「%s」" % tr(arrive) if arrive != "" else ""
+			return _game.play_cut_in(ENEMY_TYPES[type_id]["art"], title, said)
+		"map_event":
+			var cut := line.find("！")
+			var title := line.substr(0, cut + 1) if cut >= 0 else line
+			var rest := line.substr(cut + 1) if cut >= 0 else ""
+			return _game.play_cut_in("event_" + str(event["id"]), title, rest)
+	return false

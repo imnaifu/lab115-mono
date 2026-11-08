@@ -1213,8 +1213,6 @@ const EN := {
 	"升一级": "Level up",
 	"测试模式：从 %d:00 开始，职级已升到 %s": "Test mode: starting at %d:00, promoted to %s",
 	# The bosses (.45, BossKits): arrivals, attacks, how to dodge them, their lines
-	"首领出现：%s": "Boss: %s",
-	"最后的考验：%s": "Final test: %s",
 	"%s 进入二阶段！": "%s enters phase two!",
 	"遇到过的怪会收进图鉴；每张图 4 个 boss，招式固定": "Enemies you meet go in the bestiary; each map has 4 bosses with fixed attacks",
 	"遇到过的怪会收进图鉴；每局 2:00、4:00、6:00、8:00 各从 5 个 boss 里抽一个": "Enemies you meet go in the bestiary; each run draws one of 5 bosses at 2:00, 4:00, 6:00 and 8:00",
@@ -1440,6 +1438,16 @@ const EN := {
 	"5 个职业都在无尽模式撑到 20:00": "Reach 20:00 in Endless with all 5 jobs",
 	"大满贯": "Grand Slam",
 	"拿到其他所有成就": "Earn every other achievement",
+	# Cut-ins (0.3.20)
+	"空降：%s": "Parachuted in: %s",
+	"终面：%s": "Final round: %s",
+	"%s空降了！": "%s parachutes in!",
+	"%s来终面了！": "%s for your final round!",
+	"下班时间到！": "Clock-out!",
+	"不再来新怪，清完场上的就上市": "No more coming: clear the floor to IPO",
+	"撑过 10:00，清完了场上的怪": "Lasted to 10:00 and cleared the floor",
+	"紧急会议！": "Emergency meeting!",
+	"%d 秒内打掉围上来的 %d 个精英，打完发年终奖": "In %d s, beat the %d elites closing in for a year-end bonus",
 	# Year-end bonus cut-ins (0.3.19)
 	"%s被干掉了！": "%s is down!",
 	"年终奖到账，开箱": "Year-end bonus incoming",
