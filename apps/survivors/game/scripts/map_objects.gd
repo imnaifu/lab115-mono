@@ -158,6 +158,8 @@ func tick(delta: float) -> void:
 				if _stand(thing, distance <= DESK_RADIUS, delta) >= DESK_CHARGE:
 					Effects.ring(game, thing["at"], DESK_RADIUS, GOLD if thing["golden"] else Art.GREEN)
 					_remove(i)
+					if thing["golden"]:
+						game.achievements.on_golden_desk()
 					game.offer_desk(thing["golden"])
 			"room":
 				if _tick_room(thing, distance, delta):

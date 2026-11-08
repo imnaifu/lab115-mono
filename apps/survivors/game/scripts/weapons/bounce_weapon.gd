@@ -114,6 +114,7 @@ func _on_edge_bounce(logo: Logo, half: Vector2, damage: float) -> void:
 		_blast(logo.position, CORNER_RADIUS, damage * CORNER_DAMAGE, Art.BRAND)
 		Effects.callout(game, logo.position, tr("撞角了！"), Art.BRAND)
 		Sound.play("corner")
+		game.achievements.on_corner()
 	elif evolved:
 		_blast(logo.position, EDGE_BLAST_RADIUS, damage * EDGE_BLAST_DAMAGE, Art.BLUE)
 	else:

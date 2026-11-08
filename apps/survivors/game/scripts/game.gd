@@ -1444,6 +1444,7 @@ func accept_revive() -> void:
 	revived = true
 	Progress.use_revive(run_id)
 	telemetry.on_revive(true)
+	achievements.on_revive()
 	player.revive(player.max_hp * REVIVE_HP, REVIVE_INVULN)
 	Effects.ring(self, player.position, REVIVE_RADIUS, Art.GREEN)
 	for enemy in query_enemies(player.position, REVIVE_RADIUS, false):

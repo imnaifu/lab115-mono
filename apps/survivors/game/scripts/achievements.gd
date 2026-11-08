@@ -40,6 +40,28 @@ const LIST := [
 	{"id": "sg_stamps_all", "tier": "gold", "art": "mbs", "group": "打卡", "name": "新加坡通", "text": "新加坡 5 个地标全部打卡", "goal": 5},
 	{"id": "bj_stamps_all", "tier": "gold", "art": "summer_palace", "group": "打卡", "name": "京城通", "text": "北京 5 个地标全部打卡", "goal": 5},
 	{"id": "train_hit", "tier": "bronze", "art": "caltrain", "group": "彩蛋", "name": "赶上了 Caltrain", "text": "被 Caltrain 或 13 号线撞飞一次"},
+	# 0.3.14 (the user: 成就再多加一些 → 全加，再来一些): 21 more, in the groups they belong to.
+	{"id": "all_four_bosses", "tier": "silver", "art": "chest", "group": "战斗", "name": "年终奖拿到手软", "text": "一局打掉 4 个 boss"},
+	{"id": "three_thousand", "tier": "gold", "art": "skull", "group": "战斗", "name": "三千人斩", "text": "一局打死 3000 个怪"},
+	{"id": "max_weapon", "tier": "bronze", "art": "star_gold", "group": "战斗", "name": "技术专家", "text": "一局有一把武器升到满级"},
+	{"id": "all_max", "tier": "gold", "art": "monitors", "group": "战斗", "name": "全栈专家", "text": "一局 6 把武器全部满级"},
+	{"id": "skill_five", "tier": "silver", "art": "enter_key", "group": "战斗", "name": "技能控", "text": "一局放 5 次技能"},
+	{"id": "kills_50k", "tier": "gold", "art": "skull", "group": "战斗", "name": "打工人", "text": "累计打死 50000 个怪", "goal": 50000},
+	{"id": "boss_kills_50", "tier": "silver", "art": "elimination", "group": "战斗", "name": "boss 收割机", "text": "累计打掉 50 个 boss", "goal": 50},
+	{"id": "speedrun", "tier": "gold", "art": "bike", "group": "生存", "name": "速通", "text": "普通模式 11:00 内清完场通关"},
+	{"id": "no_passives", "tier": "gold", "art": "frugality", "group": "生存", "name": "极简主义", "text": "不拿任何被动通关"},
+	{"id": "rehired", "tier": "bronze", "art": "rehire", "group": "生存", "name": "回来上班", "text": "用一次返聘复活"},
+	{"id": "runs_50", "tier": "silver", "art": "day1", "group": "生存", "name": "老员工", "text": "累计打 50 局", "goal": 50},
+	{"id": "full_hp_win", "tier": "gold", "art": "tea_time", "group": "生存", "name": "满血下班", "text": "生命满着通关"},
+	{"id": "parcels_10", "tier": "bronze", "art": "parcel", "group": "地图", "name": "拆快递", "text": "一局开 10 个快递"},
+	{"id": "rooms_all", "tier": "silver", "art": "meeting_room", "group": "地图", "name": "会议之王", "text": "一局 3 间紧急会议室全部打赢"},
+	{"id": "forms_win", "tier": "gold", "art": "forms", "group": "地图", "name": "卷到底", "text": "签满 3 张加班申请并通关"},
+	{"id": "golden_desk", "tier": "bronze", "art": "icon_trophy", "group": "地图", "name": "金色工位", "text": "用一次金色工位"},
+	{"id": "naps_3", "tier": "bronze", "art": "nap", "group": "地图", "name": "午休达人", "text": "一局捡到 3 次午休"},
+	{"id": "stamps_run", "tier": "silver", "art": "first_coffee", "group": "打卡", "name": "全勤", "text": "一局把 5 个打卡点都打一遍"},
+	{"id": "endless_bosses", "tier": "silver", "art": "investor", "group": "无尽", "name": "加班费", "text": "无尽模式一局打掉 10 个 boss"},
+	{"id": "corner", "tier": "bronze", "art": "screensaver", "group": "彩蛋", "name": "撞角了", "text": "屏保撞进屏幕角落一次"},
+	{"id": "red_packets_10", "tier": "silver", "art": "red_packet", "group": "彩蛋", "name": "红包雨", "text": "一局捡到 10 个红包"},
 	# 无尽模式 (Game.endless, 0.2.0, the user: 加更多的成就; picked 无尽撑到 11 / 12 / 15 分钟).
 	# 20 / 30 / 60 minutes from 0.3.0 (the user: 成就改难点了 → 20 30 60; 11 / 12 / 15 until then); the
 	# ids keep the old minutes, as some have earned them already.
@@ -48,7 +70,7 @@ const LIST := [
 	# Platinum from 0.3.0 (the user: 加个撑满 60min 的白金成就): the full hour, where a run ends.
 	{"id": "endless_15", "tier": "platinum", "art": "icon_infinity", "group": "无尽", "name": "996", "text": "无尽模式撑满 60 分钟"},
 ]
-const GROUPS := ["生存", "战斗", "职业", "打卡", "无尽", "彩蛋"]
+const GROUPS := ["生存", "战斗", "职业", "打卡", "地图", "无尽", "彩蛋"]
 ## Achievement tiers (.31, the user's call: like trophies), hardest first, with their colours.
 ## Platinum was all_clear alone (.42, the user's call: everything, like a trophy list's platinum;
 ## 万人斩, 京城通 and 全图鉴 were platinum until then and are gold now); 996, 无尽模式's full hour, is the
@@ -76,6 +98,10 @@ const ESTIMATED_RATES := {
 	"win_coder": 8.0, "win_pm": 6.0, "win_designer": 5.0, "win_ops": 5.0, "win_data_scientist": 4.0,
 	"stamps_5": 30.0, "stamps_all": 25.0, "ldn_stamps_all": 8.0, "sea_stamps_all": 6.0, "sg_stamps_all": 5.0, "bj_stamps_all": 4.0, "train_hit": 40.0,
 	"endless_11": 3.0, "endless_12": 1.0, "endless_15": 0.2,
+	"all_four_bosses": 12.0, "three_thousand": 3.0, "max_weapon": 40.0, "all_max": 2.0, "skill_five": 10.0, "kills_50k": 0.5,
+	"boss_kills_50": 2.0, "speedrun": 4.0, "no_passives": 0.5, "rehired": 15.0, "runs_50": 3.0, "full_hp_win": 2.0,
+	"parcels_10": 20.0, "rooms_all": 5.0, "forms_win": 2.0, "golden_desk": 15.0, "naps_3": 5.0, "stamps_run": 10.0,
+	"endless_bosses": 1.0, "corner": 30.0, "red_packets_10": 3.0,
 }
 const SURVIVE_SECONDS := 300.0
 const UNTOUCHED_SECONDS := 180.0
@@ -83,6 +109,16 @@ const KILLS_IN_A_RUN := 1000
 const CLOSE_CALL_HP := 10.0
 ## 无尽模式's achievements by the second a run must reach (only in that mode, Game.endless).
 const ENDLESS_AT := {"endless_11": 1200.0, "endless_12": 1800.0, "endless_15": 3600.0}
+## 0.3.14's run goals.
+const KILLS_BIG_RUN := 3000
+const SKILLS_IN_A_RUN := 5
+const SPEEDRUN_SECONDS := 660.0
+const PARCELS_IN_A_RUN := 10
+const NAPS_IN_A_RUN := 3
+const RED_PACKETS_IN_A_RUN := 10
+const BOSSES_IN_A_RUN := 4
+const ENDLESS_BOSSES := 10
+const FORMS_TO_WIN := 3
 ## Seconds between the checks tick() makes.
 const CHECK_GAP := 0.5
 
@@ -99,6 +135,8 @@ var _bosses := {}
 ## For the 怪物图鉴 (Bestiary): types met and killed this run.
 var _seen := {}
 var _kills_by_type := {}
+## Bosses killed this run (0.3.14: 年终奖拿到手软, 加班费, boss 收割机).
+var _boss_kills := 0
 var _finished := false
 
 
@@ -175,8 +213,12 @@ static func progress(id: String) -> Array:
 		return [0, 0]
 	var done := 0
 	match id:
-		"ten_thousand":
+		"ten_thousand", "kills_50k":
 			done = Progress.stat("kills", 0)
+		"boss_kills_50":
+			done = Progress.stat("boss_kills", 0)
+		"runs_50":
+			done = Progress.stat("runs", 0)
 		"all_bosses":
 			done = (Progress.stat("bosses", []) as Array).size()
 		"bestiary_all":
@@ -221,6 +263,34 @@ func tick(delta: float) -> void:
 		_unlock("untouched")
 	if _game.kills >= KILLS_IN_A_RUN:
 		_unlock("thousand")
+	# 0.3.14's, what a frame of play can tell.
+	if _game.kills >= KILLS_BIG_RUN:
+		_unlock("three_thousand")
+	if Progress.stat("kills", 0) + _game.kills >= data("kills_50k")["goal"]:
+		_unlock("kills_50k")
+	if Progress.stat("boss_kills", 0) + _boss_kills >= data("boss_kills_50")["goal"]:
+		_unlock("boss_kills_50")
+	if _boss_kills >= BOSSES_IN_A_RUN:
+		_unlock("all_four_bosses")
+	if _game.endless and _boss_kills >= ENDLESS_BOSSES:
+		_unlock("endless_bosses")
+	if _game.ultimates.casts >= SKILLS_IN_A_RUN:
+		_unlock("skill_five")
+	if _game.map_objects.parcels_opened >= PARCELS_IN_A_RUN:
+		_unlock("parcels_10")
+	if _game.map_objects.rooms_won >= MapObjects.ROOMS:
+		_unlock("rooms_all")
+	if _game.naps >= NAPS_IN_A_RUN:
+		_unlock("naps_3")
+	if _game.red_packets >= RED_PACKETS_IN_A_RUN:
+		_unlock("red_packets_10")
+	if _game.stamps.done_count() >= Maps.current.STAMPS.size():
+		_unlock("stamps_run")
+	var maxed := player.weapons.filter(_maxed)
+	if not maxed.is_empty():
+		_unlock("max_weapon")
+	if maxed.size() >= Jobs.MAX_WEAPONS:
+		_unlock("all_max")
 	if Progress.stat("kills", 0) + _game.kills >= data("ten_thousand")["goal"]:
 		_unlock("ten_thousand")
 	if player.weapons.size() >= Jobs.MAX_WEAPONS:
@@ -252,6 +322,7 @@ func on_hurt() -> void:
 
 func on_boss_killed(type_id: String) -> void:
 	_bosses[type_id] = true
+	_boss_kills += 1
 	_unlock("first_boss")
 	if _all_bosses().size() >= data("all_bosses")["goal"]:
 		_unlock("all_bosses")
@@ -270,6 +341,29 @@ func on_train_hit() -> void:
 	_unlock("train_hit")
 
 
+## A 返聘 spent (Game.accept_revive, 0.3.14).
+func on_revive() -> void:
+	_unlock("rehired")
+
+
+## A golden desk charged (MapObjects, 0.3.14).
+func on_golden_desk() -> void:
+	_unlock("golden_desk")
+
+
+## The screensaver's logo hit a corner (BounceWeapon, 0.3.14); not in the 出发 page's demo.
+func on_corner() -> void:
+	if not _game.previewing:
+		_unlock("corner")
+
+
+## A weapon at its last level: a shared one's MAX_LEVEL, a job's own both directions full.
+static func _maxed(weapon: Weapon) -> bool:
+	if Upgrades.BRANCHES.has(weapon.id):
+		return weapon.branch_a >= Upgrades.BRANCH_MAX and weapon.branch_b >= Upgrades.BRANCH_MAX
+	return weapon.level >= Upgrades.MAX_LEVEL
+
+
 ## The run is over (won, lost or given up): the end-only achievements, then the run's kills,
 ## bosses and win go into the totals. Only once, however the run ended.
 func finish(victory: bool) -> void:
@@ -279,6 +373,15 @@ func finish(victory: bool) -> void:
 	_unlock("first_day")
 	if victory:
 		_unlock("ipo")
+		# 0.3.14's, what only a win tells.
+		if _game.elapsed <= SPEEDRUN_SECONDS:
+			_unlock("speedrun")
+		if _game.upgrades.passive_levels.is_empty():
+			_unlock("no_passives")
+		if _game.player.hp >= _game.player.max_hp:
+			_unlock("full_hp_win")
+		if _game.signed_forms >= FORMS_TO_WIN:
+			_unlock("forms_win")
 		if _game.player.hp <= CLOSE_CALL_HP:
 			_unlock("close_call")
 		_unlock("win_" + _game.player.job)
@@ -291,6 +394,9 @@ func finish(victory: bool) -> void:
 		elif Maps.current_id == "sg":
 			_unlock("win_singapore")
 	Progress.set_stat("runs", Progress.stat("runs", 0) + 1)
+	Progress.set_stat("boss_kills", Progress.stat("boss_kills", 0) + _boss_kills)
+	if Progress.stat("runs", 0) >= data("runs_50")["goal"]:
+		_unlock("runs_50")
 	Progress.set_stat("kills", Progress.stat("kills", 0) + _game.kills)
 	Progress.set_stat("bosses", Array(_all_bosses()))
 	Progress.set_stat("seen", Array(_all_seen()))
