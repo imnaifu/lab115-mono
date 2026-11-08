@@ -13,7 +13,9 @@ const COUNT := [1, 1, 2, 2, 2]
 ## go where the crowd is thickest: about 440 a second alone at full level at 8:00, now about 300.
 const DAMAGE := [3.0, 3.0, 4.0, 4.0, 5.0]
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): up to 46 (54 before).
-const RADIUS := [36.0, 38.0, 40.0, 42.0, 46.0]
+## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
+## 42 / 45 / 48 / 51 / 56 (36 / 38 / 40 / 42 / 46 until then).
+const RADIUS := [42.0, 45.0, 48.0, 51.0, 56.0]
 const LIFETIME := 3.0
 ## A room fades in over this long, and starts working once it has (.39: it used to slow and hurt
 ## from the first frame, while still almost invisible).

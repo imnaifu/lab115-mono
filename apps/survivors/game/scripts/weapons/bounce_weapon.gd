@@ -14,7 +14,9 @@ extends Weapon
 
 ## Logos out at once.
 const COUNT := [1, 1, 2, 2, 3]
-const DAMAGE := [12.0, 16.0, 16.0, 20.0, 26.0]
+## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
+## growth +6 / +6 / +9 (+4 / +4 / +6 until then), the opening 12 the same.
+const DAMAGE := [12.0, 18.0, 18.0, 24.0, 33.0]
 const SPEED := [150.0, 150.0, 170.0, 170.0, 190.0]
 const REHIT := 0.5
 ## The tile's side, as drawn and as it hits and bounces.

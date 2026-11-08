@@ -17,7 +17,9 @@ const COUNT := [1, 2, 2, 2, 3]
 ## +1 every level from 0.3.6 (the user: 无人机伤害略加一点点; 12 / 12 / 14 / 16 / 16 until then), the
 ## steps on the cards (+2, +2) the same. Alone and standing still it was 3rd of the ten shared
 ## weapons then: 244 a second at level 2 at 4:00, 676 at level 5 at 8:00.
-const DAMAGE := [13.0, 13.0, 15.0, 17.0, 17.0]
+## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
+## +3 / +3 (+2 / +2), so 14 / 14 / 17 / 20 / 20.
+const DAMAGE := [14.0, 14.0, 17.0, 20.0, 20.0]
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): blasts up to 30 (36 before).
 const BLAST_RADIUS := [26.0, 26.0, 28.0, 28.0, 30.0]
 ## Was 180 until .35, slow enough for the crowd to walk out from under the bomb.

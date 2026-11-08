@@ -8,7 +8,11 @@ const COUNT := [1, 2, 2, 2, 3]
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 24 / 24 / 34 / 34 / 44, with one more keyboard at level 4 and
 ## ×1.4 at 5. Smashing through a late crowd it dealt about 490 a second alone at full level at 8:00,
 ## now about 300 (the common weapons' mark; the jobs' own about 500).
-const DAMAGE := [24.0, 24.0, 26.0, 28.0, 28.0]
+## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
+## 20 to start (24), +5 / +5 (+2 / +2), so full 30 (28) — then (the user: 机械键盘还是削弱一下到500 左右,
+## alone at full level at 8:00 it hit about 710 a second walking a loop): 12 to start, +3 / +3, full
+## 18, about 500 a second there (15 / 15 / 18 / 21 / 21 tried first: 570).
+const DAMAGE := [12.0, 12.0, 15.0, 18.0, 18.0]
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): ×1.2 at level 5 (×1.4 before).
 const SIZE := [1.0, 1.0, 1.0, 1.0, 1.2]
 const GRAVITY := 420.0

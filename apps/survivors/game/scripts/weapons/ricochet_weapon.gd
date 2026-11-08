@@ -10,7 +10,9 @@ const BOUNCES := [3, 4, 5, 6, 8]
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 10 / 10 / 15 / 15 / 21 and 3–6 enemies a mail. One enemy at a
 ## time, it fell behind the weapons that hit a crowd: about 160 a second alone at full level at 8:00,
 ## now about 300.
-const DAMAGE := [10.0, 13.0, 20.0, 24.0, 30.0]
+## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
+## about a fifth more at every level (10 / 13 / 20 / 24 / 30 until then).
+const DAMAGE := [12.0, 16.0, 24.0, 29.0, 36.0]
 const COUNT := [1, 1, 1, 2, 2]
 ## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
 ## the speed-ups gave went into damage instead, the same damage a second at every level.

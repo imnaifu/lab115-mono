@@ -12,7 +12,10 @@ const COUNT := [1, 1, 2, 2, 3]
 const DAMAGE := [20.0, 28.0, 28.0, 36.0, 50.0]
 ## Enemies each file passes through. Players walk away from a crowd as often as into it, so a
 ## file that reaches the crowd has to count for more than one hit.
-const PIERCE := [2, 2, 2, 2, 3]
+## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
+## through every enemy at every level (2 / 2 / 2 / 2 / 3 until then).
+const UNLIMITED := 1 << 20
+const PIERCE := [UNLIMITED, UNLIMITED, UNLIMITED, UNLIMITED, UNLIMITED]
 ## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
 ## the speed-ups gave went into damage instead, the same damage a second at every level.
 const COOLDOWN := [0.7, 0.7, 0.7, 0.7, 0.7]

@@ -164,8 +164,8 @@ func _weapon_detail(id: String) -> Dictionary:
 				["瞄准", "%s 内最近的怪，没有就朝面向" % _num(PokeWeapon.AIM_RANGE)],
 				["每针", "长 %s、宽 %s 的一条线，线上的怪都挨打" % [_num(PokeWeapon.LENGTH), _num(PokeWeapon.WIDTH)]]]
 		"facing":
-			rows = [["伤害", FacingWeapon.DAMAGE], ["每次几份", FacingWeapon.COUNT], ["穿透", FacingWeapon.PIERCE], ["间隔（秒）", FacingWeapon.COOLDOWN]]
-			fixed = [["方向", "朝面向发出"], ["飞行速度", _num(FacingWeapon.SPEED)]]
+			rows = [["伤害", FacingWeapon.DAMAGE], ["每次几份", FacingWeapon.COUNT], ["间隔（秒）", FacingWeapon.COOLDOWN]]
+			fixed = [["方向", "朝面向发出"], ["穿透", "所有怪（0.3.9 起）"], ["飞行速度", _num(FacingWeapon.SPEED)]]
 		"bomber":
 			rows = [["伤害", BomberWeapon.DAMAGE], ["架数", BomberWeapon.COUNT], ["爆炸半径", BomberWeapon.BLAST_RADIUS]]
 			fixed = [["投弹", "每架每 %s 秒一颗，落地前 %s 秒先出影子和红圈" % [_num(BomberWeapon.RELOAD), _num(BomberWeapon.FALL_SECONDS)]],

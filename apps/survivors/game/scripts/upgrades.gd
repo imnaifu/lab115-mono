@@ -68,13 +68,13 @@ const WEAPONS := {
 	"enter": {"name": "回车键", "art": "enter_key", "behavior": "aimed", "type": "shoot", "job": "coder",
 		"levels": ["自动敲向最近的敌人"]},
 	"screensaver": {"name": "屏保", "art": "screensaver", "behavior": "bounce", "type": "shoot",
-		"levels": ["logo 一直在屏幕里弹来弹去，穿透一切；撞进屏幕角落会炸一圈", "伤害 +4", "多一个 logo，飞得更快", "伤害 +4", "多一个 logo，伤害 +6，飞得更快"]},
+		"levels": ["logo 一直在屏幕里弹来弹去，穿透一切；撞进屏幕角落会炸一圈", "伤害 +6", "多一个 logo，飞得更快", "伤害 +6", "多一个 logo，伤害 +9，飞得更快"]},
 	"copy": {"name": "复制粘贴", "art": "paper", "behavior": "facing", "type": "shoot",
-		"levels": ["朝面向的方向连发文件，能穿过敌人", "伤害 +4", "多粘贴一份", "伤害 +4", "多粘贴一份，伤害 +7，穿透 +1"]},
+		"levels": ["朝面向的方向连发文件，穿过所有敌人", "伤害 +8", "多粘贴一份", "伤害 +8", "多粘贴一份，伤害 +14"]},
 	"keyboard": {"name": "机械键盘", "art": "keyboard", "behavior": "toss", "type": "shoot",
-		"levels": ["往上一抛，落下砸穿一切", "多抛一把", "伤害 +2", "伤害 +2", "多抛一把，键盘变大"]},
+		"levels": ["往上一抛，落下砸穿一切", "多抛一把", "伤害 +3", "伤害 +3", "多抛一把，键盘变大"]},
 	"email": {"name": "邮件抄送", "art": "email_cc", "behavior": "ricochet", "type": "shoot",
-		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "伤害 +3，多抄送 1 个", "伤害 +7，多抄送 1 个", "多发一封，伤害 +4，多抄送 1 个", "伤害 +6，多抄送 2 个"]},
+		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "伤害 +4，多抄送 1 个", "伤害 +8，多抄送 1 个", "多发一封，伤害 +5，多抄送 1 个", "伤害 +7，多抄送 2 个"]},
 	"prd": {"name": "激光笔", "art": "laser_pointer", "behavior": "swing", "type": "melee", "job": "pm",
 		"levels": ["朝最近的怪扫一下激光，扫过的怪都挨打"]},
 	"poke": {"name": "抽样", "art": "sample_needle", "behavior": "poke", "type": "melee", "job": "data_scientist",
@@ -92,7 +92,7 @@ const WEAPONS := {
 	"firewall": {"name": "防火墙", "art": "firewall", "behavior": "orbit", "type": "summon", "job": "ops",
 		"levels": ["一面墙护着你：身边有怪就飞过去撞开，先打离你最近的"]},
 	"drone": {"name": "无人机", "art": "drone", "behavior": "bomber", "type": "summon",
-		"levels": ["飞到怪最多的地方扔炸弹，炸一片", "多一架无人机", "伤害 +2，炸得更大", "伤害 +2", "多一架，炸得更大"]},
+		"levels": ["飞到怪最多的地方扔炸弹，炸一片", "多一架无人机", "伤害 +3，炸得更大", "伤害 +3", "多一架，炸得更大"]},
 	"outsource": {"name": "外包团队", "art": "outsourcing", "behavior": "squad", "type": "summon",
 		"levels": ["招 2 个外包站在你身边，附近的怪会先去打他们；被打倒几秒后重新招人", "多招 1 个", "更抗揍，伤害 +3", "多招 1 个", "多招 1 个，更抗揍，伤害 +3"]},
 }
@@ -647,7 +647,8 @@ static func weapon_stats(weapon_id: String, weapon_level: int) -> Dictionary:
 	var i := weapon_level - 1
 	match WEAPONS[weapon_id]["behavior"]:
 		"facing":
-			return {"damage": FacingWeapon.DAMAGE[i], "count": FacingWeapon.COUNT[i], "pierce": FacingWeapon.PIERCE[i], "cooldown": FacingWeapon.COOLDOWN[i]}
+			# No pierce since 0.3.9: every file goes through everything at every level.
+			return {"damage": FacingWeapon.DAMAGE[i], "count": FacingWeapon.COUNT[i], "cooldown": FacingWeapon.COOLDOWN[i]}
 		"bomber":
 			return {"damage": BomberWeapon.DAMAGE[i], "count": BomberWeapon.COUNT[i], "radius": BomberWeapon.BLAST_RADIUS[i]}
 		"strike":

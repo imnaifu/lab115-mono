@@ -12,7 +12,9 @@ const DAMAGE := [16.0, 16.0, 24.0, 24.0, 36.0]
 const SPLASH_RADIUS := [12.0, 12.0, 12.0, 16.0, 18.0]
 ## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
 ## the speed-ups gave went into damage instead, the same damage a second at every level.
-const COOLDOWN := [2.6, 2.6, 2.6, 2.6, 2.6]
+## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
+## every 2.2 s (2.6 until then).
+const COOLDOWN := [2.2, 2.2, 2.2, 2.2, 2.2]
 ## Only enemies this close to the player (most of the screen's short side): when it struck anywhere
 ## on screen, kills far off went by unnoticed (the user's call).
 const RANGE := 150.0
