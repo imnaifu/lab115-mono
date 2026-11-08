@@ -141,11 +141,11 @@ const SOLID_SPANS := {}
 ## save's, so they stay when a spot changes (.77: sea_microhard is Mount Rainier; Microhard's
 ## headquarters is in Redmond, the user: 只放总部在这个城市的).
 const STAMPS := {
-	"sea_spheres": {"art": "spheres", "block": Vector2i(0, 1), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 10.0]},
-	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-2, -3), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 5.0]},
-	"sea_troll": {"art": "fremont_troll", "block": Vector2i(2, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.02]},
-	"sea_microhard": {"art": "mt_rainier", "block": Vector2i(2, 3), "name": "雷尼尔雪山", "note": "天晴才看得见，一年没几天", "bonus": ["might", 0.02]},
-	"sea_pike": {"art": "pike_place", "block": Vector2i(-2, 3), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.05]},
+	"sea_spheres": {"art": "spheres", "block": Vector2i(0, 1), "name": "Amazin' 球球", "note": "三个玻璃球，里面是热带雨林", "bonus": ["luck", 5.0]},
+	"sea_space_needle": {"art": "space_needle", "block": Vector2i(-2, -3), "name": "太空针塔", "note": "飞碟停在了塔尖上", "bonus": ["max_hp", 10.0]},
+	"sea_troll": {"art": "fremont_troll", "block": Vector2i(2, -3), "name": "弗里蒙特巨魔", "note": "桥底下抓着一辆小车", "bonus": ["haste", 0.03]},
+	"sea_microhard": {"art": "mt_rainier", "block": Vector2i(2, 3), "name": "雷尼尔雪山", "note": "天晴才看得见，一年没几天", "bonus": ["might", 0.03]},
+	"sea_pike": {"art": "pike_place", "block": Vector2i(-2, 3), "name": "派克市场", "note": "小心头顶飞过来的鱼", "bonus": ["magnet", 0.1]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

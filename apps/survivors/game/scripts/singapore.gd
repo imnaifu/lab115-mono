@@ -135,11 +135,11 @@ const SOLID_SPANS := {}
 ## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
 ## sg_one_north is Shopay's headquarters, 纬壹科技城 until then).
 const STAMPS := {
-	"sg_one_north": {"art": "icon_bag", "block": Vector2i(0, 1), "name": "Shopay 总部", "note": "大促一来，全楼通宵", "bonus": ["haste", 0.02]},
-	"sg_merlion": {"art": "merlion", "block": Vector2i(-2, -3), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.05]},
-	"sg_jewel": {"art": "jewel", "block": Vector2i(2, -3), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.02]},
-	"sg_mbs": {"art": "mbs", "block": Vector2i(2, 3), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 5.0]},
-	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(-2, 3), "name": "圣淘沙", "note": "沙滩、椰树和度假村", "bonus": ["luck", 10.0]},
+	"sg_one_north": {"art": "icon_bag", "block": Vector2i(0, 1), "name": "Shopay 总部", "note": "大促一来，全楼通宵", "bonus": ["haste", 0.03]},
+	"sg_merlion": {"art": "merlion", "block": Vector2i(-2, -3), "name": "鱼尾狮", "note": "狮子头、鱼尾巴，嘴里一直在喷水", "bonus": ["magnet", 0.1]},
+	"sg_jewel": {"art": "jewel", "block": Vector2i(2, -3), "name": "星耀樟宜", "note": "机场里有一道室内瀑布", "bonus": ["might", 0.03]},
+	"sg_mbs": {"art": "mbs", "block": Vector2i(2, 3), "name": "滨海湾金沙", "note": "三栋楼顶着一艘船", "bonus": ["max_hp", 10.0]},
+	"sg_sentosa": {"art": "sentosa_beach", "block": Vector2i(-2, 3), "name": "圣淘沙", "note": "沙滩、椰树和度假村", "bonus": ["luck", 5.0]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

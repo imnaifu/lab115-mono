@@ -149,11 +149,11 @@ const SOLID_SPANS := {"tower_bridge": [[0.22, 0.28], [0.72, 0.78]]}
 ## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
 ## ldn_kings_cross is DeepMine's headquarters, 国王十字站 until then).
 const STAMPS := {
-	"ldn_kings_cross": {"art": "icon_pickaxe", "block": Vector2i(0, 1), "name": "DeepMine 总部", "note": "AI 实验室，下棋没输过", "bonus": ["luck", 10.0]},
-	"ldn_museum": {"art": "british_museum", "block": Vector2i(-2, -3), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.05]},
-	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(2, -3), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.02]},
-	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(2, 3), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 5.0]},
-	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-2, 3), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.02]},
+	"ldn_kings_cross": {"art": "icon_pickaxe", "block": Vector2i(0, 1), "name": "DeepMine 总部", "note": "AI 实验室，下棋没输过", "bonus": ["luck", 5.0]},
+	"ldn_museum": {"art": "british_museum", "block": Vector2i(-2, -3), "name": "大英博物馆", "note": "里面全是别人家的宝贝", "bonus": ["magnet", 0.1]},
+	"ldn_canary": {"art": "canary_wharf", "block": Vector2i(2, -3), "name": "金丝雀码头", "note": "银行和金融科技的塔楼群", "bonus": ["might", 0.03]},
+	"ldn_tower_bridge": {"art": "tower_bridge", "block": Vector2i(2, 3), "name": "伦敦塔桥", "note": "大船一来，桥面就竖起来", "bonus": ["max_hp", 10.0]},
+	"ldn_big_ben": {"art": "big_ben", "block": Vector2i(-2, 3), "name": "大本钟", "note": "五点一响，准时下班", "bonus": ["haste", 0.03]},
 }
 
 ## Parody companies, as in BayArea.BRANDS.

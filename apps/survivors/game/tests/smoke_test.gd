@@ -567,6 +567,13 @@ func _report() -> int:
 	# must have run.
 	if _game.level > 3 and _from_minute == 0 and not _reroll_checked:
 		problems.append("never got to check 刷新")
+	# Every landmark's bonus one 培训 rank of its kind (0.3.21, the user: 打卡给的东西和培训一个等级的数值对上).
+	for map_id: String in Maps.ALL:
+		for stamp_id: String in Maps.script_of(map_id).STAMPS:
+			var bonus: Array = Maps.script_of(map_id).STAMPS[stamp_id]["bonus"]
+			var rank: Array = Training.STATS.filter(func(stat: Dictionary) -> bool: return stat["id"] == bonus[0])
+			if rank.is_empty() or not is_equal_approx(float(bonus[1]), float(rank[0]["step"])):
+				problems.append("%s's bonus %s isn't one 培训 rank" % [stamp_id, bonus])
 	# Each map's bosses as strong and as quick as their slot says (.78: .76 changed only the slots).
 	for map_id: String in Maps.ALL:
 		var bosses: Array = Maps.script_of(map_id).BOSSES

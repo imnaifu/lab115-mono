@@ -147,11 +147,11 @@ const SOLID_SPANS := {}
 ## another map's in the save. The ids are the save's, so they stay when a spot changes (.77:
 ## bj_xierqi is 白度's headquarters, 西二旗地铁站 until then).
 const STAMPS := {
-	"bj_xierqi": {"art": "icon_paw", "block": Vector2i(0, 1), "name": "白度总部", "note": "门口的熊掌老远就看得见", "bonus": ["luck", 10.0]},
-	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-2, -3), "name": "颐和园", "note": "佛香阁立在万寿山上", "bonus": ["max_hp", 5.0]},
-	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(2, -3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.02]},
-	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.02]},
-	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(-2, 3), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.05]},
+	"bj_xierqi": {"art": "icon_paw", "block": Vector2i(0, 1), "name": "白度总部", "note": "门口的熊掌老远就看得见", "bonus": ["luck", 5.0]},
+	"bj_yiheyuan": {"art": "summer_palace", "block": Vector2i(-2, -3), "name": "颐和园", "note": "佛香阁立在万寿山上", "bonus": ["max_hp", 10.0]},
+	"bj_tsinghua": {"art": "tsinghua_gate", "block": Vector2i(2, -3), "name": "清华园", "note": "二校门前的游客比学生多", "bonus": ["haste", 0.03]},
+	"bj_birds_nest": {"art": "birds_nest", "block": Vector2i(2, 3), "name": "鸟巢", "note": "一路往东南，去看鸟巢", "bonus": ["might", 0.03]},
+	"bj_zhongguancun": {"art": "monitors", "block": Vector2i(-2, 3), "name": "中关村", "note": "攒电脑、找投资，都来这儿", "bonus": ["magnet", 0.1]},
 }
 
 ## Parody companies, as in BayArea.BRANDS, each with an icon of its own (.39: 嘀嘀 a taxi, 网异 a

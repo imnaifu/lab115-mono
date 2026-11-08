@@ -161,17 +161,18 @@ const LAWN_LANDMARKS := {Vector2i(0, 1): "dino_skeleton"}
 ## middle one at 1:00, then the corners clockwise from the north-west at 3:00, 5:00, 7:00, 9:00): its picture
 ## on the 打卡 page, the block it stands on (in LANDMARKS / LAWN_LANDMARKS), its name, a line about
 ## it, and the small bonus it gives for good once checked in at ([kind, amount], Stamps.BONUSES).
-## Since .55 (the user's call) each gives 2% damage, 2% cooldown, +10 luck, 5% pickup range or +5
-## health (3%, 3%, 20, 10%, 10 from .44); all five maps' together are about one passive card each.
+## Since 0.3.21 each gives one 培训 rank of its kind (the user: 打卡给的东西和培训一个等级的数值对上; the
+## smoke test checks): 3% damage, 3% cooldown, +5 luck, 10% pickup range or +10 health; .55–0.3.20 2%,
+## 2%, 10, 5%, 5 (3%, 3%, 20, 10%, 10 from .44).
 ## The ids are the save's, so they stay when a spot changes (.77: pear_park is the 泛美金字塔):
 ## whoever checked in there keeps it and its bonus.
 const STAMPS := {
-	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, 1), "name": "Goggle 总部", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 10.0]},
-	"golden_gate": {"art": "golden_gate", "block": Vector2i(-2, -3), "name": "金门大桥", "note": "一路往西北，走到地图角上", "bonus": ["might", 0.02]},
-	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(2, -3), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.02]},
+	"goggle": {"art": "dino_skeleton", "block": Vector2i(0, 1), "name": "Goggle 总部", "note": "草坪上躺着一副恐龙骨架", "bonus": ["luck", 5.0]},
+	"golden_gate": {"art": "golden_gate", "block": Vector2i(-2, -3), "name": "金门大桥", "note": "一路往西北，走到地图角上", "bonus": ["might", 0.03]},
+	"stanford_tower": {"art": "stanford_tower", "block": Vector2i(2, -3), "name": "胡佛塔", "note": "斯坦福的钟塔，创业故事都从这儿开始", "bonus": ["haste", 0.03]},
 	# Sailsforce 大厦's bonus until .52.
-	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.05]},
-	"pear_park": {"art": "transamerica", "block": Vector2i(-2, 3), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["max_hp", 5.0]},
+	"stadium": {"art": "stadium", "block": Vector2i(2, 3), "name": "Levy's 球场", "note": "周末看球的地方", "bonus": ["magnet", 0.1]},
+	"pear_park": {"art": "transamerica", "block": Vector2i(-2, 3), "name": "泛美金字塔", "note": "旧金山天际线上的尖塔", "bonus": ["max_hp", 10.0]},
 }
 ## Signs that belong to a landmark drawing.
 const LANDMARK_BRANDS := {"stadium": "levys"}
