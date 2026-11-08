@@ -1122,18 +1122,23 @@ func dps_of(source: String) -> float:
 	return damage_by_source.get(source, 0.0) / maxf(elapsed - damage_since.get(source, 0.0), 1.0)
 
 
-## Steeper from level 10 since .33 (was + max(0, level - 20) * 4): the user found the level-ups
-## too frequent. Bots that pick up every star now reach about 39 by 10:00 instead of 49, and have
-## every weapon and passive maxed at 9:00-9:40, some never (before, 7:30-8:30).
+## A straight line from 0.3.22 (the user, after a live run at level 23 by 6:30 with every star
+## picked up: 升级经验改成线性增长，10:00 45 级左右): 5 + XP_PER_LEVEL a level past the first four,
+## so a player who picks up nine stars in ten reaches about 20 by 5:00, 28 by 6:30, 45 by 10:00
+## (35 with the old curve). .33–0.3.21 it got 10 steeper still from level 10 (the user then found
+## the level-ups too frequent; + max(0, level - 20) * 4 before that).
 func xp_to_next() -> int:
 	return xp_needed(level)
 
 
 ## XP from `at_level` to the next, as xp_to_next() (static so the 官网 can list the curve).
+const XP_PER_LEVEL := 6.5
+
+
 static func xp_needed(at_level: int) -> int:
 	if at_level <= EARLY_LEVEL_XP.size():
 		return EARLY_LEVEL_XP[at_level - 1]
-	return 5 + (at_level - 1) * 6 + maxi(0, at_level - 10) * 10
+	return 5 + roundi((at_level - 1) * XP_PER_LEVEL)
 
 
 func add_xp(amount: int) -> void:

@@ -250,15 +250,15 @@ def upgrades_section(data: dict) -> str:
     job_levels = " / ".join(str(level) for level in data["job_weapon_levels"])
     # The whole curve (.72, the user: 升一级要的经验全都列出来放到网站上): each level, what the next one
     # takes and the total from level 1. The steps are read off the curve, not written in.
-    early_step, late_step = xp[5] - xp[4], xp[-1] - xp[-2]
-    late_from = next(level for level in range(6, len(xp)) if xp[level] - xp[level - 1] == late_step)
+    # A straight line from 0.3.22, its steps alternating round the average (6.5: 6, 7, 6, 7…).
+    step = (xp[-1] - xp[4]) / (len(xp) - 5)
     total = 0
     xp_rows = []
     for level, amount in enumerate(xp, start=1):
         total += amount
         xp_rows.append(f"<tr><td>L{level} → L{level + 1}</td><td>{amount}</td><td>{total:,}</td></tr>")
     xp_card = f"""<article class="card"><h3>经验和职级</h3><ul>
-<li>升一级要的经验：前 4 级 {" / ".join(str(amount) for amount in xp[:4])}，之后每级多要 {early_step}，{late_from} 级以后每级多要 {late_step}（全表见下）</li>
+<li>升一级要的经验：前 4 级 {" / ".join(str(amount) for amount in xp[:4])}，之后一直线性增长，每级平均多要 {number(round(step, 1))}（全表见下）</li>
 <li>从头升到 {"、".join(f"L{level} 一共要 {amount}" for level, amount in reach.items())}</li>
 <li>等级就是职级：{ranks}</li>
 <li>每次升级三选一，运气好多一张；专属武器第 {job_levels} 级必出</li>
