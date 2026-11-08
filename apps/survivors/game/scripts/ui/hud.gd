@@ -4634,6 +4634,9 @@ func _send_clear() -> void:
 		return
 	_show_board_row(tr("正在上榜…"), false)
 	var answer: Dictionary = await Leaderboard.submit()
+	# 榜上有名 (0.3.18): top 3 on the board or the job's.
+	if answer.get("ok", false):
+		game.achievements.on_board_rank(Leaderboard.last_rank, Leaderboard.last_job_rank)
 	if answer.get("ok", false):
 		var line := tr("%s榜第 %d 名 · 最好 %s") % [_board_name(), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared or game.endless)]
 		# And among this job's (0.3.7; a server before says nothing).

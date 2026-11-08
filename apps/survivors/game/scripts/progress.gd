@@ -83,6 +83,11 @@ static func add_revive(id: String) -> void:
 	_save()
 
 
+## How many 返聘 were ever spent (返聘专家, 0.3.18).
+static func revives_spent() -> int:
+	return _keys("revives_used").size()
+
+
 ## One spent in the run `run_id` (a run spends one at most).
 static func use_revive(run_id: String) -> void:
 	_load().set_value("revives_used", run_id, int(Time.get_unix_time_from_system()))
