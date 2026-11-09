@@ -20,14 +20,16 @@ extends Weapon
 
 ## 7 a hit at level 1 (.39, the user's call): an opening Bug (8 health, 10.4 in Beijing, up to 13
 ## by 1:00) takes two hits on every map. Growth and pace come from the balance fit (DESIGN.md 2.2).
-const BASE_DAMAGE := 7.0
+## 9 since 0.3.36 (the user, after a live coder run down at 7:26 with the key at 15: 回车初始9，每级更大加9).
+const BASE_DAMAGE := 9.0
 ## +12 a 更大 since .74 (the user: 回车和抽样成长伤害加高; +8 before): a key hits one enemy, and late
 ## the weapons that hit a crowd left it far behind (about 360 damage a second alone at 8:00 against
 ## the product manager's 930); now about 500. +9 since .91 (the user, from the live runs: 程序员数值太
 ## 高了，程序员降 → +8 → 改成 +9; a won London run had the Enter key at 77% of all damage): full 更大
 ## hits 43, not 55. +8 since .95 (the user: 程序员削弱成长伤害 → +8): full 更大 hits 39, about 9% less
-## from the second level on; the opening 7 is the same.
-const DAMAGE_PER_SIZE := 8.0
+## from the second level on; the opening 7 is the same. +9 since 0.3.36 (with the opening 9): full 更大
+## hits 45.
+const DAMAGE_PER_SIZE := 9.0
 const SIZE_GROWTH := 0.25
 const SPEED := 230.0
 ## Kept short so most kills, and their stars, land within walking distance.
