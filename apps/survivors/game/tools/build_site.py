@@ -274,7 +274,7 @@ def upgrades_section(data: dict) -> str:
     rarity_card = f"""<article class="card"><h3>升级卡稀有度</h3>
 <p class="muted">每张武器卡和被动卡都抽一个稀有度，等级照常 +1，越稀有这一步给得越多。</p>
 <div class="scroll"><table class="nums"><tr><th></th><th>概率</th><th>数值被动</th><th>武器伤害</th><th>其他被动效果</th></tr>{"".join(rows)}</table></div>
-<p class="muted">概率是运气 0 时的。「数值被动」（冰美式这种加数的）这一级加的量乘这么多，比如冰美式 +10% 变 +20%；「武器伤害」是这一把武器永久多的伤害，同一把能叠；「其他被动效果」（股票期权这种有自己玩法的）是这个被动的效果永久多这么多（背锅侠的反伤倍数、降本增效和开源项目的几率、股票期权每分钟加的伤害，站会是间隔缩短），同一个能叠。</p></article>"""
+<p class="muted">概率是运气 0 时的。「数值被动」（冰美式这种加数的）这一级加的量乘这么多，比如传说的冰美式 +8% 变 +14%；「武器伤害」是这一把武器永久多的伤害，同一把能叠；「其他被动效果」（股票期权这种有自己玩法的）是这个被动的效果永久多这么多（背锅侠的反伤倍数、降本增效和开源项目的几率、股票期权每分钟加的伤害，站会是间隔缩短），同一个能叠。</p></article>"""
 
     luck = data["luck"]
     head = "".join(f"<th>{rarity_tag(rarity)}</th>" for rarity in rarities)

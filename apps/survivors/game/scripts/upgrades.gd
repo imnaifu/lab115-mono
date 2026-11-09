@@ -53,8 +53,9 @@ const RARITIES := [
 ## 0.005 since .97 (the user's plan C), 0.01 before.
 const LUCK_PER_POINT := 0.005
 ## The passives that add a number, by how much at common rarity (percent for the multipliers);
-## the card text has it as %s. The rest are table perks.
-const STAT_STEPS := {"might": 10.0, "armor": 1.0, "vitality": 20.0, "swiftness": 8.0, "haste": 8.0,
+## the card text has it as %s. The rest are table perks. 冰美式 8 since 0.3.32 (the user: 冰美式加的多了点
+## → go; 10 before): +40% at level 5, a desk's half +4%.
+const STAT_STEPS := {"might": 8.0, "armor": 1.0, "vitality": 20.0, "swiftness": 8.0, "haste": 8.0,
 	"magnet": 30.0, "regen": 0.3, "luck": 20.0}
 ## What a scaled step is rounded to (1 unless listed), so cards show clean numbers and give exactly
 ## what they show: 冰美式 ×1.15 is +12%, not +11.5%, and 工位绿植's 0.345 is 0.35, not a 0.3 that
