@@ -18,8 +18,9 @@ const COUNT := [1, 1, 2, 2, 3]
 ## growth +6 / +6 / +9 (+4 / +4 / +6 until then), the opening 12 the same.
 const DAMAGE := [12.0, 18.0, 18.0, 24.0, 33.0]
 ## 0.3.32 (the user: 屏保速度慢一点 → go): 20% slower, 120 / 120 / 135 / 135 / 150 (150 / 150 / 170 / 170 / 190
-## before); it sweeps less and reaches a corner less often.
-const SPEED := [120.0, 120.0, 135.0, 135.0, 150.0]
+## before); it sweeps less and reaches a corner less often. 0.3.33 (the user: 屏保速度慢 40% → 比最早慢 40%):
+## 90 / 90 / 102 / 102 / 114.
+const SPEED := [90.0, 90.0, 102.0, 102.0, 114.0]
 const REHIT := 0.5
 ## The tile's side, as drawn and as it hits and bounces.
 const SIZE := 24.0
