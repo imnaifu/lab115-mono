@@ -1129,14 +1129,15 @@ func dps_of(source: String) -> float:
 ## A straight line from 0.3.22 (the user, after a live run at level 23 by 6:30 with every star
 ## picked up: 升级经验改成线性增长，10:00 45 级左右): 5 + XP_PER_LEVEL a level past the first four,
 ## so a player who picks up nine stars in ten reaches about 20 by 5:00, 28 by 6:30, 45 by 10:00
-## (35 with the old curve). .33–0.3.21 it got 10 steeper still from level 10 (the user then found
+## (35 with the old curve). 8.5 since 0.3.28 (the user, after a live clear at 46 by 10:00: 升级改慢一点，
+## 10min 40 级): the same stars reach about 40 by 10:00. .33–0.3.21 it got 10 steeper still from level 10 (the user then found
 ## the level-ups too frequent; + max(0, level - 20) * 4 before that).
 func xp_to_next() -> int:
 	return xp_needed(level)
 
 
 ## XP from `at_level` to the next, as xp_to_next() (static so the 官网 can list the curve).
-const XP_PER_LEVEL := 6.5
+const XP_PER_LEVEL := 8.5
 
 
 static func xp_needed(at_level: int) -> int:

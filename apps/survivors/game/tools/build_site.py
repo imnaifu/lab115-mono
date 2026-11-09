@@ -250,7 +250,7 @@ def upgrades_section(data: dict) -> str:
     job_levels = " / ".join(str(level) for level in data["job_weapon_levels"])
     # The whole curve (.72, the user: 升一级要的经验全都列出来放到网站上): each level, what the next one
     # takes and the total from level 1. The steps are read off the curve, not written in.
-    # A straight line from 0.3.22, its steps alternating round the average (6.5: 6, 7, 6, 7…).
+    # A straight line from 0.3.22, its steps alternating round the average (8.5 since 0.3.28: 8, 9, 8, 9…).
     step = (xp[-1] - xp[4]) / (len(xp) - 5)
     total = 0
     xp_rows = []
