@@ -129,7 +129,7 @@ const EVOLUTIONS := {
 const BRANCH_MAX := 4
 const BRANCHES := {
 	"enter": {"a": {"name": "更多", "text": "每轮多敲一下"}, "b": {"name": "更大", "text": "按键变大，伤害 +9"}},
-	"prd": {"a": {"name": "更长", "text": "光束更长，伤害 +7"}, "b": {"name": "更宽", "text": "扫得更开（四次到 120°），伤害 +7"}},
+	"prd": {"a": {"name": "更长", "text": "光束更长，伤害 +8"}, "b": {"name": "更宽", "text": "扫得更开（四次到 140°），伤害 +8"}},
 	"firewall": {"a": {"name": "更多", "text": "多一面墙"}, "b": {"name": "更硬", "text": "墙更大，伤害 +10"}},
 	"guides": {"a": {"name": "更长", "text": "十字更长，升满四次横竖都到屏幕边"}, "b": {"name": "更粗", "text": "线更粗，伤害 +3.5"}},
 	# Stratified sampling takes from every stratum, so more ways; a bigger sample is more jabs.
