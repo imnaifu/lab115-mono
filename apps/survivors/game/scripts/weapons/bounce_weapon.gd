@@ -30,7 +30,8 @@ const CORNER_SNAP := 14.0
 const CORNER_RADIUS := 60.0
 ## Corner blast damage, in multiples of the logo's own, to everything on the screen (0.3.26, the
 ## user: 改成全屏，伤害是一倍; bosses too). Until then ×3 within CORNER_RADIUS of the corner.
-const CORNER_DAMAGE := 1.0
+## 0.6 since 0.3.35 (the user: 屏保伤害调低一点 → picked 只降撞角).
+const CORNER_DAMAGE := 0.6
 const EDGE_BLAST_RADIUS := 30.0
 const EDGE_BLAST_DAMAGE := 0.6
 
