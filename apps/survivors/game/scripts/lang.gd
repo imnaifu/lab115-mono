@@ -442,7 +442,7 @@ const EN := {
 	"同时多开一个会": "One more meeting at once",
 	"再多开一个会，伤害 +3，会议室更大": "Another meeting, damage +3, bigger room",
 	"防火墙": "Firewall",
-	"一面墙护着你：身边有怪就飞过去撞开，先打离你最近的": "A wall guards you: it flies at enemies that come near and knocks them away, closest first",
+	"一面墙护着你：身边有怪就飞过去撞，先打离你最近的，撞完飞回身边才能再出": "A wall guards you: it flies at enemies that come near, closest first, and must fly back to you before it goes again",
 	"多一面墙": "One more wall",
 	"外包团队": "Contractors",
 	"多招 1 个": "Hire one more",

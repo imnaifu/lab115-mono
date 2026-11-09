@@ -19,6 +19,12 @@ extends Weapon
 ## wall, 更硬 makes every wall hit harder and bigger. Either way each upgrade also widens the
 ## guarded circle a little.
 ##
+## 0.3.31 (the user: 运维感觉机制上有点容易，要削弱下 → picked 墙撞完必须飞回身边才能再出击): after a
+## slam a wall flies all the way back to its place by the player (within HOME_REACH), and only then
+## does its ATTACK_GAP start; until then the gap ran from the slam, the wall drifting back meanwhile,
+## so against a crowd close by (back within the gap) it slammed every 0.5 s without a break. The
+## round trip now comes on top: a crowd at the edge of the circle gets through more.
+##
 ## Walls no longer push what they hit out (90, 40 more a 更硬): .39, the user's call for every job's
 ## own weapon, so the jobs differ only in how they deal damage.
 
@@ -48,6 +54,8 @@ const ATTACK_GAP := 0.5
 const SIZE := 18.0
 const EVOLVED_COUNT := 6
 const EVOLVED_STUN := 0.4
+## How close to its place by the player a wall back from a slam must come before it may go again.
+const HOME_REACH := 6.0
 
 
 class Wall:
@@ -57,6 +65,8 @@ class Wall:
 	var target: Enemy
 	## Until it may slam again.
 	var cooldown_left := 0.0
+	## On its way back from a slam (0.3.31): it may not go again until it is home.
+	var returning := false
 
 
 var _walls: Array[Wall] = []
@@ -103,13 +113,17 @@ func _process(delta: float) -> void:
 		# Always the one closest to the player: a wall on its way switches if another gets closer.
 		if wall.target != null:
 			wall.target = closest
-		elif wall.cooldown_left <= 0.0 and closest != null and _clock - _last_launch >= gap / _walls.size():
+		elif not wall.returning and wall.cooldown_left <= 0.0 and closest != null and _clock - _last_launch >= gap / _walls.size():
 			wall.target = closest
 			_last_launch = _clock
 		var goal := player.position + Vector2.from_angle(_clock * IDLE_SPIN + TAU * i / _walls.size()) * IDLE_RADIUS
 		if wall.target != null:
 			goal = wall.target.position
 		wall.position = wall.position.move_toward(goal, SPEED * delta)
+		if wall.returning and wall.position.distance_to(goal) <= HOME_REACH:
+			wall.returning = false
+			# The gap runs from getting home, not from the slam (0.3.31).
+			wall.cooldown_left = gap
 		wall.sprite.position = wall.position
 		wall.sprite.scale = Vector2.ONE * Art.scale_for(art, SIZE * stats["size"])
 		if wall.target == null:
@@ -124,6 +138,7 @@ func _process(delta: float) -> void:
 				enemy.stun(EVOLVED_STUN)
 		wall.target = null
 		wall.cooldown_left = gap
+		wall.returning = true
 
 
 ## The enemy inside the guarded circle closest to the player, or null.

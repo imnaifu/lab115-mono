@@ -151,7 +151,7 @@ func _weapon_detail(id: String) -> Dictionary:
 				["升满", "范围 %s、角度 %s°" % [_num(SwingWeapon.BASE_RADIUS + SwingWeapon.RADIUS_PER_LONGER * Upgrades.BRANCH_MAX),
 					_num(SwingWeapon.BASE_ARC_DEGREES + SwingWeapon.ARC_PER_WIDER * Upgrades.BRANCH_MAX)]]]
 		"orbit":
-			fixed = [["出击", "每面墙每 %s 秒扑向离你最近的怪撞一下，墙身下的都挨打" % _num(OrbitWeapon.ATTACK_GAP)],
+			fixed = [["出击", "每面墙扑向离你最近的怪撞一下，墙身下的都挨打；撞完要飞回你身边，而且离上一下至少 %s 秒，才能再出" % _num(OrbitWeapon.ATTACK_GAP)],
 				["守护范围", "%s，每升一级 +%s" % [_num(OrbitWeapon.BASE_GUARD_RADIUS), _num(OrbitWeapon.GUARD_PER_UPGRADE)]],
 				["墙的大小", "半径 %s，「更硬」每级 +%s" % [_num(OrbitWeapon.WALL_RADIUS), _num(OrbitWeapon.WALL_RADIUS_PER_HARDER)]],
 				["飞行速度", _num(OrbitWeapon.SPEED)]]
