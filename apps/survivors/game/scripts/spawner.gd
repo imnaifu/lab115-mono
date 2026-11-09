@@ -38,8 +38,11 @@ const ENDLESS_BOSSES_UNTIL := 3600.0
 ## Every run's since 0.3.29 — 无尽模式's health grows faster later (0.3.0, the user: 20 后更快，30 后再更快, after the balance bot
 ## with the crowd's curve alone lasted 14–60+ minutes once past 10:00, median about half an hour):
 ## from each [minute, extra] on, `extra` more a minute on top of HP_PER_MINUTE: +25% a minute until
-## 20:00 (×6 then), +50% to 30:00 (×11), +100% after (×21 at 40:00, ×41 at 60:00).
-const ENDLESS_HP_STEPS := [[20.0, 0.25], [30.0, 0.5]]
+## 20:00 (×6 then), +50% to 30:00 (×11), +100% after (×21 at 40:00, ×41 at 60:00) — until 0.3.30, below.
+## 0.3.30 (the user, after a live run lasting 15 minutes of 加班 at full health: 太容易了，怪血量加一点
+## → picked +25% a minute from 10:00): [10, 0.25] added, so +50% a minute from 10:00, +75% from 20:00,
+## +125% from 30:00: ×6.0 at 15:00 (4.75 before), ×8.5 at 20:00 (6.0), ×12.25 at 25:00 (8.5).
+const ENDLESS_HP_STEPS := [[10.0, 0.25], [20.0, 0.25], [30.0, 0.5]]
 
 ## `size` is the art's frame height in logical pixels, `radius` the body used for hits and
 ## crowd spacing, `color` the puff left behind on death. Radii are smaller than the art on

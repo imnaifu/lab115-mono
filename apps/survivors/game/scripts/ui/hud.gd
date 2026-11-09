@@ -3007,7 +3007,7 @@ func _chest_upgrade_row(item: Dictionary) -> Control:
 ## own level), or the fallback card's heal.
 func _chest_step(item: Dictionary) -> String:
 	if item["kind"] == "heal":
-		return tr("回复 30")
+		return tr("回复 %d") % roundi(Upgrades.HEAL_CARD)
 	if item.has("branch_level"):
 		return "Lv %d → %d" % [item["branch_level"] - 1, item["branch_level"]]
 	var level: int = item["level"]

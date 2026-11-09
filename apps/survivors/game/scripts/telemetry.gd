@@ -43,7 +43,8 @@ extends RefCounted
 ##   rates), `chests` (the ratings year-end bonuses landed on: angel / series_a / ipo, from .27 shown
 ##   as 绩效 B / A / S; from .63 also seed, 绩效 C), `evolved` (weapons evolved), a
 ##   `timeline` of
-##   "seconds:level/HP/enemies" every 30 s, bosses met and killed, the `district` the run ended
+##   "seconds:level/HP/enemies" every 30 s to 10:00 (from 0.3.30 `timeline_late` goes on past it,
+##   every 60 s, about to 40:00 within MAX_TEXT; `timeline` alone stopped near 17:00), bosses met and killed, the `district` the run ended
 ##   in, and frames per second (average and worst second). `dmg_<weapon>` is each weapon's share of
 ##   all damage in percent, for the weapons (and damaging perks) that dealt any. From .19,
 ##   `new_stamps` and `new_achievements`: the ids checked in at and earned this run. From .21,
@@ -107,8 +108,11 @@ extends RefCounted
 ## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
 ## dated ones before came first. A small change bumps the last number, a big one the middle one
 ## (the user: 小改动加小的，大改动加中的).
-const VERSION := "0.3.29"
+const VERSION := "0.3.30"
 const TIMELINE_SECONDS := 30.0
+## Past 10:00 (0.3.30, the user: ok — a 24-minute run's timeline was cut at 17:00): a sample a minute,
+## into a field of its own.
+const LATE_TIMELINE_SECONDS := 60.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
 const MAX_TEXT := 480
@@ -138,6 +142,7 @@ var _rerolls := 0
 var _revive := ""
 var _revive_at := 0
 var _timeline := PackedStringArray()
+var _timeline_late := PackedStringArray()
 var _next_sample := TIMELINE_SECONDS
 var _snapshot_left := SNAPSHOT_SECONDS
 var _fps_sum := 0.0
@@ -241,8 +246,13 @@ func tick(delta: float) -> void:
 			_fps_count += 1
 			_fps_worst = minf(_fps_worst, fps)
 	if _game.elapsed >= _next_sample:
-		_next_sample += TIMELINE_SECONDS
-		_timeline.append("%d:%d/%d/%d" % [roundi(_game.elapsed), _game.level, ceili(_game.player.hp), _game.enemies.size()])
+		var late := _game.elapsed > Game.RUN_SECONDS
+		_next_sample += LATE_TIMELINE_SECONDS if late else TIMELINE_SECONDS
+		var sample := "%d:%d/%d/%d" % [roundi(_game.elapsed), _game.level, ceili(_game.player.hp), _game.enemies.size()]
+		if late:
+			_timeline_late.append(sample)
+		else:
+			_timeline.append(sample)
 	_snapshot_left -= delta
 	if _snapshot_left <= 0.0:
 		_snapshot_left = SNAPSHOT_SECONDS
@@ -365,6 +375,7 @@ func _summary(result: String) -> Dictionary:
 		"evolved": ",".join(evolved),
 		"district": Maps.current.district_of(Vector2i((player.position / City.BLOCK).floor())),
 		"timeline": ";".join(_timeline).left(MAX_TEXT),
+		"timeline_late": ";".join(_timeline_late).left(MAX_TEXT),
 		"bosses_seen": _bosses_seen,
 		"bosses_killed": _bosses_killed,
 		"peak_enemies": _peak_enemies,

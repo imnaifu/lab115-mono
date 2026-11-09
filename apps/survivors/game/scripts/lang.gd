@@ -194,7 +194,7 @@ const EN := {
 	"会没开完…精英还在": "Meeting ran over… the elites stay",
 	"已练满，每局 %d 次": "Maxed: %d a run",
 	"每局 %d 次 → 下一级 %d 次": "%d a run → next %d",
-	"回复 30": "Heal 30",
+	"回复 %d": "Heal %d",
 	"新": "New",
 	"暂停": "Paused",
 	"武器 %d / %d": "Weapons %d / %d",
@@ -782,7 +782,7 @@ const EN := {
 	"集束轰炸": "Cluster Bombs",
 	"每颗炸弹落地再炸出 3 颗小炸弹": "Every bomb throws out 3 smaller ones as it lands",
 	"摸鱼一会儿": "Slack Off",
-	"回复 30 生命": "Heal 30 HP",
+	"回复 20 生命": "Heal 20 HP",
 	# The settings' 云存档 row and page (Cloud), and the page's own 存档码 dialogs (export_presets.cfg)
 	"管理存档": "Manage",
 	"进度会自动存到云端。记下存档码，换手机或清了浏览器数据，都能用它找回": "Your progress is saved to the cloud by itself. Keep your save code: it brings everything back on a new phone or after the browser's data is cleared.",

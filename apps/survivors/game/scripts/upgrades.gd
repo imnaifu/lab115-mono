@@ -162,8 +162,10 @@ const MAX_STATS_SHOWN := 2
 const PERK_STAT_NAMES := {"stock": "每分钟伤害", "scapegoat": "反伤", "cost_cut": "爆炸几率", "open_source": "炮台几率",
 	"standup": "站会间隔"}
 
-## Offered only when everything else is maxed out.
-const FALLBACK := {"kind": "heal", "id": "heal", "level": 0, "name": "摸鱼一会儿", "art": "boba", "text": "回复 30 生命"}
+## Offered only when everything else is maxed out (and as a year-end bonus's then). Heals HEAL_CARD:
+## 20 since 0.3.30 (the user, after a live run with 60-odd of them in its 加班: 回血卡，回血少点，20; 30 before).
+const HEAL_CARD := 20.0
+const FALLBACK := {"kind": "heal", "id": "heal", "level": 0, "name": "摸鱼一会儿", "art": "boba", "text": "回复 20 生命"}
 
 var passive_levels := {}
 ## Each table perk's own extra effect from rarer cards (RARITIES `bonus`, stacking): 0.12 is its
@@ -574,7 +576,7 @@ func apply(choice: Dictionary) -> void:
 				passive_levels[choice["id"]] = current + 1
 				perk_bonus[choice["id"]] = perk_bonus.get(choice["id"], 0.0) + rarity["bonus"]
 		"heal":
-			player.heal(30.0)
+			player.heal(HEAL_CARD)
 		"desk":
 			# Straight onto the player, no passive level: a desk's step is already worked out.
 			apply_stat(player, choice["id"], choice["step"])
