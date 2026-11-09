@@ -2,7 +2,7 @@ class_name BounceWeapon
 extends Weapon
 ## Logos bouncing round the screen for good, off its edges like an old
 ## screensaver, going through everything they touch; the same enemy can be hit again every REHIT
-## seconds. A logo that bounces right into a corner of the screen blasts everything round it.
+## seconds. A logo that bounces right into a corner of the screen blasts everything on the screen.
 ## (Silicon Valley: 屏保.) Vampire Survivors' Runetracer, made permanent: it used to fly a couple
 ## of seconds and vanish, and the user wanted them "never gone, just bouncing all over".
 ## 动态壁纸 (evolved with 降噪耳机): every bounce off an edge blasts the enemies near it too.
@@ -23,9 +23,11 @@ const REHIT := 0.5
 const SIZE := 24.0
 ## A bounce this close to both edges at a corner counts as hitting the corner.
 const CORNER_SNAP := 14.0
+## The ring drawn where it hit (only drawn: the blast is the whole screen).
 const CORNER_RADIUS := 60.0
-## Corner blast damage, in multiples of the logo's own.
-const CORNER_DAMAGE := 3.0
+## Corner blast damage, in multiples of the logo's own, to everything on the screen (0.3.26, the
+## user: 改成全屏，伤害是一倍; bosses too). Until then ×3 within CORNER_RADIUS of the corner.
+const CORNER_DAMAGE := 1.0
 const EDGE_BLAST_RADIUS := 30.0
 const EDGE_BLAST_DAMAGE := 0.6
 
@@ -111,7 +113,7 @@ func _on_edge_bounce(logo: Logo, half: Vector2, damage: float) -> void:
 	var offset := (logo.position - player.position).abs()
 	if half.x - offset.x <= CORNER_SNAP and half.y - offset.y <= CORNER_SNAP:
 		# The moment everyone watching a screensaver waited for.
-		_blast(logo.position, CORNER_RADIUS, damage * CORNER_DAMAGE, Art.BRAND)
+		_blast_screen(logo.position, half + Vector2.ONE * SIZE / 2.0, damage * CORNER_DAMAGE)
 		Effects.callout(game, logo.position, tr("撞角了！"), Art.BRAND)
 		Sound.play("corner")
 		# The achievement, and a cut-in now and then (0.3.15).
@@ -120,6 +122,23 @@ func _on_edge_bounce(logo: Logo, half: Vector2, damage: float) -> void:
 		_blast(logo.position, EDGE_BLAST_RADIUS, damage * EDGE_BLAST_DAMAGE, Art.BLUE)
 	else:
 		Effects.ring(game, logo.position, 10.0, Art.BLUE)
+
+
+## The corner's blast: every enemy on the screen (`half` its half size round the player, an enemy
+## counting while any of it shows), pushed away from the corner; a ring there and a shake.
+func _blast_screen(at: Vector2, half: Vector2, damage: float) -> void:
+	Effects.ring(game, at, CORNER_RADIUS, Art.BRAND)
+	player.shake(0.2, 3.0)
+	# Gathered first: a hit can kill, and dying takes an enemy out of game.enemies.
+	var targets: Array[Enemy] = []
+	for enemy in game.enemies:
+		if enemy.dead or enemy.ally_left > 0.0:
+			continue
+		var offset := (enemy.position - player.position).abs() - Vector2.ONE * enemy.hit_radius
+		if offset.x <= half.x and offset.y <= half.y:
+			targets.append(enemy)
+	for enemy in targets:
+		game.damage_enemy(enemy, damage, (enemy.position - at).normalized() * 60.0, id, true)
 
 
 func _blast(at: Vector2, radius: float, damage: float, color: Color) -> void:

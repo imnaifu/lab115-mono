@@ -186,7 +186,7 @@ func _weapon_detail(id: String) -> Dictionary:
 		"bounce":
 			rows = [["伤害", BounceWeapon.DAMAGE], ["个数", BounceWeapon.COUNT], ["速度", BounceWeapon.SPEED]]
 			fixed = [["命中", "穿透一切，同一只怪每 %s 秒最多挨一下" % _num(BounceWeapon.REHIT)],
-				["撞角", "撞进屏幕角落（离两条边都不到 %s）时炸半径 %s、%s 倍伤害" % [_num(BounceWeapon.CORNER_SNAP), _num(BounceWeapon.CORNER_RADIUS), _num(BounceWeapon.CORNER_DAMAGE)]],
+				["撞角", "撞进屏幕角落（离两条边都不到 %s）时炸全屏：屏幕里所有的怪（boss 也算）各挨 %s 倍伤害" % [_num(BounceWeapon.CORNER_SNAP), _num(BounceWeapon.CORNER_DAMAGE)]],
 				["存在", "一直在屏幕里弹，不会消失"]]
 		"zone":
 			rows = [["伤害", ZoneWeapon.DAMAGE], ["同时几个会", ZoneWeapon.COUNT], ["半径", ZoneWeapon.RADIUS]]

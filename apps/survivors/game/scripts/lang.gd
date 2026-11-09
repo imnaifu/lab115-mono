@@ -721,7 +721,7 @@ const EN := {
 	"被 Caltrain 或 13 号线撞飞一次": "Get knocked aside by a Caltrain or a Line 13 train",
 	# Weapons, from the jobs rework (guides, tracking points, two directions)
 	"朝最近的怪扫一下激光，扫过的怪都挨打": "Sweeps a laser at the nearest enemy, hitting everything it crosses",
-	"logo 一直在屏幕里弹来弹去，穿透一切；撞进屏幕角落会炸一圈": "Logos keep bouncing round the screen, through everything; one that hits a corner explodes",
+	"logo 一直在屏幕里弹来弹去，穿透一切；撞进屏幕角落会炸全屏": "Logos keep bouncing round the screen, through everything; one that hits a corner blasts the whole screen",
 	"多一个 logo，飞得更快": "One more logo, faster",
 	"更多": "More",
 	"更大": "Bigger",

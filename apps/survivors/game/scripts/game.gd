@@ -16,6 +16,8 @@ signal boss_move(form: String)
 signal revive_offered(left: int)
 ## The screensaver's logo hit a corner and the game stands still for its cut-in (on_screensaver_corner).
 signal corner_cut_in
+## Every corner the screensaver's logo hits (0.3.26: its blast is the whole screen), for the HUD's flash.
+signal corner_hit
 ## A moment worth stopping for (play_cut_in): its cut-in, `art` / `title` / `line`, which Hud plays
 ## while the game stands still CUT_IN_SECONDS.
 signal cut_in(art: String, title: String, line: String)
@@ -620,6 +622,8 @@ func _end_hitstop() -> void:
 ## or it is the 出发 page's demo.
 func on_screensaver_corner() -> void:
 	achievements.on_corner()
+	if not previewing:
+		corner_hit.emit()
 	if previewing or _frozen or state != State.PLAYING or elapsed - _corner_cut_in_at < CORNER_CUT_IN_GAP:
 		return
 	_corner_cut_in_at = elapsed

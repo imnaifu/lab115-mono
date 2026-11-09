@@ -68,7 +68,7 @@ const WEAPONS := {
 	"enter": {"name": "回车键", "art": "enter_key", "behavior": "aimed", "type": "shoot", "job": "coder",
 		"levels": ["自动敲向最近的敌人"]},
 	"screensaver": {"name": "屏保", "art": "screensaver", "behavior": "bounce", "type": "shoot",
-		"levels": ["logo 一直在屏幕里弹来弹去，穿透一切；撞进屏幕角落会炸一圈", "伤害 +6", "多一个 logo，飞得更快", "伤害 +6", "多一个 logo，伤害 +9，飞得更快"]},
+		"levels": ["logo 一直在屏幕里弹来弹去，穿透一切；撞进屏幕角落会炸全屏", "伤害 +6", "多一个 logo，飞得更快", "伤害 +6", "多一个 logo，伤害 +9，飞得更快"]},
 	"copy": {"name": "复制粘贴", "art": "paper", "behavior": "facing", "type": "shoot",
 		"levels": ["朝面向的方向连发文件，穿过所有敌人", "伤害 +8", "多粘贴一份", "伤害 +8", "多粘贴一份，伤害 +14"]},
 	"keyboard": {"name": "机械键盘", "art": "keyboard", "behavior": "toss", "type": "shoot",

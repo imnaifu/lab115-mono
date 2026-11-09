@@ -917,6 +917,7 @@ func _build_ultimate_button() -> void:
 	_ultimate_button.add_child(_ultimate_ring)
 	game.ultimates.winding_up.connect(_play_cut_in)
 	game.corner_cut_in.connect(_play_corner_cut_in)
+	game.corner_hit.connect(_flash_corner)
 	game.cut_in.connect(_play_game_cut_in)
 	game.ultimates.went_off.connect(_on_ultimate_went_off)
 	game.ultimates.charged.connect(_on_ultimate_charged)
@@ -1046,6 +1047,21 @@ func _play_corner_cut_in() -> void:
 	_cut_in = SkillCutIn.new()
 	_root.add_child(_cut_in)
 	_cut_in.play_with(Upgrades.WEAPONS["screensaver"]["art"], tr("撞角了！"), tr("等了一整个屏保的时间"), _root.size, Game.CORNER_FREEZE)
+
+
+## Every corner the screensaver hits (0.3.26): the whole screen flashes white, its blast being the
+## whole screen. Under the HUD's dialogs, which a hit while one is open doesn't happen under anyway.
+func _flash_corner() -> void:
+	var flash := ColorRect.new()
+	flash.color = Color(Color.WHITE, 0.5)
+	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(flash)
+	_root.move_child(flash, 0)
+	# Real time: the corner's cut-in (Game.freeze) may stop the game meanwhile.
+	var fade := flash.create_tween().set_ignore_time_scale()
+	fade.tween_property(flash, "color:a", 0.0, 0.3)
+	fade.tween_callback(flash.queue_free)
 
 
 ## A moment the game stops for (Game.play_cut_in: a year-end bonus about to open since 0.3.19; a boss
