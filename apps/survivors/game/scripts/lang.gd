@@ -1538,6 +1538,8 @@ const EN := {
 	"伤害 +4，多抄送 1 个": "Damage +4, cc one more",
 	"伤害 +8，多抄送 1 个": "Damage +8, cc one more",
 	"多发一封，伤害 +5，多抄送 1 个": "One more mail, damage +5, cc one more",
+	"伤害 +5，多抄送 1 个": "Damage +5, cc one more",
+	"伤害 +7，多抄送 1 个": "Damage +7, cc one more",
 	"伤害 +7，多抄送 2 个": "Damage +7, cc two more",
 	# Each job's board (0.3.7)
 	"全部": "All",

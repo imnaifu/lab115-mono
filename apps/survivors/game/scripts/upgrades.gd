@@ -75,7 +75,7 @@ const WEAPONS := {
 	"keyboard": {"name": "机械键盘", "art": "keyboard", "behavior": "toss", "type": "shoot",
 		"levels": ["往上一抛，落下砸穿一切", "多抛一把", "伤害 +3", "伤害 +3", "多抛一把，键盘变大"]},
 	"email": {"name": "邮件抄送", "art": "email_cc", "behavior": "ricochet", "type": "shoot",
-		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "伤害 +4，多抄送 1 个", "伤害 +8，多抄送 1 个", "多发一封，伤害 +5，多抄送 1 个", "伤害 +7，多抄送 2 个"]},
+		"levels": ["朝最近的怪发邮件，在怪之间弹射，抄送 3 个人", "伤害 +4，多抄送 1 个", "伤害 +8，多抄送 1 个", "伤害 +5，多抄送 1 个", "伤害 +7，多抄送 1 个"]},
 	"prd": {"name": "激光笔", "art": "laser_pointer", "behavior": "swing", "type": "melee", "job": "pm",
 		"levels": ["朝最近的怪扫一下激光，扫过的怪都挨打"]},
 	"poke": {"name": "抽样", "art": "sample_needle", "behavior": "poke", "type": "melee", "job": "data_scientist",

@@ -6,14 +6,16 @@ extends Weapon
 ## Enemies each email reaches, the first included.
 ## Toned down from 8 bounces of 18 at full level, a third of a product manager's damage.
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): eight enemies a mail at level 5 (six before).
-const BOUNCES := [3, 4, 5, 6, 8]
+## 0.3.34 (the user: 邮件抄送也削弱一点 → 邮件永远一封，每封 34567): 3 / 4 / 5 / 6 / 7 (8 at level 5 before).
+const BOUNCES := [3, 4, 5, 6, 7]
 ## .74 (the user: 有穿透的武器数值调低点…其他的给我方案 → go): was 10 / 10 / 15 / 15 / 21 and 3–6 enemies a mail. One enemy at a
 ## time, it fell behind the weapons that hit a crowd: about 160 a second alone at full level at 8:00,
 ## now about 300.
 ## 0.3.9 (the user: 屏保成长伤害加一下 / 复制粘贴穿透改成无限 / 机械键盘初始削弱一点，成长加一点 / 云端部署改 2.2 秒 / 拉会半径大一点 / 无人机伤害加一点 / 邮件伤害加一点):
 ## about a fifth more at every level (10 / 13 / 20 / 24 / 30 until then).
 const DAMAGE := [12.0, 16.0, 24.0, 29.0, 36.0]
-const COUNT := [1, 1, 1, 2, 2]
+## One mail at a time at every level since 0.3.34 (a second from level 4 before).
+const COUNT := [1, 1, 1, 1, 1]
 ## Upgrades never make it faster (.39, the user's call: only 双屏显示器 speeds weapons up); what
 ## the speed-ups gave went into damage instead, the same damage a second at every level.
 const COOLDOWN := [1.6, 1.6, 1.6, 1.6, 1.6]

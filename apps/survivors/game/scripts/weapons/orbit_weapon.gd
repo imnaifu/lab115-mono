@@ -1,8 +1,8 @@
 class_name OrbitWeapon
 extends Weapon
 ## Guard walls: each circles the player while nothing is near, and as soon as an enemy is within
-## GUARD_RADIUS of the player it flies at the one closest to the player, slams it (and whatever else
-## its body covers there), and comes back until it may go again. (Silicon Valley: 防火墙.)
+## GUARD_RADIUS of the player it flies at the one closest to the player, slams it (only it since 0.3.34;
+## whatever else its body covered there too before), and comes back until it may go again. (Silicon Valley: 防火墙.)
 ## .82 (the user: 运维的攻击很奇怪，不要去卡不同的怪，而是固定攻击最近的，只卡频率; 都打最近的):
 ## every wall goes for the same enemy, the closest to the player, and each wall slams once every
 ## ATTACK_GAP seconds, the walls taking turns. Until .81 a wall could hurt an enemy only once every
@@ -50,7 +50,8 @@ const WALL_RADIUS_PER_HARDER := 3.0
 ## as for every other weapon). Set by a firewall-only probe to keep the damage a second of .79,
 ## when an enemy could be hurt once every 1.8 s by each wall (HIT_GAP) and a wall rested 0.43 s
 ## after each target.
-const ATTACK_GAP := 0.5
+## 0.4 since 0.3.34 (the user, walls hitting one enemy only now: 撞击间隔缩短一点 → 0.4; 0.5 before).
+const ATTACK_GAP := 0.4
 const SIZE := 18.0
 const EVOLVED_COUNT := 6
 const EVOLVED_STUN := 0.4
@@ -131,11 +132,12 @@ func _process(delta: float) -> void:
 		var hit := game.query_enemies(wall.position, wall_radius)
 		if not wall.target in hit:
 			continue
-		# Reached it: one slam on everything under the wall, then back until the gap is up.
-		for enemy in hit:
-			game.damage_enemy(enemy, damage, Vector2.ZERO, id)
-			if evolved:
-				enemy.stun(EVOLVED_STUN)
+		# Reached it: one slam on that enemy alone (0.3.34, the user: 运维还是太强了 → picked 墙只打目标那一只;
+		# everything under the wall until then, which cleared a crowd pressing in on the player),
+		# then back until the gap is up.
+		game.damage_enemy(wall.target, damage, Vector2.ZERO, id)
+		if evolved:
+			wall.target.stun(EVOLVED_STUN)
 		wall.target = null
 		wall.cooldown_left = gap
 		wall.returning = true

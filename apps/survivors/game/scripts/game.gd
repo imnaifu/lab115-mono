@@ -145,7 +145,8 @@ const MAGNET_FROM_LEVEL := 10
 ## off. Regular kills from level 10 on drop one, as often as a magnet (the user: 概率和磁铁一样).
 const NAP_DROP_CHANCE := 0.005
 const NAP_FROM_LEVEL := 10
-const NAP_SECONDS := 3.0
+## 2 since 0.3.34 (the user: 午休改短点 → 2s; 3 before).
+const NAP_SECONDS := 2.0
 ## A 红包 (.61) pays one of these in 工资, saved at once like a year-end bonus's. Regular kills drop
 ## one from the start, so even a run over before its first boss earns a little.
 const RED_PACKET_DROP_CHANCE := 0.005
