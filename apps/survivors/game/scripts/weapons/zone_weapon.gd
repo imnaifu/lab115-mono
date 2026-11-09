@@ -21,8 +21,9 @@ const LIFETIME := 3.0
 ## from the first frame, while still almost invisible).
 const FADE_IN := 1.0 / 6.0
 const TICK := 0.5
-## Speed left to an enemy inside (40% slower).
-const SLOW := 0.6
+## Speed left to an enemy inside: 20% slower since 0.3.27 (the user: 拉会太强了 → 减速改成 20%，伤害不减;
+## 40% until then), a boss half that (Enemy.slow).
+const SLOW := 0.8
 const COOLDOWN := 4.0
 ## Spots sampled when looking for the thickest crowd.
 const CANDIDATES := 10
