@@ -5,9 +5,11 @@ Tính năng chính
 
 • Ưu tiên tải video gốc không logo; nếu không có, tự động chuyển sang luồng video thông thường
 
-• Xuất danh sách ghi chú Xiaohongshu ra CSV chỉ với một cú nhấp — trang chủ, kết quả tìm kiếm và trang cá nhân
+• Ảnh Live được lưu kèm đoạn video chuyển động; nội dung bài viết (tác giả, ngày đăng, vị trí IP, lượt tương tác, chủ đề) được lưu thành note.txt
 
-• Dùng trực tiếp trên trang bài viết, trang chủ, trang tìm kiếm và trang cá nhân của Xiaohongshu
+• Xuất danh sách ghi chú Xiaohongshu ra CSV chỉ với một cú nhấp — trang chủ, kết quả tìm kiếm, trang cá nhân và mục đã lưu
+
+• Dùng trực tiếp trên trang bài viết, trang chủ, trang tìm kiếm, trang cá nhân và mục đã lưu của Xiaohongshu — hỗ trợ cả xiaohongshu.com và rednote.com
 
 • Không cần đăng nhập, không thu thập thông tin tài khoản
 
@@ -18,17 +20,17 @@ Tính năng chính
 ────────────────────
 Cách sử dụng
 ────────────────────
-Tải ảnh và video của một bài viết
+Tải ảnh, video và nội dung của một bài viết
 
 1. Mở một bài viết Xiaohongshu bất kỳ
 
 2. Nhấp vào biểu tượng tiện ích và mở thẻ "Tải bài viết"
 
-3. Chọn ảnh và video bạn muốn, rồi tải tất cả vào một thư mục
+3. Chọn ảnh, video và nội dung bạn muốn, rồi tải tất cả vào một thư mục
 
 Xuất danh sách ghi chú
 
-1. Mở trang chủ, trang kết quả tìm kiếm hoặc trang cá nhân trên Xiaohongshu và chờ ghi chú tải xong
+1. Mở trang chủ, trang kết quả tìm kiếm, trang cá nhân hoặc mục đã lưu trên Xiaohongshu và chờ ghi chú tải xong
 
 2. Nhấp vào biểu tượng tiện ích và mở thẻ "Xuất danh sách ghi chú"
 

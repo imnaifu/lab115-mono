@@ -29,32 +29,32 @@ S["en"] = {
     "hero_title": "RedNote, saved in <mark>one&nbsp;click</mark>",
     "hero_sub": "Download a post's images &amp; video · Export note lists to CSV<br>Free · No sign-up · Runs entirely in your browser",
     "hero_how": "See how it works",
-    "hero_tags": ["#Watermark-free video", "#Home feed", "#Search", "#Profiles", "#CSV export"],
+    "hero_tags": ["#Watermark-free video", "#Live Photos", "#Search", "#Profiles", "#CSV export"],
     "feat_h": "What it does",
     "feats": [
-        ("post", "fill-sky", "Download a whole post", "Tick the images and video you want — the watermark-free original video when available."),
+        ("post", "fill-sky", "Download a whole post", "Tick the images, video and text you want — Live Photos keep their motion clip, and video is the watermark-free original when available."),
         ("folder", "fill-yellow", "One folder per post", "Named after the time and post title, files numbered in order, nothing overwritten."),
-        ("list", "fill-mint", "Capture as you scroll", "Home feed, search or a profile — every note you pass is collected and de-duplicated."),
+        ("list", "fill-mint", "Capture as you scroll", "Home feed, search, a profile or your Collections — every note you pass is collected and de-duplicated."),
         ("csv", "fill-lilac", "Export to CSV", "Opens in Excel, Numbers or Google Sheets with titles, authors and engagement data."),
     ],
     "pv_h": "See it in action", "pv_label": "Screens",
     "pv": [
         ("post", "Single post", "The Download Single Post tab listing a post's video and all of its images, each with a checkbox",
          "Every image &amp; video, saved in <mark>one&nbsp;click</mark>", "Open any RedNote post, tick what you want, and download it all into a single folder.",
-         ["Watermark-free original video when available", "Works on image posts and video posts", "Pick only the files you need"]),
+         ["Watermark-free original video when available", "Live Photos and the post text (note.txt) too", "Pick only the files you need"]),
         ("folder", "Auto-organized", "A Downloads folder named after the time and post title, holding video-1.mp4 and image-1 to image-9",
          "One post, <mark>one&nbsp;tidy</mark> folder", "Each download goes into a folder named after the time and the post title, with files numbered in order.",
          ["Folder named by time + post title", "Files numbered image-1, image-2…", "Never overwrites existing files"]),
         ("list", "Note list", "The Export Note List tab: 128 notes captured, each with title, author, like, collect and comment counts and a date",
          "Scroll as usual, export <mark>anytime</mark>", "Browse the home feed, search results or a profile — every note you scroll past is captured and de-duplicated.",
-         ["Home feed · Search · Profiles", "Auto de-dup with a live count", "Titles, authors and engagement data"]),
+         ["Home feed · Search · Profiles · Collections", "Auto de-dup with a live count", "Titles, authors and engagement data"]),
         ("csv", "CSV", "The exported CSV open in a spreadsheet, with Title, Author Name, Publish Time, Like Count and Collect Count columns",
          "A clean spreadsheet, <mark>ready</mark> to analyze", "Opens straight in Excel, Numbers or Google Sheets — handy for content research and competitor tracking.",
          ["Title, author, publish date", "Likes · collects · comments · shares", "Cover, profile and all image links"]),
     ],
     "how_h": "Three steps",
     "steps": [
-        ("browser", "fill-sky", "Open RedNote", "The home feed, search results, a profile, or any post."),
+        ("browser", "fill-sky", "Open RedNote", "The home feed, search results, a profile, your Collections, or any post."),
         ("click", "fill-pink", "Click the icon", "Choose Export Note List or Download Single Post. On a list, keep scrolling to collect more notes."),
         ("saved", "fill-mint", "Export or download", "Click Export CSV for the spreadsheet, or tick images and video and download them. Clear starts over."),
     ],
@@ -83,7 +83,7 @@ S["en"] = {
     "privacy_title": "Privacy Policy - RedNote Exporter",
     "privacy_description": "RedNote Exporter collects, stores and transmits no personal data. Everything happens inside your browser.",
     "privacy": """<h1>Privacy Policy</h1>
-      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 6, 2026</p>
+      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 7, 2026</p>
 
       <div class="summary">
         <p><strong>In short:</strong> this extension collects, stores and transmits no personal data. It has no server, no accounts, and no analytics or tracking code. Everything happens inside your own browser.</p>
@@ -92,8 +92,8 @@ S["en"] = {
       <h2>What the extension reads</h2>
       <p>The extension runs only on xiaohongshu.com and rednote.com pages, and only reads the note data those pages load themselves:</p>
       <ul>
-        <li><strong>Note lists</strong> — notes loaded by the home feed, search results and profile pages: title, author, publish time, engagement counts (likes, collects, comments, shares), cover and image links.</li>
-        <li><strong>A single post</strong> — the image links, video links and basic details of the post you have open, so they can be downloaded.</li>
+        <li><strong>Note lists</strong> — notes loaded by the home feed, search results, profile pages and Collections tabs: title, author, publish time, engagement counts (likes, collects, comments, shares), cover and image links.</li>
+        <li><strong>A single post</strong> — the image, Live Photo and video links, text, topics, IP location and engagement counts of the post you have open, so they can be downloaded or saved as a text file.</li>
       </ul>
       <p>All of this is content already publicly visible on the page. The extension does not read your RedNote account details, messages, cookies or passwords, and it never sends requests of its own to RedNote — it only reads data the page has already received while you browse.</p>
 
@@ -145,32 +145,32 @@ S["zh"] = {
     "hero_title": "小红书笔记，<mark>一键</mark>带走",
     "hero_sub": "图片视频一键下载 · 笔记列表导出 CSV<br>免费 · 无需登录 · 全程在你的浏览器里完成",
     "hero_how": "看看怎么用",
-    "hero_tags": ["#无水印原片", "#首页推荐", "#搜索结果", "#用户主页", "#导出CSV"],
+    "hero_tags": ["#无水印原片", "#实况图", "#搜索结果", "#用户主页", "#导出CSV"],
     "feat_h": "能做什么",
     "feats": [
-        ("post", "fill-sky", "一键下载单帖", "勾选想要的图片和视频，视频优先下载无水印原片。"),
+        ("post", "fill-sky", "一键下载单帖", "勾选想要的图片、视频和正文，实况图连动态一起存，视频优先无水印原片。"),
         ("folder", "fill-yellow", "一帖一个文件夹", "按下载时间和标题建文件夹，文件按顺序编号，不覆盖旧文件。"),
-        ("list", "fill-mint", "边刷边采集", "首页推荐、搜索结果、用户主页往下滑，看过的笔记自动去重收集。"),
+        ("list", "fill-mint", "边刷边采集", "首页推荐、搜索结果、用户主页、收藏页往下滑，看过的笔记自动去重收集。"),
         ("csv", "fill-lilac", "导出 CSV 表格", "Excel、Numbers、Google 表格直接打开，标题、作者、互动数据都在。"),
     ],
     "pv_h": "看看界面", "pv_label": "界面预览",
     "pv": [
         ("post", "下载单帖", "「下载单帖资源」标签页：列出笔记的视频和全部图片，可以逐张勾选",
          "图片和视频，<mark>一键</mark>全部保存", "打开任意一篇笔记，勾选想要的图片和视频，点一下就下载到同一个文件夹。",
-         ["视频优先下载无水印原片", "图文笔记、视频笔记都支持", "只勾选你需要的那几张"]),
+         ["视频优先下载无水印原片", "实况图、正文（note.txt）也能存", "只勾选你需要的那几张"]),
         ("folder", "自动整理", "下载文件夹里：一个以时间和笔记标题命名的文件夹，里面是 video-1.mp4 和 image-1 到 image-9",
          "一篇笔记，<mark>一个</mark>文件夹", "文件夹按下载时间和笔记标题命名，视频和图片按顺序编号，不用再一张张重命名。",
          ["下载时间 + 标题，自动建文件夹", "image-1、image-2… 按原顺序编号", "重名自动加序号，不覆盖旧文件"]),
         ("list", "导出列表", "「导出笔记列表」标签页：已采集 128 条，列出每条笔记的标题、作者、点赞收藏评论数和日期",
          "边刷边采集，<mark>随时</mark>导出", "在首页推荐、搜索结果或用户主页正常往下滑，看过的笔记会被自动收集并去重。",
-         ["首页推荐 · 搜索结果 · 用户主页", "自动去重，实时显示采集数量", "标题、作者、互动数据一起带上"]),
+         ["首页推荐 · 搜索结果 · 用户主页 · 收藏", "自动去重，实时显示采集数量", "标题、作者、互动数据一起带上"]),
         ("csv", "CSV 表格", "导出的 CSV 在表格软件里打开：标题、作者、发布时间、点赞数、收藏数等列",
          "导出就是<mark>一张</mark>整齐的表", "Excel、Numbers、Google 表格直接打开，中文不乱码，做选题分析、竞品整理都顺手。",
          ["标题、作者、发布时间", "点赞 · 收藏 · 评论 · 分享", "封面、作者主页、全部图片链接"]),
     ],
     "how_h": "三步上手",
     "steps": [
-        ("browser", "fill-sky", "打开小红书", "首页推荐、搜索结果、用户主页，或者任意一篇笔记。"),
+        ("browser", "fill-sky", "打开小红书", "首页推荐、搜索结果、用户主页、收藏页，或者任意一篇笔记。"),
         ("click", "fill-pink", "点击扩展图标", "切换到「导出笔记列表」或「下载单帖资源」。列表页继续往下滚动，可以累积采集更多笔记。"),
         ("saved", "fill-mint", "导出或下载", "点「导出 CSV」保存表格，或勾选图片视频一键下载；「清空」可以重新开始。"),
     ],
@@ -199,7 +199,7 @@ S["zh"] = {
     "privacy_title": "隐私政策 - 小红书导出工具 RedNote Exporter",
     "privacy_description": "小红书导出工具（RedNote Exporter）不收集、不存储、不传输任何个人数据，所有处理都在你的浏览器里完成。",
     "privacy": """<h1>隐私政策</h1>
-      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 6 日</p>
+      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 7 日</p>
 
       <div class="summary">
         <p><strong>简单说：</strong>本扩展不收集、不存储、不传输任何个人数据。它没有服务器，没有账号体系，也没有统计或追踪代码。所有处理都在你自己的浏览器里完成。</p>
@@ -208,8 +208,8 @@ S["zh"] = {
       <h2>扩展会读取什么</h2>
       <p>只有当你打开 xiaohongshu.com 或 rednote.com 的页面时，扩展才会运行，并且只读取这些页面本身加载的笔记数据：</p>
       <ul>
-        <li><strong>笔记列表</strong>：首页推荐、搜索结果、用户主页加载出来的笔记，包括标题、作者、发布时间、互动数（点赞、收藏、评论、分享）、封面和图片链接。</li>
-        <li><strong>单篇笔记</strong>：当前打开的笔记的图片链接、视频链接和基本信息，用于下载。</li>
+        <li><strong>笔记列表</strong>：首页推荐、搜索结果、用户主页、收藏页加载出来的笔记，包括标题、作者、发布时间、互动数（点赞、收藏、评论、分享）、封面和图片链接。</li>
+        <li><strong>单篇笔记</strong>：当前打开的笔记的图片、实况图和视频链接，以及正文、话题、IP 属地、互动数等信息，用于下载或保存为文本文件。</li>
       </ul>
       <p>这些都是页面上本来就公开可见的内容。扩展不会读取你的小红书账号信息、私信、Cookie 或密码，也不会自己向小红书发起额外请求，只是读取页面在你浏览时已经收到的数据。</p>
 
@@ -261,32 +261,32 @@ S["zh-tw"] = {
     "hero_title": "小紅書筆記，<mark>一鍵</mark>帶走",
     "hero_sub": "圖片影片一鍵下載 · 筆記列表匯出 CSV<br>免費 · 不需登入 · 全程在你的瀏覽器裡完成",
     "hero_how": "看看怎麼用",
-    "hero_tags": ["#無浮水印原檔", "#首頁推薦", "#搜尋結果", "#使用者主頁", "#匯出CSV"],
+    "hero_tags": ["#無浮水印原檔", "#實況照片", "#搜尋結果", "#使用者主頁", "#匯出CSV"],
     "feat_h": "能做什麼",
     "feats": [
-        ("post", "fill-sky", "一鍵下載單篇", "勾選想要的圖片和影片，影片優先下載無浮水印原檔。"),
+        ("post", "fill-sky", "一鍵下載單篇", "勾選想要的圖片、影片和內文，實況照片連動態一起存，影片優先無浮水印原檔。"),
         ("folder", "fill-yellow", "一篇一個資料夾", "依下載時間和標題建立資料夾，檔案依序編號，不覆蓋舊檔案。"),
-        ("list", "fill-mint", "邊滑邊收集", "首頁推薦、搜尋結果、使用者主頁往下滑，看過的筆記自動去重收集。"),
+        ("list", "fill-mint", "邊滑邊收集", "首頁推薦、搜尋結果、使用者主頁、收藏頁往下滑，看過的筆記自動去重收集。"),
         ("csv", "fill-lilac", "匯出 CSV 表格", "Excel、Numbers、Google 試算表直接開啟，標題、作者、互動數據都在。"),
     ],
     "pv_h": "看看介面", "pv_label": "介面預覽",
     "pv": [
         ("post", "下載單篇", "「下載單篇資源」分頁：列出筆記的影片和全部圖片，可以逐張勾選",
          "圖片和影片，<mark>一鍵</mark>全部儲存", "打開任意一篇筆記，勾選想要的圖片和影片，點一下就下載到同一個資料夾。",
-         ["影片優先下載無浮水印原檔", "圖文筆記、影片筆記都支援", "只勾選你需要的那幾張"]),
+         ["影片優先下載無浮水印原檔", "實況照片、內文（note.txt）也能存", "只勾選你需要的那幾張"]),
         ("folder", "自動整理", "下載資料夾裡：一個以時間和筆記標題命名的資料夾，裡面是 video-1.mp4 和 image-1 到 image-9",
          "一篇筆記，<mark>一個</mark>資料夾", "資料夾依下載時間和筆記標題命名，影片和圖片依序編號，不用再一張張重新命名。",
          ["下載時間 + 標題，自動建立資料夾", "image-1、image-2… 依原順序編號", "同名自動加序號，不覆蓋舊檔案"]),
         ("list", "匯出列表", "「匯出筆記列表」分頁：已收集 128 則，列出每則筆記的標題、作者、按讚收藏留言數和日期",
          "邊滑邊收集，<mark>隨時</mark>匯出", "在首頁推薦、搜尋結果或使用者主頁正常往下滑，看過的筆記會自動收集並去除重複。",
-         ["首頁推薦 · 搜尋結果 · 使用者主頁", "自動去重，即時顯示收集數量", "標題、作者、互動數據一起帶上"]),
+         ["首頁推薦 · 搜尋結果 · 使用者主頁 · 收藏", "自動去重，即時顯示收集數量", "標題、作者、互動數據一起帶上"]),
         ("csv", "CSV 表格", "匯出的 CSV 在試算表軟體裡開啟：標題、作者、發布時間、按讚數、收藏數等欄位",
          "匯出就是<mark>一張</mark>整齊的表", "Excel、Numbers、Google 試算表直接開啟，中文不亂碼，做選題分析、競品整理都順手。",
          ["標題、作者、發布時間", "按讚 · 收藏 · 留言 · 分享", "封面、作者主頁、全部圖片連結"]),
     ],
     "how_h": "三步上手",
     "steps": [
-        ("browser", "fill-sky", "打開小紅書", "首頁推薦、搜尋結果、使用者主頁，或任意一篇筆記。"),
+        ("browser", "fill-sky", "打開小紅書", "首頁推薦、搜尋結果、使用者主頁、收藏頁，或任意一篇筆記。"),
         ("click", "fill-pink", "點擊擴充功能圖示", "切換到「匯出筆記列表」或「下載單篇資源」。列表頁繼續往下捲動，可以累積收集更多筆記。"),
         ("saved", "fill-mint", "匯出或下載", "點「匯出 CSV」儲存表格，或勾選圖片影片一鍵下載；「清空」可以重新開始。"),
     ],
@@ -315,7 +315,7 @@ S["zh-tw"] = {
     "privacy_title": "隱私權政策 - 小紅書匯出工具 RedNote Exporter",
     "privacy_description": "小紅書匯出工具（RedNote Exporter）不收集、不儲存、不傳送任何個人資料，所有處理都在你的瀏覽器裡完成。",
     "privacy": """<h1>隱私權政策</h1>
-      <p class="updated">適用於 Chrome 擴充功能「小紅書匯出工具（RedNote Exporter）」 · 最後更新：2026 年 11 月 6 日</p>
+      <p class="updated">適用於 Chrome 擴充功能「小紅書匯出工具（RedNote Exporter）」 · 最後更新：2026 年 11 月 7 日</p>
       <p class="updated">本頁為翻譯版本，內容如有出入，以<a href="/privacy/" hreflang="en" lang="en">英文版</a>為準。</p>
 
       <div class="summary">
@@ -325,8 +325,8 @@ S["zh-tw"] = {
       <h2>擴充功能會讀取什麼</h2>
       <p>只有當你打開 xiaohongshu.com 或 rednote.com 的頁面時，擴充功能才會執行，並且只讀取這些頁面本身載入的筆記資料：</p>
       <ul>
-        <li><strong>筆記列表</strong>：首頁推薦、搜尋結果、使用者主頁載入的筆記，包括標題、作者、發布時間、互動數（按讚、收藏、留言、分享）、封面和圖片連結。</li>
-        <li><strong>單篇筆記</strong>：目前開啟的筆記的圖片連結、影片連結和基本資訊，用於下載。</li>
+        <li><strong>筆記列表</strong>：首頁推薦、搜尋結果、使用者主頁、收藏頁載入的筆記，包括標題、作者、發布時間、互動數（按讚、收藏、留言、分享）、封面和圖片連結。</li>
+        <li><strong>單篇筆記</strong>：目前開啟的筆記的圖片、實況照片和影片連結，以及內文、話題、IP 屬地、互動數等資訊，用於下載或儲存為文字檔。</li>
       </ul>
       <p>這些都是頁面上本來就公開可見的內容。擴充功能不會讀取你的小紅書帳號資訊、私訊、Cookie 或密碼，也不會自己向小紅書發出額外請求，只是讀取頁面在你瀏覽時已經收到的資料。</p>
 
@@ -378,32 +378,32 @@ S["ko"] = {
     "hero_title": "샤오홍슈 노트, <mark>한 번에</mark> 저장",
     "hero_sub": "게시물 이미지·동영상 다운로드 · 노트 목록 CSV 내보내기<br>무료 · 가입 불필요 · 모든 처리는 브라우저 안에서",
     "hero_how": "사용법 보기",
-    "hero_tags": ["#워터마크없는원본", "#홈피드", "#검색결과", "#프로필", "#CSV내보내기"],
+    "hero_tags": ["#워터마크없는원본", "#라이브포토", "#검색결과", "#프로필", "#CSV내보내기"],
     "feat_h": "주요 기능",
     "feats": [
-        ("post", "fill-sky", "게시물 통째로 다운로드", "원하는 이미지와 동영상을 선택하세요. 동영상은 워터마크 없는 원본을 우선 받습니다."),
+        ("post", "fill-sky", "게시물 통째로 다운로드", "원하는 이미지, 동영상, 본문을 선택하세요. 라이브 포토는 움직이는 영상까지, 동영상은 워터마크 없는 원본을 우선 받습니다."),
         ("folder", "fill-yellow", "게시물마다 폴더 하나", "다운로드 시간과 제목으로 폴더를 만들고, 파일은 순서대로 번호를 붙이며 덮어쓰지 않습니다."),
-        ("list", "fill-mint", "스크롤하며 수집", "홈 피드, 검색 결과, 프로필을 내리기만 하면 본 노트가 중복 없이 모입니다."),
+        ("list", "fill-mint", "스크롤하며 수집", "홈 피드, 검색 결과, 프로필, 저장 탭을 내리기만 하면 본 노트가 중복 없이 모입니다."),
         ("csv", "fill-lilac", "CSV로 내보내기", "Excel, Numbers, Google 스프레드시트에서 바로 열리며 제목·작성자·반응 데이터가 담깁니다."),
     ],
     "pv_h": "화면 미리보기", "pv_label": "화면",
     "pv": [
         ("post", "게시물 다운로드", "「게시물 다운로드」 탭: 게시물의 동영상과 모든 이미지가 체크박스와 함께 표시됨",
          "이미지와 동영상, <mark>한 번에</mark> 모두 저장", "게시물을 열고 원하는 이미지와 동영상을 선택하면 한 폴더에 바로 다운로드됩니다.",
-         ["워터마크 없는 원본 동영상 우선", "이미지·동영상 게시물 모두 지원", "필요한 파일만 골라서 저장"]),
+         ["워터마크 없는 원본 동영상 우선", "라이브 포토와 본문(note.txt)도 저장", "필요한 파일만 골라서 저장"]),
         ("folder", "자동 정리", "다운로드 폴더: 시간과 게시물 제목으로 이름 붙은 폴더 안에 video-1.mp4와 image-1~image-9",
          "게시물 하나에 <mark>폴더 하나</mark>", "폴더 이름은 다운로드 시간과 게시물 제목으로 정해지고, 파일에는 순서대로 번호가 붙습니다.",
          ["다운로드 시간 + 제목으로 폴더 생성", "image-1, image-2… 원래 순서대로", "같은 이름은 번호를 붙여 덮어쓰지 않음"]),
         ("list", "노트 목록", "「노트 목록 내보내기」 탭: 128개 수집, 각 노트의 제목·작성자·좋아요·저장·댓글 수와 날짜",
          "스크롤만 하면 수집, <mark>언제든</mark> 내보내기", "홈 피드, 검색 결과, 프로필을 평소처럼 스크롤하면 본 노트가 자동으로 수집되고 중복은 제거됩니다.",
-         ["홈 피드 · 검색 결과 · 프로필", "자동 중복 제거, 실시간 개수 표시", "제목, 작성자, 반응 데이터까지"]),
+         ["홈 피드 · 검색 결과 · 프로필 · 저장", "자동 중복 제거, 실시간 개수 표시", "제목, 작성자, 반응 데이터까지"]),
         ("csv", "CSV 표", "스프레드시트에서 연 CSV: Title, Author Name, Publish Time, Like Count, Collect Count 열",
          "내보내면 바로 <mark>깔끔한</mark> 표", "Excel, Numbers, Google 스프레드시트에서 바로 열립니다. 콘텐츠 분석과 경쟁사 정리에 유용합니다.",
          ["제목, 작성자, 게시 시간", "좋아요 · 저장 · 댓글 · 공유", "커버, 프로필, 모든 이미지 링크"]),
     ],
     "how_h": "세 단계면 끝",
     "steps": [
-        ("browser", "fill-sky", "샤오홍슈 열기", "홈 피드, 검색 결과, 프로필 또는 아무 게시물."),
+        ("browser", "fill-sky", "샤오홍슈 열기", "홈 피드, 검색 결과, 프로필, 저장 탭 또는 아무 게시물."),
         ("click", "fill-pink", "확장 프로그램 아이콘 클릭", "「노트 목록 내보내기」 또는 「게시물 다운로드」를 선택하세요. 목록에서는 계속 스크롤하면 더 많이 수집됩니다."),
         ("saved", "fill-mint", "내보내기 또는 다운로드", "「CSV 내보내기」로 표를 저장하거나, 이미지와 동영상을 골라 다운로드하세요. 「지우기」로 다시 시작합니다."),
     ],
@@ -432,7 +432,7 @@ S["ko"] = {
     "privacy_title": "개인정보처리방침 - RedNote Exporter",
     "privacy_description": "RedNote Exporter는 개인 데이터를 수집·저장·전송하지 않습니다. 모든 처리는 브라우저 안에서 이루어집니다.",
     "privacy": """<h1>개인정보처리방침</h1>
-      <p class="updated">Chrome 확장 프로그램 「RedNote Exporter」 · 최종 업데이트: 2026년 11월 6일</p>
+      <p class="updated">Chrome 확장 프로그램 「RedNote Exporter」 · 최종 업데이트: 2026년 11월 7일</p>
       <p class="updated">이 페이지는 번역본입니다. 내용이 다를 경우 <a href="/privacy/" hreflang="en" lang="en">영어 원문</a>이 우선합니다.</p>
 
       <div class="summary">
@@ -442,8 +442,8 @@ S["ko"] = {
       <h2>확장 프로그램이 읽는 정보</h2>
       <p>확장 프로그램은 xiaohongshu.com과 rednote.com 페이지에서만 실행되며, 해당 페이지가 스스로 불러온 노트 데이터만 읽습니다.</p>
       <ul>
-        <li><strong>노트 목록</strong> — 홈 피드, 검색 결과, 프로필 페이지가 불러온 노트: 제목, 작성자, 게시 시간, 반응 수(좋아요, 저장, 댓글, 공유), 커버와 이미지 링크.</li>
-        <li><strong>단일 게시물</strong> — 다운로드를 위해 현재 열려 있는 게시물의 이미지 링크, 동영상 링크와 기본 정보.</li>
+        <li><strong>노트 목록</strong> — 홈 피드, 검색 결과, 프로필 페이지와 저장 탭이 불러온 노트: 제목, 작성자, 게시 시간, 반응 수(좋아요, 저장, 댓글, 공유), 커버와 이미지 링크.</li>
+        <li><strong>단일 게시물</strong> — 다운로드하거나 텍스트 파일로 저장하기 위해, 현재 열려 있는 게시물의 이미지·라이브 포토·동영상 링크와 본문, 주제, IP 위치, 반응 수.</li>
       </ul>
       <p>이 모든 정보는 페이지에 이미 공개적으로 보이는 콘텐츠입니다. 확장 프로그램은 샤오홍슈 계정 정보, 메시지, 쿠키, 비밀번호를 읽지 않으며, 샤오홍슈에 별도의 요청을 보내지 않습니다. 사용자가 탐색하는 동안 페이지가 이미 받은 데이터만 읽습니다.</p>
 
@@ -495,32 +495,32 @@ S["ja"] = {
     "hero_title": "小紅書のノートを、<mark>ワンクリック</mark>で保存",
     "hero_sub": "投稿の画像・動画をダウンロード · ノート一覧を CSV 出力<br>無料 · 登録不要 · すべてブラウザ内で完結",
     "hero_how": "使い方を見る",
-    "hero_tags": ["#透かしなし動画", "#ホームフィード", "#検索結果", "#プロフィール", "#CSV出力"],
+    "hero_tags": ["#透かしなし動画", "#ライブフォト", "#検索結果", "#プロフィール", "#CSV出力"],
     "feat_h": "できること",
     "feats": [
-        ("post", "fill-sky", "投稿をまるごと保存", "欲しい画像と動画にチェックするだけ。動画は透かしなしの元ファイルを優先します。"),
+        ("post", "fill-sky", "投稿をまるごと保存", "欲しい画像・動画・本文にチェックするだけ。ライブフォトは動く映像ごと、動画は透かしなしの元ファイルを優先します。"),
         ("folder", "fill-yellow", "1 投稿に 1 フォルダ", "時刻とタイトルでフォルダを作り、ファイルは順番に番号付け。上書きはしません。"),
-        ("list", "fill-mint", "スクロールしながら収集", "ホーム、検索、プロフィールを下へスクロールするだけで、見たノートを重複なく集めます。"),
+        ("list", "fill-mint", "スクロールしながら収集", "ホーム、検索、プロフィール、コレクションを下へスクロールするだけで、見たノートを重複なく集めます。"),
         ("csv", "fill-lilac", "CSV に出力", "Excel、Numbers、Google スプレッドシートでそのまま開け、タイトル・投稿者・反応数が入っています。"),
     ],
     "pv_h": "画面を見る", "pv_label": "画面",
     "pv": [
         ("post", "投稿を保存", "「投稿をダウンロード」タブ：投稿の動画とすべての画像がチェックボックス付きで並ぶ",
          "画像も動画も、<mark>ワンクリック</mark>で保存", "投稿を開いて、欲しい画像と動画にチェックを入れるだけ。1 つのフォルダにまとめてダウンロードします。",
-         ["透かしなしの元動画を優先", "画像投稿にも動画投稿にも対応", "必要なファイルだけ選べる"]),
+         ["透かしなしの元動画を優先", "ライブフォトと本文（note.txt）も保存", "必要なファイルだけ選べる"]),
         ("folder", "自動で整理", "ダウンロードフォルダ：時刻と投稿タイトルの名前のフォルダに video-1.mp4 と image-1〜image-9",
          "1 投稿に、<mark>1 フォルダ</mark>", "フォルダ名はダウンロード時刻と投稿タイトル。ファイルには順番どおりに番号が付きます。",
          ["時刻 + タイトルでフォルダを自動作成", "image-1、image-2… 元の順番で番号付け", "同名ファイルは番号を付けて上書きしない"]),
         ("list", "ノート一覧", "「ノート一覧を出力」タブ：128 件を収集、各ノートのタイトル・投稿者・いいね・保存・コメント数と日付",
          "スクロールで収集、<mark>いつでも</mark>出力", "ホーム、検索結果、プロフィールを普段どおりスクロールすると、見たノートが自動で収集され、重複も除かれます。",
-         ["ホーム · 検索結果 · プロフィール", "重複を自動で除去、件数をリアルタイム表示", "タイトル、投稿者、反応数もまとめて"]),
+         ["ホーム · 検索結果 · プロフィール · コレクション", "重複を自動で除去、件数をリアルタイム表示", "タイトル、投稿者、反応数もまとめて"]),
         ("csv", "CSV 表", "スプレッドシートで開いた CSV：Title、Author Name、Publish Time、Like Count、Collect Count の列",
          "出力すれば<mark>きれいな</mark>表に", "Excel、Numbers、Google スプレッドシートでそのまま開けます。企画の分析や競合リサーチに便利です。",
          ["タイトル、投稿者、投稿日時", "いいね · 保存 · コメント · シェア", "カバー、プロフィール、全画像のリンク"]),
     ],
     "how_h": "3 ステップ",
     "steps": [
-        ("browser", "fill-sky", "小紅書を開く", "ホーム、検索結果、プロフィール、または任意の投稿。"),
+        ("browser", "fill-sky", "小紅書を開く", "ホーム、検索結果、プロフィール、コレクション、または任意の投稿。"),
         ("click", "fill-pink", "拡張機能のアイコンをクリック", "「ノート一覧を出力」か「投稿をダウンロード」を選びます。一覧ページではスクロールを続けるとさらに集まります。"),
         ("saved", "fill-mint", "出力・ダウンロード", "「CSV を出力」で表を保存、または画像と動画を選んでダウンロード。「クリア」でやり直せます。"),
     ],
@@ -549,7 +549,7 @@ S["ja"] = {
     "privacy_title": "プライバシーポリシー - RedNote Exporter",
     "privacy_description": "RedNote Exporter は個人データを収集・保存・送信しません。処理はすべてブラウザ内で行われます。",
     "privacy": """<h1>プライバシーポリシー</h1>
-      <p class="updated">Chrome 拡張機能「RedNote Exporter」 · 最終更新：2026 年 11 月 6 日</p>
+      <p class="updated">Chrome 拡張機能「RedNote Exporter」 · 最終更新：2026 年 11 月 7 日</p>
       <p class="updated">このページは翻訳版です。内容に相違がある場合は<a href="/privacy/" hreflang="en" lang="en">英語版</a>が優先します。</p>
 
       <div class="summary">
@@ -559,8 +559,8 @@ S["ja"] = {
       <h2>拡張機能が読み取るもの</h2>
       <p>拡張機能は xiaohongshu.com と rednote.com のページでのみ動作し、それらのページ自身が読み込んだノートデータだけを読み取ります。</p>
       <ul>
-        <li><strong>ノート一覧</strong> — ホームフィード、検索結果、プロフィールページが読み込んだノート：タイトル、投稿者、投稿日時、反応数（いいね、保存、コメント、シェア）、カバーと画像のリンク。</li>
-        <li><strong>単一の投稿</strong> — ダウンロードのため、開いている投稿の画像リンク、動画リンクと基本情報。</li>
+        <li><strong>ノート一覧</strong> — ホームフィード、検索結果、プロフィールページ、コレクションが読み込んだノート：タイトル、投稿者、投稿日時、反応数（いいね、保存、コメント、シェア）、カバーと画像のリンク。</li>
+        <li><strong>単一の投稿</strong> — ダウンロードやテキストファイル保存のため、開いている投稿の画像・ライブフォト・動画のリンクと、本文、トピック、IP 所在地、反応数。</li>
       </ul>
       <p>これらはすべて、ページ上ですでに公開されている内容です。拡張機能は小紅書のアカウント情報、メッセージ、Cookie、パスワードを読み取らず、小紅書へ独自にリクエストを送ることもありません。閲覧中にページがすでに受け取ったデータを読むだけです。</p>
 
@@ -612,32 +612,32 @@ S["vi"] = {
     "hero_title": "Lưu Xiaohongshu chỉ với <mark>một&nbsp;cú&nbsp;nhấp</mark>",
     "hero_sub": "Tải ảnh &amp; video của bài viết · Xuất danh sách ghi chú ra CSV<br>Miễn phí · Không cần đăng ký · Chạy hoàn toàn trong trình duyệt",
     "hero_how": "Xem cách dùng",
-    "hero_tags": ["#Video không logo", "#Trang chủ", "#Tìm kiếm", "#Trang cá nhân", "#Xuất CSV"],
+    "hero_tags": ["#Video không logo", "#Ảnh Live", "#Tìm kiếm", "#Trang cá nhân", "#Xuất CSV"],
     "feat_h": "Tính năng",
     "feats": [
-        ("post", "fill-sky", "Tải trọn một bài", "Chọn ảnh và video bạn muốn — ưu tiên video gốc không logo khi có."),
+        ("post", "fill-sky", "Tải trọn một bài", "Chọn ảnh, video và nội dung bạn muốn — ảnh Live giữ cả đoạn chuyển động, video ưu tiên bản gốc không logo."),
         ("folder", "fill-yellow", "Mỗi bài một thư mục", "Đặt tên theo thời gian và tiêu đề, tệp đánh số theo thứ tự, không ghi đè."),
-        ("list", "fill-mint", "Thu thập khi cuộn", "Trang chủ, tìm kiếm hay trang cá nhân — mọi ghi chú bạn lướt qua đều được gom lại, không trùng."),
+        ("list", "fill-mint", "Thu thập khi cuộn", "Trang chủ, tìm kiếm, trang cá nhân hay mục đã lưu — mọi ghi chú bạn lướt qua đều được gom lại, không trùng."),
         ("csv", "fill-lilac", "Xuất ra CSV", "Mở trong Excel, Numbers hoặc Google Sheets, có tiêu đề, tác giả và số tương tác."),
     ],
     "pv_h": "Xem giao diện", "pv_label": "Màn hình",
     "pv": [
         ("post", "Tải bài viết", "Thẻ Tải bài viết liệt kê video và tất cả ảnh của bài, mỗi mục có ô chọn",
          "Mọi ảnh &amp; video, lưu chỉ <mark>một&nbsp;cú&nbsp;nhấp</mark>", "Mở bất kỳ bài Xiaohongshu nào, chọn những gì bạn muốn và tải tất cả vào một thư mục.",
-         ["Ưu tiên video gốc không logo", "Hỗ trợ cả bài ảnh và bài video", "Chỉ chọn những tệp bạn cần"]),
+         ["Ưu tiên video gốc không logo", "Lưu cả ảnh Live và nội dung (note.txt)", "Chỉ chọn những tệp bạn cần"]),
         ("folder", "Tự sắp xếp", "Thư mục Downloads: một thư mục đặt tên theo thời gian và tiêu đề bài, chứa video-1.mp4 và image-1 đến image-9",
          "Một bài viết, <mark>một&nbsp;thư&nbsp;mục</mark>", "Mỗi lần tải vào một thư mục đặt tên theo thời gian và tiêu đề bài, tệp được đánh số theo thứ tự.",
          ["Thư mục theo thời gian + tiêu đề", "Tệp đánh số image-1, image-2…", "Không bao giờ ghi đè tệp cũ"]),
         ("list", "Danh sách", "Thẻ Xuất danh sách ghi chú: đã thu thập 128 ghi chú, mỗi mục có tiêu đề, tác giả, số thích, lưu, bình luận và ngày",
          "Cuộn là thu thập, xuất <mark>bất cứ lúc nào</mark>", "Lướt trang chủ, kết quả tìm kiếm hoặc trang cá nhân — mọi ghi chú bạn lướt qua đều được thu thập và loại trùng.",
-         ["Trang chủ · Tìm kiếm · Trang cá nhân", "Tự loại trùng, đếm theo thời gian thực", "Tiêu đề, tác giả và số tương tác"]),
+         ["Trang chủ · Tìm kiếm · Cá nhân · Đã lưu", "Tự loại trùng, đếm theo thời gian thực", "Tiêu đề, tác giả và số tương tác"]),
         ("csv", "CSV", "Tệp CSV đã xuất mở trong bảng tính, với các cột Title, Author Name, Publish Time, Like Count, Collect Count",
          "Bảng tính gọn gàng, <mark>sẵn sàng</mark> phân tích", "Mở ngay trong Excel, Numbers hoặc Google Sheets — tiện cho nghiên cứu nội dung và theo dõi đối thủ.",
          ["Tiêu đề, tác giả, ngày đăng", "Thích · lưu · bình luận · chia sẻ", "Ảnh bìa, trang tác giả, mọi liên kết ảnh"]),
     ],
     "how_h": "Ba bước",
     "steps": [
-        ("browser", "fill-sky", "Mở Xiaohongshu", "Trang chủ, kết quả tìm kiếm, trang cá nhân hoặc một bài viết bất kỳ."),
+        ("browser", "fill-sky", "Mở Xiaohongshu", "Trang chủ, kết quả tìm kiếm, trang cá nhân, mục đã lưu hoặc một bài viết bất kỳ."),
         ("click", "fill-pink", "Nhấp vào biểu tượng", "Chọn Xuất danh sách ghi chú hoặc Tải bài viết. Ở trang danh sách, cứ cuộn tiếp để thu thập thêm."),
         ("saved", "fill-mint", "Xuất hoặc tải xuống", "Nhấp Xuất CSV để lưu bảng tính, hoặc chọn ảnh và video rồi tải xuống. Xóa để bắt đầu lại."),
     ],
@@ -666,7 +666,7 @@ S["vi"] = {
     "privacy_title": "Chính sách quyền riêng tư - RedNote Exporter",
     "privacy_description": "RedNote Exporter không thu thập, lưu trữ hay truyền bất kỳ dữ liệu cá nhân nào. Mọi xử lý đều diễn ra trong trình duyệt của bạn.",
     "privacy": """<h1>Chính sách quyền riêng tư</h1>
-      <p class="updated">Dành cho tiện ích Chrome “RedNote Exporter” · Cập nhật lần cuối: 6 tháng 11, 2026</p>
+      <p class="updated">Dành cho tiện ích Chrome “RedNote Exporter” · Cập nhật lần cuối: 7 tháng 11, 2026</p>
       <p class="updated">Đây là bản dịch. Nếu có khác biệt, <a href="/privacy/" hreflang="en" lang="en">bản tiếng Anh</a> là bản có hiệu lực.</p>
 
       <div class="summary">
@@ -676,8 +676,8 @@ S["vi"] = {
       <h2>Tiện ích đọc những gì</h2>
       <p>Tiện ích chỉ chạy trên các trang xiaohongshu.com và rednote.com, và chỉ đọc dữ liệu ghi chú mà chính các trang đó tải về:</p>
       <ul>
-        <li><strong>Danh sách ghi chú</strong> — ghi chú do trang chủ, kết quả tìm kiếm và trang cá nhân tải: tiêu đề, tác giả, thời gian đăng, số tương tác (thích, lưu, bình luận, chia sẻ), ảnh bìa và liên kết ảnh.</li>
-        <li><strong>Một bài viết</strong> — liên kết ảnh, liên kết video và thông tin cơ bản của bài bạn đang mở, để có thể tải xuống.</li>
+        <li><strong>Danh sách ghi chú</strong> — ghi chú do trang chủ, kết quả tìm kiếm, trang cá nhân và mục đã lưu tải: tiêu đề, tác giả, thời gian đăng, số tương tác (thích, lưu, bình luận, chia sẻ), ảnh bìa và liên kết ảnh.</li>
+        <li><strong>Một bài viết</strong> — liên kết ảnh, ảnh Live và video, cùng nội dung, chủ đề, vị trí IP và số tương tác của bài bạn đang mở, để tải xuống hoặc lưu thành tệp văn bản.</li>
       </ul>
       <p>Tất cả đều là nội dung vốn đã hiển thị công khai trên trang. Tiện ích không đọc thông tin tài khoản Xiaohongshu, tin nhắn, cookie hay mật khẩu của bạn, và không bao giờ tự gửi yêu cầu đến Xiaohongshu — nó chỉ đọc dữ liệu mà trang đã nhận được trong lúc bạn duyệt.</p>
 

@@ -43,7 +43,7 @@ export const STR = {
     pageEnd: (t) => `页面已到底 · 共 ${t} 条`,
     nopageT: "未检测到笔记列表",
     nopageS:
-      "请先打开小红书的首页推荐、搜索结果或用户主页，等笔记加载出来后再打开本插件。",
+      "请先打开小红书的首页推荐、搜索结果、用户主页或收藏页，等笔记加载出来后再打开本插件。",
     nopageBtn: "我已打开列表页",
     back: "返回",
     footRows: (t, p) => `${t} 条 · ${p} 页`,
@@ -63,13 +63,29 @@ export const STR = {
     deselAll: "取消全选",
     dlSel: (n) => `下载选中 · ${n}`,
     downloading: (d, t) => `正在下载 ${d}/${t}`,
-    dlSub: (v, n) => `${v ? "视频 + " : ""}${n} 张图片`,
+    dlSub: ({ video, images, live, text }) =>
+      [video && "视频", images && `${images} 张图片${live ? `（含 ${live} 张实况）` : ""}`, text && "正文"]
+        .filter(Boolean)
+        .join(" + "),
     savedN: (n) => `已保存 ${n} 个文件`,
     savedPath: (name) => `下载/${name}`,
     dedup: (r, d) => (d > 0 ? `已接收 ${r} · 跳过 ${d} 条重复` : `已接收 ${r}`),
     errT: "当前不是笔记详情页",
     errS: "请先打开一篇小红书笔记，再点击插件下载其视频与图片。",
     errBtn: "我已打开笔记",
+    liveBadge: "实况",
+    liveCount: (n) => `${n} 张实况`,
+    textWord: "正文",
+    textHint: "保存为 note.txt",
+    // note.txt field labels; each carries its own separator.
+    txt: {
+      author: "作者：",
+      published: "发布时间：",
+      ip: "IP 属地：",
+      counts: "点赞 / 收藏 / 评论 / 分享：",
+      tags: "话题：",
+      link: "链接：",
+    },
     fmt: (n) =>
       n >= 10000
         ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "w"
@@ -106,7 +122,7 @@ export const STR = {
     pageEnd: (t) => `end of page · ${t} items total`,
     nopageT: "No note list detected",
     nopageS:
-      "Open RedNote's home feed, a search results page, or a user profile and let notes load, then open this extension.",
+      "Open RedNote's home feed, a search results page, a user profile or a Collections tab and let notes load, then open this extension.",
     nopageBtn: "I've opened a list page",
     back: "Back",
     footRows: (t, p) => `${t} items · ${p} ${p > 1 ? "pages" : "page"}`,
@@ -126,7 +142,10 @@ export const STR = {
     deselAll: "Deselect",
     dlSel: (n) => `Download · ${n}`,
     downloading: (d, t) => `Downloading ${d}/${t}`,
-    dlSub: (v, n) => `${v ? "video + " : ""}${n} images`,
+    dlSub: ({ video, images, live, text }) =>
+      [video && "video", images && `${images} images${live ? ` (${live} Live)` : ""}`, text && "text"]
+        .filter(Boolean)
+        .join(" + "),
     savedN: (n) => `Saved ${n} files`,
     savedPath: (name) => `Downloads/${name}`,
     dedup: (r, d) =>
@@ -134,6 +153,18 @@ export const STR = {
     errT: "Not a post detail page",
     errS: "Open a Xiaohongshu post first, then click the extension to download its video and images.",
     errBtn: "I've opened a post",
+    liveBadge: "LIVE",
+    liveCount: (n) => `${n} Live`,
+    textWord: "Text",
+    textHint: "Saved as note.txt",
+    txt: {
+      author: "Author: ",
+      published: "Published: ",
+      ip: "IP location: ",
+      counts: "Likes / Collects / Comments / Shares: ",
+      tags: "Topics: ",
+      link: "Link: ",
+    },
     fmt: (n) =>
       n >= 1000000
         ? (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M"
@@ -153,7 +184,7 @@ export const STR = {
     pageHint: "在網頁上繼續往下捲動，新載入的筆記會自動收集",
     nopageT: "未偵測到筆記列表",
     nopageS:
-      "請先開啟小紅書的首頁推薦、搜尋結果或使用者主頁，等筆記載入後再開啟本擴充功能。",
+      "請先開啟小紅書的首頁推薦、搜尋結果、使用者主頁或收藏頁，等筆記載入後再開啟本擴充功能。",
     nopageBtn: "我已開啟列表頁",
     exportCsv: "匯出 CSV",
     clear: "清空",
@@ -170,13 +201,28 @@ export const STR = {
     deselAll: "取消全選",
     dlSel: (n) => `下載所選 · ${n}`,
     downloading: (d, t) => `正在下載 ${d}/${t}`,
-    dlSub: (v, n) => `${v ? "影片 + " : ""}${n} 張圖片`,
+    dlSub: ({ video, images, live, text }) =>
+      [video && "影片", images && `${images} 張圖片${live ? `（含 ${live} 張實況）` : ""}`, text && "內文"]
+        .filter(Boolean)
+        .join(" + "),
     savedN: (n) => `已儲存 ${n} 個檔案`,
     savedPath: (name) => `下載/${name}`,
     dedup: (r, d) => (d > 0 ? `已接收 ${r} · 略過 ${d} 則重複` : `已接收 ${r}`),
     errT: "目前不是筆記頁面",
     errS: "請先開啟一篇小紅書筆記，再點擊擴充功能下載其影片與圖片。",
     errBtn: "我已開啟筆記",
+    liveBadge: "實況",
+    liveCount: (n) => `${n} 張實況`,
+    textWord: "內文",
+    textHint: "儲存為 note.txt",
+    txt: {
+      author: "作者：",
+      published: "發布時間：",
+      ip: "IP 屬地：",
+      counts: "按讚 / 收藏 / 留言 / 分享：",
+      tags: "話題：",
+      link: "連結：",
+    },
     fmt: (n) =>
       n >= 10000
         ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "萬"
@@ -198,7 +244,7 @@ export const STR = {
       "페이지를 계속 아래로 스크롤하면 새로 불러온 노트가 자동으로 수집됩니다",
     nopageT: "노트 목록을 찾을 수 없습니다",
     nopageS:
-      "샤오홍슈 홈 피드, 검색 결과 또는 프로필을 열고 노트가 보이면 다시 열어 주세요.",
+      "샤오홍슈 홈 피드, 검색 결과, 프로필 또는 저장 탭을 열고 노트가 보이면 다시 열어 주세요.",
     nopageBtn: "목록 페이지를 열었어요",
     exportCsv: "CSV 내보내기",
     clear: "지우기",
@@ -215,7 +261,10 @@ export const STR = {
     deselAll: "선택 해제",
     dlSel: (n) => `다운로드 · ${n}`,
     downloading: (d, t) => `다운로드 중 ${d}/${t}`,
-    dlSub: (v, n) => `${v ? "동영상 + " : ""}이미지 ${n}장`,
+    dlSub: ({ video, images, live, text }) =>
+      [video && "동영상", images && `이미지 ${images}장${live ? `(라이브 ${live}장 포함)` : ""}`, text && "본문"]
+        .filter(Boolean)
+        .join(" + "),
     savedN: (n) => `파일 ${n}개 저장됨`,
     savedPath: (name) => `다운로드/${name}`,
     dedup: (r, d) =>
@@ -223,6 +272,18 @@ export const STR = {
     errT: "게시물 페이지가 아닙니다",
     errS: "먼저 샤오홍슈 게시물을 연 다음, 확장 프로그램을 클릭해 동영상과 이미지를 다운로드하세요.",
     errBtn: "게시물을 열었어요",
+    liveBadge: "LIVE",
+    liveCount: (n) => `라이브 ${n}장`,
+    textWord: "본문",
+    textHint: "note.txt로 저장",
+    txt: {
+      author: "작성자: ",
+      published: "게시일: ",
+      ip: "IP 위치: ",
+      counts: "좋아요 / 저장 / 댓글 / 공유: ",
+      tags: "주제: ",
+      link: "링크: ",
+    },
     fmt: (n) =>
       n >= 10000
         ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "만"
@@ -242,7 +303,7 @@ export const STR = {
       "ページを下にスクロールすると、新しく読み込まれたノートが自動で収集されます",
     nopageT: "ノート一覧が見つかりません",
     nopageS:
-      "小紅書のフィード、検索結果、またはプロフィールを開き、ノートが表示されてから開いてください。",
+      "小紅書のフィード、検索結果、プロフィール、またはコレクションを開き、ノートが表示されてから開いてください。",
     nopageBtn: "一覧ページを開きました",
     exportCsv: "CSV を出力",
     clear: "クリア",
@@ -259,7 +320,10 @@ export const STR = {
     deselAll: "選択を解除",
     dlSel: (n) => `ダウンロード · ${n}`,
     downloading: (d, t) => `ダウンロード中 ${d}/${t}`,
-    dlSub: (v, n) => `${v ? "動画 + " : ""}画像 ${n} 枚`,
+    dlSub: ({ video, images, live, text }) =>
+      [video && "動画", images && `画像 ${images} 枚${live ? `（ライブ ${live} 枚を含む）` : ""}`, text && "本文"]
+        .filter(Boolean)
+        .join(" + "),
     savedN: (n) => `${n} 個のファイルを保存しました`,
     savedPath: (name) => `ダウンロード/${name}`,
     dedup: (r, d) =>
@@ -267,6 +331,18 @@ export const STR = {
     errT: "投稿ページではありません",
     errS: "先に小紅書の投稿を開いてから、拡張機能をクリックして動画と画像をダウンロードしてください。",
     errBtn: "投稿を開きました",
+    liveBadge: "LIVE",
+    liveCount: (n) => `ライブ ${n} 枚`,
+    textWord: "本文",
+    textHint: "note.txt として保存",
+    txt: {
+      author: "投稿者：",
+      published: "投稿日時：",
+      ip: "IP 所在地：",
+      counts: "いいね / コレクト / コメント / シェア：",
+      tags: "トピック：",
+      link: "リンク：",
+    },
     fmt: (n) =>
       n >= 10000
         ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, "") + "万"
@@ -284,7 +360,7 @@ export const STR = {
       "Tiếp tục cuộn trang xuống — ghi chú mới tải sẽ được thu thập tự động",
     nopageT: "Không tìm thấy danh sách ghi chú",
     nopageS:
-      "Hãy mở trang chủ, trang kết quả tìm kiếm hoặc trang cá nhân trên Xiaohongshu, chờ ghi chú tải xong rồi mở lại tiện ích này.",
+      "Hãy mở trang chủ, kết quả tìm kiếm, trang cá nhân hoặc mục đã lưu trên Xiaohongshu, chờ ghi chú tải xong rồi mở lại tiện ích này.",
     nopageBtn: "Tôi đã mở trang danh sách",
     exportCsv: "Xuất CSV",
     clear: "Xóa",
@@ -301,7 +377,10 @@ export const STR = {
     deselAll: "Bỏ chọn",
     dlSel: (n) => `Tải xuống · ${n}`,
     downloading: (d, t) => `Đang tải ${d}/${t}`,
-    dlSub: (v, n) => `${v ? "video + " : ""}${n} ảnh`,
+    dlSub: ({ video, images, live, text }) =>
+      [video && "video", images && `${images} ảnh${live ? ` (gồm ${live} ảnh Live)` : ""}`, text && "nội dung"]
+        .filter(Boolean)
+        .join(" + "),
     savedN: (n) => `Đã lưu ${n} tệp`,
     // The folder on disk is "Downloads" on most Vietnamese systems.
     savedPath: (name) => `Downloads/${name}`,
@@ -310,6 +389,18 @@ export const STR = {
     errT: "Đây không phải trang bài viết",
     errS: "Hãy mở một bài viết Xiaohongshu trước, rồi nhấp vào tiện ích để tải video và ảnh.",
     errBtn: "Tôi đã mở bài viết",
+    liveBadge: "LIVE",
+    liveCount: (n) => `${n} ảnh Live`,
+    textWord: "Nội dung",
+    textHint: "Lưu thành note.txt",
+    txt: {
+      author: "Tác giả: ",
+      published: "Ngày đăng: ",
+      ip: "Vị trí IP: ",
+      counts: "Thích / Lưu / Bình luận / Chia sẻ: ",
+      tags: "Chủ đề: ",
+      link: "Liên kết: ",
+    },
   },
 };
 

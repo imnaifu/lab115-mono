@@ -95,6 +95,11 @@ html:lang(ko) .font-display {
 html:lang(ko) body {
   word-break: keep-all;
 }
+/* Japanese has no spaces; break between phrases so katakana words like
+   プロフィール don't split across lines (Chrome 119+, the site does the same). */
+html:lang(ja) body {
+  word-break: auto-phrase;
+}
 /* Vietnamese stacks Latin letters with tone marks (ạ ế ở …): PingFang and our
    Latin-only Nunito subset lack them, so glyphs would mix fonts mid-word. Use
    the system UI face for everything, numbers and brand included. */

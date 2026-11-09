@@ -4,7 +4,7 @@
     "description": "Extension name shown in the browser and the Chrome Web Store."
   },
   "appDesc": {
-    "message": "Download all images & videos from a RedNote (Xiaohongshu) post in one click, and export note lists (feed, search, profiles) to CSV",
+    "message": "Save images, Live Photos, video and text from RedNote (Xiaohongshu) posts; export feed, search, profile and collection lists to CSV",
     "description": "Short description shown in the browser and the Chrome Web Store."
   }
 }

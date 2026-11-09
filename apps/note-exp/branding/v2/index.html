@@ -258,7 +258,7 @@
             tag: ["download", "下载单帖资源"],
             h1: "图片和视频，<br><mark>一键</mark>全部保存",
             sub: "打开任意一篇笔记，勾选想要的图片和视频，点一下就下载到同一个文件夹。",
-            bullets: [["video", "视频优先下载无水印原片"], ["image", "图文笔记、视频笔记都支持"], ["check", "只勾选你需要的那几张"]],
+            bullets: [["video", "视频优先下载无水印原片"], ["image", "实况图、正文（note.txt）也能存"], ["check", "只勾选你需要的那几张"]],
           },
           s2: {
             tag: ["folder", "自动整理"],
@@ -269,8 +269,8 @@
           s3: {
             tag: ["list", "导出笔记列表"],
             h1: "边刷边采集，<br><mark>随时</mark>导出 CSV",
-            sub: "在首页推荐、搜索结果或用户主页正常往下滑，看过的笔记会被自动收集并去重。",
-            bullets: [["search", "首页推荐 · 搜索结果 · 用户主页"], ["check", "自动去重，实时显示采集数量"], ["heart", "标题、作者、互动数据一起带上"]],
+            sub: "在首页推荐、搜索结果、用户主页或收藏页正常往下滑，看过的笔记会被自动收集并去重。",
+            bullets: [["search", "首页推荐 · 搜索结果 · 用户主页 · 收藏"], ["check", "自动去重，实时显示采集数量"], ["heart", "标题、作者、互动数据一起带上"]],
           },
           s4: {
             tag: ["file", "CSV 表格"],
@@ -281,7 +281,7 @@
           s5: {
             title: "三步上手，全程<mark>在本地</mark>完成",
             steps: [
-              ["打开小红书", "首页推荐、搜索结果、用户主页，或任意一篇笔记"],
+              ["打开小红书", "首页推荐、搜索结果、用户主页、收藏页，或任意一篇笔记"],
               ["点击扩展图标", "切换到「导出笔记列表」或「下载单帖资源」"],
               ["导出或下载", "CSV 表格和图片视频直接保存到你的电脑"],
             ],
@@ -294,7 +294,7 @@
           },
           small: ["小红书<mark>导出</mark>", "图片视频下载 · 笔记导出 CSV"],
           post: { title: "秋天第一件风衣的 5 套通勤穿搭", author: "盐系小柯", time: "2026-09-28" },
-          videoUnit: "个视频", imageUnit: "张图片", videoWord: "视频", imagesWord: "图片",
+          videoUnit: "个视频", imageUnit: "张图片", liveBadge: "实况", liveCount: "2 张实况", videoWord: "视频", imagesWord: "图片",
           deselAll: "取消全选", dlSel: (n) => `下载选中 · ${n}`,
           connected: "已连接", captured: "已采集", unit: "条", capturing: "采集中…",
           dedup: "已接收 140 · 跳过 12 条重复",
@@ -324,7 +324,7 @@
             tag: ["download", "Download Single Post"],
             h1: "Every image &amp; video,<br>saved in <mark>one&nbsp;click</mark>",
             sub: "Open any RedNote post, tick what you want, and download it all into a single folder.",
-            bullets: [["video", "Watermark-free original video when available"], ["image", "Works on image posts and video posts"], ["check", "Pick only the files you need"]],
+            bullets: [["video", "Watermark-free original video when available"], ["image", "Live Photos and the post text (note.txt) too"], ["check", "Pick only the files you need"]],
           },
           s2: {
             tag: ["folder", "Auto-organized"],
@@ -335,8 +335,8 @@
           s3: {
             tag: ["list", "Export Note List"],
             h1: "Scroll as usual,<br>export <mark>anytime</mark>",
-            sub: "Browse the home feed, search results or a profile — every note you scroll past is captured and de-duplicated.",
-            bullets: [["search", "Home feed · Search · Profiles"], ["check", "Auto de-dup with a live count"], ["heart", "Titles, authors and engagement data"]],
+            sub: "Browse the home feed, search results, a profile or your Collections — every note you scroll past is captured and de-duplicated.",
+            bullets: [["search", "Home feed · Search · Profiles · Collections"], ["check", "Auto de-dup with a live count"], ["heart", "Titles, authors and engagement data"]],
           },
           s4: {
             tag: ["file", "CSV spreadsheet"],
@@ -347,7 +347,7 @@
           s5: {
             title: "Three steps. Nothing leaves <mark>your browser</mark>.",
             steps: [
-              ["Open RedNote", "The home feed, search results, a profile, or any post"],
+              ["Open RedNote", "The home feed, search results, a profile, your Collections, or any post"],
               ["Click the icon", "Choose Export Note List or Download Single Post"],
               ["Export or download", "The CSV, images and video are saved to your computer"],
             ],
@@ -360,7 +360,7 @@
           },
           small: ["RedNote <mark>Exporter</mark>", "Image & video download · CSV export"],
           post: { title: "5 easy fall trench coat looks", author: "saltyko", time: "2026-09-28" },
-          videoUnit: "video", imageUnit: "images", videoWord: "Video", imagesWord: "Images",
+          videoUnit: "video", imageUnit: "images", liveBadge: "LIVE", liveCount: "2 Live", videoWord: "Video", imagesWord: "Images",
           deselAll: "Deselect", dlSel: (n) => `Download · ${n}`,
           connected: "Connected", captured: "Captured", unit: "items", capturing: "Capturing…",
           dedup: "140 received · 12 duplicate(s) skipped",
@@ -667,7 +667,10 @@
       const postTab = () => {
         const p = T.post;
         const imgs = Array.from({ length: 9 }, (_, i) =>
-          photo(i + 2, "aspect-ratio:1;border-radius:6px;", `<span class="num">${i + 1}</span><span class="check">${ic("check", 12, 3)}</span>`, "sel"),
+          photo(i + 2, "aspect-ratio:1;border-radius:6px;", `<span class="num">${i + 1}</span><span class="check">${ic("check", 12, 3)}</span>${
+            // Live Photo badge on two images; only languages whose assets were re-rendered for 1.4.0 define it.
+            T.liveBadge && (i === 0 || i === 2) ? `<span style="position:absolute;left:4px;bottom:4px;z-index:2;font:800 10px/16px var(--display);color:var(--on-brand);background:var(--brand);border-radius:99px;padding:0 6px">${T.liveBadge}</span>` : ""
+          }`, "sel"),
         ).join("");
         const body = `
           <div style="padding:16px">
@@ -680,7 +683,7 @@
               <span style="color:var(--ink);width:36px;height:36px;display:flex;align-items:center;justify-content:center">${ic("link", 16)}</span>
             </div>
             <div style="font-weight:700;font-size:14px;line-height:22px;margin:12px 0 12px">${p.title}</div>
-            <div style="font-size:12px;color:var(--ink-muted);margin-bottom:10px"><b style="font:800 12px var(--display);color:var(--ink)">1</b> ${T.videoUnit} · <b style="font:800 12px var(--display);color:var(--ink)">9</b> ${T.imageUnit}</div>
+            <div style="font-size:12px;color:var(--ink-muted);margin-bottom:10px"><b style="font:800 12px var(--display);color:var(--ink)">1</b> ${T.videoUnit} · <b style="font:800 12px var(--display);color:var(--ink)">9</b> ${T.imageUnit}${T.liveCount ? ` · ${T.liveCount}` : ""}</div>
             ${photo(0, "height:136px;border-radius:6px;margin:0 4px;", `
               <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(47,53,66,.55);color:#fff;display:flex;align-items:center;justify-content:center;padding-left:2px">${ic("play", 20, 0, 'fill="currentColor"')}</span>
               <span style="position:absolute;right:6px;bottom:6px;font:700 11px/18px var(--display);color:#fff;background:rgba(47,53,66,.7);border-radius:99px;padding:0 8px">01:24</span>
@@ -692,7 +695,7 @@
           </div>`;
         const foot = `
           <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink);padding-left:4px"><span style="width:18px;height:18px;border-radius:4px;background:var(--brand);border:2px solid var(--brand-deep);color:var(--on-brand);display:flex;align-items:center;justify-content:center">${ic("check", 12, 3)}</span>${T.deselAll}</span>
-          <span class="btn p" style="margin-left:auto">${ic("download", 16)}${T.dlSel(10)}</span>`;
+          <span class="btn p" style="margin-left:auto">${ic("download", 16)}${T.dlSel(T.liveBadge ? 11 : 10)}</span>`;
         return popupShell("post", body, foot);
       };
 

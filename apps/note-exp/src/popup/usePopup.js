@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { parseInterceptedDataLocal } from "../utils/note";
 import { convertToCSV } from "../utils/csv";
-import { parseNoteDetail } from "../utils/video";
+import { formatNoteText, parseNoteDetail } from "../utils/video";
 
 // All popup state + actions in one hook. Real data is pulled from the content
 // script (which relays the page's intercepted API responses); there is no mock
@@ -40,6 +40,17 @@ function imageExt(url) {
   if (/webp/i.test(url)) return "webp";
   if (/\.png|png_/i.test(url)) return "png";
   return "jpg";
+}
+
+// Selection keys: "v" = the video, "t" = note.txt, "i<index>" = an image
+// (a Live Photo's motion clip rides along with its image).
+/** Every selection key a post offers, i.e. the select-all set. */
+function allKeys(post) {
+  return [
+    ...(post.video ? ["v"] : []),
+    "t",
+    ...post.images.map((_, i) => "i" + i),
+  ];
 }
 
 /**
@@ -85,6 +96,9 @@ export default function usePopup() {
   const [sel, setSel] = useState(() => new Set());
   const [dlPct, setDlPct] = useState(0);
   const [dlDone, setDlDone] = useState(0);
+  // Files in the current download job. Can exceed selCount: a Live Photo
+  // saves both its still and its motion clip.
+  const [dlTotal, setDlTotal] = useState(0);
   // Download folder name, captured at download time so the "saved to" path
   // shown afterwards matches the folder actually used.
   const [dlFolder, setDlFolder] = useState("");
@@ -176,17 +190,11 @@ export default function usePopup() {
           latest = { ...latest, noteUrl: activeTab.url };
         }
         setPost(latest);
-        // When the open note changes, select everything by default. Only seed
-        // 'v' when the post actually has a video (图文 posts have none), so the
-        // selection matches what's downloadable — mirrors selectAll's logic.
+        // When the open note changes, select everything by default (allKeys
+        // only offers 'v' when the post actually has a video).
         if (latest && latest.noteId !== postIdRef.current) {
           postIdRef.current = latest.noteId;
-          setSel(
-            new Set([
-              ...(latest.video ? ["v"] : []),
-              ...latest.images.map((_, i) => "i" + i),
-            ]),
-          );
+          setSel(new Set(allKeys(latest)));
         }
         if (pPhaseRef.current === "ready" || pPhaseRef.current === "error") {
           setPPhase(latest ? "ready" : "error");
@@ -270,10 +278,13 @@ export default function usePopup() {
     ? post.images.filter((_, i) => sel.has("i" + i)).length
     : 0;
   const selVideo = sel.has("v") && !!post?.video;
-  const selCount = selImages + (selVideo ? 1 : 0);
-  const allSel = post
-    ? selCount === post.images.length + (post.video ? 1 : 0) && selCount > 0
-    : false;
+  const selLive = post
+    ? post.images.filter((img, i) => sel.has("i" + i) && img.liveUrls.length)
+        .length
+    : 0;
+  const selText = sel.has("t") && !!post;
+  const selCount = selImages + (selVideo ? 1 : 0) + (selText ? 1 : 0);
+  const allSel = post ? selCount === allKeys(post).length : false;
 
   function toggle(key) {
     setSel((prev) => {
@@ -284,18 +295,12 @@ export default function usePopup() {
   }
   function selectAll(on) {
     if (!post) return;
-    setSel(
-      on
-        ? new Set([
-            ...(post.video ? ["v"] : []),
-            ...post.images.map((_, i) => "i" + i),
-          ])
-        : new Set(),
-    );
+    setSel(on ? new Set(allKeys(post)) : new Set());
   }
 
   // --- download (real, via chrome.downloads) ---
-  async function runDownload() {
+  // `labels` are the note.txt field labels in the UI language (L.txt).
+  async function runDownload(labels) {
     if (!post || !selCount) return;
     setPPhase("downloading");
     setDlPct(0);
@@ -319,8 +324,25 @@ export default function usePopup() {
           urls: [img.url],
           name: `${folder}/image-${i + 1}.${imageExt(img.url)}`,
         });
+        if (img.liveUrls.length) {
+          jobs.push({
+            urls: img.liveUrls,
+            name: `${folder}/image-${i + 1}-live.mp4`,
+          });
+        }
       }
     });
+    if (selText) {
+      // A data: URL goes through the same background download path as the
+      // media, so note.txt lands in the same folder. The BOM makes older
+      // Windows Notepad read it as UTF-8.
+      const body = "\uFEFF" + formatNoteText(post, labels);
+      jobs.push({
+        urls: [`data:text/plain;charset=utf-8,${encodeURIComponent(body)}`],
+        name: `${folder}/note.txt`,
+      });
+    }
+    setDlTotal(jobs.length);
 
     let done = 0;
     for (const job of jobs) {
@@ -369,9 +391,12 @@ export default function usePopup() {
     allSel,
     selImages,
     selVideo,
+    selLive,
+    selText,
     selCount,
     dlPct,
     dlDone,
+    dlTotal,
     runDownload,
     dlFolder,
   };

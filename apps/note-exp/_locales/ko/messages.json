@@ -4,7 +4,7 @@
     "description": "Extension name shown in the browser and the Chrome Web Store."
   },
   "appDesc": {
-    "message": "샤오홍슈(RedNote) 게시물의 이미지와 동영상을 한 번에 다운로드(동영상은 워터마크 없는 원본 우선)하고, 피드·검색·프로필의 노트 목록을 CSV로 내보냅니다",
+    "message": "샤오홍슈(RedNote) 게시물의 이미지, 라이브 포토, 동영상(워터마크 없는 원본 우선), 본문을 저장하고 피드·검색·프로필·저장 탭의 노트 목록을 CSV로 내보냅니다",
     "description": "Short description shown in the browser and the Chrome Web Store."
   }
 }

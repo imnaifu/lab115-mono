@@ -4,7 +4,7 @@
     "description": "Extension name shown in the browser and the Chrome Web Store."
   },
   "appDesc": {
-    "message": "小紅書（RED / RedNote）の投稿の画像と動画をワンクリックで保存（動画は透かしなしの元ファイルを優先）。フィード・検索結果・プロフィールのノート一覧を CSV に出力します",
+    "message": "小紅書（RedNote）の投稿の画像・ライブフォト・動画（透かしなし優先）・本文をワンクリックで保存。フィード・検索・プロフィール・コレクションのノート一覧を CSV に出力",
     "description": "Short description shown in the browser and the Chrome Web Store."
   }
 }

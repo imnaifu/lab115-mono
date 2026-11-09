@@ -54,7 +54,7 @@ function Popup() {
             </span>
             {s.allSel ? L.deselAll : L.selAll}
           </button>
-          <Btn kind="primary" icon="download" className="ml-auto" disabled={!s.selCount} onClick={s.runDownload}>
+          <Btn kind="primary" icon="download" className="ml-auto" disabled={!s.selCount} onClick={() => s.runDownload(L.txt)}>
             {L.dlSel(s.selCount)}
           </Btn>
         </footer>

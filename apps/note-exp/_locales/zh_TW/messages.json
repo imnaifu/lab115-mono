@@ -4,7 +4,7 @@
     "description": "Extension name shown in the browser and the Chrome Web Store."
   },
   "appDesc": {
-    "message": "一鍵下載小紅書筆記的全部圖片與影片（影片優先無浮水印原檔），並將首頁推薦、搜尋結果、使用者主頁的筆記列表匯出為 CSV",
+    "message": "一鍵下載小紅書筆記的圖片、實況照片、影片（優先無浮水印原檔）與內文，並將首頁、搜尋、主頁、收藏頁的筆記列表匯出為 CSV",
     "description": "Short description shown in the browser and the Chrome Web Store."
   }
 }

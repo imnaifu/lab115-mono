@@ -26,7 +26,7 @@ SHOTS = os.path.join(HERE, "..", "branding", "v2", "out")
 ORIGIN = "https://rednote.lab115.com"
 # Cache-busting query for every static asset: nginx and Cloudflare keep images
 # and CSS for a day, so bump this whenever a file keeps its name but changes.
-V = "v=6"
+V = "v=7"
 PREVIEWS = ["01-post-download", "02-one-folder", "03-note-list", "04-csv"]
 
 # ----------------------------------------------------------------- artwork

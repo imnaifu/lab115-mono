@@ -48,6 +48,8 @@
   //             edith.xiaohongshu.com/api/sns/web/v1/search/notes (legacy)
   // - homepage: /api/sns/web/v1/homefeed (scroll-loaded recommend feed)
   // - profile:  /api/sns/web/v1/user_posted (a user's posted notes)
+  // - collects: /api/sns/web/v2/note/collect/page (a profile's 收藏 tab;
+  //             same data.notes shape as user_posted)
   // Host differs per endpoint/version but all are under xiaohongshu.com /
   // rednote.com, which the domain check below already covers.
   const NOTE_LIST_PATHS = [
@@ -55,6 +57,7 @@
     "/api/sns/web/v1/search/notes",
     "/api/sns/web/v1/homefeed",
     "/api/sns/web/v1/user_posted",
+    "/api/sns/web/v2/note/collect/page",
   ];
 
   // Note-detail (feed) endpoint. Unlike the search/list endpoints above, the
@@ -320,7 +323,7 @@
         const allItems = data?.data?.items || [];
 
         if (isList) {
-          // user_posted responses put the notes under data.notes; the other
+          // user_posted and collect responses put the notes under data.notes; the other
           // list endpoints use data.items. Normalize entries and keep only
           // real note items so non-note cards don't pollute the received /
           // unique / duplicate counts.

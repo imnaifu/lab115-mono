@@ -4,7 +4,7 @@
     "description": "Extension name shown in the browser and the Chrome Web Store."
   },
   "appDesc": {
-    "message": "Tải mọi ảnh và video của bài Xiaohongshu (RedNote) chỉ một cú nhấp, ưu tiên video gốc không logo; xuất danh sách ghi chú ra CSV",
+    "message": "Tải ảnh, ảnh Live, video (ưu tiên bản gốc không logo) và nội dung bài Xiaohongshu (RedNote); xuất danh sách ghi chú ra CSV",
     "description": "Short description shown in the browser and the Chrome Web Store."
   }
 }

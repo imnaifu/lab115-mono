@@ -36,6 +36,9 @@ export default function PostTab({ L, s }) {
 
   // Use the first image (the cover frame) as the video poster when available.
   const videoPoster = post.images[0]?.url;
+  const liveCount = post.images.filter((im) => im.liveUrls.length).length;
+  // Text-card preview: the body, or the title for notes without one.
+  const textPreview = post.text.desc || post.title;
 
   return (
     <div className="px-4 py-4">
@@ -64,9 +67,25 @@ export default function PostTab({ L, s }) {
       <div className="text-[12px] text-ink-muted mb-2.5">
         <b className="font-display font-extrabold text-ink">{post.video ? 1 : 0}</b> {L.videoUnit} ·{' '}
         <b className="font-display font-extrabold text-ink">{post.images.length}</b> {L.imageUnit}
+        {liveCount > 0 && <> · {L.liveCount(liveCount)}</>}
       </div>
 
+      {/* note text → note.txt, first: it's the one thing every note has */}
+      <Label className="mb-2">{L.textWord}</Label>
+      <Asset
+        selected={s.sel.has('t')}
+        onClick={() => s.toggle('t')}
+        thumb={
+          <div className="bg-paper-sunk px-3 py-2.5 pr-9 text-[12px] leading-[18px] text-ink-muted whitespace-pre-line line-clamp-4 min-h-[48px]">
+            {textPreview}
+          </div>
+        }
+      >
+        <div className="font-display font-bold text-[11.5px] text-ink-muted mt-1 px-1">{L.textHint}</div>
+      </Asset>
+
       {/* video */}
+      {post.video && <Label className="mt-4 mb-2">{L.videoWord}</Label>}
       {post.video && (
         <Asset
           selected={s.sel.has('v')}
@@ -105,7 +124,16 @@ export default function PostTab({ L, s }) {
                 key={i}
                 selected={s.sel.has('i' + i)}
                 onClick={() => s.toggle('i' + i)}
-                thumb={<PhotoThumb seed={i + 2} src={im.url} className="w-full aspect-square" label={i + 1} />}
+                thumb={
+                  <PhotoThumb seed={i + 2} src={im.url} className="w-full aspect-square" label={i + 1}>
+                    {/* Live Photo: its motion clip downloads with the still */}
+                    {im.liveUrls.length > 0 && (
+                      <span className="absolute left-1 bottom-1 z-10 font-display text-[10px] font-extrabold text-on-brand bg-brand rounded-full px-1.5 leading-[16px]">
+                        {L.liveBadge}
+                      </span>
+                    )}
+                  </PhotoThumb>
+                }
               />
             ))}
           </div>
@@ -119,14 +147,16 @@ export default function PostTab({ L, s }) {
             {s.pPhase === 'downloading' ? (
               <>
                 <SheetIcon />
-                <div className="font-bold text-[16px] mb-3">{L.downloading(s.dlDone, s.selCount)}</div>
+                <div className="font-bold text-[16px] mb-3">{L.downloading(s.dlDone, s.dlTotal)}</div>
                 <Progress pct={s.dlPct} />
-                <div className="text-[12px] text-ink-muted mt-2">{L.dlSub(s.selVideo, s.selImages)}</div>
+                <div className="text-[12px] text-ink-muted mt-2">
+                  {L.dlSub({ video: s.selVideo, images: s.selImages, live: s.selLive, text: s.selText })}
+                </div>
               </>
             ) : (
               <>
                 <SheetIcon ok />
-                <div className="font-bold text-[16px] mb-3">{L.savedN(s.selCount)}</div>
+                <div className="font-bold text-[16px] mb-3">{L.savedN(s.dlTotal)}</div>
                 <Notice icon="folder" tone="success" className="mt-1.5">
                   <span className="block truncate">{L.savedPath(s.dlFolder)}</span>
                 </Notice>

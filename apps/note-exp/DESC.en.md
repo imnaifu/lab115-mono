@@ -5,9 +5,11 @@ Key Features
 
 • Videos download as the watermark-free original when available, falling back to the regular stream otherwise
 
-• Export RedNote note lists to CSV with one click — home feed, search results, and user profiles
+• Live Photos are saved together with their motion clip, and the post text (author, publish time, IP location, engagement counts, topics) is saved as note.txt
 
-• Works directly on RedNote's post pages, home feed, search pages, and profile pages
+• Export RedNote note lists to CSV with one click — home feed, search results, user profiles, and Collections
+
+• Works directly on RedNote's post pages, home feed, search pages, profiles, and Collections — on both xiaohongshu.com and rednote.com
 
 • No login required, no account data collected
 
@@ -18,17 +20,17 @@ Key Features
 ────────────────────
 How to Use
 ────────────────────
-Download a post's images and video
+Download a post's images, video and text
 
 1. Open any RedNote post
 
 2. Click the extension icon and open the "Download Single Post" tab
 
-3. Select the images and video you want, then download them into one folder
+3. Select the images, video and text you want, then download them into one folder
 
 Export a note list
 
-1. Open RedNote's home feed, a search results page, or a user profile and let notes load
+1. Open RedNote's home feed, a search results page, a user profile, or a Collections tab and let notes load
 
 2. Click the extension icon and open the "Export Note List" tab
 
