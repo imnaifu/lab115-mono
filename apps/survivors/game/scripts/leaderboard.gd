@@ -14,11 +14,16 @@ extends RefCounted
 ## 无尽模式 (Game.endless, 0.2.0) has boards of its own (the server's endless_<map>): every run that
 ## lasted MIN_SECONDS, ranked by how long, the longest first, each player's best; a record there is
 ## `cleared` when it lasted Game.RUN_SECONDS. The usual boards never see an endless run.
+## Since 0.3.29 (the user: 只留一个模式，无尽模式去掉) every run goes on the server's survive_<map> boards
+## (MODE): how long it lasted, the longest first, each player's best, `cleared` from 10:00 (won), from
+## a minute on. The clear and 无尽 boards stay on the server, no longer shown or written.
 ## Every board also has one per job (0.3.7, the user: 排行榜支持每个职业排行，两个模式都是): a run goes on
 ## both (the server does it), and board() reads a job's when asked.
 
 ## How long a run not won must last to go on a board (.96).
 const MIN_SECONDS := 60.0
+## The boards every run goes on since 0.3.29 (the server's survive_<map>).
+const MODE := "survive"
 
 ## What the server's errors mean, said to the player.
 const ERRORS := {
@@ -64,9 +69,8 @@ static func record_run(game: Game, cleared: bool) -> bool:
 		return false
 	pending = {"map": Maps.current_id, "ms": roundi(game.elapsed * 1000.0), "job": game.player.job,
 		"run": game.run_id, "cleared": cleared}
-	# Only an endless run says its mode: a server before 0.2.0 took no `mode` and ranks it as usual.
-	if game.endless:
-		pending["mode"] = "endless"
+	# A server before 0.3.29 takes "survive" as no mode, its clear board (where nothing is won any more).
+	pending["mode"] = "endless" if game.endless else MODE
 	return true
 
 
@@ -101,12 +105,10 @@ static func set_name(name: String) -> Dictionary:
 	return answer
 
 
-## A map's board (its 无尽模式 one when `endless`, one job's with `job`): {records: [{rank, user, name,
-## ms, cleared, job, me}], me: {...} or null, name}.
-static func board(map_id: String, endless: bool = false, job: String = "") -> Dictionary:
-	var asked := {"map": map_id}
-	if endless:
-		asked["mode"] = "endless"
+## A map's board (MODE's, one job's with `job`): {records: [{rank, user, name, ms, cleared, job, me}],
+## me: {...} or null, name}.
+static func board(map_id: String, job: String = "") -> Dictionary:
+	var asked := {"map": map_id, "mode": MODE}
 	if job != "":
 		asked["job"] = job
 	return await Cloud.shared().call_rpc("survivors_board", asked)

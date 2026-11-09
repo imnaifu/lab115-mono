@@ -13,6 +13,12 @@ endless_<map>: the score is how long the run lasted (1:00-60:00), the longest fi
 player; a record there is `cleared` when it lasted 10:00. A call with mode "endless" goes to it;
 without one (every client before 0.2.0) to the clear board, as before.
 
+One mode since 0.3.29 (the user: 十分钟后怪继续刷 → 只留一个模式，无尽模式去掉): a run is won at 10:00
+and goes on until the player goes down (an hour at most), so a clear has no time any more. Its
+board per map is survive_<map>, mode "survive": scored like 无尽模式's (how long, the longest first,
+`cleared` from 10:00). The clear and endless boards stay as they were; a client before 0.3.29 still
+writes to them.
+
 Every board also has one per job (0.3.7, the user: 排行榜支持每个职业排行，两个模式都是): <board>_<job>,
 e.g. clear_sv_pm, endless_sv_coder, kept the same way (each player's best with that job). A run goes
 on its board and its job's; a board call with `job` reads the job's. A board keeps one record a
@@ -80,9 +86,18 @@ local BLOCKED = {
   "法轮", "习近平", "共产党", "台独", "藏独", "疆独", "六四",
 }
 
--- A map's board (its 无尽模式 one when `endless`), or with `job` that job's (0.3.7).
-local function board_id(map, endless, job)
-  local id = (endless and "endless_" or "clear_") .. map
+-- Each mode's boards (`mode` as the client sends it; none is normal): the clear boards, 无尽模式's
+-- (0.2.0) and from 0.3.29 the one mode's. All but the clear boards rank how long, the longest first.
+local MODES = { normal = "clear_", endless = "endless_", survive = "survive_" }
+local LASTING = { endless = true, survive = true }
+
+local function mode_of(asked)
+  return MODES[asked] and asked or "normal"
+end
+
+-- A map's board in `mode`, or with `job` that job's (0.3.7).
+local function board_id(map, mode, job)
+  local id = MODES[mode] .. map
   if job ~= nil then
     id = id .. "_" .. job
   end
@@ -90,24 +105,24 @@ local function board_id(map, endless, job)
 end
 
 for map, _ in pairs(MAPS) do
-  -- Ascending (the shortest clear on top, then the longest runs not won), keeping each player's
-  -- best; no reset; ranks on.
-  local ok, err = pcall(nk.leaderboard_create, board_id(map), true, "asc", "best", nil, { map = map }, true)
-  if not ok then
-    nk.logger_warn(("leaderboard %s: %s"):format(board_id(map), tostring(err)))
-  end
-  -- 无尽模式's: descending (the longest run on top), the same otherwise.
-  ok, err = pcall(nk.leaderboard_create, board_id(map, true), true, "desc", "best", nil, { map = map, mode = "endless" }, true)
-  if not ok then
-    nk.logger_warn(("leaderboard %s: %s"):format(board_id(map, true), tostring(err)))
-  end
-  -- Each job's, the same (0.3.7).
-  for job, _ in pairs(JOBS) do
-    for _, endless in ipairs({ false, true }) do
-      ok, err = pcall(nk.leaderboard_create, board_id(map, endless, job), true, endless and "desc" or "asc", "best", nil,
-        { map = map, mode = endless and "endless" or "normal", job = job }, true)
+  for mode, _ in pairs(MODES) do
+    -- The clear boards ascending (the shortest clear on top, then the longest runs not won), the
+    -- others descending (the longest run on top); each player's best; no reset; ranks on.
+    local order = LASTING[mode] and "desc" or "asc"
+    local metadata = { map = map }
+    if mode ~= "normal" then
+      metadata.mode = mode
+    end
+    local ok, err = pcall(nk.leaderboard_create, board_id(map, mode), true, order, "best", nil, metadata, true)
+    if not ok then
+      nk.logger_warn(("leaderboard %s: %s"):format(board_id(map, mode), tostring(err)))
+    end
+    -- Each job's, the same (0.3.7).
+    for job, _ in pairs(JOBS) do
+      ok, err = pcall(nk.leaderboard_create, board_id(map, mode, job), true, order, "best", nil,
+        { map = map, mode = mode, job = job }, true)
       if not ok then
-        nk.logger_warn(("leaderboard %s: %s"):format(board_id(map, endless, job), tostring(err)))
+        nk.logger_warn(("leaderboard %s: %s"):format(board_id(map, mode, job), tostring(err)))
       end
     end
   end
@@ -126,18 +141,18 @@ local function backfill_job_boards()
   end
   local copied = 0
   for map, _ in pairs(MAPS) do
-    for _, endless in ipairs({ false, true }) do
+    for _, mode in ipairs({ "normal", "endless" }) do
       local cursor = nil
       repeat
-        local ok, records, _, next_cursor = pcall(nk.leaderboard_records_list, board_id(map, endless), nil, 100, cursor, 0)
+        local ok, records, _, next_cursor = pcall(nk.leaderboard_records_list, board_id(map, mode), nil, 100, cursor, 0)
         if not ok then
-          nk.logger_warn(("backfill %s: %s"):format(board_id(map, endless), tostring(records)))
+          nk.logger_warn(("backfill %s: %s"):format(board_id(map, mode), tostring(records)))
           break
         end
         for _, record in ipairs(records or {}) do
           local job = (record.metadata or {}).job
           if JOBS[job] then
-            nk.leaderboard_record_write(board_id(map, endless, job), record.owner_id, record.username, record.score, 0, record.metadata)
+            nk.leaderboard_record_write(board_id(map, mode, job), record.owner_id, record.username, record.score, 0, record.metadata)
             copied = copied + 1
           end
         end
@@ -250,9 +265,9 @@ local function set_name(context, payload)
   return reply({ ok = true, name = name })
 end
 
--- What a record's score stands for: {ms, cleared}. An endless board's score is the length itself.
-local function decoded(score, endless)
-  if endless then
+-- What a record's score stands for: {ms, cleared}. A board ranking how long has the length itself.
+local function decoded(score, mode)
+  if LASTING[mode] then
     return score, score >= MIN_MS
   end
   if score > MAX_MS then
@@ -261,18 +276,19 @@ local function decoded(score, endless)
   return score, true
 end
 
-local function own_record(map, user_id, endless, job)
-  local _, owner_records = nk.leaderboard_records_list(board_id(map, endless, job), { user_id }, 1, nil, 0)
+local function own_record(map, user_id, mode, job)
+  local _, owner_records = nk.leaderboard_records_list(board_id(map, mode, job), { user_id }, 1, nil, 0)
   return owner_records and owner_records[1] or nil
 end
 
 local function submit(context, payload)
   local entry = decode(payload)
   local map, ms, job = entry.map, tonumber(entry.ms), entry.job
-  local endless = entry.mode == "endless"
+  local mode = mode_of(entry.mode)
+  local lasting = LASTING[mode]
   local cleared = entry.cleared ~= false
-  local lowest = (cleared and not endless) and MIN_MS or SURVIVE_MIN_MS
-  local highest = endless and ENDLESS_MAX_MS or MAX_MS
+  local lowest = (cleared and not lasting) and MIN_MS or SURVIVE_MIN_MS
+  local highest = lasting and ENDLESS_MAX_MS or MAX_MS
   if not MAPS[map] or not JOBS[job] or ms == nil or ms < lowest or ms > highest then
     return reply({ error = "invalid" })
   end
@@ -280,31 +296,31 @@ local function submit(context, payload)
     return reply({ error = "no_name" })
   end
   local score
-  if endless then
+  if lasting then
     score = math.floor(ms)
   else
     score = cleared and math.floor(ms) or SURVIVED_FROM - math.floor(ms)
   end
   local metadata = { job = job, run = tostring(entry.run or "") }
-  nk.leaderboard_record_write(board_id(map, endless), context.user_id, nil, score, 0, metadata)
+  nk.leaderboard_record_write(board_id(map, mode), context.user_id, nil, score, 0, metadata)
   -- And its job's board (0.3.7).
-  nk.leaderboard_record_write(board_id(map, endless, job), context.user_id, nil, score, 0, metadata)
-  local record = own_record(map, context.user_id, endless)
-  local job_record = own_record(map, context.user_id, endless, job)
-  local best_ms, best_cleared = decoded(record and record.score or score, endless)
+  nk.leaderboard_record_write(board_id(map, mode, job), context.user_id, nil, score, 0, metadata)
+  local record = own_record(map, context.user_id, mode)
+  local job_record = own_record(map, context.user_id, mode, job)
+  local best_ms, best_cleared = decoded(record and record.score or score, mode)
   return reply({ ok = true, rank = record and record.rank or 0, job_rank = job_record and job_record.rank or 0,
     best_ms = best_ms, best_cleared = best_cleared })
 end
 
 local function board(context, payload)
   local asked = decode(payload)
-  local map, endless = asked.map, asked.mode == "endless"
+  local map, mode = asked.map, mode_of(asked.mode)
   -- A job's board (0.3.7) when one is asked for; anything else is the whole board.
   local job = JOBS[asked.job] and asked.job or nil
   if not MAPS[map] then
     return reply({ error = "invalid" })
   end
-  local records, owner_records = nk.leaderboard_records_list(board_id(map, endless, job), { context.user_id }, BOARD_SIZE, nil, 0)
+  local records, owner_records = nk.leaderboard_records_list(board_id(map, mode, job), { context.user_id }, BOARD_SIZE, nil, 0)
   records = records or {}
   local ids = {}
   for _, record in ipairs(records) do
@@ -322,7 +338,7 @@ local function board(context, payload)
       name = HIDDEN_NAME
     end
     local metadata = record.metadata or {}
-    local ms, cleared = decoded(record.score, endless)
+    local ms, cleared = decoded(record.score, mode)
     return { rank = record.rank, user = record.owner_id, name = name, ms = ms, cleared = cleared,
       job = metadata.job or "", me = record.owner_id == context.user_id }
   end

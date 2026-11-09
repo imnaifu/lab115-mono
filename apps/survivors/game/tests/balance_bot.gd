@@ -84,7 +84,7 @@ func _apply_bonus(player: Player) -> void:
 
 
 ## Sets its 大招 off (Ultimates) as a player saving it would: low on health, a boss on top of it,
-## or the floor to clear after 10:00.
+## (until 0.3.29 also the floor to clear after 10:00).
 func _maybe_ultimate() -> void:
 	if not _game.ultimates.ready():
 		return
@@ -93,7 +93,7 @@ func _maybe_ultimate() -> void:
 	for enemy in _game.query_enemies(player.position, ULTIMATE_BOSS_NEAR, false):
 		if enemy.is_elite:
 			boss_near = true
-	if player.hp < player.max_hp * ULTIMATE_HP or boss_near or _game.clearing():
+	if player.hp < player.max_hp * ULTIMATE_HP or boss_near:
 		_game.ultimates.cast()
 
 

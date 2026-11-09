@@ -32,7 +32,8 @@ extends RefCounted
 ##   to see whether it gets through in-app browsers.
 ##   From .30, `page_run`: the run's number on this page (2 and up are 再来一局).
 ## - run_end: `job`, `result` (win / died / restart / quit, and from 0.3.0 full: a 无尽模式 run that
-##   lasted the full hour; from 0.3.17 lost, set by the page (export_presets.cfg's head script) on a
+##   lasted the full hour, any run's from 0.3.29; from 0.3.29 win is a run that clocked out at 10:00
+##   and went down after it, a clear before, and `won` says whether it got past 10:00; from 0.3.17 lost, set by the page (export_presets.cfg's head script) on a
 ##   run left from an earlier page that died without closing — killed by the browser, as iOS does
 ##   past its memory limit, or crashed — with `ua`, that browser's userAgent; the same run usually
 ##   came as quit too when the page was hidden first, so a run with any lost copy was lost; `gl_lost`
@@ -106,7 +107,7 @@ extends RefCounted
 ## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
 ## dated ones before came first. A small change bumps the last number, a big one the middle one
 ## (the user: 小改动加小的，大改动加中的).
-const VERSION := "0.3.28"
+const VERSION := "0.3.29"
 const TIMELINE_SECONDS := 30.0
 const SNAPSHOT_SECONDS := 10.0
 ## Umami keeps string values up to 500 characters.
@@ -332,9 +333,11 @@ func _summary(result: String) -> Dictionary:
 	var data := {
 		"version": VERSION,
 		"run": _run_id,
-		# Enemies still up at 10:00, -1 for a run that ended before (.78: a win is clearing them;
-		# `seconds` of a win is then the clear time the leaderboard ranks).
+		# Enemies still up at 10:00, -1 for a run that ended before (.78–0.3.28: a win cleared them and
+		# its `seconds` was the clear time; 0.3.29: 10:00 is the win, `seconds` how long it lasted).
 		"left_at_end": _game.left_at_end,
+		# Past 10:00, won (0.3.29): `result` win / full (or restart / quit) is then a run that clocked out.
+		"won": _game.won,
 		"mode": "endless" if _game.endless else "normal",
 		"job": player.job,
 		"map": Maps.current_id,

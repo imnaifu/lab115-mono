@@ -41,8 +41,8 @@ const BOSS_SPEED_FLOOR := 46.0
 const SLOWEST_BOSS_SPEED := 22.0
 const BOSS_SPEED_SPREAD := 0.25
 const BOSS_MAX_SPEED := 54.0
-## The fastest the crowd walks in 加班 (Game.overtime_speed), under the slowest job's 60. 46 since
-## .97, with the crowd ×0.8 (57 before).
+## The fastest the crowd walked in 加班 (.78–0.3.28), under the slowest job's 60. 46 since .97, with
+## the crowd ×0.8 (57 before). Unused since 0.3.29.
 const OVERTIME_CROWD_MAX := 46.0
 ## See hit_radius.
 const BIG_ART := 40.0
@@ -182,11 +182,8 @@ func _boss_walk_speed() -> float:
 
 ## `direction` is the unit vector to walk along this frame (Game._heading).
 func tick(delta: float, direction: Vector2, separation: Vector2) -> void:
+	# 加班 made everything faster .78–0.3.28 (up to OVERTIME_CROWD_MAX); not since the clear went (0.3.29).
 	var walk := _boss_walk_speed() if is_elite else speed
-	# 加班 (Game.overtime_speed): faster, still slower than any job.
-	if game != null and game.clearing():
-		var cap := (BOSS_MAX_SPEED if is_elite else maxf(speed, OVERTIME_CROWD_MAX)) + game.overtime_cap_raise()
-		walk = minf(walk * game.overtime_speed(), cap)
 	var velocity := direction * walk
 	if _wobble > 0.0:
 		velocity += direction.orthogonal() * sin(_phase * 0.7) * _wobble
@@ -269,7 +266,7 @@ func _use_attacks(delta: float, velocity: Vector2) -> Vector2:
 		_walk_left -= delta
 	if _walk_left > 0.0:
 		return velocity
-	_walk_left = BossKits.OVERTIME_WALK_SECONDS if game != null and game.clearing() else BossKits.WALK_SECONDS
+	_walk_left = BossKits.WALK_SECONDS
 	var turn := _next_attack
 	_next_attack = (_next_attack + 1) % _attacks.size()
 	_attack = _attacks[turn]

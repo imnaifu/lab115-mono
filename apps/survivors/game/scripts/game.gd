@@ -26,11 +26,16 @@ signal cut_in(art: String, title: String, line: String)
 ## dead, asked whether to spend a 返聘 (the revive dialog in Hud).
 enum State { TITLE, PLAYING, PAUSED, LEVEL_UP, CHEST, ENDED, REVIVE }
 
-## Nothing new comes after RUN_SECONDS (.78, the user: 10:00 后不刷怪，直到清完所有怪才结束): the run
-## is won when the last enemy left goes down (a clear, timed for the leaderboard), and dying while
-## clearing up is a loss. Until .77 the run was won the moment the clock reached it.
+## 下班 at RUN_SECONDS (0.3.29, the user: 十分钟后怪继续刷 → 只留一个模式，无尽模式去掉): the run is won
+## there (clocked_out(), Achievements.clock_out) and goes on, the crowd 1.5 times the curve
+## (Spawner.OVERTIME_SPAWN) and a boss every two minutes, until the player goes down, gives up or
+## lasts ENDLESS_MAX_SECONDS; the boards rank how long (Leaderboard). .78–0.3.28 nothing new came
+## after it and the run was won when the last enemy left went down (a clear, timed for the board),
+## dying while clearing up a loss; until .77 it was won the moment the clock reached it.
 const RUN_SECONDS := 600.0
-## 加班 (.78, the user: 10:00 后所有怪加一下数值; 屏幕也可以变红之类的，提升紧张度): while clearing
+## 加班 since 0.3.29: past RUN_SECONDS a new tier every OVERTIME_STEP seconds (overtime_tier), only the
+## red alarm light and the hurried music now (the user took 怪变快、伤害翻倍 out with the clear).
+## The rest of this is .78–0.3.28's (the user: 10:00 后所有怪加一下数值; 屏幕也可以变红之类的，提升紧张度): while clearing
 ## up, a new tier every OVERTIME_STEP seconds (the first at RUN_SECONDS). From the first, every
 ## enemy walks OVERTIME_SPEED faster, OVERTIME_SPEED_STEP more each tier after, a boss walks only
 ## BossKits.OVERTIME_WALK_SECONDS between attacks, and all damage to the player is
@@ -50,14 +55,9 @@ const RUN_SECONDS := 600.0
 const ALLY_FIGHT_EVERY := 0.5
 const ALLY_SEEK := 400.0
 const OVERTIME_STEP := 30.0
-const OVERTIME_SPEED := 1.2
-const OVERTIME_SPEED_STEP := 0.05
-const OVERTIME_DAMAGE_START := 2.0
-const OVERTIME_DAMAGE := 0.5
-const OVERTIME_UNCAP_TIER := 3
-const OVERTIME_CAP_STEP := 3.0
-## What each new tier says (the first is the clock-out itself); past the list, the last one.
-const OVERTIME_LINES := ["下班时间到！不再来新怪，清完场上的就上市", "老板还没走…怪更暴躁了", "全员加班！怪越来越暴躁", "通宵了！再不清完要出事"]
+## What the first tiers say (the first is the clock-out itself, a cut-in when one can play); past the
+## list, nothing (a line every 30 seconds for an hour would only be noise).
+const OVERTIME_LINES := ["下班了！老板还没走，继续加班", "加班中…怪越来越多", "全员加班！怪越来越多", "通宵了！撑住"]
 ## 无尽模式 (0.2.0, the user: 十分钟后继续出怪，只不过数量上再多一些; 改成无尽模式，新加，原来的模式不动):
 ## picked on the 出发 page (Settings "endless"), open from the first run. Since 0.3.0 (the user:
 ## 无尽模式去掉十分钟的描述，就是怪一直线性加下去) it has no 10:00 at all: no clock-out, no clear and no
@@ -68,6 +68,9 @@ const OVERTIME_LINES := ["下班时间到！不再来新怪，清完场上的就
 ## 敲钟 achievement and nothing on the clear boards; it has its own boards ranking how long a run
 ## lasted (Leaderboard) and its own achievements (Achievements.ENDLESS_AT). It ends by itself at
 ## ENDLESS_MAX_SECONDS (0.3.0, the user: 最多 60min 就好 → 60:00 自动结束), as 撑满, the server's longest.
+## Since 0.3.29 (the user: 只留一个模式，无尽模式去掉，代码可以先留着) the 出发 page has no switch and every
+## run is the one mode (`endless` stays false); its rules past 10:00 (the bosses, the health, the hour)
+## are every run's now, and this code is left for the record.
 const ENDLESS_MAX_SECONDS := 3600.0
 ## The 出发 page's demo (0.2.1, the user: 选职业下面只用职业名和武器和数值，然后下面加个能动的动画，模拟用户
 ##在玩，要展示普通攻击和技能; picked 和局内一模一样的效果): while the page is up this very game plays
@@ -208,7 +211,7 @@ var state := State.TITLE
 var elapsed := 0.0
 var kills := 0
 ## How many enemies were still up at RUN_SECONDS (-1 before then), and whether the run was won
-## (cleared): for the result screen, the leaderboard and the run's data.
+## (clocked out at 10:00 since 0.3.29, cleared before): for the result screen, the board and the data.
 var left_at_end := -1
 var won := false
 ## This run is 无尽模式 (ENDLESS_LINES), as last picked on the 出发 page.
@@ -294,8 +297,6 @@ const CORNER_FREEZE := 0.8
 ## and since 0.3.20 (the user picked these: boss 出场、10:00 下班、通关、紧急会议开始、天气开始) as a boss
 ## comes, at the clock-out, before the result screen of a clear, as a meeting starts and as the weather comes.
 const CUT_IN_SECONDS := 1.0
-## Waiting for a cut-in to end before the clear's (play_cut_in, the result screen after it).
-var _clear_pending := false
 const CORNER_CUT_IN_GAP := 20.0
 var _corner_cut_in_at := -INF
 ## Run time (`elapsed`) before which the job's weapon keeps quiet.
@@ -327,7 +328,8 @@ func _ready() -> void:
 	Cloud.setup()
 	_star_hint_done = Settings.get_value("star_hint_shown", false)
 	runs_before = Settings.get_value("runs_played", 0)
-	endless = Settings.get_value("endless", false)
+	# The one mode since 0.3.29: the 出发 page's last 无尽 pick no longer counts.
+	endless = false
 	rng.randomize()
 
 	# The world is built from the map, so it is settled before anything else.
@@ -401,42 +403,33 @@ func _process(delta: float) -> void:
 	if state != State.PLAYING:
 		return
 	elapsed += delta
-	# 无尽模式 has no clock-out (clearing()): it goes on until the player goes down, or the full hour.
-	if endless and elapsed >= ENDLESS_MAX_SECONDS:
+	# A run goes on until the player goes down, or the full hour (every run since 0.3.29).
+	if elapsed >= ENDLESS_MAX_SECONDS:
 		elapsed = ENDLESS_MAX_SECONDS
 		# Checked now, not at the next of its half-second checks: the run ends this frame.
 		achievements.tick(Achievements.CHECK_GAP)
-		_end_run(false)
+		_end_run(won)
 		return
-	if clearing():
-		if left_at_end < 0:
+	if clocked_out():
+		# 下班 (0.3.29): won here, its achievements and totals in at once, and the run goes on.
+		if not won:
+			won = true
 			left_at_end = hostile_count()
+			achievements.clock_out()
 		var tier := overtime_tier()
 		if tier > _overtime_shown:
 			_overtime_shown = tier
-			var line: String = OVERTIME_LINES[mini(tier, OVERTIME_LINES.size()) - 1]
 			# The clock-out itself as a cut-in (0.3.20); a line at the top when one can't play.
-			if tier > 1 or not play_cut_in("ach_stopwatch", tr("下班时间到！"), tr("不再来新怪，清完场上的就上市")):
-				announce(tr(line) if tier == 1 else tr("%s · 暴躁 ×%d") % [tr(line), tier])
-		# The relabelled crowd (the data scientist's 大招) doesn't count: it is on the player's side.
-		# Cleared: 敲钟上市 as a cut-in, then the result screen (0.3.20); while another cut-in still holds
-		# the game, this waits for it (the clock stands meanwhile, so the clear time is the same).
-		if hostile_count() == 0 and not _clear_pending:
-			if _frozen:
-				return
-			_clear_pending = true
-			if not play_cut_in("bell", tr("敲钟上市！"), tr("撑过 10:00，清完了场上的怪"), _end_run.bind(true)):
-				_end_run(true)
-			return
-		if _clear_pending:
-			return
+			if tier == 1:
+				if not play_cut_in("ach_stopwatch", tr("下班了！"), tr("老板还没走，继续加班")):
+					announce(tr(OVERTIME_LINES[0]))
+			elif tier <= OVERTIME_LINES.size():
+				announce(tr(OVERTIME_LINES[tier - 1]))
 	nap_left = maxf(0.0, nap_left - delta)
 	if not has_moved and player.velocity.length_squared() > 1.0:
 		has_moved = true
-	# Clearing up (past RUN_SECONDS) nothing spawns: no crowd, rings, weather or bosses (无尽模式 never
-	# clears up: its crowd and its later bosses keep coming).
-	if not clearing():
-		spawner.tick(delta)
+	# Past RUN_SECONDS the crowd and the bosses keep coming (0.3.29; .78–0.3.28 nothing did).
+	spawner.tick(delta)
 	telemetry.tick(delta)
 	flow_field.update(delta, player.position)
 	_rebuild_grid()
@@ -532,7 +525,7 @@ func hurt_player(amount: float, by: String, how: String = "contact") -> void:
 	telemetry.last_hurt_by = by
 	telemetry.last_hurt_how = how
 	var hp_before := player.hp
-	player.take_damage(amount * overtime_damage())
+	player.take_damage(amount)
 	if player.hp < hp_before:
 		achievements.on_hurt()
 
@@ -1389,7 +1382,7 @@ func change_map(map_id: String, start: bool = false) -> void:
 ## job or map), a run still going counted as given up.
 func change_job() -> void:
 	_record_given_up()
-	achievements.finish(false)
+	achievements.finish(won)
 	telemetry.finish("restart")
 	skip_title = false
 	get_tree().paused = false
@@ -1403,7 +1396,7 @@ func _record_given_up() -> void:
 		RunHistory.record(self, "quit")
 		# On its board too once it lasted a minute (.96, the user: 下班也算), sent now since no result
 		# screen follows; not awaited: it finishes on the Cloud node, which outlives the scene.
-		if Leaderboard.record_run(self, false) and Leaderboard.online() and Leaderboard.has_name():
+		if Leaderboard.record_run(self, won) and Leaderboard.online() and Leaderboard.has_name():
 			Leaderboard.submit()
 
 
@@ -1488,7 +1481,7 @@ func set_paused(value: bool) -> void:
 func restart() -> void:
 	# A run given up from the pause screen; after a death or a win it was already sent.
 	_record_given_up()
-	achievements.finish(false)
+	achievements.finish(won)
 	telemetry.finish("restart")
 	skip_title = true
 	get_tree().paused = false
@@ -1503,7 +1496,8 @@ func _on_player_died() -> void:
 		get_tree().paused = true
 		revive_offered.emit(Progress.revives_left())
 		return
-	_end_run(false)
+	# Past 10:00 the run was won already (0.3.29): going down ends the 加班.
+	_end_run(won)
 
 
 ## The revive dialog's 返聘: one spent from the save, the player back on REVIVE_HP of their health
@@ -1533,7 +1527,7 @@ func decline_revive() -> void:
 		return
 	telemetry.on_revive(false)
 	state = State.PLAYING
-	_end_run(false)
+	_end_run(won)
 
 
 ## The enemies still against the player (the relabelled ones are on their side).
@@ -1563,7 +1557,7 @@ func _tick_ultimate_things(delta: float) -> void:
 			if enemy.lift <= 0.0 and (strongest == null or enemy.damage > strongest.damage):
 				strongest = enemy
 		if strongest != null:
-			clone.take_damage(strongest.damage * overtime_damage())
+			clone.take_damage(strongest.damage)
 	for enemy in enemies.duplicate():
 		if enemy.ally_left <= 0.0:
 			continue
@@ -1595,41 +1589,23 @@ func _dismiss_ally(enemy: Enemy) -> void:
 	_corpses.append(enemy)
 
 
-## Past RUN_SECONDS: nothing new comes, the enemies still up are what is left to clear. Never in
-## 无尽模式 (0.3.0), which has no 10:00.
-func clearing() -> bool:
+## Past RUN_SECONDS: 下班, the run won and going on (0.3.29). Never in 无尽模式 (0.3.0), which has no
+## 10:00. (clearing() until 0.3.28: nothing new came then, the enemies still up were left to clear.)
+func clocked_out() -> bool:
 	return elapsed >= RUN_SECONDS and not endless
 
 
-## The 加班 tier: 0 before RUN_SECONDS, then 1, 2, 3… every OVERTIME_STEP seconds; always 0 in
-## 无尽模式 (0.3.0: its pressure is the crowd growing, not 加班).
+## The 加班 tier: 0 before RUN_SECONDS, then 1, 2, 3… every OVERTIME_STEP seconds (the alarm light and
+## the music); always 0 in 无尽模式 (0.3.0: its pressure is the crowd growing, not 加班).
 func overtime_tier() -> int:
-	if not clearing():
+	if not clocked_out():
 		return 0
 	return 1 + floori((elapsed - RUN_SECONDS) / OVERTIME_STEP)
 
 
-## How much faster the enemies walk in this tier (1 before RUN_SECONDS).
-func overtime_speed() -> float:
-	var tier := overtime_tier()
-	return 1.0 if tier == 0 else OVERTIME_SPEED + OVERTIME_SPEED_STEP * (tier - 1)
-
-
-## How much more every hit on the player does in this tier (1 before RUN_SECONDS).
-func overtime_damage() -> float:
-	var tier := overtime_tier()
-	return 1.0 if tier == 0 else OVERTIME_DAMAGE_START + OVERTIME_DAMAGE * (tier - 1)
-
-
-## How far over its usual cap (Enemy.OVERTIME_CROWD_MAX, Enemy.BOSS_MAX_SPEED) an enemy may walk
-## in this tier: nothing until OVERTIME_UNCAP_TIER.
-func overtime_cap_raise() -> float:
-	return OVERTIME_CAP_STEP * maxi(overtime_tier() - OVERTIME_UNCAP_TIER + 1, 0)
-
-
-## Whether this 无尽模式 run lasted the full hour (ENDLESS_MAX_SECONDS): it ended there by itself.
+## Whether this run lasted the full hour (ENDLESS_MAX_SECONDS): it ended there by itself.
 func full_hour() -> bool:
-	return endless and elapsed >= ENDLESS_MAX_SECONDS
+	return elapsed >= ENDLESS_MAX_SECONDS
 
 
 func _end_run(victory: bool) -> void:
@@ -1643,8 +1619,9 @@ func _end_run(victory: bool) -> void:
 	get_tree().paused = true
 	# Before the run's data goes out and the result screen is built: both list what it earned.
 	achievements.finish(victory)
-	# A 无尽模式 run that lasted the full hour ended there, not by going down (0.3.0).
-	var result := "win" if victory else "full" if full_hour() else "died"
+	# A run that lasted the full hour ended there, not by going down (0.3.0); `win` is one that
+	# clocked out at 10:00 and went down after (0.3.29: a clear before).
+	var result := "full" if full_hour() else "win" if victory else "died"
 	telemetry.finish(result)
 	RunHistory.record(self, result)
 	Sound.stop_music()

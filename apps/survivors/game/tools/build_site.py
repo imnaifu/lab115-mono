@@ -578,17 +578,17 @@ def faq_section(data: dict) -> str:
 
 def how_section(data: dict) -> str:
     rows = "".join(f'<li><span class="at">{clock(e["at"])}</span>{esc(e["text"])}</li>' for e in data["events"])
-    # 10:00 isn't one of the spawner's events: it is when they stop (.78).
-    rows += f'<li><span class="at">{clock(data["run_seconds"])}</span>下班：不再来新怪，清完场就上市</li>'
+    # 10:00 isn't one of the spawner's events: it is the win, and the run goes on (0.3.29).
+    rows += f'<li><span class="at">{clock(data["run_seconds"])}</span>下班：算通关，之后加班，怪 ×1.5、每 2 分钟一个 boss</li>'
     return section("how", "怎么玩", "", f"""<div class="grid wide how">
-<article class="card"><h3>一局 10 分钟</h3><ul>
+<article class="card"><h3>撑到 10:00 就通关</h3><ul>
 <li>武器全自动攻击，你只管走位</li>
 <li>打死的怪掉经验星星，走近才会吸过来</li>
 <li>升级时三选一：拿武器还是拿被动</li>
 <li>每两分钟来一个 boss，一局 4 个、每局随机抽，打掉自动开「年终奖」，按绩效发工资、白送一个局内升级，工资攒着在「培训」里永久升级属性，也能买「返聘」，被裁时可以选择回来</li>
-<li>10:00 下班：不再来新怪，清完场上剩下的就敲钟上市（清场时倒下也算失败）；之后进入「加班」，每 30 秒一档：怪移速 ×1.2 起每档再 +0.05，你受到的伤害 ×2 起每档再 +0.5（10:30 ×2.5、11:00 ×3、12:00 ×4），boss 出招间隔 3 → 2 秒，11:00 起怪的移速上限每档再放开 3，越拖越危险；从开局到清完的用时上排行榜；没通关的局撑过 1 分钟也上榜，按撑了多久排在所有通关的后面</li>
-<li>排行榜：每张地图、每个模式一个总榜，另外每个职业各一个榜（排行榜页点职业头像切换），每人留自己最好的一次；结算页写你在总榜和这个职业榜的名次</li>
-<li><b>无尽模式</b>：出发页选「无尽」，没有下班：刷怪按上面的节奏一直往上涨，怪的生命每分钟 +25%、20:00 起每分钟 +50%、30:00 起每分钟 +100%，前 4 个 boss 之后每 2 分钟再来一个，武器和被动不限数量（能带全部 11 把武器、13 个被动），一直打到倒下；不算通关，有自己的排行榜，按撑了多久排，越久越前，撑满 60 分钟自动结束；还有撑到 20:00 / 30:00 的两个成就和撑满 60 分钟的白金成就</li></ul>
+<li>10:00 下班就算通关（敲钟上市、职业敲钟这些成就当场给），然后接着「加班」：怪不停，刷怪一下子变成 1.5 倍、之后照样每 30 秒涨一档，每 2 分钟再来一个 boss（从五张图的 boss 里随机抽），怪的生命每分钟 +25%、20:00 起每分钟 +50%、30:00 起每分钟 +100%，一直打到倒下，撑满 60 分钟自动结束；还有撑到 20:00 / 30:00 和撑满 60 分钟的成就</li>
+<li>排行榜：按撑了多久排，越久越前，撑过 1 分钟就上榜；每张地图一个总榜，另外每个职业各一个榜（排行榜页点职业头像切换），每人留自己最好的一次；结算页写你在总榜和这个职业榜的名次</li>
+<li>只有一个模式（0.3.29 起；之前的「无尽模式」并进来了，之前 10:00 后要清完场才算通关）</li></ul>
 <h3>操作</h3><ul><li>手机：按住屏幕任意处拖动（可选陀螺仪）</li><li>电脑：WASD 或方向键</li></ul></article>
 <article class="card"><h3>一局的节奏</h3><p class="muted">每局都一样（5:00 的天气和每个 boss 是谁每局随机）：</p><ol class="timeline">{rows}</ol></article>
 </div>""")
@@ -704,8 +704,8 @@ def build(data: dict, art_dir: pathlib.Path) -> str:
     page = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>大厂幸存者 · Big Tech Survivors</title>
-<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市。职业、属性、武器、被动、升级、掉落、培训、地图、难度、打卡点和怪物图鉴。">
-<meta property="og:title" content="大厂幸存者 Big Tech Survivors"><meta property="og:description" content="躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市。打开网页就能玩。">
+<meta name="description" content="大厂幸存者：割草类 roguelike，躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市，再看你能加班多久。职业、属性、武器、被动、升级、掉落、培训、地图、难度、打卡点和怪物图鉴。">
+<meta property="og:title" content="大厂幸存者 Big Tech Survivors"><meta property="og:description" content="躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市，再看你能加班多久。打开网页就能玩。">
 <meta property="og:image" content="https://survivors.lab115.com/index.png"><meta property="og:url" content="https://survivors.lab115.com/">
 <meta name="theme-color" content="#f7c948">
 <style>{STYLE}</style></head><body>
@@ -714,7 +714,7 @@ def build(data: dict, art_dir: pathlib.Path) -> str:
 <a class="play" href="{PLAY_URL}">开始玩</a></div></nav>
 <main><header class="hero"><div class="hero-art">{hero_arts}</div>
 <h1>大厂幸存者</h1><div class="en">BIG TECH SURVIVORS</div>
-<p class="tagline">躲开 Bug、会议和 Deadline，撑过 10 分钟、清完场就能敲钟上市。<br>打开网页就能玩，手机单手、电脑键盘都行。</p>
+<p class="tagline">躲开 Bug、会议和 Deadline，撑过 10 分钟就能敲钟上市，再看你能加班多久。<br>打开网页就能玩，手机单手、电脑键盘都行。</p>
 <a class="btn primary" href="{PLAY_URL}">开始搬砖</a>
 <span class="version">版本 {esc(data['version'])} · 本页内容由游戏数据生成</span></header>
 {body}</main>

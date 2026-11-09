@@ -105,7 +105,8 @@ func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> vo
 	if victory and not ongoing:
 		headline.add_child(UiKit.icon("bell", 40 * SCALE))
 	# 无尽模式 never wins and only ends one way (0.3.0: no 10:00 to have passed).
-	var headline_text := "还在搬砖…" if ongoing else "敲钟上市！" if victory else "撑满 60 分钟！" if game.full_hour() else "无尽加班！" if game.endless else "项目黄了…"
+	# A win clocked out at 10:00 (0.3.29) and may have gone on to the full hour.
+	var headline_text := "还在搬砖…" if ongoing else "撑满 60 分钟！" if game.full_hour() else "敲钟上市！" if victory else "无尽加班！" if game.endless else "项目黄了…"
 	headline.add_child(UiKit.label(headline_text, 32 * SCALE, "heavy"))
 
 	column.add_child(UiKit.gap(10 * SCALE))
@@ -113,13 +114,12 @@ func build(game: Game, victory: bool, theme: Theme, ongoing: bool = false) -> vo
 	column.add_child(_centered(UiKit.label("%02d:%02d" % [floori(seconds / 60.0), seconds % 60], 64 * SCALE, "display")))
 	var left := maxi(0, roundi(Game.RUN_SECONDS) - seconds)
 	var sub := tr("离上市还差 %s") % ("%02d:%02d" % [floori(left / 60.0), left % 60])
-	# Past 10:00 the clock is the clear (.78): a win's time to the last enemy, or how many were left.
-	if victory and not ongoing:
-		sub = tr("撑满 10 分钟，清完场")
+	# Past 10:00 (0.3.29) the run is won and the clock is the 加班 after it (a clear's time .78–0.3.28).
+	if game.won:
+		var extra := seconds - roundi(Game.RUN_SECONDS)
+		sub = tr("10:00 下班，又加班 %s") % ("%02d:%02d" % [floori(extra / 60.0), extra % 60])
 	elif game.endless:
 		sub = tr("无尽模式：怪越来越多，撑到倒下为止")
-	elif game.clearing():
-		sub = tr("清场时倒下，还剩 %d 只") % game.enemies.size()
 	column.add_child(_centered(UiKit.label(sub, 13 * SCALE, "muted")))
 
 	column.add_child(UiKit.gap(12 * SCALE))
@@ -220,7 +220,8 @@ static func _total_damage(game: Game) -> float:
 
 static func _roast(game: Game, victory: bool, killer: String) -> String:
 	var lines: Array = WIN_ROASTS
-	if game.endless:
+	# A minute or more of 加班 after the 10:00 win (0.3.29) gets 无尽模式's lines.
+	if game.endless or (victory and game.elapsed >= Game.RUN_SECONDS + 60.0):
 		lines = ENDLESS_ROASTS
 	elif not victory:
 		if KILLER_ROASTS.has(killer):

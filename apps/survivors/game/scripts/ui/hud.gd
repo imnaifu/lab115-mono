@@ -179,8 +179,6 @@ var _clear_label: Label
 var _board_row: VBoxContainer
 ## The 收藏 page's 排行榜 tab (.78): which map's board, and what came back for it.
 var _board_map := ""
-## Whether it shows the 无尽模式 boards (Game.endless, 0.2.0).
-var _board_endless := false
 ## The job whose board it shows (0.3.7), "" for the whole board.
 var _board_job := ""
 var _board_answer := {}
@@ -1099,14 +1097,15 @@ func _on_ultimate_went_off() -> void:
 
 func _update_clear_pill() -> void:
 	var seconds_left := Game.RUN_SECONDS - game.elapsed
-	# 无尽模式 has no 10:00 (0.3.0): no countdown to it, no clearing after.
+	# 无尽模式 has no 10:00 (0.3.0): no countdown to it, no 加班 after.
 	_clear_pill.visible = seconds_left <= CLEAR_WARNING and not game.endless
 	if not _clear_pill.visible:
 		return
+	# 0.3.29: 下班 is the win, and the run goes on (no clearing up any more).
 	if seconds_left > 0.0:
-		_clear_label.text = tr("离下班 %s · 之后不再来新怪") % ("0:%02d" % ceili(seconds_left))
+		_clear_label.text = tr("离下班 %s · 撑到就算通关") % ("0:%02d" % ceili(seconds_left))
 	else:
-		_clear_label.text = tr("加班中 · 剩 %d · 暴躁 ×%d") % [game.hostile_count(), game.overtime_tier()]
+		_clear_label.text = tr("加班中 · 撑得越久排名越高")
 
 
 func _update_boss_bar() -> void:
@@ -1612,8 +1611,7 @@ func _open_depart() -> void:
 	column.add_child(UiKit.gap(20 if portrait else 8))
 	column.add_child(_job_picker(portrait))
 	column.add_child(UiKit.gap(16 if portrait else 8))
-	column.add_child(_mode_picker(portrait))
-	column.add_child(UiKit.gap(12 if portrait else 6))
+	# No 普通 / 无尽 switch since 0.3.29 (the user: 只留一个模式); _mode_picker is left for the record.
 	# The map button only while there is more than one map to pick (.99, the user: 地图不用选择).
 	if Maps.ORDER.size() > 1:
 		column.add_child(_map_button(portrait))
@@ -3297,9 +3295,12 @@ func _show_end(victory: bool) -> void:
 		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		body.add_child(right)
 
-	# 无尽模式 never wins and only ends one way (0.3.0: no 10:00 to have passed).
+	# A win clocked out at 10:00 and went on (0.3.29): the title says how long. 无尽模式 never won.
 	left.add_child(UiKit.kicker("IPO DAY" if victory else "ENDLESS" if game.endless else "GAME OVER"))
-	var title := UiKit.label("敲钟上市！" if victory else "撑满 60 分钟！" if game.full_hour() else "无尽加班！" if game.endless else "项目黄了…", 30, "heavy")
+	var title_text := tr("撑满 60 分钟！") if game.full_hour() else tr("加班到 %s") % _clock_text(game.elapsed) if victory \
+		else tr("无尽加班！") if game.endless else tr("项目黄了…")
+	var title := UiKit.label(title_text, 30, "heavy")
+	title.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left.add_child(title)
 	var sub_text := tr("第 %d 局 · %s") % [game.runs_before + 1, tr(Jobs.data(game.player.job)["name"])]
@@ -3312,8 +3313,8 @@ func _show_end(victory: bool) -> void:
 	var stats := HBoxContainer.new()
 	stats.add_theme_constant_override("separation", 8)
 	left.add_child(stats)
-	# A win is timed to the last enemy down (.78): that is the time the leaderboard ranks.
-	for stat: Array in [["通关用时" if victory else "撑了" if game.endless else "存活", _clock_text(game.elapsed)], ["职级", Maps.rank_of(game.level)], ["击杀", str(game.kills)]]:
+	# How long it lasted is what the board ranks (0.3.29; a clear's time .78–0.3.28).
+	for stat: Array in [["撑了" if victory or game.endless else "存活", _clock_text(game.elapsed)], ["职级", Maps.rank_of(game.level)], ["击杀", str(game.kills)]]:
 		var card := UiKit.panel(UiKit.box(Art.PAPER, Art.LINE, UiKit.OUTLINE, UiKit.RADIUS_MD, Vector4(4, 6, 4, 6)))
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var card_column := VBoxContainer.new()
@@ -4743,7 +4744,7 @@ func _send_clear() -> void:
 	if answer.get("ok", false):
 		game.achievements.on_board_rank(Leaderboard.last_rank, Leaderboard.last_job_rank)
 	if answer.get("ok", false):
-		var line := tr("%s榜第 %d 名 · 最好 %s") % [_board_name(), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared or game.endless)]
+		var line := tr("%s榜第 %d 名 · 最好 %s") % [_board_name(), Leaderboard.last_rank, Leaderboard.record_text(Leaderboard.last_best_ms, Leaderboard.last_best_cleared)]
 		# And among this job's (0.3.7; a server before says nothing).
 		if Leaderboard.last_job_rank > 0:
 			line += " · " + tr("%s第 %d 名") % [tr(Jobs.data(game.player.job)["name"]), Leaderboard.last_job_rank]
@@ -5002,7 +5003,6 @@ func _open_board() -> void:
 		_board_answer = {}
 		_board_note = ""
 		_board_map = Maps.current_id
-		_board_endless = game.endless
 		_board_job = ""
 		Telemetry.send_event("leaderboard", {"action": "open"})
 	_board_open = true
@@ -5038,18 +5038,10 @@ func _open_board() -> void:
 func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 	if _board_map == "":
 		_board_map = Maps.current_id
-	# 普通 / 无尽 (0.2.0): each mode its own boards.
-	body.add_child(UiKit.segmented([tr("普通模式"), tr("无尽模式")], 1 if _board_endless else 0, func(index: int) -> void:
-		_board_endless = index == 1
-		_board_answer = {}
-		_open_board(), Art.PAPER_SUNK))
+	# One board a map since 0.3.29 (the 普通 / 无尽 switch of 0.2.0 went with 无尽模式).
 	# All jobs or one (0.3.7, the user: 排行榜支持每个职业排行，两个模式都是).
 	body.add_child(_board_job_picker())
-	if _board_endless:
-		body.add_child(_collection_note(tr("无尽模式按撑了多久排，越久越前；撑过 1 分钟就上榜。每人留自己最好的一次")))
-	else:
-		body.add_child(_collection_note(tr("每张地图一个榜：通关的（撑过 10:00、清完场上的怪）按用时排在前面，越短越前；没通关但撑过 1 分钟的按撑了多久排在后面。每人留自己最好的一次") \
-			if Maps.ORDER.size() > 1 else tr("通关的（撑过 10:00、清完场上的怪）按用时排在前面，越短越前；没通关但撑过 1 分钟的按撑了多久排在后面。每人留自己最好的一次")))
+	body.add_child(_collection_note(tr("按撑了多久排，越久越前；撑过 10:00 下班就算通关，撑过 1 分钟就上榜。每人留自己最好的一次")))
 	var names: Array = []
 	for map_id: String in Maps.ORDER:
 		names.append(tr(Maps.script_of(map_id).NAME))
@@ -5081,7 +5073,7 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 		body.add_child(_collection_note(_board_note))
 	if _board_answer.is_empty():
 		body.add_child(_collection_note(tr("正在读取…")))
-		_load_board(_board_map, _board_endless, _board_job)
+		_load_board(_board_map, _board_job)
 		return
 	if _board_answer.has("error"):
 		body.add_child(_collection_note(Leaderboard.error_text(_board_answer)))
@@ -5100,9 +5092,9 @@ func _fill_board(body: VBoxContainer, portrait: bool) -> void:
 		body.add_child(_board_line(me))
 
 
-func _load_board(map_id: String, endless: bool, job: String) -> void:
-	var answer: Dictionary = await Leaderboard.board(map_id, endless, job)
-	if not _board_open or _board_map != map_id or _board_endless != endless or _board_job != job:
+func _load_board(map_id: String, job: String) -> void:
+	var answer: Dictionary = await Leaderboard.board(map_id, job)
+	if not _board_open or _board_map != map_id or _board_job != job:
 		return
 	_board_answer = answer if not answer.is_empty() else {"error": "offline"}
 	_open_board()
@@ -5167,9 +5159,9 @@ func _board_line(record: Dictionary) -> Control:
 	shown_name.clip_text = true
 	shown_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(shown_name)
-	# A run not won (.96) in muted type: 撑到 7:42 under the clear times.
-	# 无尽模式's board (0.3.0) is all how long a run lasted, every one in the bold 12:34.5.
-	var cleared: bool = record.get("cleared", true) or _board_endless
+	# How long a run lasted (0.3.29): one past 10:00 (won) in the bold 12:34.5, one short of it muted,
+	# 撑到 7:42.
+	var cleared: bool = record.get("cleared", true)
 	var time := UiKit.label(Leaderboard.record_text(int(record.get("ms", 0)), cleared), 14 if cleared else 13, "display" if cleared else "strong", Art.INK if cleared else Art.INK_MUTED)
 	time.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	row.add_child(time)

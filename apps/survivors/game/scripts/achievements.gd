@@ -19,7 +19,7 @@ const LIST := [
 	{"id": "everything", "tier": "platinum", "art": "ach_grand_trophy", "group": "生存", "name": "大满贯", "text": "拿到其他所有成就"},
 	{"id": "first_day", "tier": "bronze", "art": "coffee", "group": "生存", "name": "第一天上班", "text": "打完第一局"},
 	{"id": "probation", "tier": "bronze", "art": "stock_options", "group": "生存", "name": "转正", "text": "一局撑过 5 分钟"},
-	{"id": "ipo", "tier": "silver", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑过 10 分钟，再清完场上的怪"},
+	{"id": "ipo", "tier": "silver", "art": "bell", "group": "生存", "name": "敲钟上市", "text": "撑过 10 分钟"},
 	{"id": "win_london", "tier": "gold", "art": "big_ben", "group": "生存", "name": "大本钟敲钟", "text": "在伦敦地图通关"},
 	{"id": "win_seattle", "tier": "gold", "art": "space_needle", "group": "生存", "name": "太空针敲钟", "text": "在西雅图地图通关"},
 	{"id": "win_singapore", "tier": "gold", "art": "merlion", "group": "生存", "name": "鱼尾狮敲钟", "text": "在新加坡地图通关"},
@@ -62,7 +62,7 @@ const LIST := [
 	{"id": "golden_desk", "tier": "bronze", "art": "ach_gold_chair", "group": "地图", "name": "金色工位", "text": "用一次金色工位"},
 	{"id": "naps_3", "tier": "bronze", "art": "nap", "group": "地图", "name": "午休达人", "text": "一局捡到 3 次午休"},
 	{"id": "stamps_run", "tier": "silver", "art": "first_coffee", "group": "打卡", "name": "全勤", "text": "一局把 5 个打卡点都打一遍"},
-	{"id": "endless_bosses", "tier": "silver", "art": "investor", "group": "无尽", "name": "加班费", "text": "无尽模式一局打掉 10 个 boss"},
+	{"id": "endless_bosses", "tier": "silver", "art": "investor", "group": "加班", "name": "加班费", "text": "一局打掉 10 个 boss"},
 	{"id": "corner", "tier": "bronze", "art": "screensaver", "group": "彩蛋", "name": "撞角了", "text": "屏保撞进屏幕角落一次"},
 	{"id": "red_packets_10", "tier": "silver", "art": "red_packet", "group": "彩蛋", "name": "红包雨", "text": "一局捡到 10 个红包"},
 	# 0.3.18 (the user: 多一些后期成就 → 全加): the long haul.
@@ -76,16 +76,17 @@ const LIST := [
 	{"id": "training_full", "tier": "gold", "art": "dumbbell", "group": "生存", "name": "培训毕业", "text": "培训全部练满"},
 	{"id": "top3", "tier": "gold", "art": "ach_podium", "group": "生存", "name": "榜上有名", "text": "进任意一个排行榜的前 3 名"},
 	{"id": "job_wins_3", "tier": "gold", "art": "ach_medal", "group": "职业", "name": "职业满贯", "text": "5 个职业各通关 3 次", "goal": 5},
-	{"id": "endless_all_jobs", "tier": "gold", "art": "ach_night_office", "group": "无尽", "name": "全员加班", "text": "5 个职业都在无尽模式撑到 20:00", "goal": 5},
+	{"id": "endless_all_jobs", "tier": "gold", "art": "ach_night_office", "group": "加班", "name": "全员加班", "text": "5 个职业都撑到 20:00", "goal": 5},
 	# 无尽模式 (Game.endless, 0.2.0, the user: 加更多的成就; picked 无尽撑到 11 / 12 / 15 分钟).
 	# 20 / 30 / 60 minutes from 0.3.0 (the user: 成就改难点了 → 20 30 60; 11 / 12 / 15 until then); the
 	# ids keep the old minutes, as some have earned them already.
-	{"id": "endless_11", "tier": "bronze", "art": "deadline", "group": "无尽", "name": "加班", "text": "无尽模式撑到 20:00"},
-	{"id": "endless_12", "tier": "silver", "art": "night_page", "group": "无尽", "name": "通宵", "text": "无尽模式撑到 30:00"},
+	{"id": "endless_11", "tier": "bronze", "art": "deadline", "group": "加班", "name": "加班", "text": "撑到 20:00"},
+	{"id": "endless_12", "tier": "silver", "art": "night_page", "group": "加班", "name": "通宵", "text": "撑到 30:00"},
 	# Platinum in 0.3.0–0.3.17 (the user: 加个撑满 60min 的白金成就), gold from 0.3.18 (the user: 白金改成一个，就是大满贯).
-	{"id": "endless_15", "tier": "gold", "art": "icon_infinity", "group": "无尽", "name": "996", "text": "无尽模式撑满 60 分钟"},
+	{"id": "endless_15", "tier": "gold", "art": "icon_infinity", "group": "加班", "name": "996", "text": "撑满 60 分钟"},
 ]
-const GROUPS := ["生存", "战斗", "职业", "打卡", "地图", "无尽", "彩蛋"]
+## 「加班」 was 「无尽」 until 0.3.29 (无尽模式 went into the one mode, its achievements with it).
+const GROUPS := ["生存", "战斗", "职业", "打卡", "地图", "加班", "彩蛋"]
 ## Achievement tiers (.31, the user's call: like trophies), hardest first, with their colours.
 ## One platinum: 大满贯 (everything) since 0.3.18 (the user: 白金改成一个，就是大满贯). 财务自由 (all_clear)
 ## was the only one from .42 (万人斩, 京城通 and 全图鉴 before), and 996 (无尽模式's full hour) a second
@@ -124,12 +125,12 @@ const SURVIVE_SECONDS := 300.0
 const UNTOUCHED_SECONDS := 180.0
 const KILLS_IN_A_RUN := 1000
 const CLOSE_CALL_HP := 10.0
-## 无尽模式's achievements by the second a run must reach (only in that mode, Game.endless).
+## The 无尽 group's achievements by the second a run must reach: only in 无尽模式 until 0.3.29, in
+## every run since (the user: 只留一个模式，无尽模式去掉 — runs go on past 10:00 now).
 const ENDLESS_AT := {"endless_11": 1200.0, "endless_12": 1800.0, "endless_15": 3600.0}
 ## 0.3.14's run goals.
 const KILLS_BIG_RUN := 3000
 const SKILLS_IN_A_RUN := 5
-const SPEEDRUN_SECONDS := 660.0
 const PARCELS_IN_A_RUN := 10
 const NAPS_IN_A_RUN := 3
 const RED_PACKETS_IN_A_RUN := 10
@@ -164,6 +165,8 @@ var _boss_kills := 0
 ## Health went under STEADY_SHARE this run (稳如老狗, 0.3.18).
 var _below_half := false
 var _finished := false
+## Won at 10:00 (clock_out), its achievements and totals in.
+var _clocked_out := false
 
 
 func _init(game: Game) -> void:
@@ -175,6 +178,10 @@ static func data(id: String) -> Dictionary:
 		if entry["id"] == id:
 			return entry
 	return {}
+
+
+## Achievements no run can earn any more, out of the list and the count (one earned stays in the save).
+const RETIRED := ["speedrun"]
 
 
 ## The achievements that belong to one map other than 硅谷 (its 敲钟 and 全部打卡), by map id.
@@ -191,6 +198,9 @@ const MAP_OF := {
 static func shown() -> Array:
 	return LIST.filter(func(entry: Dictionary) -> bool:
 		if entry["id"] == "first_evolve" and not Upgrades.EVOLUTION_ON:
+			return false
+		# 速通 (11:00 内清完场) went with the clear (0.3.29: a run goes on past 10:00, nothing to clear).
+		if RETIRED.has(entry["id"]):
 			return false
 		# A hidden map's own (敲钟, 全部打卡) can't be earned while no run is on it (.99).
 		return not MAP_OF.has(entry["id"]) or Maps.ORDER.has(MAP_OF[entry["id"]]))
@@ -280,10 +290,9 @@ func tick(delta: float) -> void:
 	var player := _game.player
 	if _game.elapsed >= SURVIVE_SECONDS:
 		_unlock("probation")
-	if _game.endless:
-		for id: String in ENDLESS_AT:
-			if _game.elapsed >= ENDLESS_AT[id]:
-				_unlock(id)
+	for id: String in ENDLESS_AT:
+		if _game.elapsed >= ENDLESS_AT[id]:
+			_unlock(id)
 	if _game.elapsed >= UNTOUCHED_SECONDS and not _hurt:
 		_unlock("untouched")
 	if _game.kills >= KILLS_IN_A_RUN:
@@ -295,7 +304,7 @@ func tick(delta: float) -> void:
 		_unlock("boss_kills_50")
 	if _boss_kills >= BOSSES_IN_A_RUN:
 		_unlock("all_four_bosses")
-	if _game.endless and _boss_kills >= ENDLESS_BOSSES:
+	if _boss_kills >= ENDLESS_BOSSES:
 		_unlock("endless_bosses")
 	if _game.ultimates.casts >= SKILLS_IN_A_RUN:
 		_unlock("skill_five")
@@ -322,7 +331,7 @@ func tick(delta: float) -> void:
 		_unlock("training_full")
 	if player.hp < player.max_hp * STEADY_SHARE:
 		_below_half = true
-	if _game.endless and _game.elapsed >= ENDLESS_JOB_SECONDS:
+	if _game.elapsed >= ENDLESS_JOB_SECONDS:
 		var jobs: Array = (Progress.stat("endless_jobs", []) as Array).duplicate()
 		if not jobs.has(player.job):
 			jobs.append(player.job)
@@ -444,37 +453,58 @@ static func _maxed(weapon: Weapon) -> bool:
 	return weapon.level >= Upgrades.MAX_LEVEL
 
 
-## The run is over (won, lost or given up): the end-only achievements, then the run's kills,
-## bosses and win go into the totals. Only once, however the run ended.
+## 10:00, 下班 (0.3.29, the user: 只留一个模式 — the run is won there and goes on): the achievements
+## only a win tells, judged at this moment (满血下班 on the health now, 稳如老狗 on the ten minutes),
+## and the win into the totals (each job's, each map's: a win opens the next map), saved at once so
+## a page closed in the 加班 after keeps it. Once a run; finish() does it for a run that never got
+## here (a test's).
+func clock_out() -> void:
+	if _clocked_out:
+		return
+	_clocked_out = true
+	_unlock("ipo")
+	if _game.upgrades.passive_levels.is_empty():
+		_unlock("no_passives")
+	if _game.player.hp >= _game.player.max_hp:
+		_unlock("full_hp_win")
+	if _game.signed_forms >= FORMS_TO_WIN:
+		_unlock("forms_win")
+	if not _below_half:
+		_unlock("steady_win")
+	if _game.player.hp <= CLOSE_CALL_HP:
+		_unlock("close_call")
+	_unlock("win_" + _game.player.job)
+	if Maps.current_id == "bj":
+		_unlock("win_beijing")
+	elif Maps.current_id == "sea":
+		_unlock("win_seattle")
+	elif Maps.current_id == "ldn":
+		_unlock("win_london")
+	elif Maps.current_id == "sg":
+		_unlock("win_singapore")
+	var wins: Dictionary = Progress.stat("wins", {})
+	wins[_game.player.job] = wins.get(_game.player.job, 0) + 1
+	Progress.set_stat("wins", wins)
+	# Per map too (.34): a win opens the next map on the world map (Maps.unlocked).
+	var map_wins: Dictionary = Progress.stat("map_wins", {})
+	map_wins[Maps.current_id] = int(map_wins.get(Maps.current_id, 0)) + 1
+	Progress.set_stat("map_wins", map_wins)
+	# After map_wins has this run's win: a last map won is what usually completes it.
+	if _jobs_won(Progress.stat("wins", {})) >= Jobs.ORDER.size():
+		_unlock("job_wins_3")
+	_check_everything()
+	Progress.save()
+
+
+## The run is over (won, lost or given up): the run's kills, bosses and the rest go into the totals.
+## A win (`victory`: past 10:00) was counted at clock_out(). Only once, however the run ended.
 func finish(victory: bool) -> void:
 	if _finished:
 		return
 	_finished = true
 	_unlock("first_day")
 	if victory:
-		_unlock("ipo")
-		# 0.3.14's, what only a win tells.
-		if _game.elapsed <= SPEEDRUN_SECONDS:
-			_unlock("speedrun")
-		if _game.upgrades.passive_levels.is_empty():
-			_unlock("no_passives")
-		if _game.player.hp >= _game.player.max_hp:
-			_unlock("full_hp_win")
-		if _game.signed_forms >= FORMS_TO_WIN:
-			_unlock("forms_win")
-		if not _below_half:
-			_unlock("steady_win")
-		if _game.player.hp <= CLOSE_CALL_HP:
-			_unlock("close_call")
-		_unlock("win_" + _game.player.job)
-		if Maps.current_id == "bj":
-			_unlock("win_beijing")
-		elif Maps.current_id == "sea":
-			_unlock("win_seattle")
-		elif Maps.current_id == "ldn":
-			_unlock("win_london")
-		elif Maps.current_id == "sg":
-			_unlock("win_singapore")
+		clock_out()
 	Progress.set_stat("runs", Progress.stat("runs", 0) + 1)
 	Progress.set_stat("boss_kills", Progress.stat("boss_kills", 0) + _boss_kills)
 	if Progress.stat("runs", 0) >= data("runs_50")["goal"]:
@@ -486,18 +516,7 @@ func finish(victory: bool) -> void:
 	for type_id: String in _kills_by_type:
 		kills_by_type[type_id] = kills_by_type.get(type_id, 0) + _kills_by_type[type_id]
 	Progress.set_stat("kills_by_type", kills_by_type)
-	if victory:
-		var wins: Dictionary = Progress.stat("wins", {})
-		wins[_game.player.job] = wins.get(_game.player.job, 0) + 1
-		Progress.set_stat("wins", wins)
-		# Per map too (.34): a win opens the next map on the world map (Maps.unlocked).
-		var map_wins: Dictionary = Progress.stat("map_wins", {})
-		map_wins[Maps.current_id] = int(map_wins.get(Maps.current_id, 0)) + 1
-		Progress.set_stat("map_wins", map_wins)
-	# After map_wins has this run's win: a last map won is what usually completes it.
 	# 0.3.18's, on the totals now that they hold this run.
-	if _jobs_won(Progress.stat("wins", {})) >= Jobs.ORDER.size():
-		_unlock("job_wins_3")
 	if _kinds_at(Progress.stat("kills_by_type", {})) >= Bestiary.ids().size():
 		_unlock("bestiary_100")
 	if Progress.stat("runs", 0) >= data("runs_200")["goal"]:
