@@ -108,7 +108,7 @@ extends RefCounted
 ## same build as 99, renamed, so data marked 99 and 0.0.1 play alike; the bare numbers (64-99) and
 ## dated ones before came first. A small change bumps the last number, a big one the middle one
 ## (the user: 小改动加小的，大改动加中的).
-const VERSION := "0.3.37"
+const VERSION := "0.3.38"
 const TIMELINE_SECONDS := 30.0
 ## Past 10:00 (0.3.30, the user: ok — a 24-minute run's timeline was cut at 17:00): a sample a minute,
 ## into a field of its own.

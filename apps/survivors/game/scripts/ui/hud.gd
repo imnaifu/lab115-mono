@@ -14,6 +14,14 @@ extends CanvasLayer
 ## Ignore picks for a moment after the cards appear, so keys held down while playing don't
 ## choose one by accident.
 const PICK_DELAY_MS := 300
+## How big the HUD comes out on a computer, of the size the stretched view alone would give it
+## (0.3.38, the user: 网站版本的按钮什么的都太大了). The view is a phone's 640x360 blown up to fill
+## the window, which put every button and line of text at about twice a phone's size. Only the
+## HUD shrinks: the world, and how much of it is in sight, stays as it was.
+const DESKTOP_UI_SCALE := 0.7
+## In a small browser window the HUD shrinks less, so a HUD pixel never comes out under this many
+## of the browser's own pixels: about what a phone held upright gets (360 across 390).
+const DESKTOP_UI_MIN_CSS := 1.1
 const SLOT_COUNT := 6
 const SLOT_SIZE := 19.0
 ## Rows of SLOT_COUNT built for weapons and for passives: enough for 无尽模式's every passive (0.3.24).
@@ -604,22 +612,43 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Lays the HUD out landscape. On a turned screen that means sizing it to the screen's swapped
 ## dimensions and turning the whole layer a quarter turn, top edge along the screen's right.
+## On a computer the whole layer is drawn smaller (_desktop_ui_scale) and laid out on a root that
+## much bigger than the view, so every screen keeps its arrangement, only smaller.
 func fit_screen(turned: bool) -> void:
 	var view := get_viewport().get_visible_rect().size
+	var ui_scale := _desktop_ui_scale(view)
 	if turned:
 		_root.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		_root.position = Vector2.ZERO
 		_root.size = Vector2(view.y, view.x)
 		transform = Transform2D(PI / 2.0, Vector2(view.x, 0.0))
+	elif ui_scale < 1.0:
+		transform = Transform2D.IDENTITY.scaled(Vector2.ONE * ui_scale)
+		# Full-rect anchors would still give the root the view's own size (the layer's scale
+		# doesn't change what it is anchored to), so it is sized by hand to fill the screen.
+		_root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		_root.position = Vector2.ZERO
+		_root.size = view / ui_scale
 	else:
 		transform = Transform2D.IDENTITY
 		_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The title has a portrait and a landscape arrangement, and so has the map picker.
+	# The title has a portrait and a landscape arrangement, and so has the map picker; a new
+	# desktop scale changes the room they have too.
 	_show_title.call_deferred()
 	if _world_open:
 		_open_map_picker.call_deferred()
 	if _training_open:
 		_open_training.call_deferred()
+
+
+## The HUD layer's scale (DESKTOP_UI_SCALE): 1 on a phone, which the view is made for.
+func _desktop_ui_scale(view: Vector2) -> float:
+	if Device.is_handheld():
+		return 1.0
+	# Browser pixels per view pixel: on a high-density screen the window counts device pixels,
+	# screen_get_scale() of them to a browser pixel (the page's devicePixelRatio).
+	var browser_pixels := float(get_window().size.x) / view.x / DisplayServer.screen_get_scale()
+	return clampf(DESKTOP_UI_MIN_CSS / browser_pixels, DESKTOP_UI_SCALE, 1.0)
 
 
 # --- Touch joystick ------------------------------------------------------------------------
