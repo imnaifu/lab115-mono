@@ -5,7 +5,7 @@ Every page is generated — home and privacy policy in each language, the 404
 page and sitemap.xml — so a wording change goes in strings.py and a layout
 change goes here; never hand-edit the HTML in public/.
 
-    python3 site/build.py            # pages + sitemap
+    python3 site/build.py            # pages (+ uninstall pages) + sitemap
     python3 site/build.py --images   # also re-cut preview shots and og images
                                      # from branding/v2/out (needs cwebp, sips)
 """
@@ -18,7 +18,7 @@ import sys
 
 sys.dont_write_bytecode = True  # importing strings.py must not leave __pycache__ in the repo
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from strings import LANGS, S, STORE  # noqa: E402
+from strings import BYE, LANGS, S, STORE  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PUB = os.path.join(HERE, "public")
@@ -26,7 +26,7 @@ SHOTS = os.path.join(HERE, "..", "branding", "v2", "out")
 ORIGIN = "https://rednote.lab115.com"
 # Cache-busting query for every static asset: nginx and Cloudflare keep images
 # and CSS for a day, so bump this whenever a file keeps its name but changes.
-V = "v=7"
+V = "v=8"
 PREVIEWS = ["01-post-download", "02-one-folder", "03-note-list", "04-csv"]
 
 # ----------------------------------------------------------------- artwork
@@ -140,6 +140,25 @@ def icons(with_touch=True):
 
 CSS = f'<link rel="stylesheet" href="/sokosoko.css?{V}">\n  <link rel="stylesheet" href="/style.css?{V}">'
 
+# Visit stats: the self-hosted Umami at stats.lab115.com (no cookies), the
+# "This website" section of the privacy page. data-domains keeps local
+# previews out of the numbers.
+STATS_SITE_ID = "1e8bb563-6b26-430c-90a2-e57b75549da7"
+
+
+def stats_tag(exclude_search=False):
+    # The uninstall page's query string (?v=&i=) goes into its events instead
+    # of every pageview URL.
+    extra = ' data-exclude-search="true"' if exclude_search else ""
+    return (f'<script defer src="https://stats.lab115.com/script.js" data-website-id="{STATS_SITE_ID}"'
+            f' data-domains="rednote.lab115.com"{extra}></script>')
+
+
+def store_link(label, where, cls="sk-btn sk-btn--primary"):
+    """An "Add to Chrome" button; Umami counts its clicks by where they came from."""
+    return (f'<a class="{cls}" href="{STORE}" rel="noopener" data-umami-event="add_to_chrome"'
+            f' data-umami-event-where="{where}">{label}</a>')
+
 
 def lang_menu(code, page):
     t = S[code]
@@ -162,7 +181,7 @@ def header(code, page):
     <nav aria-label="{t["nav_label"]}"><ul class="sk-nav">{nav}</ul></nav>
     <div class="hdr-actions">
       {lang_menu(code, page)}
-      <a class="sk-btn sk-btn--primary sk-btn--sm" href="{STORE}" rel="noopener">{t["add"]}</a>
+      {store_link(t["add"], "header", "sk-btn sk-btn--primary sk-btn--sm")}
     </div>
   </header>'''
 
@@ -242,6 +261,7 @@ def home_head(code):
   <meta name="twitter:card" content="summary_large_image">
 
   {CSS}
+  {stats_tag()}
 
   <script type="application/ld+json">
 {ld}
@@ -264,7 +284,7 @@ def home_body(code):
         panels += f'''<div class="pv-panel" role="tabpanel" id="pv-{key}" aria-labelledby="tab-{key}">
           <div class="pv-shot"><img src="/img/{code}-{shot}.webp?{V}" width="712" height="745"{loading} alt="{alt}"></div>
           <div class="pv-copy"><h3>{h}</h3><p>{p}</p><ul class="points">{points}</ul>
-            <a class="sk-btn sk-btn--primary" href="{STORE}" rel="noopener">{t["add"]}</a></div>
+            {store_link(t["add"], "preview")}</div>
         </div>'''
     steps = "".join(
         f'<li class="art-card"><div class="sk-card__well" style="background:var(--{bg})">{art(a)}</div><span class="step-no">{i + 1}</span><h3>{h}</h3><p>{p}</p></li>'
@@ -284,7 +304,7 @@ def home_body(code):
       <h1 class="sk-hero__title" id="hero-title">{t["hero_title"]}</h1>
       <p class="sk-hero__sub">{t["hero_sub"]}</p>
       <div class="cta">
-        <a class="sk-btn sk-btn--primary" href="{STORE}" rel="noopener">{t["add"]}</a>
+        {store_link(t["add"], "hero")}
         <a class="sk-btn sk-btn--secondary" href="#how">{t["hero_how"]}</a>
       </div>
       <div class="sk-tags">{tags}</div>
@@ -334,7 +354,7 @@ def home_body(code):
         <img src="/img/icon.svg?{V}" alt="" width="72" height="72">
         <div class="sk-h2-wrap"><h2 class="sk-h2" id="closing-title">{t["close_h"]}</h2></div>
         <p>{t["close_p"]}</p>
-        <a class="sk-btn sk-btn--primary" href="{STORE}" rel="noopener">{t["add"]}</a>
+        {store_link(t["add"], "closing")}
       </div>
     </section>
   </main>
@@ -390,6 +410,7 @@ def privacy_page(code):
   {icons(with_touch=False)}
   <meta name="theme-color" content="#ffffff">
   {CSS}
+  {stats_tag()}
 </head>
 <body>
   {header(code, "privacy")}
@@ -422,6 +443,7 @@ def notfound_page():
   <meta name="robots" content="noindex">
   <link rel="icon" href="/img/icon.svg?{V}" type="image/svg+xml">
   {CSS}
+  {stats_tag()}
 </head>
 <body>
   <main class="notfound">
@@ -431,6 +453,90 @@ def notfound_page():
       <p class="sk-empty__text">{links}</p>
     </div>
   </main>
+</body>
+</html>
+'''
+
+
+def bye_page(code):
+    # Not linked anywhere and not in the sitemap: only Chrome opens it, after
+    # the extension is removed. One tap on a reason is the whole ask; the
+    # comment box is extra. Events (Umami, website stats): `uninstall` on load,
+    # `uninstall_reason` per tap, `uninstall_comment` on send, each with the
+    # extension version `v` and, if its stats were on, its install id `i`.
+    t, b = S[code], BYE[code]
+    reasons = "".join(f'<button type="button" class="sk-tag bye-reason" aria-pressed="false" data-reason="{key}">{label}</button>'
+                      for key, label in b["reasons"])
+    return f'''<!doctype html>
+<!--
+  Uninstall page ({t["label"]}). Generated by site/build.py from site/strings.py
+  (BYE): edit those and rebuild, never this file.
+-->
+<html lang="{t["hreflang"]}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{b["title"]}</title>
+  <meta name="robots" content="noindex">
+  {icons(with_touch=False)}
+  <meta name="theme-color" content="#ffffff">
+  {CSS}
+  {stats_tag(exclude_search=True)}
+</head>
+<body>
+  <header class="sk-header">
+    <a class="sk-logo" href="{t["path"]}">{LOGO}{t["brand"]}</a>
+  </header>
+
+  <main class="sk-container">
+    <article class="prose bye">
+      <h1>{b["h1"]}</h1>
+      <p>{b["lead"]}</p>
+      <div class="bye-reasons" role="group" aria-label="{b["h1"]}">{reasons}</div>
+      <form class="bye-more" hidden>
+        <label class="sk-field">
+          <span class="sk-field__label">{b["more"]}</span>
+          <textarea class="sk-textarea" name="comment" maxlength="500"></textarea>
+        </label>
+        <button type="submit" class="sk-btn sk-btn--primary">{b["send"]}</button>
+      </form>
+      <p class="bye-thanks" role="status" hidden>{b["thanks"]}</p>
+      <p class="bye-back">{b["back"]} <a href="{STORE}" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="bye">{b["reinstall"]}</a></p>
+    </article>
+  </main>
+  <script>
+    (function () {{
+      var query = new URLSearchParams(location.search);
+      var base = {{ v: (query.get("v") || "").slice(0, 20), i: (query.get("i") || "").slice(0, 32) }};
+      // Umami's script loads deferred; wait for it a little rather than drop the event.
+      function track(name, data, tries) {{
+        var payload = Object.assign({{}}, base, data || {{}});
+        if (window.umami) window.umami.track(name, payload);
+        else if ((tries || 0) < 20) setTimeout(function () {{ track(name, data, (tries || 0) + 1); }}, 500);
+      }}
+      track("uninstall");
+      var picked = "";
+      var form = document.querySelector(".bye-more");
+      var thanks = document.querySelector(".bye-thanks");
+      document.querySelectorAll(".bye-reason").forEach(function (button) {{
+        button.addEventListener("click", function () {{
+          if (button.getAttribute("aria-pressed") === "true") return;
+          button.setAttribute("aria-pressed", "true");
+          picked = picked ? picked + "," + button.dataset.reason : button.dataset.reason;
+          track("uninstall_reason", {{ reason: button.dataset.reason }});
+          form.hidden = false;
+          thanks.hidden = false;
+        }});
+      }});
+      form.addEventListener("submit", function (event) {{
+        event.preventDefault();
+        var comment = form.comment.value.trim().slice(0, 500);
+        if (comment) track("uninstall_comment", {{ comment: comment, reason: picked }});
+        form.hidden = true;
+        thanks.hidden = false;
+      }});
+    }})();
+  </script>
 </body>
 </html>
 '''
@@ -476,9 +582,10 @@ def main():
         prefix = S[code]["path"].strip("/")
         write(os.path.join(prefix, "index.html"), home_head(code) + home_body(code))
         write(os.path.join(prefix, "privacy", "index.html"), privacy_page(code))
+        write(os.path.join(prefix, "bye", "index.html"), bye_page(code))
     write("404.html", notfound_page())
     write("sitemap.xml", sitemap())
-    print(f"built {len(LANGS) * 2} pages + 404 + sitemap")
+    print(f"built {len(LANGS) * 2} pages + {len(LANGS)} uninstall pages + 404 + sitemap")
 
 
 if __name__ == "__main__":

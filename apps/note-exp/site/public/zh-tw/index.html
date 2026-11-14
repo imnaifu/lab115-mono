@@ -8,7 +8,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>小紅書下載器 - 圖片影片一鍵下載、筆記列表匯出 CSV | RedNote Exporter</title>
-  <meta name="description" content="免費 Chrome 擴充功能：一鍵下載小紅書筆記的全部圖片與影片（影片優先無浮水印原檔），把首頁推薦、搜尋結果、使用者主頁的筆記列表匯出為 CSV。不需登入，資料只在本機處理。">
+  <meta name="description" content="免費 Chrome 擴充功能：一鍵下載小紅書筆記的全部圖片與影片（影片優先無浮水印原檔），把首頁推薦、搜尋結果、使用者主頁的筆記列表匯出為 CSV。不需登入，筆記只在你的瀏覽器裡處理。">
   <link rel="canonical" href="https://rednote.lab115.com/zh-tw/">
   <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/">
   <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/">
@@ -17,24 +17,25 @@
   <link rel="alternate" hreflang="ja" href="https://rednote.lab115.com/ja/">
   <link rel="alternate" hreflang="vi" href="https://rednote.lab115.com/vi/">
   <link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/">
-  <link rel="icon" href="/img/icon.svg?v=7" type="image/svg+xml">
-  <link rel="icon" href="/favicon.png?v=7" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="/img/icon128.png?v=7">
+  <link rel="icon" href="/img/icon.svg?v=8" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png?v=8" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/img/icon128.png?v=8">
   <meta name="theme-color" content="#ffffff">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="小紅書匯出工具 RedNote Exporter">
   <meta property="og:title" content="小紅書下載器 - 圖片影片一鍵下載、筆記列表匯出 CSV">
-  <meta property="og:description" content="一鍵下載小紅書筆記的圖片與影片，筆記列表匯出 CSV。免費、不需登入、本機處理。">
+  <meta property="og:description" content="一鍵下載小紅書筆記的圖片與影片，筆記列表匯出 CSV。免費、不需登入、在瀏覽器裡處理。">
   <meta property="og:url" content="https://rednote.lab115.com/zh-tw/">
-  <meta property="og:image" content="https://rednote.lab115.com/img/og-zh-tw.jpg?v=7">
+  <meta property="og:image" content="https://rednote.lab115.com/img/og-zh-tw.jpg?v=8">
   <meta property="og:image:width" content="1400">
   <meta property="og:image:height" content="560">
   <meta property="og:locale" content="zh_TW">
   <meta name="twitter:card" content="summary_large_image">
 
-  <link rel="stylesheet" href="/sokosoko.css?v=7">
-  <link rel="stylesheet" href="/style.css?v=7">
+  <link rel="stylesheet" href="/sokosoko.css?v=8">
+  <link rel="stylesheet" href="/style.css?v=8">
+  <script defer src="https://stats.lab115.com/script.js" data-website-id="1e8bb563-6b26-430c-90a2-e57b75549da7" data-domains="rednote.lab115.com"></script>
 
   <script type="application/ld+json">
 {
@@ -117,14 +118,14 @@
 </head>
 <body>
   <header class="sk-header">
-    <a class="sk-logo" href="/zh-tw/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">小紅書匯出工具</a>
+    <a class="sk-logo" href="/zh-tw/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">小紅書匯出工具</a>
     <nav aria-label="頁面導覽"><ul class="sk-nav"><li><a href="#features">功能</a></li><li><a href="#preview">預覽</a></li><li><a href="#how">用法</a></li><li><a href="#faq">常見問題</a></li></ul></nav>
     <div class="hdr-actions">
       <details class="lang-menu">
         <summary aria-label="語言: 繁體中文"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg><span>繁體中文</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></summary>
         <ul><li><a href="/" hreflang="en" lang="en">English</a></li><li><a href="/zh/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/" hreflang="zh-TW" lang="zh-TW" aria-current="page">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul>
       </details>
-      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">加到 Chrome</a>
+      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="header">加到 Chrome</a>
     </div>
   </header>
 
@@ -134,9 +135,9 @@
       <span class="sk-hero__blob" style="width:140px;height:140px;background:var(--fill-pink);right:80px;bottom:-50px"></span>
       <span class="sk-hero__blob" style="width:90px;height:90px;background:var(--fill-mint);right:-20px;top:40px"></span>
       <h1 class="sk-hero__title" id="hero-title">小紅書筆記，<mark>一鍵</mark>帶走</h1>
-      <p class="sk-hero__sub">圖片影片一鍵下載 · 筆記列表匯出 CSV<br>免費 · 不需登入 · 全程在你的瀏覽器裡完成</p>
+      <p class="sk-hero__sub">圖片影片一鍵下載 · 筆記列表匯出 CSV<br>免費 · 不需登入 · 筆記不離開你的瀏覽器</p>
       <div class="cta">
-        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">加到 Chrome</a>
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="hero">加到 Chrome</a>
         <a class="sk-btn sk-btn--secondary" href="#how">看看怎麼用</a>
       </div>
       <div class="sk-tags"><span class="sk-tag">#無浮水印原檔</span><span class="sk-tag">#實況照片</span><span class="sk-tag">#搜尋結果</span><span class="sk-tag">#使用者主頁</span><span class="sk-tag">#匯出CSV</span></div>
@@ -182,21 +183,21 @@
         <div class="pv" data-tabs>
           <div class="sk-tabs pv-tabs" role="tablist" aria-label="介面預覽"><button class="sk-tab" role="tab" id="tab-post" aria-controls="pv-post" aria-selected="true">下載單篇</button><button class="sk-tab" role="tab" id="tab-folder" aria-controls="pv-folder" aria-selected="false">自動整理</button><button class="sk-tab" role="tab" id="tab-list" aria-controls="pv-list" aria-selected="false">匯出列表</button><button class="sk-tab" role="tab" id="tab-csv" aria-controls="pv-csv" aria-selected="false">CSV 表格</button></div>
           <div class="pv-panel" role="tabpanel" id="pv-post" aria-labelledby="tab-post">
-          <div class="pv-shot"><img src="/img/zh-tw-01-post-download.webp?v=7" width="712" height="745" alt="「下載單篇資源」分頁：列出筆記的影片和全部圖片，可以逐張勾選"></div>
+          <div class="pv-shot"><img src="/img/zh-tw-01-post-download.webp?v=8" width="712" height="745" alt="「下載單篇資源」分頁：列出筆記的影片和全部圖片，可以逐張勾選"></div>
           <div class="pv-copy"><h3>圖片和影片，<mark>一鍵</mark>全部儲存</h3><p>打開任意一篇筆記，勾選想要的圖片和影片，點一下就下載到同一個資料夾。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>影片優先下載無浮水印原檔</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>實況照片、內文（note.txt）也能存</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>只勾選你需要的那幾張</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">加到 Chrome</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">加到 Chrome</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-folder" aria-labelledby="tab-folder">
-          <div class="pv-shot"><img src="/img/zh-tw-02-one-folder.webp?v=7" width="712" height="745" loading="lazy" alt="下載資料夾裡：一個以時間和筆記標題命名的資料夾，裡面是 video-1.mp4 和 image-1 到 image-9"></div>
+          <div class="pv-shot"><img src="/img/zh-tw-02-one-folder.webp?v=8" width="712" height="745" loading="lazy" alt="下載資料夾裡：一個以時間和筆記標題命名的資料夾，裡面是 video-1.mp4 和 image-1 到 image-9"></div>
           <div class="pv-copy"><h3>一篇筆記，<mark>一個</mark>資料夾</h3><p>資料夾依下載時間和筆記標題命名，影片和圖片依序編號，不用再一張張重新命名。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>下載時間 + 標題，自動建立資料夾</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>image-1、image-2… 依原順序編號</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>同名自動加序號，不覆蓋舊檔案</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">加到 Chrome</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">加到 Chrome</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-list" aria-labelledby="tab-list">
-          <div class="pv-shot"><img src="/img/zh-tw-03-note-list.webp?v=7" width="712" height="745" loading="lazy" alt="「匯出筆記列表」分頁：已收集 128 則，列出每則筆記的標題、作者、按讚收藏留言數和日期"></div>
+          <div class="pv-shot"><img src="/img/zh-tw-03-note-list.webp?v=8" width="712" height="745" loading="lazy" alt="「匯出筆記列表」分頁：已收集 128 則，列出每則筆記的標題、作者、按讚收藏留言數和日期"></div>
           <div class="pv-copy"><h3>邊滑邊收集，<mark>隨時</mark>匯出</h3><p>在首頁推薦、搜尋結果或使用者主頁正常往下滑，看過的筆記會自動收集並去除重複。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>首頁推薦 · 搜尋結果 · 使用者主頁 · 收藏</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>自動去重，即時顯示收集數量</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>標題、作者、互動數據一起帶上</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">加到 Chrome</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">加到 Chrome</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-csv" aria-labelledby="tab-csv">
-          <div class="pv-shot"><img src="/img/zh-tw-04-csv.webp?v=7" width="712" height="745" loading="lazy" alt="匯出的 CSV 在試算表軟體裡開啟：標題、作者、發布時間、按讚數、收藏數等欄位"></div>
+          <div class="pv-shot"><img src="/img/zh-tw-04-csv.webp?v=8" width="712" height="745" loading="lazy" alt="匯出的 CSV 在試算表軟體裡開啟：標題、作者、發布時間、按讚數、收藏數等欄位"></div>
           <div class="pv-copy"><h3>匯出就是<mark>一張</mark>整齊的表</h3><p>Excel、Numbers、Google 試算表直接開啟，中文不亂碼，做選題分析、競品整理都順手。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>標題、作者、發布時間</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>按讚 · 收藏 · 留言 · 分享</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>封面、作者主頁、全部圖片連結</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">加到 Chrome</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">加到 Chrome</a></div>
         </div>
         </div>
       </div>
@@ -237,7 +238,7 @@
 
     <section class="sk-section sk-section--soft" aria-labelledby="privacy-title">
       <div class="sk-container">
-        <div class="sk-h2-wrap"><h2 class="sk-h2" id="privacy-title">資料只留在本機</h2><span class="sk-h2-sub" aria-hidden="true">PRIVACY</span></div>
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="privacy-title">筆記只留在本機</h2><span class="sk-h2-sub" aria-hidden="true">PRIVACY</span></div>
         <ul class="priv"><li><span class="sk-cat__disc" style="background:var(--fill-yellow)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M34 44V34a14 14 0 0 1 28 0v10"/>
 <rect x="24" y="44" width="48" height="36" rx="7" fill="var(--brand)"/>
@@ -245,7 +246,7 @@
 </svg></span><h3>不用註冊</h3><p>擴充功能沒有帳號系統，也不讀取你的小紅書帳號資訊。</p></li><li><span class="sk-cat__disc" style="background:var(--fill-sky)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M30 70h36a13 13 0 0 0 2-26 18 18 0 0 0-34-4 15 15 0 0 0-4 30Z" fill="#fff"/>
 <path d="M20 22 76 78" stroke-width="3.5"/>
-</svg></span><h3>不連外部伺服器</h3><p>收集、匯出、下載都在瀏覽器裡完成，沒有任何資料傳給我們或第三方。</p></li><li><span class="sk-cat__disc" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+</svg></span><h3>儲存的內容不上傳</h3><p>筆記、圖片、影片都不經過我們的伺服器。我們只收到匿名的使用次數，而且你可以關掉。</p></li><li><span class="sk-cat__disc" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M48 14 74 24v20c0 18-11 31-26 37-15-6-26-19-26-37V24Z" fill="#fff"/>
 <path d="M36 47l8 8 16-17" stroke-width="3"/>
 </svg></span><h3>只處理公開內容</h3><p>擴充功能只讀取你正在瀏覽的小紅書頁面上已經看得到的筆記。</p></li></ul>
@@ -262,17 +263,17 @@
 
     <section class="sk-section sk-section--soft closing" aria-labelledby="closing-title">
       <div class="sk-container">
-        <img src="/img/icon.svg?v=7" alt="" width="72" height="72">
+        <img src="/img/icon.svg?v=8" alt="" width="72" height="72">
         <div class="sk-h2-wrap"><h2 class="sk-h2" id="closing-title">現在就試試</h2></div>
         <p>裝好後打開任意一篇小紅書筆記，點一下擴充功能圖示就能用。</p>
-        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">加到 Chrome</a>
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="closing">加到 Chrome</a>
       </div>
     </section>
   </main>
 
   <footer class="sk-footer">
     <div class="sk-footer__cols">
-      <div><a class="sk-logo" href="/zh-tw/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">小紅書匯出工具</a><p class="foot-desc">免費的小紅書圖片影片下載、筆記列表匯出 CSV 擴充功能。</p><p class="foot-made"><a href="https://lab115.com/zh">LAB115 出品</a></p></div>
+      <div><a class="sk-logo" href="/zh-tw/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">小紅書匯出工具</a><p class="foot-desc">免費的小紅書圖片影片下載、筆記列表匯出 CSV 擴充功能。</p><p class="foot-made"><a href="https://lab115.com/zh">LAB115 出品</a></p></div>
       <div><h4>產品</h4><ul><li><a href="#features">功能</a></li><li><a href="#preview">介面預覽</a></li><li><a href="#how">怎麼用</a></li></ul></div>
       <div><h4>說明</h4><ul><li><a href="#faq">常見問題</a></li><li><a href="/zh-tw/privacy/">隱私權政策</a></li><li><a href="mailto:help@lab115.com">意見回饋 help@lab115.com</a></li></ul></div>
       <div><h4>語言</h4><ul><li><a href="/" hreflang="en" lang="en">English</a></li><li><a href="/zh/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul></div>

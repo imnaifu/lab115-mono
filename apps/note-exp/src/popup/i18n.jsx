@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { track } from "./stats.js";
 
 // UI languages in menu order. Codes match the _locales folders; labels are each
 // language's own name so people can find theirs whatever is showing.
@@ -16,6 +17,10 @@ export const LANGS = [
 // anything missing (the demo-only keys) falls back to English.
 export const STR = {
   zh_CN: {
+    menu: "更多设置",
+    statsT: "匿名使用统计",
+    statsS: "帮我们了解哪些功能常用。只统计操作次数，不含笔记内容、链接和账号。",
+    privacy: "隐私政策",
     brand: "小红书导出工具",
     tabList: "导出笔记列表",
     tabPost: "下载单帖资源",
@@ -94,6 +99,10 @@ export const STR = {
           : "" + n,
   },
   en: {
+    menu: "Settings",
+    statsT: "Anonymous usage stats",
+    statsS: "Helps us see which features get used. Only counts actions: no note content, links or accounts.",
+    privacy: "Privacy policy",
     brand: "RedNote Exporter",
     tabList: "Export Note List",
     tabPost: "Download Single Post",
@@ -173,6 +182,10 @@ export const STR = {
           : "" + n,
   },
   zh_TW: {
+    menu: "更多設定",
+    statsT: "匿名使用統計",
+    statsS: "幫我們了解哪些功能常用。只統計操作次數，不含筆記內容、連結和帳號。",
+    privacy: "隱私權政策",
     brand: "小紅書匯出工具",
     tabList: "匯出筆記列表",
     tabPost: "下載單篇資源",
@@ -233,6 +246,10 @@ export const STR = {
   // Counts render as "<number> <unit>", so units are worded to read naturally
   // after the number in each language.
   ko: {
+    menu: "설정",
+    statsT: "익명 사용 통계",
+    statsS: "어떤 기능이 많이 쓰이는지 파악하는 데 도움이 됩니다. 사용 횟수만 집계하며 노트 내용, 링크, 계정 정보는 포함하지 않습니다.",
+    privacy: "개인정보처리방침",
     tabList: "노트 목록 내보내기",
     tabPost: "게시물 다운로드",
     openNote: "원본 게시물 열기",
@@ -292,6 +309,10 @@ export const STR = {
           : "" + n,
   },
   ja: {
+    menu: "設定",
+    statsT: "匿名の利用統計",
+    statsS: "よく使われる機能を把握するために使います。操作の回数だけを集計し、ノートの内容・リンク・アカウントは含みません。",
+    privacy: "プライバシーポリシー",
     tabList: "ノート一覧を出力",
     tabPost: "投稿をダウンロード",
     openNote: "元の投稿を開く",
@@ -349,6 +370,10 @@ export const STR = {
         : n.toLocaleString("ja-JP"),
   },
   vi: {
+    menu: "Cài đặt",
+    statsT: "Thống kê sử dụng ẩn danh",
+    statsS: "Giúp chúng tôi biết tính năng nào được dùng nhiều. Chỉ đếm số lần thao tác, không gồm nội dung ghi chú, liên kết hay tài khoản.",
+    privacy: "Chính sách quyền riêng tư",
     tabList: "Xuất danh sách ghi chú",
     tabPost: "Tải bài viết",
     openNote: "Mở bài gốc",
@@ -437,6 +462,7 @@ const LangCtx = createContext(null);
 export function LangProvider({ children }) {
   const [lang, setLangState] = useState(() => readPicked() || browserLang());
   const setLang = (code) => {
+    if (code !== lang) track("lang_change", { from: lang, to: code });
     setLangState(code);
     try {
       localStorage.setItem(PICKED_KEY, code);

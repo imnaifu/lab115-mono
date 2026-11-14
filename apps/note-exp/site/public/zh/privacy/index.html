@@ -9,7 +9,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>隐私政策 - 小红书导出工具 RedNote Exporter</title>
-  <meta name="description" content="小红书导出工具（RedNote Exporter）不收集、不存储、不传输任何个人数据，所有处理都在你的浏览器里完成。">
+  <meta name="description" content="小红书导出工具（RedNote Exporter）采集和下载的笔记、图片、视频只在你的浏览器里，只发送可以关闭的匿名使用次数。">
   <link rel="canonical" href="https://rednote.lab115.com/zh/privacy/">
   <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/privacy/">
   <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/privacy/">
@@ -18,32 +18,33 @@
   <link rel="alternate" hreflang="ja" href="https://rednote.lab115.com/ja/privacy/">
   <link rel="alternate" hreflang="vi" href="https://rednote.lab115.com/vi/privacy/">
   <link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/privacy/">
-  <link rel="icon" href="/img/icon.svg?v=7" type="image/svg+xml">
-  <link rel="icon" href="/favicon.png?v=7" type="image/png" sizes="32x32">
+  <link rel="icon" href="/img/icon.svg?v=8" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png?v=8" type="image/png" sizes="32x32">
   <meta name="theme-color" content="#ffffff">
-  <link rel="stylesheet" href="/sokosoko.css?v=7">
-  <link rel="stylesheet" href="/style.css?v=7">
+  <link rel="stylesheet" href="/sokosoko.css?v=8">
+  <link rel="stylesheet" href="/style.css?v=8">
+  <script defer src="https://stats.lab115.com/script.js" data-website-id="1e8bb563-6b26-430c-90a2-e57b75549da7" data-domains="rednote.lab115.com"></script>
 </head>
 <body>
   <header class="sk-header">
-    <a class="sk-logo" href="/zh/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">小红书导出工具</a>
+    <a class="sk-logo" href="/zh/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">小红书导出工具</a>
     <nav aria-label="页面导航"><ul class="sk-nav"><li><a href="/zh/#features">功能</a></li><li><a href="/zh/#preview">预览</a></li><li><a href="/zh/#how">用法</a></li><li><a href="/zh/#faq">常见问题</a></li></ul></nav>
     <div class="hdr-actions">
       <details class="lang-menu">
         <summary aria-label="语言: 简体中文"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg><span>简体中文</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></summary>
         <ul><li><a href="/privacy/" hreflang="en" lang="en">English</a></li><li><a href="/zh/privacy/" hreflang="zh-CN" lang="zh-CN" aria-current="page">简体中文</a></li><li><a href="/zh-tw/privacy/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/privacy/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/privacy/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/privacy/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul>
       </details>
-      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">添加到 Chrome</a>
+      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="header">添加到 Chrome</a>
     </div>
   </header>
 
   <main class="sk-container">
     <article class="prose">
       <h1>隐私政策</h1>
-      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 7 日</p>
+      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 13 日</p>
 
       <div class="summary">
-        <p><strong>简单说：</strong>本扩展不收集、不存储、不传输任何个人数据。它没有服务器，没有账号体系，也没有统计或追踪代码。所有处理都在你自己的浏览器里完成。</p>
+        <p><strong>简单说：</strong>你采集和下载的笔记、图片、视频都只在你的浏览器里，不会离开你的电脑。扩展会把匿名的使用次数（用了哪些功能、用了多少次）发到我们自建的统计服务器，用来决定先改进什么。这些数据不含笔记内容、链接和账号信息，你可以在扩展的 ⋯ 菜单里关掉。</p>
       </div>
 
       <h2>扩展会读取什么</h2>
@@ -54,17 +55,34 @@
       </ul>
       <p>这些都是页面上本来就公开可见的内容。扩展不会读取你的小红书账号信息、私信、Cookie 或密码，也不会自己向小红书发起额外请求，只是读取页面在你浏览时已经收到的数据。</p>
 
+      <h2>匿名使用统计</h2>
+      <p>为了了解大家实际在用哪些功能，扩展会向我们自建的统计服务器（Umami，地址 stats.lab115.com）发送少量匿名事件：</p>
+      <ul>
+        <li><strong>什么时候发：</strong>安装或更新扩展时；打开扩展弹窗、切换标签页、导出笔记列表、下载单帖、清空列表、打开原帖、切换界面语言时。</li>
+        <li><strong>包含什么：</strong>当前页面的类型（首页推荐、搜索、用户主页、单篇笔记或其他）以及是 xiaohongshu.com 还是 rednote.com；数量，例如导出了几条笔记，下载了几张图片、几个视频、几张实况图、几个文本文件，有几个没能开始下载；视频是不是无水印原片；界面语言和浏览器语言；扩展版本；以及安装时随机生成的安装 ID，用来统计有多少人在用、有没有人回来继续用。</li>
+        <li><strong>绝不包含：</strong>笔记 ID、链接、标题和正文，作者名，搜索词，文件名，你的小红书账号，Cookie，以及你访问其他网站的任何信息。</li>
+        <li><strong>网络信息：</strong>和所有网络请求一样，统计服务器会收到你的 IP 地址和浏览器标识。服务器只用它们推断大致的国家和浏览器、操作系统类型，不保存 IP 地址。</li>
+        <li><strong>怎么关闭：</strong>在扩展弹窗里点 ⋯，关掉「匿名使用统计」。关闭后不再发送任何数据。</li>
+      </ul>
+      <p>统计数据只保存在我们自己的服务器上，只用于改进扩展，不出售也不分享。</p>
+
+      <h2>卸载扩展时</h2>
+      <p>扩展被卸载后，Chrome 会打开本网站上的一个简短页面，问你卸载的原因。页面地址里带有扩展版本号；如果使用统计是开着的，还带有安装 ID，用来把卸载原因和这个安装用过的功能对上。填不填都可以。</p>
+
+      <h2>本网站</h2>
+      <p>rednote.lab115.com 用同一个自建的 Umami 统计访问情况：浏览了哪些页面、从哪个网站过来、大致国家、浏览器和设备类型，以及「添加到 Chrome」按钮的点击。网站不设置 Cookie，也不使用第三方统计工具。</p>
+
       <h2>数据存在哪里</h2>
       <ul>
         <li>采集到的笔记只保存在当前标签页的内存里。关闭标签页、刷新页面或点「清空」后就会丢弃。</li>
         <li>你点「导出 CSV」或「下载」时，文件直接由浏览器保存到你电脑的下载文件夹。图片和视频由浏览器从小红书的图片、视频服务器直接下载，不经过我们。</li>
-        <li>扩展只在本地记住一项设置：你在语言菜单里选择的界面语言。</li>
+        <li>扩展在本地只保存三样东西：你在语言菜单里选择的界面语言、使用统计是否开启，以及随机生成的安装 ID。</li>
       </ul>
 
       <h2>我们不做的事</h2>
       <ul>
-        <li>不把任何数据发送到我们或任何第三方的服务器。</li>
-        <li>不使用统计、广告或追踪工具。</li>
+        <li>不把你采集或下载的笔记、图片、视频、正文发送到我们或任何第三方的服务器。</li>
+        <li>不使用第三方统计、广告或追踪工具。</li>
         <li>不出售、不出租、不分享任何数据。</li>
         <li>不在后台主动采集。只有你在浏览小红书页面时，扩展才会处理该页面的数据。</li>
       </ul>
@@ -72,6 +90,7 @@
       <h2>权限说明</h2>
       <ul>
         <li><code>downloads</code>：把你选中的图片、视频保存到下载文件夹，并按「时间 + 笔记标题」放进同一个子文件夹。</li>
+        <li><code>storage</code>：记住使用统计的开关设置和安装 ID。</li>
         <li><strong>访问 xiaohongshu.com 和 rednote.com（含 edith、so 子域名）</strong>：在这些页面上运行，读取页面加载的笔记数据。扩展不会在其他网站上运行。</li>
       </ul>
 
@@ -88,7 +107,7 @@
 
   <footer class="sk-footer">
     <div class="sk-footer__cols">
-      <div><a class="sk-logo" href="/zh/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">小红书导出工具</a><p class="foot-desc">免费的小红书图片视频下载、笔记列表导出 CSV 扩展。</p><p class="foot-made"><a href="https://lab115.com/zh">LAB115 出品</a></p></div>
+      <div><a class="sk-logo" href="/zh/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">小红书导出工具</a><p class="foot-desc">免费的小红书图片视频下载、笔记列表导出 CSV 扩展。</p><p class="foot-made"><a href="https://lab115.com/zh">LAB115 出品</a></p></div>
       <div><h4>产品</h4><ul><li><a href="/zh/#features">功能</a></li><li><a href="/zh/#preview">界面预览</a></li><li><a href="/zh/#how">怎么用</a></li></ul></div>
       <div><h4>帮助</h4><ul><li><a href="/zh/#faq">常见问题</a></li><li><a href="/zh/privacy/">隐私政策</a></li><li><a href="mailto:help@lab115.com">反馈 help@lab115.com</a></li></ul></div>
       <div><h4>语言</h4><ul><li><a href="/privacy/" hreflang="en" lang="en">English</a></li><li><a href="/zh/privacy/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/privacy/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/privacy/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/privacy/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/privacy/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul></div>

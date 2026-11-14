@@ -8,7 +8,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>샤오홍슈 다운로더 - 레드노트 이미지·동영상 저장, 노트 목록 CSV 내보내기 | RedNote Exporter</title>
-  <meta name="description" content="무료 Chrome 확장 프로그램: 샤오홍슈(RedNote) 게시물의 이미지와 동영상을 한 번에 다운로드하고(동영상은 워터마크 없는 원본 우선), 홈 피드·검색 결과·프로필의 노트 목록을 CSV로 내보냅니다. 로그인 불필요, 모든 처리는 브라우저 안에서.">
+  <meta name="description" content="무료 Chrome 확장 프로그램: 샤오홍슈(RedNote) 게시물의 이미지와 동영상을 한 번에 다운로드하고(동영상은 워터마크 없는 원본 우선), 홈 피드·검색 결과·프로필의 노트 목록을 CSV로 내보냅니다. 로그인 불필요, 노트는 브라우저 밖으로 나가지 않습니다.">
   <link rel="canonical" href="https://rednote.lab115.com/ko/">
   <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/">
   <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/">
@@ -17,24 +17,25 @@
   <link rel="alternate" hreflang="ja" href="https://rednote.lab115.com/ja/">
   <link rel="alternate" hreflang="vi" href="https://rednote.lab115.com/vi/">
   <link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/">
-  <link rel="icon" href="/img/icon.svg?v=7" type="image/svg+xml">
-  <link rel="icon" href="/favicon.png?v=7" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="/img/icon128.png?v=7">
+  <link rel="icon" href="/img/icon.svg?v=8" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png?v=8" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/img/icon128.png?v=8">
   <meta name="theme-color" content="#ffffff">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="RedNote Exporter">
   <meta property="og:title" content="샤오홍슈 다운로더 - 이미지·동영상 저장, 노트 목록 CSV 내보내기">
-  <meta property="og:description" content="샤오홍슈 게시물의 이미지와 동영상을 한 번에 저장하고 노트 목록을 CSV로 내보내세요. 무료, 로그인 불필요, 100% 로컬 처리.">
+  <meta property="og:description" content="샤오홍슈 게시물의 이미지와 동영상을 한 번에 저장하고 노트 목록을 CSV로 내보내세요. 무료, 로그인 불필요, 브라우저 안에서 처리.">
   <meta property="og:url" content="https://rednote.lab115.com/ko/">
-  <meta property="og:image" content="https://rednote.lab115.com/img/og-ko.jpg?v=7">
+  <meta property="og:image" content="https://rednote.lab115.com/img/og-ko.jpg?v=8">
   <meta property="og:image:width" content="1400">
   <meta property="og:image:height" content="560">
   <meta property="og:locale" content="ko_KR">
   <meta name="twitter:card" content="summary_large_image">
 
-  <link rel="stylesheet" href="/sokosoko.css?v=7">
-  <link rel="stylesheet" href="/style.css?v=7">
+  <link rel="stylesheet" href="/sokosoko.css?v=8">
+  <link rel="stylesheet" href="/style.css?v=8">
+  <script defer src="https://stats.lab115.com/script.js" data-website-id="1e8bb563-6b26-430c-90a2-e57b75549da7" data-domains="rednote.lab115.com"></script>
 
   <script type="application/ld+json">
 {
@@ -117,14 +118,14 @@
 </head>
 <body>
   <header class="sk-header">
-    <a class="sk-logo" href="/ko/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">RedNote Exporter</a>
+    <a class="sk-logo" href="/ko/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">RedNote Exporter</a>
     <nav aria-label="페이지"><ul class="sk-nav"><li><a href="#features">기능</a></li><li><a href="#preview">미리보기</a></li><li><a href="#how">사용법</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
     <div class="hdr-actions">
       <details class="lang-menu">
         <summary aria-label="언어: 한국어"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg><span>한국어</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></summary>
         <ul><li><a href="/" hreflang="en" lang="en">English</a></li><li><a href="/zh/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko" aria-current="page">한국어</a></li><li><a href="/ja/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul>
       </details>
-      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome에 추가</a>
+      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="header">Chrome에 추가</a>
     </div>
   </header>
 
@@ -134,9 +135,9 @@
       <span class="sk-hero__blob" style="width:140px;height:140px;background:var(--fill-pink);right:80px;bottom:-50px"></span>
       <span class="sk-hero__blob" style="width:90px;height:90px;background:var(--fill-mint);right:-20px;top:40px"></span>
       <h1 class="sk-hero__title" id="hero-title">샤오홍슈 노트, <mark>한 번에</mark> 저장</h1>
-      <p class="sk-hero__sub">게시물 이미지·동영상 다운로드 · 노트 목록 CSV 내보내기<br>무료 · 가입 불필요 · 모든 처리는 브라우저 안에서</p>
+      <p class="sk-hero__sub">게시물 이미지·동영상 다운로드 · 노트 목록 CSV 내보내기<br>무료 · 가입 불필요 · 노트는 브라우저 밖으로 나가지 않음</p>
       <div class="cta">
-        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome에 추가</a>
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="hero">Chrome에 추가</a>
         <a class="sk-btn sk-btn--secondary" href="#how">사용법 보기</a>
       </div>
       <div class="sk-tags"><span class="sk-tag">#워터마크없는원본</span><span class="sk-tag">#라이브포토</span><span class="sk-tag">#검색결과</span><span class="sk-tag">#프로필</span><span class="sk-tag">#CSV내보내기</span></div>
@@ -182,21 +183,21 @@
         <div class="pv" data-tabs>
           <div class="sk-tabs pv-tabs" role="tablist" aria-label="화면"><button class="sk-tab" role="tab" id="tab-post" aria-controls="pv-post" aria-selected="true">게시물 다운로드</button><button class="sk-tab" role="tab" id="tab-folder" aria-controls="pv-folder" aria-selected="false">자동 정리</button><button class="sk-tab" role="tab" id="tab-list" aria-controls="pv-list" aria-selected="false">노트 목록</button><button class="sk-tab" role="tab" id="tab-csv" aria-controls="pv-csv" aria-selected="false">CSV 표</button></div>
           <div class="pv-panel" role="tabpanel" id="pv-post" aria-labelledby="tab-post">
-          <div class="pv-shot"><img src="/img/ko-01-post-download.webp?v=7" width="712" height="745" alt="「게시물 다운로드」 탭: 게시물의 동영상과 모든 이미지가 체크박스와 함께 표시됨"></div>
+          <div class="pv-shot"><img src="/img/ko-01-post-download.webp?v=8" width="712" height="745" alt="「게시물 다운로드」 탭: 게시물의 동영상과 모든 이미지가 체크박스와 함께 표시됨"></div>
           <div class="pv-copy"><h3>이미지와 동영상, <mark>한 번에</mark> 모두 저장</h3><p>게시물을 열고 원하는 이미지와 동영상을 선택하면 한 폴더에 바로 다운로드됩니다.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>워터마크 없는 원본 동영상 우선</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>라이브 포토와 본문(note.txt)도 저장</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>필요한 파일만 골라서 저장</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome에 추가</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome에 추가</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-folder" aria-labelledby="tab-folder">
-          <div class="pv-shot"><img src="/img/ko-02-one-folder.webp?v=7" width="712" height="745" loading="lazy" alt="다운로드 폴더: 시간과 게시물 제목으로 이름 붙은 폴더 안에 video-1.mp4와 image-1~image-9"></div>
+          <div class="pv-shot"><img src="/img/ko-02-one-folder.webp?v=8" width="712" height="745" loading="lazy" alt="다운로드 폴더: 시간과 게시물 제목으로 이름 붙은 폴더 안에 video-1.mp4와 image-1~image-9"></div>
           <div class="pv-copy"><h3>게시물 하나에 <mark>폴더 하나</mark></h3><p>폴더 이름은 다운로드 시간과 게시물 제목으로 정해지고, 파일에는 순서대로 번호가 붙습니다.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>다운로드 시간 + 제목으로 폴더 생성</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>image-1, image-2… 원래 순서대로</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>같은 이름은 번호를 붙여 덮어쓰지 않음</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome에 추가</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome에 추가</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-list" aria-labelledby="tab-list">
-          <div class="pv-shot"><img src="/img/ko-03-note-list.webp?v=7" width="712" height="745" loading="lazy" alt="「노트 목록 내보내기」 탭: 128개 수집, 각 노트의 제목·작성자·좋아요·저장·댓글 수와 날짜"></div>
+          <div class="pv-shot"><img src="/img/ko-03-note-list.webp?v=8" width="712" height="745" loading="lazy" alt="「노트 목록 내보내기」 탭: 128개 수집, 각 노트의 제목·작성자·좋아요·저장·댓글 수와 날짜"></div>
           <div class="pv-copy"><h3>스크롤만 하면 수집, <mark>언제든</mark> 내보내기</h3><p>홈 피드, 검색 결과, 프로필을 평소처럼 스크롤하면 본 노트가 자동으로 수집되고 중복은 제거됩니다.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>홈 피드 · 검색 결과 · 프로필 · 저장</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>자동 중복 제거, 실시간 개수 표시</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>제목, 작성자, 반응 데이터까지</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome에 추가</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome에 추가</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-csv" aria-labelledby="tab-csv">
-          <div class="pv-shot"><img src="/img/ko-04-csv.webp?v=7" width="712" height="745" loading="lazy" alt="스프레드시트에서 연 CSV: Title, Author Name, Publish Time, Like Count, Collect Count 열"></div>
+          <div class="pv-shot"><img src="/img/ko-04-csv.webp?v=8" width="712" height="745" loading="lazy" alt="스프레드시트에서 연 CSV: Title, Author Name, Publish Time, Like Count, Collect Count 열"></div>
           <div class="pv-copy"><h3>내보내면 바로 <mark>깔끔한</mark> 표</h3><p>Excel, Numbers, Google 스프레드시트에서 바로 열립니다. 콘텐츠 분석과 경쟁사 정리에 유용합니다.</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>제목, 작성자, 게시 시간</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>좋아요 · 저장 · 댓글 · 공유</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>커버, 프로필, 모든 이미지 링크</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome에 추가</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome에 추가</a></div>
         </div>
         </div>
       </div>
@@ -237,7 +238,7 @@
 
     <section class="sk-section sk-section--soft" aria-labelledby="privacy-title">
       <div class="sk-container">
-        <div class="sk-h2-wrap"><h2 class="sk-h2" id="privacy-title">데이터는 내 컴퓨터에만</h2><span class="sk-h2-sub" aria-hidden="true">PRIVACY</span></div>
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="privacy-title">노트는 내 컴퓨터에만</h2><span class="sk-h2-sub" aria-hidden="true">PRIVACY</span></div>
         <ul class="priv"><li><span class="sk-cat__disc" style="background:var(--fill-yellow)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M34 44V34a14 14 0 0 1 28 0v10"/>
 <rect x="24" y="44" width="48" height="36" rx="7" fill="var(--brand)"/>
@@ -245,7 +246,7 @@
 </svg></span><h3>계정 불필요</h3><p>가입 절차가 없고 샤오홍슈 계정 정보도 읽지 않습니다.</p></li><li><span class="sk-cat__disc" style="background:var(--fill-sky)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M30 70h36a13 13 0 0 0 2-26 18 18 0 0 0-34-4 15 15 0 0 0-4 30Z" fill="#fff"/>
 <path d="M20 22 76 78" stroke-width="3.5"/>
-</svg></span><h3>외부 서버 없음</h3><p>수집, 내보내기, 다운로드가 모두 브라우저 안에서 이뤄지며 어떤 데이터도 외부로 보내지 않습니다.</p></li><li><span class="sk-cat__disc" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+</svg></span><h3>저장한 내용은 업로드되지 않음</h3><p>노트, 이미지, 동영상은 저희 서버를 거치지 않습니다. 저희가 받는 것은 끌 수 있는 익명 사용 횟수뿐입니다.</p></li><li><span class="sk-cat__disc" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M48 14 74 24v20c0 18-11 31-26 37-15-6-26-19-26-37V24Z" fill="#fff"/>
 <path d="M36 47l8 8 16-17" stroke-width="3"/>
 </svg></span><h3>공개 콘텐츠만</h3><p>지금 보고 있는 샤오홍슈 페이지에 이미 보이는 노트만 읽습니다.</p></li></ul>
@@ -262,17 +263,17 @@
 
     <section class="sk-section sk-section--soft closing" aria-labelledby="closing-title">
       <div class="sk-container">
-        <img src="/img/icon.svg?v=7" alt="" width="72" height="72">
+        <img src="/img/icon.svg?v=8" alt="" width="72" height="72">
         <div class="sk-h2-wrap"><h2 class="sk-h2" id="closing-title">지금 써 보세요</h2></div>
         <p>설치한 뒤 샤오홍슈 게시물을 열고 확장 프로그램 아이콘을 클릭하세요.</p>
-        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome에 추가</a>
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="closing">Chrome에 추가</a>
       </div>
     </section>
   </main>
 
   <footer class="sk-footer">
     <div class="sk-footer__cols">
-      <div><a class="sk-logo" href="/ko/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">RedNote Exporter</a><p class="foot-desc">샤오홍슈 이미지와 동영상을 저장하고 노트 목록을 CSV로 내보내는 무료 Chrome 확장 프로그램.</p><p class="foot-made"><a href="https://lab115.com">Made by LAB115</a></p></div>
+      <div><a class="sk-logo" href="/ko/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">RedNote Exporter</a><p class="foot-desc">샤오홍슈 이미지와 동영상을 저장하고 노트 목록을 CSV로 내보내는 무료 Chrome 확장 프로그램.</p><p class="foot-made"><a href="https://lab115.com">Made by LAB115</a></p></div>
       <div><h4>제품</h4><ul><li><a href="#features">기능</a></li><li><a href="#preview">미리보기</a></li><li><a href="#how">사용법</a></li></ul></div>
       <div><h4>도움말</h4><ul><li><a href="#faq">자주 묻는 질문</a></li><li><a href="/ko/privacy/">개인정보처리방침</a></li><li><a href="mailto:help@lab115.com">help@lab115.com</a></li></ul></div>
       <div><h4>언어</h4><ul><li><a href="/" hreflang="en" lang="en">English</a></li><li><a href="/zh/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul></div>

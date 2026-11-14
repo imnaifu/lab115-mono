@@ -209,3 +209,14 @@ html:not(.js) .pv-panel + .pv-panel { margin-top: var(--space-7); }
 .notfound { min-height: 100vh; display: grid; place-items: center; background: var(--paper-soft); }
 .notfound .sk-empty__art svg { width: 70%; }
 .notfound a { color: var(--link); }
+
+/* ── Uninstall page (/bye/) ──────────────────────────────────────────────── */
+
+.bye-reasons { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-5); }
+.bye-reasons .sk-tag { font-size: 14px; line-height: 22px; padding: var(--space-2) var(--space-4); }
+/* [hidden] must win over the flex display below */
+.bye-more[hidden] { display: none; }
+.bye-more { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); margin-top: var(--space-6); }
+.bye-more .sk-field { width: 100%; max-width: 560px; }
+.bye-thanks { color: var(--success); font-weight: 700; }
+.bye-back { color: var(--ink-muted); margin-top: var(--space-7) !important; }

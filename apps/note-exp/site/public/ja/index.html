@@ -8,7 +8,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>小紅書ダウンローダー - RED の画像・動画を一括保存、ノート一覧を CSV 出力 | RedNote Exporter</title>
-  <meta name="description" content="無料の Chrome 拡張機能：小紅書（RED / RedNote）の投稿の画像と動画をワンクリックで保存（動画は透かしなしの元ファイルを優先）。ホームフィード・検索結果・プロフィールのノート一覧を CSV に出力できます。ログイン不要、処理はすべてブラウザ内で完結。">
+  <meta name="description" content="無料の Chrome 拡張機能：小紅書（RED / RedNote）の投稿の画像と動画をワンクリックで保存（動画は透かしなしの元ファイルを優先）。ホームフィード・検索結果・プロフィールのノート一覧を CSV に出力できます。ログイン不要、ノートがブラウザの外に出ることはありません。">
   <link rel="canonical" href="https://rednote.lab115.com/ja/">
   <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/">
   <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/">
@@ -17,24 +17,25 @@
   <link rel="alternate" hreflang="ja" href="https://rednote.lab115.com/ja/">
   <link rel="alternate" hreflang="vi" href="https://rednote.lab115.com/vi/">
   <link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/">
-  <link rel="icon" href="/img/icon.svg?v=7" type="image/svg+xml">
-  <link rel="icon" href="/favicon.png?v=7" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="/img/icon128.png?v=7">
+  <link rel="icon" href="/img/icon.svg?v=8" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png?v=8" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/img/icon128.png?v=8">
   <meta name="theme-color" content="#ffffff">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="RedNote Exporter">
   <meta property="og:title" content="小紅書ダウンローダー - 画像・動画を一括保存、ノート一覧を CSV 出力">
-  <meta property="og:description" content="小紅書の投稿の画像と動画をワンクリックで保存し、ノート一覧を CSV に出力。無料、ログイン不要、100% ローカル処理。">
+  <meta property="og:description" content="小紅書の投稿の画像と動画をワンクリックで保存し、ノート一覧を CSV に出力。無料、ログイン不要、ブラウザ内で処理。">
   <meta property="og:url" content="https://rednote.lab115.com/ja/">
-  <meta property="og:image" content="https://rednote.lab115.com/img/og-ja.jpg?v=7">
+  <meta property="og:image" content="https://rednote.lab115.com/img/og-ja.jpg?v=8">
   <meta property="og:image:width" content="1400">
   <meta property="og:image:height" content="560">
   <meta property="og:locale" content="ja_JP">
   <meta name="twitter:card" content="summary_large_image">
 
-  <link rel="stylesheet" href="/sokosoko.css?v=7">
-  <link rel="stylesheet" href="/style.css?v=7">
+  <link rel="stylesheet" href="/sokosoko.css?v=8">
+  <link rel="stylesheet" href="/style.css?v=8">
+  <script defer src="https://stats.lab115.com/script.js" data-website-id="1e8bb563-6b26-430c-90a2-e57b75549da7" data-domains="rednote.lab115.com"></script>
 
   <script type="application/ld+json">
 {
@@ -117,14 +118,14 @@
 </head>
 <body>
   <header class="sk-header">
-    <a class="sk-logo" href="/ja/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">RedNote Exporter</a>
+    <a class="sk-logo" href="/ja/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">RedNote Exporter</a>
     <nav aria-label="ページ"><ul class="sk-nav"><li><a href="#features">機能</a></li><li><a href="#preview">画面</a></li><li><a href="#how">使い方</a></li><li><a href="#faq">よくある質問</a></li></ul></nav>
     <div class="hdr-actions">
       <details class="lang-menu">
         <summary aria-label="言語: 日本語"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg><span>日本語</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></summary>
         <ul><li><a href="/" hreflang="en" lang="en">English</a></li><li><a href="/zh/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/" hreflang="ja" lang="ja" aria-current="page">日本語</a></li><li><a href="/vi/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul>
       </details>
-      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome に追加</a>
+      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="header">Chrome に追加</a>
     </div>
   </header>
 
@@ -134,9 +135,9 @@
       <span class="sk-hero__blob" style="width:140px;height:140px;background:var(--fill-pink);right:80px;bottom:-50px"></span>
       <span class="sk-hero__blob" style="width:90px;height:90px;background:var(--fill-mint);right:-20px;top:40px"></span>
       <h1 class="sk-hero__title" id="hero-title">小紅書のノートを、<mark>ワンクリック</mark>で保存</h1>
-      <p class="sk-hero__sub">投稿の画像・動画をダウンロード · ノート一覧を CSV 出力<br>無料 · 登録不要 · すべてブラウザ内で完結</p>
+      <p class="sk-hero__sub">投稿の画像・動画をダウンロード · ノート一覧を CSV 出力<br>無料 · 登録不要 · ノートはブラウザの外に出ません</p>
       <div class="cta">
-        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome に追加</a>
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="hero">Chrome に追加</a>
         <a class="sk-btn sk-btn--secondary" href="#how">使い方を見る</a>
       </div>
       <div class="sk-tags"><span class="sk-tag">#透かしなし動画</span><span class="sk-tag">#ライブフォト</span><span class="sk-tag">#検索結果</span><span class="sk-tag">#プロフィール</span><span class="sk-tag">#CSV出力</span></div>
@@ -182,21 +183,21 @@
         <div class="pv" data-tabs>
           <div class="sk-tabs pv-tabs" role="tablist" aria-label="画面"><button class="sk-tab" role="tab" id="tab-post" aria-controls="pv-post" aria-selected="true">投稿を保存</button><button class="sk-tab" role="tab" id="tab-folder" aria-controls="pv-folder" aria-selected="false">自動で整理</button><button class="sk-tab" role="tab" id="tab-list" aria-controls="pv-list" aria-selected="false">ノート一覧</button><button class="sk-tab" role="tab" id="tab-csv" aria-controls="pv-csv" aria-selected="false">CSV 表</button></div>
           <div class="pv-panel" role="tabpanel" id="pv-post" aria-labelledby="tab-post">
-          <div class="pv-shot"><img src="/img/ja-01-post-download.webp?v=7" width="712" height="745" alt="「投稿をダウンロード」タブ：投稿の動画とすべての画像がチェックボックス付きで並ぶ"></div>
+          <div class="pv-shot"><img src="/img/ja-01-post-download.webp?v=8" width="712" height="745" alt="「投稿をダウンロード」タブ：投稿の動画とすべての画像がチェックボックス付きで並ぶ"></div>
           <div class="pv-copy"><h3>画像も動画も、<mark>ワンクリック</mark>で保存</h3><p>投稿を開いて、欲しい画像と動画にチェックを入れるだけ。1 つのフォルダにまとめてダウンロードします。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>透かしなしの元動画を優先</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>ライブフォトと本文（note.txt）も保存</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>必要なファイルだけ選べる</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome に追加</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome に追加</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-folder" aria-labelledby="tab-folder">
-          <div class="pv-shot"><img src="/img/ja-02-one-folder.webp?v=7" width="712" height="745" loading="lazy" alt="ダウンロードフォルダ：時刻と投稿タイトルの名前のフォルダに video-1.mp4 と image-1〜image-9"></div>
+          <div class="pv-shot"><img src="/img/ja-02-one-folder.webp?v=8" width="712" height="745" loading="lazy" alt="ダウンロードフォルダ：時刻と投稿タイトルの名前のフォルダに video-1.mp4 と image-1〜image-9"></div>
           <div class="pv-copy"><h3>1 投稿に、<mark>1 フォルダ</mark></h3><p>フォルダ名はダウンロード時刻と投稿タイトル。ファイルには順番どおりに番号が付きます。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>時刻 + タイトルでフォルダを自動作成</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>image-1、image-2… 元の順番で番号付け</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>同名ファイルは番号を付けて上書きしない</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome に追加</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome に追加</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-list" aria-labelledby="tab-list">
-          <div class="pv-shot"><img src="/img/ja-03-note-list.webp?v=7" width="712" height="745" loading="lazy" alt="「ノート一覧を出力」タブ：128 件を収集、各ノートのタイトル・投稿者・いいね・保存・コメント数と日付"></div>
+          <div class="pv-shot"><img src="/img/ja-03-note-list.webp?v=8" width="712" height="745" loading="lazy" alt="「ノート一覧を出力」タブ：128 件を収集、各ノートのタイトル・投稿者・いいね・保存・コメント数と日付"></div>
           <div class="pv-copy"><h3>スクロールで収集、<mark>いつでも</mark>出力</h3><p>ホーム、検索結果、プロフィールを普段どおりスクロールすると、見たノートが自動で収集され、重複も除かれます。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>ホーム · 検索結果 · プロフィール · コレクション</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>重複を自動で除去、件数をリアルタイム表示</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>タイトル、投稿者、反応数もまとめて</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome に追加</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome に追加</a></div>
         </div><div class="pv-panel" role="tabpanel" id="pv-csv" aria-labelledby="tab-csv">
-          <div class="pv-shot"><img src="/img/ja-04-csv.webp?v=7" width="712" height="745" loading="lazy" alt="スプレッドシートで開いた CSV：Title、Author Name、Publish Time、Like Count、Collect Count の列"></div>
+          <div class="pv-shot"><img src="/img/ja-04-csv.webp?v=8" width="712" height="745" loading="lazy" alt="スプレッドシートで開いた CSV：Title、Author Name、Publish Time、Like Count、Collect Count の列"></div>
           <div class="pv-copy"><h3>出力すれば<mark>きれいな</mark>表に</h3><p>Excel、Numbers、Google スプレッドシートでそのまま開けます。企画の分析や競合リサーチに便利です。</p><ul class="points"><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>タイトル、投稿者、投稿日時</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>いいね · 保存 · コメント · シェア</li><li><span class="pt-ic"><svg class="sk-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>カバー、プロフィール、全画像のリンク</li></ul>
-            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome に追加</a></div>
+            <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="preview">Chrome に追加</a></div>
         </div>
         </div>
       </div>
@@ -237,7 +238,7 @@
 
     <section class="sk-section sk-section--soft" aria-labelledby="privacy-title">
       <div class="sk-container">
-        <div class="sk-h2-wrap"><h2 class="sk-h2" id="privacy-title">データは手元だけに</h2><span class="sk-h2-sub" aria-hidden="true">PRIVACY</span></div>
+        <div class="sk-h2-wrap"><h2 class="sk-h2" id="privacy-title">ノートは手元だけに</h2><span class="sk-h2-sub" aria-hidden="true">PRIVACY</span></div>
         <ul class="priv"><li><span class="sk-cat__disc" style="background:var(--fill-yellow)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M34 44V34a14 14 0 0 1 28 0v10"/>
 <rect x="24" y="44" width="48" height="36" rx="7" fill="var(--brand)"/>
@@ -245,7 +246,7 @@
 </svg></span><h3>アカウント不要</h3><p>登録は不要で、小紅書のアカウント情報も読み取りません。</p></li><li><span class="sk-cat__disc" style="background:var(--fill-sky)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M30 70h36a13 13 0 0 0 2-26 18 18 0 0 0-34-4 15 15 0 0 0-4 30Z" fill="#fff"/>
 <path d="M20 22 76 78" stroke-width="3.5"/>
-</svg></span><h3>外部サーバーなし</h3><p>収集・出力・ダウンロードはすべてブラウザ内で行われ、データを外部に送ることはありません。</p></li><li><span class="sk-cat__disc" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+</svg></span><h3>保存した内容はアップロードしない</h3><p>ノート、画像、動画が私たちのサーバーを通ることはありません。受け取るのはオフにできる匿名の利用回数だけです。</p></li><li><span class="sk-cat__disc" style="background:var(--fill-mint)"><svg viewBox="0 0 96 96" aria-hidden="true" fill="none" stroke="var(--art-line)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M48 14 74 24v20c0 18-11 31-26 37-15-6-26-19-26-37V24Z" fill="#fff"/>
 <path d="M36 47l8 8 16-17" stroke-width="3"/>
 </svg></span><h3>公開コンテンツのみ</h3><p>閲覧中の小紅書ページにすでに表示されているノートだけを読み取ります。</p></li></ul>
@@ -262,17 +263,17 @@
 
     <section class="sk-section sk-section--soft closing" aria-labelledby="closing-title">
       <div class="sk-container">
-        <img src="/img/icon.svg?v=7" alt="" width="72" height="72">
+        <img src="/img/icon.svg?v=8" alt="" width="72" height="72">
         <div class="sk-h2-wrap"><h2 class="sk-h2" id="closing-title">さっそく試す</h2></div>
         <p>インストールしたら、小紅書の投稿を開いて拡張機能のアイコンをクリックするだけ。</p>
-        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Chrome に追加</a>
+        <a class="sk-btn sk-btn--primary" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="closing">Chrome に追加</a>
       </div>
     </section>
   </main>
 
   <footer class="sk-footer">
     <div class="sk-footer__cols">
-      <div><a class="sk-logo" href="/ja/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">RedNote Exporter</a><p class="foot-desc">小紅書の画像と動画を保存し、ノート一覧を CSV に出力する無料の Chrome 拡張機能。</p><p class="foot-made"><a href="https://lab115.com">Made by LAB115</a></p></div>
+      <div><a class="sk-logo" href="/ja/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">RedNote Exporter</a><p class="foot-desc">小紅書の画像と動画を保存し、ノート一覧を CSV に出力する無料の Chrome 拡張機能。</p><p class="foot-made"><a href="https://lab115.com">Made by LAB115</a></p></div>
       <div><h4>製品</h4><ul><li><a href="#features">機能</a></li><li><a href="#preview">画面</a></li><li><a href="#how">使い方</a></li></ul></div>
       <div><h4>ヘルプ</h4><ul><li><a href="#faq">よくある質問</a></li><li><a href="/ja/privacy/">プライバシーポリシー</a></li><li><a href="mailto:help@lab115.com">help@lab115.com</a></li></ul></div>
       <div><h4>言語</h4><ul><li><a href="/" hreflang="en" lang="en">English</a></li><li><a href="/zh/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul></div>

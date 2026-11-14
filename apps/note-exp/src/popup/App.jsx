@@ -9,7 +9,7 @@ import { Btn } from './components/ui.jsx';
 
 function Popup() {
   const { L, lang, setLang } = useLang();
-  const s = usePopup();
+  const s = usePopup(lang);
 
   return (
     <div className="w-[400px] h-[600px] flex flex-col bg-paper text-ink text-[13px] font-sans overflow-hidden relative antialiased">

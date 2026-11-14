@@ -13,7 +13,7 @@ Key Features
 
 • No login required, no account data collected
 
-• All data is processed locally in your browser
+• Notes, images and videos are processed in your browser and never uploaded
 
 • Interface in 6 languages — 简体中文, 繁體中文, English, 한국어, 日本語, Tiếng Việt — picked from your browser language
 
@@ -39,9 +39,11 @@ Export a note list
 ────────────────────
 Privacy & Security
 ────────────────────
-• This extension does NOT collect, store, or transmit any personal data
+• Notes, images, videos and text you capture or download never leave your browser
 
-• No external servers are used
+• To improve the extension, it sends anonymous usage counts (which features are used, how often) to our own statistics server. No note content, links or account details, and you can turn it off in the ⋯ menu
+
+• Full privacy policy: https://rednote.lab115.com/privacy/
 
 • All exported and downloaded content comes from publicly available RedNote pages
 

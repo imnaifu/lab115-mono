@@ -17,17 +17,17 @@ S["en"] = {
     "path": "/", "hreflang": "en", "og_locale": "en_US", "label": "English", "shots": "en",
     "head_comment": "English home page (/), the site's default language.",
     "title": "RedNote Exporter - Xiaohongshu Image &amp; Video Downloader, Export Notes to CSV",
-    "description": "Free Chrome extension: download every image and video from a RedNote (Xiaohongshu) post in one click — watermark-free video when available — and export the home feed, search results or a profile to CSV. No login, everything stays in your browser.",
+    "description": "Free Chrome extension: download every image and video from a RedNote (Xiaohongshu) post in one click — watermark-free video when available — and export the home feed, search results or a profile to CSV. No login, and your notes never leave your browser.",
     "og_site_name": "RedNote Exporter",
     "og_title": "RedNote Exporter - Save RedNote images &amp; videos, export notes to CSV",
-    "og_description": "Download a RedNote post's images and video in one click, and export note lists to CSV. Free, no login, 100% local.",
+    "og_description": "Download a RedNote post's images and video in one click, and export note lists to CSV. Free, no login, processed in your browser.",
     "app_name": "RedNote Exporter", "app_alt": "小红书导出工具",
     "app_description": "Download every image and video from a RedNote (Xiaohongshu) post in one click, and export the home feed, search results or a profile's notes to CSV.",
     "brand": "RedNote Exporter", "nav_label": "Page", "lang_label": "Language",
     "nav": [("#features", "Features"), ("#preview", "Preview"), ("#how", "How it works"), ("#faq", "FAQ")],
     "add": "Add to Chrome",
     "hero_title": "RedNote, saved in <mark>one&nbsp;click</mark>",
-    "hero_sub": "Download a post's images &amp; video · Export note lists to CSV<br>Free · No sign-up · Runs entirely in your browser",
+    "hero_sub": "Download a post's images &amp; video · Export note lists to CSV<br>Free · No sign-up · Notes never leave your browser",
     "hero_how": "See how it works",
     "hero_tags": ["#Watermark-free video", "#Live Photos", "#Search", "#Profiles", "#CSV export"],
     "feat_h": "What it does",
@@ -58,10 +58,10 @@ S["en"] = {
         ("click", "fill-pink", "Click the icon", "Choose Export Note List or Download Single Post. On a list, keep scrolling to collect more notes."),
         ("saved", "fill-mint", "Export or download", "Click Export CSV for the spreadsheet, or tick images and video and download them. Clear starts over."),
     ],
-    "priv_h": "Your data stays with you",
+    "priv_h": "Your notes stay with you",
     "privs": [
         ("lock", "fill-yellow", "No account", "The extension has no sign-up and never reads your RedNote account details."),
-        ("cloudoff", "fill-sky", "No external servers", "Capturing, exporting and downloading all happen in your browser. Nothing is sent to us or anyone else."),
+        ("cloudoff", "fill-sky", "Nothing you save is uploaded", "Notes, images and videos never pass through our servers. We only receive anonymous usage counts, and you can turn those off."),
         ("shield", "fill-mint", "Public content only", "It only reads notes already visible on the RedNote page you are browsing."),
     ],
     "priv_more": "Read the full privacy policy",
@@ -81,12 +81,12 @@ S["en"] = {
     "disclaimer": "RedNote Exporter is not affiliated with, endorsed by or authorized by RedNote (Xiaohongshu). It only handles publicly visible content and is intended for personal and research use.",
     "notfound": "Page not found", "back": "Back to home",
     "privacy_title": "Privacy Policy - RedNote Exporter",
-    "privacy_description": "RedNote Exporter collects, stores and transmits no personal data. Everything happens inside your browser.",
+    "privacy_description": "RedNote Exporter keeps your notes, images and videos in your browser. It only sends anonymous usage counts, which you can turn off.",
     "privacy": """<h1>Privacy Policy</h1>
-      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 7, 2026</p>
+      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 13, 2026</p>
 
       <div class="summary">
-        <p><strong>In short:</strong> this extension collects, stores and transmits no personal data. It has no server, no accounts, and no analytics or tracking code. Everything happens inside your own browser.</p>
+        <p><strong>In short:</strong> the notes, images and videos you capture or download never leave your browser. The extension sends anonymous usage counts (which features are used, and how often) to our own statistics server so we know what to improve. They never include note content, links or your account, and you can turn them off in the extension’s ⋯ menu.</p>
       </div>
 
       <h2>What the extension reads</h2>
@@ -97,17 +97,34 @@ S["en"] = {
       </ul>
       <p>All of this is content already publicly visible on the page. The extension does not read your RedNote account details, messages, cookies or passwords, and it never sends requests of its own to RedNote — it only reads data the page has already received while you browse.</p>
 
+      <h2>Anonymous usage statistics</h2>
+      <p>To learn which features people actually use, the extension reports a few anonymous events to our self-hosted statistics server (Umami, at stats.lab115.com):</p>
+      <ul>
+        <li><strong>When:</strong> the extension is installed or updated, and when you open its popup, switch tabs, export a note list, download a post, clear the list, open the original post or change the interface language.</li>
+        <li><strong>What an event contains:</strong> the kind of page you are on (home feed, search, profile, a post or other) and whether it is xiaohongshu.com or rednote.com; counts such as how many notes were exported, or how many images, videos, Live Photos and text files were downloaded and how many failed to start; whether a video was the watermark-free original; the interface and browser language; the extension version; and a random install ID created when the extension is installed, used to count users and see whether they come back.</li>
+        <li><strong>What it never contains:</strong> note IDs, links, titles or text, author names, search words, file names, your RedNote account, cookies, or anything about other websites you visit.</li>
+        <li><strong>Network details:</strong> like any web request, a report reaches the server with your IP address and browser user agent. The server uses them to work out the approximate country and the browser and operating system, and does not store the IP address.</li>
+        <li><strong>Turning it off:</strong> click ⋯ in the extension’s popup and switch off “Anonymous usage stats”. From then on nothing is sent.</li>
+      </ul>
+      <p>The statistics stay on our own server, are used only to improve the extension, and are never sold or shared.</p>
+
+      <h2>When you uninstall</h2>
+      <p>After the extension is removed, Chrome opens a short page on this website asking why. Its address carries the extension version and, if usage statistics were on, the install ID, so an answer can be matched to the features that install used. Answering is optional.</p>
+
+      <h2>This website</h2>
+      <p>rednote.lab115.com counts visits with the same self-hosted Umami: pages viewed, the referring site, approximate country, browser and device type, and clicks on the “Add to Chrome” buttons. It sets no cookies and uses no third-party analytics.</p>
+
       <h2>Where data is kept</h2>
       <ul>
         <li>Captured notes live only in the memory of the current tab. Closing or reloading the tab, or clicking Clear, discards them.</li>
         <li>When you click Export CSV or Download, your browser saves the files straight to your Downloads folder. Images and video are fetched by your browser directly from RedNote's media servers, never through us.</li>
-        <li>The only thing the extension remembers locally is one setting: the interface language you picked from its language menu.</li>
+        <li>The extension keeps three small things locally: the interface language you picked from its language menu, whether usage statistics are on, and the random install ID.</li>
       </ul>
 
       <h2>What we don't do</h2>
       <ul>
-        <li>We do not send any data to our servers or to any third party.</li>
-        <li>We do not use analytics, advertising or tracking tools.</li>
+        <li>We never send the notes, images, videos or text you capture or download to our servers or anyone else.</li>
+        <li>We do not use third-party analytics, advertising or tracking tools.</li>
         <li>We do not sell, rent or share any data.</li>
         <li>We do not collect anything in the background. The extension only handles a RedNote page while you are browsing it.</li>
       </ul>
@@ -115,6 +132,7 @@ S["en"] = {
       <h2>Permissions</h2>
       <ul>
         <li><code>downloads</code> — saves the images and video you select to your Downloads folder, grouped into one sub-folder named after the time and post title.</li>
+        <li><code>storage</code> — remembers the usage-statistics setting and the install ID.</li>
         <li><strong>Access to xiaohongshu.com and rednote.com</strong> (including the edith and so subdomains) — lets the extension run on those pages and read the note data they load. It does not run on any other site.</li>
       </ul>
 
@@ -133,17 +151,17 @@ S["zh"] = {
     "path": "/zh/", "hreflang": "zh-CN", "og_locale": "zh_CN", "label": "简体中文", "shots": "zh",
     "head_comment": "简体中文主页（/zh/）。",
     "title": "小红书导出工具 - 图片视频一键下载、笔记列表导出 CSV | RedNote Exporter",
-    "description": "免费 Chrome 扩展：一键下载小红书笔记的全部图片与视频（视频优先无水印原片），把首页推荐、搜索结果、用户主页的笔记列表导出为 CSV。无需登录，数据只在本地处理。",
+    "description": "免费 Chrome 扩展：一键下载小红书笔记的全部图片与视频（视频优先无水印原片），把首页推荐、搜索结果、用户主页的笔记列表导出为 CSV。无需登录，笔记只在你的浏览器里处理。",
     "og_site_name": "小红书导出工具 RedNote Exporter",
     "og_title": "小红书导出工具 - 图片视频一键下载、笔记列表导出 CSV",
-    "og_description": "一键下载小红书笔记的图片与视频，笔记列表导出 CSV。免费、无需登录、本地处理。",
+    "og_description": "一键下载小红书笔记的图片与视频，笔记列表导出 CSV。免费、无需登录、在浏览器里处理。",
     "app_name": "小红书导出工具 (RedNote Exporter)", "app_alt": "RedNote Exporter",
     "app_description": "一键下载小红书笔记的全部图片与视频，并将首页推荐、搜索结果、用户主页的笔记列表导出为 CSV。",
     "brand": "小红书导出工具", "nav_label": "页面导航", "lang_label": "语言",
     "nav": [("#features", "功能"), ("#preview", "预览"), ("#how", "用法"), ("#faq", "常见问题")],
     "add": "添加到 Chrome",
     "hero_title": "小红书笔记，<mark>一键</mark>带走",
-    "hero_sub": "图片视频一键下载 · 笔记列表导出 CSV<br>免费 · 无需登录 · 全程在你的浏览器里完成",
+    "hero_sub": "图片视频一键下载 · 笔记列表导出 CSV<br>免费 · 无需登录 · 笔记不离开你的浏览器",
     "hero_how": "看看怎么用",
     "hero_tags": ["#无水印原片", "#实况图", "#搜索结果", "#用户主页", "#导出CSV"],
     "feat_h": "能做什么",
@@ -174,10 +192,10 @@ S["zh"] = {
         ("click", "fill-pink", "点击扩展图标", "切换到「导出笔记列表」或「下载单帖资源」。列表页继续往下滚动，可以累积采集更多笔记。"),
         ("saved", "fill-mint", "导出或下载", "点「导出 CSV」保存表格，或勾选图片视频一键下载；「清空」可以重新开始。"),
     ],
-    "priv_h": "数据只留在本地",
+    "priv_h": "笔记只留在本地",
     "privs": [
         ("lock", "fill-yellow", "不用注册", "扩展没有账号体系，也不读取你的小红书账号信息。"),
-        ("cloudoff", "fill-sky", "不连外部服务器", "采集、导出、下载都在浏览器里完成，没有任何数据发给我们或第三方。"),
+        ("cloudoff", "fill-sky", "保存的内容不上传", "笔记、图片、视频都不经过我们的服务器。我们只收到匿名的使用次数，而且你可以关掉。"),
         ("shield", "fill-mint", "只处理公开内容", "扩展只读取你正在浏览的小红书页面上已经能看到的笔记。"),
     ],
     "priv_more": "阅读完整的隐私政策",
@@ -197,12 +215,12 @@ S["zh"] = {
     "disclaimer": "本扩展与小红书（RED / RedNote）官方无任何关联或授权，仅处理公开可见内容，适用于个人和研究用途。",
     "notfound": "找不到这个页面", "back": "回到首页",
     "privacy_title": "隐私政策 - 小红书导出工具 RedNote Exporter",
-    "privacy_description": "小红书导出工具（RedNote Exporter）不收集、不存储、不传输任何个人数据，所有处理都在你的浏览器里完成。",
+    "privacy_description": "小红书导出工具（RedNote Exporter）采集和下载的笔记、图片、视频只在你的浏览器里，只发送可以关闭的匿名使用次数。",
     "privacy": """<h1>隐私政策</h1>
-      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 7 日</p>
+      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 13 日</p>
 
       <div class="summary">
-        <p><strong>简单说：</strong>本扩展不收集、不存储、不传输任何个人数据。它没有服务器，没有账号体系，也没有统计或追踪代码。所有处理都在你自己的浏览器里完成。</p>
+        <p><strong>简单说：</strong>你采集和下载的笔记、图片、视频都只在你的浏览器里，不会离开你的电脑。扩展会把匿名的使用次数（用了哪些功能、用了多少次）发到我们自建的统计服务器，用来决定先改进什么。这些数据不含笔记内容、链接和账号信息，你可以在扩展的 ⋯ 菜单里关掉。</p>
       </div>
 
       <h2>扩展会读取什么</h2>
@@ -213,17 +231,34 @@ S["zh"] = {
       </ul>
       <p>这些都是页面上本来就公开可见的内容。扩展不会读取你的小红书账号信息、私信、Cookie 或密码，也不会自己向小红书发起额外请求，只是读取页面在你浏览时已经收到的数据。</p>
 
+      <h2>匿名使用统计</h2>
+      <p>为了了解大家实际在用哪些功能，扩展会向我们自建的统计服务器（Umami，地址 stats.lab115.com）发送少量匿名事件：</p>
+      <ul>
+        <li><strong>什么时候发：</strong>安装或更新扩展时；打开扩展弹窗、切换标签页、导出笔记列表、下载单帖、清空列表、打开原帖、切换界面语言时。</li>
+        <li><strong>包含什么：</strong>当前页面的类型（首页推荐、搜索、用户主页、单篇笔记或其他）以及是 xiaohongshu.com 还是 rednote.com；数量，例如导出了几条笔记，下载了几张图片、几个视频、几张实况图、几个文本文件，有几个没能开始下载；视频是不是无水印原片；界面语言和浏览器语言；扩展版本；以及安装时随机生成的安装 ID，用来统计有多少人在用、有没有人回来继续用。</li>
+        <li><strong>绝不包含：</strong>笔记 ID、链接、标题和正文，作者名，搜索词，文件名，你的小红书账号，Cookie，以及你访问其他网站的任何信息。</li>
+        <li><strong>网络信息：</strong>和所有网络请求一样，统计服务器会收到你的 IP 地址和浏览器标识。服务器只用它们推断大致的国家和浏览器、操作系统类型，不保存 IP 地址。</li>
+        <li><strong>怎么关闭：</strong>在扩展弹窗里点 ⋯，关掉「匿名使用统计」。关闭后不再发送任何数据。</li>
+      </ul>
+      <p>统计数据只保存在我们自己的服务器上，只用于改进扩展，不出售也不分享。</p>
+
+      <h2>卸载扩展时</h2>
+      <p>扩展被卸载后，Chrome 会打开本网站上的一个简短页面，问你卸载的原因。页面地址里带有扩展版本号；如果使用统计是开着的，还带有安装 ID，用来把卸载原因和这个安装用过的功能对上。填不填都可以。</p>
+
+      <h2>本网站</h2>
+      <p>rednote.lab115.com 用同一个自建的 Umami 统计访问情况：浏览了哪些页面、从哪个网站过来、大致国家、浏览器和设备类型，以及「添加到 Chrome」按钮的点击。网站不设置 Cookie，也不使用第三方统计工具。</p>
+
       <h2>数据存在哪里</h2>
       <ul>
         <li>采集到的笔记只保存在当前标签页的内存里。关闭标签页、刷新页面或点「清空」后就会丢弃。</li>
         <li>你点「导出 CSV」或「下载」时，文件直接由浏览器保存到你电脑的下载文件夹。图片和视频由浏览器从小红书的图片、视频服务器直接下载，不经过我们。</li>
-        <li>扩展只在本地记住一项设置：你在语言菜单里选择的界面语言。</li>
+        <li>扩展在本地只保存三样东西：你在语言菜单里选择的界面语言、使用统计是否开启，以及随机生成的安装 ID。</li>
       </ul>
 
       <h2>我们不做的事</h2>
       <ul>
-        <li>不把任何数据发送到我们或任何第三方的服务器。</li>
-        <li>不使用统计、广告或追踪工具。</li>
+        <li>不把你采集或下载的笔记、图片、视频、正文发送到我们或任何第三方的服务器。</li>
+        <li>不使用第三方统计、广告或追踪工具。</li>
         <li>不出售、不出租、不分享任何数据。</li>
         <li>不在后台主动采集。只有你在浏览小红书页面时，扩展才会处理该页面的数据。</li>
       </ul>
@@ -231,6 +266,7 @@ S["zh"] = {
       <h2>权限说明</h2>
       <ul>
         <li><code>downloads</code>：把你选中的图片、视频保存到下载文件夹，并按「时间 + 笔记标题」放进同一个子文件夹。</li>
+        <li><code>storage</code>：记住使用统计的开关设置和安装 ID。</li>
         <li><strong>访问 xiaohongshu.com 和 rednote.com（含 edith、so 子域名）</strong>：在这些页面上运行，读取页面加载的笔记数据。扩展不会在其他网站上运行。</li>
       </ul>
 
@@ -249,17 +285,17 @@ S["zh-tw"] = {
     "path": "/zh-tw/", "hreflang": "zh-TW", "og_locale": "zh_TW", "label": "繁體中文", "shots": "zh_TW",
     "head_comment": "繁體中文主頁（/zh-tw/）。",
     "title": "小紅書下載器 - 圖片影片一鍵下載、筆記列表匯出 CSV | RedNote Exporter",
-    "description": "免費 Chrome 擴充功能：一鍵下載小紅書筆記的全部圖片與影片（影片優先無浮水印原檔），把首頁推薦、搜尋結果、使用者主頁的筆記列表匯出為 CSV。不需登入，資料只在本機處理。",
+    "description": "免費 Chrome 擴充功能：一鍵下載小紅書筆記的全部圖片與影片（影片優先無浮水印原檔），把首頁推薦、搜尋結果、使用者主頁的筆記列表匯出為 CSV。不需登入，筆記只在你的瀏覽器裡處理。",
     "og_site_name": "小紅書匯出工具 RedNote Exporter",
     "og_title": "小紅書下載器 - 圖片影片一鍵下載、筆記列表匯出 CSV",
-    "og_description": "一鍵下載小紅書筆記的圖片與影片，筆記列表匯出 CSV。免費、不需登入、本機處理。",
+    "og_description": "一鍵下載小紅書筆記的圖片與影片，筆記列表匯出 CSV。免費、不需登入、在瀏覽器裡處理。",
     "app_name": "小紅書匯出工具 (RedNote Exporter)", "app_alt": "RedNote Exporter",
     "app_description": "一鍵下載小紅書筆記的全部圖片與影片，並將首頁推薦、搜尋結果、使用者主頁的筆記列表匯出為 CSV。",
     "brand": "小紅書匯出工具", "nav_label": "頁面導覽", "lang_label": "語言",
     "nav": [("#features", "功能"), ("#preview", "預覽"), ("#how", "用法"), ("#faq", "常見問題")],
     "add": "加到 Chrome",
     "hero_title": "小紅書筆記，<mark>一鍵</mark>帶走",
-    "hero_sub": "圖片影片一鍵下載 · 筆記列表匯出 CSV<br>免費 · 不需登入 · 全程在你的瀏覽器裡完成",
+    "hero_sub": "圖片影片一鍵下載 · 筆記列表匯出 CSV<br>免費 · 不需登入 · 筆記不離開你的瀏覽器",
     "hero_how": "看看怎麼用",
     "hero_tags": ["#無浮水印原檔", "#實況照片", "#搜尋結果", "#使用者主頁", "#匯出CSV"],
     "feat_h": "能做什麼",
@@ -290,10 +326,10 @@ S["zh-tw"] = {
         ("click", "fill-pink", "點擊擴充功能圖示", "切換到「匯出筆記列表」或「下載單篇資源」。列表頁繼續往下捲動，可以累積收集更多筆記。"),
         ("saved", "fill-mint", "匯出或下載", "點「匯出 CSV」儲存表格，或勾選圖片影片一鍵下載；「清空」可以重新開始。"),
     ],
-    "priv_h": "資料只留在本機",
+    "priv_h": "筆記只留在本機",
     "privs": [
         ("lock", "fill-yellow", "不用註冊", "擴充功能沒有帳號系統，也不讀取你的小紅書帳號資訊。"),
-        ("cloudoff", "fill-sky", "不連外部伺服器", "收集、匯出、下載都在瀏覽器裡完成，沒有任何資料傳給我們或第三方。"),
+        ("cloudoff", "fill-sky", "儲存的內容不上傳", "筆記、圖片、影片都不經過我們的伺服器。我們只收到匿名的使用次數，而且你可以關掉。"),
         ("shield", "fill-mint", "只處理公開內容", "擴充功能只讀取你正在瀏覽的小紅書頁面上已經看得到的筆記。"),
     ],
     "priv_more": "閱讀完整的隱私權政策",
@@ -313,13 +349,13 @@ S["zh-tw"] = {
     "disclaimer": "本擴充功能與小紅書（RED / RedNote）官方無任何關聯或授權，僅處理公開可見內容，適用於個人與研究用途。",
     "notfound": "找不到這個頁面", "back": "回到首頁",
     "privacy_title": "隱私權政策 - 小紅書匯出工具 RedNote Exporter",
-    "privacy_description": "小紅書匯出工具（RedNote Exporter）不收集、不儲存、不傳送任何個人資料，所有處理都在你的瀏覽器裡完成。",
+    "privacy_description": "小紅書匯出工具（RedNote Exporter）收集和下載的筆記、圖片、影片只在你的瀏覽器裡，只傳送可以關閉的匿名使用次數。",
     "privacy": """<h1>隱私權政策</h1>
-      <p class="updated">適用於 Chrome 擴充功能「小紅書匯出工具（RedNote Exporter）」 · 最後更新：2026 年 11 月 7 日</p>
+      <p class="updated">適用於 Chrome 擴充功能「小紅書匯出工具（RedNote Exporter）」 · 最後更新：2026 年 11 月 13 日</p>
       <p class="updated">本頁為翻譯版本，內容如有出入，以<a href="/privacy/" hreflang="en" lang="en">英文版</a>為準。</p>
 
       <div class="summary">
-        <p><strong>簡單說：</strong>本擴充功能不收集、不儲存、不傳送任何個人資料。它沒有伺服器，沒有帳號系統，也沒有統計或追蹤程式碼。所有處理都在你自己的瀏覽器裡完成。</p>
+        <p><strong>簡單說：</strong>你收集和下載的筆記、圖片、影片都只在你的瀏覽器裡，不會離開你的電腦。擴充功能會把匿名的使用次數（用了哪些功能、用了多少次）傳到我們自建的統計伺服器，用來決定先改進什麼。這些資料不含筆記內容、連結和帳號資訊，你可以在擴充功能的 ⋯ 選單裡關掉。</p>
       </div>
 
       <h2>擴充功能會讀取什麼</h2>
@@ -330,17 +366,34 @@ S["zh-tw"] = {
       </ul>
       <p>這些都是頁面上本來就公開可見的內容。擴充功能不會讀取你的小紅書帳號資訊、私訊、Cookie 或密碼，也不會自己向小紅書發出額外請求，只是讀取頁面在你瀏覽時已經收到的資料。</p>
 
+      <h2>匿名使用統計</h2>
+      <p>為了了解大家實際在用哪些功能，擴充功能會向我們自建的統計伺服器（Umami，位址 stats.lab115.com）傳送少量匿名事件：</p>
+      <ul>
+        <li><strong>什麼時候傳：</strong>安裝或更新擴充功能時；開啟擴充功能視窗、切換分頁、匯出筆記列表、下載單篇筆記、清空列表、開啟原文、切換介面語言時。</li>
+        <li><strong>包含什麼：</strong>目前頁面的類型（首頁推薦、搜尋、使用者主頁、單篇筆記或其他）以及是 xiaohongshu.com 還是 rednote.com；數量，例如匯出了幾則筆記，下載了幾張圖片、幾部影片、幾張實況照片、幾個文字檔，有幾個沒能開始下載；影片是不是無浮水印原檔；介面語言和瀏覽器語言；擴充功能版本；以及安裝時隨機產生的安裝 ID，用來統計有多少人在用、有沒有人回來繼續用。</li>
+        <li><strong>絕不包含：</strong>筆記 ID、連結、標題和內文，作者名稱，搜尋關鍵字，檔名，你的小紅書帳號，Cookie，以及你造訪其他網站的任何資訊。</li>
+        <li><strong>網路資訊：</strong>和所有網路請求一樣，統計伺服器會收到你的 IP 位址和瀏覽器識別資訊。伺服器只用它們推斷大致的國家和瀏覽器、作業系統類型，不儲存 IP 位址。</li>
+        <li><strong>如何關閉：</strong>在擴充功能視窗裡點 ⋯，關掉「匿名使用統計」。關閉後不再傳送任何資料。</li>
+      </ul>
+      <p>統計資料只保存在我們自己的伺服器上，只用於改進擴充功能，不出售也不分享。</p>
+
+      <h2>移除擴充功能時</h2>
+      <p>擴充功能被移除後，Chrome 會開啟本網站上的一個簡短頁面，詢問移除的原因。頁面網址帶有擴充功能版本；如果使用統計是開著的，還帶有安裝 ID，用來把原因和這個安裝用過的功能對應起來。填不填都可以。</p>
+
+      <h2>本網站</h2>
+      <p>rednote.lab115.com 用同一個自建的 Umami 統計造訪情況：瀏覽了哪些頁面、從哪個網站過來、大致國家、瀏覽器和裝置類型，以及「加到 Chrome」按鈕的點擊。網站不設定 Cookie，也不使用第三方統計工具。</p>
+
       <h2>資料存在哪裡</h2>
       <ul>
         <li>收集到的筆記只儲存在目前分頁的記憶體裡。關閉分頁、重新整理頁面或點「清空」後就會捨棄。</li>
         <li>你點「匯出 CSV」或「下載」時，檔案直接由瀏覽器儲存到你電腦的下載資料夾。圖片和影片由瀏覽器從小紅書的圖片、影片伺服器直接下載，不經過我們。</li>
-        <li>擴充功能只在本機記住一項設定：你在語言選單裡選擇的介面語言。</li>
+        <li>擴充功能在本機只保存三樣東西：你在語言選單裡選擇的介面語言、使用統計是否開啟，以及隨機產生的安裝 ID。</li>
       </ul>
 
       <h2>我們不做的事</h2>
       <ul>
-        <li>不把任何資料傳送到我們或任何第三方的伺服器。</li>
-        <li>不使用統計、廣告或追蹤工具。</li>
+        <li>不把你收集或下載的筆記、圖片、影片、內文傳送到我們或任何第三方的伺服器。</li>
+        <li>不使用第三方統計、廣告或追蹤工具。</li>
         <li>不出售、不出租、不分享任何資料。</li>
         <li>不在背景主動收集。只有你在瀏覽小紅書頁面時，擴充功能才會處理該頁面的資料。</li>
       </ul>
@@ -348,6 +401,7 @@ S["zh-tw"] = {
       <h2>權限說明</h2>
       <ul>
         <li><code>downloads</code>：把你選取的圖片、影片儲存到下載資料夾，並依「時間 + 筆記標題」放進同一個子資料夾。</li>
+        <li><code>storage</code>：記住使用統計的開關設定和安裝 ID。</li>
         <li><strong>存取 xiaohongshu.com 和 rednote.com（含 edith、so 子網域）</strong>：在這些頁面上執行，讀取頁面載入的筆記資料。擴充功能不會在其他網站上執行。</li>
       </ul>
 
@@ -366,17 +420,17 @@ S["ko"] = {
     "path": "/ko/", "hreflang": "ko", "og_locale": "ko_KR", "label": "한국어", "shots": "ko",
     "head_comment": "Korean home page (/ko/).",
     "title": "샤오홍슈 다운로더 - 레드노트 이미지·동영상 저장, 노트 목록 CSV 내보내기 | RedNote Exporter",
-    "description": "무료 Chrome 확장 프로그램: 샤오홍슈(RedNote) 게시물의 이미지와 동영상을 한 번에 다운로드하고(동영상은 워터마크 없는 원본 우선), 홈 피드·검색 결과·프로필의 노트 목록을 CSV로 내보냅니다. 로그인 불필요, 모든 처리는 브라우저 안에서.",
+    "description": "무료 Chrome 확장 프로그램: 샤오홍슈(RedNote) 게시물의 이미지와 동영상을 한 번에 다운로드하고(동영상은 워터마크 없는 원본 우선), 홈 피드·검색 결과·프로필의 노트 목록을 CSV로 내보냅니다. 로그인 불필요, 노트는 브라우저 밖으로 나가지 않습니다.",
     "og_site_name": "RedNote Exporter",
     "og_title": "샤오홍슈 다운로더 - 이미지·동영상 저장, 노트 목록 CSV 내보내기",
-    "og_description": "샤오홍슈 게시물의 이미지와 동영상을 한 번에 저장하고 노트 목록을 CSV로 내보내세요. 무료, 로그인 불필요, 100% 로컬 처리.",
+    "og_description": "샤오홍슈 게시물의 이미지와 동영상을 한 번에 저장하고 노트 목록을 CSV로 내보내세요. 무료, 로그인 불필요, 브라우저 안에서 처리.",
     "app_name": "RedNote Exporter", "app_alt": "샤오홍슈 다운로더",
     "app_description": "샤오홍슈(RedNote) 게시물의 이미지와 동영상을 한 번에 다운로드하고, 홈 피드·검색 결과·프로필의 노트 목록을 CSV로 내보냅니다.",
     "brand": "RedNote Exporter", "nav_label": "페이지", "lang_label": "언어",
     "nav": [("#features", "기능"), ("#preview", "미리보기"), ("#how", "사용법"), ("#faq", "FAQ")],
     "add": "Chrome에 추가",
     "hero_title": "샤오홍슈 노트, <mark>한 번에</mark> 저장",
-    "hero_sub": "게시물 이미지·동영상 다운로드 · 노트 목록 CSV 내보내기<br>무료 · 가입 불필요 · 모든 처리는 브라우저 안에서",
+    "hero_sub": "게시물 이미지·동영상 다운로드 · 노트 목록 CSV 내보내기<br>무료 · 가입 불필요 · 노트는 브라우저 밖으로 나가지 않음",
     "hero_how": "사용법 보기",
     "hero_tags": ["#워터마크없는원본", "#라이브포토", "#검색결과", "#프로필", "#CSV내보내기"],
     "feat_h": "주요 기능",
@@ -407,10 +461,10 @@ S["ko"] = {
         ("click", "fill-pink", "확장 프로그램 아이콘 클릭", "「노트 목록 내보내기」 또는 「게시물 다운로드」를 선택하세요. 목록에서는 계속 스크롤하면 더 많이 수집됩니다."),
         ("saved", "fill-mint", "내보내기 또는 다운로드", "「CSV 내보내기」로 표를 저장하거나, 이미지와 동영상을 골라 다운로드하세요. 「지우기」로 다시 시작합니다."),
     ],
-    "priv_h": "데이터는 내 컴퓨터에만",
+    "priv_h": "노트는 내 컴퓨터에만",
     "privs": [
         ("lock", "fill-yellow", "계정 불필요", "가입 절차가 없고 샤오홍슈 계정 정보도 읽지 않습니다."),
-        ("cloudoff", "fill-sky", "외부 서버 없음", "수집, 내보내기, 다운로드가 모두 브라우저 안에서 이뤄지며 어떤 데이터도 외부로 보내지 않습니다."),
+        ("cloudoff", "fill-sky", "저장한 내용은 업로드되지 않음", "노트, 이미지, 동영상은 저희 서버를 거치지 않습니다. 저희가 받는 것은 끌 수 있는 익명 사용 횟수뿐입니다."),
         ("shield", "fill-mint", "공개 콘텐츠만", "지금 보고 있는 샤오홍슈 페이지에 이미 보이는 노트만 읽습니다."),
     ],
     "priv_more": "개인정보처리방침 전문 보기",
@@ -430,13 +484,13 @@ S["ko"] = {
     "disclaimer": "RedNote Exporter는 샤오홍슈(RedNote)와 제휴하거나 승인·허가를 받지 않았습니다. 공개된 콘텐츠만 처리하며 개인 및 연구 목적으로 만들어졌습니다.",
     "notfound": "페이지를 찾을 수 없습니다", "back": "홈으로",
     "privacy_title": "개인정보처리방침 - RedNote Exporter",
-    "privacy_description": "RedNote Exporter는 개인 데이터를 수집·저장·전송하지 않습니다. 모든 처리는 브라우저 안에서 이루어집니다.",
+    "privacy_description": "RedNote Exporter는 노트, 이미지, 동영상을 브라우저 안에만 두며, 끌 수 있는 익명 사용 횟수만 보냅니다.",
     "privacy": """<h1>개인정보처리방침</h1>
-      <p class="updated">Chrome 확장 프로그램 「RedNote Exporter」 · 최종 업데이트: 2026년 11월 7일</p>
+      <p class="updated">Chrome 확장 프로그램 「RedNote Exporter」 · 최종 업데이트: 2026년 11월 13일</p>
       <p class="updated">이 페이지는 번역본입니다. 내용이 다를 경우 <a href="/privacy/" hreflang="en" lang="en">영어 원문</a>이 우선합니다.</p>
 
       <div class="summary">
-        <p><strong>요약:</strong> 이 확장 프로그램은 개인 데이터를 수집, 저장, 전송하지 않습니다. 서버도, 계정도, 분석이나 추적 코드도 없습니다. 모든 처리는 사용자의 브라우저 안에서 이루어집니다.</p>
+        <p><strong>요약:</strong> 수집하거나 다운로드한 노트, 이미지, 동영상은 브라우저 밖으로 나가지 않습니다. 무엇을 먼저 개선할지 알기 위해, 확장 프로그램은 익명 사용 횟수(어떤 기능을 얼마나 자주 쓰는지)를 저희가 직접 운영하는 통계 서버로 보냅니다. 여기에는 노트 내용, 링크, 계정 정보가 포함되지 않으며, 확장 프로그램의 ⋯ 메뉴에서 끌 수 있습니다.</p>
       </div>
 
       <h2>확장 프로그램이 읽는 정보</h2>
@@ -447,17 +501,34 @@ S["ko"] = {
       </ul>
       <p>이 모든 정보는 페이지에 이미 공개적으로 보이는 콘텐츠입니다. 확장 프로그램은 샤오홍슈 계정 정보, 메시지, 쿠키, 비밀번호를 읽지 않으며, 샤오홍슈에 별도의 요청을 보내지 않습니다. 사용자가 탐색하는 동안 페이지가 이미 받은 데이터만 읽습니다.</p>
 
+      <h2>익명 사용 통계</h2>
+      <p>사용자들이 실제로 어떤 기능을 쓰는지 알기 위해, 확장 프로그램은 저희가 직접 운영하는 통계 서버(Umami, stats.lab115.com)로 몇 가지 익명 이벤트를 보냅니다.</p>
+      <ul>
+        <li><strong>보내는 시점:</strong> 확장 프로그램을 설치하거나 업데이트할 때, 그리고 팝업을 열거나, 탭을 바꾸거나, 노트 목록을 내보내거나, 게시물을 다운로드하거나, 목록을 비우거나, 원본 게시물을 열거나, 인터페이스 언어를 바꿀 때.</li>
+        <li><strong>포함되는 정보:</strong> 현재 페이지의 종류(홈 피드, 검색, 프로필, 게시물, 기타)와 xiaohongshu.com인지 rednote.com인지; 내보낸 노트 수, 다운로드한 이미지·동영상·라이브 포토·텍스트 파일 수와 다운로드를 시작하지 못한 수 같은 개수; 동영상이 워터마크 없는 원본이었는지; 인터페이스 언어와 브라우저 언어; 확장 프로그램 버전; 그리고 설치할 때 무작위로 만들어지는 설치 ID(사용자 수와 재방문 여부를 세는 데 사용).</li>
+        <li><strong>절대 포함하지 않는 정보:</strong> 노트 ID, 링크, 제목, 본문, 작성자 이름, 검색어, 파일 이름, 샤오홍슈 계정, 쿠키, 그리고 다른 웹사이트 방문에 관한 어떤 정보도.</li>
+        <li><strong>네트워크 정보:</strong> 모든 웹 요청과 마찬가지로 통계 서버는 IP 주소와 브라우저 정보(User-Agent)를 받습니다. 서버는 이를 대략적인 국가와 브라우저·운영체제 종류를 파악하는 데만 쓰고, IP 주소는 저장하지 않습니다.</li>
+        <li><strong>끄는 방법:</strong> 확장 프로그램 팝업에서 ⋯를 누르고 「익명 사용 통계」를 끄세요. 그 이후로는 아무것도 보내지 않습니다.</li>
+      </ul>
+      <p>통계는 저희 서버에만 보관되며, 확장 프로그램을 개선하는 데만 쓰이고, 판매하거나 공유하지 않습니다.</p>
+
+      <h2>제거할 때</h2>
+      <p>확장 프로그램을 제거하면 Chrome이 이 웹사이트의 짧은 페이지를 열어 제거 이유를 묻습니다. 페이지 주소에는 확장 프로그램 버전이, 사용 통계가 켜져 있었다면 설치 ID도 함께 담겨 있어 답변을 그 설치에서 쓴 기능과 연결할 수 있습니다. 답변은 선택 사항입니다.</p>
+
+      <h2>이 웹사이트</h2>
+      <p>rednote.lab115.com은 같은 자체 운영 Umami로 방문을 집계합니다: 본 페이지, 유입 사이트, 대략적인 국가, 브라우저와 기기 종류, 「Chrome에 추가」 버튼 클릭. 쿠키를 쓰지 않으며 제3자 분석 도구도 쓰지 않습니다.</p>
+
       <h2>데이터 보관 위치</h2>
       <ul>
         <li>수집한 노트는 현재 탭의 메모리에만 있습니다. 탭을 닫거나 새로고침하거나 「지우기」를 누르면 삭제됩니다.</li>
         <li>「CSV 내보내기」나 「다운로드」를 누르면 브라우저가 파일을 다운로드 폴더에 바로 저장합니다. 이미지와 동영상은 브라우저가 샤오홍슈 미디어 서버에서 직접 받으며, 저희를 거치지 않습니다.</li>
-        <li>확장 프로그램이 로컬에 기억하는 것은 언어 메뉴에서 고른 인터페이스 언어 설정 하나뿐입니다.</li>
+        <li>확장 프로그램이 로컬에 저장하는 것은 세 가지뿐입니다: 언어 메뉴에서 고른 인터페이스 언어, 사용 통계를 켰는지 여부, 무작위 설치 ID.</li>
       </ul>
 
       <h2>하지 않는 일</h2>
       <ul>
-        <li>어떤 데이터도 저희 서버나 제3자에게 보내지 않습니다.</li>
-        <li>분석, 광고, 추적 도구를 사용하지 않습니다.</li>
+        <li>수집하거나 다운로드한 노트, 이미지, 동영상, 본문을 저희 서버나 제3자에게 보내지 않습니다.</li>
+        <li>제3자 분석, 광고, 추적 도구를 사용하지 않습니다.</li>
         <li>어떤 데이터도 판매, 대여, 공유하지 않습니다.</li>
         <li>백그라운드에서 아무것도 수집하지 않습니다. 사용자가 샤오홍슈 페이지를 보는 동안에만 그 페이지를 처리합니다.</li>
       </ul>
@@ -465,6 +536,7 @@ S["ko"] = {
       <h2>권한</h2>
       <ul>
         <li><code>downloads</code> — 선택한 이미지와 동영상을 다운로드 폴더에 저장하며, 시간과 게시물 제목으로 이름 붙인 하위 폴더 하나에 모읍니다.</li>
+        <li><code>storage</code> — 사용 통계 설정과 설치 ID를 기억합니다.</li>
         <li><strong>xiaohongshu.com 및 rednote.com 접근</strong>(edith, so 하위 도메인 포함) — 해당 페이지에서 실행되어 페이지가 불러온 노트 데이터를 읽습니다. 다른 사이트에서는 실행되지 않습니다.</li>
       </ul>
 
@@ -483,17 +555,17 @@ S["ja"] = {
     "path": "/ja/", "hreflang": "ja", "og_locale": "ja_JP", "label": "日本語", "shots": "ja",
     "head_comment": "Japanese home page (/ja/).",
     "title": "小紅書ダウンローダー - RED の画像・動画を一括保存、ノート一覧を CSV 出力 | RedNote Exporter",
-    "description": "無料の Chrome 拡張機能：小紅書（RED / RedNote）の投稿の画像と動画をワンクリックで保存（動画は透かしなしの元ファイルを優先）。ホームフィード・検索結果・プロフィールのノート一覧を CSV に出力できます。ログイン不要、処理はすべてブラウザ内で完結。",
+    "description": "無料の Chrome 拡張機能：小紅書（RED / RedNote）の投稿の画像と動画をワンクリックで保存（動画は透かしなしの元ファイルを優先）。ホームフィード・検索結果・プロフィールのノート一覧を CSV に出力できます。ログイン不要、ノートがブラウザの外に出ることはありません。",
     "og_site_name": "RedNote Exporter",
     "og_title": "小紅書ダウンローダー - 画像・動画を一括保存、ノート一覧を CSV 出力",
-    "og_description": "小紅書の投稿の画像と動画をワンクリックで保存し、ノート一覧を CSV に出力。無料、ログイン不要、100% ローカル処理。",
+    "og_description": "小紅書の投稿の画像と動画をワンクリックで保存し、ノート一覧を CSV に出力。無料、ログイン不要、ブラウザ内で処理。",
     "app_name": "RedNote Exporter", "app_alt": "小紅書ダウンローダー",
     "app_description": "小紅書（RED / RedNote）の投稿の画像と動画をワンクリックで保存し、ホームフィード・検索結果・プロフィールのノート一覧を CSV に出力します。",
     "brand": "RedNote Exporter", "nav_label": "ページ", "lang_label": "言語",
     "nav": [("#features", "機能"), ("#preview", "画面"), ("#how", "使い方"), ("#faq", "よくある質問")],
     "add": "Chrome に追加",
     "hero_title": "小紅書のノートを、<mark>ワンクリック</mark>で保存",
-    "hero_sub": "投稿の画像・動画をダウンロード · ノート一覧を CSV 出力<br>無料 · 登録不要 · すべてブラウザ内で完結",
+    "hero_sub": "投稿の画像・動画をダウンロード · ノート一覧を CSV 出力<br>無料 · 登録不要 · ノートはブラウザの外に出ません",
     "hero_how": "使い方を見る",
     "hero_tags": ["#透かしなし動画", "#ライブフォト", "#検索結果", "#プロフィール", "#CSV出力"],
     "feat_h": "できること",
@@ -524,10 +596,10 @@ S["ja"] = {
         ("click", "fill-pink", "拡張機能のアイコンをクリック", "「ノート一覧を出力」か「投稿をダウンロード」を選びます。一覧ページではスクロールを続けるとさらに集まります。"),
         ("saved", "fill-mint", "出力・ダウンロード", "「CSV を出力」で表を保存、または画像と動画を選んでダウンロード。「クリア」でやり直せます。"),
     ],
-    "priv_h": "データは手元だけに",
+    "priv_h": "ノートは手元だけに",
     "privs": [
         ("lock", "fill-yellow", "アカウント不要", "登録は不要で、小紅書のアカウント情報も読み取りません。"),
-        ("cloudoff", "fill-sky", "外部サーバーなし", "収集・出力・ダウンロードはすべてブラウザ内で行われ、データを外部に送ることはありません。"),
+        ("cloudoff", "fill-sky", "保存した内容はアップロードしない", "ノート、画像、動画が私たちのサーバーを通ることはありません。受け取るのはオフにできる匿名の利用回数だけです。"),
         ("shield", "fill-mint", "公開コンテンツのみ", "閲覧中の小紅書ページにすでに表示されているノートだけを読み取ります。"),
     ],
     "priv_more": "プライバシーポリシー全文を読む",
@@ -547,13 +619,13 @@ S["ja"] = {
     "disclaimer": "RedNote Exporter は小紅書（RED / RedNote）と提携しておらず、承認や許可も受けていません。公開されているコンテンツのみを扱い、個人利用および研究目的を想定しています。",
     "notfound": "ページが見つかりません", "back": "ホームへ戻る",
     "privacy_title": "プライバシーポリシー - RedNote Exporter",
-    "privacy_description": "RedNote Exporter は個人データを収集・保存・送信しません。処理はすべてブラウザ内で行われます。",
+    "privacy_description": "RedNote Exporter はノート、画像、動画をブラウザ内にとどめ、オフにできる匿名の利用回数だけを送信します。",
     "privacy": """<h1>プライバシーポリシー</h1>
-      <p class="updated">Chrome 拡張機能「RedNote Exporter」 · 最終更新：2026 年 11 月 7 日</p>
+      <p class="updated">Chrome 拡張機能「RedNote Exporter」 · 最終更新：2026 年 11 月 13 日</p>
       <p class="updated">このページは翻訳版です。内容に相違がある場合は<a href="/privacy/" hreflang="en" lang="en">英語版</a>が優先します。</p>
 
       <div class="summary">
-        <p><strong>要約：</strong>この拡張機能は個人データを収集、保存、送信しません。サーバーもアカウントも、分析やトラッキングのコードもありません。すべての処理はお使いのブラウザ内で行われます。</p>
+        <p><strong>要点：</strong>収集・ダウンロードしたノート、画像、動画がブラウザの外に出ることはありません。何を優先して改善するかを知るため、拡張機能は匿名の利用回数（どの機能がどれくらい使われたか）を私たちが自前で運用する統計サーバーに送ります。ノートの内容・リンク・アカウント情報は含まれず、拡張機能の ⋯ メニューからオフにできます。</p>
       </div>
 
       <h2>拡張機能が読み取るもの</h2>
@@ -564,17 +636,34 @@ S["ja"] = {
       </ul>
       <p>これらはすべて、ページ上ですでに公開されている内容です。拡張機能は小紅書のアカウント情報、メッセージ、Cookie、パスワードを読み取らず、小紅書へ独自にリクエストを送ることもありません。閲覧中にページがすでに受け取ったデータを読むだけです。</p>
 
+      <h2>匿名の利用統計</h2>
+      <p>実際にどの機能が使われているかを知るため、拡張機能は私たちが自前で運用する統計サーバー（Umami、stats.lab115.com）にいくつかの匿名イベントを送ります。</p>
+      <ul>
+        <li><strong>送るタイミング：</strong>拡張機能のインストール時と更新時、そしてポップアップを開いたとき、タブを切り替えたとき、ノート一覧を出力したとき、投稿をダウンロードしたとき、一覧をクリアしたとき、元の投稿を開いたとき、表示言語を変えたとき。</li>
+        <li><strong>含まれるもの：</strong>今いるページの種類（ホームフィード、検索、プロフィール、投稿、その他）と、xiaohongshu.com か rednote.com か。出力したノートの件数、ダウンロードした画像・動画・Live Photos・テキストファイルの数と開始できなかった数などの件数。動画が透かしなしの元ファイルだったか。表示言語とブラウザの言語。拡張機能のバージョン。インストール時にランダムに作られるインストール ID（利用者数と再利用の有無を数えるため）。</li>
+        <li><strong>決して含まないもの：</strong>ノートの ID、リンク、タイトルや本文、投稿者名、検索語、ファイル名、小紅書のアカウント、Cookie、ほかのウェブサイトの閲覧に関する情報。</li>
+        <li><strong>通信に伴う情報：</strong>あらゆるウェブリクエストと同じく、統計サーバーには IP アドレスとブラウザの識別情報（User-Agent）が届きます。サーバーはこれらをおおよその国、ブラウザと OS の種類の判定にだけ使い、IP アドレスは保存しません。</li>
+        <li><strong>オフにする方法：</strong>拡張機能のポップアップで ⋯ を押し、「匿名の利用統計」をオフにしてください。以後は何も送信されません。</li>
+      </ul>
+      <p>統計は私たちのサーバーにだけ保存され、拡張機能の改善にのみ使い、販売や共有はしません。</p>
+
+      <h2>アンインストールしたとき</h2>
+      <p>拡張機能を削除すると、Chrome がこのサイトの短いページを開き、削除の理由をお聞きします。ページのアドレスには拡張機能のバージョンと、利用統計がオンだった場合はインストール ID が含まれ、回答をそのインストールで使われた機能と結び付けられます。回答は任意です。</p>
+
+      <h2>このウェブサイト</h2>
+      <p>rednote.lab115.com は同じ自前の Umami でアクセスを集計しています：閲覧されたページ、参照元サイト、おおよその国、ブラウザと端末の種類、「Chrome に追加」ボタンのクリック。Cookie は使わず、第三者の分析ツールも使いません。</p>
+
       <h2>データの保存場所</h2>
       <ul>
         <li>収集したノートは現在のタブのメモリ内にのみ存在します。タブを閉じる、再読み込みする、または「クリア」を押すと破棄されます。</li>
         <li>「CSV を出力」や「ダウンロード」を押すと、ブラウザがファイルを直接ダウンロードフォルダに保存します。画像と動画はブラウザが小紅書のメディアサーバーから直接取得し、私たちを経由することはありません。</li>
-        <li>拡張機能がローカルに記憶するのは、言語メニューで選んだ表示言語の設定ひとつだけです。</li>
+        <li>拡張機能がローカルに保存するのは 3 つだけです：言語メニューで選んだ表示言語、利用統計のオン・オフ、ランダムなインストール ID。</li>
       </ul>
 
       <h2>行わないこと</h2>
       <ul>
-        <li>データを私たちのサーバーや第三者に送信しません。</li>
-        <li>分析、広告、トラッキングのツールを使用しません。</li>
+        <li>収集・ダウンロードしたノート、画像、動画、本文を私たちのサーバーや第三者に送信しません。</li>
+        <li>第三者の分析、広告、トラッキングのツールを使用しません。</li>
         <li>データを販売、貸与、共有しません。</li>
         <li>バックグラウンドで何かを収集することはありません。拡張機能が小紅書のページを扱うのは、そのページを閲覧している間だけです。</li>
       </ul>
@@ -582,6 +671,7 @@ S["ja"] = {
       <h2>権限</h2>
       <ul>
         <li><code>downloads</code> — 選択した画像と動画をダウンロードフォルダに保存し、時刻と投稿タイトルの名前を付けたサブフォルダにまとめます。</li>
+        <li><code>storage</code> — 利用統計の設定とインストール ID を記憶します。</li>
         <li><strong>xiaohongshu.com と rednote.com へのアクセス</strong>（edith と so のサブドメインを含む）— それらのページで動作し、ページが読み込んだノートデータを読み取ります。ほかのサイトでは動作しません。</li>
       </ul>
 
@@ -600,17 +690,17 @@ S["vi"] = {
     "path": "/vi/", "hreflang": "vi", "og_locale": "vi_VN", "label": "Tiếng Việt", "shots": "vi",
     "head_comment": "Vietnamese home page (/vi/).",
     "title": "Tải ảnh &amp; video Xiaohongshu (Tiểu Hồng Thư), xuất CSV | RedNote Exporter",
-    "description": "Tiện ích Chrome miễn phí: tải mọi ảnh và video của một bài Xiaohongshu (RedNote) chỉ với một cú nhấp — ưu tiên video gốc không logo — và xuất danh sách ghi chú ở trang chủ, kết quả tìm kiếm hoặc trang cá nhân ra CSV. Không cần đăng nhập, mọi thứ ở lại trong trình duyệt.",
+    "description": "Tiện ích Chrome miễn phí: tải mọi ảnh và video của một bài Xiaohongshu (RedNote) chỉ với một cú nhấp — ưu tiên video gốc không logo — và xuất danh sách ghi chú ở trang chủ, kết quả tìm kiếm hoặc trang cá nhân ra CSV. Không cần đăng nhập, ghi chú không rời khỏi trình duyệt.",
     "og_site_name": "RedNote Exporter",
     "og_title": "Tải ảnh &amp; video Xiaohongshu, xuất danh sách ghi chú ra CSV",
-    "og_description": "Tải ảnh và video của bài Xiaohongshu chỉ một cú nhấp, xuất danh sách ghi chú ra CSV. Miễn phí, không cần đăng nhập, xử lý 100% cục bộ.",
+    "og_description": "Tải ảnh và video của bài Xiaohongshu chỉ một cú nhấp, xuất danh sách ghi chú ra CSV. Miễn phí, không cần đăng nhập, xử lý trong trình duyệt.",
     "app_name": "RedNote Exporter", "app_alt": "Tải ảnh & video Xiaohongshu",
     "app_description": "Tải mọi ảnh và video của một bài Xiaohongshu (RedNote) chỉ với một cú nhấp, và xuất danh sách ghi chú ở trang chủ, kết quả tìm kiếm hoặc trang cá nhân ra CSV.",
     "brand": "RedNote Exporter", "nav_label": "Trang", "lang_label": "Ngôn ngữ",
     "nav": [("#features", "Tính năng"), ("#preview", "Giao diện"), ("#how", "Cách dùng"), ("#faq", "Hỏi đáp")],
     "add": "Thêm vào Chrome",
     "hero_title": "Lưu Xiaohongshu chỉ với <mark>một&nbsp;cú&nbsp;nhấp</mark>",
-    "hero_sub": "Tải ảnh &amp; video của bài viết · Xuất danh sách ghi chú ra CSV<br>Miễn phí · Không cần đăng ký · Chạy hoàn toàn trong trình duyệt",
+    "hero_sub": "Tải ảnh &amp; video của bài viết · Xuất danh sách ghi chú ra CSV<br>Miễn phí · Không cần đăng ký · Ghi chú không rời khỏi trình duyệt",
     "hero_how": "Xem cách dùng",
     "hero_tags": ["#Video không logo", "#Ảnh Live", "#Tìm kiếm", "#Trang cá nhân", "#Xuất CSV"],
     "feat_h": "Tính năng",
@@ -641,10 +731,10 @@ S["vi"] = {
         ("click", "fill-pink", "Nhấp vào biểu tượng", "Chọn Xuất danh sách ghi chú hoặc Tải bài viết. Ở trang danh sách, cứ cuộn tiếp để thu thập thêm."),
         ("saved", "fill-mint", "Xuất hoặc tải xuống", "Nhấp Xuất CSV để lưu bảng tính, hoặc chọn ảnh và video rồi tải xuống. Xóa để bắt đầu lại."),
     ],
-    "priv_h": "Dữ liệu ở lại với bạn",
+    "priv_h": "Ghi chú ở lại với bạn",
     "privs": [
         ("lock", "fill-yellow", "Không cần tài khoản", "Tiện ích không cần đăng ký và không bao giờ đọc thông tin tài khoản Xiaohongshu của bạn."),
-        ("cloudoff", "fill-sky", "Không máy chủ ngoài", "Thu thập, xuất và tải xuống đều diễn ra trong trình duyệt. Không gì được gửi cho chúng tôi hay bất kỳ ai."),
+        ("cloudoff", "fill-sky", "Nội dung đã lưu không bị tải lên", "Ghi chú, ảnh và video không đi qua máy chủ của chúng tôi. Chúng tôi chỉ nhận số lần sử dụng ẩn danh, và bạn có thể tắt."),
         ("shield", "fill-mint", "Chỉ nội dung công khai", "Tiện ích chỉ đọc những ghi chú đã hiển thị trên trang Xiaohongshu bạn đang xem."),
     ],
     "priv_more": "Đọc toàn bộ chính sách quyền riêng tư",
@@ -664,13 +754,13 @@ S["vi"] = {
     "disclaimer": "RedNote Exporter không liên kết với, không được xác nhận hay cho phép bởi Xiaohongshu (RedNote). Tiện ích chỉ xử lý nội dung công khai và dành cho mục đích cá nhân, nghiên cứu.",
     "notfound": "Không tìm thấy trang", "back": "Về trang chủ",
     "privacy_title": "Chính sách quyền riêng tư - RedNote Exporter",
-    "privacy_description": "RedNote Exporter không thu thập, lưu trữ hay truyền bất kỳ dữ liệu cá nhân nào. Mọi xử lý đều diễn ra trong trình duyệt của bạn.",
+    "privacy_description": "RedNote Exporter giữ ghi chú, ảnh và video trong trình duyệt của bạn. Nó chỉ gửi số lần sử dụng ẩn danh, và bạn có thể tắt.",
     "privacy": """<h1>Chính sách quyền riêng tư</h1>
-      <p class="updated">Dành cho tiện ích Chrome “RedNote Exporter” · Cập nhật lần cuối: 7 tháng 11, 2026</p>
+      <p class="updated">Dành cho tiện ích Chrome “RedNote Exporter” · Cập nhật lần cuối: 13 tháng 11, 2026</p>
       <p class="updated">Đây là bản dịch. Nếu có khác biệt, <a href="/privacy/" hreflang="en" lang="en">bản tiếng Anh</a> là bản có hiệu lực.</p>
 
       <div class="summary">
-        <p><strong>Tóm tắt:</strong> tiện ích này không thu thập, lưu trữ hay truyền bất kỳ dữ liệu cá nhân nào. Không có máy chủ, không có tài khoản, không có mã phân tích hay theo dõi. Mọi thứ diễn ra trong trình duyệt của chính bạn.</p>
+        <p><strong>Tóm lại:</strong> ghi chú, ảnh và video bạn thu thập hay tải xuống không bao giờ rời khỏi trình duyệt. Tiện ích gửi số lần sử dụng ẩn danh (tính năng nào được dùng và dùng bao nhiêu lần) đến máy chủ thống kê do chúng tôi tự vận hành, để biết cần cải thiện gì trước. Dữ liệu này không chứa nội dung ghi chú, liên kết hay tài khoản, và bạn có thể tắt nó trong menu ⋯ của tiện ích.</p>
       </div>
 
       <h2>Tiện ích đọc những gì</h2>
@@ -681,17 +771,34 @@ S["vi"] = {
       </ul>
       <p>Tất cả đều là nội dung vốn đã hiển thị công khai trên trang. Tiện ích không đọc thông tin tài khoản Xiaohongshu, tin nhắn, cookie hay mật khẩu của bạn, và không bao giờ tự gửi yêu cầu đến Xiaohongshu — nó chỉ đọc dữ liệu mà trang đã nhận được trong lúc bạn duyệt.</p>
 
+      <h2>Thống kê sử dụng ẩn danh</h2>
+      <p>Để biết mọi người thực sự dùng những tính năng nào, tiện ích gửi một vài sự kiện ẩn danh đến máy chủ thống kê do chúng tôi tự vận hành (Umami, tại stats.lab115.com):</p>
+      <ul>
+        <li><strong>Khi nào:</strong> khi cài đặt hoặc cập nhật tiện ích, và khi bạn mở cửa sổ tiện ích, chuyển tab, xuất danh sách ghi chú, tải một bài viết, xóa danh sách, mở bài gốc hoặc đổi ngôn ngữ giao diện.</li>
+        <li><strong>Một sự kiện gồm:</strong> loại trang bạn đang xem (trang chủ, tìm kiếm, trang cá nhân, một bài viết hoặc khác) và đó là xiaohongshu.com hay rednote.com; các con số như đã xuất bao nhiêu ghi chú, đã tải bao nhiêu ảnh, video, Live Photo và tệp văn bản và bao nhiêu tệp không bắt đầu tải được; video có phải bản gốc không logo hay không; ngôn ngữ giao diện và ngôn ngữ trình duyệt; phiên bản tiện ích; và một mã cài đặt ngẫu nhiên tạo ra khi cài, dùng để đếm số người dùng và xem họ có quay lại không.</li>
+        <li><strong>Không bao giờ gồm:</strong> mã ghi chú, liên kết, tiêu đề hay nội dung, tên tác giả, từ khóa tìm kiếm, tên tệp, tài khoản Xiaohongshu của bạn, cookie, hay bất cứ điều gì về các trang web khác bạn truy cập.</li>
+        <li><strong>Thông tin mạng:</strong> như mọi yêu cầu web, máy chủ thống kê nhận được địa chỉ IP và thông tin trình duyệt (user agent) của bạn. Máy chủ chỉ dùng chúng để suy ra quốc gia gần đúng, loại trình duyệt và hệ điều hành, và không lưu địa chỉ IP.</li>
+        <li><strong>Cách tắt:</strong> nhấn ⋯ trong cửa sổ tiện ích và tắt “Thống kê sử dụng ẩn danh”. Từ đó trở đi không có gì được gửi.</li>
+      </ul>
+      <p>Dữ liệu thống kê chỉ nằm trên máy chủ của chúng tôi, chỉ dùng để cải thiện tiện ích, và không bao giờ được bán hay chia sẻ.</p>
+
+      <h2>Khi bạn gỡ cài đặt</h2>
+      <p>Sau khi tiện ích bị gỡ, Chrome mở một trang ngắn trên website này để hỏi lý do. Địa chỉ trang có phiên bản tiện ích và, nếu thống kê sử dụng đang bật, mã cài đặt, để câu trả lời có thể gắn với những tính năng mà lượt cài đặt đó đã dùng. Bạn không bắt buộc phải trả lời.</p>
+
+      <h2>Website này</h2>
+      <p>rednote.lab115.com đếm lượt truy cập bằng cùng hệ thống Umami tự vận hành: các trang được xem, trang giới thiệu, quốc gia gần đúng, loại trình duyệt và thiết bị, và số lần nhấn nút “Thêm vào Chrome”. Website không đặt cookie và không dùng công cụ phân tích của bên thứ ba.</p>
+
       <h2>Dữ liệu được lưu ở đâu</h2>
       <ul>
         <li>Ghi chú thu thập được chỉ nằm trong bộ nhớ của thẻ hiện tại. Đóng hoặc tải lại thẻ, hoặc nhấp Xóa, sẽ loại bỏ chúng.</li>
         <li>Khi bạn nhấp Xuất CSV hoặc Tải xuống, trình duyệt lưu tệp thẳng vào thư mục Tải xuống. Ảnh và video do trình duyệt tải trực tiếp từ máy chủ đa phương tiện của Xiaohongshu, không bao giờ đi qua chúng tôi.</li>
-        <li>Điều duy nhất tiện ích ghi nhớ trên máy là một cài đặt: ngôn ngữ giao diện bạn chọn trong menu ngôn ngữ.</li>
+        <li>Tiện ích chỉ lưu ba thứ nhỏ trên máy: ngôn ngữ giao diện bạn chọn trong menu ngôn ngữ, thống kê sử dụng có đang bật không, và mã cài đặt ngẫu nhiên.</li>
       </ul>
 
       <h2>Những điều chúng tôi không làm</h2>
       <ul>
-        <li>Không gửi bất kỳ dữ liệu nào đến máy chủ của chúng tôi hay bên thứ ba.</li>
-        <li>Không dùng công cụ phân tích, quảng cáo hay theo dõi.</li>
+        <li>Không gửi ghi chú, ảnh, video hay văn bản bạn thu thập hoặc tải xuống đến máy chủ của chúng tôi hay bất kỳ ai.</li>
+        <li>Không dùng công cụ phân tích, quảng cáo hay theo dõi của bên thứ ba.</li>
         <li>Không bán, cho thuê hay chia sẻ bất kỳ dữ liệu nào.</li>
         <li>Không thu thập gì trong nền. Tiện ích chỉ xử lý một trang Xiaohongshu khi bạn đang xem trang đó.</li>
       </ul>
@@ -699,6 +806,7 @@ S["vi"] = {
       <h2>Quyền truy cập</h2>
       <ul>
         <li><code>downloads</code> — lưu ảnh và video bạn chọn vào thư mục Tải xuống, gom vào một thư mục con đặt tên theo thời gian và tiêu đề bài.</li>
+        <li><code>storage</code> — ghi nhớ cài đặt thống kê sử dụng và mã cài đặt.</li>
         <li><strong>Truy cập xiaohongshu.com và rednote.com</strong> (bao gồm tên miền phụ edith và so) — cho phép tiện ích chạy trên các trang đó và đọc dữ liệu ghi chú chúng tải về. Tiện ích không chạy trên trang web nào khác.</li>
       </ul>
 
@@ -710,4 +818,65 @@ S["vi"] = {
 
       <h2>Liên hệ</h2>
       <p>Có câu hỏi về quyền riêng tư? Gửi email đến <a href="mailto:help@lab115.com">help@lab115.com</a>.</p>""",
+}
+
+# --------------------------------------------------------------- uninstall page
+# /<lang>/bye/: Chrome opens it after the extension is removed (background.ts,
+# setUninstallPage). `reasons` are (key, label); the key is what the stats get,
+# so keep keys the same across languages and add new ones at the end.
+BYE = {
+    "en": {
+        "title": "RedNote Exporter removed", "h1": "Sorry to see you go",
+        "lead": "What made you remove it? One tap helps us fix it.",
+        "reasons": [("not_working", "Downloads or exports didn’t work"), ("missing_feature", "It lacks a feature I need"),
+                    ("hard_to_use", "Hard to use or confusing"), ("privacy", "Worried about privacy"),
+                    ("one_time", "I only needed it once"), ("found_other", "Switched to another tool"), ("other", "Something else")],
+        "more": "Anything else we should know? (optional)", "send": "Send",
+        "thanks": "Thanks — we read every answer.", "back": "Changed your mind?", "reinstall": "Add it back to Chrome",
+    },
+    "zh": {
+        "title": "已卸载小红书导出工具", "h1": "很遗憾你要走了",
+        "lead": "是什么原因让你卸载了它？点一下就能帮我们改进。",
+        "reasons": [("not_working", "下载或导出用不了"), ("missing_feature", "缺少我需要的功能"),
+                    ("hard_to_use", "不好用，看不懂"), ("privacy", "担心隐私"),
+                    ("one_time", "只是临时用一下"), ("found_other", "换了别的工具"), ("other", "其他原因")],
+        "more": "还有什么想告诉我们的？（选填）", "send": "提交",
+        "thanks": "谢谢，每条反馈我们都会看。", "back": "改变主意了？", "reinstall": "重新添加到 Chrome",
+    },
+    "zh-tw": {
+        "title": "已移除小紅書匯出工具", "h1": "很遺憾你要離開了",
+        "lead": "是什麼原因讓你移除了它？點一下就能幫我們改進。",
+        "reasons": [("not_working", "下載或匯出無法使用"), ("missing_feature", "缺少我需要的功能"),
+                    ("hard_to_use", "不好用，看不懂"), ("privacy", "擔心隱私"),
+                    ("one_time", "只是臨時用一下"), ("found_other", "換了別的工具"), ("other", "其他原因")],
+        "more": "還有什麼想告訴我們的？（選填）", "send": "送出",
+        "thanks": "謝謝，每則回饋我們都會看。", "back": "改變主意了？", "reinstall": "重新加到 Chrome",
+    },
+    "ko": {
+        "title": "RedNote Exporter 제거됨", "h1": "떠나신다니 아쉽습니다",
+        "lead": "제거하신 이유가 무엇인가요? 한 번만 눌러 주시면 개선에 큰 도움이 됩니다.",
+        "reasons": [("not_working", "다운로드나 내보내기가 안 됨"), ("missing_feature", "필요한 기능이 없음"),
+                    ("hard_to_use", "쓰기 어렵거나 헷갈림"), ("privacy", "개인정보가 걱정됨"),
+                    ("one_time", "한 번만 필요했음"), ("found_other", "다른 도구로 바꿈"), ("other", "기타")],
+        "more": "더 알려 주실 내용이 있나요? (선택)", "send": "보내기",
+        "thanks": "감사합니다. 모든 답변을 읽고 있습니다.", "back": "마음이 바뀌셨나요?", "reinstall": "Chrome에 다시 추가",
+    },
+    "ja": {
+        "title": "RedNote Exporter を削除しました", "h1": "ご利用ありがとうございました",
+        "lead": "削除した理由を教えてください。ワンタップで改善に役立ちます。",
+        "reasons": [("not_working", "ダウンロードや出力がうまくいかない"), ("missing_feature", "欲しい機能がない"),
+                    ("hard_to_use", "使いにくい・わかりにくい"), ("privacy", "プライバシーが心配"),
+                    ("one_time", "一度だけ使いたかった"), ("found_other", "別のツールに乗り換えた"), ("other", "その他")],
+        "more": "ほかに伝えたいことはありますか？（任意）", "send": "送信",
+        "thanks": "ありがとうございます。いただいた回答はすべて読んでいます。", "back": "気が変わりましたか？", "reinstall": "Chrome にもう一度追加",
+    },
+    "vi": {
+        "title": "Đã gỡ RedNote Exporter", "h1": "Tiếc là bạn rời đi",
+        "lead": "Vì sao bạn gỡ tiện ích? Chỉ một lần nhấn cũng giúp chúng tôi cải thiện.",
+        "reasons": [("not_working", "Tải xuống hoặc xuất không hoạt động"), ("missing_feature", "Thiếu tính năng tôi cần"),
+                    ("hard_to_use", "Khó dùng hoặc khó hiểu"), ("privacy", "Lo ngại về quyền riêng tư"),
+                    ("one_time", "Tôi chỉ cần dùng một lần"), ("found_other", "Đã chuyển sang công cụ khác"), ("other", "Lý do khác")],
+        "more": "Bạn còn muốn nói gì thêm không? (không bắt buộc)", "send": "Gửi",
+        "thanks": "Cảm ơn bạn, chúng tôi đọc mọi câu trả lời.", "back": "Bạn đổi ý?", "reinstall": "Thêm lại vào Chrome",
+    },
 }

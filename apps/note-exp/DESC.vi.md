@@ -13,7 +13,7 @@ Tính năng chính
 
 • Không cần đăng nhập, không thu thập thông tin tài khoản
 
-• Mọi dữ liệu chỉ được xử lý trong trình duyệt của bạn
+• Ghi chú, ảnh và video được xử lý trong trình duyệt và không bị tải lên
 
 • Giao diện hỗ trợ 6 ngôn ngữ, gồm tiếng Việt (简体中文、繁體中文、English、한국어、日本語、Tiếng Việt), tự động theo ngôn ngữ trình duyệt
 
@@ -39,9 +39,11 @@ Xuất danh sách ghi chú
 ────────────────────
 Quyền riêng tư & Bảo mật
 ────────────────────
-• Tiện ích KHÔNG thu thập, lưu trữ hay truyền bất kỳ dữ liệu cá nhân nào
+• Ghi chú, ảnh, video và văn bản bạn thu thập hoặc tải xuống không bao giờ rời khỏi trình duyệt
 
-• Không sử dụng máy chủ bên ngoài
+• Để cải thiện tiện ích, nó gửi số lần sử dụng ẩn danh (tính năng nào được dùng, bao nhiêu lần) đến máy chủ thống kê do chúng tôi tự vận hành. Không gồm nội dung ghi chú, liên kết hay tài khoản, và có thể tắt trong menu ⋯
+
+• Chính sách quyền riêng tư đầy đủ: https://rednote.lab115.com/vi/privacy/
 
 • Mọi nội dung được xuất và tải xuống đều lấy từ các trang công khai của Xiaohongshu
 

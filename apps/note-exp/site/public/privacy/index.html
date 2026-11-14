@@ -9,7 +9,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy Policy - RedNote Exporter</title>
-  <meta name="description" content="RedNote Exporter collects, stores and transmits no personal data. Everything happens inside your browser.">
+  <meta name="description" content="RedNote Exporter keeps your notes, images and videos in your browser. It only sends anonymous usage counts, which you can turn off.">
   <link rel="canonical" href="https://rednote.lab115.com/privacy/">
   <link rel="alternate" hreflang="en" href="https://rednote.lab115.com/privacy/">
   <link rel="alternate" hreflang="zh-CN" href="https://rednote.lab115.com/zh/privacy/">
@@ -18,32 +18,33 @@
   <link rel="alternate" hreflang="ja" href="https://rednote.lab115.com/ja/privacy/">
   <link rel="alternate" hreflang="vi" href="https://rednote.lab115.com/vi/privacy/">
   <link rel="alternate" hreflang="x-default" href="https://rednote.lab115.com/privacy/">
-  <link rel="icon" href="/img/icon.svg?v=7" type="image/svg+xml">
-  <link rel="icon" href="/favicon.png?v=7" type="image/png" sizes="32x32">
+  <link rel="icon" href="/img/icon.svg?v=8" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png?v=8" type="image/png" sizes="32x32">
   <meta name="theme-color" content="#ffffff">
-  <link rel="stylesheet" href="/sokosoko.css?v=7">
-  <link rel="stylesheet" href="/style.css?v=7">
+  <link rel="stylesheet" href="/sokosoko.css?v=8">
+  <link rel="stylesheet" href="/style.css?v=8">
+  <script defer src="https://stats.lab115.com/script.js" data-website-id="1e8bb563-6b26-430c-90a2-e57b75549da7" data-domains="rednote.lab115.com"></script>
 </head>
 <body>
   <header class="sk-header">
-    <a class="sk-logo" href="/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">RedNote Exporter</a>
+    <a class="sk-logo" href="/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">RedNote Exporter</a>
     <nav aria-label="Page"><ul class="sk-nav"><li><a href="/#features">Features</a></li><li><a href="/#preview">Preview</a></li><li><a href="/#how">How it works</a></li><li><a href="/#faq">FAQ</a></li></ul></nav>
     <div class="hdr-actions">
       <details class="lang-menu">
         <summary aria-label="Language: English"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg><span>English</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></summary>
         <ul><li><a href="/privacy/" hreflang="en" lang="en" aria-current="page">English</a></li><li><a href="/zh/privacy/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/privacy/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/privacy/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/privacy/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/privacy/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul>
       </details>
-      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener">Add to Chrome</a>
+      <a class="sk-btn sk-btn--primary sk-btn--sm" href="https://chromewebstore.google.com/detail/rednote-exporter/peadpgjojnooldamfigkfbdiahhffjlm" rel="noopener" data-umami-event="add_to_chrome" data-umami-event-where="header">Add to Chrome</a>
     </div>
   </header>
 
   <main class="sk-container">
     <article class="prose">
       <h1>Privacy Policy</h1>
-      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 7, 2026</p>
+      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 13, 2026</p>
 
       <div class="summary">
-        <p><strong>In short:</strong> this extension collects, stores and transmits no personal data. It has no server, no accounts, and no analytics or tracking code. Everything happens inside your own browser.</p>
+        <p><strong>In short:</strong> the notes, images and videos you capture or download never leave your browser. The extension sends anonymous usage counts (which features are used, and how often) to our own statistics server so we know what to improve. They never include note content, links or your account, and you can turn them off in the extension’s ⋯ menu.</p>
       </div>
 
       <h2>What the extension reads</h2>
@@ -54,17 +55,34 @@
       </ul>
       <p>All of this is content already publicly visible on the page. The extension does not read your RedNote account details, messages, cookies or passwords, and it never sends requests of its own to RedNote — it only reads data the page has already received while you browse.</p>
 
+      <h2>Anonymous usage statistics</h2>
+      <p>To learn which features people actually use, the extension reports a few anonymous events to our self-hosted statistics server (Umami, at stats.lab115.com):</p>
+      <ul>
+        <li><strong>When:</strong> the extension is installed or updated, and when you open its popup, switch tabs, export a note list, download a post, clear the list, open the original post or change the interface language.</li>
+        <li><strong>What an event contains:</strong> the kind of page you are on (home feed, search, profile, a post or other) and whether it is xiaohongshu.com or rednote.com; counts such as how many notes were exported, or how many images, videos, Live Photos and text files were downloaded and how many failed to start; whether a video was the watermark-free original; the interface and browser language; the extension version; and a random install ID created when the extension is installed, used to count users and see whether they come back.</li>
+        <li><strong>What it never contains:</strong> note IDs, links, titles or text, author names, search words, file names, your RedNote account, cookies, or anything about other websites you visit.</li>
+        <li><strong>Network details:</strong> like any web request, a report reaches the server with your IP address and browser user agent. The server uses them to work out the approximate country and the browser and operating system, and does not store the IP address.</li>
+        <li><strong>Turning it off:</strong> click ⋯ in the extension’s popup and switch off “Anonymous usage stats”. From then on nothing is sent.</li>
+      </ul>
+      <p>The statistics stay on our own server, are used only to improve the extension, and are never sold or shared.</p>
+
+      <h2>When you uninstall</h2>
+      <p>After the extension is removed, Chrome opens a short page on this website asking why. Its address carries the extension version and, if usage statistics were on, the install ID, so an answer can be matched to the features that install used. Answering is optional.</p>
+
+      <h2>This website</h2>
+      <p>rednote.lab115.com counts visits with the same self-hosted Umami: pages viewed, the referring site, approximate country, browser and device type, and clicks on the “Add to Chrome” buttons. It sets no cookies and uses no third-party analytics.</p>
+
       <h2>Where data is kept</h2>
       <ul>
         <li>Captured notes live only in the memory of the current tab. Closing or reloading the tab, or clicking Clear, discards them.</li>
         <li>When you click Export CSV or Download, your browser saves the files straight to your Downloads folder. Images and video are fetched by your browser directly from RedNote's media servers, never through us.</li>
-        <li>The only thing the extension remembers locally is one setting: the interface language you picked from its language menu.</li>
+        <li>The extension keeps three small things locally: the interface language you picked from its language menu, whether usage statistics are on, and the random install ID.</li>
       </ul>
 
       <h2>What we don't do</h2>
       <ul>
-        <li>We do not send any data to our servers or to any third party.</li>
-        <li>We do not use analytics, advertising or tracking tools.</li>
+        <li>We never send the notes, images, videos or text you capture or download to our servers or anyone else.</li>
+        <li>We do not use third-party analytics, advertising or tracking tools.</li>
         <li>We do not sell, rent or share any data.</li>
         <li>We do not collect anything in the background. The extension only handles a RedNote page while you are browsing it.</li>
       </ul>
@@ -72,6 +90,7 @@
       <h2>Permissions</h2>
       <ul>
         <li><code>downloads</code> — saves the images and video you select to your Downloads folder, grouped into one sub-folder named after the time and post title.</li>
+        <li><code>storage</code> — remembers the usage-statistics setting and the install ID.</li>
         <li><strong>Access to xiaohongshu.com and rednote.com</strong> (including the edith and so subdomains) — lets the extension run on those pages and read the note data they load. It does not run on any other site.</li>
       </ul>
 
@@ -88,7 +107,7 @@
 
   <footer class="sk-footer">
     <div class="sk-footer__cols">
-      <div><a class="sk-logo" href="/"><img src="/img/icon.svg?v=7" alt="" width="28" height="28">RedNote Exporter</a><p class="foot-desc">A free Chrome extension that saves RedNote images and videos and exports note lists to CSV.</p><p class="foot-made"><a href="https://lab115.com">Made by LAB115</a></p></div>
+      <div><a class="sk-logo" href="/"><img src="/img/icon.svg?v=8" alt="" width="28" height="28">RedNote Exporter</a><p class="foot-desc">A free Chrome extension that saves RedNote images and videos and exports note lists to CSV.</p><p class="foot-made"><a href="https://lab115.com">Made by LAB115</a></p></div>
       <div><h4>Product</h4><ul><li><a href="/#features">Features</a></li><li><a href="/#preview">Preview</a></li><li><a href="/#how">How it works</a></li></ul></div>
       <div><h4>Help</h4><ul><li><a href="/#faq">FAQ</a></li><li><a href="/privacy/">Privacy policy</a></li><li><a href="mailto:help@lab115.com">help@lab115.com</a></li></ul></div>
       <div><h4>Language</h4><ul><li><a href="/privacy/" hreflang="en" lang="en">English</a></li><li><a href="/zh/privacy/" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/privacy/" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li><li><a href="/ko/privacy/" hreflang="ko" lang="ko">한국어</a></li><li><a href="/ja/privacy/" hreflang="ja" lang="ja">日本語</a></li><li><a href="/vi/privacy/" hreflang="vi" lang="vi">Tiếng Việt</a></li></ul></div>

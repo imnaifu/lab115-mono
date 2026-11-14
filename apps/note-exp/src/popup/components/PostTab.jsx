@@ -1,3 +1,4 @@
+import { track } from '../stats.js';
 import Icon from './Icon.jsx';
 import PhotoThumb from './PhotoThumb.jsx';
 import { Btn, Progress, Overlay, Sheet, SheetIcon, EmptyState, Notice, Label } from './ui.jsx';
@@ -54,6 +55,7 @@ export default function PostTab({ L, s }) {
             href={post.noteUrl}
             target="_blank"
             rel="noreferrer"
+            onClick={() => track("open_note")}
             aria-label={L.openNote}
             className="text-ink hover:bg-paper-sunk w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-colors duration-[120ms]"
           >

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { parseInterceptedDataLocal } from "../utils/note";
 import { convertToCSV } from "../utils/csv";
 import { formatNoteText, parseNoteDetail } from "../utils/video";
+import { pageKind, track } from "./stats.js";
 
 // All popup state + actions in one hook. Real data is pulled from the content
 // script (which relays the page's intercepted API responses); there is no mock
@@ -80,8 +81,13 @@ function originOf(tab) {
   return "https://www.xiaohongshu.com";
 }
 
-export default function usePopup() {
-  const [tab, setTab] = useState("list");
+// `lang` is the popup's UI language, only read for the popup_open stat.
+export default function usePopup(lang) {
+  const [tab, setTabState] = useState("list");
+  function setTab(key) {
+    if (key !== tab) track("tab", { to: key });
+    setTabState(key);
+  }
 
   // list tab (homefeed / search / user profile note lists)
   const [sPhase, setSPhase] = useState("capturing"); // nopage | capturing | exporting | exported
@@ -104,6 +110,10 @@ export default function usePopup() {
   const [dlFolder, setDlFolder] = useState("");
 
   const bodyRef = useRef(null);
+  // Kind of page the active tab shows ({ site, page }), for the stats.
+  const pageRef = useRef({ site: "other", page: "other" });
+  const langRef = useRef(lang);
+  langRef.current = lang;
 
   // Underlying PostData[] of the last list refresh, kept for CSV export.
   const parsedRef = useRef([]);
@@ -125,11 +135,19 @@ export default function usePopup() {
   // Poll the content script for both list and post data once per second.
   useEffect(() => {
     let alive = true;
+    // popup_open goes out once, after the first poll, so it can say what the
+    // user found: how many notes were captured and whether a post was open.
+    let openReported = false;
 
     async function refresh() {
       const activeTab = await getActiveTab();
       if (!alive || !activeTab?.id) return;
       const base = originOf(activeTab);
+      pageRef.current = pageKind(activeTab.url);
+      // -1: the content script didn't answer (not a RedNote page, or opened
+      // before the extension was installed/updated and not reloaded since).
+      let noteCount = -1;
+      let postKind = "none";
 
       // --- note list (search / homefeed / user_posted) ---
       try {
@@ -138,6 +156,7 @@ export default function usePopup() {
         });
         const parsed = parseInterceptedDataLocal(resp?.data, base);
         parsedRef.current = parsed;
+        noteCount = parsed.length;
         setItems(
           parsed.map((p, i) => ({
             id: p.noteUrl || String(i),
@@ -190,6 +209,7 @@ export default function usePopup() {
           latest = { ...latest, noteUrl: activeTab.url };
         }
         setPost(latest);
+        if (latest) postKind = latest.video ? "video" : "images";
         // When the open note changes, select everything by default (allKeys
         // only offers 'v' when the post actually has a video).
         if (latest && latest.noteId !== postIdRef.current) {
@@ -204,6 +224,16 @@ export default function usePopup() {
         if (pPhaseRef.current === "ready" || pPhaseRef.current === "error") {
           setPPhase("error");
         }
+      }
+
+      if (!openReported) {
+        openReported = true;
+        track("popup_open", {
+          ...pageRef.current,
+          notes: noteCount,
+          post: postKind,
+          ui_lang: langRef.current || "",
+        });
       }
     }
 
@@ -224,6 +254,7 @@ export default function usePopup() {
     const data = parsedRef.current;
     if (!data.length) return;
 
+    track("export", { ...pageRef.current, notes: data.length });
     const csv = convertToCSV(data);
     // Filename: "yyyy-mm-dd hh-mm-ss rednote-notes.csv". Reuse nowStamp()
     // (local time, filename-safe dashes) so it matches the download-folder
@@ -258,6 +289,7 @@ export default function usePopup() {
 
   // --- clear (drops the page-side caches; nothing auto-clears anymore) ---
   async function runClear() {
+    track("clear", { notes: parsedRef.current.length });
     // Ask the page to drop its caches first, so the next 1s poll doesn't
     // repopulate the UI from stale injected-script state.
     try {
@@ -312,6 +344,7 @@ export default function usePopup() {
     const jobs = [];
     if (selVideo && post.video) {
       jobs.push({
+        kind: "video",
         urls: [post.video.url, ...post.video.backupUrls],
         name: `${folder}/video-1.mp4`,
       });
@@ -321,11 +354,13 @@ export default function usePopup() {
     post.images.forEach((img, i) => {
       if (sel.has("i" + i)) {
         jobs.push({
+          kind: "image",
           urls: [img.url],
           name: `${folder}/image-${i + 1}.${imageExt(img.url)}`,
         });
         if (img.liveUrls.length) {
           jobs.push({
+            kind: "live",
             urls: img.liveUrls,
             name: `${folder}/image-${i + 1}-live.mp4`,
           });
@@ -338,6 +373,7 @@ export default function usePopup() {
       // Windows Notepad read it as UTF-8.
       const body = "\uFEFF" + formatNoteText(post, labels);
       jobs.push({
+        kind: "text",
         urls: [`data:text/plain;charset=utf-8,${encodeURIComponent(body)}`],
         name: `${folder}/note.txt`,
       });
@@ -345,24 +381,44 @@ export default function usePopup() {
     setDlTotal(jobs.length);
 
     let done = 0;
+    let failed = 0;
+    // Which video file we got: the watermark-free original or a fallback stream.
+    let videoSource = "none";
     for (const job of jobs) {
       // Route through the background worker, which forces the target path via
       // onDeterminingFilename. Calling chrome.downloads.download with `filename`
       // directly here is unreliable: the CDN's Content-Disposition overrides it,
       // dropping the folder and renaming the files.
+      let started = false;
       try {
-        await chrome.runtime.sendMessage({
+        const resp = await chrome.runtime.sendMessage({
           action: "downloadResource",
           urls: job.urls,
           filename: job.name,
         });
+        started = !!resp?.ok;
+        if (started && job.kind === "video") {
+          videoSource = resp.index < post.video.originalCount ? "original" : "watermarked";
+        }
       } catch {
         // background unreachable — skip this job
       }
+      // "Started" is all we learn: a file the CDN refuses later still counts.
+      if (!started) failed += 1;
       done += 1;
       setDlDone(done);
       setDlPct(Math.round((done / jobs.length) * 100));
     }
+    track("download", {
+      video: selVideo ? 1 : 0,
+      images: selImages,
+      live: selLive,
+      text: selText ? 1 : 0,
+      all: allSel ? 1 : 0,
+      files: jobs.length,
+      failed,
+      video_source: videoSource,
+    });
     after(300, () => setPPhase("done"));
   }
 

@@ -16,6 +16,9 @@ export interface VideoInfo {
   // remaining watermark-free CDN mirrors first, then the watermarked stream
   // URLs (master_url + backup_urls) as a last resort.
   backupUrls: string[];
+  // How many of [url, ...backupUrls] are watermark-free originals (they come
+  // first), so a download can tell which kind it ended up with.
+  originalCount: number;
   duration: string; // "mm:ss"
   size: string; // human-readable, e.g. "38.2 MB"
   resolution: string; // "WIDTHxHEIGHT"
@@ -167,6 +170,7 @@ function pickVideoInfo(note: any): VideoInfo | null {
   return {
     url: primaryUrl,
     backupUrls: fallbackUrls,
+    originalCount: watermarkFreeUrls.length,
     duration: formatDuration(variant.duration ?? variant.video_duration ?? 0),
     // Size/resolution metadata only exists on the stream variant; the original
     // file's size differs slightly from the watermarked encode's.
