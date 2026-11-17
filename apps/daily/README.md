@@ -2285,6 +2285,11 @@ culture    人文   76   3 页   live
   proxy 的 matcher 跳过带扩展名的路径，没有这个 handler `/feed.xml` 是 404。
 - **`<link rel="alternate" type="application/atom+xml">` 在 `layout.tsx` 的
   metadata 里**，只声明当前语言那一份。没有它，读者拿到域名找不到订阅地址。
+- **Chrome 扩展（`apps/daily-ext`）只读这份 feed**，所以 feed 的一部分格式是契约：entry 的
+  `<id>` 是带日期路径的文章 URL、按「新的一天在前、天内按 rank」排序、`<category term label/>`、
+  正文第一个 `<p>` 是论点、最后一个 `<p>` 是「看原文 → — 来源名」。改这些要同时改扩展的
+  `src/shared/feed.ts` / `src/popup/take.ts` —— 已安装的扩展要等商店更新才换解析器。细节见
+  `feed.ts` 开头的注释。
 
 ## 输出的 JSON
 
@@ -2340,6 +2345,9 @@ https://raw.githubusercontent.com/imnaifu/files/main/daily/2026/08/2026-08-10.js
 - `/d/2026-08-10` 单日固定链接
 - `/archive` 归档列表，直接扫 clone 目录得出，没有索引文件
 - `/feed.xml`、`/zh/feed.xml`、`/en/feed.xml` Atom 输出，见上面「站点自己的 feed」
+- `/extension` Chrome 扩展（`apps/daily-ext`）的介绍和隐私政策，商店后台的隐私政策地址指向它。
+  `noindex`、不进 sitemap；文案在 `lib/i18n.ts` 的 `ext*`，是对扩展实际行为的陈述，扩展的权限、
+  存储或网络请求一变就要跟着改
 
 每条路径都带语言前缀（`/zh/…`、`/en/…`），**两种语言渲染的是各自的摘要**。取哪一份由
 `summaryFor`（`lib/take.ts`）一处决定，poster 和 og:description 也走它 —— 所以

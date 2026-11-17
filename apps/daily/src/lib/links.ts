@@ -213,6 +213,16 @@ export const TOPIC_PATH = "/topic";
 export const ABOUT_PATH = "/about";
 
 /**
+ * `/extension` — what the Chrome extension (apps/daily-ext) does, and its
+ * privacy policy. The Chrome Web Store listing points its privacy-policy field
+ * here, so this URL has to keep resolving for as long as the extension is listed.
+ *
+ * NOT IN THE SITEMAP AND `noindex`: the site's index surface is deliberately
+ * small (see sitemap.ts), and a privacy page is not something to spend it on.
+ */
+export const EXTENSION_PATH = "/extension";
+
+/**
  * `/today` — AN ALIAS THAT RESOLVES TO THE NEWEST EDITION, not a page.
  *
  * WHY IT EXISTS. The bar's first item is 「今天列表」 and it has to lead to the

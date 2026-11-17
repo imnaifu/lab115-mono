@@ -25,6 +25,17 @@ import type { Digest, PublishedArticle } from "./types";
  * `<updated>` distinct from `<published>` (see `entryFor`), and `xml:lang` —
  * this is a bilingual site that treats /zh and /en as two publications, so the
  * feed has to say which one a reader is holding.
+ *
+ * THE CHROME EXTENSION (apps/daily-ext) READS THIS FEED AS ITS ONLY DATA SOURCE,
+ * so parts of the markup are a contract, not just presentation. It relies on:
+ * the entry `<id>` being the article URL with the digest date in its path
+ * (`/YYYY/MM/DD/<slug>`, `/en/` prefixed for English); entries in digest order,
+ * newest day first and rank order within a day; `<category term label/>`; and
+ * the body shape in `contentHtml` — thesis as the first `<p>`, `<h3>` headings,
+ * and the original link plus ` — Source` as the LAST `<p>`. Change any of those
+ * and update apps/daily-ext/src/shared/feed.ts and src/popup/take.ts with it;
+ * installed copies of the extension keep running the old parser until the store
+ * ships an update.
  */
 
 /**
