@@ -390,7 +390,7 @@
             tag: ["download", "下載單篇資源"],
             h1: "圖片和影片，<br><mark>一鍵</mark>全部儲存",
             sub: "打開任意一篇筆記，勾選想要的圖片和影片，點一下就下載到同一個資料夾。",
-            bullets: [["video", "影片優先下載無浮水印原檔"], ["image", "圖文筆記、影片筆記都支援"], ["check", "只勾選你需要的那幾張"]],
+            bullets: [["video", "影片優先下載無浮水印原檔"], ["image", "實況圖、內文（note.txt）也能存"], ["check", "只勾選你需要的那幾張"]],
           },
           s2: {
             tag: ["folder", "自動整理"],
@@ -401,8 +401,8 @@
           s3: {
             tag: ["list", "匯出筆記列表"],
             h1: "邊滑邊收集，<br><mark>隨時</mark>匯出 CSV",
-            sub: "在首頁推薦、搜尋結果或使用者主頁正常往下滑，看過的筆記會自動收集並去除重複。",
-            bullets: [["search", "首頁推薦 · 搜尋結果 · 使用者主頁"], ["check", "自動去重，即時顯示收集數量"], ["heart", "標題、作者、互動數據一起帶上"]],
+            sub: "在首頁推薦、搜尋結果、使用者主頁或收藏頁正常往下滑，看過的筆記會自動收集並去除重複。",
+            bullets: [["search", "首頁推薦 · 搜尋結果 · 使用者主頁 · 收藏"], ["check", "自動去重，即時顯示收集數量"], ["heart", "標題、作者、互動數據一起帶上"]],
           },
           s4: {
             tag: ["file", "CSV 表格"],
@@ -413,7 +413,7 @@
           s5: {
             title: "三步上手，檔案<mark>只存在你的電腦</mark>",
             steps: [
-              ["打開小紅書", "首頁推薦、搜尋結果、使用者主頁，或任意一篇筆記"],
+              ["打開小紅書", "首頁推薦、搜尋結果、使用者主頁、收藏頁，或任意一篇筆記"],
               ["點擊擴充功能圖示", "切換到「匯出筆記列表」或「下載單篇資源」"],
               ["匯出或下載", "CSV 表格和圖片影片直接儲存到你的電腦"],
             ],
@@ -426,7 +426,7 @@
           },
           small: ["小紅書<mark>匯出</mark>", "圖片影片下載 · 筆記匯出 CSV"],
           post: { title: "秋天第一件風衣的 5 套通勤穿搭", author: "鹽系小柯", time: "2026-09-28" },
-          videoUnit: "部影片", imageUnit: "張圖片", videoWord: "影片", imagesWord: "圖片",
+          videoUnit: "部影片", imageUnit: "張圖片", liveBadge: "實況", liveCount: "2 張實況", videoWord: "影片", imagesWord: "圖片",
           deselAll: "取消全選", dlSel: (n) => `下載所選 · ${n}`,
           connected: "已連線", captured: "已收集", unit: "則", capturing: "收集中…",
           dedup: "已接收 140 · 略過 12 則重複",
@@ -456,7 +456,7 @@
             tag: ["download", "게시물 다운로드"],
             h1: "이미지와 동영상,<br><mark>한 번에</mark> 모두 저장",
             sub: "게시물을 열고 원하는 이미지와 동영상을 선택하면 한 폴더에 바로 다운로드됩니다.",
-            bullets: [["video", "워터마크 없는 원본 동영상 우선"], ["image", "이미지·동영상 게시물 모두 지원"], ["check", "필요한 파일만 골라서 저장"]],
+            bullets: [["video", "워터마크 없는 원본 동영상 우선"], ["image", "라이브 포토와 본문(note.txt)도 저장"], ["check", "필요한 파일만 골라서 저장"]],
           },
           s2: {
             tag: ["folder", "자동 정리"],
@@ -467,8 +467,8 @@
           s3: {
             tag: ["list", "노트 목록 내보내기"],
             h1: "스크롤만 하면 수집,<br><mark>언제든</mark> CSV로",
-            sub: "홈 피드, 검색 결과, 프로필을 평소처럼 스크롤하면 본 노트가 자동으로 수집되고 중복은 제거됩니다.",
-            bullets: [["search", "홈 피드 · 검색 결과 · 프로필"], ["check", "자동 중복 제거, 실시간 개수 표시"], ["heart", "제목, 작성자, 반응 데이터까지"]],
+            sub: "홈 피드, 검색 결과, 프로필, 저장 탭을 평소처럼 스크롤하면 본 노트가 자동으로 수집되고 중복은 제거됩니다.",
+            bullets: [["search", "홈 피드 · 검색 결과 · 프로필 · 저장"], ["check", "자동 중복 제거, 실시간 개수 표시"], ["heart", "제목, 작성자, 반응 데이터까지"]],
           },
           s4: {
             tag: ["file", "CSV 표"],
@@ -479,7 +479,7 @@
           s5: {
             title: "세 단계, 파일은 <mark>내 컴퓨터에만</mark>",
             steps: [
-              ["샤오홍슈 열기", "홈 피드, 검색 결과, 프로필 또는 아무 게시물"],
+              ["샤오홍슈 열기", "홈 피드, 검색 결과, 프로필, 저장 탭 또는 아무 게시물"],
               ["아이콘 클릭", "「노트 목록 내보내기」 또는 「게시물 다운로드」 선택"],
               ["내보내기·다운로드", "CSV와 이미지, 동영상이 컴퓨터에 저장됩니다"],
             ],
@@ -492,7 +492,7 @@
           },
           small: ["샤오홍슈 <mark>다운로더</mark>", "이미지·동영상 저장 · CSV 내보내기"],
           post: { title: "가을 트렌치코트 출근룩 5가지", author: "솔티코", time: "2026-09-28" },
-          videoUnit: "동영상", imageUnit: "이미지", videoWord: "동영상", imagesWord: "이미지",
+          videoUnit: "동영상", imageUnit: "이미지", liveBadge: "LIVE", liveCount: "라이브 2장", videoWord: "동영상", imagesWord: "이미지",
           deselAll: "선택 해제", dlSel: (n) => `다운로드 · ${n}`,
           connected: "연결됨", captured: "수집됨", unit: "개", capturing: "수집 중…",
           dedup: "140개 받음 · 중복 12개 건너뜀",
@@ -522,7 +522,7 @@
             tag: ["download", "投稿をダウンロード"],
             h1: "画像も動画も、<br><mark>ワンクリック</mark>で保存",
             sub: "投稿を開いて、欲しい画像と動画にチェックを入れるだけ。1 つのフォルダにまとめてダウンロードします。",
-            bullets: [["video", "透かしなしの元動画を優先"], ["image", "画像投稿にも動画投稿にも対応"], ["check", "必要なファイルだけ選べる"]],
+            bullets: [["video", "透かしなしの元動画を優先"], ["image", "Live Photos と本文（note.txt）も保存"], ["check", "必要なファイルだけ選べる"]],
           },
           s2: {
             tag: ["folder", "自動で整理"],
@@ -533,8 +533,8 @@
           s3: {
             tag: ["list", "ノート一覧を出力"],
             h1: "スクロールで収集、<br><mark>いつでも</mark> CSV に",
-            sub: "ホーム、検索結果、プロフィールを普段どおりスクロールすると、見たノートが自動で収集され、重複も除かれます。",
-            bullets: [["search", "ホーム · 検索結果 · プロフィール"], ["check", "重複を自動で除去、件数をリアルタイム表示"], ["heart", "タイトル、投稿者、反応数もまとめて"]],
+            sub: "ホーム、検索結果、プロフィール、コレクションを普段どおりスクロールすると、見たノートが自動で収集され、重複も除かれます。",
+            bullets: [["search", "ホーム · 検索 · プロフィール · コレクション"], ["check", "重複を自動で除去、件数をリアルタイム表示"], ["heart", "タイトル、投稿者、反応数もまとめて"]],
           },
           s4: {
             tag: ["file", "CSV 表"],
@@ -545,7 +545,7 @@
           s5: {
             title: "3 ステップ、ファイルは<mark>手元のパソコンだけ</mark>に",
             steps: [
-              ["小紅書を開く", "ホーム、検索結果、プロフィール、または任意の投稿"],
+              ["小紅書を開く", "ホーム、検索結果、プロフィール、コレクション、または任意の投稿"],
               ["アイコンをクリック", "「ノート一覧を出力」か「投稿をダウンロード」を選択"],
               ["出力・ダウンロード", "CSV と画像・動画がパソコンに保存されます"],
             ],
@@ -558,7 +558,7 @@
           },
           small: ["小紅書<mark>保存</mark>ツール", "画像・動画の保存 · CSV 出力"],
           post: { title: "秋のトレンチコート通勤コーデ 5 選", author: "しおこ", time: "2026-09-28" },
-          videoUnit: "本の動画", imageUnit: "枚の画像", videoWord: "動画", imagesWord: "画像",
+          videoUnit: "本の動画", imageUnit: "枚の画像", liveBadge: "LIVE", liveCount: "ライブ 2 枚", videoWord: "動画", imagesWord: "画像",
           deselAll: "選択を解除", dlSel: (n) => `ダウンロード · ${n}`,
           connected: "接続済み", captured: "収集済み", unit: "件", capturing: "収集中…",
           dedup: "140 件受信 · 重複 12 件をスキップ",
@@ -588,7 +588,7 @@
             tag: ["download", "Tải bài viết"],
             h1: "Mọi ảnh &amp; video,<br>lưu chỉ <mark>một&nbsp;cú&nbsp;nhấp</mark>",
             sub: "Mở bất kỳ bài Xiaohongshu nào, chọn những gì bạn muốn và tải tất cả vào một thư mục.",
-            bullets: [["video", "Ưu tiên video gốc không logo"], ["image", "Hỗ trợ cả bài ảnh và bài video"], ["check", "Chỉ chọn những tệp bạn cần"]],
+            bullets: [["video", "Ưu tiên video gốc không logo"], ["image", "Cả Live Photo và nội dung bài (note.txt)"], ["check", "Chỉ chọn những tệp bạn cần"]],
           },
           s2: {
             tag: ["folder", "Tự động sắp xếp"],
@@ -599,8 +599,8 @@
           s3: {
             tag: ["list", "Xuất danh sách ghi chú"],
             h1: "Cuộn là thu thập,<br>xuất <mark>bất cứ lúc nào</mark>",
-            sub: "Lướt trang chủ, kết quả tìm kiếm hoặc trang cá nhân — mọi ghi chú bạn lướt qua đều được thu thập và loại trùng.",
-            bullets: [["search", "Trang chủ · Tìm kiếm · Trang cá nhân"], ["check", "Tự loại trùng, đếm theo thời gian thực"], ["heart", "Tiêu đề, tác giả và số tương tác"]],
+            sub: "Lướt trang chủ, kết quả tìm kiếm, trang cá nhân hoặc mục đã lưu — mọi ghi chú bạn lướt qua đều được thu thập và loại trùng.",
+            bullets: [["search", "Trang chủ · Tìm kiếm · Cá nhân · Đã lưu"], ["check", "Tự loại trùng, đếm theo thời gian thực"], ["heart", "Tiêu đề, tác giả và số tương tác"]],
           },
           s4: {
             tag: ["file", "Bảng CSV"],
@@ -611,7 +611,7 @@
           s5: {
             title: "Ba bước. Tệp chỉ nằm trên <mark>máy của bạn</mark>.",
             steps: [
-              ["Mở Xiaohongshu", "Trang chủ, kết quả tìm kiếm, trang cá nhân hoặc một bài viết"],
+              ["Mở Xiaohongshu", "Trang chủ, kết quả tìm kiếm, trang cá nhân, mục đã lưu hoặc một bài viết"],
               ["Nhấp vào biểu tượng", "Chọn Xuất danh sách ghi chú hoặc Tải bài viết"],
               ["Xuất hoặc tải xuống", "CSV, ảnh và video được lưu vào máy tính của bạn"],
             ],
@@ -624,7 +624,7 @@
           },
           small: ["Tải <mark>Xiaohongshu</mark>", "Tải ảnh & video · Xuất CSV"],
           post: { title: "5 cách phối áo trench đi làm mùa thu", author: "saltyko", time: "2026-09-28" },
-          videoUnit: "video", imageUnit: "ảnh", videoWord: "Video", imagesWord: "Ảnh",
+          videoUnit: "video", imageUnit: "ảnh", liveBadge: "LIVE", liveCount: "2 ảnh Live", videoWord: "Video", imagesWord: "Ảnh",
           deselAll: "Bỏ chọn", dlSel: (n) => `Tải xuống · ${n}`,
           connected: "Đã kết nối", captured: "Đã thu thập", unit: "ghi chú", capturing: "Đang thu thập…",
           dedup: "Đã nhận 140 · bỏ qua 12 trùng lặp",
@@ -668,7 +668,7 @@
         const p = T.post;
         const imgs = Array.from({ length: 9 }, (_, i) =>
           photo(i + 2, "aspect-ratio:1;border-radius:6px;", `<span class="num">${i + 1}</span><span class="check">${ic("check", 12, 3)}</span>${
-            // Live Photo badge on two images; only languages whose assets were re-rendered for 1.4.0 define it.
+            // Live Photo badge on two images (every language defines liveBadge since 1.4.1).
             T.liveBadge && (i === 0 || i === 2) ? `<span style="position:absolute;left:4px;bottom:4px;z-index:2;font:800 10px/16px var(--display);color:var(--on-brand);background:var(--brand);border-radius:99px;padding:0 6px">${T.liveBadge}</span>` : ""
           }`, "sel"),
         ).join("");
