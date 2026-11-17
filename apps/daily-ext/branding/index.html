@@ -1,0 +1,204 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Daily Picks · Store assets</title>
+    <!--
+      Chrome Web Store assets, rendered by render.sh with headless Chrome.
+      One template for every asset: ?lang=zh|en&id=s1|s3|small.
+
+      The side panels in these images are screenshots of the built extension
+      taken by capture.mjs (shots/*.png, 2×, 400×628 — `.panel img.shot` below
+      must match its viewport), with every piece of article text (titles, theses, source
+      names) swapped for grey placeholder bars — the store images show the
+      product, not anybody's article. Re-run capture.mjs after any panel change.
+      The bar above each panel (icon, name, pin, close) is drawn here: Chrome
+      draws it in the real browser, outside the extension's page.
+    -->
+    <style>
+      /* Sokosoko tokens, the same values as src/sidepanel/index.css. Yellow is a
+         fill (ink on it), never a text colour. */
+      @font-face { font-family: "Nunito"; font-weight: 700; src: url("../src/sidepanel/fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Nunito"; font-weight: 800; src: url("../src/sidepanel/fonts/nunito-latin-800-normal.woff2") format("woff2"); }
+      :root {
+        --paper: #ffffff;
+        --paper-soft: #faf7f0;
+        --paper-sunk: #f3efe6;
+        --line: #e6e0d4;
+        --ink: #2f3542;
+        --ink-mid: #4a4f5c;
+        --ink-soft: #666b7a;
+        --brand: #f7c948;
+        --brand-soft: #fdf1cc;
+        --fill-sky: #bcdcf2;
+        --fill-mint: #bfe3cf;
+        --display: "Nunito", "PingFang SC", "Helvetica Neue", sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { overflow: hidden; background: var(--paper-soft); }
+      body {
+        font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      .canvas { position: relative; overflow: hidden; background: var(--paper-soft); }
+      /* Two flat pastel discs, no gradients — the same device as the site's home hero. */
+      .disc { position: absolute; border-radius: 50%; }
+
+      .copy { position: absolute; left: 88px; top: 0; bottom: 0; width: 500px; display: flex; flex-direction: column; justify-content: center; gap: 26px; }
+      .brandrow { display: flex; align-items: center; gap: 14px; font-family: var(--display); font-weight: 800; font-size: 26px; }
+      .brandrow img { width: 48px; height: 48px; }
+      h1 { font-family: var(--display); font-weight: 800; font-size: 50px; line-height: 1.28; letter-spacing: 0.01em; }
+      body.en h1 { font-size: 46px; line-height: 1.2; letter-spacing: 0; }
+      /* The highlighter: a thick yellow underline drawn behind the lower half of the words. */
+      h1 em {
+        font-style: normal;
+        text-decoration: underline var(--brand);
+        text-decoration-thickness: 0.36em;
+        text-underline-offset: -0.2em;
+        text-decoration-skip-ink: none;
+      }
+      .sub { font-size: 21px; line-height: 1.75; color: var(--ink-mid); }
+      body.en .sub { font-size: 20px; line-height: 1.6; }
+
+      .shadow { box-shadow: 0 24px 60px rgba(47, 53, 66, 0.18), 0 4px 14px rgba(47, 53, 66, 0.08); }
+
+      /* A stripped-down browser window: toolbar on top, a page on the left, the
+         side panel on the right — so it is obvious where the panel lives. */
+      .window {
+        position: absolute;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .toolbar {
+        flex: none;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .omnibox { flex: 1; height: 32px; border-radius: 999px; background: var(--paper-sunk); }
+      .tool { width: 22px; height: 22px; border-radius: 6px; background: var(--paper-sunk); }
+      .exticon { position: relative; width: 28px; height: 28px; }
+      .exticon img { width: 28px; height: 28px; display: block; }
+      /* The panel is open, so its toolbar button shows as pressed. */
+      .exticon.on::before { content: ""; position: absolute; inset: -5px; border-radius: 8px; background: var(--paper-sunk); }
+      .exticon.on img { position: relative; }
+      .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--fill-sky); }
+      .content { flex: 1; display: flex; min-height: 0; }
+      /* Somebody else's page, as abstract blocks. */
+      .page { flex: 1; padding: 28px 22px; display: flex; flex-direction: column; gap: 12px; background: var(--paper); }
+      .page .block { height: 120px; border-radius: 10px; background: var(--paper-sunk); margin-bottom: 8px; }
+      .page .bar { height: 10px; border-radius: 999px; background: var(--paper-sunk); }
+      .divider { flex: none; width: 1px; background: var(--line); }
+
+      /* One side panel: Chrome's bar, then the extension's page. */
+      .panel { flex: none; width: 400px; display: flex; flex-direction: column; background: var(--paper); }
+      .panel.float { position: absolute; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; }
+      .panel img.shot { display: block; width: 400px; height: 628px; }
+      .chromebar {
+        flex: none;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 0 12px 0 14px;
+        font: 500 14px/1 -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+        color: #3c4043;
+        background: #ffffff;
+      }
+      .chromebar img { width: 18px; height: 18px; }
+      .chromebar .name { flex: 1; }
+      .chromebar svg { width: 18px; height: 18px; stroke: #5f6368; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .panel.dark { background: #1c1f26; border-color: #363c48; }
+      .panel.dark .chromebar { background: #202124; color: #e8eaed; }
+      .panel.dark .chromebar svg { stroke: #9aa0a6; }
+
+      /* small promo tile */
+      .tile { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 40px; height: 100%; position: relative; }
+      .tile .brandrow { font-size: 34px; gap: 16px; }
+      .tile .brandrow img { width: 64px; height: 64px; }
+      .tile p { font-size: 18px; line-height: 1.55; color: var(--ink-mid); max-width: 330px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const LANG = params.get("lang") === "en" ? "en" : "zh";
+      const ID = params.get("id") || "s1";
+      const SIZES = { small: [440, 280] };
+      const [W, H] = SIZES[ID] || [1280, 800];
+      document.body.className = LANG;
+      document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+
+      const T = {
+        // Chinese headlines break after the comma by hand: left to the browser,
+        // a 50px line breaks inside a word.
+        zh: {
+          brand: "每日严选",
+          tagline: "过滤信息噪音，严选各领域的犀利见解",
+          s1: ["今天值得读的，<br><em>都在侧边栏里</em>", "每天从几十个优质信息源里严选几篇，配中文概要。点工具栏图标，在侧边栏里读。"],
+          s3: ["中英文随时切换，<br><em>深浅色自动跟随</em>", "每篇一句话讲清楚，点卡片读完整概要。<br>出了新一期，图标上就显示篇数。"],
+        },
+        en: {
+          brand: "Daily Picks",
+          tagline: "Cut the noise. The sharpest takes from every field",
+          s1: ["Today's best reads,<br><em>in your side panel</em>", "A handful of picks a day from dozens of top sources, each one summarized. Click the toolbar icon and read them beside any page."],
+          s3: ["English or Chinese, <em>light or dark</em>", "Every pick in one sentence, a click away from the full summary. When a new edition lands, the icon shows the count."],
+        },
+      }[LANG];
+      const OTHER = LANG === "zh" ? "en" : "zh";
+      const NAME = { zh: "每日严选", en: "Daily Picks" };
+
+      // Chrome's side panel bar: the extension's icon and name, then pin and close.
+      const PIN = `<svg viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/></svg>`;
+      const CLOSE = `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+      const chromebar = (lang) =>
+        `<div class="chromebar"><img src="../icons/icon32.png" alt="" /><span class="name">${NAME[lang]}</span>${PIN}${CLOSE}</div>`;
+      const panelInner = (lang, shot) => `${chromebar(lang)}<img class="shot" src="shots/${shot}.png" alt="" />`;
+
+      const discs = `
+        <div class="disc" style="width:640px;height:640px;right:-120px;top:-260px;background:var(--brand-soft)"></div>
+        <div class="disc" style="width:360px;height:360px;left:-120px;bottom:-170px;background:var(--fill-mint);opacity:.55"></div>`;
+      const brandrow = `<div class="brandrow"><img src="mark.svg" alt="" /><span>${T.brand}</span></div>`;
+      const copy = ([title, sub]) =>
+        `<div class="copy">${brandrow}<h1>${title}</h1><p class="sub">${sub}</p></div>`;
+      const pageBlocks = `<div class="page"><div class="block"></div>${[92, 100, 84, 96, 70, 0, 88, 100, 76]
+        .map((w) => (w ? `<div class="bar" style="width:${w}%"></div>` : `<div style="height:10px"></div>`))
+        .join("")}</div>`;
+
+      let body = "";
+      if (ID === "s1") {
+        // Window: 52 toolbar + 40 Chrome bar + 628 panel = 720 tall.
+        body = `${discs}${copy(T.s1)}
+          <div class="window shadow" style="left:628px;top:40px;width:624px;height:722px">
+            <div class="toolbar">
+              <div class="omnibox"></div><div class="tool"></div>
+              <div class="exticon on"><img src="../icons/icon48.png" alt="" /></div>
+              <div class="avatar"></div>
+            </div>
+            <div class="content">${pageBlocks}<div class="divider"></div>
+              <div class="panel">${panelInner(LANG, `${LANG}-list`)}</div>
+            </div>
+          </div>`;
+      } else if (ID === "s3") {
+        // This language in light in front, the other language in dark behind it.
+        body = `${discs}${copy(T.s3)}
+          <div class="panel float dark shadow" style="left:810px;top:36px;z-index:1">${panelInner(OTHER, `${OTHER}-list-dark`)}</div>
+          <div class="panel float shadow" style="left:650px;top:96px;z-index:2">${panelInner(LANG, `${LANG}-list`)}</div>`;
+      } else if (ID === "small") {
+        body = `<div class="disc" style="width:300px;height:300px;right:-90px;top:-120px;background:var(--brand-soft)"></div>
+          <div class="tile">${brandrow}<p>${T.tagline}</p></div>`;
+      }
+      document.getElementById("root").innerHTML =
+        `<div class="canvas" style="width:${W}px;height:${H}px">${body}</div>`;
+    </script>
+  </body>
+</html>

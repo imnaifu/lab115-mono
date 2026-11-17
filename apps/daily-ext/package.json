@@ -1,0 +1,30 @@
+{
+  "name": "daily-picks-extension",
+  "private": true,
+  "version": "1.0.0",
+  "description": "每日严选 / Daily Picks — Chrome side panel for daily.lab115.com",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "icons": "node scripts/icons.mjs",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "playwright": "^1.64.1",
+    "sharp": "^0.33.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
+  }
+}

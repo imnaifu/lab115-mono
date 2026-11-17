@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Daily Picks",
+    "description": "Extension name, shown in the store and the toolbar tooltip."
+  },
+  "appDesc": {
+    "message": "The day's few articles worth reading, picked from dozens of top sources and summarized. Read them in your browser's side panel.",
+    "description": "Store short description; 132 characters max."
+  }
+}

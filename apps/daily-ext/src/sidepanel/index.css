@@ -1,0 +1,388 @@
+/*
+ * Sokosoko, the same system as daily.lab115.com: white page, one ink colour,
+ * yellow only as a fill (never as text — 1.6:1 on white), everything clickable
+ * is a pill. Values copied from apps/daily/src/index.css, light and dark.
+ *
+ * Nunito is bundled (Latin only, for the brand, numbers and dates) instead of
+ * loaded from Google Fonts: the privacy page promises the extension talks to
+ * daily.lab115.com and nothing else. Chinese uses the system's own font.
+ */
+
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./fonts/nunito-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("./fonts/nunito-latin-800-normal.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light dark;
+  --page: #ffffff;
+  --page-deep: #faf7f0;
+  --card: #f3efe6;
+  --line: #e6e0d4;
+  --ink: #2f3542;
+  --ink-mid: #4a4f5c;
+  --ink-soft: #666b7a;
+  --ink-fixed: #2f3542;
+  --brand: #f7c948;
+  --brand-deep: #e0a91b;
+  --brand-soft: #fdf1cc;
+  --link: #2f6fb0;
+  --shadow: 0 6px 18px rgba(47, 53, 66, 0.1);
+  --font-text: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC",
+    "Microsoft YaHei", sans-serif;
+  --font-display: "Nunito", var(--font-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #1c1f26;
+    --page-deep: #22262e;
+    --card: #2a2f39;
+    --line: #363c48;
+    --ink: #eef0f4;
+    --ink-mid: #d3d7df;
+    --ink-soft: #a9afbc;
+    --brand-deep: #ffd966;
+    --brand-soft: #3a3220;
+    --link: #7fb4ec;
+    --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The side panel is as tall as the window and as wide as the reader drags it
+   (Chrome's minimum is 320px), so the layout fills both instead of fixing a size. */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Chrome's own bar above the panel (icon, name, pin, close) is white like the
+     page, so without a line the two run together. Outside the scroller, so it
+     stays put and the cards slide under it. */
+  border-top: 1px solid var(--line);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* ---- top row: the edition's date and the language switch ---- */
+
+/* At the top of the scrolling list, not pinned. Its sides line up with the
+   cards' edges (the list's 10px gutter). */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 10px 0 16px;
+}
+
+/* The language switch: both choices on one track, a yellow thumb under the
+   current one. The thumb is the yellow fill, so the label on it is ink-fixed. */
+.lang-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 72px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--page-deep);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lang-switch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 999px;
+  background: var(--brand);
+  transition: transform 0.18s ease;
+}
+
+.lang-switch[aria-checked="true"]::before {
+  transform: translateX(100%);
+}
+
+.lang-switch span {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  transition: color 0.18s ease;
+}
+
+.lang-switch[aria-checked="false"] span:first-child,
+.lang-switch[aria-checked="true"] span:last-child {
+  color: var(--ink-fixed);
+}
+
+.day {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.day-date {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.day-count {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.notice {
+  padding: 8px 16px;
+  font-size: 12px;
+  background: var(--brand-soft);
+  color: var(--ink);
+}
+
+/* ---- pills ---- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--page);
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.pill:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.pill.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--ink-fixed);
+}
+
+/* ---- list ---- */
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A panel dragged wide keeps the cards at a readable measure, centred. The
+   column is at least the panel's height so the empty and error states centre
+   in it. */
+.column {
+  max-width: 640px;
+  min-height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 10px 10px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--page);
+  transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+}
+
+.item:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+  border-color: var(--ink-soft);
+}
+
+.rank {
+  flex: none;
+  width: 18px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.item-body {
+  /* Fill the card even when the title is short, so every card's text column
+     starts and ends at the same place. */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.chip {
+  --c: var(--cat);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c);
+}
+
+@media (prefers-color-scheme: dark) {
+  .chip {
+    --c: var(--cat-dark);
+  }
+}
+
+.source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.item-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+/* The whole take, unclamped: it is one sentence by construction, and it is the
+   reason the card exists. */
+.item-thesis {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-mid);
+}
+
+/* ---- end of the list ---- */
+
+/* 「已经到底了 · 更多在 daily.lab115.com」 between two hairlines. */
+.end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 20px 20px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.end::before,
+.end::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.end a {
+  color: var(--ink-mid);
+  text-underline-offset: 2px;
+}
+
+.end a:hover {
+  text-decoration: underline;
+}
+
+/* ---- states ---- */
+
+.state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 24px;
+}
+
+.state p {
+  margin: 0;
+}

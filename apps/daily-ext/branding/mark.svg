@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="每日严选 Daily Picks">
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#F7C948" stroke="#2F3542" stroke-width="3"/>
+  <g transform="translate(32 32) scale(0.88) translate(-32 -32)" fill="none" stroke="#2F3542" stroke-linecap="round">
+    <path stroke-width="7" d="M 13.2 21 H 56"/>
+    <path stroke-width="7" d="M 13.2 43 H 56"/>
+    <path stroke-width="5" d="M 30 25 V 39"/>
+    <path stroke-width="5" d="M 42 25 V 39"/>
+    <path stroke-width="7" d="M 8 11 A 35 35 0 0 1 8 53"/>
+  </g>
+</svg>
