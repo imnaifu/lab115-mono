@@ -30,6 +30,12 @@ function Asset({ selected, onClick, children, thumb }) {
 export default function PostTab({ L, s }) {
   const post = s.post;
 
+  // A RedNote page the extension can't read until it is reloaded. Not while a
+  // download is on screen: the background owns those files.
+  if (s.pageStale && s.pPhase !== 'downloading' && s.pPhase !== 'done') {
+    return <EmptyState art="post" title={L.reloadT} sub={L.reloadS} btn={L.reloadBtn} onBtn={s.reloadPage} />;
+  }
+
   // No video note captured yet (or not on a post page).
   if (s.pPhase === 'error' || !post) {
     return <EmptyState art="post" title={L.errT} sub={L.errS} btn={L.errBtn} onBtn={() => s.setPPhase('ready')} />;

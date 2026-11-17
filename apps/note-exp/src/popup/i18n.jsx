@@ -78,6 +78,11 @@ export const STR = {
     errT: "当前不是笔记详情页",
     errS: "请先打开一篇小红书笔记，再点击插件下载其视频与图片。",
     errBtn: "我已打开笔记",
+    // A RedNote tab opened before install/update whose script couldn't be attached.
+    reloadT: "刷新一下页面就能用",
+    reloadS:
+      "这个页面是在插件安装或更新之前打开的，插件还读不到它，刷新一下就好。",
+    reloadBtn: "刷新页面",
     liveBadge: "实况",
     liveCount: (n) => `${n} 张实况`,
     textWord: "正文",
@@ -162,6 +167,10 @@ export const STR = {
     errT: "Not a post detail page",
     errS: "Open a Xiaohongshu post first, then click the extension to download its video and images.",
     errBtn: "I've opened a post",
+    reloadT: "Reload this page",
+    reloadS:
+      "This page was open before the extension was installed or updated, so the extension can't read it yet. Reload it and it will work.",
+    reloadBtn: "Reload page",
     liveBadge: "LIVE",
     liveCount: (n) => `${n} Live`,
     textWord: "Text",
@@ -224,6 +233,10 @@ export const STR = {
     errT: "目前不是筆記頁面",
     errS: "請先開啟一篇小紅書筆記，再點擊擴充功能下載其影片與圖片。",
     errBtn: "我已開啟筆記",
+    reloadT: "重新整理一下頁面就能用",
+    reloadS:
+      "這個頁面是在擴充功能安裝或更新之前開啟的，擴充功能還讀不到它，重新整理一下就好。",
+    reloadBtn: "重新整理頁面",
     liveBadge: "實況",
     liveCount: (n) => `${n} 張實況`,
     textWord: "內文",
@@ -289,6 +302,10 @@ export const STR = {
     errT: "게시물 페이지가 아닙니다",
     errS: "먼저 샤오홍슈 게시물을 연 다음, 확장 프로그램을 클릭해 동영상과 이미지를 다운로드하세요.",
     errBtn: "게시물을 열었어요",
+    reloadT: "페이지를 새로고침해 주세요",
+    reloadS:
+      "이 페이지는 확장 프로그램을 설치하거나 업데이트하기 전에 열려 있어서 아직 읽을 수 없습니다. 새로고침하면 바로 사용할 수 있어요.",
+    reloadBtn: "페이지 새로고침",
     liveBadge: "LIVE",
     liveCount: (n) => `라이브 ${n}장`,
     textWord: "본문",
@@ -352,6 +369,10 @@ export const STR = {
     errT: "投稿ページではありません",
     errS: "先に小紅書の投稿を開いてから、拡張機能をクリックして動画と画像をダウンロードしてください。",
     errBtn: "投稿を開きました",
+    reloadT: "ページを再読み込みしてください",
+    reloadS:
+      "このページは拡張機能をインストールまたは更新する前に開かれていたため、まだ読み取れません。再読み込みすると使えるようになります。",
+    reloadBtn: "ページを再読み込み",
     liveBadge: "LIVE",
     liveCount: (n) => `ライブ ${n} 枚`,
     textWord: "本文",
@@ -414,6 +435,10 @@ export const STR = {
     errT: "Đây không phải trang bài viết",
     errS: "Hãy mở một bài viết Xiaohongshu trước, rồi nhấp vào tiện ích để tải video và ảnh.",
     errBtn: "Tôi đã mở bài viết",
+    reloadT: "Hãy tải lại trang",
+    reloadS:
+      "Trang này được mở trước khi cài đặt hoặc cập nhật tiện ích nên tiện ích chưa đọc được. Tải lại trang là dùng được ngay.",
+    reloadBtn: "Tải lại trang",
     liveBadge: "LIVE",
     liveCount: (n) => `${n} ảnh Live`,
     textWord: "Nội dung",

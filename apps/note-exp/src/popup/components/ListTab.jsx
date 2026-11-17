@@ -3,6 +3,12 @@ import NoteRow from './NoteRow.jsx';
 import { Spinner, Btn, Progress, Overlay, Sheet, SheetIcon, EmptyState, Notice } from './ui.jsx';
 
 export default function ListTab({ L, s }) {
+  // A RedNote page the extension can't read until it is reloaded. Not while an
+  // export is on screen: that runs from data already in the popup.
+  if (s.pageStale && (s.sPhase === 'nopage' || s.sPhase === 'capturing')) {
+    return <EmptyState art="browser" title={L.reloadT} sub={L.reloadS} btn={L.reloadBtn} onBtn={s.reloadPage} />;
+  }
+
   if (s.sPhase === 'nopage') {
     return (
       <EmptyState

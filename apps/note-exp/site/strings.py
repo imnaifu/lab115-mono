@@ -83,7 +83,7 @@ S["en"] = {
     "privacy_title": "Privacy Policy - RedNote Exporter",
     "privacy_description": "RedNote Exporter keeps your notes, images and videos in your browser. It only sends anonymous usage counts, which you can turn off.",
     "privacy": """<h1>Privacy Policy</h1>
-      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 13, 2026</p>
+      <p class="updated">For the Chrome extension “RedNote Exporter” · Last updated: November 17, 2026</p>
 
       <div class="summary">
         <p><strong>In short:</strong> the notes, images and videos you capture or download never leave your browser. The extension sends anonymous usage counts (which features are used, and how often) to our own statistics server so we know what to improve. They never include note content, links or your account, and you can turn them off in the extension’s ⋯ menu.</p>
@@ -133,6 +133,7 @@ S["en"] = {
       <ul>
         <li><code>downloads</code> — saves the images and video you select to your Downloads folder, grouped into one sub-folder named after the time and post title.</li>
         <li><code>storage</code> — remembers the usage-statistics setting and the install ID.</li>
+        <li><code>scripting</code> — if a xiaohongshu.com or rednote.com tab was already open when the extension was installed or updated, puts the extension's page script into that tab so it works without a reload. It is used on those two sites only.</li>
         <li><strong>Access to xiaohongshu.com and rednote.com</strong> (including the edith and so subdomains) — lets the extension run on those pages and read the note data they load. It does not run on any other site.</li>
       </ul>
 
@@ -217,7 +218,7 @@ S["zh"] = {
     "privacy_title": "隐私政策 - 小红书导出工具 RedNote Exporter",
     "privacy_description": "小红书导出工具（RedNote Exporter）采集和下载的笔记、图片、视频只在你的浏览器里，只发送可以关闭的匿名使用次数。",
     "privacy": """<h1>隐私政策</h1>
-      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 13 日</p>
+      <p class="updated">适用于 Chrome 扩展「小红书导出工具（RedNote Exporter）」 · 最后更新：2026 年 11 月 17 日</p>
 
       <div class="summary">
         <p><strong>简单说：</strong>你采集和下载的笔记、图片、视频都只在你的浏览器里，不会离开你的电脑。扩展会把匿名的使用次数（用了哪些功能、用了多少次）发到我们自建的统计服务器，用来决定先改进什么。这些数据不含笔记内容、链接和账号信息，你可以在扩展的 ⋯ 菜单里关掉。</p>
@@ -267,6 +268,7 @@ S["zh"] = {
       <ul>
         <li><code>downloads</code>：把你选中的图片、视频保存到下载文件夹，并按「时间 + 笔记标题」放进同一个子文件夹。</li>
         <li><code>storage</code>：记住使用统计的开关设置和安装 ID。</li>
+        <li><code>scripting</code>：安装或更新扩展时，如果已经开着小红书（xiaohongshu.com / rednote.com）的页面，把扩展的页面脚本补进这些页面，不用刷新就能用。只用于这两个网站。</li>
         <li><strong>访问 xiaohongshu.com 和 rednote.com（含 edith、so 子域名）</strong>：在这些页面上运行，读取页面加载的笔记数据。扩展不会在其他网站上运行。</li>
       </ul>
 
@@ -351,7 +353,7 @@ S["zh-tw"] = {
     "privacy_title": "隱私權政策 - 小紅書匯出工具 RedNote Exporter",
     "privacy_description": "小紅書匯出工具（RedNote Exporter）收集和下載的筆記、圖片、影片只在你的瀏覽器裡，只傳送可以關閉的匿名使用次數。",
     "privacy": """<h1>隱私權政策</h1>
-      <p class="updated">適用於 Chrome 擴充功能「小紅書匯出工具（RedNote Exporter）」 · 最後更新：2026 年 11 月 13 日</p>
+      <p class="updated">適用於 Chrome 擴充功能「小紅書匯出工具（RedNote Exporter）」 · 最後更新：2026 年 11 月 17 日</p>
       <p class="updated">本頁為翻譯版本，內容如有出入，以<a href="/privacy/" hreflang="en" lang="en">英文版</a>為準。</p>
 
       <div class="summary">
@@ -402,6 +404,7 @@ S["zh-tw"] = {
       <ul>
         <li><code>downloads</code>：把你選取的圖片、影片儲存到下載資料夾，並依「時間 + 筆記標題」放進同一個子資料夾。</li>
         <li><code>storage</code>：記住使用統計的開關設定和安裝 ID。</li>
+        <li><code>scripting</code>：安裝或更新擴充功能時，如果已經開著小紅書（xiaohongshu.com / rednote.com）的頁面，把擴充功能的頁面腳本補進這些頁面，不用重新整理就能使用。只用於這兩個網站。</li>
         <li><strong>存取 xiaohongshu.com 和 rednote.com（含 edith、so 子網域）</strong>：在這些頁面上執行，讀取頁面載入的筆記資料。擴充功能不會在其他網站上執行。</li>
       </ul>
 
@@ -486,7 +489,7 @@ S["ko"] = {
     "privacy_title": "개인정보처리방침 - RedNote Exporter",
     "privacy_description": "RedNote Exporter는 노트, 이미지, 동영상을 브라우저 안에만 두며, 끌 수 있는 익명 사용 횟수만 보냅니다.",
     "privacy": """<h1>개인정보처리방침</h1>
-      <p class="updated">Chrome 확장 프로그램 「RedNote Exporter」 · 최종 업데이트: 2026년 11월 13일</p>
+      <p class="updated">Chrome 확장 프로그램 「RedNote Exporter」 · 최종 업데이트: 2026년 11월 17일</p>
       <p class="updated">이 페이지는 번역본입니다. 내용이 다를 경우 <a href="/privacy/" hreflang="en" lang="en">영어 원문</a>이 우선합니다.</p>
 
       <div class="summary">
@@ -537,6 +540,7 @@ S["ko"] = {
       <ul>
         <li><code>downloads</code> — 선택한 이미지와 동영상을 다운로드 폴더에 저장하며, 시간과 게시물 제목으로 이름 붙인 하위 폴더 하나에 모읍니다.</li>
         <li><code>storage</code> — 사용 통계 설정과 설치 ID를 기억합니다.</li>
+        <li><code>scripting</code> — 확장 프로그램을 설치하거나 업데이트할 때 이미 열려 있던 샤오홍슈(xiaohongshu.com / rednote.com) 탭에 확장 프로그램의 페이지 스크립트를 넣어, 새로고침하지 않아도 바로 쓸 수 있게 합니다. 이 두 사이트에서만 사용합니다.</li>
         <li><strong>xiaohongshu.com 및 rednote.com 접근</strong>(edith, so 하위 도메인 포함) — 해당 페이지에서 실행되어 페이지가 불러온 노트 데이터를 읽습니다. 다른 사이트에서는 실행되지 않습니다.</li>
       </ul>
 
@@ -621,7 +625,7 @@ S["ja"] = {
     "privacy_title": "プライバシーポリシー - RedNote Exporter",
     "privacy_description": "RedNote Exporter はノート、画像、動画をブラウザ内にとどめ、オフにできる匿名の利用回数だけを送信します。",
     "privacy": """<h1>プライバシーポリシー</h1>
-      <p class="updated">Chrome 拡張機能「RedNote Exporter」 · 最終更新：2026 年 11 月 13 日</p>
+      <p class="updated">Chrome 拡張機能「RedNote Exporter」 · 最終更新：2026 年 11 月 17 日</p>
       <p class="updated">このページは翻訳版です。内容に相違がある場合は<a href="/privacy/" hreflang="en" lang="en">英語版</a>が優先します。</p>
 
       <div class="summary">
@@ -672,6 +676,7 @@ S["ja"] = {
       <ul>
         <li><code>downloads</code> — 選択した画像と動画をダウンロードフォルダに保存し、時刻と投稿タイトルの名前を付けたサブフォルダにまとめます。</li>
         <li><code>storage</code> — 利用統計の設定とインストール ID を記憶します。</li>
+        <li><code>scripting</code> — 拡張機能のインストールや更新の時点で小紅書（xiaohongshu.com / rednote.com）のタブがすでに開いていた場合、そのタブに拡張機能のページスクリプトを追加し、再読み込みしなくても使えるようにします。この 2 つのサイトでのみ使います。</li>
         <li><strong>xiaohongshu.com と rednote.com へのアクセス</strong>（edith と so のサブドメインを含む）— それらのページで動作し、ページが読み込んだノートデータを読み取ります。ほかのサイトでは動作しません。</li>
       </ul>
 
@@ -756,7 +761,7 @@ S["vi"] = {
     "privacy_title": "Chính sách quyền riêng tư - RedNote Exporter",
     "privacy_description": "RedNote Exporter giữ ghi chú, ảnh và video trong trình duyệt của bạn. Nó chỉ gửi số lần sử dụng ẩn danh, và bạn có thể tắt.",
     "privacy": """<h1>Chính sách quyền riêng tư</h1>
-      <p class="updated">Dành cho tiện ích Chrome “RedNote Exporter” · Cập nhật lần cuối: 13 tháng 11, 2026</p>
+      <p class="updated">Dành cho tiện ích Chrome “RedNote Exporter” · Cập nhật lần cuối: 17 tháng 11, 2026</p>
       <p class="updated">Đây là bản dịch. Nếu có khác biệt, <a href="/privacy/" hreflang="en" lang="en">bản tiếng Anh</a> là bản có hiệu lực.</p>
 
       <div class="summary">
@@ -807,6 +812,7 @@ S["vi"] = {
       <ul>
         <li><code>downloads</code> — lưu ảnh và video bạn chọn vào thư mục Tải xuống, gom vào một thư mục con đặt tên theo thời gian và tiêu đề bài.</li>
         <li><code>storage</code> — ghi nhớ cài đặt thống kê sử dụng và mã cài đặt.</li>
+        <li><code>scripting</code> — khi cài đặt hoặc cập nhật tiện ích, nếu trang Xiaohongshu (xiaohongshu.com / rednote.com) đã được mở sẵn, tiện ích sẽ thêm tập lệnh của mình vào các trang đó để dùng được ngay mà không cần tải lại. Chỉ dùng trên hai trang web này.</li>
         <li><strong>Truy cập xiaohongshu.com và rednote.com</strong> (bao gồm tên miền phụ edith và so) — cho phép tiện ích chạy trên các trang đó và đọc dữ liệu ghi chú chúng tải về. Tiện ích không chạy trên trang web nào khác.</li>
       </ul>
 

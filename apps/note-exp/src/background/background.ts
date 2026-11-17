@@ -155,6 +155,51 @@ async function setUninstallPage(): Promise<void> {
   }
 }
 
+// ------------------------------------------------------ Already-open tabs
+// Chrome only runs the manifest's content script in pages loaded after the
+// extension is installed. A RedNote tab that was already open when it got
+// installed has no script at all, and one open across an update keeps a copy
+// that can no longer talk to the extension — either way the popup can't read
+// the page, which used to look like "not a post page" until the user happened
+// to reload. So on install and update, put the content script into those tabs.
+//
+// What a late script can see: the note open right now (it is read from the
+// page's own state, see captureInitialStateNote in injected.ts) and every list
+// page loaded from then on; list pages fetched before it arrived are gone.
+// After an update the page keeps the old injected script with everything it
+// captured, and the new content script talks to it, so nothing is lost.
+const PAGE_PATTERNS = ["https://www.xiaohongshu.com/*", "https://www.rednote.com/*"];
+
+async function contentScriptAnswers(tabId: number): Promise<boolean> {
+  try {
+    const reply = await chrome.tabs.sendMessage(tabId, { action: "ping" });
+    return reply?.ok === true;
+  } catch {
+    // No script, or one cut off by an update.
+    return false;
+  }
+}
+
+async function attachToOpenTabs(): Promise<void> {
+  try {
+    const tabs = await chrome.tabs.query({ url: PAGE_PATTERNS });
+    await Promise.all(
+      tabs.map(async (tab) => {
+        // A discarded tab reloads (with the manifest script) when it is next shown.
+        if (tab.id === undefined || tab.discarded) return;
+        if (await contentScriptAnswers(tab.id)) return;
+        try {
+          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+        } catch {
+          // Tab closed or navigating meanwhile: the popup offers a reload button.
+        }
+      }),
+    );
+  } catch {
+    // ignore: the popup still offers a reload button
+  }
+}
+
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
     track("install");
@@ -163,6 +208,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     // Chrome also fires "update" on a reload with the same version (development).
     if (details.previousVersion !== version) track("update", { from: details.previousVersion ?? "" });
   }
+  if (details.reason === "install" || details.reason === "update") attachToOpenTabs();
   setUninstallPage();
 });
 

@@ -109,6 +109,13 @@ export default function usePopup(lang) {
   // shown afterwards matches the folder actually used.
   const [dlFolder, setDlFolder] = useState("");
 
+  // The active tab is a RedNote page but its content script doesn't answer:
+  // the tab was open before the extension was installed or updated, and the
+  // background couldn't attach to it (see attachToOpenTabs). Only a reload
+  // helps, so both tabs say that instead of "not a post / list page". Cleared
+  // as soon as a script answers.
+  const [pageStale, setPageStale] = useState(false);
+
   const bodyRef = useRef(null);
   // Kind of page the active tab shows ({ site, page }), for the stats.
   const pageRef = useRef({ site: "other", page: "other" });
@@ -150,10 +157,13 @@ export default function usePopup(lang) {
       let postKind = "none";
 
       // --- note list (search / homefeed / user_posted) ---
+      let answered = false;
       try {
         const resp = await chrome.tabs.sendMessage(activeTab.id, {
           action: "extractPostData",
         });
+        answered = true;
+        setPageStale(false);
         const parsed = parseInterceptedDataLocal(resp?.data, base);
         parsedRef.current = parsed;
         noteCount = parsed.length;
@@ -179,7 +189,9 @@ export default function usePopup(lang) {
           setSPhase("capturing");
         }
       } catch {
-        // Content script unreachable → not on a Xiaohongshu/RedNote page.
+        // Content script unreachable → not on a Xiaohongshu/RedNote page, or
+        // on one that was open before install/update (pageStale).
+        if (!answered) setPageStale(pageRef.current.site !== "other");
         parsedRef.current = [];
         setItems([]);
         if (
@@ -285,6 +297,13 @@ export default function usePopup(lang) {
         return n;
       });
     after(80, tick);
+  }
+
+  // --- reload the active tab, for a page open since before install/update ---
+  async function reloadPage() {
+    const activeTab = await getActiveTab();
+    // The popup stays open; its 1s poll picks the page up once it has loaded.
+    if (activeTab?.id) chrome.tabs.reload(activeTab.id);
   }
 
   // --- clear (drops the page-side caches; nothing auto-clears anymore) ---
@@ -437,6 +456,8 @@ export default function usePopup(lang) {
     runExport,
     runClear,
     bodyRef,
+    pageStale,
+    reloadPage,
     // post
     pPhase,
     setPPhase,
