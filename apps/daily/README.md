@@ -2288,7 +2288,7 @@ culture    人文   76   3 页   live
 - **Chrome 扩展（`apps/daily-ext`）只读这份 feed**，所以 feed 的一部分格式是契约：entry 的
   `<id>` 是带日期路径的文章 URL、按「新的一天在前、天内按 rank」排序、`<category term label/>`、
   正文第一个 `<p>` 是论点、最后一个 `<p>` 是「看原文 → — 来源名」。改这些要同时改扩展的
-  `src/shared/feed.ts` / `src/popup/take.ts` —— 已安装的扩展要等商店更新才换解析器。细节见
+  `src/shared/feed.ts` / `src/sidepanel/take.ts` —— 已安装的扩展要等商店更新才换解析器。细节见
   `feed.ts` 开头的注释。
 
 ## 输出的 JSON

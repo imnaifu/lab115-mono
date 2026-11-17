@@ -364,30 +364,31 @@ const STRINGS = {
      * `src/background/background.ts`。扩展的权限、存储或网络行为一变，这里要跟着改。
      */
     extTitle: "每日严选 Chrome 扩展",
-    extLead: "在浏览器工具栏里读每天的严选",
+    extLead: "在浏览器侧边栏里读每天的严选",
     extBody: [
-      "点浏览器工具栏上的图标，弹出最新一期的严选：每篇一张卡片，有栏目、来源、标题和一句话概要。对哪篇感兴趣，点卡片就会在新标签页打开本站这篇的完整概要。",
-      "出了新一期，图标上会显示这一期的篇数，打开看过就消失。中英文随时切换。",
+      "点浏览器工具栏上的图标，右侧打开侧边栏，显示最新一期的严选：每篇一张卡片，有栏目、来源、标题和一句话概要。对哪篇感兴趣，点卡片就会在新标签页打开本站这篇的完整概要，侧边栏留在原处。",
+      "出了新一期，图标上会显示这一期的篇数，打开看过就消失；侧边栏一直开着的话，新一期会直接换上。中英文随时切换。",
       "内容和本站完全一样：扩展读的就是本站公开的 feed，不另外生成任何东西。",
     ],
     extPrivacyTitle: "隐私说明",
     extPrivacy: [
       "扩展不收集、不上传任何个人信息。没有账号，不含统计、广告或任何第三方代码。",
-      "它只和 daily.lab115.com 这一个网站通信：每 30 分钟，以及每次打开弹窗时，读取一次本站公开的 feed。请求不带 cookie，也不带任何能识别你的标识；和打开普通网页一样，它会经过 Cloudflare，留下常规的访问记录（IP 地址、时间、浏览器类型）。",
+      "它只和 daily.lab115.com 这一个网站通信：每 30 分钟，以及每次打开侧边栏时，读取一次本站公开的 feed。请求不带 cookie，也不带任何能识别你的标识；和打开普通网页一样，它会经过 Cloudflare，留下常规的访问记录（IP 地址、时间、浏览器类型）。",
       "保存在你电脑上的只有这几样：你选的语言、最近一次读到的中文和英文 feed（用来秒开和离线阅读）、你看过的最新一期的日期（决定图标上要不要显示篇数）。它们存在浏览器给扩展的本地存储里，不跨设备同步，卸载扩展时一起删除。",
       "点卡片打开的是本站的网页，和直接访问本站一样；从那里再点进原文，适用的是原作者网站自己的隐私政策。",
     ],
-    extPermsTitle: "它要的三项权限",
+    extPermsTitle: "它要的四项权限",
     extPerms: [
       ["存储（storage）", "保存上面说的语言、feed 缓存和已读日期。"],
       ["闹钟（alarms）", "每 30 分钟检查一次有没有新一期。"],
+      ["侧边栏（sidePanel）", "点工具栏图标时，在浏览器右侧的侧边栏里显示列表。"],
       [
         "访问 daily.lab115.com",
         "Chrome 安装时显示为「读取和更改您在 daily.lab115.com 上的数据」。扩展只用它读取 feed，不改动任何东西，也不读取你访问的其他网站。",
       ],
     ],
     extContact: "有问题请写信到 help@lab115.com。",
-    extUpdated: "最后更新：2026 年 11 月 13 日",
+    extUpdated: "最后更新：2026 年 11 月 17 日",
     topicHubDocTitle: (names: readonly string[]) =>
       `探索话题：${names.join("、")}等每日精选`,
     topicHubLead:
@@ -763,30 +764,31 @@ const STRINGS = {
     /* See the Chinese side: every privacy sentence states what apps/daily-ext
        actually does, and changes when its permissions, storage or requests do. */
     extTitle: "Daily Picks for Chrome",
-    extLead: "Read each day's picks from your browser toolbar",
+    extLead: "Read each day's picks in your browser's side panel",
     extBody: [
-      "Click the icon in your browser toolbar and the newest edition opens in a popup: one card per article, with its section, its source, its headline and the one-sentence take. Click a card and the full summary opens on this site in a new tab.",
-      "When a new edition is out, the icon shows how many picks it has, and the number goes away once you have looked. You can switch between English and Chinese at any time.",
+      "Click the icon in your browser toolbar and the newest edition opens in the side panel: one card per article, with its section, its source, its headline and the one-sentence take. Click a card and the full summary opens on this site in a new tab, with the side panel staying where it is.",
+      "When a new edition is out, the icon shows how many picks it has, and the number goes away once you have looked; if the side panel is already open, the new edition simply replaces the old one. You can switch between English and Chinese at any time.",
       "The content is exactly what this site publishes: the extension reads the site's public feed and generates nothing of its own.",
     ],
     extPrivacyTitle: "Privacy",
     extPrivacy: [
       "The extension collects and uploads no personal information. There is no account, and no analytics, advertising or third-party code of any kind.",
-      "It talks to one website only, daily.lab115.com: every 30 minutes, and each time you open the popup, it reads the site's public feed. The request carries no cookies and nothing that identifies you; like any web page you open, it passes through Cloudflare and leaves an ordinary access record (IP address, time, browser type).",
-      "All it keeps on your computer is: the language you chose, the last Chinese and English feeds it fetched (so the popup opens instantly and works offline), and the date of the newest edition you have seen (so it knows whether to show the count on the icon). These live in the browser's local storage for the extension, are not synced across devices, and are deleted when you remove the extension.",
+      "It talks to one website only, daily.lab115.com: every 30 minutes, and each time you open the side panel, it reads the site's public feed. The request carries no cookies and nothing that identifies you; like any web page you open, it passes through Cloudflare and leaves an ordinary access record (IP address, time, browser type).",
+      "All it keeps on your computer is: the language you chose, the last Chinese and English feeds it fetched (so the side panel opens instantly and works offline), and the date of the newest edition you have seen (so it knows whether to show the count on the icon). These live in the browser's local storage for the extension, are not synced across devices, and are deleted when you remove the extension.",
       "A card opens a page on this site, the same as visiting it directly; if you go on to the original article from there, the author's own site and its privacy policy apply.",
     ],
-    extPermsTitle: "The three permissions it asks for",
+    extPermsTitle: "The four permissions it asks for",
     extPerms: [
       ["Storage", "Keeps the language, the feed cache and the last-seen date described above."],
       ["Alarms", "Checks for a new edition every 30 minutes."],
+      ["Side panel", "Shows the list in the browser's side panel when you click the toolbar icon."],
       [
         "Access to daily.lab115.com",
         "Chrome shows this as \"Read and change your data on daily.lab115.com\" at install. The extension only uses it to read the feed; it changes nothing and cannot see any other site you visit.",
       ],
     ],
     extContact: "Questions? Write to help@lab115.com.",
-    extUpdated: "Last updated: November 13, 2026",
+    extUpdated: "Last updated: November 17, 2026",
     topicHubDocTitle: (names: readonly string[]) =>
       `Explore topics: ${names.join(", ")} and more, picked daily`,
     topicHubLead:

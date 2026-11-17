@@ -26,8 +26,8 @@
          address. A browser's favicon store ignores `max-age` and survives a hard
          reload, so without a bump the tab can keep an icon that no longer exists
          anywhere on disk.
-      5. The Chrome extension's icons in apps/daily-ext/icons and its popup copy
-         (src/popup/mark.svg). Regenerate both with `npm run icons` there.
+      5. The Chrome extension's icons in apps/daily-ext/icons and the copy its store
+         images use (branding/mark.svg). Regenerate both with `npm run icons` there.
 
     Palette from src/index.css: brand #F7C948, ink #2F3542.
   -->

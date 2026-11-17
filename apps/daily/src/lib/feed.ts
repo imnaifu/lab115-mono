@@ -33,7 +33,7 @@ import type { Digest, PublishedArticle } from "./types";
  * newest day first and rank order within a day; `<category term label/>`; and
  * the body shape in `contentHtml` — thesis as the first `<p>`, `<h3>` headings,
  * and the original link plus ` — Source` as the LAST `<p>`. Change any of those
- * and update apps/daily-ext/src/shared/feed.ts and src/popup/take.ts with it;
+ * and update apps/daily-ext/src/shared/feed.ts and src/sidepanel/take.ts with it;
  * installed copies of the extension keep running the old parser until the store
  * ships an update.
  */
