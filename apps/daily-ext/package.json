@@ -1,7 +1,7 @@
 {
   "name": "daily-picks-extension",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "每日严选 / Daily Picks — Chrome side panel for daily.lab115.com",
   "type": "module",
   "scripts": {
